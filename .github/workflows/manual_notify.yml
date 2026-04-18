@@ -43,7 +43,7 @@ jobs:
           
       - name: Send Notification
         env:
-          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
         run: |
           python .github/scripts/manual_dispatch.py \
             --title "${{ inputs.title }}" \
