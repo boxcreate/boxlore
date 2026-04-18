@@ -746,4 +746,10 @@ class HomeViewModel(
             )
         }
     }
+    
+    fun resetFeatureFlag() {
+        viewModelScope.launch {
+            userPrefs.dismissFeatureAnnouncement("")
+        }
+    }
 }

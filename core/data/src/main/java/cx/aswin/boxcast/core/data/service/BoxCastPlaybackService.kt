@@ -45,6 +45,8 @@ class BoxCastPlaybackService : MediaLibraryService() {
         )
     }
     private var isRefilling = false
+    // Lazy-init health reporter for service-level playback tracking
+    private val healthReporter by lazy { cx.aswin.boxcast.core.data.analytics.AppHealthReporter(this) }
     
     // Pending seek position for resume playback (set in onAddMediaItems, consumed in onIsPlayingChanged)
     @Volatile
@@ -146,6 +148,13 @@ class BoxCastPlaybackService : MediaLibraryService() {
         var progressSaverJob: kotlinx.coroutines.Job? = null
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
+                // Service-level playback tracking (survives Activity kill)
+                if (isPlaying) {
+                    healthReporter.onPlaybackStarted()
+                } else {
+                    healthReporter.onPlaybackStopped()
+                }
+                
                 if (isPlaying) {
                     // Apply any pending resume-seek BEFORE starting progress saver
                     val seekTo = pendingSeekMs
@@ -265,6 +274,8 @@ class BoxCastPlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        // Flush any tracked playback time before shutting down
+        healthReporter.onPlaybackStopped()
         mediaSession?.run {
             player.release()
             release()

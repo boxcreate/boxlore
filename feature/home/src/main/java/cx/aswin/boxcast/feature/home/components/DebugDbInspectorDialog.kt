@@ -33,6 +33,7 @@ fun DebugDbInspectorDialog(
     history: List<ListeningHistoryEntity>,
     podcasts: List<PodcastEntity>,
     onDeleteHistoryItem: (String) -> Unit,
+    onResetFeatureFlag: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
@@ -46,6 +47,17 @@ fun DebugDbInspectorDialog(
             Column {
                 var selectedTabIndex by remember { mutableIntStateOf(0) }
                 val tabs = listOf("History (${history.size})", "Subs (${podcasts.size})")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text("Debug Tools", style = MaterialTheme.typography.titleMedium)
+                    androidx.compose.material3.OutlinedButton(onClick = onResetFeatureFlag) {
+                        Text("Reset Dialog Flag")
+                    }
+                }
 
                 TabRow(selectedTabIndex = selectedTabIndex) {
                     tabs.forEachIndexed { index, title ->

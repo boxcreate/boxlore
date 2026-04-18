@@ -142,15 +142,29 @@ class UserPreferencesRepository(context: Context) {
         dataStore.edit { it[AnalyticsKeys.HAS_LOGGED_FIRST_PLAY] = true }
     }
     
+    // --- FEATURE ANNOUNCEMENT (version-specific one-time dialog) ---
+    private object FeatureKeys {
+        val DISMISSED_FEATURE_VERSION = stringPreferencesKey("dismissed_feature_version")
+    }
+    
+    val dismissedFeatureVersion: Flow<String> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[FeatureKeys.DISMISSED_FEATURE_VERSION] ?: "" }
+    
+    suspend fun dismissFeatureAnnouncement(version: String) {
+        dataStore.edit { it[FeatureKeys.DISMISSED_FEATURE_VERSION] = version }
+    }
+    
     // --- ANNOUNCEMENT PREFERENCES ---
     private object AnnouncementKeys {
         val TITLE = stringPreferencesKey("announcement_title")
         val BODY = stringPreferencesKey("announcement_body")
         val ROUTE = stringPreferencesKey("announcement_route")
+        val IMAGE_URL = stringPreferencesKey("announcement_image_url")
         val TIMESTAMP = androidx.datastore.preferences.core.longPreferencesKey("announcement_timestamp")
     }
     
-    data class Announcement(val title: String, val body: String, val route: String?, val timestamp: Long)
+    data class Announcement(val title: String, val body: String, val route: String?, val imageUrl: String?, val timestamp: Long)
     
     val activeAnnouncementStream: Flow<Announcement?> = dataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
@@ -162,23 +176,19 @@ class UserPreferencesRepository(context: Context) {
                     title = title,
                     body = body,
                     route = pref[AnnouncementKeys.ROUTE],
+                    imageUrl = pref[AnnouncementKeys.IMAGE_URL],
                     timestamp = pref[AnnouncementKeys.TIMESTAMP] ?: 0L
                 )
-            } else {
-                null
-            }
+            } else null
         }
         
-    suspend fun setAnnouncement(title: String, body: String, route: String?, timestamp: Long) {
-        dataStore.edit { pref ->
-            pref[AnnouncementKeys.TITLE] = title
-            pref[AnnouncementKeys.BODY] = body
-            if (route != null) {
-                pref[AnnouncementKeys.ROUTE] = route
-            } else {
-                pref.remove(AnnouncementKeys.ROUTE)
-            }
-            pref[AnnouncementKeys.TIMESTAMP] = timestamp
+    suspend fun setAnnouncement(title: String, body: String, route: String?, imageUrl: String?, timestamp: Long) {
+        dataStore.edit {
+            it[AnnouncementKeys.TITLE] = title
+            it[AnnouncementKeys.BODY] = body
+            if (route != null) it[AnnouncementKeys.ROUTE] = route else it.remove(AnnouncementKeys.ROUTE)
+            if (imageUrl != null) it[AnnouncementKeys.IMAGE_URL] = imageUrl else it.remove(AnnouncementKeys.IMAGE_URL)
+            it[AnnouncementKeys.TIMESTAMP] = timestamp
         }
     }
     

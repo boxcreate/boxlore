@@ -130,6 +130,7 @@ fun HomeRoute(
             onNavigateToPlayStoreReview()
         },
         onSubmitFeedback = onSubmitFeedback,
+        onResetFeatureFlag = viewModel::resetFeatureFlag,
         modifier = modifier
     )
 }
@@ -165,6 +166,7 @@ fun HomeScreen(
     onDismissFeedback: () -> Unit = {},
     onNavigateToPlayStoreReview: () -> Unit = {},
     onSubmitFeedback: suspend (String, String, String) -> Boolean = { _, _, _ -> false },
+    onResetFeatureFlag: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Track scroll state for collapsing top bar
@@ -192,6 +194,7 @@ fun HomeScreen(
             history = debugHistory,
             podcasts = debugPodcasts,
             onDeleteHistoryItem = onDeleteHistoryItem,
+            onResetFeatureFlag = onResetFeatureFlag,
             onDismissRequest = { showDebugDialog = false }
         )
     }

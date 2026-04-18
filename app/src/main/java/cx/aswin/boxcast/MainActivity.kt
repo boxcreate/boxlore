@@ -5,6 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.core.content.ContextCompat
+import com.google.firebase.messaging.FirebaseMessaging
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
@@ -21,9 +28,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.zIndex
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +81,9 @@ private val TRANSITION_EASING = FastOutSlowInEasing
 class MainActivity : ComponentActivity() {
     // State for Player Expansion (Notification handling)
     private var expandPlayerTrigger by androidx.compose.runtime.mutableLongStateOf(0L)
+    
+    // First-party health analytics (privacy-respecting, no PII)
+    private lateinit var healthReporter: cx.aswin.boxcast.core.data.analytics.AppHealthReporter
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
@@ -82,11 +102,24 @@ class MainActivity : ComponentActivity() {
             intent.removeExtra("EXTRA_OPEN_PLAYER") 
         }
     }
+    
+    override fun onResume() {
+        super.onResume()
+        if (::healthReporter.isInitialized) healthReporter.onAppForeground()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        if (::healthReporter.isInitialized) healthReporter.onAppBackground()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Initialize health reporter
+        healthReporter = cx.aswin.boxcast.core.data.analytics.AppHealthReporter(applicationContext)
         
         // Handle initial launch intent
         handlePlayerIntent(intent)
@@ -160,6 +193,7 @@ class MainActivity : ComponentActivity() {
             val hasSeenMarkPlayedTip by userPrefs.hasSeenMarkPlayedTip.collectAsState(initial = true)
             val hasLoggedFirstPlay by userPrefs.hasLoggedFirstPlay.collectAsState(initial = true)
             val activeAnnouncement by userPrefs.activeAnnouncementStream.collectAsState(initial = null)
+            val dismissedFeatureVersion by userPrefs.dismissedFeatureVersion.collectAsState(initial = "")
             val playerState by playbackRepository.playerState.collectAsState()
             
             val darkTheme = when(themeConfig) {
@@ -169,12 +203,34 @@ class MainActivity : ComponentActivity() {
             }
             
             var appInstanceId by remember { mutableStateOf<String?>(null) }
+            val permissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                // Handled automatically by OS
+            }
+            
             LaunchedEffect(Unit) {
                 try {
                     com.google.firebase.analytics.FirebaseAnalytics.getInstance(application).appInstanceId.addOnSuccessListener { 
                         appInstanceId = it
                     }
                 } catch(e: Exception) { /* Ignore if missing */ }
+                
+                try {
+                    // Subscribe to FCM topic for global announcements
+                    FirebaseMessaging.getInstance().subscribeToTopic("all_users")
+                    
+                    // Subscribe to environment-specific topic safely by clearing the antagonist topic
+                    if (cx.aswin.boxcast.BuildConfig.DEBUG) {
+                        FirebaseMessaging.getInstance().subscribeToTopic("debug_users")
+                        FirebaseMessaging.getInstance().unsubscribeFromTopic("prod_users")
+                    } else {
+                        FirebaseMessaging.getInstance().subscribeToTopic("prod_users")
+                        FirebaseMessaging.getInstance().unsubscribeFromTopic("debug_users")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("Firebase", "Failed FCM init", e)
+                }
             }
             
             val scope = rememberCoroutineScope() // Scope for playback actions
@@ -196,6 +252,15 @@ class MainActivity : ComponentActivity() {
                     userPrefs.markFirstPlayLogged()
                 }
             }
+            
+            // Health Reporter: Track playback time (includes background listening)
+            LaunchedEffect(playerState.isPlaying) {
+                if (playerState.isPlaying) {
+                    healthReporter.onPlaybackStarted()
+                } else {
+                    healthReporter.onPlaybackStopped()
+                }
+            }
 
             BoxCastTheme(
                 darkTheme = darkTheme,
@@ -211,7 +276,46 @@ class MainActivity : ComponentActivity() {
                             scope.launch { userPrefs.clearAnnouncement() }
                         },
                         title = { Text(text = announcement.title) },
-                        text = { Text(text = announcement.body) },
+                        text = { 
+                            androidx.compose.foundation.layout.Column {
+                                if (!announcement.imageUrl.isNullOrBlank()) {
+                                    coil.compose.AsyncImage(
+                                        model = announcement.imageUrl,
+                                        contentDescription = "Announcement Image",
+                                        modifier = androidx.compose.ui.Modifier
+                                            .fillMaxWidth()
+                                            .height(180.dp)
+                                            .padding(bottom = 16.dp)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                }
+                                @androidx.compose.runtime.Composable
+                                fun parseSimpleMarkdown(text: String): androidx.compose.ui.text.AnnotatedString {
+                                    return androidx.compose.ui.text.buildAnnotatedString {
+                                        var currentIndex = 0
+                                        val regex = Regex("\\*\\*(.*?)\\*\\*|\\*(.*?)\\*")
+                                        val matches = regex.findAll(text)
+                                        for (match in matches) {
+                                            append(text.substring(currentIndex, match.range.first))
+                                            if (match.groups[1] != null) {
+                                                withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) {
+                                                    append(match.groupValues[1])
+                                                }
+                                            } else if (match.groups[2] != null) {
+                                                withStyle(androidx.compose.ui.text.SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) {
+                                                    append(match.groupValues[2])
+                                                }
+                                            }
+                                            currentIndex = match.range.last + 1
+                                        }
+                                        append(text.substring(currentIndex))
+                                    }
+                                }
+                                
+                                Text(text = parseSimpleMarkdown(announcement.body)) 
+                            }
+                        },
                         confirmButton = {
                             if (!announcement.route.isNullOrBlank()) {
                                 androidx.compose.material3.TextButton(
@@ -240,6 +344,170 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
+                }
+
+                // --- One-time Feature Announcement (Android Auto - v1.3.6) ---
+                // This constant controls which version triggers this specific announcement.
+                // Change it only when you want to show a NEW feature announcement for a future release.
+                val featureAnnouncementId = "android_auto_1.3.6"
+                val showFeatureDialog = currentRoute == "home" && dismissedFeatureVersion != featureAnnouncementId && activeAnnouncement == null
+                
+                // DEBUG: trace all conditions
+                LaunchedEffect(onboardingCompleted, dismissedFeatureVersion, activeAnnouncement) {
+                    android.util.Log.w("FeatureDialog", "=== Feature Dialog Debug ===")
+                    android.util.Log.w("FeatureDialog", "onboardingCompleted=$onboardingCompleted")
+                    android.util.Log.w("FeatureDialog", "dismissedFeatureVersion='$dismissedFeatureVersion'")
+                    android.util.Log.w("FeatureDialog", "featureAnnouncementId='$featureAnnouncementId'")
+                    android.util.Log.w("FeatureDialog", "activeAnnouncement=$activeAnnouncement")
+                    android.util.Log.w("FeatureDialog", "showFeatureDialog=$showFeatureDialog")
+                }
+                
+                if (showFeatureDialog) {
+                    // Staggered animation phases with smooth entrance
+                    val overlayAlpha = remember { androidx.compose.animation.core.Animatable(0f) }
+                    val phase1 = remember { androidx.compose.animation.core.Animatable(0f) }
+                    val phase2 = remember { androidx.compose.animation.core.Animatable(0f) }
+                    val phase3 = remember { androidx.compose.animation.core.Animatable(0f) }
+                    val phase4 = remember { androidx.compose.animation.core.Animatable(0f) }
+                    
+                    LaunchedEffect(Unit) {
+                        // First: smooth overlay fade-in
+                        overlayAlpha.animateTo(1f, androidx.compose.animation.core.tween(500))
+                        // Then: staggered content with breathing room
+                        kotlinx.coroutines.delay(200)
+                        phase1.animateTo(1f, androidx.compose.animation.core.tween(600, easing = FastOutSlowInEasing))
+                        kotlinx.coroutines.delay(100)
+                        phase2.animateTo(1f, androidx.compose.animation.core.tween(500, easing = FastOutSlowInEasing))
+                        kotlinx.coroutines.delay(100)
+                        phase3.animateTo(1f, androidx.compose.animation.core.tween(700, easing = FastOutSlowInEasing))
+                        kotlinx.coroutines.delay(200)
+                        phase4.animateTo(1f, androidx.compose.animation.core.tween(400, easing = FastOutSlowInEasing))
+                    }
+                    
+                    // Full-screen overlay
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .zIndex(100f)
+                            .graphicsLayer { alpha = overlayAlpha.value }
+                            .background(MaterialTheme.colorScheme.surface)
+                            .then(
+                                Modifier.padding(
+                                    WindowInsets.navigationBars.asPaddingValues()
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(horizontal = 40.dp)
+                        ) {
+                            // Phase 1: BoxCast logo slides down
+                            Box(
+                                modifier = Modifier.graphicsLayer {
+                                    alpha = phase1.value
+                                    translationY = (1f - phase1.value) * -60f
+                                }
+                            ) {
+                                cx.aswin.boxcast.core.designsystem.components.BoxCastLogo()
+                            }
+                            
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(32.dp))
+                            
+                            // Phase 2: Divider line draws in
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(phase2.value * 0.4f)
+                                    .height(1.dp)
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
+                            )
+                            
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(32.dp))
+                            
+                            // Phase 2: "now works with" fades in
+                            Text(
+                                text = "now works with",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    letterSpacing = 3.sp,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.graphicsLayer {
+                                    alpha = phase2.value
+                                    translationY = (1f - phase2.value) * 30f
+                                }
+                            )
+                            
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(20.dp))
+                            
+                            // Phase 3: Android Auto logo scales in
+                            Box(
+                                modifier = Modifier.graphicsLayer {
+                                    alpha = phase3.value
+                                    scaleX = 0.7f + (phase3.value * 0.3f)
+                                    scaleY = 0.7f + (phase3.value * 0.3f)
+                                },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    // Android Auto vector icon
+                                    androidx.compose.foundation.Image(
+                                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_android_auto),
+                                        contentDescription = "Android Auto",
+                                        modifier = Modifier
+                                            .height(64.dp)
+                                            .width(64.dp)
+                                    )
+                                    
+                                    androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+                                    
+                                    Text(
+                                        text = "Android Auto",
+                                        style = MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                            
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(40.dp))
+                            
+                            // Phase 4: Description + dismiss button
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.graphicsLayer {
+                                    alpha = phase4.value
+                                    translationY = (1f - phase4.value) * 20f
+                                }
+                            ) {
+                                Text(
+                                    text = "Your podcasts, on the road.\nConnect to your car and listen hands-free.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    lineHeight = 22.sp
+                                )
+                                
+                                androidx.compose.foundation.layout.Spacer(Modifier.height(36.dp))
+                                
+                                androidx.compose.material3.FilledTonalButton(
+                                    onClick = {
+                                        healthReporter.logFeatureAnnouncementSeen(featureAnnouncementId)
+                                        scope.launch { userPrefs.dismissFeatureAnnouncement(featureAnnouncementId) }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(0.6f)
+                                ) {
+                                    Text(
+                                        text = "Continue",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -377,6 +645,14 @@ class MainActivity : ComponentActivity() {
 
                             // Main tabs
                             composable("home") {
+                                androidx.compose.runtime.LaunchedEffect(showFeatureDialog) {
+                                    // Request Notification Permission for Android 13+ only after feature dialog is dismissed
+                                    if (!showFeatureDialog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                         if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                                             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                         }
+                                    }
+                                }
                                 HomeRoute(
                                     apiBaseUrl = apiBaseUrl,
                                     publicKey = publicKey,
