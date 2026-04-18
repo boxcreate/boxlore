@@ -26,6 +26,15 @@ on:
       image:
         description: 'Image URL (Optional)'
         required: false
+      target:
+        description: 'Target Environment'
+        required: true
+        default: 'all_users'
+        type: choice
+        options:
+        - all_users
+        - debug_users
+        - prod_users
 
 jobs:
   send-notification:
@@ -53,4 +62,5 @@ jobs:
             --body "${{ inputs.body }}" \
             --type "${{ inputs.type }}" \
             --route "${{ inputs.route }}" \
-            --image "${{ inputs.image }}"
+            --image "${{ inputs.image }}" \
+            --target "${{ inputs.target }}"

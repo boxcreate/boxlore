@@ -28,14 +28,16 @@ def send_notification(args):
     if getattr(args, 'image', None):
         data_payload['image'] = args.image
         
+    topic = getattr(args, 'target', 'all_users')
+        
     message = messaging.Message(
         data=data_payload,
-        topic='all_users'
+        topic=topic
     )
     
     try:
         response = messaging.send(message)
-        print(f"Successfully sent message to topic 'all_users': {response}")
+        print(f"Successfully sent message to topic '{topic}': {response}")
     except Exception as e:
         print(f"Failed to send message: {e}")
         raise e
@@ -47,6 +49,7 @@ if __name__ == "__main__":
     parser.add_argument('--type', required=True, help='Where to show (push/in-app/both)')
     parser.add_argument('--route', required=False, default="", help='Optional Deep Link Route')
     parser.add_argument('--image', required=False, default="", help='Optional Big Image URL')
+    parser.add_argument('--target', required=False, default="all_users", help='Target audience topic')
     
     args = parser.parse_args()
     send_notification(args)
