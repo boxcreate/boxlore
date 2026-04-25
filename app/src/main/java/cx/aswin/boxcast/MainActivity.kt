@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
@@ -73,6 +74,9 @@ import cx.aswin.boxcast.core.designsystem.theme.BoxCastTheme
 import cx.aswin.boxcast.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxcast.feature.home.HomeRoute
 import cx.aswin.boxcast.feature.player.PlayerRoute
+import cx.aswin.boxcast.core.designsystem.component.ExpressiveAnimatedBackground
+import cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion
+import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 
 // PixelPlayer-inspired transition specs
 private const val TRANSITION_DURATION = 350
@@ -195,6 +199,8 @@ class MainActivity : ComponentActivity() {
             val activeAnnouncement by userPrefs.activeAnnouncementStream.collectAsState(initial = null)
             val dismissedFeatureVersion by userPrefs.dismissedFeatureVersion.collectAsState(initial = "")
             val playerState by playbackRepository.playerState.collectAsState()
+            val isRadioMode by userPrefs.isRadioModeStream.collectAsState(initial = false)
+            val isModeSwitching by cx.aswin.boxcast.feature.home.ModeSwitchState.isSwitching.collectAsState()
             
             val darkTheme = when(themeConfig) {
                 "light" -> false
@@ -368,20 +374,17 @@ class MainActivity : ComponentActivity() {
                     val phase1 = remember { androidx.compose.animation.core.Animatable(0f) }
                     val phase2 = remember { androidx.compose.animation.core.Animatable(0f) }
                     val phase3 = remember { androidx.compose.animation.core.Animatable(0f) }
-                    val phase4 = remember { androidx.compose.animation.core.Animatable(0f) }
                     
                     LaunchedEffect(Unit) {
                         // First: smooth overlay fade-in
-                        overlayAlpha.animateTo(1f, androidx.compose.animation.core.tween(500))
-                        // Then: staggered content with breathing room
+                        overlayAlpha.animateTo(1f, androidx.compose.animation.core.tween(600))
+                        // Then: coordinated cascading fades (Header -> Body -> Action)
                         kotlinx.coroutines.delay(200)
-                        phase1.animateTo(1f, androidx.compose.animation.core.tween(600, easing = FastOutSlowInEasing))
+                        phase1.animateTo(1f, ExpressiveMotion.SleekFadeSpec) // Phase 1: Brand (Logo + Label)
                         kotlinx.coroutines.delay(100)
-                        phase2.animateTo(1f, androidx.compose.animation.core.tween(500, easing = FastOutSlowInEasing))
+                        phase2.animateTo(1f, ExpressiveMotion.SleekFadeSpec) // Phase 2: Context (Hero + Description)
                         kotlinx.coroutines.delay(100)
-                        phase3.animateTo(1f, androidx.compose.animation.core.tween(700, easing = FastOutSlowInEasing))
-                        kotlinx.coroutines.delay(200)
-                        phase4.animateTo(1f, androidx.compose.animation.core.tween(400, easing = FastOutSlowInEasing))
+                        phase3.animateTo(1f, ExpressiveMotion.SleekFadeSpec) // Phase 3: Action (Continue Button)
                     }
                     
                     // Full-screen overlay
@@ -390,7 +393,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .zIndex(100f)
                             .graphicsLayer { alpha = overlayAlpha.value }
-                            .background(MaterialTheme.colorScheme.surface)
+                            .pointerInput(Unit) { /* Block all touch-through to content below */ }
                             .then(
                                 Modifier.padding(
                                     WindowInsets.navigationBars.asPaddingValues()
@@ -398,89 +401,59 @@ class MainActivity : ComponentActivity() {
                             ),
                         contentAlignment = Alignment.Center
                     ) {
+                        // Dynamic Expressive Background (Morphing shapes + Dynamic Colors)
+                        ExpressiveAnimatedBackground(
+                            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(horizontal = 40.dp)
                         ) {
-                            // Phase 1: BoxCast logo slides down
-                            Box(
-                                modifier = Modifier.graphicsLayer {
-                                    alpha = phase1.value
-                                    translationY = (1f - phase1.value) * -60f
-                                }
-                            ) {
-                                cx.aswin.boxcast.core.designsystem.components.BoxCastLogo()
-                            }
-                            
-                            androidx.compose.foundation.layout.Spacer(Modifier.height(32.dp))
-                            
-                            // Phase 2: Divider line draws in
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(phase2.value * 0.4f)
-                                    .height(1.dp)
-                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
-                            )
-                            
-                            androidx.compose.foundation.layout.Spacer(Modifier.height(32.dp))
-                            
-                            // Phase 2: "now works with" fades in
-                            Text(
-                                text = "now works with",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    letterSpacing = 3.sp,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.graphicsLayer {
-                                    alpha = phase2.value
-                                    translationY = (1f - phase2.value) * 30f
-                                }
-                            )
-                            
-                            androidx.compose.foundation.layout.Spacer(Modifier.height(20.dp))
-                            
-                            // Phase 3: Android Auto logo scales in
-                            Box(
-                                modifier = Modifier.graphicsLayer {
-                                    alpha = phase3.value
-                                    scaleX = 0.7f + (phase3.value * 0.3f)
-                                    scaleY = 0.7f + (phase3.value * 0.3f)
-                                },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    // Android Auto vector icon
-                                    androidx.compose.foundation.Image(
-                                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_android_auto),
-                                        contentDescription = "Android Auto",
-                                        modifier = Modifier
-                                            .height(64.dp)
-                                            .width(64.dp)
-                                    )
-                                    
-                                    androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
-                                    
-                                    Text(
-                                        text = "Android Auto",
-                                        style = MaterialTheme.typography.headlineSmall.copy(
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                            
-                            androidx.compose.foundation.layout.Spacer(Modifier.height(40.dp))
-                            
-                            // Phase 4: Description + dismiss button
+                            // Phase 1: Header Group (Logo + Label)
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.graphicsLayer {
-                                    alpha = phase4.value
-                                    translationY = (1f - phase4.value) * 20f
-                                }
+                                modifier = Modifier.graphicsLayer { alpha = phase1.value }
                             ) {
+                                cx.aswin.boxcast.core.designsystem.components.BoxCastLogo()
+                                
+                                androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
+                                
+                                // Divider line
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.3f)
+                                        .height(1.dp)
+                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
+                                )
+                                
+                                androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
+                                
+                                Text(
+                                    text = "now works with",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        letterSpacing = 3.sp,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Normal
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
+                            }
+                            
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(32.dp))
+                            
+                            // Phase 2: Body Group (Hero + Description)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.graphicsLayer { alpha = phase2.value }
+                            ) {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_android_auto),
+                                    contentDescription = "Android Auto",
+                                    modifier = Modifier.height(140.dp),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                                )
+                                
+                                androidx.compose.foundation.layout.Spacer(Modifier.height(40.dp))
+                                
                                 Text(
                                     text = "Your podcasts, on the road.\nConnect to your car and listen hands-free.",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -488,15 +461,26 @@ class MainActivity : ComponentActivity() {
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     lineHeight = 22.sp
                                 )
-                                
-                                androidx.compose.foundation.layout.Spacer(Modifier.height(36.dp))
+                            }
+                            
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(40.dp))
+                            
+                            // Phase 3: Action Group (Button)
+                            Box(
+                                modifier = Modifier.graphicsLayer { alpha = phase3.value }
+                            ) {
                                 
                                 androidx.compose.material3.FilledTonalButton(
                                     onClick = {
                                         healthReporter.logFeatureAnnouncementSeen(featureAnnouncementId)
                                         scope.launch { userPrefs.dismissFeatureAnnouncement(featureAnnouncementId) }
                                     },
-                                    modifier = Modifier.fillMaxWidth(0.6f)
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.6f)
+                                        .expressiveClickable {
+                                            healthReporter.logFeatureAnnouncementSeen(featureAnnouncementId)
+                                            scope.launch { userPrefs.dismissFeatureAnnouncement(featureAnnouncementId) }
+                                        }
                                 ) {
                                     Text(
                                         text = "Continue",
@@ -729,7 +713,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                     },
-                                    onSubmitFeedback = { category, message, version ->
+                                    onSubmitFeedback = { category, message, version, email ->
                                         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                             try {
                                                 val feedbackUrl = "${apiBaseUrl}/feedback"
@@ -747,6 +731,9 @@ class MainActivity : ComponentActivity() {
                                                     put("category", category)
                                                     put("message", message)
                                                     put("appVersion", version)
+                                                    if (email.isNotBlank()) {
+                                                        put("email", email)
+                                                    }
                                                 }
                                                 
                                                 conn.outputStream.bufferedWriter().use { it.write(json.toString()) }
@@ -1286,6 +1273,8 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // Unified Player Sheet - PixelPlayer architecture (Last so it draws ON TOP)
+                    // Hidden in Radio Mode and during mode switch animation
+                    if (!isRadioMode && !isModeSwitching) {
                     cx.aswin.boxcast.feature.player.UnifiedPlayerSheet(
                         playbackRepository = playbackRepository,
                         downloadRepository = downloadRepository,
@@ -1319,6 +1308,7 @@ class MainActivity : ComponentActivity() {
                         },
                         modifier = Modifier.align(Alignment.TopStart)
                     )
+                    } // end !isRadioMode
                     
                     // Privacy Consent Dialog (Overlay on everything)
                     if (!hasUserSetConsent) {

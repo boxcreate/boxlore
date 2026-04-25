@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.compose.AsyncImagePainter
@@ -38,89 +39,72 @@ fun CuratedEpisodeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+    Column(
         modifier = modifier
-            .width(148.dp)
+            .width(140.dp)
             .expressiveClickable(onClick = onClick)
     ) {
-        Box {
-            // Square podcast artwork
-            Box(
-                modifier = Modifier
-                    .size(148.dp)
-                    .clip(MaterialTheme.shapes.large)
+        // Square podcast artwork
+        Box(
+            modifier = Modifier
+                .size(140.dp)
+                .clip(MaterialTheme.shapes.large)
+        ) {
+            SubcomposeAsyncImage(
+                model = (episode.imageUrl ?: "").ifEmpty { podcast.imageUrl },
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             ) {
-                SubcomposeAsyncImage(
-                    model = (episode.imageUrl ?: "").ifEmpty { podcast.imageUrl },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    val state = painter.state
-                    if (state is AsyncImagePainter.State.Loading ||
-                        state is AsyncImagePainter.State.Error) {
-                        AnimatedShapesFallback()
-                    } else {
-                        SubcomposeAsyncImageContent()
-                    }
+                val state = painter.state
+                if (state is AsyncImagePainter.State.Loading ||
+                    state is AsyncImagePainter.State.Error) {
+                    AnimatedShapesFallback()
+                } else {
+                    SubcomposeAsyncImageContent()
                 }
+            }
 
-                // Bottom gradient scrim for text legibility
-                Box(
+            // Duration pill (bottom right)
+            if (episode.duration > 0) {
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = Color.Black.copy(alpha = 0.6f),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.55f),
-                                    Color.Black.copy(alpha = 0.85f),
-                                    Color.Black.copy(alpha = 0.95f)
-                                )
-                            )
-                        )
-                )
-
-                // Duration pill (top right)
-                if (episode.duration > 0) {
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = Color.Black.copy(alpha = 0.6f),
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                    ) {
-                        Text(
-                            text = formatDuration(episode.duration),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-
-                // Episode title overlay at the bottom
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(10.dp)
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
                 ) {
                     Text(
-                        text = episode.title,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
+                        text = formatDuration(episode.duration),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
                         color = Color.White,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }
         }
+        
+        Spacer(modifier = Modifier.height(10.dp))
+        
+        // Text Content
+        Text(
+            text = episode.title,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 16.sp
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = podcast.title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

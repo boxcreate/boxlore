@@ -30,6 +30,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.fadeIn as animFadeIn
+import androidx.compose.animation.fadeOut as animFadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.ui.Alignment
 import cx.aswin.boxcast.feature.home.components.GridSkeletonItems
@@ -55,6 +61,8 @@ import cx.aswin.boxcast.feature.home.components.TimeBlockSection
 import cx.aswin.boxcast.feature.home.CuratedTimeBlock
 import cx.aswin.boxcast.feature.home.components.TopControlBar
 import cx.aswin.boxcast.feature.home.components.YourShowsSection
+import cx.aswin.boxcast.feature.home.components.RadioFeed
+import cx.aswin.boxcast.feature.home.components.ModeSwitchOverlay
 
 import cx.aswin.boxcast.feature.home.components.DebugDbInspectorDialog
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
@@ -74,7 +82,7 @@ fun HomeRoute(
     onNavigateToExplore: ((String?) -> Unit)? = null,
     onNavigateToSettings: (() -> Unit)? = null,
     onNavigateToPlayStoreReview: () -> Unit = {},
-    onSubmitFeedback: suspend (String, String, String) -> Boolean = { _, _, _ -> false },
+    onSubmitFeedback: suspend (String, String, String, String) -> Boolean = { _, _, _, _ -> false },
     modifier: Modifier = Modifier
 ) {
     val application = LocalContext.current.applicationContext as android.app.Application
@@ -90,10 +98,19 @@ fun HomeRoute(
     val playerState by viewModel.playerState.collectAsState()
     val debugHistory by viewModel.debugHistory.collectAsState(initial = emptyList())
     val debugPodcasts by viewModel.debugPodcasts.collectAsState(initial = emptyList())
+    val isRadioMode by viewModel.isRadioMode.collectAsState()
     
     val showReviewPrompt by viewModel.showReviewPrompt.collectAsState()
     val showPostReview by viewModel.showPostReview.collectAsState()
     val showFeedback by viewModel.showFeedback.collectAsState()
+    
+    val activeRadioStation by viewModel.activeRadioStation.collectAsState()
+    val isRadioPlaying by viewModel.isRadioPlaying.collectAsState()
+    val isRadioLoading by viewModel.isRadioLoading.collectAsState()
+    val showRadioPlayerModal by viewModel.showRadioPlayerModal.collectAsState()
+    val showRadioStoryModal by viewModel.showRadioStoryModal.collectAsState()
+    val radioStoryStations by viewModel.radioStoryStations.collectAsState()
+    val radioStoryIndex by viewModel.radioStoryIndex.collectAsState()
     
     HomeScreen(
         uiState = uiState,
@@ -131,6 +148,24 @@ fun HomeRoute(
         },
         onSubmitFeedback = onSubmitFeedback,
         onResetFeatureFlag = viewModel::resetFeatureFlag,
+        isRadioMode = isRadioMode,
+        onToggleRadioMode = viewModel::toggleRadioMode,
+        podcastRepository = viewModel.podcastRepository,
+        activeRadioStation = activeRadioStation,
+        isRadioPlaying = isRadioPlaying,
+        isRadioLoading = isRadioLoading,
+        showRadioPlayerModal = showRadioPlayerModal,
+        showRadioStoryModal = showRadioStoryModal,
+        radioStoryStations = radioStoryStations,
+        radioStoryIndex = radioStoryIndex,
+        onPlayRadioStation = viewModel::playRadioStation,
+        onCloseRadioPlayer = viewModel::closeRadioPlayer,
+        onHideRadioPlayerModal = viewModel::hideRadioPlayerModal,
+        onOpenRadioStory = viewModel::openRadioStory,
+        onCloseRadioStory = viewModel::closeRadioStory,
+        onTuneInFromStory = viewModel::tuneInFromStory,
+        onNextStory = viewModel::nextStory,
+        onPreviousStory = viewModel::previousStory,
         modifier = modifier
     )
 }
@@ -165,26 +200,54 @@ fun HomeScreen(
     onDismissPostReview: () -> Unit = {},
     onDismissFeedback: () -> Unit = {},
     onNavigateToPlayStoreReview: () -> Unit = {},
-    onSubmitFeedback: suspend (String, String, String) -> Boolean = { _, _, _ -> false },
+    onSubmitFeedback: suspend (String, String, String, String) -> Boolean = { _, _, _, _ -> false },
     onResetFeatureFlag: () -> Unit = {},
+    isRadioMode: Boolean = false,
+    onToggleRadioMode: () -> Unit = {},
+    podcastRepository: cx.aswin.boxcast.core.data.PodcastRepository,
+    activeRadioStation: cx.aswin.boxcast.feature.home.components.RadioStation? = null,
+    isRadioPlaying: Boolean = false,
+    isRadioLoading: Boolean = false,
+    showRadioPlayerModal: Boolean = false,
+    showRadioStoryModal: Boolean = false,
+    radioStoryStations: List<cx.aswin.boxcast.feature.home.components.RadioStation> = emptyList(),
+    radioStoryIndex: Int = 0,
+    onPlayRadioStation: (cx.aswin.boxcast.feature.home.components.RadioStation) -> Unit = {},
+    onCloseRadioPlayer: () -> Unit = {},
+    onHideRadioPlayerModal: () -> Unit = {},
+    onOpenRadioStory: (List<cx.aswin.boxcast.feature.home.components.RadioStation>, Int) -> Unit = { _, _ -> },
+    onCloseRadioStory: () -> Unit = {},
+    onTuneInFromStory: () -> Unit = {},
+    onNextStory: () -> Unit = {},
+    onPreviousStory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Track scroll state for collapsing top bar
     val gridState = rememberLazyStaggeredGridState()
+    val radioListState = androidx.compose.foundation.lazy.rememberLazyListState()
     var showDebugDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     
     // Calculate scroll fraction: 0 = at top (expanded), 1 = scrolled (collapsed)
-    val scrollFraction by remember {
+    val scrollFraction by remember(isRadioMode) {
         derivedStateOf {
-            val firstVisibleItem = gridState.firstVisibleItemIndex
-            val firstVisibleOffset = gridState.firstVisibleItemScrollOffset
-            
-            val collapseThreshold = 100f
-            
-            if (firstVisibleItem == 0) {
-                (firstVisibleOffset / collapseThreshold).coerceIn(0f, 1f)
+            if (isRadioMode) {
+                val firstVisibleItem = radioListState.firstVisibleItemIndex
+                val firstVisibleOffset = radioListState.firstVisibleItemScrollOffset
+                val collapseThreshold = 100f
+                if (firstVisibleItem == 0) {
+                    (firstVisibleOffset / collapseThreshold).coerceIn(0f, 1f)
+                } else {
+                    1f
+                }
             } else {
-                1f 
+                val firstVisibleItem = gridState.firstVisibleItemIndex
+                val firstVisibleOffset = gridState.firstVisibleItemScrollOffset
+                val collapseThreshold = 100f
+                if (firstVisibleItem == 0) {
+                    (firstVisibleOffset / collapseThreshold).coerceIn(0f, 1f)
+                } else {
+                    1f
+                }
             }
         }
     }
@@ -199,45 +262,111 @@ fun HomeScreen(
         )
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopControlBar(
-            scrollFraction = scrollFraction,
-            onFeedbackClick = onFeedbackClick,
-            onFeedbackLongClick = onForceReviewPrompt,
-            onAvatarClick = { onNavigateToSettings?.invoke() },
-            onAvatarLongClick = { showDebugDialog = true }
+    // Track mode-switch animation state
+    var isSwitching by remember { androidx.compose.runtime.mutableStateOf(false) }
+    // The "pending" mode — what we're switching TO
+    var pendingRadioMode by remember { androidx.compose.runtime.mutableStateOf(isRadioMode) }
+    
+    Box(modifier = modifier.fillMaxSize()) {
+        // Main content underneath
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopControlBar(
+                scrollFraction = scrollFraction,
+                isRadioMode = isRadioMode,
+                onToggleRadioMode = {
+                    // Start the switch animation
+                    pendingRadioMode = !isRadioMode
+                    isSwitching = true
+                    ModeSwitchState.start()
+                },
+                onFeedbackClick = onFeedbackClick,
+                onFeedbackLongClick = onForceReviewPrompt,
+                onAvatarClick = { onNavigateToSettings?.invoke() },
+                onAvatarLongClick = { showDebugDialog = true }
+            )
+            
+            // Content area — immediate swap (overlay hides the transition)
+            if (isRadioMode) {
+                RadioFeed(
+                    listState = radioListState, 
+                    modifier = Modifier.fillMaxSize(), 
+                    podcastRepository = podcastRepository,
+                    playingStationId = activeRadioStation?.id,
+                    isRadioPlaying = isRadioPlaying,
+                    onPlayStation = onPlayRadioStation,
+                    onOpenStory = onOpenRadioStory
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (uiState.isError) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Error loading content", color = MaterialTheme.colorScheme.error)
+                        }
+                    } else {
+                        PodcastFeed(
+                            heroItems = uiState.heroItems,
+                            latestItems = uiState.latestEpisodes,
+                            unplayedEpisodeCount = uiState.unplayedEpisodeCount,
+                            subscribedItems = uiState.subscribedPodcasts,
+                            timeBlock = uiState.timeBlock,
+                            gridItems = uiState.discoverPodcasts,
+                            selectedCategory = uiState.selectedCategory,
+                            currentPlayingPodcastId = currentPlayingPodcastId,
+                            isPlaying = isPlaying,
+                            isFilterLoading = uiState.isFilterLoading,
+                            onPodcastClick = onPodcastClick,
+                            onHeroArrowClick = onHeroArrowClick,
+                            onEpisodeClick = onEpisodeClick,
+                            onPlayClick = onPlayClick,
+                            onNavigateToLibrary = onNavigateToLibrary,
+                            onNavigateToLatestEpisodes = onNavigateToLatestEpisodes,
+                            onNavigateToExplore = onNavigateToExplore,
+                            onToggleSubscription = onToggleSubscription,
+                            onTogglePlayback = onTogglePlayback,
+                            onSelectCategory = onSelectCategory,
+                            gridState = gridState
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Full-screen branded overlay
+        ModeSwitchOverlay(
+            isVisible = isSwitching,
+            isRadioMode = pendingRadioMode,
+            onAnimationComplete = {
+                // Actually perform the mode switch now
+                onToggleRadioMode()
+                // Dismiss the overlay
+                isSwitching = false
+                ModeSwitchState.finish()
+            }
         )
         
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (uiState.isError) {
-                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                     Text("Error loading content", color = MaterialTheme.colorScheme.error)
-                 }
-            } else {
-                PodcastFeed(
-                    heroItems = uiState.heroItems,
-                    latestItems = uiState.latestEpisodes,
-                    unplayedEpisodeCount = uiState.unplayedEpisodeCount,
-                    subscribedItems = uiState.subscribedPodcasts,
-                    timeBlock = uiState.timeBlock,
-                    gridItems = uiState.discoverPodcasts,
-                    selectedCategory = uiState.selectedCategory,
-                    currentPlayingPodcastId = currentPlayingPodcastId,
-                    isPlaying = isPlaying,
-                    isFilterLoading = uiState.isFilterLoading,
-                    onPodcastClick = onPodcastClick,
-                    onHeroArrowClick = onHeroArrowClick,
-                    onEpisodeClick = onEpisodeClick,
-                    onPlayClick = onPlayClick,
-                    onNavigateToLibrary = onNavigateToLibrary,
-                    onNavigateToLatestEpisodes = onNavigateToLatestEpisodes,
-                    onNavigateToExplore = onNavigateToExplore,
-                    onToggleSubscription = onToggleSubscription,
-                    onTogglePlayback = onTogglePlayback,
-                    onSelectCategory = onSelectCategory,
-                    gridState = gridState
-                )
-            }
+        // Overlays
+        if (showRadioPlayerModal && activeRadioStation != null) {
+            cx.aswin.boxcast.feature.home.components.RadioPlayerModal(
+                station = activeRadioStation,
+                isPlaying = isRadioPlaying,
+                isLoading = isRadioLoading,
+                onClose = onCloseRadioPlayer,
+                onTogglePlayPause = { onPlayRadioStation(activeRadioStation) },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        if (showRadioStoryModal) {
+            cx.aswin.boxcast.feature.home.components.RadioStoryModal(
+                stations = radioStoryStations,
+                currentIndex = radioStoryIndex,
+                isLoading = isRadioLoading,
+                onClose = onCloseRadioStory,
+                onTuneIn = onTuneInFromStory,
+                onNext = onNextStory,
+                onPrevious = onPreviousStory,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
     

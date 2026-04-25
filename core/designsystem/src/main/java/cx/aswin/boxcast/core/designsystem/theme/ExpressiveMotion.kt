@@ -1,8 +1,10 @@
 package cx.aswin.boxcast.core.designsystem.theme
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -33,6 +35,18 @@ object ExpressiveMotion {
     val QuickSpring = spring<Float>(
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = Spring.StiffnessHigh
+    )
+
+    // Formal spring for professional reveals (M3 Expressive)
+    val FormalSpring = spring<Float>(
+        dampingRatio = 0.8f, // Grounded, minimal bounce
+        stiffness = 400f // Slightly faster for a punchy reveal
+    )
+
+    // Sleek Fade Spec (App Store style)
+    val SleekFadeSpec = tween<Float>(
+        durationMillis = 500,
+        easing = LinearOutSlowInEasing
     )
 }
 

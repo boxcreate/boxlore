@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -81,6 +82,18 @@ data class HomeDataWrapper(
     val history: List<cx.aswin.boxcast.core.data.database.ListeningHistoryEntity>
 )
 
+/**
+ * Shared switching state observable from any composable.
+ * Used by MainActivity to hide the mini player during mode switch animation.
+ */
+object ModeSwitchState {
+    private val _isSwitching = MutableStateFlow(false)
+    val isSwitching: StateFlow<Boolean> = _isSwitching.asStateFlow()
+    
+    fun start() { _isSwitching.value = true }
+    fun finish() { _isSwitching.value = false }
+}
+
 class HomeViewModel(
     application: Application,
     apiBaseUrl: String,
@@ -88,7 +101,7 @@ class HomeViewModel(
     private val playbackRepository: cx.aswin.boxcast.core.data.PlaybackRepository
 ) : AndroidViewModel(application) {
     
-    private val repository = PodcastRepository(baseUrl = apiBaseUrl, publicKey = publicKey, context = application)
+    val podcastRepository = PodcastRepository(baseUrl = apiBaseUrl, publicKey = publicKey, context = application)
     private val database = cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(application)
     private val subscriptionRepository = cx.aswin.boxcast.core.data.SubscriptionRepository(database.podcastDao(), cx.aswin.boxcast.core.data.analytics.AnalyticsHelper(application, cx.aswin.boxcast.core.data.privacy.ConsentManager(application))) // This might be complex to reconstruct.
     // Actually, SubscriptionRepository takes dao and analytcs.
@@ -117,6 +130,63 @@ class HomeViewModel(
     // Playback state to UI
     val playerState = playbackRepository.playerState
     
+    // Radio Mode state
+    val isRadioMode: StateFlow<Boolean> = userPrefs.isRadioModeStream
+        .onStart { emit(false) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    
+    // True while the mode-switch overlay animation is playing
+    private val _isModeSwitching = MutableStateFlow(false)
+    val isModeSwitching: StateFlow<Boolean> = _isModeSwitching.asStateFlow()
+    
+    // --- RADIO PLAYER (Completely separated from Podcast queue) ---
+    val radioPlayer = androidx.media3.exoplayer.ExoPlayer.Builder(application)
+        .setAudioAttributes(
+            androidx.media3.common.AudioAttributes.Builder()
+                .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC)
+                .setUsage(androidx.media3.common.C.USAGE_MEDIA)
+                .build(),
+            true // Handle audio focus automatically (will pause if podcast starts, and vice-versa)
+        )
+        .build()
+
+    private val _activeRadioStation = MutableStateFlow<cx.aswin.boxcast.feature.home.components.RadioStation?>(null)
+    val activeRadioStation: StateFlow<cx.aswin.boxcast.feature.home.components.RadioStation?> = _activeRadioStation.asStateFlow()
+    
+    private val _isRadioPlaying = MutableStateFlow(false)
+    val isRadioPlaying: StateFlow<Boolean> = _isRadioPlaying.asStateFlow()
+    
+    private val _isRadioLoading = MutableStateFlow(false)
+    val isRadioLoading: StateFlow<Boolean> = _isRadioLoading.asStateFlow()
+    
+    private val _showRadioPlayerModal = MutableStateFlow(false)
+    val showRadioPlayerModal: StateFlow<Boolean> = _showRadioPlayerModal.asStateFlow()
+
+    private val _showRadioStoryModal = MutableStateFlow(false)
+    val showRadioStoryModal: StateFlow<Boolean> = _showRadioStoryModal.asStateFlow()
+
+    private val _radioStoryStations = MutableStateFlow<List<cx.aswin.boxcast.feature.home.components.RadioStation>>(emptyList())
+    val radioStoryStations: StateFlow<List<cx.aswin.boxcast.feature.home.components.RadioStation>> = _radioStoryStations.asStateFlow()
+
+    private val _radioStoryIndex = MutableStateFlow(0)
+    val radioStoryIndex: StateFlow<Int> = _radioStoryIndex.asStateFlow()
+    
+    
+    fun startModeSwitching() {
+        _isModeSwitching.value = true
+    }
+    
+    fun finishModeSwitching() {
+        _isModeSwitching.value = false
+    }
+    
+    fun toggleRadioMode() {
+        viewModelScope.launch {
+            val current = isRadioMode.value
+            userPrefs.setRadioMode(!current)
+        }
+    }
+    
     // Cached base data (For You)
     private var cachedForYouTrending: List<Podcast> = emptyList()
     private var cachedHeroItems: List<SmartHeroItem> = emptyList()
@@ -127,8 +197,102 @@ class HomeViewModel(
     private var activeRegion = "us"
 
     init {
+        radioPlayer.addListener(object : androidx.media3.common.Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                _isRadioPlaying.value = isPlaying
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                _isRadioLoading.value = playbackState == androidx.media3.common.Player.STATE_BUFFERING
+            }
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                if (mediaItem != null) {
+                    val index = radioPlayer.currentMediaItemIndex
+                    val stations = _radioStoryStations.value
+                    if (stations.isNotEmpty() && index in stations.indices) {
+                        _activeRadioStation.value = stations[index]
+                        _radioStoryIndex.value = index
+                    }
+                }
+            }
+        })
+        
         loadData()
         startBackgroundSync()
+    }
+
+    fun playRadioStation(station: cx.aswin.boxcast.feature.home.components.RadioStation) {
+        if (_activeRadioStation.value?.id == station.id) {
+            if (radioPlayer.isPlaying) {
+                radioPlayer.pause()
+            } else {
+                radioPlayer.play()
+            }
+            _showRadioPlayerModal.value = true
+            return
+        }
+        
+        // Stop any running podcast!
+        playbackRepository.pause()
+
+        radioPlayer.stop()
+        radioPlayer.clearMediaItems()
+        
+        _activeRadioStation.value = station
+        _showRadioPlayerModal.value = true
+        val mediaItem = androidx.media3.common.MediaItem.fromUri(station.streamUrl)
+        radioPlayer.setMediaItem(mediaItem)
+        radioPlayer.prepare()
+        radioPlayer.play()
+    }
+
+    fun closeRadioPlayer() {
+        radioPlayer.pause()
+        _showRadioPlayerModal.value = false
+    }
+
+    fun hideRadioPlayerModal() {
+        _showRadioPlayerModal.value = false
+    }
+
+    fun openRadioStory(stations: List<cx.aswin.boxcast.feature.home.components.RadioStation>, startIndex: Int) {
+        playbackRepository.pause()
+        radioPlayer.stop()
+        radioPlayer.clearMediaItems()
+        
+        _radioStoryStations.value = stations
+        _radioStoryIndex.value = startIndex
+        _activeRadioStation.value = stations[startIndex]
+        _showRadioStoryModal.value = true
+        
+        val mediaItems = stations.map { androidx.media3.common.MediaItem.fromUri(it.streamUrl) }
+        radioPlayer.setMediaItems(mediaItems)
+        radioPlayer.seekTo(startIndex, androidx.media3.common.C.TIME_UNSET)
+        radioPlayer.prepare()
+        radioPlayer.play()
+    }
+
+    fun closeRadioStory() {
+        _showRadioStoryModal.value = false
+        radioPlayer.pause()
+        radioPlayer.clearMediaItems()
+        _radioStoryStations.value = emptyList()
+    }
+
+    fun tuneInFromStory() {
+        _showRadioStoryModal.value = false
+        _showRadioPlayerModal.value = true
+    }
+    
+    fun nextStory() {
+        if (radioPlayer.hasNextMediaItem()) {
+            radioPlayer.seekToNextMediaItem()
+        }
+    }
+    
+    fun previousStory() {
+        if (radioPlayer.hasPreviousMediaItem()) {
+            radioPlayer.seekToPreviousMediaItem()
+        }
     }
 
     private fun loadData() {
@@ -138,7 +302,7 @@ class HomeViewModel(
                 activeRegion = region
                 
                 combine(
-                    repository.getTrendingPodcastsStream(region, 50, null) // Dynamic Region
+                    podcastRepository.getTrendingPodcastsStream(region, 50, null) // Dynamic Region
                         .onStart { 
                             android.util.Log.d("BoxCastTiming", "VM: Base stream starting for region=$region")
                             emit(emptyList()) 
@@ -181,134 +345,98 @@ class HomeViewModel(
                         val heroList = mutableListOf<SmartHeroItem>()
                         val usedPodcastIds = mutableSetOf<String>()
 
-                        // A. Real Resume (Priority 1)
-                        val lastPlayed = resumeList.firstOrNull()
-                        if (lastPlayed != null) {
-                            try {
-                                val epImage = lastPlayed.imageUrl
-                                val podImage = lastPlayed.podcastImageUrl
-                                
-                                val resumePodcast = Podcast(
-                                    id = lastPlayed.podcastId,
-                                    title = lastPlayed.podcastTitle,
-                                    artist = "",
-                                    imageUrl = if (!epImage.isNullOrEmpty()) epImage else podImage ?: "",
-                                    fallbackImageUrl = podImage,
-                                    description = "",
-                                    genre = "Podcast",
-                                    latestEpisode = Episode(
-                                        id = lastPlayed.episodeId,
-                                        title = lastPlayed.episodeTitle,
-                                        description = "",
-                                        imageUrl = epImage ?: "",
-                                        audioUrl = lastPlayed.audioUrl ?: "",
-                                        duration = (lastPlayed.durationMs / 1000).toInt(),
-                                        publishedDate = 0L
-                                    )
-                                )
-
-                                val timeLeft = ((lastPlayed.durationMs - lastPlayed.positionMs) / 60000).coerceAtLeast(1)
-                                heroList.add(
-                                    SmartHeroItem(
-                                        type = HeroType.RESUME,
-                                        podcast = resumePodcast,
-                                        label = "RESUME • ${timeLeft}m left",
-                                        description = lastPlayed.episodeTitle
-                                    )
-                                )
-                                usedPodcastIds.add(resumePodcast.id)
-                            } catch (e: Exception) { e.printStackTrace() }
-                        }
-                        
-                        // B. Secondary Resume
-                        if (resumeList.size == 2) {
-                            val secondSession = resumeList[1]
-                            try {
-                                val epImage = secondSession.imageUrl
-                                val podImage = secondSession.podcastImageUrl
-                                
-                                val secondPodcast = Podcast(
-                                    id = secondSession.podcastId,
-                                    title = secondSession.podcastTitle,
-                                    artist = "",
-                                    imageUrl = if (!epImage.isNullOrEmpty()) epImage else podImage ?: "",
-                                    fallbackImageUrl = podImage,
-                                    description = "",
-                                    genre = "Podcast",
-                                    latestEpisode = Episode(
-                                        id = secondSession.episodeId,
-                                        title = secondSession.episodeTitle,
-                                        description = "",
-                                        imageUrl = epImage ?: "",
-                                        audioUrl = secondSession.audioUrl ?: "",
-                                        duration = (secondSession.durationMs / 1000).toInt(),
-                                        publishedDate = 0L
-                                    )
-                                )
-                                val timeLeft = ((secondSession.durationMs - secondSession.positionMs) / 60000).coerceAtLeast(1)
-                                heroList.add(
-                                    SmartHeroItem(
-                                        type = HeroType.RESUME,
-                                        podcast = secondPodcast,
-                                        label = "RESUME • ${timeLeft}m left",
-                                        description = secondSession.episodeTitle
-                                    )
-                                )
-                                usedPodcastIds.add(secondPodcast.id)
-                            } catch (e: Exception) {}
-                            
-                        } else if (resumeList.size > 2) {
-                            val gridCandidates = resumeList.drop(1).take(6)
-                            val gridPodcasts = mutableListOf<Podcast>()
-                            
-                            for (session in gridCandidates) {
+                        // A. Resume Sessions — Progressive Density
+                        // 1 session  → 1 full card
+                        // 2 sessions → 2 full cards
+                        // 3-5 sessions → 1 full card + 1 grid card (2-4 items)
+                        if (resumeList.isNotEmpty()) {
+                            // Helper to convert a PlaybackSession to a Podcast
+                            fun sessionToPodcast(session: cx.aswin.boxcast.core.data.PlaybackSession): Podcast {
+                                val epImage = session.imageUrl
+                                val podImage = session.podcastImageUrl
                                 val ratio = if (session.durationMs > 0) {
                                     (session.positionMs.toFloat() / session.durationMs.toFloat()).coerceIn(0f, 1f)
                                 } else 0f
-                                
-                                    val epImage = session.imageUrl
-                                    val podImage = session.podcastImageUrl
-                                    
-                                    val pod = Podcast(
-                                        id = session.podcastId,
-                                        title = session.podcastTitle,
-                                        artist = "", 
-                                        imageUrl = if (!epImage.isNullOrEmpty()) epImage else podImage ?: "",
-                                        fallbackImageUrl = podImage,
+                                return Podcast(
+                                    id = session.podcastId,
+                                    title = session.podcastTitle,
+                                    artist = "",
+                                    imageUrl = if (!epImage.isNullOrEmpty()) epImage else podImage ?: "",
+                                    fallbackImageUrl = podImage,
+                                    description = "",
+                                    genre = "Podcast",
+                                    resumeProgress = ratio,
+                                    latestEpisode = Episode(
+                                        id = session.episodeId,
+                                        title = session.episodeTitle,
                                         description = "",
-                                        genre = "Podcast",
-                                        resumeProgress = ratio,
-                                        latestEpisode = Episode(
-                                            id = session.episodeId,
-                                            title = session.episodeTitle,
-                                            description = "",
-                                            imageUrl = epImage ?: "",
-                                            audioUrl = session.audioUrl ?: "",
-                                            duration = (session.durationMs / 1000).toInt(),
-                                            publishedDate = 0L
-                                        )
-                                    )
-                                gridPodcasts.add(pod)
-                                usedPodcastIds.add(pod.id)
-                            }
-                            
-                            if (gridPodcasts.isNotEmpty()) {
-                                heroList.add(
-                                    SmartHeroItem(
-                                        type = HeroType.RESUME_GRID,
-                                        podcast = gridPodcasts.first(), 
-                                        label = "JUMP BACK IN",
-                                        description = null,
-                                        gridItems = gridPodcasts
+                                        imageUrl = epImage ?: "",
+                                        audioUrl = session.audioUrl ?: "",
+                                        duration = (session.durationMs / 1000).toInt(),
+                                        publishedDate = 0L
                                     )
                                 )
+                            }
+
+                            val first = resumeList[0]
+                            try {
+                                val firstPodcast = sessionToPodcast(first)
+                                val timeLeft = ((first.durationMs - first.positionMs) / 60000).coerceAtLeast(1)
+                                heroList.add(
+                                    SmartHeroItem(
+                                        type = HeroType.RESUME,
+                                        podcast = firstPodcast,
+                                        label = "RESUME • ${timeLeft}m left",
+                                        description = first.episodeTitle
+                                    )
+                                )
+                                usedPodcastIds.add(firstPodcast.id)
+                            } catch (e: Exception) { e.printStackTrace() }
+
+                            if (resumeList.size == 2) {
+                                // 2 sessions → second also gets a full card
+                                val second = resumeList[1]
+                                try {
+                                    val secondPodcast = sessionToPodcast(second)
+                                    val timeLeft = ((second.durationMs - second.positionMs) / 60000).coerceAtLeast(1)
+                                    heroList.add(
+                                        SmartHeroItem(
+                                            type = HeroType.RESUME,
+                                            podcast = secondPodcast,
+                                            label = "RESUME • ${timeLeft}m left",
+                                            description = second.episodeTitle
+                                        )
+                                    )
+                                    usedPodcastIds.add(secondPodcast.id)
+                                } catch (e: Exception) {}
+                            } else if (resumeList.size > 2) {
+                                // 3-5 sessions → remaining go into a grid card (max 4 items)
+                                val gridCandidates = resumeList.drop(1).take(4)
+                                val gridPodcasts = gridCandidates.mapNotNull { session ->
+                                    try {
+                                        val pod = sessionToPodcast(session)
+                                        usedPodcastIds.add(pod.id)
+                                        pod
+                                    } catch (e: Exception) { null }
+                                }
+                                if (gridPodcasts.isNotEmpty()) {
+                                    heroList.add(
+                                        SmartHeroItem(
+                                            type = HeroType.RESUME_GRID,
+                                            podcast = gridPodcasts.first(),
+                                            label = "JUMP BACK IN",
+                                            description = null,
+                                            gridItems = gridPodcasts
+                                        )
+                                    )
+                                }
                             }
                         }
 
                         // C. Smart "Catch Up" with Three-Tier Priority
                         // Bucket 1: Unplayed (top priority, hero-eligible)
                         // Bucket 2: In Progress (sorted by most recently played)
-                        // Bucket 3: Recently Completed (48h grace, max 3)
+                        // Bucket 3: Completed (sorted by recency, no time limit)
                         val unplayedBucket = mutableListOf<Podcast>()
                         val inProgressBucket = mutableListOf<Pair<Podcast, Long>>() // Pair(podcast, lastPlayedAt)
                         val completedBucket = mutableListOf<Pair<Podcast, Long>>()
@@ -343,19 +471,15 @@ class HomeViewModel(
                                                     ) to history.lastPlayedAt
                                                 )
                                             }
-                                            // Completed within 48h grace period
+                                            // Completed — include all, no time restriction
                                             history.isCompleted -> {
-                                                val completedAgo = System.currentTimeMillis() - history.lastPlayedAt
-                                                val gracePeriodMs = 48 * 60 * 60 * 1000L
-                                                if (completedAgo < gracePeriodMs) {
-                                                    completedBucket.add(
-                                                        pod.copy(
-                                                            latestEpisode = freshEpisode,
-                                                            resumeProgress = 1f,
-                                                            episodeStatus = EpisodeStatus.COMPLETED
-                                                        ) to history.lastPlayedAt
-                                                    )
-                                                }
+                                                completedBucket.add(
+                                                    pod.copy(
+                                                        latestEpisode = freshEpisode,
+                                                        resumeProgress = 1f,
+                                                        episodeStatus = EpisodeStatus.COMPLETED
+                                                    ) to history.lastPlayedAt
+                                                )
                                             }
                                         }
                                     }
@@ -363,52 +487,55 @@ class HomeViewModel(
                             } catch (e: Exception) { e.printStackTrace() }
                         }
 
-                        // Build smart catch-up list: Unplayed first → In Progress by recency → Completed (max 3)
+                        // Build smart catch-up list: Unplayed first → In Progress by recency → All Completed by recency
                         val catchUpList = buildList {
                             addAll(unplayedBucket)
                             addAll(inProgressBucket.sortedByDescending { it.second }.map { it.first })
-                            addAll(completedBucket.sortedByDescending { it.second }.take(3).map { it.first })
+                            addAll(completedBucket.sortedByDescending { it.second }.map { it.first })
                         }
 
-                        // Hero carousel: Only UNPLAYED episodes get premium hero real estate
+                        // B. New Episodes — Same Progressive Density
+                        // 1 unplayed → 1 full card
+                        // 2 unplayed → 2 full cards
+                        // 3-5 unplayed → 1 full card + 1 grid card (2-4 items)
                         if (unplayedBucket.isNotEmpty()) {
-                             if (unplayedBucket.size > 2) {
-                                 val topDrop = unplayedBucket.first()
-                                 heroList.add(
+                            val first = unplayedBucket.first()
+                            heroList.add(
+                                SmartHeroItem(
+                                    type = HeroType.JUMP_BACK_IN,
+                                    podcast = first,
+                                    label = if (unplayedBucket.size == 1) "NEW EPISODE" else "FRESH DROP",
+                                    description = first.latestEpisode?.title
+                                )
+                            )
+                            usedPodcastIds.add(first.id)
+
+                            if (unplayedBucket.size == 2) {
+                                // 2 unplayed → second also gets a full card
+                                val second = unplayedBucket[1]
+                                heroList.add(
                                     SmartHeroItem(
                                         type = HeroType.JUMP_BACK_IN,
-                                        podcast = topDrop,
-                                        label = "FRESH DROP",
-                                        description = topDrop.latestEpisode?.title
+                                        podcast = second,
+                                        label = "NEW EPISODE",
+                                        description = second.latestEpisode?.title
                                     )
-                                 )
-                                 usedPodcastIds.add(topDrop.id)
-                                 
-                                 val gridDrops = unplayedBucket.drop(1).take(6)
-                                 if (gridDrops.isNotEmpty()) {
-                                     heroList.add(
-                                         SmartHeroItem(
-                                             type = HeroType.NEW_EPISODES_GRID,
-                                             podcast = gridDrops.first(), 
-                                             label = "NEW EPISODES",
-                                             description = null,
-                                             gridItems = gridDrops
-                                         )
-                                     )
-                                     usedPodcastIds.addAll(gridDrops.map { it.id })
-                                 }
-                             } else {
-                                 val heroCandidate = unplayedBucket.first()
-                                 heroList.add(
-                                     SmartHeroItem(
-                                         type = HeroType.JUMP_BACK_IN,
-                                         podcast = heroCandidate,
-                                         label = "NEW EPISODE",
-                                         description = heroCandidate.latestEpisode?.title
-                                     )
-                                 )
-                                 usedPodcastIds.add(heroCandidate.id)
-                             }
+                                )
+                                usedPodcastIds.add(second.id)
+                            } else if (unplayedBucket.size > 2) {
+                                // 3-5 unplayed → remaining go into a grid card (max 4 items)
+                                val gridDrops = unplayedBucket.drop(1).take(4)
+                                heroList.add(
+                                    SmartHeroItem(
+                                        type = HeroType.NEW_EPISODES_GRID,
+                                        podcast = gridDrops.first(),
+                                        label = "NEW EPISODES",
+                                        description = null,
+                                        gridItems = gridDrops
+                                    )
+                                )
+                                usedPodcastIds.addAll(gridDrops.map { it.id })
+                            }
                         }
 
                         // C. Spotlight (Fill to 8)
@@ -458,7 +585,7 @@ class HomeViewModel(
                              viewModelScope.async {
                                  try {
                                      // Use new Vibe API
-                                     val list = repository.getCuratedPodcasts(genre.id) // genre.id is now a vibeId like "morning_news"
+                                     val list = podcastRepository.getCuratedPodcasts(genre.id) // genre.id is now a vibeId like "morning_news"
                                      val filtered = list
                                          .filter { it.latestEpisode != null }
                                          .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
@@ -541,7 +668,7 @@ class HomeViewModel(
                     try {
                         android.util.Log.d("HomeViewModel", "Category: Fetching '$category' for region '$region'...")
                         var finalList: List<Podcast> = emptyList()
-                        repository.getTrendingPodcastsStream(region, 50, category.lowercase())
+                        podcastRepository.getTrendingPodcastsStream(region, 50, category.lowercase())
                             .collect { items ->
                                 finalList = items
                                 _uiState.update { 
@@ -589,7 +716,7 @@ class HomeViewModel(
                     // Fetch latest episodes for the newly subscribed podcast so UI updates immediately
                     launch(kotlinx.coroutines.Dispatchers.IO) {
                         try {
-                            val synced = repository.syncSubscriptions(listOf(podcast.id))
+                            val synced = podcastRepository.syncSubscriptions(listOf(podcast.id))
                             synced[podcast.id]?.let { episode ->
                                 subscriptionRepository.updateLatestEpisode(podcast.id, episode)
                             }
@@ -678,7 +805,7 @@ class HomeViewModel(
                 android.util.Log.d("HomeViewModel", "Starting background sync for ${currentSubs.size} subs in ${chunks.size} chunks")
                 for (chunk in chunks) {
                     try {
-                        val synced = repository.syncSubscriptions(chunk.toList())
+                        val synced = podcastRepository.syncSubscriptions(chunk.toList())
                         android.util.Log.d("HomeViewModel", "Successfully fetched chunk of ${chunk.size} subs, saving to DB...")
                         for ((podId, episode) in synced) {
                             subscriptionRepository.updateLatestEpisode(podId, episode)
@@ -751,5 +878,10 @@ class HomeViewModel(
         viewModelScope.launch {
             userPrefs.dismissFeatureAnnouncement("")
         }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        radioPlayer.release()
     }
 }

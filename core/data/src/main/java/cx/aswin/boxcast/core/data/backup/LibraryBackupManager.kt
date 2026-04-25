@@ -44,6 +44,8 @@ class LibraryBackupManager(
         return try {
             val backup = gson.fromJson(jsonString, BoxCastBackup::class.java)
             
+            val importedIds = mutableListOf<String>()
+            
             // 1. Restore subscriptions
             for (entity in backup.subscriptions) {
                 // Assuming we have a way to save entity directly or we re-map to model
@@ -58,11 +60,24 @@ class LibraryBackupManager(
                     genre = entity.genre ?: "Podcast"
                 )
                 subscriptionRepository.subscribe(podcast)
+                importedIds.add(podcast.id)
             }
             
             // 2. Restore playback histories (liked episodes)
             for (entity in backup.history) {
                 playbackRepository.upsertHistoryEntity(entity)
+            }
+            
+            // 3. Trigger check for new episodes
+            if (importedIds.isNotEmpty()) {
+                try {
+                    val syncedMap = podcastRepository.syncSubscriptions(importedIds)
+                    for ((id, ep) in syncedMap) {
+                        subscriptionRepository.updateLatestEpisode(id, ep)
+                    }
+                } catch (e: Exception) {
+                    Log.e("JSON_IMPORT", "Failed to sync episodes", e)
+                }
             }
             
             backup.subscriptions.size
@@ -95,6 +110,8 @@ class LibraryBackupManager(
                 eventType = parser.next()
             }
 
+            val importedIds = mutableListOf<String>()
+            
             // Fallback: search BoxCast API for each query silently to resolve
             for (query in queries) {
                 try {
@@ -103,10 +120,26 @@ class LibraryBackupManager(
                     if (results.isNotEmpty()) {
                         val match = results.first()
                         subscriptionRepository.subscribe(match)
+                        importedIds.add(match.id)
                         importedCount++
                     }
                 } catch (e: Exception) {
                     Log.e("OPML_IMPORT", "Failed to resolve: $query", e)
+                }
+            }
+            
+            // Trigger check for new episodes
+            if (importedIds.isNotEmpty()) {
+                try {
+                    // Break into chunks if OPML is huge to prevent request timeouts
+                    importedIds.chunked(50).forEach { chunk ->
+                        val syncedMap = podcastRepository.syncSubscriptions(chunk)
+                        for ((id, ep) in syncedMap) {
+                            subscriptionRepository.updateLatestEpisode(id, ep)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("OPML_IMPORT", "Failed to sync episodes", e)
                 }
             }
         } catch (e: Exception) {

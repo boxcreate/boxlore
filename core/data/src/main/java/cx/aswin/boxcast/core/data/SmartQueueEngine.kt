@@ -59,7 +59,9 @@ class DefaultSmartQueueEngine @Inject constructor(
             return emptyList()
         }
 
-        // 3. Take next episodes from the same podcast
+        // 3. Take next episodes from the same podcast (excluding current)
+        val currentTitle = allEpisodes[currentIndex].title
+        val currentIdStr = searchId
         val candidates = mutableListOf<Episode>()
         val remainingCount = allEpisodes.size - (currentIndex + 1)
         
@@ -68,7 +70,13 @@ class DefaultSmartQueueEngine @Inject constructor(
         if (remainingCount > 0) {
             val limit = minOf(remainingCount, 20)
             for (i in 1..limit) {
-                candidates.add(allEpisodes[currentIndex + i])
+                val candidate = allEpisodes[currentIndex + i]
+                // Skip duplicates: same ID or same exact title as currently playing
+                if (candidate.id == currentIdStr || candidate.title == currentTitle) {
+                    android.util.Log.d("SmartQueue", "Skipping duplicate: '${candidate.title}' (id=${candidate.id})")
+                    continue
+                }
+                candidates.add(candidate)
             }
         } else {
             // FALLBACK: End of current podcast -> Smart Discovery

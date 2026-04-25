@@ -52,8 +52,18 @@ class QueueManager @Inject constructor(
             val nextEntries = smartQueueEngine.getNextEpisodes(currentItem, podcast, null)
             android.util.Log.d(TAG, "Auto-refill got ${nextEntries.size} more episodes")
             
+            // Defensive dedup: skip any entry matching currently playing episode
+            val currentEpisodeId = currentEpisode.id
+            val currentEpisodeTitle = currentEpisode.title
+            
             nextEntries.forEach { entry ->
                 val domainNext = entry.episode.toDomain(entry.podcast)
+                
+                // Skip if same ID or exact same title as currently playing
+                if (domainNext.id == currentEpisodeId || domainNext.title == currentEpisodeTitle) {
+                    android.util.Log.d(TAG, "Refill: Skipping duplicate '${domainNext.title}' (id=${domainNext.id})")
+                    return@forEach
+                }
                 
                 // Add to Persistence
                 queueRepository.addToQueue(entry.episode, entry.podcast)

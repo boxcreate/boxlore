@@ -22,6 +22,7 @@ class UserPreferencesRepository(context: Context) {
         val THEME_CONFIG = stringPreferencesKey("theme_config")
         val USE_DYNAMIC_COLOR = androidx.datastore.preferences.core.booleanPreferencesKey("use_dynamic_color")
         val THEME_BRAND = stringPreferencesKey("theme_brand")
+        val IS_RADIO_MODE = androidx.datastore.preferences.core.booleanPreferencesKey("is_radio_mode")
     }
 
     val regionStream: Flow<String> = dataStore.data
@@ -82,6 +83,21 @@ class UserPreferencesRepository(context: Context) {
     suspend fun setThemeBrand(themeBrand: String) {
         dataStore.edit { preferences ->
             preferences[Keys.THEME_BRAND] = themeBrand
+        }
+    }
+
+    // APP MODE PREFERENCES
+    val isRadioModeStream: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.IS_RADIO_MODE] ?: false
+        }
+
+    suspend fun setRadioMode(isRadioMode: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.IS_RADIO_MODE] = isRadioMode
         }
     }
 

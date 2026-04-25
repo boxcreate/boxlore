@@ -48,25 +48,27 @@ class HistoryViewModel(
         if (historyList.isEmpty()) {
             HistoryUiState.Empty
         } else {
-            // Calculate Rich Stats
+            // Calculate Rich Stats (separate from grouping to avoid side-effects)
             var totalMs = 0L
             var completedCount = 0
             val podcastFrequency = mutableMapOf<String, Int>()
             val podcastImages = mutableMapOf<String, String?>()
 
-            val groupedByDate = historyList.groupBy { entity ->
-                totalMs += entity.progressMs
-                // Consider completed if flag is set, or progress > 90%
-                if (entity.isCompleted || (entity.durationMs > 0 && entity.progressMs > entity.durationMs * 0.9f)) {
-                    completedCount++
-                }
+            historyList.forEach { entity ->
+                // Use durationMs for completed episodes (prevents replay-reduces-time bug)
+                // Use progressMs for in-progress episodes
+                val isComplete = entity.isCompleted || (entity.durationMs > 0 && entity.progressMs > entity.durationMs * 0.9f)
+                totalMs += if (isComplete && entity.durationMs > 0) entity.durationMs else entity.progressMs
+                if (isComplete) completedCount++
 
                 val count = podcastFrequency.getOrDefault(entity.podcastName, 0) + 1
                 podcastFrequency[entity.podcastName] = count
                 if (entity.podcastImageUrl != null) {
                     podcastImages[entity.podcastName] = entity.podcastImageUrl
                 }
+            }
 
+            val groupedByDate = historyList.groupBy { entity ->
                 Instant.ofEpochMilli(entity.lastPlayedAt).atZone(ZoneId.systemDefault()).toLocalDate()
             }.toSortedMap(reverseOrder())
 

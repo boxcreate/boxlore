@@ -1,12 +1,18 @@
 package cx.aswin.boxcast.feature.library
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,20 +29,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
@@ -155,11 +170,15 @@ fun HistoryScreen(
                                         modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
                                     ) {
                                         episodes.forEach { entity ->
-                                            SwipeToDeleteHistoryItem(
-                                                entity = entity,
-                                                onDelete = { viewModel.removeHistoryItem(entity.episodeId) },
-                                                onClick = { onEpisodeClick(entity) }
-                                            )
+                                            // key() ensures dismiss state is tied to THIS specific episode,
+                                            // preventing cascade-delete when items shift after removal
+                                            androidx.compose.runtime.key(entity.episodeId) {
+                                                SwipeToDeleteHistoryItem(
+                                                    entity = entity,
+                                                    onDelete = { viewModel.removeHistoryItem(entity.episodeId) },
+                                                    onClick = { onEpisodeClick(entity) }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -352,51 +371,144 @@ fun DateHeaderRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeToDeleteHistoryItem(
     entity: ListeningHistoryEntity,
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDelete()
-                true
-            } else false
-        }
-    )
-
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        modifier = Modifier
-            .fillMaxWidth()
-            .expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick),
-        backgroundContent = {
-            val color = MaterialTheme.colorScheme.errorContainer
+    val density = LocalDensity.current
+    val hapticFeedback = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Swipe state
+    val offsetX = remember { Animatable(0f) }
+    var showDeletePill by remember { mutableStateOf(false) }
+    var autoHideJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    
+    val dismissThreshold = with(density) { 80.dp.toPx() }
+    
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Delete pill BEHIND the card — uses matchParentSize to match card height exactly
+        if (showDeletePill) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(color)
-                    .padding(end = 24.dp),
+                    .matchParentSize()
+                    .zIndex(0f),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.onErrorContainer
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .clickable {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            autoHideJob?.cancel()
+                            onDelete()
+                        }
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Rounded.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            "Delete",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
             }
         }
-    ) {
+        
+        // Card content - slides with swipe
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = MaterialTheme.shapes.medium, // Staggered list items
-            modifier = Modifier.fillMaxWidth()
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .zIndex(1f)
+                .offset { IntOffset(offsetX.value.toInt(), 0) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            autoHideJob?.cancel()
+                        },
+                        onDragEnd = {
+                            coroutineScope.launch {
+                                if (offsetX.value < -dismissThreshold) {
+                                    // Show delete pill
+                                    showDeletePill = true
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    
+                                    offsetX.animateTo(
+                                        targetValue = -dismissThreshold * 1.5f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        )
+                                    )
+                                    
+                                    // Auto-restore after 3 seconds
+                                    autoHideJob = coroutineScope.launch {
+                                        delay(3000)
+                                        showDeletePill = false
+                                        offsetX.animateTo(
+                                            0f,
+                                            spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessLow
+                                            )
+                                        )
+                                    }
+                                } else {
+                                    // Snap back
+                                    showDeletePill = false
+                                    offsetX.animateTo(
+                                        0f,
+                                        spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        )
+                                    )
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            coroutineScope.launch {
+                                showDeletePill = false
+                                offsetX.animateTo(0f, spring())
+                            }
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            coroutineScope.launch {
+                                // Only allow left swipe (negative)
+                                val newOffset = (offsetX.value + dragAmount).coerceAtMost(0f)
+                                offsetX.snapTo(newOffset)
+                                
+                                if (kotlin.math.abs(offsetX.value) > dismissThreshold * 0.5f && !showDeletePill) {
+                                    showDeletePill = true
+                                }
+                                if (showDeletePill && kotlin.math.abs(offsetX.value) < dismissThreshold * 0.3f) {
+                                    showDeletePill = false
+                                    autoHideJob?.cancel()
+                                }
+                            }
+                        }
+                    )
+                }
+                .expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -414,7 +526,7 @@ fun SwipeToDeleteHistoryItem(
                         modifier = Modifier.fillMaxSize()
                     )
                     
-                    // Simple progress scrim on the image
+                    // Progress scrim on image
                     if (entity.durationMs > 0) {
                         val progress = (entity.progressMs.toFloat() / entity.durationMs.toFloat()).coerceIn(0f, 1f)
                         Box(

@@ -138,6 +138,21 @@ class PlaybackRepository(
                         Log.d("PlaybackRepo", "Playback ENDED. Cancelling pending saves and marking completed.")
                         pendingSaveJob?.cancel() // CRITICAL: Prevent "Pause" save from overwriting completion
                         
+                        // Sleep Timer: End of Episode — stop everything if EOE is active
+                        if (_playerState.value.sleepAtEndOfEpisode) {
+                            Log.d("PlaybackRepo", "Sleep Timer (EOE): Episode ended, stopping playback.")
+                            mediaController?.stop()
+                            mediaController?.clearMediaItems()
+                            sleepTimerJob?.cancel()
+                            stopProgressTicker()
+                            _playerState.value = _playerState.value.copy(
+                                isPlaying = false, position = 0,
+                                sleepTimerEnd = null, sleepAtEndOfEpisode = false
+                            )
+                            repositoryScope.launch { markCurrentEpisodeAsCompleted() }
+                            return
+                        }
+                        
                         _playerState.value = _playerState.value.copy(isPlaying = false, position = 0)
                         stopProgressTicker()
                         // Mark as completed
@@ -155,6 +170,25 @@ class PlaybackRepository(
                     
                     val slotIndex = queue.indexOfFirst { it.id == episodeId }
                     android.util.Log.d("PlaybackRepo", "onMediaItemTransition: mediaId=$episodeId, slotIndex=$slotIndex, queueSize=${queue.size}, reason=$reason")
+                    
+                    // Sleep Timer: End of Episode — intercept auto-advance
+                    if (oldState.sleepAtEndOfEpisode && reason == androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                        Log.d("PlaybackRepo", "Sleep Timer (EOE): Auto-advance intercepted. Pausing playback.")
+                        mediaController?.pause()
+                        sleepTimerJob?.cancel()
+                        stopProgressTicker()
+                        _playerState.value = _playerState.value.copy(
+                            isPlaying = false,
+                            sleepTimerEnd = null, sleepAtEndOfEpisode = false
+                        )
+                        // Mark previous episode as completed
+                        val prevEpisode = oldState.currentEpisode
+                        val prevPodcast = oldState.currentPodcast
+                        if (prevEpisode != null) {
+                            repositoryScope.launch { markEpisodeAsCompleted(prevEpisode, prevPodcast) }
+                        }
+                        return
+                    }
                     
                     if (slotIndex == -1) {
                         android.util.Log.w("PlaybackRepo", "onMediaItemTransition: Episode $episodeId NOT found in local queue. Ignoring.")
@@ -455,9 +489,16 @@ class PlaybackRepository(
     suspend fun addToQueue(episode: Episode, podcast: Podcast) {
         Log.d("PlaybackRepo", "addToQueue called: episodeId=${episode.id}, title=${episode.title}")
         
-        // Prevent Duplicates in active queue
+        // Prevent Duplicates in active queue (by ID)
         if (_playerState.value.queue.any { it.id == episode.id }) {
-            Log.w("PlaybackRepo", "addToQueue: Episode ${episode.title} already in active queue. Skipping.")
+            Log.w("PlaybackRepo", "addToQueue: Episode ${episode.title} already in active queue (ID match). Skipping.")
+            return
+        }
+        
+        // Prevent duplicate of currently playing episode (by title — catches republished episodes)
+        val currentEp = _playerState.value.currentEpisode
+        if (currentEp != null && currentEp.title == episode.title && currentEp.id != episode.id) {
+            Log.w("PlaybackRepo", "addToQueue: Episode '${episode.title}' matches currently playing title. Skipping.")
             return
         }
 
@@ -838,34 +879,33 @@ class PlaybackRepository(
     }
 
     fun setSleepTimer(durationMinutes: Int) {
+        Log.d("PlaybackRepo", "setSleepTimer called: $durationMinutes minutes")
         sleepTimerJob?.cancel()
         
         if (durationMinutes <= 0) {
+            Log.d("PlaybackRepo", "Sleep timer: OFF")
             _playerState.value = _playerState.value.copy(sleepTimerEnd = null, sleepAtEndOfEpisode = false)
             return
         }
 
         // Special marker for "End of Episode" mode
         if (durationMinutes == 999) {
-            // Enable dynamic End-of-Episode mode
-            _playerState.value = _playerState.value.copy(sleepAtEndOfEpisode = true)
+            Log.d("PlaybackRepo", "Sleep timer: End of Episode mode ENABLED")
+            // Just set the flag — the actual pause is handled by onMediaItemTransition
+            // and onPlaybackStateChanged(STATE_ENDED) in the Media3 listener
+            _playerState.value = _playerState.value.copy(sleepAtEndOfEpisode = true, sleepTimerEnd = null)
             
+            // Background job only updates the countdown display (no action logic)
             sleepTimerJob = repositoryScope.launch {
                 while (true) {
                     val state = _playerState.value
                     if (!state.sleepAtEndOfEpisode) break
                     
-                    val remaining = state.duration - state.position
-                    if (remaining <= 0 && state.duration > 0) {
-                        // Episode ended, trigger sleep
-                        pause()
-                        _playerState.value = _playerState.value.copy(sleepTimerEnd = null, sleepAtEndOfEpisode = false)
-                        break
+                    if (state.duration > 0 && state.position > 0) {
+                        val remaining = (state.duration - state.position).coerceAtLeast(0)
+                        val dynamicEndTime = System.currentTimeMillis() + remaining
+                        _playerState.value = _playerState.value.copy(sleepTimerEnd = dynamicEndTime)
                     }
-                    
-                    // Update the displayed end time dynamically
-                    val dynamicEndTime = System.currentTimeMillis() + remaining
-                    _playerState.value = _playerState.value.copy(sleepTimerEnd = dynamicEndTime)
                     
                     delay(1000)
                 }
@@ -873,14 +913,20 @@ class PlaybackRepository(
         } else {
             // Fixed timer mode
             val endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
+            Log.d("PlaybackRepo", "Sleep timer: Fixed ${durationMinutes}m, endTime=$endTime")
             _playerState.value = _playerState.value.copy(sleepTimerEnd = endTime, sleepAtEndOfEpisode = false)
 
             sleepTimerJob = repositoryScope.launch {
-                while (System.currentTimeMillis() < endTime) {
-                    delay(1000)
+                val waitMs = endTime - System.currentTimeMillis()
+                if (waitMs > 0) {
+                    delay(waitMs)
                 }
-                pause()
-                _playerState.value = _playerState.value.copy(sleepTimerEnd = null)
+                Log.d("PlaybackRepo", "Sleep timer: FIRING! Pausing playback.")
+                mediaController?.pause()
+                stopProgressTicker()
+                _playerState.value = _playerState.value.copy(
+                    sleepTimerEnd = null, isPlaying = false
+                )
             }
         }
     }

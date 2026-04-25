@@ -272,11 +272,12 @@ fun PostReviewSheet(
 @Composable
 fun FeedbackSheet(
     appVersion: String,
-    onSubmit: suspend (category: String, message: String, version: String) -> Boolean,
+    onSubmit: suspend (category: String, message: String, version: String, email: String) -> Boolean,
     onRateInstead: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
     var message by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("feature") }
     var isSubmitting by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
@@ -430,6 +431,44 @@ fun FeedbackSheet(
                     textAlign = TextAlign.End
                 )
                 
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = when (selectedCategory) {
+                        "feature" -> "Mind sharing your email? We'd love to follow up and chat more about your idea."
+                        "bug" -> "Mind sharing your email? We may need a few more details to help squash this bug."
+                        else -> "Mind sharing your email? We really appreciate the feedback and may reach out."
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = MaterialTheme.typography.labelMedium.lineHeight
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Email input (optional)
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    placeholder = { 
+                         Text(
+                             text = "you@example.com (optional)",
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                         ) 
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    )
+                )
+                
                 if (errorMsg != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -463,7 +502,7 @@ fun FeedbackSheet(
                         errorMsg = null
                         
                         scope.launch {
-                            val success = onSubmit(selectedCategory, message.trim(), appVersion)
+                            val success = onSubmit(selectedCategory, message.trim(), appVersion, email.trim())
                             if (success) {
                                 isSuccess = true
                             } else {
