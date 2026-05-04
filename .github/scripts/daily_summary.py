@@ -14,14 +14,6 @@ TELEMETRY_API_URL = "https://boxcast-telemetry.boxboxcric.workers.dev/query"
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 IST = timezone(timedelta(hours=5, minutes=30))
 
-# Model fallback chain
-MODELS = [
-    {"id": "gpt-4o", "name": "GPT-4o"},
-    {"id": "DeepSeek-R1", "name": "DeepSeek R1"},
-    {"id": "Meta-Llama-3.1-405B-Instruct", "name": "Llama 3.1 405B"},
-    {"id": "gpt-4o-mini", "name": "GPT-4o Mini"},
-]
-
 def query_turso(sql, args=None):
     token = os.environ.get("TELEMETRY_API_KEY")
     if not token:
@@ -207,41 +199,38 @@ def call_gemini(system_prompt, user_prompt):
         print("ERROR: No Gemini token available")
         sys.exit(1)
 
-    target_model = os.environ.get("TARGET_MODEL", "gemini-2.5-flash").strip()
-    # If the workflow provides a gpt model, fallback to gemini-2.5-flash
-    if target_model.startswith("gpt") or target_model.startswith("DeepSeek") or target_model.startswith("Meta"):
-        target_model = "gemini-2.5-flash"
+    target_model = os.environ.get("TARGET_MODEL", "gemini-3-flash-preview").strip()
     
-    print(f"Trying model: {target_model}...")
-    
-    url = GEMINI_API_URL.format(model=target_model, key=key)
-    
-    payload = {
-        "systemInstruction": {
-            "parts": [{"text": system_prompt}]
-        },
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": user_prompt}]
-            }
-        ]
-    }
-    
-    try:
-        resp = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=60)
-        if resp.status_code == 200:
-            data = resp.json()
-            if "candidates" in data and len(data["candidates"]) > 0:
-                summary = data["candidates"][0]["content"]["parts"][0]["text"]
-                print(f"✅ Success with {target_model}")
-                return summary, target_model
+    # If the workflow provides a legacy gpt model, map it to gemini-3-flash-preview
+    if target_model.startswith("gpt") or target_model.startswith("DeepSeek") or target_model.startswith("Meta") or target_model.startswith("gemini-2.5-pro"):
+        target_model = "gemini-3-flash-preview"
         
-        print(f"⚠️ {target_model} returned {resp.status_code}: {resp.text[:200]}")
-    except Exception as e:
-        print(f"⚠️ {target_model} failed: {e}")
+    models_to_try = [target_model]
+    if target_model != "gemini-2.5-flash":
+        models_to_try.append("gemini-2.5-flash")
+    
+    for model in models_to_try:
+        print(f"Trying model: {model}...")
+        url = GEMINI_API_URL.format(model=model, key=key)
+        payload = {
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}]
+        }
+        
+        try:
+            resp = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=60)
+            if resp.status_code == 200:
+                data = resp.json()
+                if "candidates" in data and len(data["candidates"]) > 0:
+                    summary = data["candidates"][0]["content"]["parts"][0]["text"]
+                    print(f"✅ Success with {model}")
+                    return summary, model
+            
+            print(f"⚠️ {model} returned {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            print(f"⚠️ {model} failed: {e}")
 
-    print("ERROR: Gemini call failed")
+    print("ERROR: All Gemini models failed")
     sys.exit(1)
 
 def save_summary_turso(date_str, summary, model_id):
