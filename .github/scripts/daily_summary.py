@@ -104,7 +104,7 @@ def fetch_metrics(target_date):
         lt_metrics[row['metric_key'].replace('prod_', '')] = row['v']
         
     # Raw un-aggregated logs (Leveraging Gemini's large context window)
-    raw_logs_res = query_turso(f"SELECT event_name, event_data, timestamp FROM telemetry_logs WHERE date(timestamp) = '{target_date}' ORDER BY timestamp DESC LIMIT 5000")
+    raw_logs_res = query_turso(f"SELECT event_type, event_payload, created_at FROM raw_events WHERE date(created_at) = '{target_date}' ORDER BY created_at DESC LIMIT 5000")
     
     return {
         "date": target_date,
