@@ -82,10 +82,13 @@ class BoxCastFcmService : FirebaseMessagingService() {
 
         // Setup intent (open app, or deep link)
         val intent = if (route != null && route.startsWith("http")) {
-            Intent(Intent.ACTION_VIEW, Uri.parse(route))
+            Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
+                putExtra("from_push", true)
+            }
         } else {
             Intent(this, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("from_push", true)
                 // If we want internal routing via deep link, we pass an extra
                 if (route != null) {
                     putExtra("target_route", route)
@@ -99,6 +102,8 @@ class BoxCastFcmService : FirebaseMessagingService() {
             intent, 
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
+        cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("notification_push_received")
 
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(cx.aswin.boxcast.R.drawable.ic_notification) 

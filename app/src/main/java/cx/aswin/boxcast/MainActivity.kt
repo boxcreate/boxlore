@@ -117,11 +117,13 @@ class MainActivity : ComponentActivity() {
         val shouldOpenPlayer = intent.getBooleanExtra("EXTRA_OPEN_PLAYER", false)
         if (shouldOpenPlayer) {
             expandPlayerTrigger = System.currentTimeMillis()
-            // Note: 'android:usesCleartextTraffic="false"' is an AndroidManifest.xml attribute,
-            // and cannot be set directly in Kotlin code.
-            // If you intended to set this, please modify your AndroidManifest.xml file.
             // Clear extra to prevent re-triggering on rotation/re-creation
             intent.removeExtra("EXTRA_OPEN_PLAYER") 
+        }
+
+        if (intent.getBooleanExtra("from_push", false)) {
+            cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("notification_push_tapped")
+            intent.removeExtra("from_push")
         }
     }
     
@@ -297,7 +299,11 @@ class MainActivity : ComponentActivity() {
             val permissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) { isGranted ->
-                // Handled automatically by OS
+                if (isGranted) {
+                    cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("notification_permission_granted")
+                } else {
+                    cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("notification_permission_denied")
+                }
             }
             
             LaunchedEffect(Unit) {
@@ -368,6 +374,9 @@ class MainActivity : ComponentActivity() {
                         },
                         title = { Text(text = announcement.title) },
                         text = { 
+                            LaunchedEffect(announcement) {
+                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("notification_inapp_seen")
+                            }
                             androidx.compose.foundation.layout.Column {
                                 if (!announcement.imageUrl.isNullOrBlank()) {
                                     coil.compose.AsyncImage(
@@ -411,6 +420,7 @@ class MainActivity : ComponentActivity() {
                             if (!announcement.route.isNullOrBlank()) {
                                 androidx.compose.material3.TextButton(
                                     onClick = {
+                                        cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("notification_inapp_tapped")
                                         scope.launch { userPrefs.clearAnnouncement() }
                                         try {
                                             val intent = android.content.Intent(
