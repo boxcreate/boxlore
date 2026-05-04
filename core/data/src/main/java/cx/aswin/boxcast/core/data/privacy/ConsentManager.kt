@@ -34,8 +34,8 @@ class ConsentManager(private val context: Context) {
             }
         }
         .map { preferences ->
-            // Default to FALSE (Opt-in)
-            preferences[PreferencesKeys.CRASH_REPORTING_CONSENT] ?: false
+            // Default to TRUE (Opt-out)
+            preferences[PreferencesKeys.CRASH_REPORTING_CONSENT] ?: true
         }
 
     val isUsageAnalyticsConsented: Flow<Boolean> = dataStore.data
@@ -47,14 +47,15 @@ class ConsentManager(private val context: Context) {
             }
         }
         .map { preferences ->
-            // Default to FALSE (Opt-in)
-            preferences[PreferencesKeys.USAGE_ANALYTICS_CONSENT] ?: false
+            // Default to TRUE (Opt-out)
+            preferences[PreferencesKeys.USAGE_ANALYTICS_CONSENT] ?: true
         }
         
     // Has the user seen the dialog and made a choice?
     val hasUserSetConsent: Flow<Boolean> = dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.CONSENT_DECIDED] ?: false
+            // Forcing true as we removed the onboarding consent dialog
+            true
         }
 
     suspend fun setConsent(crashReporting: Boolean, usageAnalytics: Boolean) {

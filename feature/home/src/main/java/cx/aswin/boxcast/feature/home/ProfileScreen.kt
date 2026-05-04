@@ -39,10 +39,6 @@ fun ProfileScreen(
     onSetRegion: (String) -> Unit = {},
     onBack: () -> Unit,
     onResetAnalytics: () -> Unit,
-    isAnalyticsEnabled: Boolean = false,
-    onToggleAnalytics: (Boolean) -> Unit = {},
-    isCrashReportingEnabled: Boolean = false,
-    onToggleCrashReporting: (Boolean) -> Unit = {},
     appInstanceId: String? = null,
     currentThemeConfig: String = "system",
     isDynamicColorEnabled: Boolean = true,
@@ -73,7 +69,7 @@ fun ProfileScreen(
     )
     
     // Calculate enabled state at top level to ensure recomposition
-    val isDataCollectionEnabled = isCrashReportingEnabled || isAnalyticsEnabled
+    val isDataCollectionEnabled = true
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -388,45 +384,21 @@ fun ProfileScreen(
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Column {
-                            // Analytics Toggle
+                            // Data Usage Explanation
                             ListItem(
-                                headlineContent = { Text("App Analytics") },
-                                supportingContent = { Text("Share anonymous usage data.") },
+                                headlineContent = { Text("How We Use Data") },
+                                supportingContent = { 
+                                    Text("BoxCast uses anonymous, first-party telemetry to improve your recommendations and identify bugs. No personal data is collected or shared with third parties.") 
+                                },
                                 leadingContent = {
                                     Icon(
                                         imageVector = Icons.Rounded.Info, 
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary
                                     )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = isAnalyticsEnabled,
-                                        onCheckedChange = onToggleAnalytics
-                                    )
                                 }
                             )
                             HorizontalDivider()
-                            
-                            // Crash Reports Toggle
-                            ListItem(
-                                headlineContent = { Text("Crash Reporting") },
-                                supportingContent = { Text("Auto-report bugs and crashes.") },
-                                leadingContent = {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Warning, 
-                                        contentDescription = null, // Warning icon for crashes
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = isCrashReportingEnabled,
-                                        onCheckedChange = onToggleCrashReporting
-                                    )
-                                }
-                            )
-                             HorizontalDivider()
 
                             // Privacy Policy
                             ListItem(
@@ -678,7 +650,6 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("• Your cloud analytics ID will be regenerated.")
                     Text("• Orphaned data is auto-deleted after 14 months.")
-                    Text("• You will be asked to RE-CONSENT immediately.")
                 }
             },
             confirmButton = {

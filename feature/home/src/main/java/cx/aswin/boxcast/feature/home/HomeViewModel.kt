@@ -483,6 +483,12 @@ class HomeViewModel(
                             isFilterLoading = trendingList.isEmpty(),
                             isError = false
                         )
+                        
+                        // Time-To-First-Value (New User Retention) Tracking
+                        if (trendingList.isNotEmpty() && heroList.isEmpty() && subs.isEmpty()) {
+                            val analyticsHelper = cx.aswin.boxcast.core.data.analytics.AnalyticsHelper(getApplication(), cx.aswin.boxcast.core.data.privacy.ConsentManager(getApplication()))
+                            analyticsHelper.logEmptyStateSeen("home")
+                        }
                 }
             }
         }
@@ -563,8 +569,12 @@ class HomeViewModel(
                 ?: state.heroItems.find { it.podcast.id == podcastId }?.podcast
             
             if (podcast != null) {
+                val analyticsHelper = cx.aswin.boxcast.core.data.analytics.AnalyticsHelper(getApplication(), cx.aswin.boxcast.core.data.privacy.ConsentManager(getApplication()))
                 subscriptionRepository.toggleSubscription(podcast)
-                if (subscriptionRepository.isSubscribed(podcast.id)) {
+                val isSubscribed = subscriptionRepository.isSubscribed(podcast.id)
+                analyticsHelper.logSubscribeAction(isSubscribed, source = "home_feed")
+                
+                if (isSubscribed) {
                     // Fetch latest episodes for the newly subscribed podcast so UI updates immediately
                     launch(kotlinx.coroutines.Dispatchers.IO) {
                         try {

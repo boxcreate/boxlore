@@ -93,7 +93,10 @@ class PlayerViewModel(
         }
     }
 
-    fun loadPodcast(podcastId: String) {
+    private var initialSource: String = "unknown"
+
+    fun loadPodcast(podcastId: String, source: String = "unknown") {
+        initialSource = source
         viewModelScope.launch {
             if (_uiState.value is PlayerUiState.Success) return@launch // Already loaded?
             
@@ -156,7 +159,7 @@ class PlayerViewModel(
                      
                      // Auto-play first episode if available and NOT already playing this podcast
                      if (episodes.isNotEmpty() && !isSamePodcast) {
-                         playEpisode(episodes.first())
+                         playEpisode(episodes.first(), initialSource)
                      }
                 } else {
                     _uiState.value = PlayerUiState.Error
@@ -170,11 +173,11 @@ class PlayerViewModel(
         }
     }
 
-    fun playEpisode(episode: Episode) {
+    fun playEpisode(episode: Episode, source: String? = null) {
         val currentState = _uiState.value
         if (currentState is PlayerUiState.Success) {
             viewModelScope.launch {
-                analyticsHelper.logEpisodeStarted("player", false)
+                analyticsHelper.logEpisodeStarted(source ?: initialSource, false)
                 
                 // Smart Skip: Check if episode is already in the active queue
                 val currentQueue = playbackRepository.playerState.value.queue

@@ -1,11 +1,7 @@
 package cx.aswin.boxcast.core.data.analytics
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.Bundle
 import android.os.SystemClock
-import com.google.firebase.analytics.FirebaseAnalytics
 import cx.aswin.boxcast.core.data.privacy.ConsentManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,24 +9,38 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+/**
+ * AnalyticsHelper — Privacy-first, first-party analytics powered by the Insight Engine.
+ *
+ * All events flow through SessionAggregator → batched HTTP → Cloudflare Worker → Turso.
+ * Zero third-party analytics SDKs. No personal data collected.
+ *
+ * Event naming convention:
+ *   funnel_*    → conversion funnel steps (onboarding, activation)
+ *   discovery_* → how users find content
+ *   play_*      → playback behavior and quality
+ *   feature_*   → feature adoption signals
+ *   action_*    → user actions (subscribe, like, share)
+ *   screen_*    → navigation patterns
+ *   friction_*  → pain points (errors, empty states, rage taps)
+ */
 class AnalyticsHelper(
     private val context: Context,
     private val consentManager: ConsentManager
 ) {
 
-    private val firebaseAnalytics = FirebaseAnalytics.getInstance(context)
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    
+
     // Cached state for synchronous checks (default false for safety)
     private var isUsageConsented = false
-    
+
     // Timestamp when app was first opened (for time-to-first-play calculation)
     private val appOpenTimeElapsed = SystemClock.elapsedRealtime()
 
     // Milestone tracking for episode progress (scrub-safe)
     private var currentEpisodeMilestones = mutableSetOf<Int>()
     private var currentTrackingEpisodeKey: String? = null
-    
+
     // Session tracking for listening_session_summary
     private var sessionStartElapsed: Long? = null
 
@@ -43,78 +53,130 @@ class AnalyticsHelper(
     }
 
     // ── Core Logging ──────────────────────────────────────────
-    
-    private fun logEvent(eventName: String, params: Map<String, String>) {
-        if (!isUsageConsented) return
-        val bundle = Bundle()
-        params.forEach { (key, value) -> bundle.putString(key, value) }
-        firebaseAnalytics.logEvent(eventName, bundle)
-    }
-    
-    /** Fires regardless of consent — used only for onboarding funnel tracking. */
-    private fun logUngatedEvent(eventName: String, params: Map<String, String>) {
-        val bundle = Bundle()
-        params.forEach { (key, value) -> bundle.putString(key, value) }
-        firebaseAnalytics.logEvent(eventName, bundle)
+
+    private fun track(metricKey: String, amount: Int = 1) {
+        // Insight Engine events are always tracked (privacy-safe by design)
+        SessionAggregator.incrementAggregate(metricKey, amount)
     }
 
-    // ── KPI-1: Activation ─────────────────────────────────────
+    /** Track regardless of consent — for onboarding funnel (pre-consent). */
+    private fun trackUngated(metricKey: String, amount: Int = 1) {
+        SessionAggregator.incrementAggregate(metricKey, amount)
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  FUNNEL: Onboarding (pre-consent, always tracked)
+    // ══════════════════════════════════════════════════════════
+
+    /**
+     * Tracks onboarding funnel steps with rich context.
+     * Steps: consent_shown → consent_accepted/declined → genres_selected → search_shown → completed/skipped
+     */
+    fun logOnboardingStep(step: String, additionalParams: Map<String, String>? = null) {
+        when (step) {
+            "consent_shown" -> trackUngated("funnel_consent_shown")
+            "consent_accepted" -> trackUngated("funnel_consent_accepted")
+            "consent_declined" -> trackUngated("funnel_consent_declined")
+            "genres_selected" -> {
+                trackUngated("funnel_onboarding_genres_picked")
+                val count = additionalParams?.get("genre_count")?.toIntOrNull() ?: 0
+                if (count > 0) trackUngated("funnel_onboarding_genres_total", count)
+            }
+            "search_shown" -> trackUngated("funnel_onboarding_search_used")
+            "completed" -> {
+                trackUngated("funnel_onboarding_completed")
+                val podCount = additionalParams?.get("podcast_count")?.toIntOrNull() ?: 0
+                if (podCount > 0) trackUngated("funnel_onboarding_subs_total", podCount)
+            }
+            "skipped" -> trackUngated("funnel_onboarding_skipped")
+            else -> trackUngated("funnel_onboarding_$step")
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  FUNNEL: Activation (first-ever play)
+    // ══════════════════════════════════════════════════════════
 
     /** E1: First episode ever played. Call once per install (gate with DataStore). */
     fun logFirstEpisodePlayed(source: String) {
         val elapsedSinceOpen = SystemClock.elapsedRealtime() - appOpenTimeElapsed
-        val bucket = when {
-            elapsedSinceOpen < 60_000 -> "under_1m"
-            elapsedSinceOpen < 300_000 -> "1_5m"
-            else -> "over_5m"
+        track("funnel_first_play")
+        track("funnel_first_play_source_$source")
+        // Time-to-first-play buckets for activation speed analysis
+        when {
+            elapsedSinceOpen < 60_000 -> track("funnel_first_play_under_1m")
+            elapsedSinceOpen < 300_000 -> track("funnel_first_play_1_5m")
+            else -> track("funnel_first_play_over_5m")
         }
-        logEvent("first_episode_played", mapOf(
-            "source" to source,
-            "time_to_first_play_bucket" to bucket
-        ))
-    }
-    
-    /** E14: Onboarding consent flow tracking. Bypasses consent gate. */
-    fun logOnboardingStep(step: String, additionalParams: Map<String, String>? = null) {
-        val params = mutableMapOf("step" to step)
-        additionalParams?.let { params.putAll(it) }
-        logUngatedEvent("onboarding_step", params)
     }
 
-    // ── KPI-2: Engagement ─────────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    //  DISCOVERY: How users find content
+    // ══════════════════════════════════════════════════════════
+
+    /** E7: Search performed. No query text logged (privacy-safe). */
+    fun logSearchPerformed(hasResults: Boolean) {
+        if (!isUsageConsented) return
+        track("discovery_search")
+        if (!hasResults) {
+            track("friction_search_empty")
+        }
+    }
+
+    /** E8: Explore vibe/category selected. */
+    fun logExploreVibeSelected(vibeCategory: String) {
+        if (!isUsageConsented) return
+        track("discovery_explore_vibe")
+        // Sanitize vibe name for metric key
+        val safeVibe = vibeCategory.lowercase().replace(Regex("[^a-z0-9]"), "_").take(30)
+        track("discovery_vibe_$safeVibe")
+    }
+
+    /** E9: Hero card tapped on home screen. */
+    fun logHeroCardTapped(cardType: String, cardPosition: Int) {
+        if (!isUsageConsented) return
+        track("discovery_hero_tapped")
+        val safeType = cardType.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+        track("discovery_hero_type_$safeType")
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  PLAYBACK: Engagement depth and quality
+    // ══════════════════════════════════════════════════════════
 
     /** E2: Episode playback started. */
     fun logEpisodeStarted(source: String, isDownloaded: Boolean) {
-        logEvent("episode_started", mapOf(
-            "source" to source,
-            "is_downloaded" to isDownloaded.toString()
-        ))
+        if (!isUsageConsented) return
+        track("play_episode_started")
+        val safeSource = source.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+        track("play_source_$safeSource")
+        if (isDownloaded) track("play_from_download")
     }
 
-    /** 
+    /**
      * E3: Episode progress milestone reached. Scrub-safe.
-     * Call from PlaybackRepository on progress tick. 
      * Only fires if the milestone is crossed during normal playback (not seek).
      */
     fun logEpisodeProgress(episodeKey: String, currentPercent: Int) {
+        if (!isUsageConsented) return
         // Reset tracking on episode change
         if (episodeKey != currentTrackingEpisodeKey) {
             currentTrackingEpisodeKey = episodeKey
             currentEpisodeMilestones.clear()
         }
-        
+
         val milestones = listOf(25, 50, 75, 100)
         for (milestone in milestones) {
             if (currentPercent >= milestone && milestone !in currentEpisodeMilestones) {
                 currentEpisodeMilestones.add(milestone)
-                logEvent("episode_progress", mapOf("milestone" to milestone.toString()))
+                track("play_milestone_$milestone")
             }
         }
     }
-    
-    /** 
+
+    /**
      * Mark milestones as passed without firing events (on seek).
-     * Call when user seeks forward past milestones.
+     * Prevents counting seek-past as genuine listening.
      */
     fun markMilestonesPassedOnSeek(episodeKey: String, seekToPercent: Int) {
         if (episodeKey != currentTrackingEpisodeKey) {
@@ -129,7 +191,9 @@ class AnalyticsHelper(
         }
     }
 
-    // ── KPI-3: Session Quality ────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    //  SESSION: Listening session quality
+    // ══════════════════════════════════════════════════════════
 
     /** Call when playback starts to begin session timing. */
     fun startListeningSession() {
@@ -138,12 +202,18 @@ class AnalyticsHelper(
         }
     }
 
-    /** E4: Listening session summary. Call when playback stops. */
+    /** E4: Listening session summary with duration bucket. */
     fun endListeningSession() {
         val start = sessionStartElapsed ?: return
         sessionStartElapsed = null
-        
+
         val durationMs = SystemClock.elapsedRealtime() - start
+        val durationSec = (durationMs / 1000).toInt()
+
+        // Track total listening session time (aggregates across the day)
+        if (durationSec > 0) track("play_session_total_sec", durationSec)
+
+        // Duration buckets for session quality analysis
         val bucket = when {
             durationMs < 60_000 -> "under_1m"
             durationMs < 300_000 -> "1_5m"
@@ -152,87 +222,103 @@ class AnalyticsHelper(
             durationMs < 3_600_000 -> "30_60m"
             else -> "over_60m"
         }
-        logEvent("listening_session_summary", mapOf("duration_bucket" to bucket))
+        track("play_session_$bucket")
     }
 
-    // ── KPI-4: Subscriptions ──────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    //  SUBSCRIPTIONS: Growth and churn signals
+    // ══════════════════════════════════════════════════════════
 
     /** E5: Subscribe or unsubscribe action. */
-    fun logSubscribeAction(isSubscribe: Boolean) {
-        logEvent("subscribe_action", mapOf(
-            "action" to if (isSubscribe) "subscribe" else "unsubscribe"
-        ))
+    fun logSubscribeAction(isSubscribe: Boolean, source: String = "unknown") {
+        if (!isUsageConsented) return
+        if (isSubscribe) {
+            track("action_subscribe")
+            val safeSource = source.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+            track("action_subscribe_from_$safeSource")
+        } else {
+            track("action_unsubscribe")
+        }
     }
 
-    // ── KPI-5: Feature Adoption ───────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    //  FEATURE ADOPTION: Power feature usage
+    // ══════════════════════════════════════════════════════════
 
-    /** E6: Power feature used. */
+    /** E6: Power feature used (skip, speed, timer, download, queue, etc.) */
     fun logFeatureUsed(feature: String) {
-        logEvent("feature_used", mapOf("feature" to feature))
+        if (!isUsageConsented) return
+        val safeFeature = feature.lowercase().replace(Regex("[^a-z0-9]"), "_").take(30)
+        track("feature_$safeFeature")
     }
 
-    // ── Discovery ─────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    //  NAVIGATION: Screen-level behavior
+    // ══════════════════════════════════════════════════════════
 
-    /** E7: Search performed. No query text logged. */
-    fun logSearchPerformed(hasResults: Boolean) {
-        logEvent(FirebaseAnalytics.Event.SEARCH, mapOf(
-            "has_results" to hasResults.toString()
-        ))
-    }
-
-    /** E8: Explore vibe/category selected. */
-    fun logExploreVibeSelected(vibeCategory: String) {
-        logEvent("explore_vibe_selected", mapOf("vibe_category" to vibeCategory))
-    }
-
-    /** E9: Hero card tapped on home screen. */
-    fun logHeroCardTapped(cardType: String, cardPosition: Int) {
-        logEvent("hero_card_tapped", mapOf(
-            "card_type" to cardType,
-            "card_position" to cardPosition.toString()
-        ))
-    }
-
-    /** E10: Screen view. */
+    /** E10: Screen view — tracks which screens users actually visit. */
     fun logScreenView(screenName: String) {
-        logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, mapOf(
-            FirebaseAnalytics.Param.SCREEN_NAME to screenName,
-            FirebaseAnalytics.Param.SCREEN_CLASS to screenName
-        ))
+        if (!isUsageConsented) return
+        val safeScreen = screenName.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+        track("screen_$safeScreen")
     }
 
-    // ── Reliability ───────────────────────────────────────────
+    /** Tracks when a user hits an empty state, useful for churn analysis. */
+    fun logEmptyStateSeen(screenName: String) {
+        if (!isUsageConsented) return
+        val safeScreen = screenName.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+        track("friction_empty_$safeScreen")
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  FRICTION: Pain points and reliability
+    // ══════════════════════════════════════════════════════════
 
     /** E11: Playback error with network context. */
     fun logPlaybackError(errorType: String) {
-        logEvent("playback_error", mapOf(
-            "error_type" to errorType,
-            "network_state" to getNetworkState()
-        ))
+        if (!isUsageConsented) return
+        track("friction_playback_error")
+        val safeType = errorType.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+        track("friction_error_$safeType")
+        // Network context for debugging
+        val networkState = getNetworkState()
+        track("friction_error_net_$networkState")
     }
-    
+
     private fun getNetworkState(): String {
         return try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
             val network = cm.activeNetwork ?: return "offline"
             val capabilities = cm.getNetworkCapabilities(network) ?: return "unknown"
             when {
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+                capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+                capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
                 else -> "unknown"
             }
         } catch (_: Exception) { "unknown" }
     }
 
-    // ── Retention ─────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    //  RETENTION: Engagement and feedback
+    // ══════════════════════════════════════════════════════════
 
     /** E12: In-app feedback interaction. */
     fun logAppFeedback(action: String) {
-        logEvent("app_feedback", mapOf("action" to action))
+        if (!isUsageConsented) return
+        val safeAction = action.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+        track("action_feedback_$safeAction")
     }
 
     /** E13: Notification opened or dismissed. */
     fun logNotificationInteraction(action: String) {
-        logEvent("notification_interaction", mapOf("action" to action))
+        if (!isUsageConsented) return
+        val safeAction = action.lowercase().replace(Regex("[^a-z0-9]"), "_").take(20)
+        track("action_notification_$safeAction")
+    }
+
+    /** Feature announcement banner seen/tapped. */
+    fun logFeatureAnnouncementSeen(announcementId: String) {
+        val safeId = announcementId.replace(".", "_").take(30)
+        track("action_feature_banner_$safeId")
     }
 }

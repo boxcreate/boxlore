@@ -171,6 +171,9 @@ class PlaybackRepository(
                     val slotIndex = queue.indexOfFirst { it.id == episodeId }
                     android.util.Log.d("PlaybackRepo", "onMediaItemTransition: mediaId=$episodeId, slotIndex=$slotIndex, queueSize=${queue.size}, reason=$reason")
                     
+                    // Insight Engine: Track episodes-per-session (each transition = new episode)
+                    cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("play_episodes_this_session")
+                    
                     // Sleep Timer: End of Episode — intercept auto-advance
                     if (oldState.sleepAtEndOfEpisode && reason == androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
                         Log.d("PlaybackRepo", "Sleep Timer (EOE): Auto-advance intercepted. Pausing playback.")
@@ -699,6 +702,9 @@ class PlaybackRepository(
             isLiked = lastSession.isLiked,
             queue = restoredQueue
         )
+        
+        // Insight Engine: Track session restore (user coming back to finish)
+        cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("play_session_restored")
         return true
     }
     
@@ -712,6 +718,8 @@ class PlaybackRepository(
         _playerState.value = PlayerState()
         // Mark as dismissed so we don't restore on next app launch
         prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, true).apply()
+        // Insight Engine: Track player dismissal (churn signal)
+        cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_player_dismissed")
     }
     
     fun togglePlayPause() {
@@ -740,6 +748,8 @@ class PlaybackRepository(
             val podcast = _playerState.value.currentPodcast
             val savedPosition = _playerState.value.position
             
+            // Insight Engine: Track session resume from killed state
+            cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("play_session_resumed")
             Log.d("PlaybackRepo", "resume(): Controller empty, reloading full queue (${queue.size} items)")
             
             repositoryScope.launch {
@@ -861,6 +871,7 @@ class PlaybackRepository(
         val currentEpisodeId = _playerState.value.currentEpisode?.id ?: return
         val currentIndex = _playerState.value.queue.indexOfFirst { it.id == currentEpisodeId }
         if (currentIndex != -1 && currentIndex < _playerState.value.queue.size - 1) {
+            cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("play_skip_next_episode")
             skipToEpisode(currentIndex + 1)
         }
     }
@@ -869,6 +880,7 @@ class PlaybackRepository(
         val currentEpisodeId = _playerState.value.currentEpisode?.id ?: return
         val currentIndex = _playerState.value.queue.indexOfFirst { it.id == currentEpisodeId }
         if (currentIndex > 0) {
+            cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("play_skip_prev_episode")
             skipToEpisode(currentIndex - 1)
         }
     }
@@ -891,6 +903,7 @@ class PlaybackRepository(
         // Special marker for "End of Episode" mode
         if (durationMinutes == 999) {
             Log.d("PlaybackRepo", "Sleep timer: End of Episode mode ENABLED")
+            cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("feature_sleep_timer_eoe")
             // Just set the flag — the actual pause is handled by onMediaItemTransition
             // and onPlaybackStateChanged(STATE_ENDED) in the Media3 listener
             _playerState.value = _playerState.value.copy(sleepAtEndOfEpisode = true, sleepTimerEnd = null)
@@ -912,6 +925,7 @@ class PlaybackRepository(
             }
         } else {
             // Fixed timer mode
+            cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("feature_sleep_timer_fixed")
             val endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
             Log.d("PlaybackRepo", "Sleep timer: Fixed ${durationMinutes}m, endTime=$endTime")
             _playerState.value = _playerState.value.copy(sleepTimerEnd = endTime, sleepAtEndOfEpisode = false)
@@ -922,6 +936,7 @@ class PlaybackRepository(
                     delay(waitMs)
                 }
                 Log.d("PlaybackRepo", "Sleep timer: FIRING! Pausing playback.")
+                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("feature_sleep_timer_fired")
                 mediaController?.pause()
                 stopProgressTicker()
                 _playerState.value = _playerState.value.copy(
@@ -995,6 +1010,11 @@ class PlaybackRepository(
         val existing = listeningHistoryDao.getHistoryItem(episode.id)
         val newStatus = !(existing?.isLiked ?: false)
         
+        // Insight Engine: Track like/unlike actions
+        cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate(
+            if (newStatus) "action_like" else "action_unlike"
+        )
+        
         // If current player is playing this episode, update state immediately
         if (_playerState.value.currentEpisode?.id == episode.id) {
              _playerState.value = _playerState.value.copy(isLiked = newStatus)
@@ -1026,6 +1046,9 @@ class PlaybackRepository(
     suspend fun toggleCompletion(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?) {
         val existing = listeningHistoryDao.getHistoryItem(episode.id)
         val newStatus = !(existing?.isCompleted ?: false)
+        
+        // Insight Engine: Track manual mark-as-complete
+        if (newStatus) cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_mark_complete")
         
         if (existing != null) {
             listeningHistoryDao.setCompletionStatus(episode.id, newStatus)

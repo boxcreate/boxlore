@@ -163,7 +163,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         // Initialize health reporter
-        healthReporter = cx.aswin.boxcast.core.data.analytics.AppHealthReporter(applicationContext)
+        healthReporter = cx.aswin.boxcast.core.data.analytics.AppHealthReporter(
+            context = applicationContext,
+            telemetryUrl = BuildConfig.TELEMETRY_API_URL,
+            telemetryKey = BuildConfig.TELEMETRY_API_KEY
+        )
         
         // Handle initial launch intent
         handlePlayerIntent(intent)
@@ -204,6 +208,19 @@ class MainActivity : ComponentActivity() {
             // API config from BuildConfig
             val apiBaseUrl = BuildConfig.BOXCAST_API_BASE_URL
             val publicKey = BuildConfig.BOXCAST_PUBLIC_KEY
+            val telemetryUrl = BuildConfig.TELEMETRY_API_URL
+            val telemetryKey = BuildConfig.TELEMETRY_API_KEY
+            
+            LaunchedEffect(Unit) {
+                // Save to SharedPreferences so the background Service can access them
+                val prefs = getSharedPreferences("boxcast_api_config", MODE_PRIVATE)
+                prefs.edit()
+                    .putString("base_url", apiBaseUrl)
+                    .putString("public_key", publicKey)
+                    .putString("telemetry_url", telemetryUrl)
+                    .putString("telemetry_key", telemetryKey)
+                    .apply()
+            }
             
             // Show bottom nav on all screens except player and onboarding
             val showBottomNav = !currentRoute.startsWith("player") && currentRoute != "onboarding"
@@ -664,6 +681,8 @@ class MainActivity : ComponentActivity() {
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Importing JSON...", android.widget.Toast.LENGTH_SHORT).show() }
                                                 val jsonStr = application.contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() } ?: return@launch
                                                 val count = cx.aswin.boxcast.core.data.backup.LibraryBackupManager(subscriptionRepository, playbackRepository, podcastRepository).importLibraryFromJson(jsonStr)
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_json")
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_subs_total", count)
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { 
                                                     android.widget.Toast.makeText(application, "Imported $count items", android.widget.Toast.LENGTH_SHORT).show()
                                                     onboardingViewModel.skipOnboarding {
@@ -681,6 +700,8 @@ class MainActivity : ComponentActivity() {
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Importing OPML (This may take a minute)...", android.widget.Toast.LENGTH_SHORT).show() }
                                                 val inputStream = application.contentResolver.openInputStream(uri) ?: return@launch
                                                 val count = cx.aswin.boxcast.core.data.backup.LibraryBackupManager(subscriptionRepository, playbackRepository, podcastRepository).importFromOpml(inputStream)
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_opml")
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_subs_total", count)
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { 
                                                     android.widget.Toast.makeText(application, "Found & Subscribed to $count podcasts", android.widget.Toast.LENGTH_LONG).show()
                                                     onboardingViewModel.skipOnboarding {
@@ -834,25 +855,9 @@ class MainActivity : ComponentActivity() {
                                             try {
                                                 com.google.firebase.analytics.FirebaseAnalytics.getInstance(application).resetAnalyticsData()
                                                 consentManager.clearConsent()
-                                                // No need for Toast, dialog will popup? Or Toast is good.
-                                                // Actually, if we reset consent, the DIALOG appears immediately covering everything.
                                             } catch (e: Exception) {
                                                 android.util.Log.e("Settings", "Failed to reset analytics", e)
                                             }
-                                        }
-                                    },
-                                    isAnalyticsEnabled = analyticsConsent,
-                                    onToggleAnalytics = { enabled ->
-                                        scope.launch {
-                                            // Preserve crash consent state, update analytics
-                                            consentManager.setConsent(crashlyticsConsent, enabled)
-                                        }
-                                    },
-                                    isCrashReportingEnabled = crashlyticsConsent,
-                                    onToggleCrashReporting = { enabled ->
-                                        scope.launch {
-                                            // Preserve analytics consent state, update crash
-                                            consentManager.setConsent(enabled, analyticsConsent)
                                         }
                                     },
                                     appInstanceId = appInstanceId,
@@ -868,6 +873,7 @@ class MainActivity : ComponentActivity() {
                                             try {
                                                 val backupJson = cx.aswin.boxcast.core.data.backup.LibraryBackupManager(subscriptionRepository, playbackRepository, podcastRepository).exportLibraryAsJson()
                                                 application.contentResolver.openOutputStream(uri)?.use { it.write(backupJson.toByteArray()) }
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_export_json")
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Library Exported Successfully", android.widget.Toast.LENGTH_SHORT).show() }
                                             } catch(e: Exception){
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Failed to export: ${e.message}", android.widget.Toast.LENGTH_SHORT).show() }
@@ -880,6 +886,8 @@ class MainActivity : ComponentActivity() {
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Importing JSON...", android.widget.Toast.LENGTH_SHORT).show() }
                                                 val jsonStr = application.contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() } ?: return@launch
                                                 val count = cx.aswin.boxcast.core.data.backup.LibraryBackupManager(subscriptionRepository, playbackRepository, podcastRepository).importLibraryFromJson(jsonStr)
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_json")
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_subs_total", count)
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Imported $count items", android.widget.Toast.LENGTH_SHORT).show() }
                                             } catch(e: Exception) {
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Import Failed", android.widget.Toast.LENGTH_SHORT).show() }
@@ -892,6 +900,8 @@ class MainActivity : ComponentActivity() {
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Importing OPML (This may take a minute)...", android.widget.Toast.LENGTH_SHORT).show() }
                                                 val inputStream = application.contentResolver.openInputStream(uri) ?: return@launch
                                                 val count = cx.aswin.boxcast.core.data.backup.LibraryBackupManager(subscriptionRepository, playbackRepository, podcastRepository).importFromOpml(inputStream)
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_opml")
+                                                cx.aswin.boxcast.core.data.analytics.SessionAggregator.incrementAggregate("action_import_subs_total", count)
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Found & Subscribed to $count podcasts", android.widget.Toast.LENGTH_LONG).show() }
                                             } catch(e: Exception){
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "OPML Import Failed", android.widget.Toast.LENGTH_SHORT).show() }
@@ -1377,31 +1387,6 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.align(Alignment.TopStart)
                     )
                     } // end !isRadioMode
-                    
-                    // Privacy Consent Dialog (Overlay on everything)
-                    if (!hasUserSetConsent) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surface)
-                        )
-                        
-                        // Track onboarding consent funnel
-                        LaunchedEffect(Unit) {
-                            analyticsHelper.logOnboardingStep("consent_shown")
-                        }
-                        
-                        cx.aswin.boxcast.core.designsystem.components.PrivacyConsentDialog(
-                            onConsentDecided = { crash, usage ->
-                                scope.launch {
-                                    analyticsHelper.logOnboardingStep(
-                                        if (usage) "consent_accepted" else "consent_declined"
-                                    )
-                                    consentManager.setConsent(crash, usage)
-                                }
-                            }
-                        )
-                    }
                 }
             }
         }

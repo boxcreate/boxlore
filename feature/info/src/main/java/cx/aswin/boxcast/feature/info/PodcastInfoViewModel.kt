@@ -300,6 +300,7 @@ class PodcastInfoViewModel(
                 subscriptionRepository.toggleSubscription(currentState.podcast)
                 // Refresh state
                 val isSubscribed = subscriptionRepository.isSubscribed(currentState.podcast.id)
+                analyticsHelper.logSubscribeAction(isSubscribed, source = "podcast_page")
                 _uiState.value = currentState.copy(isSubscribed = isSubscribed)
                 
                 if (isSubscribed) {
@@ -401,6 +402,7 @@ class PodcastInfoViewModel(
             if (playbackRepository.playerState.value.currentEpisode?.id == episode.id) {
                 playbackRepository.togglePlayPause()
             } else {
+                analyticsHelper.logEpisodeStarted("podcast_page", false)
                 // Pass the current UI sort order to the QueueManager logic
                 val sortOrder = if (currentState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
                 queueManager.playEpisode(episode, currentState.podcast, sortOrder)

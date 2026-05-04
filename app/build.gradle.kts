@@ -33,6 +33,8 @@ android {
         
         buildConfigField("String", "BOXCAST_API_BASE_URL", "\"${localProps.getProperty("BOXCAST_API_BASE_URL", "")}\"")
         buildConfigField("String", "BOXCAST_PUBLIC_KEY", "\"${localProps.getProperty("BOXCAST_PUBLIC_KEY", "")}\"")
+        buildConfigField("String", "TELEMETRY_API_URL", "\"${localProps.getProperty("TELEMETRY_API_URL", "https://boxcast-telemetry.boxboxcric.workers.dev")}\"")
+        buildConfigField("String", "TELEMETRY_API_KEY", "\"${localProps.getProperty("TELEMETRY_API_KEY", "REDACTED_TELEMETRY_KEY")}\"")
     }
 
     signingConfigs {

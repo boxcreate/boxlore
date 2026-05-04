@@ -50,8 +50,7 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation("androidx.media3:media3-ui:1.2.1")
     
-    // Analytics
+    // Firebase (database only — analytics removed in favor of Insight Engine)
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
     implementation(libs.firebase.database)
 }

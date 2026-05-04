@@ -279,6 +279,8 @@ class EpisodeInfoViewModel(
                         description = "",
                         genre = currentState.podcastGenre
                     )
+                    val analyticsHelper = cx.aswin.boxcast.core.data.analytics.AnalyticsHelper(getApplication(), cx.aswin.boxcast.core.data.privacy.ConsentManager(getApplication()))
+                    analyticsHelper.logEpisodeStarted("episode_page", false)
                     queueManager.playEpisode(currentState.episode, pod)
                 }
             }
