@@ -99,6 +99,18 @@ def fetch_metrics(target_date):
     funnel = {k: v for k, v in metrics.items() if k.startswith('funnel_')}
     curated = {k: v for k, v in metrics.items() if k.startswith('curated_')}
     
+    # 7-day aggregates
+    agg_7d_res = query_turso(f"SELECT metric_key, SUM(metric_value) as v FROM daily_aggregates WHERE date_partition >= date('{target_date}', '-7 days') AND metric_key NOT LIKE 'debug_%' GROUP BY metric_key")
+    metrics_7d = {}
+    for row in agg_7d_res:
+        metrics_7d[row['metric_key'].replace('prod_', '')] = row['v']
+        
+    # Lifetime aggregates
+    lt_res = query_turso("SELECT metric_key, SUM(metric_value) as v FROM daily_aggregates WHERE metric_key NOT LIKE 'debug_%' GROUP BY metric_key")
+    lt_metrics = {}
+    for row in lt_res:
+        lt_metrics[row['metric_key'].replace('prod_', '')] = row['v']
+    
     return {
         "date": target_date,
         "dau": dau,
@@ -114,51 +126,53 @@ def fetch_metrics(target_date):
         "screen_per_user_min": screen_per_user_min,
         "top_podcasts": podcasts,
         "funnel": funnel,
-        "curated": curated
+        "curated": curated,
+        "metrics_7d": metrics_7d,
+        "lt_metrics": lt_metrics
     }
 
 def build_prompt(today, prev):
-    system_prompt = """You are an expert mobile app analytics advisor for BoxCast, an Android podcast app.
-Your job is to produce a concise, actionable daily summary email for the solo developer.
+    system_prompt = """You are a senior product analyst for BoxCast, an Android podcast app.
+Your job is to produce a highly actionable, insightful daily summary email for the solo developer.
 
-Format your response EXACTLY as follows (use markdown):
+CRITICAL RULES:
+- NEVER just restate the raw numbers. The developer can see the dashboard.
+- Your job is to find PATTERNS, ANOMALIES, RATIOS, and ACTIONABLE INSIGHTS.
+- Look at the Today vs 7-Day vs Lifetime ratios to identify trends (e.g. "Today had a spike in audio play compared to the 7-day average").
+- Flag anything suspicious or noteworthy as a ⚠️ or ✅.
+- If data is sparse, state the implications rather than complaining about lack of data.
 
-📊 EXECUTIVE SUMMARY
-2-3 sentences summarizing the day's health at a glance.
+Format your response exactly as follows (use markdown):
 
-📈 KEY METRICS
-- DAU: X (↑/↓ Y% vs yesterday)
-- WAU (7d): X
-- New Installs: X
-- Sessions/User: X
-- Audio Playback: Xh total (Xm avg/user)
-- Screen Time: Xh total (Xm avg/user)
+# 📊 DAILY INSIGHT REPORT
 
-🎧 CONTENT & ENGAGEMENT
-- Which podcasts dominated today? (Content concentration)
-- Are users spending more time listening (audio) or browsing (screen)?
-- Any interesting signals from the curated section or onboarding funnel?
+## 🚀 The Big Picture
+2-3 sentences summarizing the real story of the day (e.g. "We saw a spike in organic installs, but funnel data shows they dropped off at onboarding").
 
-💡 RECOMMENDATIONS
-Actionable next steps based on the data.
+## 📈 Key Anomalies & Trends
+- Bullet point 1: Insight comparing today to 7-day/lifetime.
+- Bullet point 2: Insight about engagement ratio (screen vs audio).
+- Bullet point 3: Insight about funnel/discovery behavior.
 
-⚠️ ALERTS
-Flag any concerning metrics (e.g., massive drop in listen time, skewed power user data). Omit if everything is healthy.
+## 🎧 Content Strategy
+- What content is resonating based on today's top podcasts?
+- Are users finding things organically or via search?
 
-Be specific with numbers. Do not refer to old insights; focus heavily on the rich new metrics provided (audio vs screen time, podcast concentration, funnel data)."""
+## 💡 Actionable Next Steps
+1. ...
+2. ...
+3. ..."""
 
     def delta(curr, prev):
         if prev == 0: return "N/A"
         pct = round(((curr - prev) / prev) * 100)
         return f"{'↑' if pct >= 0 else '↓'} {abs(pct)}%"
 
-    user_prompt = f"""Analyze this data for BoxCast app on {today['date']}:
+    user_prompt = f"""Analyze this telemetry for BoxCast app on {today['date']}:
 
 === TODAY ({today['date']}) ===
 DAU: {today['dau']} ({delta(today['dau'], prev['dau'])} vs yesterday)
-WAU (7d Active): {today['wau']}
-Total Lifetime Installs: {today['total_installs']}
-New Installs Today: {today['new_installs']}
+New Installs Today: {today['new_installs']} ({delta(today['new_installs'], prev['new_installs'])} vs yesterday)
 Returning Users: {today['returning']}
 Total Sessions: {today['total_sessions']} ({delta(today['total_sessions'], prev['total_sessions'])} vs yesterday)
 Sessions/User: {today['sessions_per_user']}x
@@ -172,13 +186,17 @@ Total Screen Time (Browsing): {today['total_screen_hrs']}h ({today['screen_per_u
 Top Podcasts Played Today:
 {json.dumps(today['top_podcasts'], indent=2)}
 
-=== FUNNEL & CURATED DISCOVERY ===
+=== FUNNEL & CURATED DISCOVERY (Today) ===
 Onboarding/Funnel Events: {json.dumps(today['funnel'])}
 Curated Section Engagement: {json.dumps(today['curated'])}
 
-=== YESTERDAY ({prev['date']}) ===
-DAU: {prev['dau']}, Sessions: {prev['total_sessions']}
-Playback: {prev['listen_per_user_min']}m avg/user, Screen: {prev['screen_per_user_min']}m avg/user
+=== RECENT TRENDS (Last 7 Days) ===
+WAU (7d Active): {today['wau']}
+Aggregates (7d): {json.dumps(today['metrics_7d'])}
+
+=== LIFETIME DATA ===
+Total Registered Devices: {today['total_installs']}
+Lifetime Aggregates: {json.dumps(today['lt_metrics'])}
 
 Please generate the summary."""
     return system_prompt, user_prompt
