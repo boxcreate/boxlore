@@ -129,18 +129,19 @@ def fetch_metrics(target_date):
     }
 
 def build_prompt(today, prev):
-    system_prompt = """You are a senior product analyst for BoxCast, an Android podcast app.
-Your job is to produce a highly actionable, insightful, and beautifully formatted daily summary email for the solo developer.
+    system_prompt = """You are a senior product analyst for boxcast, an Android podcast app.
+Your job is to produce a highly actionable, insightful, and beautifully designed daily summary email for the solo developer.
 
 CRITICAL RULES:
 - Do NOT just restate the raw numbers. The developer already has a dashboard for that.
 - Be highly creative and analytical. Find hidden correlations, sequential patterns in the raw logs, and interesting user behavior anomalies.
-- You have complete freedom to structure this email however you think is most impactful and readable. Let the data guide the story.
-- MAKE IT VISUAL: Use ASCII art, progress bars (e.g., ██████░░░░), bullet points, bolding, and emojis to create a "styled" and beautiful reading experience within the email text.
+- MUST OUTPUT PURE HTML: You must output a complete, production-ready HTML email. Do not use markdown blocks (e.g. ```html). Output ONLY the raw HTML string starting with <!DOCTYPE html>.
+- DESIGN & STYLE: Use inline CSS to create a beautiful, modern, dark-mode inspired email design. Use clean typography (sans-serif), nice padding, and soft rounded corners.
+- MAKE IT VISUAL: Use HTML/CSS to draw simple bar charts, progress bars, or visually highlighted metric cards to represent the data beautifully.
 - If data is sparse, state the implications rather than complaining about lack of data.
-- Conclude with exactly 1 or 2 high-impact, actionable recommendations for the developer based on today's data.
+- Conclude with exactly 1 or 2 high-impact, actionable recommendations for the developer.
 
-Format your response as a beautifully structured email body."""
+Format your response as a complete HTML document."""
 
     def delta(curr, prev):
         if prev == 0: return "N/A"
@@ -248,8 +249,8 @@ def send_email_via_proxy(date_str, summary, model_id):
         print("⚠️ APP_SECRET_KEY not set, skipping email")
         return
 
-    subject = f"[BoxCast] Daily Summary — {date_str} (via {model_id})"
-    body = f"BoxCast Daily Analytics Summary\n{'='*40}\nDate: {date_str}\nModel: {model_id}\nGenerated: {datetime.now(IST).strftime('%Y-%m-%d %H:%M IST')}\n{'='*40}\n\n{summary}"
+    subject = f"[boxcast] Daily Summary — {date_str} (via {model_id})"
+    body = summary
 
     try:
         resp = requests.post(
@@ -279,7 +280,16 @@ def main():
     print("Calling Gemini...")
     summary, model_id = call_gemini(sys_prompt, user_prompt)
 
-    print(f"\n{'='*40}\n{summary}\n{'='*40}\n")
+    # Strip markdown backticks if Gemini accidentally adds them
+    if summary.startswith("```html"):
+        summary = summary[7:]
+    if summary.startswith("```"):
+        summary = summary[3:]
+    if summary.endswith("```"):
+        summary = summary[:-3]
+    summary = summary.strip()
+
+    print(f"\n{'='*40}\n{summary[:500]}... [Truncated for logs]\n{'='*40}\n")
 
     save_summary_turso(target_date, summary, model_id)
     send_email_via_proxy(target_date, summary, model_id)
