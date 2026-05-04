@@ -16,6 +16,7 @@
             --md-sys-color-primary: #A8C7FA;
             --md-sys-color-on-primary: #002F65;
             --md-sys-color-error: #FFB4AB;
+            --md-sys-color-tertiary: #81D4C2;
             --radius-large: 24px;
         }
 
@@ -89,7 +90,7 @@
             font-weight: 700;
         }
 
-        /* Minimal Highlight Card */
+        /* Highlight Card */
         .highlight-box {
             background-color: var(--md-sys-color-surface-container);
             padding: 32px;
@@ -109,6 +110,10 @@
 
         .highlight-title.warning {
             color: var(--md-sys-color-error);
+        }
+
+        .highlight-title.open-source {
+            color: var(--md-sys-color-tertiary);
         }
 
         a {
@@ -134,6 +139,20 @@
             color: var(--md-sys-color-error);
         }
 
+        .tech-stack {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.875rem;
+            background-color: rgba(168, 199, 250, 0.08);
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+            color: #C4C6D0;
+        }
+
+        .tech-stack strong {
+            color: var(--md-sys-color-primary);
+        }
+
         footer {
             margin-top: 80px;
             padding-top: 24px;
@@ -149,15 +168,17 @@
     <div class="container">
         <header>
             <h1>Privacy Policy</h1>
-            <div class="last-updated">Last Updated: February 3, 2026</div>
+            <div class="last-updated">Last Updated: May 4, 2026</div>
         </header>
 
         <section>
             <h2>1. Our Core Promise</h2>
+            <p>boxcast is a <strong>zero-monetary-gain, exploratory pet project</strong>. We built it to learn and to share something useful with podcast listeners — not to monetize your attention or your data.</p>
+
             <div class="highlight-box">
                 <span class="highlight-title">ANONYMITY FIRST</span>
-                <p>We do not verify who you are. We do not collect names, emails, phone numbers, or precise GPS
-                    locations.</p>
+                <p>We do not know who you are. We do not collect names, emails, phone numbers, or precise GPS
+                    locations. Your app generates a random, anonymous Instance ID that is never linked to you or your device hardware.</p>
 
                 <div style="height: 1px; background: #44474F; margin: 24px 0;"></div>
 
@@ -168,7 +189,7 @@
                             <path
                                 d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                         </svg>
-                        Use data for advertising
+                        Use data for advertising — 0 ads, forever
                     </li>
                     <li>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -184,50 +205,91 @@
                         </svg>
                         Profile or track you across apps
                     </li>
+                    <li>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                        </svg>
+                        Use third-party analytics SDKs like Google Analytics or Facebook
+                    </li>
                 </ul>
             </div>
         </section>
 
         <section>
             <h2>2. Data We Collect</h2>
-            <p>We use <strong>Google Firebase</strong> to collect minimal technical data strictly for app stability.</p>
+            <p>We use a <strong>self-hosted telemetry system</strong> that runs on our own infrastructure. Your data never touches Google, Facebook, or any third-party analytics provider.</p>
 
-            <h3>Crash Reporting</h3>
-            <p>Stack traces and device state (e.g., "Pixel 6, Android 13") to help us fix bugs.</p>
+            <div class="tech-stack">
+                <strong>Our Stack:</strong> Cloudflare Workers → Turso (libSQL)<br>
+                All data stays in <strong>our own database</strong>. No third-party SDKs are involved.
+            </div>
 
-            <h3>Usage Analytics</h3>
-            <p>Interaction events (e.g., "Played: Episode Name", "Search: Query") to identify trending content.
-                Approximate location (City/Country) derived from IP address.</p>
+            <h3>Daily Heartbeats</h3>
+            <p>A random, app-generated Instance ID and the date you last opened the app. This helps us understand how many people use boxcast — nothing more.</p>
+
+            <h3>Usage Aggregates</h3>
+            <p>Aggregated counters like "total plays today" or "total searches today," grouped by cohort (e.g. app version). These are <strong>not</strong> tied to individual users — they are summed across all users for a given day.</p>
+
+            <h3>Podcast Intelligence</h3>
+            <p>We log which podcasts are being played to eventually build native, community-driven charts. This data is <strong>strictly aggregated by podcast ID</strong> and is absolutely never linked back to you or your device.</p>
         </section>
 
         <section>
-            <h2>3. Control & Deletion</h2>
-            <p>You can toggle all data collection in <strong>Settings</strong>.</p>
-
-            <h3>Right to Erasure</h3>
-            <p>You can request immediate permanent deletion of your data.</p>
-            <ol>
-                <li>Go to <strong>Settings</strong> > <strong>Data Management</strong></li>
-                <li>Email us your <strong>Instance ID</strong></li>
-            </ol>
-
-            <h3>Retention Policy</h3>
+            <h2>3. What We Don't Collect</h2>
             <ul>
-                <li><strong>Auto-Deletion:</strong> User-level data is automatically deleted after <strong>14 months of
-                        inactivity</strong>.</li>
-                <li><strong>Active Use:</strong> If you continue to use the app, the retention period resets to preserve
-                    your preferences.</li>
+                <li><strong>No PII:</strong> No names, emails, phone numbers, or accounts.</li>
+                <li><strong>No Device Identifiers:</strong> No IMEI, Android ID, or advertising ID. Your Instance ID is randomly generated by the app and can be reset at any time.</li>
+                <li><strong>No Location Data:</strong> No GPS, no IP-based geolocation logging.</li>
+                <li><strong>No Listening History:</strong> Your subscriptions, downloads, and play history are stored <strong>only on your device</strong> and never leave it.</li>
             </ul>
         </section>
 
         <section>
-            <h2>4. Contact</h2>
+            <h2>4. Control & Deletion</h2>
+
+            <h3>Reset Your Identity</h3>
+            <p>You can regenerate your anonymous Instance ID at any time from <strong>Settings → Data & Privacy → Data Management</strong>. This acts as a "Forget Me" — your old ID becomes orphaned data.</p>
+
+            <h3>Request Full Deletion</h3>
+            <p>Email us your Instance ID and we will permanently delete all associated data.</p>
+            <ol>
+                <li>Go to <strong>Settings</strong> → <strong>Data & Privacy</strong></li>
+                <li>Expand <strong>Data Management</strong> → <strong>Request Deletion</strong></li>
+                <li>Email your <strong>Instance ID</strong> to <a href="mailto:privacy@aswin.cx">privacy@aswin.cx</a></li>
+            </ol>
+
+            <h3>Retention Policy</h3>
+            <ul>
+                <li><strong>Auto-Deletion:</strong> User-level data (heartbeats) is automatically deleted after <strong>14 months of
+                        inactivity</strong>.</li>
+                <li><strong>Aggregated Data:</strong> Daily aggregates and podcast intelligence are anonymized counters and do not contain any user-identifiable information.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>5. Open Source & Verification</h2>
+            <div class="highlight-box">
+                <span class="highlight-title open-source">100% OPEN SOURCE</span>
+                <p>The <strong>entire</strong> boxcast application — including the telemetry engine, the analytics worker, and this privacy page — is fully open source. You don't have to take our word for it.</p>
+                <p style="margin-bottom: 0;">
+                    <a href="https://github.com/ashwkun/box.cast.android">→ View the full source code on GitHub</a>
+                </p>
+            </div>
+            <p>You can also paste the following prompt into any AI assistant to have it audit our code for you:</p>
+            <div class="tech-stack">
+                "Analyze the source code of this Android app at https://github.com/ashwkun/box.cast.android. Does it collect any Personally Identifiable Information (PII), track device identifiers, or contain any third-party advertising SDKs?"
+            </div>
+        </section>
+
+        <section>
+            <h2>6. Contact</h2>
             <p>Privacy Inquiries: <a href="mailto:privacy@aswin.cx">privacy@aswin.cx</a></p>
             <p>Project Source: <a href="https://github.com/ashwkun/box.cast.android">GitHub</a></p>
         </section>
 
         <footer>
-            &copy; 2026 BoxCast Open Source.
+            &copy; 2026 boxcast — Open Source.
         </footer>
     </div>
 </body>
