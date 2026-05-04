@@ -87,9 +87,15 @@ def fetch_metrics(target_date):
     screen_per_user_min = round(total_engagement_sec / dau / 60) if dau > 0 else 0
     sessions_per_user = round(total_sessions / dau, 1) if dau > 0 else 0
     
-    # Funnel & Curated
+    # Funnel
     funnel = {k: v for k, v in metrics.items() if k.startswith('funnel_')}
-    curated = {k: v for k, v in metrics.items() if k.startswith('curated_')}
+    
+    # Curated Section Engagement (Stored in podcast_intelligence table)
+    curated_res = query_turso(f"SELECT metric_key, SUM(metric_value) as v FROM podcast_intelligence WHERE date_partition = '{target_date}' AND metric_key NOT LIKE 'debug_%' AND metric_key LIKE '%curated%' GROUP BY metric_key")
+    curated = {}
+    for row in curated_res:
+        k = row['metric_key'].replace('prod_', '')
+        curated[k] = row['v']
     
     # 7-day aggregates
     agg_7d_res = query_turso(f"SELECT metric_key, SUM(metric_value) as v FROM daily_aggregates WHERE date_partition >= date('{target_date}', '-7 days') AND metric_key NOT LIKE 'debug_%' GROUP BY metric_key")
