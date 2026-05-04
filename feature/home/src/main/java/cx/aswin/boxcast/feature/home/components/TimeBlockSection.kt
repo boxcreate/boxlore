@@ -111,8 +111,8 @@ fun TimeBlockSection(
                                     episode = episode,
                                     onClick = {
                                         // Track curated card tap + episode play
-                                        analyticsHelper.logCuratedCardTapped(section.category, podcast.id, i)
-                                        analyticsHelper.logCuratedEpisodePlayed(section.category, podcast.id, i)
+                                        analyticsHelper.logCuratedCardTapped(section.category, podcast.title, i)
+                                        analyticsHelper.logCuratedEpisodePlayed(section.category, podcast.title, i)
                                         onEpisodeClick(episode, podcast)
                                     }
                                 )
