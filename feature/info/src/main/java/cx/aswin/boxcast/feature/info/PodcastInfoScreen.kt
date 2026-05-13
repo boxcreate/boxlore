@@ -1493,39 +1493,61 @@ fun SingleTrailerCard(
                 shape = CircleShape,
                 color = if (isPlaying || isResume) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(40.dp) // Slightly larger play button for a better hit target
                     .clickable { onPlayClick(episode) }
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
                     tint = if (isPlaying || isResume) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(10.dp)
                 )
             }
             
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             
             // Text
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = episode.title,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                val durationText = if (episode.duration > 0) {
-                    val h = episode.duration / 3600
-                    val m = (episode.duration % 3600) / 60
-                    if (h > 0) "${h}hr ${m}min" else "${m}min"
-                } else "Trailer"
                 
-                Text(
-                    text = durationText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = ExpressiveShapes.Pill,
+                        color = MaterialTheme.colorScheme.tertiaryContainer 
+                    ) {
+                        Text(
+                            text = "Trailer",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    
+                    val durationText = if (episode.duration > 0) {
+                        val h = episode.duration / 3600
+                        val m = (episode.duration % 3600) / 60
+                        if (h > 0) "${h}hr ${m}min" else "${m}min"
+                    } else ""
+                    
+                    if (durationText.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = durationText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }
