@@ -42,7 +42,7 @@ jobs:
           TURSO_URL: ${{ secrets.TURSO_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           PI_DB_PATH: podcastindex_feeds.db
-          MIN_EPISODES: '5'
+          MIN_EPISODES: '10'
         run: node scripts/sync-search-index.js
 
       - name: Cleanup
