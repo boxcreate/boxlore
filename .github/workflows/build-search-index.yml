@@ -60,6 +60,17 @@ jobs:
           echo "Verifying..."
           turso db show boxcast-search
 
+      - name: Warm up Turso Cache
+        run: |
+          echo "Warming up FTS index blocks to prevent cold-start latency..."
+          turso db shell boxcast-search "SELECT title FROM search_fts WHERE search_fts MATCH 'news' LIMIT 5;" > /dev/null
+          turso db shell boxcast-search "SELECT title FROM search_fts WHERE search_fts MATCH 'sports' LIMIT 5;" > /dev/null
+          turso db shell boxcast-search "SELECT title FROM search_fts WHERE search_fts MATCH 'history' LIMIT 5;" > /dev/null
+          turso db shell boxcast-search "SELECT title FROM search_fts WHERE search_fts MATCH 'technology' LIMIT 5;" > /dev/null
+          turso db shell boxcast-search "SELECT title FROM search_fts WHERE search_fts MATCH 'comedy' LIMIT 5;" > /dev/null
+          turso db shell boxcast-search "SELECT title FROM search_fts WHERE search_fts MATCH 'conspiracy' LIMIT 5;" > /dev/null
+          echo "Warm-up complete!"
+
       - name: Update Worker Search Token
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
