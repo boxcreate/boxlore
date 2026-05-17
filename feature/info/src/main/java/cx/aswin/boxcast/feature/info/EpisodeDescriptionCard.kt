@@ -55,7 +55,7 @@ internal fun extractSocialLinks(html: String): List<SocialLink> {
             host.contains("instagram.com") ->
                 SocialLink("Instagram", url, Color(0xFFE4405F), Icons.Rounded.CameraAlt)
             host.contains("twitter.com") || host.contains("x.com") ->
-                SocialLink("X", url, Color(0xFF000000), Icons.Rounded.Tag)
+                SocialLink("X", url, Color(0xFF1DA1F2), Icons.Rounded.Tag)
             host.contains("spotify.com") || host.contains("open.spotify.com") ->
                 SocialLink("Spotify", url, Color(0xFF1DB954), Icons.Rounded.MusicNote)
             host.contains("podcasts.apple.com") ->
@@ -63,7 +63,7 @@ internal fun extractSocialLinks(html: String): List<SocialLink> {
             host.contains("patreon.com") ->
                 SocialLink("Patreon", url, Color(0xFFF96854), Icons.Rounded.Loyalty)
             host.contains("tiktok.com") ->
-                SocialLink("TikTok", url, Color(0xFF010101), Icons.Rounded.Videocam)
+                SocialLink("TikTok", url, Color(0xFFEE1D52), Icons.Rounded.Videocam)
             host.contains("facebook.com") || host.contains("fb.com") ->
                 SocialLink("Facebook", url, Color(0xFF1877F2), Icons.Rounded.People)
             host.contains("discord.com") || host.contains("discord.gg") ->
@@ -120,8 +120,16 @@ internal fun EpisodeDescriptionCard(
                     )
                 )
         ) {
-            // --- Social Links Row ---
+            // --- Social Links ---
             if (socialLinks.isNotEmpty()) {
+                Text(
+                    text = "Links",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp)
+                )
+
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 20.dp),
@@ -150,7 +158,15 @@ internal fun EpisodeDescriptionCard(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // --- Description Text ---
+            // --- Description ---
+            Text(
+                text = "About this episode",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp)
+            )
+
             HtmlText(
                 text = description,
                 style = MaterialTheme.typography.bodyLarge.copy(
@@ -213,14 +229,14 @@ private fun SocialChip(
             Icon(
                 imageVector = link.icon,
                 contentDescription = link.platform,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = link.brandColor,
                 modifier = Modifier.size(16.dp)
             )
             Text(
                 text = link.platform,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
+                color = link.brandColor
             )
         }
     }
