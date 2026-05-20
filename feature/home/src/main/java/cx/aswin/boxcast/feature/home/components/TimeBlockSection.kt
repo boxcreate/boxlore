@@ -1,5 +1,11 @@
 package cx.aswin.boxcast.feature.home.components
 
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,16 +19,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,19 +46,53 @@ fun TimeBlockSection(
     modifier: Modifier = Modifier
 ) {
     val themeColor = when (data.title) {
-        "Good Morning" -> Color(0xFFFFB300)      // Amber Gold
+        "Good Morning" -> Color(0xFFFFA000)      // Soft Golden Amber
         "Afternoon Break" -> Color(0xFF0288D1)    // Sky Blue
-        "Evening Unwind" -> Color(0xFF9C27B0)     // Sunset Purple
-        "Late Night Listen" -> Color(0xFF3F51B5)  // Midnight Indigo
+        "Evening Unwind" -> Color(0xFFFFC107)     // Warm Yellow for evening
+        "Late Night Listen" -> Color(0xFF2C3E50)  // Dark Night Slate Blue
         else -> MaterialTheme.colorScheme.primary
     }
+
+    // Gentle micro-animations for the header icon
+    val infiniteTransition = rememberInfiniteTransition(label = "icon_animation")
+    
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2600, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "rotation"
+    )
+
+    // Faint vertical gradient backdrop fading to transparent
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            themeColor.copy(alpha = 0.05f),
+            Color.Transparent
+        )
+    )
 
     LaunchedEffect(data.title) {
         onImpression(data.title, data.sections.map { it.category })
     }
 
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .background(gradientBrush)
+            .padding(bottom = 12.dp)
     ) {
         // --- Master Header ---
         Row(
@@ -64,7 +105,13 @@ fun TimeBlockSection(
                 imageVector = data.icon,
                 contentDescription = null,
                 tint = themeColor,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier
+                    .size(28.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = rotation
+                    }
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column {
@@ -93,15 +140,6 @@ fun TimeBlockSection(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(vertical = 8.dp)
                 ) {
-                    // Vertical accent bar matching the active timeblock color
-                    Box(
-                        modifier = Modifier
-                            .width(4.dp)
-                            .height(16.dp)
-                            .clip(CircleShape)
-                            .background(themeColor)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = section.title,
                         style = MaterialTheme.typography.titleMedium,
