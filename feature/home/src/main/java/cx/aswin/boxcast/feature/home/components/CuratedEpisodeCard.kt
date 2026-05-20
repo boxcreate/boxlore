@@ -41,6 +41,9 @@ fun CuratedEpisodeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNew = episode.publishedDate > 0L &&
+            (System.currentTimeMillis() / 1000L - episode.publishedDate) < 2 * 24 * 60 * 60L
+
     Column(
         modifier = modifier
             .width(140.dp)
@@ -64,6 +67,25 @@ fun CuratedEpisodeCard(
                     AnimatedShapesFallback()
                 } else {
                     SubcomposeAsyncImageContent()
+                }
+            }
+
+            // New badge (top left)
+            if (isNew) {
+                Surface(
+                    shape = MaterialTheme.shapes.extraSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                ) {
+                    Text(
+                        text = "NEW",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, lineHeight = 8.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
                 }
             }
 

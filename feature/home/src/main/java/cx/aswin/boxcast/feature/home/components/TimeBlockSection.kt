@@ -27,6 +27,11 @@ import cx.aswin.boxcast.feature.home.CuratedTimeBlock
 import cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily
 
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+
 @Composable
 fun TimeBlockSection(
     data: CuratedTimeBlock,
@@ -34,46 +39,93 @@ fun TimeBlockSection(
     onImpression: (String, List<String>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
 
-    Column(
-        modifier = modifier.fillMaxWidth()
+    val gradientBrush = when (data.title) {
+        "Good Morning" -> Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFFFE082).copy(alpha = 0.12f), // Sunrise Gold
+                Color.Transparent
+            )
+        )
+        "Afternoon Break" -> Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFB3E5FC).copy(alpha = 0.15f), // Sky Blue
+                Color.Transparent
+            )
+        )
+        "Evening Unwind" -> Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFE1BEE7).copy(alpha = 0.18f), // Sunset Purple
+                Color.Transparent
+            )
+        )
+        "Late Night Listen" -> Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFC5CAE9).copy(alpha = 0.18f), // Midnight Indigo
+                Color.Transparent
+            )
+        )
+        else -> null
+    }
+
+    LaunchedEffect(data.title) {
+        onImpression(data.title, data.sections.map { it.category })
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+        )
     ) {
-        LaunchedEffect(data.title) {
-            onImpression(data.title, data.sections.map { it.category })
-        }
-
-        // --- Master Header ---
         Column(
-            modifier = Modifier.padding(vertical = 8.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.material3.Icon(
-                    imageVector = data.icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (gradientBrush != null) {
+                        Modifier.background(gradientBrush)
+                    } else {
+                        Modifier
+                    }
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                Column {
-                    Text(
-                        text = data.title,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontFamily = SectionHeaderFontFamily,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        ),
-                        letterSpacing = (-0.5).sp
+                .padding(16.dp)
+        ) {
+            // --- Master Header ---
+            Column(
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Icon(
+                        imageVector = data.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = data.subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column {
+                        Text(
+                            text = data.title,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontFamily = SectionHeaderFontFamily,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            ),
+                            letterSpacing = (-0.5).sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = data.subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-        }
 
             // --- Genre Rails ---
             data.sections.forEachIndexed { index, section ->
@@ -118,5 +170,6 @@ fun TimeBlockSection(
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
+        }
     }
 }
