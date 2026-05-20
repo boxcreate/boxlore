@@ -60,41 +60,38 @@ fun TimeBlockSection(
         else -> MaterialTheme.colorScheme.primary
     }
 
-    // Faint vertical gradient backdrop fading to transparent
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(
-            themeColor.copy(alpha = 0.05f),
-            Color.Transparent
-        )
-    )
-
     LaunchedEffect(data.title) {
         onImpression(data.title, data.sections.map { it.category })
     }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            // Bleed background gradient to absolute screen edges, bypassing grid padding
-            .layout { measurable, constraints ->
-                val paddingPx = 16.dp.roundToPx()
-                val expandedConstraints = constraints.copy(
-                    maxWidth = constraints.maxWidth + (paddingPx * 2),
-                    minWidth = constraints.minWidth + (paddingPx * 2)
-                )
-                val placeable = measurable.measure(expandedConstraints)
-                layout(placeable.width - (paddingPx * 2), placeable.height) {
-                    placeable.place(-paddingPx, 0)
-                }
-            }
-            .background(gradientBrush)
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 12.dp)
+        modifier = modifier.fillMaxWidth()
     ) {
         // --- Master Header ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // Bleed background gradient to absolute screen edges, bypassing grid padding
+                .layout { measurable, constraints ->
+                    val paddingPx = 16.dp.roundToPx()
+                    val expandedConstraints = constraints.copy(
+                        maxWidth = constraints.maxWidth + (paddingPx * 2),
+                        minWidth = constraints.minWidth + (paddingPx * 2)
+                    )
+                    val placeable = measurable.measure(expandedConstraints)
+                    layout(placeable.width - (paddingPx * 2), placeable.height) {
+                        placeable.place(-paddingPx, 0)
+                    }
+                }
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            themeColor.copy(alpha = 0.08f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(horizontal = 16.dp)
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -118,6 +115,8 @@ fun TimeBlockSection(
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // --- Genre Rails ---
         data.sections.forEachIndexed { index, section ->
@@ -218,8 +217,8 @@ private fun AnimatedTimeBlockIcon(title: String, themeColor: Color, fallbackIcon
         "Evening Unwind" -> {
             val infiniteTransition = rememberInfiniteTransition(label = "sunset")
             val sunYOffset by infiniteTransition.animateFloat(
-                initialValue = -1f,
-                targetValue = 10f,
+                initialValue = 0f,
+                targetValue = 16f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(3200, easing = EaseInOutSine),
                     repeatMode = RepeatMode.Reverse
@@ -244,7 +243,7 @@ private fun AnimatedTimeBlockIcon(title: String, themeColor: Color, fallbackIcon
                         modifier = Modifier
                             .size(20.dp)
                             .align(Alignment.TopCenter)
-                            .graphicsLayer { translationY = sunYOffset }
+                            .graphicsLayer { translationY = sunYOffset.dp.toPx() }
                     )
                 }
                 Box(
