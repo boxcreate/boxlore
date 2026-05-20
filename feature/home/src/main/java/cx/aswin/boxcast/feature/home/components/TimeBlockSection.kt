@@ -52,13 +52,7 @@ fun TimeBlockSection(
     onImpression: (String, List<String>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
-    val themeColor = when (data.title) {
-        "Good Morning" -> Color(0xFFFFA000)      // Soft Golden Amber
-        "Afternoon Break" -> Color(0xFF0288D1)    // Sky Blue
-        "Evening Unwind" -> Color(0xFFFFC107)     // Warm Yellow for evening
-        "Late Night Listen" -> Color(0xFF2C3E50)  // Dark Night Slate Blue
-        else -> MaterialTheme.colorScheme.primary
-    }
+    val themeColor = MaterialTheme.colorScheme.primary
 
     LaunchedEffect(data.title) {
         onImpression(data.title, data.sections.map { it.category })
@@ -71,27 +65,6 @@ fun TimeBlockSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                // Bleed background gradient to absolute screen edges, bypassing grid padding
-                .layout { measurable, constraints ->
-                    val paddingPx = 16.dp.roundToPx()
-                    val expandedConstraints = constraints.copy(
-                        maxWidth = constraints.maxWidth + (paddingPx * 2),
-                        minWidth = constraints.minWidth + (paddingPx * 2)
-                    )
-                    val placeable = measurable.measure(expandedConstraints)
-                    layout(placeable.width - (paddingPx * 2), placeable.height) {
-                        placeable.place(-paddingPx, 0)
-                    }
-                }
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            themeColor.copy(alpha = 0.08f),
-                            Color.Transparent
-                        )
-                    )
-                )
-                .padding(horizontal = 16.dp)
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
