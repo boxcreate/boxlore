@@ -684,25 +684,6 @@ fun PodcastInfoScreen(
                                             }
                                         }
                                     }
-                                } else if (state.isLoadingMore) {
-                                    items(3) { index ->
-                                        val width = when (index) {
-                                            0 -> 100.dp
-                                            1 -> 85.dp
-                                            else -> 70.dp
-                                        }
-                                        Surface(
-                                            shape = ExpressiveShapes.Pill,
-                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            modifier = Modifier
-                                                .width(width)
-                                                .height(32.dp)
-                                                .m3Shimmer(
-                                                    baseColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                    highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                                                )
-                                        ) {}
-                                    }
                                 }
 
                                 // 6. Genre
@@ -880,7 +861,15 @@ fun PodcastInfoScreen(
                             
                              if (strippedDesc.isNotEmpty()) {
                                  Surface(
-                                     modifier = Modifier.fillMaxWidth(),
+                                     modifier = Modifier
+                                         .fillMaxWidth()
+                                         .animateContentSize(
+                                             animationSpec = spring(
+                                                 dampingRatio = Spring.DampingRatioLowBouncy,
+                                                 stiffness = Spring.StiffnessMediumLow
+                                             )
+                                         )
+                                         .expressiveClickable { isDescExpanded = !isDescExpanded },
                                      color = MaterialTheme.colorScheme.surfaceContainerLow,
                                      shape = MaterialTheme.shapes.large
                                  ) {
@@ -896,15 +885,7 @@ fun PodcastInfoScreen(
                                              maxLines = if (isDescExpanded) Int.MAX_VALUE else 2,
                                              overflow = TextOverflow.Ellipsis,
                                              lineHeight = 20.sp,
-                                             modifier = Modifier
-                                                 .fillMaxWidth()
-                                                 .expressiveClickable { isDescExpanded = !isDescExpanded }
-                                                 .animateContentSize(
-                                                     animationSpec = spring(
-                                                         dampingRatio = Spring.DampingRatioLowBouncy,
-                                                         stiffness = Spring.StiffnessMediumLow
-                                                     )
-                                                 )
+                                             modifier = Modifier.fillMaxWidth()
                                          )
                                          
                                          if (isDescExpanded && state.podcast.isLocked) {
@@ -921,7 +902,7 @@ fun PodcastInfoScreen(
                                                  modifier = Modifier
                                                      .fillMaxWidth()
                                                      .clip(MaterialTheme.shapes.small)
-                                                     .expressiveClickable { showLockedInfoDialog = true }
+                                                     .expressiveClickable(isolate = true) { showLockedInfoDialog = true }
                                                      .padding(vertical = 4.dp),
                                                  verticalAlignment = Alignment.CenterVertically,
                                                  horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1073,20 +1054,14 @@ fun PodcastInfoScreen(
                     }
                     
                     if (state.isLoadingMore) {
-                        if (feedItems.isEmpty()) {
-                            items(5) {
-                                EpisodeSkeletonLoader()
-                            }
-                        } else {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(24.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    BoxCastLoader.CircularWavy(size = 32.dp)
-                                }
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BoxCastLoader.CircularWavy(size = 32.dp)
                             }
                         }
                     }
@@ -1189,113 +1164,6 @@ fun PodcastInfoScreen(
     }
 }
 
-@Composable
-fun EpisodeSkeletonLoader(
-    modifier: Modifier = Modifier
-) {
-    val baseColor = MaterialTheme.colorScheme.surfaceContainerHigh
-    val highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
-    
-    androidx.compose.material3.ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = MaterialTheme.shapes.large,
-        colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Image skeleton
-                Box(
-                    modifier = Modifier
-                        .size(76.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(baseColor)
-                        .m3Shimmer(baseColor, highlightColor)
-                )
-                
-                Spacer(modifier = Modifier.width(14.dp))
-                
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // Date skeleton
-                    Box(
-                        modifier = Modifier
-                            .width(60.dp)
-                            .height(12.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(baseColor)
-                            .m3Shimmer(baseColor, highlightColor)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(6.dp))
-                    
-                    // Title skeleton line 1
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .height(16.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(baseColor)
-                            .m3Shimmer(baseColor, highlightColor)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    // Title skeleton line 2
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.6f)
-                            .height(16.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(baseColor)
-                            .m3Shimmer(baseColor, highlightColor)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Bottom control area skeleton
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(90.dp)
-                        .height(32.dp)
-                        .clip(cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes.Pill)
-                        .background(baseColor)
-                        .m3Shimmer(baseColor, highlightColor)
-                )
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    repeat(3) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(baseColor)
-                                .m3Shimmer(baseColor, highlightColor)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun EpisodeListItem(
@@ -2032,7 +1900,7 @@ fun SingleTrailerCard(
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onEpisodeClick(episode, globalIndex) },
+            .expressiveClickable { onEpisodeClick(episode, globalIndex) },
         shape = MaterialTheme.shapes.large,
         colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -2050,7 +1918,7 @@ fun SingleTrailerCard(
                 color = if (isPlaying || isResume) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
                     .size(40.dp) // Slightly larger play button for a better hit target
-                    .clickable { onPlayClick(episode) }
+                    .expressiveClickable(isolate = true) { onPlayClick(episode) }
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
@@ -2133,7 +2001,7 @@ fun TrailerStackCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded }
+                    .expressiveClickable { isExpanded = !isExpanded }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -2187,7 +2055,7 @@ fun TrailerStackCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onEpisodeClick(episode, globalIndex) }
+                                .expressiveClickable { onEpisodeClick(episode, globalIndex) }
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -2197,7 +2065,7 @@ fun TrailerStackCard(
                                 color = if (isPlaying || isResume) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .clickable { onPlayClick(episode) }
+                                    .expressiveClickable(isolate = true) { onPlayClick(episode) }
                             ) {
                                 Icon(
                                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
