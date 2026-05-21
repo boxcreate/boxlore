@@ -60,7 +60,7 @@ fun GenreSelector(
         }
 
         // 2. Dynamic List (Selected + Top Genres)
-        items(displayGenres) { genre ->
+        items(displayGenres, key = { it.value }) { genre ->
             GenreChip(
                 label = genre.label,
                 isSelected = selectedCategory == genre.value,
