@@ -111,7 +111,10 @@ fun TimeBlockSection(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(section.podcasts.size) { i ->
+                    items(
+                        count = section.podcasts.size,
+                        key = { i -> section.podcasts[i].id }
+                    ) { i ->
                         val podcast = section.podcasts[i]
                         val episode = podcast.latestEpisode
                         

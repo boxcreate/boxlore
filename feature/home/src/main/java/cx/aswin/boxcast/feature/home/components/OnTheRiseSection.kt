@@ -97,7 +97,10 @@ fun OnTheRiseRail(
         contentPadding = PaddingValues(horizontal = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(podcasts.size) { i ->
+        items(
+            count = podcasts.size,
+            key = { i -> podcasts[i].id }
+        ) { i ->
             RisingCard(
                 podcast = podcasts[i],
                 onClick = { onPodcastClick(podcasts[i]) }
