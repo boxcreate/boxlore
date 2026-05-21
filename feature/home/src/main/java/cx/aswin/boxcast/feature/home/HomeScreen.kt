@@ -382,51 +382,51 @@ private fun PodcastFeed(
         modifier = modifier.fillMaxSize()
     ) {
 
-        // 1. Smart Hero (Personalized Content)
+        // 1. Smart Hero (Personalized Content) and Region Nudge
         item(span = StaggeredGridItemSpan.FullLine) {
-            if (heroItems.isNotEmpty()) {
-                HeroCarousel(
-                    heroItems = heroItems,
-                    currentPlayingPodcastId = currentPlayingPodcastId,
-                    isPlaying = isPlaying,
-                    onPlayClick = { podcast, bundle -> onPlayClick?.invoke(podcast, bundle) },
-                    onDetailsClick = { podcast ->
-                        val ep = podcast.latestEpisode
-                        if (ep != null) {
-                            onEpisodeClick?.invoke(ep, podcast, "home_hero_card")
-                        } else {
-                            onPodcastClick(podcast, "home_hero_card", null, null)
-                        }
-                    },
-                    onArrowClick = onHeroArrowClick,
-                    onToggleSubscription = onToggleSubscription,
-                    onTogglePlayback = onTogglePlayback,
-                    modifier = Modifier.padding(horizontal = 8.dp) 
-                )
-            } else {
-                cx.aswin.boxcast.feature.home.components.HeroSkeleton()
-            }
-        }
+            Column {
+                if (heroItems.isNotEmpty()) {
+                    HeroCarousel(
+                        heroItems = heroItems,
+                        currentPlayingPodcastId = currentPlayingPodcastId,
+                        isPlaying = isPlaying,
+                        onPlayClick = { podcast, bundle -> onPlayClick?.invoke(podcast, bundle) },
+                        onDetailsClick = { podcast ->
+                            val ep = podcast.latestEpisode
+                            if (ep != null) {
+                                onEpisodeClick?.invoke(ep, podcast, "home_hero_card")
+                            } else {
+                                onPodcastClick(podcast, "home_hero_card", null, null)
+                            }
+                        },
+                        onArrowClick = onHeroArrowClick,
+                        onToggleSubscription = onToggleSubscription,
+                        onTogglePlayback = onTogglePlayback,
+                        modifier = Modifier.padding(horizontal = 8.dp) 
+                    )
+                } else {
+                    cx.aswin.boxcast.feature.home.components.HeroSkeleton()
+                }
 
-        item(span = StaggeredGridItemSpan.FullLine) {
-            AnimatedVisibility(
-                visible = showRegionNudge,
-                enter = expandVertically(
-                    animationSpec = tween(400),
-                    expandFrom = androidx.compose.ui.Alignment.Top
-                ) + fadeIn(animationSpec = tween(400)),
-                exit = shrinkVertically(
-                    animationSpec = tween(300),
-                    shrinkTowards = androidx.compose.ui.Alignment.Top
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                cx.aswin.boxcast.feature.home.components.RegionMismatchNudgeBanner(
-                    systemRegion = systemRegionCode,
-                    activeRegion = activeRegionCode,
-                    onSwitchRegion = onSwitchRegion,
-                    onDismiss = onDismissNudge,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                )
+                AnimatedVisibility(
+                    visible = showRegionNudge,
+                    enter = expandVertically(
+                        animationSpec = tween(400),
+                        expandFrom = androidx.compose.ui.Alignment.Top
+                    ) + fadeIn(animationSpec = tween(400)),
+                    exit = shrinkVertically(
+                        animationSpec = tween(300),
+                        shrinkTowards = androidx.compose.ui.Alignment.Top
+                    ) + fadeOut(animationSpec = tween(300))
+                ) {
+                    cx.aswin.boxcast.feature.home.components.RegionMismatchNudgeBanner(
+                        systemRegion = systemRegionCode,
+                        activeRegion = activeRegionCode,
+                        onSwitchRegion = onSwitchRegion,
+                        onDismiss = onDismissNudge,
+                        modifier = Modifier.padding(start = 8.dp, top = 16.dp, end = 8.dp, bottom = 8.dp)
+                    )
+                }
             }
         }
 
