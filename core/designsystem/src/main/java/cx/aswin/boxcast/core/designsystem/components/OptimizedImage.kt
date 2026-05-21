@@ -78,15 +78,14 @@ fun OptimizedImage(
     }
 
     Box(modifier = modifier) {
-        if (state is AsyncImagePainter.State.Success) {
-            Image(
-                painter = painter,
-                contentDescription = contentDescription,
-                contentScale = contentScale,
-                colorFilter = colorFilter,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
+        Image(
+            painter = painter,
+            contentDescription = contentDescription,
+            contentScale = contentScale,
+            colorFilter = colorFilter,
+            modifier = Modifier.fillMaxSize()
+        )
+        if (state !is AsyncImagePainter.State.Success) {
             AnimatedShapesFallback()
         }
     }
