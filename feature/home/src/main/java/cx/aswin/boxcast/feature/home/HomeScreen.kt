@@ -424,7 +424,7 @@ private fun PodcastFeed(
                         activeRegion = activeRegionCode,
                         onSwitchRegion = onSwitchRegion,
                         onDismiss = onDismissNudge,
-                        modifier = Modifier.padding(start = 8.dp, top = 16.dp, end = 8.dp, bottom = 8.dp)
+                        modifier = Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 0.dp)
                     )
                 }
             }

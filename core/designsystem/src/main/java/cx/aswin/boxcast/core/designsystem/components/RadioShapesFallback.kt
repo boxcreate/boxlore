@@ -5,7 +5,6 @@ import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Radio
@@ -15,6 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import kotlin.random.Random
@@ -25,6 +27,12 @@ import kotlin.random.Random
  */
 @Composable
 fun RadioShapesFallback() {
+    LogRecomposition(name = "RadioShapesFallback")
+
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val radioIcon = Icons.Rounded.Radio
+    val iconColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f)
+
     // Random positions calculated once per composition
     val shapes = remember {
         val allShapes = listOf(
@@ -36,7 +44,7 @@ fun RadioShapesFallback() {
             ExpressiveShapes.Diamond, ExpressiveShapes.Gem, ExpressiveShapes.Pentagon
         ).shuffled()
         
-        val placedShapes = mutableListOf<Triple<Float, Float, androidx.compose.ui.graphics.Shape>>()
+        val placedShapes = mutableListOf<PlacedShape>()
         val availableShapes = allShapes.toMutableList()
         
         // Try to place up to 6 shapes without overlapping
@@ -48,8 +56,8 @@ fun RadioShapesFallback() {
             
             var overlaps = false
             for (placed in placedShapes) {
-                val px = placed.first
-                val py = placed.second
+                val px = placed.x
+                val py = placed.y
                 val dist = kotlin.math.sqrt((x - px) * (x - px) + (y - py) * (y - py))
                 if (dist < 200f) {
                     overlaps = true
@@ -58,7 +66,8 @@ fun RadioShapesFallback() {
             }
             
             if (!overlaps) {
-                placedShapes.add(Triple(x, y, availableShapes.removeAt(0)))
+                val size = 180 + Random.nextInt(170)
+                placedShapes.add(PlacedShape(x, y, size, availableShapes.removeAt(0)))
             }
         }
         placedShapes
@@ -69,35 +78,44 @@ fun RadioShapesFallback() {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.tertiaryContainer)
             .graphicsLayer { clip = true }
+            .logDrawTime("RadioShapesFallbackDraw")
+            .logLayoutTime("RadioShapesFallbackLayout")
+            .drawWithCache {
+                val cachedOutlines = shapes.map { placed ->
+                    val sizePx = placed.size.dp.toPx()
+                    val outline = placed.shape.createOutline(
+                        size = Size(sizePx, sizePx),
+                        layoutDirection = layoutDirection,
+                        density = this
+                    )
+                    Triple(
+                        placed.x.dp.toPx() - (sizePx / 2f),
+                        placed.y.dp.toPx() - (sizePx / 2f),
+                        outline
+                    )
+                }
+                
+                onDrawBehind {
+                    cachedOutlines.forEach { (xPx, yPx, outline) ->
+                        translate(left = xPx, top = yPx) {
+                            drawOutline(
+                                outline = outline,
+                                color = tertiaryColor,
+                                alpha = 0.05f
+                            )
+                        }
+                    }
+                }
+            }
     ) {
-        shapes.forEach { (dx, dy, shape) ->
-            val size = (180 + Random.nextInt(170)).dp 
-            
-            Box(
-                modifier = Modifier
-                    .size(size)
-                    .offset(
-                        x = dx.dp - (size / 2), 
-                        y = dy.dp - (size / 2)
-                    )
-                    .background(
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.05f),
-                        shape = shape
-                    )
-            )
-        }
-        
-        // Centered Radio Icon
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Radio,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.size(64.dp)
-            )
-        }
+        // Centered Radio Icon (Only layout child)
+        Icon(
+            imageVector = radioIcon,
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier
+                .size(64.dp)
+                .align(Alignment.Center)
+        )
     }
 }

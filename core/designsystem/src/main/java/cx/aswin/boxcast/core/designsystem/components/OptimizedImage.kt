@@ -1,19 +1,33 @@
 package cx.aswin.boxcast.core.designsystem.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
+
+/**
+ * Global cache of URLs for which the proxy has failed, to avoid repeatedly
+ * attempting proxy load for failed items when scrolling lazy lists.
+ */
+private val proxyFailedUrls = java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
 /**
  * A reusable image composable that implements a proxy-first loading strategy
@@ -51,9 +65,12 @@ fun OptimizedImage(
 
     val proxyUrl = remember(url, proxyWidth) { url.optimizedImageUrl(proxyWidth) }
 
+    // Check if this url has already failed on the proxy in this app session
+    val isProxyKnownFailed = remember(url) { proxyFailedUrls.contains(url) }
+
     // Track which URL we're currently trying
-    var currentUrl by remember(url) { mutableStateOf(proxyUrl) }
-    var hasTriedFallback by remember(url) { mutableStateOf(false) }
+    var currentUrl by remember(url) { mutableStateOf(if (isProxyKnownFailed) url else proxyUrl) }
+    var hasTriedFallback by remember(url) { mutableStateOf(isProxyKnownFailed) }
 
     val painter = rememberAsyncImagePainter(model = currentUrl)
     val state = painter.state
@@ -62,6 +79,7 @@ fun OptimizedImage(
         // Trigger fallback to raw URL outside of composition via LaunchedEffect
         if (!hasTriedFallback && currentUrl == proxyUrl) {
             LaunchedEffect(url) {
+                proxyFailedUrls.add(url)
                 hasTriedFallback = true
                 currentUrl = url
                 
@@ -85,8 +103,30 @@ fun OptimizedImage(
             colorFilter = colorFilter,
             modifier = Modifier.fillMaxSize()
         )
-        if (state !is AsyncImagePainter.State.Success) {
-            AnimatedShapesFallback()
+        when {
+            state is AsyncImagePainter.State.Success -> {
+                // Rendered by Image, do nothing
+            }
+            state is AsyncImagePainter.State.Error && hasTriedFallback -> {
+                // Both proxy and raw URL failed. Render final fallback.
+                AnimatedShapesFallback()
+            }
+            else -> {
+                // Loading, Empty, or proxy failed but we are falling back: Render lightweight solid placeholder
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Podcasts,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                }
+            }
         }
     }
 }
