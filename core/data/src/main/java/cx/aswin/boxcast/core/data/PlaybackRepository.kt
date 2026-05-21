@@ -518,6 +518,7 @@ class PlaybackRepository(
                 )
             }
             
+            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("resume")
             controller.setMediaItems(mediaItems, startIndex, startPosMs)
             controller.prepare()
             
@@ -812,6 +813,7 @@ class PlaybackRepository(
             Log.d("PlaybackRepo", "resume(): Controller empty, reloading full queue (${queue.size} items)")
             
             repositoryScope.launch {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("resume")
                 if (queue.isNotEmpty() && podcast != null) {
                     // Find current episode in queue and reload from that point
                     val startIndex = queue.indexOfFirst { it.id == currentEpisode.id }.coerceAtLeast(0)
@@ -883,10 +885,12 @@ class PlaybackRepository(
     }
     
     fun skipForward() {
+        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("skip_30s")
         seekTo((_playerState.value.position + 30000).coerceAtMost(_playerState.value.duration))
     }
     
     fun skipBackward() {
+        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("replay_10s")
         seekTo((_playerState.value.position - 10000).coerceAtLeast(0))
     }
 
@@ -931,6 +935,7 @@ class PlaybackRepository(
                         }
                     }
                     
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("transition")
                     controller.seekToDefaultPosition(i)
                     controller.play()
                     return

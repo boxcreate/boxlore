@@ -34,7 +34,10 @@ class SubscriptionRepository(
                     fundingMessage = entity.fundingMessage,
                     medium = entity.medium,
                     hasValue = entity.hasValue,
-                    updateFrequency = entity.updateFrequency
+                    updateFrequency = entity.updateFrequency,
+                    location = entity.location,
+                    license = entity.license,
+                    isLocked = entity.isLocked
                 )
             }
         }
@@ -63,7 +66,11 @@ class SubscriptionRepository(
                 fundingUrl = podcast.fundingUrl,
                 fundingMessage = podcast.fundingMessage,
                 medium = podcast.medium,
-                hasValue = podcast.hasValue
+                hasValue = podcast.hasValue,
+                updateFrequency = podcast.updateFrequency,
+                location = podcast.location,
+                license = podcast.license,
+                isLocked = podcast.isLocked
             )
             podcastDao.upsert(entity)
         }
@@ -91,7 +98,10 @@ class SubscriptionRepository(
             fundingMessage = existing?.fundingMessage ?: podcast.fundingMessage,
             medium = existing?.medium ?: podcast.medium,
             hasValue = existing?.hasValue ?: podcast.hasValue,
-            updateFrequency = existing?.updateFrequency ?: podcast.updateFrequency
+            updateFrequency = existing?.updateFrequency ?: podcast.updateFrequency,
+            location = existing?.location ?: podcast.location,
+            license = existing?.license ?: podcast.license,
+            isLocked = existing?.isLocked ?: podcast.isLocked
         )
         podcastDao.upsert(entity)
     }

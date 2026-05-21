@@ -13,6 +13,18 @@ if (!TURSO_URL || !TURSO_TOKEN) {
 }
 
 async function main() {
+    const countryIndex = process.argv.indexOf('--country');
+    const country = countryIndex !== -1 ? process.argv[countryIndex + 1] : null;
+
+    let sql = "SELECT DISTINCT itunes_id FROM charts";
+    let args = [];
+
+    if (country) {
+        sql = "SELECT DISTINCT itunes_id FROM charts WHERE country = ?";
+        args = [{ type: "text", value: country }];
+        console.warn(`Filtering charts for country: ${country}`);
+    }
+
     const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
         method: "POST",
         headers: {
@@ -22,7 +34,7 @@ async function main() {
         body: JSON.stringify({
             requests: [{
                 type: "execute",
-                stmt: { sql: "SELECT DISTINCT itunes_id FROM charts", args: [] }
+                stmt: { sql, args }
             }, { type: "close" }]
         })
     });

@@ -38,8 +38,44 @@ fun HtmlText(
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
-            TextView(ctx).apply {
-                movementMethod = LinkMovementMethod.getInstance()
+            val textView = object : TextView(ctx) {
+                override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+                    val textVal = this.text
+                    if (textVal is android.text.Spanned) {
+                        val action = event.action
+                        if (action == android.view.MotionEvent.ACTION_DOWN ||
+                            action == android.view.MotionEvent.ACTION_UP ||
+                            action == android.view.MotionEvent.ACTION_MOVE
+                        ) {
+                            var x = event.x.toInt()
+                            var y = event.y.toInt()
+
+                            x -= totalPaddingLeft
+                            y -= totalPaddingTop
+
+                            x += scrollX
+                            y += scrollY
+
+                            val layout = layout
+                            if (layout != null) {
+                                val line = layout.getLineForVertical(y)
+                                val off = layout.getOffsetForHorizontal(line, x.toFloat())
+
+                                val link = textVal.getSpans(off, off, android.text.style.ClickableSpan::class.java)
+
+                                if (link.isNotEmpty()) {
+                                    if (action == android.view.MotionEvent.ACTION_UP) {
+                                        link[0].onClick(this)
+                                    }
+                                    return true
+                                }
+                            }
+                        }
+                    }
+                    return super.onTouchEvent(event)
+                }
+            }
+            textView.apply {
                 params(this, style, textColor, linkTextColor, maxLines)
             }
         },

@@ -1386,26 +1386,56 @@ class MainActivity : ComponentActivity() {
 
                     // Navigation Bar
                     if (showBottomNav) {
+                        val activeTab = when {
+                            currentRoute == "home" -> "home"
+                            currentRoute.startsWith("explore") -> "explore"
+                            currentRoute.startsWith("library") -> "library"
+                            currentRoute.startsWith("podcast") || currentRoute.startsWith("episode") -> {
+                                val entryPoint = navBackStackEntry?.arguments?.getString("entryPoint")
+                                when {
+                                    entryPoint == null -> "home"
+                                    entryPoint.contains("library") -> "library"
+                                    entryPoint.contains("explore") || entryPoint.contains("search") || entryPoint.contains("bottom_nav") -> "explore"
+                                    else -> "home"
+                                }
+                            }
+                            else -> "home"
+                        }
+
                         BoxCastNavigationBar(
-                            currentRoute = currentRoute,
+                            currentRoute = activeTab,
                             onNavigate = { route ->
                                 // Navigation logic for bottom tabs
                                 // podcast/ and episode/ routes are "detail" screens that can be reached from multiple tabs
                                 
                                 when {
-                                    // Same route - do nothing
-                                    currentRoute == route -> { }
+                                    // Same route - pop back to the root of the tab
+                                    activeTab == route -> {
+                                        if (route == "home") {
+                                            navController.popBackStack("home", inclusive = false)
+                                        } else if (route == "explore") {
+                                            val popped = navController.popBackStack("explore?category={category}&entryPoint={entryPoint}", inclusive = false)
+                                            if (!popped) {
+                                                navController.navigate("explore?entryPoint=bottom_nav") {
+                                                    popUpTo("home") { saveState = false }
+                                                    launchSingleTop = true
+                                                }
+                                            }
+                                        } else if (route == "library") {
+                                            val popped = navController.popBackStack("library", inclusive = false)
+                                            if (!popped) {
+                                                navController.navigate("library") {
+                                                    popUpTo("home") { saveState = false }
+                                                    launchSingleTop = true
+                                                }
+                                            }
+                                        }
+                                    }
                                     
                                     // Navigating to Home
                                     route == "home" -> {
                                         navController.popBackStack("home", inclusive = false)
                                     }
-                                    
-                                    // Navigating to Explore from Explore root or while on Explore
-                                    route == "explore" && currentRoute == "explore" -> { }
-                                    
-                                    // Navigating to Library from Library root
-                                    route == "library" && currentRoute == "library" -> { }
                                     
                                     // Default: Navigate to the new tab
                                     else -> {

@@ -3,6 +3,8 @@ package cx.aswin.boxcast.feature.info
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.text.Html
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -47,6 +49,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -61,6 +64,7 @@ import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.ui.graphics.vector.ImageVector
 import cx.aswin.boxcast.core.designsystem.theme.contrastColor
+import cx.aswin.boxcast.core.designsystem.theme.m3Shimmer
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,6 +77,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.FilterChip
@@ -129,6 +135,7 @@ import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
+import cx.aswin.boxcast.core.model.Person
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import coil.compose.SubcomposeAsyncImage
@@ -148,6 +155,58 @@ private fun extractDominantColor(bitmap: Bitmap): Color {
         ?: palette.dominantSwatch?.rgb
         ?: return Color.Transparent
     return Color(colorInt)
+}
+
+@Composable
+private fun CompactPersonChip(
+    person: Person,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = ExpressiveShapes.Pill,
+        modifier = Modifier.expressiveClickable(
+            enabled = !person.href.isNullOrBlank(),
+            onClick = onClick
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (!person.img.isNullOrBlank()) {
+                OptimizedImage(
+                    url = person.img,
+                    proxyWidth = 40,
+                    contentDescription = person.name,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
+            val displayText = if (!person.role.isNullOrBlank()) {
+                "${person.name} (${person.role!!.replaceFirstChar { it.uppercaseChar() }})"
+            } else {
+                person.name
+            }
+            Text(
+                text = displayText,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
 }
 
 // Navbar height constant
@@ -347,6 +406,24 @@ fun PodcastInfoScreen(
                 val displayEpisodes = state.searchResults ?: state.episodes
                 val feedItems = remember(displayEpisodes) { groupEpisodes(displayEpisodes) }
                 
+                val strippedDesc = remember(state.podcast.description) { stripHtml(state.podcast.description) }
+                var isDescExpanded by remember { mutableStateOf(false) }
+                
+                val podcastPersons = remember(state.episodes) {
+                    state.episodes.take(15)
+                        .flatMap { it.persons ?: emptyList() }
+                        .distinctBy { it.name.lowercase().trim() }
+                }
+
+                val sortedPersons = remember(podcastPersons) {
+                    podcastPersons.sortedWith(
+                        compareByDescending<Person> { 
+                            val role = it.role?.lowercase() ?: ""
+                            role.contains("host") || role.contains("creator") || role.contains("presenter")
+                        }.thenBy { it.name }
+                    )
+                }
+                
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -419,118 +496,164 @@ fun PodcastInfoScreen(
                                         .filter { it.episodeType != "trailer" && it.episodeType != "bonus" && it.publishedDate > 0 }
                                         .sortedByDescending { it.publishedDate }
                                         .take(15)
-    
-                                    val latestEpisodeDate = validEpisodes.firstOrNull()?.publishedDate ?: state.podcast.latestEpisode?.publishedDate
-    
-                                    // 2. Check if it's dead or on hiatus
-                                    if (latestEpisodeDate != null && latestEpisodeDate > 0) {
-                                        val daysSinceLatest = (System.currentTimeMillis() / 1000 - latestEpisodeDate) / (60 * 60 * 24)
-                                        if (daysSinceLatest > 365) {
-                                            val result = Pair("Inactive / Ended", Icons.Rounded.PauseCircle)
-                                            cachedFrequencyData = result
-                                            return@remember result
-                                        } else if (daysSinceLatest > 180) {
-                                            val result = Pair("On Hiatus", Icons.Rounded.PauseCircle)
-                                            cachedFrequencyData = result
-                                            return@remember result
-                                        }
-                                    }
-    
-                                    // 3. Predict frequency using Median
-                                    if (validEpisodes.size < 4) return@remember cachedFrequencyData
-    
-                                    val intervals = mutableListOf<Long>()
-                                    for (i in 0 until validEpisodes.size - 1) {
-                                        val newer = validEpisodes[i].publishedDate
-                                        val older = validEpisodes[i + 1].publishedDate
-                                        val daysDiff = (newer - older) / (60 * 60 * 24)
-                                        if (daysDiff >= 0) intervals.add(daysDiff)
-                                    }
-    
-                                    if (intervals.isEmpty()) return@remember cachedFrequencyData
-    
-                                    // The magic of Median: ignores outliers like special drops
-                                    val sortedIntervals = intervals.sorted()
-                                    val medianIntervalDays = sortedIntervals[sortedIntervals.size / 2]
-    
-                                    // Determine common release day
-                                    val calendar = java.util.Calendar.getInstance()
-                                    val dayCounts = IntArray(8)
-                                    for (ep in validEpisodes) {
-                                        calendar.timeInMillis = ep.publishedDate * 1000
-                                        dayCounts[calendar.get(java.util.Calendar.DAY_OF_WEEK)]++
-                                    }
-                                    var maxDay = -1
-                                    var maxCount = 0
-                                    for (i in 1..7) {
-                                        if (dayCounts[i] > maxCount) {
-                                            maxCount = dayCounts[i]
-                                            maxDay = i
-                                        }
-                                    }
-                                    
-                                    val commonDayName = if (maxCount >= (validEpisodes.size * 0.5).toInt()) {
-                                        when (maxDay) {
-                                            java.util.Calendar.SUNDAY -> "Sundays"
-                                            java.util.Calendar.MONDAY -> "Mondays"
-                                            java.util.Calendar.TUESDAY -> "Tuesdays"
-                                            java.util.Calendar.WEDNESDAY -> "Wednesdays"
-                                            java.util.Calendar.THURSDAY -> "Thursdays"
-                                            java.util.Calendar.FRIDAY -> "Fridays"
-                                            java.util.Calendar.SATURDAY -> "Saturdays"
-                                            else -> null
-                                        }
-                                    } else null
-    
-                                    var predictedText: String? = null
-                                    var icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Rounded.CalendarMonth
-    
-                                    if (medianIntervalDays in 0..1) {
-                                        predictedText = "Releases Daily"
-                                        icon = Icons.Rounded.Bolt
-                                    } else if (medianIntervalDays in 2..4) {
-                                        predictedText = "Releases Multi-Weekly"
-                                        icon = Icons.Rounded.CalendarMonth
-                                    } else if (medianIntervalDays in 5..8) {
-                                        predictedText = if (commonDayName != null) "Weekly on $commonDayName" else "Releases Weekly"
-                                        icon = Icons.Rounded.CalendarMonth
-                                    } else if (medianIntervalDays in 12..16) {
-                                        predictedText = if (commonDayName != null) "Every 2 Weeks on $commonDayName" else "Releases Every 2 Weeks"
-                                        icon = Icons.Rounded.CalendarMonth
-                                    } else if (medianIntervalDays in 25..35) {
-                                        predictedText = "Releases Monthly"
-                                        icon = Icons.Rounded.CalendarMonth
-                                    }
-    
-                                    // 4. Check for decay / delayed seasons
-                                    if (predictedText != null && latestEpisodeDate != null) {
-                                        if (medianIntervalDays > 3) {
-                                            val daysSinceLatest = (System.currentTimeMillis() / 1000 - latestEpisodeDate) / (60 * 60 * 24)
-                                            if (daysSinceLatest > (medianIntervalDays * 2)) {
-                                                val result = Pair("Between Seasons", Icons.Rounded.HourglassBottom)
-                                                cachedFrequencyData = result
-                                                return@remember result
-                                            }
-                                        }
-                                        val result = Pair(predictedText, icon)
-                                        cachedFrequencyData = result
-                                        return@remember result
-                                    }
-    
-                                    cachedFrequencyData
-                                } else {
-                                    // If sorted by oldest or searching, use the cached calculation (to prevent "Inactive / Ended" bug)
-                                    cachedFrequencyData
-                                }
-                            }
+     
+                                     val latestEpisodeDate = validEpisodes.firstOrNull()?.publishedDate ?: state.podcast.latestEpisode?.publishedDate
+                                     val daysSinceLatest = latestEpisodeDate?.let { (System.currentTimeMillis() / 1000 - it) / (60 * 60 * 24) }
+     
+                                     // 2. Check if it's dead or on hiatus
+                                     if (daysSinceLatest != null && daysSinceLatest > 0) {
+                                         if (daysSinceLatest > 365) {
+                                             val result = Pair("Inactive / Ended", Icons.Rounded.PauseCircle)
+                                             cachedFrequencyData = result
+                                             return@remember result
+                                         } else if (daysSinceLatest > 180) {
+                                             val result = Pair("On Hiatus", Icons.Rounded.PauseCircle)
+                                             cachedFrequencyData = result
+                                             return@remember result
+                                         }
+                                     }
+
+                                     // 3. Check for decay / delayed seasons (Between Seasons check)
+                                     // Calculate medianIntervalDays to determine standard gap
+                                     val medianIntervalDays: Long? = if (validEpisodes.size >= 4) {
+                                         val intervals = mutableListOf<Long>()
+                                         for (i in 0 until validEpisodes.size - 1) {
+                                             val newer = validEpisodes[i].publishedDate
+                                             val older = validEpisodes[i + 1].publishedDate
+                                             val daysDiff = (newer - older) / (60 * 60 * 24)
+                                             if (daysDiff >= 0) intervals.add(daysDiff)
+                                         }
+                                         if (intervals.isNotEmpty()) {
+                                             val sortedIntervals = intervals.sorted()
+                                             sortedIntervals[sortedIntervals.size / 2]
+                                         } else null
+                                     } else {
+                                         // Estimate based on tag if episodes are scarce
+                                         val tag = state.podcast.updateFrequency?.lowercase() ?: ""
+                                         when {
+                                             tag.contains("daily") -> 1L
+                                             tag.contains("weekly") -> 7L
+                                             tag.contains("bi-weekly") || tag.contains("2 weeks") -> 14L
+                                             tag.contains("monthly") -> 30L
+                                             else -> null
+                                         }
+                                     }
+
+                                     if (medianIntervalDays != null && medianIntervalDays > 3 && daysSinceLatest != null) {
+                                         if (daysSinceLatest > (medianIntervalDays * 2)) {
+                                             val result = Pair("Between Seasons", Icons.Rounded.HourglassBottom)
+                                             cachedFrequencyData = result
+                                             return@remember result
+                                         }
+                                     }
+
+                                     // 4. Use the explicit updateFrequency tag if available
+                                     val tag = state.podcast.updateFrequency
+                                     if (!tag.isNullOrBlank()) {
+                                         val cleanText = tag.trim().lowercase()
+                                         val parsedDouble = cleanText.toDoubleOrNull()
+                                         val formattedText = if (parsedDouble != null) {
+                                             when {
+                                                 parsedDouble >= 7.0 -> "Releases Daily"
+                                                 parsedDouble >= 2.0 -> "Releases Multi-Weekly"
+                                                 parsedDouble >= 1.0 -> "Releases Weekly"
+                                                 parsedDouble >= 0.5 -> "Releases Every 2 Weeks"
+                                                 parsedDouble >= 0.1 -> "Releases Monthly"
+                                                 else -> "Releases Occasionally"
+                                             }
+                                         } else {
+                                             when (cleanText) {
+                                                 "daily" -> "Releases Daily"
+                                                 "weekly" -> "Releases Weekly"
+                                                 "monthly" -> "Releases Monthly"
+                                                 "biweekly", "bi-weekly" -> "Releases Every 2 Weeks"
+                                                 else -> tag.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                                             }
+                                         }
+                                         val icon = if (formattedText.contains("Daily", ignoreCase = true)) Icons.Rounded.Bolt else Icons.Rounded.CalendarMonth
+                                         val result = Pair(formattedText, icon)
+                                         cachedFrequencyData = result
+                                         return@remember result
+                                     }
+
+                                     // 5. Fallback: Predict frequency using Median and Day of Week counts
+                                     if (validEpisodes.size < 4) return@remember cachedFrequencyData
+                                     if (medianIntervalDays == null) return@remember cachedFrequencyData
+     
+                                     // Determine common release day
+                                     val calendar = java.util.Calendar.getInstance()
+                                     val dayCounts = IntArray(8)
+                                     for (ep in validEpisodes) {
+                                         calendar.timeInMillis = ep.publishedDate * 1000
+                                         dayCounts[calendar.get(java.util.Calendar.DAY_OF_WEEK)]++
+                                     }
+                                     var maxDay = -1
+                                     var maxCount = 0
+                                     for (i in 1..7) {
+                                         if (dayCounts[i] > maxCount) {
+                                             maxCount = dayCounts[i]
+                                             maxDay = i
+                                         }
+                                     }
+                                     
+                                     val commonDayName = if (maxCount >= (validEpisodes.size * 0.5).toInt()) {
+                                         when (maxDay) {
+                                             java.util.Calendar.SUNDAY -> "Sundays"
+                                             java.util.Calendar.MONDAY -> "Mondays"
+                                             java.util.Calendar.TUESDAY -> "Tuesdays"
+                                             java.util.Calendar.WEDNESDAY -> "Wednesdays"
+                                             java.util.Calendar.THURSDAY -> "Thursdays"
+                                             java.util.Calendar.FRIDAY -> "Fridays"
+                                             java.util.Calendar.SATURDAY -> "Saturdays"
+                                             else -> null
+                                         }
+                                     } else null
+     
+                                     var predictedText: String? = null
+                                     var icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Rounded.CalendarMonth
+     
+                                     if (medianIntervalDays in 0..1) {
+                                         predictedText = "Releases Daily"
+                                         icon = Icons.Rounded.Bolt
+                                     } else if (medianIntervalDays in 2..4) {
+                                         predictedText = "Releases Multi-Weekly"
+                                         icon = Icons.Rounded.CalendarMonth
+                                     } else if (medianIntervalDays in 5..8) {
+                                         predictedText = if (commonDayName != null) "Weekly on $commonDayName" else "Releases Weekly"
+                                         icon = Icons.Rounded.CalendarMonth
+                                     } else if (medianIntervalDays in 12..16) {
+                                         predictedText = if (commonDayName != null) "Every 2 Weeks on $commonDayName" else "Releases Every 2 Weeks"
+                                         icon = Icons.Rounded.CalendarMonth
+                                     } else if (medianIntervalDays in 25..35) {
+                                         predictedText = "Releases Monthly"
+                                         icon = Icons.Rounded.CalendarMonth
+                                     }
+     
+                                     if (predictedText != null) {
+                                         val result = Pair(predictedText, icon)
+                                         cachedFrequencyData = result
+                                         return@remember result
+                                     }
+     
+                                     cachedFrequencyData
+                                 } else {
+                                     // If sorted by oldest or searching, use the cached calculation (to prevent "Inactive / Ended" bug)
+                                     cachedFrequencyData
+                                 }
+                             }
 
                             // 3. Scrollable Metadata Chips Row — centered
+                            // Pre-compute trailer episode in composable scope
+                            val trailerEpisode = remember(state.episodes) {
+                                state.episodes.firstOrNull { it.episodeType == "trailer" }
+                            }
+                            
                             androidx.compose.foundation.lazy.LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                // Update Frequency Pill
+                                // 4. Update Frequency
                                 if (frequencyData != null) {
                                     item {
                                         Surface(
@@ -557,50 +680,28 @@ fun PodcastInfoScreen(
                                             }
                                         }
                                     }
-                                }
-
-
-
-                                // Medium Pill — only shown for non-"podcast" mediums
-                                val medium = state.podcast.medium
-                                if (!medium.isNullOrEmpty() && medium != "podcast") {
-                                    item {
-                                        val mediumIcon = when (medium.lowercase()) {
-                                            "music" -> Icons.Rounded.MusicNote
-                                            "video" -> Icons.Rounded.Videocam
-                                            "film" -> Icons.Rounded.Movie
-                                            "audiobook" -> Icons.Rounded.AutoStories
-                                            "newsletter" -> Icons.Rounded.Email
-                                            "blog" -> Icons.Rounded.Article
-                                            else -> Icons.Rounded.Headphones
+                                } else if (state.isLoadingMore) {
+                                    items(3) { index ->
+                                        val width = when (index) {
+                                            0 -> 100.dp
+                                            1 -> 85.dp
+                                            else -> 70.dp
                                         }
                                         Surface(
                                             shape = ExpressiveShapes.Pill,
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = mediumIcon,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            modifier = Modifier
+                                                .width(width)
+                                                .height(32.dp)
+                                                .m3Shimmer(
+                                                    baseColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                    highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
                                                 )
-                                                Text(
-                                                    text = medium.replaceFirstChar { c -> c.uppercaseChar() },
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
+                                        ) {}
                                     }
                                 }
 
-                                // Genre Pill — uses genre-specific icons
+                                // 6. Genre
                                 if (state.podcast.genre.isNotEmpty()) {
                                     item {
                                         val genreLc = state.podcast.genre.lowercase()
@@ -652,7 +753,91 @@ fun PodcastInfoScreen(
                                     }
                                 }
 
-                                // Podcast 2.0: Funding
+                                // 2. Cast & Crew
+                                items(sortedPersons) { person ->
+                                    CompactPersonChip(
+                                        person = person,
+                                        onClick = {
+                                            if (!person.href.isNullOrBlank()) {
+                                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(person.href))
+                                                context.startActivity(intent)
+                                            }
+                                        }
+                                    )
+                                }
+
+                                // 1. Play Trailer
+                                if (trailerEpisode != null) {
+                                    item {
+                                        Surface(
+                                            shape = ExpressiveShapes.Pill,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.expressiveClickable {
+                                                viewModel.onPlayClick(trailerEpisode)
+                                            }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.PlayArrow,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onPrimary
+                                                )
+                                                Text(
+                                                    text = "Play Trailer",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onPrimary,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 5. Medium (if non-standard)
+                                val medium = state.podcast.medium
+                                if (!medium.isNullOrEmpty() && medium != "podcast") {
+                                    item {
+                                        val mediumIcon = when (medium.lowercase()) {
+                                            "music" -> Icons.Rounded.MusicNote
+                                            "video" -> Icons.Rounded.Videocam
+                                            "film" -> Icons.Rounded.Movie
+                                            "audiobook" -> Icons.Rounded.AutoStories
+                                            "newsletter" -> Icons.Rounded.Email
+                                            "blog" -> Icons.Rounded.Article
+                                            else -> Icons.Rounded.Headphones
+                                        }
+                                        Surface(
+                                            shape = ExpressiveShapes.Pill,
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = mediumIcon,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                                Text(
+                                                    text = medium.replaceFirstChar { c -> c.uppercaseChar() },
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 3. Funding / Support
                                 val hasFunding = state.podcast.fundingUrl != null
                                 if (hasFunding) {
                                     item {
@@ -689,36 +874,108 @@ fun PodcastInfoScreen(
                             
                             Spacer(modifier = Modifier.height(18.dp))
                             
-                            // 4. Description (Expandable — 2 lines default)
-                            val strippedDesc = stripHtml(state.podcast.description)
-                            var isDescExpanded by remember { mutableStateOf(false) }
-                            
-                            if (strippedDesc.isNotEmpty()) {
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                    shape = MaterialTheme.shapes.large
-                                ) {
-                                    Text(
-                                        text = strippedDesc,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = if (isDescExpanded) Int.MAX_VALUE else 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        lineHeight = 20.sp,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .expressiveClickable { isDescExpanded = !isDescExpanded }
-                                            .padding(16.dp)
-                                            .animateContentSize(
-                                                animationSpec = spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessMediumLow
-                                                )
-                                            )
-                                    )
-                                }
-                            }
+                             if (strippedDesc.isNotEmpty()) {
+                                 Surface(
+                                     modifier = Modifier.fillMaxWidth(),
+                                     color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                     shape = MaterialTheme.shapes.large
+                                 ) {
+                                     Column(
+                                         modifier = Modifier
+                                             .fillMaxWidth()
+                                             .padding(16.dp)
+                                     ) {
+                                         Text(
+                                             text = strippedDesc,
+                                             style = MaterialTheme.typography.bodyMedium,
+                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                             maxLines = if (isDescExpanded) Int.MAX_VALUE else 2,
+                                             overflow = TextOverflow.Ellipsis,
+                                             lineHeight = 20.sp,
+                                             modifier = Modifier
+                                                 .fillMaxWidth()
+                                                 .expressiveClickable { isDescExpanded = !isDescExpanded }
+                                                 .animateContentSize(
+                                                     animationSpec = spring(
+                                                         dampingRatio = Spring.DampingRatioLowBouncy,
+                                                         stiffness = Spring.StiffnessMediumLow
+                                                     )
+                                                 )
+                                         )
+                                         
+                                         if (isDescExpanded && state.podcast.isLocked) {
+                                             var showLockedInfoDialog by remember { mutableStateOf(false) }
+                                             
+                                             Spacer(modifier = Modifier.height(12.dp))
+                                             androidx.compose.material3.HorizontalDivider(
+                                                 thickness = 0.5.dp,
+                                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                             )
+                                             Spacer(modifier = Modifier.height(8.dp))
+                                             
+                                             Row(
+                                                 modifier = Modifier
+                                                     .fillMaxWidth()
+                                                     .clip(MaterialTheme.shapes.small)
+                                                     .expressiveClickable { showLockedInfoDialog = true }
+                                                     .padding(vertical = 4.dp),
+                                                 verticalAlignment = Alignment.CenterVertically,
+                                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                             ) {
+                                                 Icon(
+                                                     imageVector = Icons.Rounded.Lock,
+                                                     contentDescription = "Locked",
+                                                     tint = MaterialTheme.colorScheme.error,
+                                                     modifier = Modifier.size(16.dp)
+                                                 )
+                                                 Text(
+                                                     text = "Podcast feed is locked",
+                                                     style = MaterialTheme.typography.labelMedium,
+                                                     fontWeight = FontWeight.Bold,
+                                                     color = MaterialTheme.colorScheme.error
+                                                 )
+                                                 Icon(
+                                                     imageVector = Icons.Rounded.Info,
+                                                     contentDescription = "Information",
+                                                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                                     modifier = Modifier.size(14.dp)
+                                                 )
+                                             }
+                                             
+                                             if (showLockedInfoDialog) {
+                                                 AlertDialog(
+                                                     onDismissRequest = { showLockedInfoDialog = false },
+                                                     icon = {
+                                                         Icon(
+                                                             imageVector = Icons.Rounded.Lock,
+                                                             contentDescription = null,
+                                                             tint = MaterialTheme.colorScheme.error
+                                                         )
+                                                     },
+                                                     title = {
+                                                         Text(
+                                                             text = "Podcast Locked",
+                                                             style = MaterialTheme.typography.titleMedium,
+                                                             fontWeight = FontWeight.Bold
+                                                         )
+                                                     },
+                                                     text = {
+                                                         Text(
+                                                             text = "This podcast's feed has been locked by its publisher. According to the Podcasting 2.0 specification, a locked feed prevents other directory platforms or hosting services from importing or migrating this show's feed without the owner's explicit authorization.",
+                                                             style = MaterialTheme.typography.bodyMedium
+                                                         )
+                                                     },
+                                                     confirmButton = {
+                                                         TextButton(onClick = { showLockedInfoDialog = false }) {
+                                                             Text("Got it")
+                                                        }
+                                                     }
+                                                 )
+                                             }
+                                         }
+                                     }
+                                 }
+                             }
                         }
                     }
                     
@@ -812,14 +1069,20 @@ fun PodcastInfoScreen(
                     }
                     
                     if (state.isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                BoxCastLoader.CircularWavy(size = 32.dp)
+                        if (feedItems.isEmpty()) {
+                            items(5) {
+                                EpisodeSkeletonLoader()
+                            }
+                        } else {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    BoxCastLoader.CircularWavy(size = 32.dp)
+                                }
                             }
                         }
                     }
@@ -916,6 +1179,114 @@ fun PodcastInfoScreen(
                         isDownloadedFlow = viewModel::isDownloaded,
                         isDownloadingFlow = viewModel::isDownloading
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EpisodeSkeletonLoader(
+    modifier: Modifier = Modifier
+) {
+    val baseColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val highlightColor = MaterialTheme.colorScheme.surfaceContainerHighest
+    
+    androidx.compose.material3.ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = MaterialTheme.shapes.large,
+        colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Image skeleton
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(baseColor)
+                        .m3Shimmer(baseColor, highlightColor)
+                )
+                
+                Spacer(modifier = Modifier.width(14.dp))
+                
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Date skeleton
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(12.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(baseColor)
+                            .m3Shimmer(baseColor, highlightColor)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(6.dp))
+                    
+                    // Title skeleton line 1
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .height(16.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(baseColor)
+                            .m3Shimmer(baseColor, highlightColor)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    // Title skeleton line 2
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .height(16.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(baseColor)
+                            .m3Shimmer(baseColor, highlightColor)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Bottom control area skeleton
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(90.dp)
+                        .height(32.dp)
+                        .clip(cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes.Pill)
+                        .background(baseColor)
+                        .m3Shimmer(baseColor, highlightColor)
+                )
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    repeat(3) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(baseColor)
+                                .m3Shimmer(baseColor, highlightColor)
+                        )
+                    }
                 }
             }
         }

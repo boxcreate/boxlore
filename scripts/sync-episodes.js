@@ -154,26 +154,41 @@ async function main() {
     }
 
     // 3. Get podcasts needing sync (Priority: New > News(4h) > Others(24h))
+    const countryIndex = process.argv.indexOf('--country');
+    const country = countryIndex !== -1 ? process.argv[countryIndex + 1] : null;
+
     const ONE_DAY_MS = 24 * 60 * 60 * 1000;
     const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
     const CUTOFF_STANDARD = Date.now() - ONE_DAY_MS;
     const CUTOFF_NEWS = Date.now() - FOUR_HOURS_MS;
 
-    const sql = `
+    let sql = `
         SELECT DISTINCT p.id, p.itunes_id, p.last_ep_sync
         FROM charts c
         JOIN podcasts p ON c.itunes_id = p.itunes_id
         WHERE 
-            p.last_ep_sync IS NULL 
-            OR (c.category = 'News' AND p.last_ep_sync < ${CUTOFF_NEWS})
-            OR (p.last_ep_sync < ${CUTOFF_STANDARD})
+            (
+                p.last_ep_sync IS NULL 
+                OR (c.category = 'News' AND p.last_ep_sync < ?)
+                OR (p.last_ep_sync < ?)
+            )
+    `;
+    let args = [CUTOFF_NEWS, CUTOFF_STANDARD];
+
+    if (country) {
+        sql += ` AND c.country = ?`;
+        args.push(country);
+        console.log(`Filtering sync candidates for country: ${country}`);
+    }
+
+    sql += `
         ORDER BY p.last_ep_sync ASC
         LIMIT 2000
     `;
 
     console.log("Fetching sync candidates...");
-    const res = await executeSQL(sql);
+    const res = await executeSQL(sql, args);
     const podcasts = res?.results?.[0]?.response?.result?.rows?.map(r => ({
         id: r[0].value,
         itunesId: r[1].value,

@@ -77,26 +77,18 @@ fun Modifier.expressiveClickable(
         .pointerInput(enabled) {
             if (!enabled) return@pointerInput
             detectTapGestures(
-                onPress = { 
-                    // Quick shrink on press
+                onTap = {
+                    currentOnClick()
                     scope.launch {
                         scale.animateTo(
                             targetValue = 0.85f,
                             animationSpec = ExpressiveMotion.QuickSpring
                         )
-                    }
-                    // Wait for release
-                    tryAwaitRelease()
-                    // Bounce back
-                    scope.launch {
                         scale.animateTo(
                             targetValue = 1f,
                             animationSpec = ExpressiveMotion.BouncySpring
                         )
                     }
-                },
-                onTap = {
-                    currentOnClick()
                 }
             )
         }

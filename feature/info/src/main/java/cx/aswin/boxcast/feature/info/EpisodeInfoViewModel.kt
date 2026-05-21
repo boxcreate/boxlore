@@ -27,7 +27,9 @@ sealed interface EpisodeInfoUiState {
         val durationMs: Long = 0L,
         val relatedEpisodes: List<Episode> = emptyList(),
         val relatedEpisodesLoading: Boolean = true,
-        val isPlaying: Boolean = false // Sync with global player
+        val isPlaying: Boolean = false, // Sync with global player
+        val location: String? = null,
+        val license: String? = null
     ) : EpisodeInfoUiState
     data object Error : EpisodeInfoUiState
 }
@@ -167,13 +169,20 @@ class EpisodeInfoViewModel(
                 val resumeSession = playbackRepository.getSession(episodeId)
                 val resumeMs = resumeSession?.positionMs ?: 0L
                 val durationMs = resumeSession?.durationMs ?: (episodeDuration * 1000L)
+                
+                // Fetch local podcast if exists for immediate metadata
+                val localPodcast = database.podcastDao().getPodcast(podcastId)
+                val initialLocation = localPodcast?.location
+                val initialLicense = localPodcast?.license
 
                 _uiState.value = EpisodeInfoUiState.Success(
                     episode = currentEpisode,
                     podcastId = podcastId,
                     podcastTitle = podcastTitle,
                     resumePositionMs = resumeMs,
-                    durationMs = durationMs
+                    durationMs = durationMs,
+                    location = initialLocation,
+                    license = initialLicense
                 )
                 
                 // Track Screen View
@@ -214,7 +223,9 @@ class EpisodeInfoViewModel(
                         resumePositionMs = resumeMs,
                         durationMs = durationMs,
                         relatedEpisodes = existingState?.relatedEpisodes ?: emptyList(),
-                        relatedEpisodesLoading = existingState?.relatedEpisodesLoading ?: true
+                        relatedEpisodesLoading = existingState?.relatedEpisodesLoading ?: true,
+                        location = existingState?.location ?: initialLocation,
+                        license = existingState?.license ?: initialLicense
                     )
                 }
                 
@@ -248,11 +259,13 @@ class EpisodeInfoViewModel(
                     if (currentSuccess != null && currentSuccess.episode.id == episodeId) {
                         relatedEpisodesShownCount = relatedEps.size
                         _uiState.value = currentSuccess.copy(
-                        relatedEpisodes = relatedEps,
-                        relatedEpisodesLoading = false,
-                        podcastGenre = genre.ifEmpty { currentSuccess.podcastGenre }
-                    )
-                }
+                            relatedEpisodes = relatedEps,
+                            relatedEpisodesLoading = false,
+                            podcastGenre = genre.ifEmpty { currentSuccess.podcastGenre },
+                            location = podcast?.location ?: currentSuccess.location,
+                            license = podcast?.license ?: currentSuccess.license
+                        )
+                    }
             } catch (e: Exception) {
                 android.util.Log.e("EpisodeInfo", "Error fetching related episodes", e)
                 // Mark loading as done even on failure

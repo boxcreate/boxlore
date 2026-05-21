@@ -30,5 +30,8 @@ data class PodcastEntity(
     val fundingMessage: String? = null,
     val medium: String? = null,
     val hasValue: Boolean = false,
-    val updateFrequency: String? = null
+    val updateFrequency: String? = null,
+    val location: String? = null,
+    val license: String? = null,
+    val isLocked: Boolean = false
 )

@@ -251,7 +251,13 @@ data class PodcastFeed(
     val ownerName: String? = null,
 
     @SerialName("updateFrequency")
-    val updateFrequency: String? = null
+    val updateFrequency: String? = null,
+
+    @SerialName("license")
+    val license: String? = null,
+
+    @SerialName("location")
+    val location: String? = null
 )
 
 // ============== METADATA ==============
@@ -265,7 +271,19 @@ data class PodcastMetaResponse(
     val type: String? = "episodic", // serial or episodic
     
     @SerialName("title")
-    val title: String? = null
+    val title: String? = null,
+
+    @SerialName("location")
+    val location: String? = null,
+
+    @SerialName("license")
+    val license: String? = null,
+
+    @SerialName("locked")
+    val locked: Int? = null,
+
+    @SerialName("updateFrequency")
+    val updateFrequency: String? = null
 )
 
 // ============== PODCAST 2.0 TYPES ==============

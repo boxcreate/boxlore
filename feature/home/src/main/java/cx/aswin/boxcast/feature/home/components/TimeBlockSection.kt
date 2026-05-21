@@ -122,6 +122,7 @@ fun TimeBlockSection(
                                 onClick = {
                                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackCuratedCardTapped(
                                         podcastId = podcast.id,
+                                        podcastName = podcast.title,
                                         vibeId = section.category,
                                         positionIndex = i
                                     )
