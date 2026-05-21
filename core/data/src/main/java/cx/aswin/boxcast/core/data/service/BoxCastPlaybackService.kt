@@ -54,6 +54,8 @@ class BoxCastPlaybackService : MediaLibraryService() {
     @Volatile
     private var pendingSeekMs: Long = 0L
 
+    private val firedHeartbeats = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+
     // Playback Telemetry State
     private var playbackSessionStartTimeMs: Long = 0L
     private var playbackSessionEpisodeId: String? = null
@@ -122,7 +124,9 @@ class BoxCastPlaybackService : MediaLibraryService() {
                     errorCode = error.errorCodeName,
                     errorMessage = error.message ?: "Unknown",
                     podcastId = podcastId,
-                    episodeId = episodeId
+                    episodeId = episodeId,
+                    podcastName = playbackSessionPodcastName,
+                    episodeTitle = playbackSessionEpisodeTitle
                 )
             }
             
@@ -156,6 +160,23 @@ class BoxCastPlaybackService : MediaLibraryService() {
                 reason: Int
             ) {
                 android.util.Log.d("BoxCastPlayer", "onPositionDiscontinuity: reason=$reason, from ${oldPosition.positionMs} to ${newPosition.positionMs}")
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    updateHeartbeatsForPosition(newPosition.positionMs, playbackSessionTotalDurationMs)
+                    val source = cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.consumeSeekSource()
+                    android.util.Log.d("BoxCastPlayer", "onPositionDiscontinuity (SEEK): source=$source, reason=$reason, from ${oldPosition.positionMs} to ${newPosition.positionMs}")
+                    if (source != "resume" && source != "transition" && playbackSessionEpisodeId != null) {
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackSeeked(
+                            podcastId = playbackSessionPodcastId,
+                            podcastName = playbackSessionPodcastName,
+                            episodeId = playbackSessionEpisodeId!!,
+                            episodeTitle = playbackSessionEpisodeTitle,
+                            fromPositionSeconds = oldPosition.positionMs / 1000f,
+                            toPositionSeconds = newPosition.positionMs / 1000f,
+                            totalDurationSeconds = playbackSessionTotalDurationMs / 1000f,
+                            seekSource = source
+                        )
+                    }
+                }
             }
         })
 
@@ -187,6 +208,26 @@ class BoxCastPlaybackService : MediaLibraryService() {
                     }
                 }
             }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (!playWhenReady) {
+                    val pauseReason = when (reason) {
+                        Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY -> "headphone_disconnected"
+                        Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS -> "audio_focus_loss_permanent"
+                        Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST -> "user_voluntary"
+                        else -> "user_voluntary"
+                    }
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setPauseReason(pauseReason)
+                    android.util.Log.d("BoxCastPlayer", "onPlayWhenReadyChanged: playWhenReady=false, reason=$reason, pauseReason=$pauseReason")
+                }
+            }
+
+            override fun onPlaybackSuppressionReasonChanged(reason: Int) {
+                if (reason == Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS) {
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setPauseReason("audio_focus_loss_transient")
+                    android.util.Log.d("BoxCastPlayer", "onPlaybackSuppressionReasonChanged: transient audio focus loss")
+                }
+            }
         })
         
         // Progress saver + resume-seek + Telemetry
@@ -209,22 +250,23 @@ class BoxCastPlaybackService : MediaLibraryService() {
                         player.seekTo(seekTo)
                         // Delay progress saver to avoid overwriting the seek position
                         progressSaverJob?.cancel()
-                        progressSaverJob = serviceScope.launch(Dispatchers.IO) {
+                        progressSaverJob = serviceScope.launch {
                             kotlinx.coroutines.delay(5000) // Wait 5s after seek
-                            saveProgressLoop(player)
+                            startPlaybackTicker(player)
                         }
                     } else {
                         progressSaverJob?.cancel()
-                        progressSaverJob = serviceScope.launch(Dispatchers.IO) {
-                            saveProgressLoop(player)
+                        progressSaverJob = serviceScope.launch {
+                            startPlaybackTicker(player)
                         }
                     }
                 } else {
                     // Telemetry: Paused playing 
-                    // Only end session if explicitly paused or stopped. Ignore buffering/seeking.
+                    // Only end session if explicitly paused, stopped, or transiently suppressed. Ignore buffering/seeking.
                     val shouldEndSession = !player.playWhenReady || 
                                            player.playbackState == Player.STATE_ENDED ||
-                                           player.playbackState == Player.STATE_IDLE
+                                           player.playbackState == Player.STATE_IDLE ||
+                                           player.playbackSuppressionReason != Player.PLAYBACK_SUPPRESSION_REASON_NONE
                     
                     if (shouldEndSession) {
                         endPlaybackSession(forceCompleted = false)
@@ -253,15 +295,19 @@ class BoxCastPlaybackService : MediaLibraryService() {
 
         val forwardingPlayer = object : androidx.media3.common.ForwardingPlayer(player) {
             override fun seekToNext() {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("skip_30s")
                 seekForward()
             }
             override fun seekToPrevious() {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("replay_10s")
                 seekBack()
             }
             override fun seekToNextMediaItem() {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("skip_30s")
                 seekForward()
             }
             override fun seekToPreviousMediaItem() {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("replay_10s")
                 seekBack()
             }
             
@@ -328,6 +374,10 @@ class BoxCastPlaybackService : MediaLibraryService() {
         
         endPlaybackSession(forceCompleted = false) // Flush any outgoing session
         
+        if (playbackSessionEpisodeId != episodeId) {
+            firedHeartbeats.clear()
+        }
+        
         playbackSessionStartTimeMs = System.currentTimeMillis()
         playbackSessionBufferingStartTimeMs = 0L
         playbackSessionTotalBufferedTimeMs = 0L
@@ -366,17 +416,49 @@ class BoxCastPlaybackService : MediaLibraryService() {
             val podcastId = findPodcastIdForEpisode(episodeId)
             playbackSessionPodcastId = podcastId
             
-            // Resolve genre race condition
+            // Resolve actual podcast name and genre via Database, History, or API
+            var resolvedPodcastName: String? = null
             var actualGenre = genre
-            if ((actualGenre == null || actualGenre == "Podcast") && podcastId != null) {
+            
+            if (podcastId != null) {
+                // 1. Try local database (very fast)
                 try {
                     val podcast = database.podcastDao().getPodcast(podcastId)
-                    if (podcast != null && !podcast.genre.isNullOrBlank() && podcast.genre != "Podcast") {
-                        actualGenre = podcast.genre
-                        playbackSessionPodcastGenre = actualGenre
+                    if (podcast != null) {
+                        resolvedPodcastName = podcast.title
+                        if (!podcast.genre.isNullOrBlank() && podcast.genre != "Podcast") {
+                            actualGenre = podcast.genre
+                            playbackSessionPodcastGenre = actualGenre
+                        }
                     }
                 } catch (e: Exception) { /* ignore */ }
+                
+                // 2. Try listening history
+                if (resolvedPodcastName.isNullOrBlank()) {
+                    try {
+                        val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
+                        if (historyItem != null && !historyItem.podcastName.isNullOrBlank()) {
+                            resolvedPodcastName = historyItem.podcastName
+                        }
+                    } catch (e: Exception) { /* ignore */ }
+                }
+                
+                // 3. Try fetching details from repository
+                if (resolvedPodcastName.isNullOrBlank()) {
+                    try {
+                        val podcast = podcastRepository.getPodcastDetails(podcastId)
+                        if (podcast != null) {
+                            resolvedPodcastName = podcast.title
+                        }
+                    } catch (e: Exception) { /* ignore */ }
+                }
             }
+            
+            val finalPodcastName = resolvedPodcastName
+                ?: currentItem?.mediaMetadata?.subtitle?.toString()
+                ?: currentItem?.mediaMetadata?.artist?.toString()
+            
+            playbackSessionPodcastName = finalPodcastName
             
             // Check if repeating
             val history = database.listeningHistoryDao().getHistoryItem(episodeId)
@@ -392,11 +474,14 @@ class BoxCastPlaybackService : MediaLibraryService() {
             val startPositionMs = kotlinx.coroutines.withContext(Dispatchers.Main) { 
                 mediaSession?.player?.currentPosition ?: 0L 
             }
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                updateHeartbeatsForPosition(startPositionMs, durationMs)
+            }
             val isSubscribed = podcastId?.let { subscriptionRepository.isSubscribed(it) } ?: false
             
             cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackStarted(
                 podcastId = podcastId,
-                podcastName = artist,
+                podcastName = finalPodcastName,
                 podcastGenre = actualGenre,
                 episodeId = episodeId,
                 episodeTitle = title,
@@ -437,20 +522,54 @@ class BoxCastPlaybackService : MediaLibraryService() {
             // Capture queue size for analytics
             val currentQueueSize = try { mediaSession?.player?.mediaItemCount ?: 0 } catch (_: Exception) { 0 }
             
-            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackPaused(
-                podcastId = currentPodcastId,
-                podcastName = currentPodcastName,
-                podcastGenre = currentPodcastGenre,
-                episodeId = currentEpisodeId,
-                episodeTitle = currentEpisodeTitle,
-                durationPlayedSeconds = durationPlayedSeconds,
-                totalBufferedTimeSeconds = playbackSessionTotalBufferedTimeMs / 1000f,
-                totalDurationSeconds = totalDurationMs / 1000f,
-                isCompleted = isCompleted,
-                entryPoint = entryPoint,
-                entryPointContext = entryPointContext,
-                queueSize = currentQueueSize
-            )
+            if (isCompleted) {
+                // Instantly dispatch 100% heartbeat if not already fired
+                if (!firedHeartbeats.contains("percent_100")) {
+                    firedHeartbeats.add("percent_100")
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackHeartbeat(
+                        podcastId = currentPodcastId,
+                        podcastName = currentPodcastName,
+                        episodeId = currentEpisodeId,
+                        episodeTitle = currentEpisodeTitle,
+                        currentPositionSeconds = totalDurationMs / 1000f,
+                        totalDurationSeconds = totalDurationMs / 1000f,
+                        heartbeatPercentage = 100,
+                        heartbeatType = "percent"
+                    )
+                }
+
+                // Dedicated playback_completed event
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackCompleted(
+                    podcastId = currentPodcastId,
+                    podcastName = currentPodcastName,
+                    podcastGenre = currentPodcastGenre,
+                    episodeId = currentEpisodeId,
+                    episodeTitle = currentEpisodeTitle,
+                    totalDurationSeconds = totalDurationMs / 1000f,
+                    entryPoint = entryPoint,
+                    entryPointContext = entryPointContext
+                )
+            } else {
+                val pauseReason = cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.consumePauseReason()
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackPaused(
+                    podcastId = currentPodcastId,
+                    podcastName = currentPodcastName,
+                    podcastGenre = currentPodcastGenre,
+                    episodeId = currentEpisodeId,
+                    episodeTitle = currentEpisodeTitle,
+                    durationPlayedSeconds = durationPlayedSeconds,
+                    totalBufferedTimeSeconds = playbackSessionTotalBufferedTimeMs / 1000f,
+                    totalDurationSeconds = totalDurationMs / 1000f,
+                    isCompleted = false,
+                    entryPoint = entryPoint,
+                    entryPointContext = entryPointContext,
+                    queueSize = currentQueueSize,
+                    pauseReason = pauseReason
+                )
+            }
+            
+            // Flush events immediately to prevent losses during backgrounding/shutdown
+            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.flush()
             
             // Reset
             playbackSessionStartTimeMs = 0L
@@ -480,6 +599,19 @@ class BoxCastPlaybackService : MediaLibraryService() {
         }
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val player = mediaSession?.player
+        if (player != null) {
+            if (!player.playWhenReady || player.mediaItemCount == 0 || player.playbackState == Player.STATE_ENDED || player.playbackState == Player.STATE_IDLE) {
+                android.util.Log.d("BoxCastPlaybackService", "onTaskRemoved: player not playing or queue empty, stopping service gracefully")
+                stopSelf()
+            }
+        } else {
+            stopSelf()
+        }
+        super.onTaskRemoved(rootIntent)
     }
 
     /**
@@ -593,12 +725,83 @@ class BoxCastPlaybackService : MediaLibraryService() {
     }
 
     /**
-     * Periodically saves playback position to DB (runs on Dispatchers.IO).
+     * Periodically saves playback position and dispatches heartbeat telemetry (runs on Dispatchers.Main).
      */
-    private suspend fun saveProgressLoop(player: ExoPlayer) {
+    private suspend fun startPlaybackTicker(player: ExoPlayer) {
         while (true) {
             kotlinx.coroutines.delay(10_000)
+            
+            // 1. Save progress once
             saveProgressOnce(player)
+            
+            // 2. Dispatch lightweight playback heartbeat telemetry
+            val episodeId = playbackSessionEpisodeId
+            if (episodeId != null && player.isPlaying) {
+                val currentPosMs = player.currentPosition
+                val durationMs = player.duration
+                if (durationMs > 0) {
+                    val currentPosSec = currentPosMs / 1000f
+                    val durationSec = durationMs / 1000f
+                    val percent = (currentPosMs.toFloat() / durationMs.toFloat()) * 100f
+                    
+                    // 10%, 25%, 50%, 75%, 90%
+                    val percentMilestones = listOf(10, 25, 50, 75, 90)
+                    for (milestone in percentMilestones) {
+                        if (percent >= milestone && !firedHeartbeats.contains("percent_$milestone")) {
+                            firedHeartbeats.add("percent_$milestone")
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackHeartbeat(
+                                podcastId = playbackSessionPodcastId,
+                                podcastName = playbackSessionPodcastName,
+                                episodeId = episodeId,
+                                episodeTitle = playbackSessionEpisodeTitle,
+                                currentPositionSeconds = currentPosSec,
+                                totalDurationSeconds = durationSec,
+                                heartbeatPercentage = milestone,
+                                heartbeatType = "percent"
+                            )
+                        }
+                    }
+                    
+                    // Time-based: every 5 minutes (300 seconds)
+                    val fiveMinuteIntervals = (currentPosSec / 300f).toInt()
+                    if (fiveMinuteIntervals > 0) {
+                        val milestoneKey = "time_${fiveMinuteIntervals * 5}m"
+                        if (!firedHeartbeats.contains(milestoneKey)) {
+                            firedHeartbeats.add(milestoneKey)
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackHeartbeat(
+                                podcastId = playbackSessionPodcastId,
+                                podcastName = playbackSessionPodcastName,
+                                episodeId = episodeId,
+                                episodeTitle = playbackSessionEpisodeTitle,
+                                currentPositionSeconds = currentPosSec,
+                                totalDurationSeconds = durationSec,
+                                heartbeatPercentage = 0,
+                                heartbeatType = "interval"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateHeartbeatsForPosition(positionMs: Long, durationMs: Long) {
+        if (durationMs <= 0) return
+        val percent = (positionMs.toFloat() / durationMs.toFloat()) * 100f
+        
+        // Percent milestones
+        val percentMilestones = listOf(10, 25, 50, 75, 90)
+        for (milestone in percentMilestones) {
+            if (percent >= milestone) {
+                firedHeartbeats.add("percent_$milestone")
+            }
+        }
+        
+        // Time-based intervals
+        val positionSec = positionMs / 1000f
+        val fiveMinuteIntervals = (positionSec / 300f).toInt()
+        for (i in 1..fiveMinuteIntervals) {
+            firedHeartbeats.add("time_${i * 5}m")
         }
     }
     
@@ -722,10 +925,12 @@ class BoxCastPlaybackService : MediaLibraryService() {
         ): ListenableFuture<androidx.media3.session.SessionResult> {
             when (customCommand.customAction) {
                 "SEEK_BACK" -> {
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("replay_10s")
                     session.player.seekBack()
                     android.util.Log.d("AutoBrowse", "Seek back 10s")
                 }
                 "SEEK_FORWARD" -> {
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("skip_30s")
                     session.player.seekForward()
                     android.util.Log.d("AutoBrowse", "Seek forward 30s")
                 }

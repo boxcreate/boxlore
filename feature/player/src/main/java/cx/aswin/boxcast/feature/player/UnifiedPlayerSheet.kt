@@ -265,7 +265,7 @@ fun UnifiedPlayerSheet(
         if (expandTrigger > 0L) {
             // Force Expand
             currentSheetContentState = PlayerSheetState.EXPANDED
-            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.startSession(podcast?.id, episode?.id)
+            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.startSession(podcast?.id, episode.id, podcast?.title, episode.title)
             animatePlayerSheet(targetExpanded = true)
         }
     }
@@ -390,11 +390,11 @@ fun UnifiedPlayerSheet(
                                 scope.launch {
                                     if (targetState == PlayerSheetState.EXPANDED) {
                                         if (currentSheetContentState != PlayerSheetState.EXPANDED) {
-                                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("expanded", podcast?.id, episode?.id)
+                                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("expanded", podcast?.id, episode.id, podcast?.title, episode.title)
                                         }
                                         launch { animatePlayerSheet(targetExpanded = true) }
                                         currentSheetContentState = PlayerSheetState.EXPANDED
-                                        cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.startSession(podcast?.id, episode?.id)
+                                        cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.startSession(podcast?.id, episode.id, podcast?.title, episode.title)
                                     } else {
                                         val dynamicDamping = lerp(
                                             Spring.DampingRatioNoBouncy,
@@ -438,10 +438,10 @@ fun UnifiedPlayerSheet(
                         scope.launch {
                             if (currentSheetContentState == PlayerSheetState.COLLAPSED) {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("expanded", podcast?.id, episode?.id)
+                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("expanded", podcast?.id, episode.id, podcast?.title, episode.title)
                                 launch { animatePlayerSheet(targetExpanded = true) }
                                 currentSheetContentState = PlayerSheetState.EXPANDED
-                                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.startSession(podcast?.id, episode?.id)
+                                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.startSession(podcast?.id, episode.id, podcast?.title, episode.title)
                             } else {
                                 launch {
                                     val currentFraction = playerContentExpansionFraction.value
@@ -473,7 +473,7 @@ fun UnifiedPlayerSheet(
                         SwipeableMiniPlayer(
                             isPlaying = state.isPlaying,
                             onDismiss = { 
-                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("dismissed", podcast?.id, episode?.id)
+                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("dismissed", podcast?.id, episode.id, podcast?.title, episode.title)
                                 playbackRepository.clearSession() 
                             },
                             backgroundColor = scheme.primaryContainer,
@@ -494,16 +494,16 @@ fun UnifiedPlayerSheet(
                                 duration = state.duration,
                                 colorScheme = scheme,
                                 onPlayPause = {
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("play_pause", podcast?.id, episode?.id)
+                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("play_pause", podcast?.id, episode.id, podcast?.title, episode.title)
                                     if (state.isPlaying) playbackRepository.pause()
                                     else playbackRepository.resume()
                                 },
                                 onPrevious = { 
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("previous", podcast?.id, episode?.id)
+                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("previous", podcast?.id, episode.id, podcast?.title, episode.title)
                                     playbackRepository.skipBackward() 
                                 },
                                 onNext = { 
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("next", podcast?.id, episode?.id)
+                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction("next", podcast?.id, episode.id, podcast?.title, episode.title)
                                     playbackRepository.skipForward() 
                                 },
                                 modifier = Modifier.fillMaxSize()

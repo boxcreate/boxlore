@@ -633,7 +633,7 @@ fun EpisodeInfoScreen(
                                         shadowElevation = 4.dp
                                     ) {
                                         Text(
-                                            text = "Tap to mark played ↑",
+                                            text = "↑ Tap to mark completed",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -650,7 +650,10 @@ fun EpisodeInfoScreen(
                         item {
                             EpisodeDescriptionCard(
                                 description = state.episode.description,
-                                accentColor = accentColor
+                                accentColor = accentColor,
+                                location = state.location,
+                                license = state.license,
+                                persons = state.episode.persons
                             )
                         }
                     }

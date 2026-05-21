@@ -10,6 +10,10 @@ jobs:
   sync-pi-data:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      max-parallel: 1
+      matrix:
+        country: [us, in, gb]
     
     steps:
       - name: Checkout
@@ -47,7 +51,7 @@ jobs:
           TURSO_URL: ${{ secrets.TURSO_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
-          node scripts/get-chart-itunes-ids.js > chart_itunes_ids.txt
+          node scripts/get-chart-itunes-ids.js --country ${{ matrix.country }} > chart_itunes_ids.txt
           echo "Got $(wc -l < chart_itunes_ids.txt) iTunes IDs from charts"
           head -5 chart_itunes_ids.txt
           
@@ -96,7 +100,7 @@ jobs:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           PODCAST_INDEX_API_KEY: ${{ secrets.PODCAST_INDEX_API_KEY }}
           PODCAST_INDEX_API_SECRET: ${{ secrets.PODCAST_INDEX_API_SECRET }}
-        run: node scripts/sync-episodes.js
+        run: node scripts/sync-episodes.js --country ${{ matrix.country }}
 
       - name: Install Vectorization Dependencies
         run: npm install
@@ -105,7 +109,7 @@ jobs:
         env:
           TURSO_URL: ${{ secrets.TURSO_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: node scripts/vectorize.js
+        run: node scripts/vectorize.js --country ${{ matrix.country }}
 
           
       - name: Cleanup

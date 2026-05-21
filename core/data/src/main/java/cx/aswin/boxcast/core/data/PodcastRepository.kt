@@ -39,10 +39,10 @@ class PodcastRepository(
 ) {
     private val api: BoxCastApi = NetworkModule.createBoxCastApi(baseUrl, context)
 
-    suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null): List<Podcast> = withContext(Dispatchers.IO) {
+    suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0): List<Podcast> = withContext(Dispatchers.IO) {
         // Fallback or non-streaming implementation
         try {
-            val response = api.getTrending(publicKey, country, limit, category).execute()
+            val response = api.getTrending(publicKey, country, limit, category, offset).execute()
             if (response.isSuccessful && response.body() != null) {
                 mapFeedsToPodcasts(response.body()!!.feeds)
             } else {
@@ -67,11 +67,11 @@ class PodcastRepository(
         }
     }
 
-    fun getTrendingPodcastsStream(country: String = "us", limit: Int = 50, category: String? = null): kotlinx.coroutines.flow.Flow<List<Podcast>> = kotlinx.coroutines.flow.flow {
+    fun getTrendingPodcastsStream(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0): kotlinx.coroutines.flow.Flow<List<Podcast>> = kotlinx.coroutines.flow.flow {
         val podcasts = mutableListOf<Podcast>()
         try {
-            android.util.Log.d("BoxCastRepo", "Stream: Requesting trending country=$country, limit=$limit, category=$category")
-            val call = api.getTrendingStream(publicKey, country, limit, category)
+            android.util.Log.d("BoxCastRepo", "Stream: Requesting trending country=$country, limit=$limit, category=$category, offset=$offset")
+            val call = api.getTrendingStream(publicKey, country, limit, category, offset)
             val response = call.execute()
             
             android.util.Log.d("BoxCastRepo", "Stream: Response code=${response.code()}, isSuccessful=${response.isSuccessful}")
@@ -291,7 +291,10 @@ class PodcastRepository(
                     medium = feed.medium,
                     ownerName = feed.ownerName,
                     hasValue = feed.value != null,
-                    updateFrequency = feed.updateFrequency
+                    updateFrequency = feed.updateFrequency,
+                    location = feed.location,
+                    license = feed.license,
+                    isLocked = feed.locked == 1
                 )
             } else {
                 null
@@ -349,7 +352,7 @@ class PodcastRepository(
             chaptersUrl = item.chaptersUrl,
             transcriptUrl = item.transcriptUrl,
             transcripts = item.transcripts?.map { Transcript(url = it.url, type = it.type) },
-            persons = item.persons?.map { Person(name = it.name, role = it.role, img = it.img, href = it.href) },
+            persons = item.persons?.map { Person(name = it.name, role = it.role, group = it.group, img = it.img, href = it.href) },
             seasonNumber = item.season,
             episodeNumber = item.episodeNumber,
             episodeType = item.episodeType
@@ -365,6 +368,15 @@ class PodcastRepository(
             }
         } catch (e: Exception) {
             "episodic"
+        }
+    }
+
+    suspend fun getPodcastMeta(feedId: String): cx.aswin.boxcast.core.network.model.PodcastMetaResponse? = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getPodcastMeta(publicKey, feedId).execute()
+            if (response.isSuccessful) response.body() else null
+        } catch (e: Exception) {
+            null
         }
     }
 

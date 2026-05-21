@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 
 enum class EpisodeSort { NEWEST, OLDEST }
@@ -179,46 +180,164 @@ class PodcastInfoViewModel(
             return
         }
         
-        // Track screen viewed
-        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
-            podcastId = podcastId,
-            entryPoint = entryPoint,
-            genreFilter = genreFilter,
-            scrollDepth = scrollDepth,
-            searchQuery = searchQuery
-        )
-
         currentPodcastId = podcastId
         currentOffset = 0
         viewModelScope.launch {
-            _uiState.value = PodcastInfoUiState.Loading
+            // 1. Instantly load from local database if available
+            val localPodcastEntity = database.podcastDao().getPodcast(podcastId)
+            val isSubscribed = subscriptionRepository.isSubscribed(podcastId)
+            var currentPodcast: Podcast? = localPodcastEntity?.let { entity ->
+                Podcast(
+                    id = entity.podcastId,
+                    title = entity.title,
+                    artist = entity.author ?: "Unknown",
+                    imageUrl = entity.imageUrl ?: "",
+                    description = entity.description,
+                    genre = entity.genre ?: "Podcast",
+                    type = entity.type,
+                    latestEpisode = entity.latestEpisode,
+                    podcastGuid = entity.podcastGuid,
+                    fundingUrl = entity.fundingUrl,
+                    fundingMessage = entity.fundingMessage,
+                    medium = entity.medium,
+                    hasValue = entity.hasValue,
+                    updateFrequency = entity.updateFrequency,
+                    location = entity.location,
+                    license = entity.license,
+                    isLocked = entity.isLocked
+                )
+            }
+
+            if (currentPodcast != null) {
+                if (wasSubscribedAtStart == null) {
+                    wasSubscribedAtStart = isSubscribed
+                }
+                _uiState.value = PodcastInfoUiState.Success(
+                    podcast = currentPodcast,
+                    episodes = emptyList(),
+                    isSubscribed = isSubscribed,
+                    hasMoreEpisodes = true,
+                    isLoadingMore = true
+                )
+            } else {
+                _uiState.value = PodcastInfoUiState.Loading
+            }
+
             try {
-                val podcast = repository.getPodcastDetails(podcastId)
-                if (podcast != null) {
-                    val limit = if (podcast.type == "serial") 200 else PAGE_SIZE
-                    val initialSort = if (podcast.type == "serial") EpisodeSort.OLDEST else EpisodeSort.NEWEST
-                    val sortParam = if (initialSort == EpisodeSort.OLDEST) "oldest" else "newest"
-                    val page = repository.getEpisodesPaginated(podcastId, limit, 0, sortParam)
-                    val isSubscribed = subscriptionRepository.isSubscribed(podcastId)
+                // 2. Fetch details and episodes in parallel using coroutine async
+                val podcastDeferred = async { repository.getPodcastDetails(podcastId) }
+                
+                val initialType = currentPodcast?.type ?: "episodic"
+                val limit = if (initialType == "serial") 200 else PAGE_SIZE
+                val initialSort = if (initialType == "serial") EpisodeSort.OLDEST else EpisodeSort.NEWEST
+                val sortParam = if (initialSort == EpisodeSort.OLDEST) "oldest" else "newest"
+                
+                val episodesDeferred = async { repository.getEpisodesPaginated(podcastId, limit, 0, sortParam) }
+
+                val apiPodcast = podcastDeferred.await()
+                val page = episodesDeferred.await()
+
+                if (apiPodcast != null) {
+                    currentPodcast = apiPodcast
                     
+                    // Track screen viewed with podcast name
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
+                        podcastId = podcastId,
+                        podcastName = apiPodcast.title,
+                        entryPoint = entryPoint,
+                        genreFilter = genreFilter,
+                        scrollDepth = scrollDepth,
+                        searchQuery = searchQuery
+                    )
+
                     if (wasSubscribedAtStart == null) {
                         wasSubscribedAtStart = isSubscribed
                     }
 
                     currentOffset = page.episodes.size
                     _uiState.value = PodcastInfoUiState.Success(
-                        podcast = podcast,
+                        podcast = apiPodcast,
                         episodes = page.episodes,
                         isSubscribed = isSubscribed,
                         hasMoreEpisodes = page.hasMore,
-                        currentSort = initialSort
+                        currentSort = initialSort,
+                        isLoadingMore = false
                     )
+
+                    // 3. Asynchronously fetch RSS metadata in background without blocking UI
+                    launch {
+                        try {
+                            val meta = repository.getPodcastMeta(podcastId)
+                            if (meta != null) {
+                                val state = _uiState.value
+                                if (state is PodcastInfoUiState.Success && state.podcast.id == podcastId) {
+                                    val enrichedPodcast = state.podcast.copy(
+                                        location = meta.location,
+                                        license = meta.license,
+                                        isLocked = meta.locked == 1,
+                                        updateFrequency = meta.updateFrequency
+                                    )
+                                    _uiState.value = state.copy(podcast = enrichedPodcast)
+                                    
+                                    // If subscribed, persist enriched values in database
+                                    if (isSubscribed) {
+                                        val updatedEntity = cx.aswin.boxcast.core.data.database.PodcastEntity(
+                                            podcastId = enrichedPodcast.id,
+                                            title = enrichedPodcast.title,
+                                            author = enrichedPodcast.artist,
+                                            imageUrl = enrichedPodcast.imageUrl,
+                                            description = enrichedPodcast.description,
+                                            genre = enrichedPodcast.genre,
+                                            type = enrichedPodcast.type,
+                                            isSubscribed = true,
+                                            lastRefreshed = System.currentTimeMillis(),
+                                            latestEpisode = enrichedPodcast.latestEpisode,
+                                            podcastGuid = enrichedPodcast.podcastGuid,
+                                            fundingUrl = enrichedPodcast.fundingUrl,
+                                            fundingMessage = enrichedPodcast.fundingMessage,
+                                            medium = enrichedPodcast.medium,
+                                            hasValue = enrichedPodcast.hasValue,
+                                            updateFrequency = enrichedPodcast.updateFrequency,
+                                            location = enrichedPodcast.location,
+                                            license = enrichedPodcast.license,
+                                            isLocked = enrichedPodcast.isLocked
+                                        )
+                                        database.podcastDao().upsert(updatedEntity)
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                 } else {
-                    _uiState.value = PodcastInfoUiState.Error
+                    if (currentPodcast == null) {
+                        // Fallback tracking without podcast name
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
+                            podcastId = podcastId,
+                            podcastName = null,
+                            entryPoint = entryPoint,
+                            genreFilter = genreFilter,
+                            scrollDepth = scrollDepth,
+                            searchQuery = searchQuery
+                        )
+                        _uiState.value = PodcastInfoUiState.Error
+                    }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                _uiState.value = PodcastInfoUiState.Error
+                if (currentPodcast == null) {
+                    // Fallback tracking without podcast name
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
+                        podcastId = podcastId,
+                        podcastName = null,
+                        entryPoint = entryPoint,
+                        genreFilter = genreFilter,
+                        scrollDepth = scrollDepth,
+                        searchQuery = searchQuery
+                    )
+                    e.printStackTrace()
+                    _uiState.value = PodcastInfoUiState.Error
+                }
             }
         }
     }

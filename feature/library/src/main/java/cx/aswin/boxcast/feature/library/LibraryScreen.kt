@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import cx.aswin.boxcast.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
@@ -336,7 +337,7 @@ private fun LibraryCardCollage(
             val rotation = if (realIndex % 2 == 0) 10f else -10f
 
             AsyncImage(
-                model = imageUrl,
+                model = imageUrl.optimizedImageUrl(400),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -434,7 +435,7 @@ fun LibraryPodcastCard(
                     .height(if (isTall) 200.dp else 150.dp) // Staggered heights (Reduced)
             ) {
                 AsyncImage(
-                    model = podcast.imageUrl,
+                    model = podcast.imageUrl.optimizedImageUrl(400),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

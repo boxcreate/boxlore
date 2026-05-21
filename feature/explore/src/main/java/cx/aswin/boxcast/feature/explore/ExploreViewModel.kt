@@ -34,7 +34,9 @@ sealed interface ExploreUiState {
         val isLoading: Boolean = false, // For showing skeleton in grid area only
         val currentVibe: String? = null,
         val suggestedVibes: List<Pair<String, String>> = emptyList(),
-        val correctedQuery: String? = null
+        val correctedQuery: String? = null,
+        val isLoadingMore: Boolean = false,
+        val hasMore: Boolean = true
     ) : ExploreUiState
     data class Error(val message: String) : ExploreUiState
 }
@@ -64,6 +66,12 @@ class ExploreViewModel(
     // Search Job to cancel previous searches
     private var searchJob: Job? = null
 
+    // Pagination State
+    private var currentOffset = 0
+    private val PAGE_SIZE = 20
+    private val _isLoadingMore = MutableStateFlow(false)
+    private val _hasMorePages = MutableStateFlow(true)
+
     // Telemetry State
     private var sessionStartTime = System.currentTimeMillis()
     private var categoriesClickedCount = 0
@@ -82,7 +90,9 @@ class ExploreViewModel(
                 _trendingPodcasts,
                 _searchResults,
                 _searchQuery,
-                _isLoading
+                _isLoading,
+                _isLoadingMore,
+                _hasMorePages
             ) { args: Array<Any?> ->
                 val subIds = args[0] as Set<String>
                 val category = args[1] as String
@@ -90,13 +100,19 @@ class ExploreViewModel(
                 val searchRes = args[3] as List<Podcast>
                 val query = args[4] as String
                 val pIsLoading = args[5] as Boolean
+                val pIsLoadingMore = args[6] as Boolean
+                val pHasMore = args[7] as Boolean
                 // Custom combine to pull all flows
-                Triple(subIds, category, trending) to Triple(searchRes, query, pIsLoading)
+                Triple(subIds, category, trending) to arrayOf(searchRes, query, pIsLoading, pIsLoadingMore, pHasMore)
             }.combine(
                 combine(_currentVibe, _suggestedVibes, _correctedQuery) { vibe, vibes, corrected -> Triple(vibe, vibes, corrected) }
             ) { (trip1, trip2), vibeTriple ->
                 val (subIds, category, trending) = trip1
-                val (searchRes, query, pIsLoading) = trip2
+                val searchRes = trip2[0] as List<Podcast>
+                val query = trip2[1] as String
+                val pIsLoading = trip2[2] as Boolean
+                val pIsLoadingMore = trip2[3] as Boolean
+                val pHasMore = trip2[4] as Boolean
                 val (currentVibe, vibes, corrected) = vibeTriple
 
                 val isSearching = query.isNotEmpty() || currentVibe != null
@@ -111,7 +127,9 @@ class ExploreViewModel(
                     isLoading = pIsLoading,
                     currentVibe = currentVibe,
                     suggestedVibes = vibes,
-                    correctedQuery = corrected
+                    correctedQuery = corrected,
+                    isLoadingMore = pIsLoadingMore,
+                    hasMore = pHasMore
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -215,6 +233,8 @@ class ExploreViewModel(
     }
 
     private fun loadTrending(category: String) {
+        currentOffset = 0
+        _hasMorePages.value = true
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -224,15 +244,45 @@ class ExploreViewModel(
                 // This hits the Turso DB (via Proxy)
                 val podcasts = podcastRepository.getTrendingPodcasts(
                     country = "us", 
-                    limit = 50,
-                    category = apiCategory
+                    limit = PAGE_SIZE,
+                    category = apiCategory,
+                    offset = 0
                 )
                 _trendingPodcasts.value = podcasts
+                _hasMorePages.value = podcasts.size >= PAGE_SIZE
+                currentOffset = podcasts.size
             } catch (e: Exception) {
                 // Handle error
                 _trendingPodcasts.value = emptyList()
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    fun loadMoreTrending() {
+        if (_isLoadingMore.value || !_hasMorePages.value || _searchQuery.value.isNotEmpty() || _currentVibe.value != null) return
+        _isLoadingMore.value = true
+        viewModelScope.launch {
+            try {
+                val apiCategory = if (_currentCategory.value == "All") null else _currentCategory.value.lowercase()
+                val morePodcasts = podcastRepository.getTrendingPodcasts(
+                    country = "us",
+                    limit = PAGE_SIZE,
+                    category = apiCategory,
+                    offset = currentOffset
+                )
+                if (morePodcasts.size < PAGE_SIZE) {
+                    _hasMorePages.value = false
+                }
+                currentOffset += morePodcasts.size
+                val existingIds = _trendingPodcasts.value.map { it.id }.toSet()
+                val newPodcasts = morePodcasts.filter { it.id !in existingIds }
+                _trendingPodcasts.value = _trendingPodcasts.value + newPodcasts
+            } catch (e: Exception) {
+                android.util.Log.e("ExploreViewModel", "Load more error", e)
+            } finally {
+                _isLoadingMore.value = false
             }
         }
     }

@@ -173,6 +173,32 @@ class HomeViewModel(
                     android.util.Log.d("BoxCastTiming", "VM: Trending stream completed (cold flow done). StateFlow keeps combine alive.")
                 }
                 
+                // Fetch curated vibes ONCE (they only depend on time-of-day, not on combine inputs)
+                val blockConfig = getTimeBlockConfig()
+                val daySeed = java.time.LocalDate.now().toEpochDay()
+                val prefetchedTimeBlock = viewModelScope.async {
+                    try {
+                        val sectionJobs = blockConfig.genres.map { genre ->
+                            async {
+                                try {
+                                    val list = podcastRepository.getCuratedPodcasts(genre.id)
+                                    val filtered = list
+                                        .filter { it.latestEpisode != null }
+                                        .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
+                                        .take(10)
+                                    if (filtered.isNotEmpty()) {
+                                        CuratedSectionData(genre.title, genre.id, filtered)
+                                    } else null
+                                } catch (e: Exception) { null }
+                            }
+                        }
+                        val resolvedSections = sectionJobs.awaitAll().filterNotNull()
+                        if (resolvedSections.isNotEmpty()) {
+                            CuratedTimeBlock(blockConfig.title, blockConfig.subtitle, blockConfig.icon, resolvedSections)
+                        } else null
+                    } catch (e: Exception) { null }
+                }
+                
                 combine(
                     trendingState, // Hot StateFlow — never completes
                     playbackRepository.resumeSessions
@@ -444,32 +470,8 @@ class HomeViewModel(
                         }
 
 
-                        // --- NEW: Unified Time Block ---
-                        val blockConfig = getTimeBlockConfig()
-                        val daySeed = java.time.LocalDate.now().toEpochDay()
-                        
-                        // Fetch sections in parallel
-                        val sectionJobs = blockConfig.genres.map { genre ->
-                             viewModelScope.async {
-                                 try {
-                                     // Use new Vibe API
-                                     val list = podcastRepository.getCuratedPodcasts(genre.id) // genre.id is now a vibeId like "morning_news"
-                                     val filtered = list
-                                         .filter { it.latestEpisode != null }
-                                         .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
-                                         .take(10)
-                                     
-                                     if (filtered.isNotEmpty()) {
-                                         CuratedSectionData(genre.title, genre.id, filtered)
-                                     } else null
-                                 } catch (e: Exception) { null }
-                             }
-                        }
-                        
-                        val resolvedSections = sectionJobs.awaitAll().filterNotNull()
-                        val timeBlock = if (resolvedSections.isNotEmpty()) {
-                            CuratedTimeBlock(blockConfig.title, blockConfig.subtitle, blockConfig.icon, resolvedSections)
-                        } else null
+                        // --- Unified Time Block (prefetched once, reused across combine emissions) ---
+                        val timeBlock = prefetchedTimeBlock.await()
                         
                         // Update used IDs
                         timeBlock?.sections?.forEach { sec -> 

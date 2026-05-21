@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowOverflow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,6 +40,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
@@ -65,6 +67,8 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -136,7 +140,8 @@ fun ExploreScreen(
             onPodcastClick(id, entryPoint, filter, index)
         },
         onVibeSelected = viewModel::onVibeSelected,
-        onClearVibe = viewModel::clearVibe
+        onClearVibe = viewModel::clearVibe,
+        onLoadMore = { viewModel.loadMoreTrending() }
     )
 }
 
@@ -148,7 +153,8 @@ fun ExploreContent(
     onCategorySelected: (String) -> Unit,
     onPodcastClick: (String, String, String?, Int?) -> Unit,
     onVibeSelected: (String, String) -> Unit,
-    onClearVibe: () -> Unit
+    onClearVibe: () -> Unit,
+    onLoadMore: () -> Unit = {}
 ) {
     // Handle error/loading states
     when (uiState) {
@@ -264,7 +270,24 @@ fun ExploreContent(
         }
 
         // SCROLLABLE CONTENT: Grid
+        val gridState = rememberLazyStaggeredGridState()
+
+        // Infinite scroll trigger using snapshotFlow to avoid rapid-fire recomposition loops
+        androidx.compose.runtime.LaunchedEffect(gridState) {
+            androidx.compose.runtime.snapshotFlow {
+                val layoutInfo = gridState.layoutInfo
+                val totalItems = layoutInfo.totalItemsCount
+                val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                totalItems > 0 && lastVisible >= totalItems - 6
+            }
+            .distinctUntilChanged()
+            .collect { nearEnd ->
+                if (nearEnd) onLoadMore()
+            }
+        }
+
         LazyVerticalStaggeredGrid(
+            state = gridState,
             columns = StaggeredGridCells.Adaptive(150.dp),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -338,7 +361,7 @@ fun ExploreContent(
                 } else {
                     val gridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
                     val showGenreChip = state.currentCategory == "All" && state.currentVibe == null
-                    itemsIndexed(gridItems, key = { _, it -> "${gridItems.indexOf(it)}_${it.id}" }) { index, podcast ->
+                    itemsIndexed(gridItems, key = { index, it -> "grid_${index}_${it.id}" }) { index, podcast ->
                         val heightVariant = podcast.id.hashCode() % 3
                         val cardHeight = when (heightVariant) {
                             0 -> 260.dp
@@ -361,6 +384,18 @@ fun ExploreContent(
                             showGenreChip = showGenreChip,
                             onClick = { onPodcastClick(podcast.id, entryPointStr, state.currentCategory, actualIndex) }
                         )
+                    }
+
+                    // Loading indicator for pagination
+                    if (state.isLoadingMore) {
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BoxCastLoader.Expressive(size = 40.dp)
+                            }
+                        }
                     }
                 }
             }

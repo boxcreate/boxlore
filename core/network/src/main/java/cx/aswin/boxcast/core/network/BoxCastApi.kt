@@ -26,7 +26,8 @@ interface BoxCastApi {
         @Header("X-App-Key") publicKey: String,
         @Query("country") country: String? = "us",
         @Query("limit") limit: Int? = 50,
-        @Query("cat") category: String? = null // New: Genre Filter
+        @Query("cat") category: String? = null, // New: Genre Filter
+        @Query("offset") offset: Int? = 0
     ): retrofit2.Call<TrendingResponse>
 
     @GET("trending")
@@ -35,7 +36,8 @@ interface BoxCastApi {
         @Header("X-App-Key") publicKey: String,
         @Query("country") country: String? = "us",
         @Query("limit") limit: Int? = 50,
-        @Query("cat") category: String? = null // New: Genre Filter
+        @Query("cat") category: String? = null, // New: Genre Filter
+        @Query("offset") offset: Int? = 0
     ): retrofit2.Call<okhttp3.ResponseBody>
 
     @GET("search")

@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class Person(
     val name: String,
     val role: String? = null,  // "host", "guest", "editor"
+    val group: String? = null, // "cast", "writing", "visuals"
     val img: String? = null,
     val href: String? = null
 )

@@ -25,5 +25,8 @@ data class Podcast(
     val medium: String? = null,   // "podcast", "music", "video"
     val ownerName: String? = null,
     val hasValue: Boolean = false,  // true if V4V value tag exists
-    val updateFrequency: String? = null
+    val updateFrequency: String? = null,
+    val location: String? = null,
+    val license: String? = null,
+    val isLocked: Boolean = false
 )

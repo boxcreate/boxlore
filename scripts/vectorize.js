@@ -99,15 +99,33 @@ async function main() {
 
     // 2. Fetch Candidates
     // Prioritize items with latest episodes (richer context)
-    const sql = `
-        SELECT id, title, description, latest_ep_title, latest_ep_description 
-        FROM podcasts 
-        WHERE vector IS NULL 
-        LIMIT ${LIMIT}
-    `;
+    const countryIndex = process.argv.indexOf('--country');
+    const country = countryIndex !== -1 ? process.argv[countryIndex + 1] : null;
+
+    let sql;
+    let args = [];
+
+    if (country) {
+        sql = `
+            SELECT DISTINCT p.id, p.title, p.description, p.latest_ep_title, p.latest_ep_description 
+            FROM charts c
+            JOIN podcasts p ON c.itunes_id = p.itunes_id
+            WHERE p.vector IS NULL AND c.country = ?
+            LIMIT ${LIMIT}
+        `;
+        args = [country];
+        console.log(`Filtering vectorization candidates for country: ${country}`);
+    } else {
+        sql = `
+            SELECT id, title, description, latest_ep_title, latest_ep_description 
+            FROM podcasts 
+            WHERE vector IS NULL 
+            LIMIT ${LIMIT}
+        `;
+    }
 
     console.log("Fetching candidates...");
-    const res = await executeSQL(sql);
+    const res = await executeSQL(sql, args);
     const rows = res?.results?.[0]?.response?.result?.rows || [];
 
     if (rows.length === 0) {

@@ -4,12 +4,19 @@ object PlayerSessionAggregator {
     private var isSessionActive = false
     private var podcastId: String? = null
     private var episodeId: String? = null
+    private var podcastName: String? = null
+    private var episodeTitle: String? = null
     private var sessionStartTimeMs: Long = 0L
 
     private val actionCounts = mutableMapOf<String, Int>()
     private val propertyValues = mutableMapOf<String, String>()
 
-    fun startSession(podcastId: String?, episodeId: String?) {
+    fun startSession(
+        podcastId: String?,
+        episodeId: String?,
+        podcastName: String? = null,
+        episodeTitle: String? = null
+    ) {
         // If a session is already active for a different episode, flush it first
         if (isSessionActive && (this.episodeId != episodeId || this.podcastId != podcastId)) {
             endSession()
@@ -19,6 +26,8 @@ object PlayerSessionAggregator {
             isSessionActive = true
             this.podcastId = podcastId
             this.episodeId = episodeId
+            this.podcastName = podcastName
+            this.episodeTitle = episodeTitle
             this.sessionStartTimeMs = System.currentTimeMillis()
             actionCounts.clear()
             propertyValues.clear()
@@ -67,13 +76,17 @@ object PlayerSessionAggregator {
         AnalyticsHelper.trackFullPlayerScreenSession(
             podcastId = podcastId,
             episodeId = episodeId,
-            metrics = metrics
+            metrics = metrics,
+            podcastName = podcastName,
+            episodeTitle = episodeTitle
         )
 
         // Reset
         isSessionActive = false
         podcastId = null
         episodeId = null
+        podcastName = null
+        episodeTitle = null
         sessionStartTimeMs = 0L
         actionCounts.clear()
         propertyValues.clear()

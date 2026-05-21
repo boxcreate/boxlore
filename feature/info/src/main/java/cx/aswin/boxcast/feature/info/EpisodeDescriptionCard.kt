@@ -5,9 +5,11 @@ import android.net.Uri
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.outlined.*
@@ -15,16 +17,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxcast.core.designsystem.component.HtmlText
+import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
+import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxcast.core.model.Person
 
-// --- Data Model ---
+// --- Data Models ---
 
 internal data class SocialLink(
     val platform: String,
@@ -33,10 +41,82 @@ internal data class SocialLink(
     val icon: ImageVector
 )
 
+
+
 // --- URL Extraction & Categorization ---
 
 private val HREF_REGEX = Regex("""href\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
 private val URL_REGEX = Regex("""https?://[^\s<>"')\]]+""")
+
+// Known tracking/feed/infrastructure domains to skip entirely
+private val SKIP_HOSTS = setOf(
+    "podcastindex", "feeds.", "anchor.fm", "podtrac", "chartable", "feedburner",
+    "podcasts.google.com"
+)
+
+private fun extractHandle(url: String, host: String): String? {
+    return try {
+        val uri = java.net.URI(url)
+        val path = uri.path ?: return null
+        val segments = path.split("/").filter { it.isNotEmpty() }
+        if (segments.isEmpty()) return null
+
+        when {
+            host.contains("youtube.com") || host.contains("youtu.be") -> {
+                val first = segments.firstOrNull() ?: return null
+                when {
+                    first.startsWith("@") -> first
+                    first == "c" || first == "user" -> segments.getOrNull(1)?.let { "@$it" }
+                    first == "channel" -> null
+                    else -> if (first.length > 4 && !first.startsWith("UC")) "@$first" else null
+                }
+            }
+            host.contains("reddit.com") -> {
+                if (segments.size >= 2) {
+                    val type = segments[0]
+                    val name = segments[1]
+                    if (type == "r") "r/$name"
+                    else if (type == "u" || type == "user") "u/$name"
+                    else null
+                } else {
+                    null
+                }
+            }
+            host.contains("discord.com") || host.contains("discord.gg") -> {
+                if (host.contains("discord.gg")) {
+                    segments.firstOrNull()
+                } else {
+                    if (segments.firstOrNull() == "invite") {
+                        segments.getOrNull(1)
+                    } else {
+                        segments.firstOrNull()
+                    }
+                }
+            }
+            host.contains("instagram.com") ||
+            host.contains("twitter.com") || host.contains("x.com") ||
+            host.contains("threads.net") ||
+            host.contains("patreon.com") ||
+            host.contains("tiktok.com") ||
+            host.contains("twitch.tv") ||
+            host.contains("facebook.com") || host.contains("fb.com") -> {
+                val first = segments.firstOrNull() ?: return null
+                val ignore = setOf(
+                    "share", "intent", "hashtag", "p", "reel", "stories", 
+                    "explore", "home", "tos", "privacy", "login", "signup",
+                    "messages", "notifications", "settings", "search", "about"
+                )
+                if (ignore.contains(first.lowercase())) return null
+                if (first.length < 2) return null
+                
+                if (first.startsWith("@")) first else "@$first"
+            }
+            else -> null
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
 
 internal fun extractSocialLinks(html: String): List<SocialLink> {
     val urls = mutableSetOf<String>()
@@ -49,44 +129,48 @@ internal fun extractSocialLinks(html: String): List<SocialLink> {
             java.net.URI(url).host?.lowercase() ?: ""
         } catch (_: Exception) { "" }
 
+        if (host.isEmpty()) return@mapNotNull null
+
+        // Skip tracking/infrastructure URLs
+        if (SKIP_HOSTS.any { skip -> host.contains(skip) }) return@mapNotNull null
+
+        val handle = extractHandle(url, host)
+
         when {
             host.contains("youtube.com") || host.contains("youtu.be") ->
-                SocialLink("YouTube", url, Color(0xFFFF0000), Icons.Rounded.PlayCircle)
+                SocialLink(if (handle != null) "YouTube: $handle" else "YouTube", url, Color(0xFFFF0000), Icons.Rounded.PlayCircle)
             host.contains("instagram.com") ->
-                SocialLink("Instagram", url, Color(0xFFE4405F), Icons.Rounded.CameraAlt)
+                SocialLink(if (handle != null) "Instagram: $handle" else "Instagram", url, Color(0xFFE4405F), Icons.Rounded.CameraAlt)
             host.contains("twitter.com") || host.contains("x.com") ->
-                SocialLink("X", url, Color(0xFF1DA1F2), Icons.Rounded.Tag)
+                SocialLink(if (handle != null) "X: $handle" else "X", url, Color(0xFF1DA1F2), Icons.Rounded.Tag)
+            host.contains("threads.net") ->
+                SocialLink(if (handle != null) "Threads: $handle" else "Threads", url, Color(0xFF101010), Icons.Rounded.AlternateEmail)
             host.contains("spotify.com") || host.contains("open.spotify.com") ->
                 SocialLink("Spotify", url, Color(0xFF1DB954), Icons.Rounded.MusicNote)
             host.contains("podcasts.apple.com") ->
                 SocialLink("Apple Podcasts", url, Color(0xFF9933CC), Icons.Rounded.Podcasts)
             host.contains("patreon.com") ->
-                SocialLink("Patreon", url, Color(0xFFF96854), Icons.Rounded.Loyalty)
+                SocialLink(if (handle != null) "Patreon: $handle" else "Patreon", url, Color(0xFFF96854), Icons.Rounded.Loyalty)
             host.contains("tiktok.com") ->
-                SocialLink("TikTok", url, Color(0xFFEE1D52), Icons.Rounded.Videocam)
+                SocialLink(if (handle != null) "TikTok: $handle" else "TikTok", url, Color(0xFFEE1D52), Icons.Rounded.Videocam)
             host.contains("facebook.com") || host.contains("fb.com") ->
-                SocialLink("Facebook", url, Color(0xFF1877F2), Icons.Rounded.People)
+                SocialLink(if (handle != null) "Facebook: $handle" else "Facebook", url, Color(0xFF1877F2), Icons.Rounded.People)
             host.contains("discord.com") || host.contains("discord.gg") ->
-                SocialLink("Discord", url, Color(0xFF5865F2), Icons.Rounded.Forum)
+                SocialLink(if (handle != null) "Discord: $handle" else "Discord", url, Color(0xFF5865F2), Icons.Rounded.Forum)
             host.contains("linkedin.com") ->
                 SocialLink("LinkedIn", url, Color(0xFF0A66C2), Icons.Rounded.Work)
             host.contains("twitch.tv") ->
-                SocialLink("Twitch", url, Color(0xFF9146FF), Icons.Rounded.Videocam)
+                SocialLink(if (handle != null) "Twitch: $handle" else "Twitch", url, Color(0xFF9146FF), Icons.Rounded.Videocam)
             host.contains("reddit.com") ->
-                SocialLink("Reddit", url, Color(0xFFFF4500), Icons.Rounded.Forum)
-            // Skip feed/API/tracking URLs
-            host.contains("podcastindex") || host.contains("feeds.") ||
-                host.contains("anchor.fm") || host.contains("podtrac") ||
-                host.contains("chartable") || host.contains("feedburner") ||
-                host.isEmpty() -> null
-            // Generic website
+                SocialLink(if (handle != null) "Reddit: $handle" else "Reddit", url, Color(0xFFFF4500), Icons.Rounded.Forum)
+            // Generic website — still a chip, neutral color
             else -> {
                 val name = host.removePrefix("www.").split(".").first()
-                    .replaceFirstChar { it.uppercase() }
+                    .replaceFirstChar { c -> c.uppercase() }
                 SocialLink(name, url, Color(0xFF607D8B), Icons.Rounded.Language)
             }
         }
-    }.distinctBy { it.platform }
+    }.distinctBy { it.url.lowercase().trim() }
 }
 
 // --- Composable ---
@@ -95,44 +179,84 @@ internal fun extractSocialLinks(html: String): List<SocialLink> {
 internal fun EpisodeDescriptionCard(
     description: String,
     accentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    location: String? = null,
+    license: String? = null,
+    persons: List<Person>? = null
 ) {
     val context = LocalContext.current
     val socialLinks = remember(description) { extractSocialLinks(description) }
     var expanded by remember { mutableStateOf(false) }
-    val isLong = remember(description) { description.length > 200 }
+    val isLong = remember(description) { description.length > 500 }
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .expressiveClickable(enabled = isLong) { expanded = !expanded },
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge
+        shape = MaterialTheme.shapes.large
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 20.dp, bottom = 16.dp)
+                .padding(16.dp)
                 .animateContentSize(
                     animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
                     )
                 )
         ) {
-            // --- Social Links ---
-            if (socialLinks.isNotEmpty()) {
+            // --- Cast & Crew (Person chips) ---
+            if (!persons.isNullOrEmpty()) {
                 Text(
-                    text = "Links",
+                    text = "Cast & Crew",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp)
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(persons) { person ->
+                        PersonChip(
+                            person = person,
+                            onClick = {
+                                if (!person.href.isNullOrBlank()) {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(person.href))
+                                    context.startActivity(intent)
+                                }
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // --- Social Links ---
+            if (socialLinks.isNotEmpty()) {
+                Text(
+                    text = "Episode Resources",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
 
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     items(socialLinks) { link ->
@@ -150,7 +274,6 @@ internal fun EpisodeDescriptionCard(
 
                 // Subtle divider
                 HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 20.dp),
                     thickness = 0.5.dp,
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
@@ -164,52 +287,178 @@ internal fun EpisodeDescriptionCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
             HtmlText(
                 text = description,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    lineHeight = 24.sp
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    lineHeight = 20.sp
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = if (expanded || !isLong) Int.MAX_VALUE else 5,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .expressiveClickable { if (isLong) expanded = !expanded }
-                    .padding(horizontal = 20.dp)
-                    .animateContentSize(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        )
-                    )
+                maxLines = if (expanded || !isLong) Int.MAX_VALUE else 8,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            // --- Expand/Collapse Toggle ---
-            if (isLong) {
-                Spacer(modifier = Modifier.height(8.dp))
 
+
+            // --- Metadata Footer (Location & License) ---
+            if (!location.isNullOrBlank() || !license.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .expressiveClickable { expanded = !expanded }
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (!location.isNullOrBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.LocationOn,
+                                contentDescription = "Location",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = location,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    
+                    if (!license.isNullOrBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Copyright,
+                                contentDescription = "License",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = formatLicense(license),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+internal fun formatLicense(licenseCode: String): String {
+    val clean = licenseCode.trim().lowercase()
+    if (clean.startsWith("cc-") || clean == "cc0" || clean.contains("creative-commons") || clean.contains("creative commons")) {
+        val suffix = clean.removePrefix("cc-").removePrefix("creative-commons-").removePrefix("creative commons-").uppercase()
+        return when (suffix) {
+            "0", "CC0", "ZERO" -> "Public Domain (CC0)"
+            "BY" -> "Creative Commons BY"
+            "BY-SA" -> "Creative Commons BY-SA"
+            "BY-NC" -> "Creative Commons BY-NC"
+            "BY-ND" -> "Creative Commons BY-ND"
+            "BY-NC-SA" -> "Creative Commons BY-NC-SA"
+            "BY-NC-ND" -> "Creative Commons BY-NC-ND"
+            else -> "Creative Commons ${suffix.ifEmpty { "License" }}"
+        }
+    }
+    return when (clean) {
+        "all-rights-reserved", "copyright" -> "All Rights Reserved"
+        "public-domain" -> "Public Domain"
+        else -> licenseCode.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    }
+}
+
+// --- Person Chip (Premium avatar + name + role) ---
+
+@Composable
+internal fun PersonChip(
+    person: Person,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = ExpressiveShapes.Pill,
+        modifier = Modifier.expressiveClickable(
+            enabled = !person.href.isNullOrBlank(),
+            onClick = onClick
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                start = 4.dp,
+                end = 14.dp,
+                top = 4.dp,
+                bottom = 4.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Avatar
+            if (!person.img.isNullOrBlank()) {
+                OptimizedImage(
+                    url = person.img,
+                    proxyWidth = 80, // 32dp * ~2.5x density
+                    contentDescription = person.name,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // Fallback avatar with initial
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = if (expanded) "Show less" else "Show more",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        text = person.name.firstOrNull()?.uppercase() ?: "?",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                }
+            }
+
+            // Name + Role
+            Column {
+                Text(
+                    text = person.name,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!person.role.isNullOrBlank()) {
+                    val roleText = person.role!!
+                    Text(
+                        text = roleText.replaceFirstChar { c -> c.uppercaseChar() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -226,7 +475,7 @@ private fun SocialChip(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes.Pill,
+        shape = ExpressiveShapes.Pill,
         modifier = Modifier
             .expressiveClickable(onClick = onClick)
     ) {
@@ -250,3 +499,5 @@ private fun SocialChip(
         }
     }
 }
+
+
