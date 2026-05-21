@@ -50,7 +50,8 @@ fun Modifier.shimmerEffect(): Modifier = composed {
 // For now, let's use a standard implementation that accepts colors or uses safe defaults.
 fun Modifier.m3Shimmer(
     baseColor: Color = Color.Gray.copy(alpha = 0.2f),
-    highlightColor: Color = Color.Gray.copy(alpha = 0.4f)
+    highlightColor: Color = Color.Gray.copy(alpha = 0.4f),
+    shape: androidx.compose.ui.graphics.Shape = androidx.compose.ui.graphics.RectangleShape
 ): Modifier = composed {
     var size by remember { mutableStateOf(IntSize.Zero) }
     val transition = rememberInfiniteTransition(label = "Shimmer")
@@ -72,7 +73,8 @@ fun Modifier.m3Shimmer(
             ),
             start = Offset(startOffsetX, 0f),
             end = Offset(startOffsetX + size.width.toFloat(), size.height.toFloat())
-        )
+        ),
+        shape = shape
     ).onGloballyPositioned {
         size = it.size
     }

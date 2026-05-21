@@ -680,15 +680,20 @@ private fun ExploreHeroCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 if (!podcast.description.isNullOrEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = podcast.description ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 18.sp
-                    )
+                    val strippedDesc = remember(podcast.description) {
+                        android.text.Html.fromHtml(podcast.description ?: "", android.text.Html.FROM_HTML_MODE_LEGACY).toString().trim()
+                    }
+                    if (strippedDesc.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = strippedDesc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 18.sp
+                        )
+                    }
                 }
             }
         }

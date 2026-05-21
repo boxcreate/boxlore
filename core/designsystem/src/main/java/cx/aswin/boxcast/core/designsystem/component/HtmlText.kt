@@ -29,7 +29,8 @@ fun HtmlText(
     style: TextStyle = LocalTextStyle.current,
     color: Color = LocalContentColor.current,
     linkColor: Color = MaterialTheme.colorScheme.primary,
-    maxLines: Int = Int.MAX_VALUE
+    maxLines: Int = Int.MAX_VALUE,
+    onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val linkTextColor = remember(linkColor) { linkColor.toArgb() }
@@ -77,11 +78,17 @@ fun HtmlText(
             }
             textView.apply {
                 params(this, style, textColor, linkTextColor, maxLines)
+                setOnClickListener {
+                    onClick?.invoke()
+                }
             }
         },
         update = { textView ->
             params(textView, style, textColor, linkTextColor, maxLines)
             textView.text = HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_COMPACT)
+            textView.setOnClickListener {
+                onClick?.invoke()
+            }
         }
     )
 }

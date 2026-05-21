@@ -35,7 +35,7 @@ fun ExploreSkeletonLoader() {
                     .fillMaxWidth()
                     .height(56.dp)
                     .clip(MaterialTheme.shapes.extraLarge)
-                    .m3Shimmer(baseColor, highlightColor)
+                .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.extraLarge)
             ) // Search Bar
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -47,7 +47,7 @@ fun ExploreSkeletonLoader() {
                             .width(80.dp)
                             .height(32.dp)
                             .clip(MaterialTheme.shapes.small)
-                            .m3Shimmer(baseColor, highlightColor)
+                .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.small)
                     )
                 }
             }
@@ -81,7 +81,7 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                     .width(120.dp)
                     .height(24.dp)
                     .clip(MaterialTheme.shapes.small)
-                    .m3Shimmer(bColor, hColor)
+                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.small)
             )
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -93,7 +93,7 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                             .width(280.dp)
                             .height(170.dp)
                             .clip(MaterialTheme.shapes.extraLarge)
-                            .m3Shimmer(bColor, hColor)
+                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraLarge)
                     )
                 }
             }
@@ -111,7 +111,7 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                 .width(200.dp)
                 .height(24.dp)
                 .clip(MaterialTheme.shapes.small)
-                .m3Shimmer(bColor, hColor)
+                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.small)
         )
     }
 
@@ -127,7 +127,7 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                     .fillMaxWidth()
                     .height(if (isTall) 280.dp else 220.dp)
                     .clip(MaterialTheme.shapes.large)
-                    .m3Shimmer(bColor, hColor)
+                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.large)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Box(
@@ -135,7 +135,7 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                     .fillMaxWidth(0.8f)
                     .height(16.dp)
                     .clip(MaterialTheme.shapes.extraSmall)
-                    .m3Shimmer(bColor, hColor)
+                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraSmall)
             )
              Spacer(modifier = Modifier.height(4.dp))
             Box(
@@ -143,7 +143,7 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                     .fillMaxWidth(0.5f)
                     .height(14.dp)
                     .clip(MaterialTheme.shapes.extraSmall)
-                    .m3Shimmer(bColor, hColor)
+                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraSmall)
             )
         }
     }

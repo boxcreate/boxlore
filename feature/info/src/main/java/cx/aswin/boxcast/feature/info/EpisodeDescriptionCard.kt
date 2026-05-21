@@ -297,7 +297,8 @@ internal fun EpisodeDescriptionCard(
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = if (expanded || !isLong) Int.MAX_VALUE else 8,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { if (isLong) expanded = !expanded }
             )
 
 
@@ -399,6 +400,7 @@ internal fun PersonChip(
         shape = ExpressiveShapes.Pill,
         modifier = Modifier.expressiveClickable(
             enabled = !person.href.isNullOrBlank(),
+            isolate = true,
             onClick = onClick
         )
     ) {
@@ -477,7 +479,7 @@ private fun SocialChip(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = ExpressiveShapes.Pill,
         modifier = Modifier
-            .expressiveClickable(onClick = onClick)
+            .expressiveClickable(isolate = true, onClick = onClick)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

@@ -37,7 +37,7 @@ fun ExpressivePlayButton(
         shape = playPillShape,
         modifier = modifier
             .width(160.dp)
-            .expressiveClickable(onClick = onClick)
+            .expressiveClickable(isolate = true, onClick = onClick)
     ) {
         Box(contentAlignment = Alignment.Center) {
             // INTEGRATED PROGRESS BAR (Bottom Strip)

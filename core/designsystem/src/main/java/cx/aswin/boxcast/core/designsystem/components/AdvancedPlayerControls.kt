@@ -208,7 +208,7 @@ fun AdaptiveControlButton(
             color = Color.Transparent,
             modifier = Modifier
                 .size(controlSize ?: 48.dp) // Standard Minimum Touch Target or Custom
-                .expressiveClickable(onClick = onClick)
+                .expressiveClickable(isolate = true, onClick = onClick)
         ) {
             Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
                 androidx.compose.animation.AnimatedContent(
@@ -255,7 +255,7 @@ fun AdaptiveControlButton(
             shape = androidx.compose.foundation.shape.CircleShape,
             modifier = Modifier
                 .size(size)
-                .expressiveClickable(onClick = onClick)
+                .expressiveClickable(isolate = true, onClick = onClick)
         ) {
             Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
                 androidx.compose.animation.AnimatedContent(
@@ -314,7 +314,7 @@ fun AdaptiveControlButton(
             shape = squircleShape,
             modifier = Modifier
                 .size(size)
-                .expressiveClickable(onClick = onClick)
+                .expressiveClickable(isolate = true, onClick = onClick)
         ) {
             Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
                 androidx.compose.animation.AnimatedContent(
