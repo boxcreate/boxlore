@@ -5,12 +5,7 @@ import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material3.Icon
@@ -19,6 +14,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import kotlin.random.Random
@@ -29,6 +31,10 @@ data class PlacedShape(val x: Float, val y: Float, val size: Int, val shape: and
 fun AnimatedShapesFallback() {
     LogRecomposition(name = "AnimatedShapesFallback")
     
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val podcastIcon = Icons.Rounded.Podcasts
+    val iconColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
+
     // Random positions and sizes calculated once per composition
     val shapes = remember {
         val allShapes = listOf(
@@ -77,33 +83,79 @@ fun AnimatedShapesFallback() {
             .graphicsLayer { clip = true } // Allow clipping at container edge
             .logDrawTime("AnimatedShapesFallbackDraw")
             .logLayoutTime("AnimatedShapesFallbackLayout")
+            .drawWithCache {
+                val cachedOutlines = shapes.map { placed ->
+                    val sizePx = placed.size.dp.toPx()
+                    val outline = placed.shape.createOutline(
+                        size = Size(sizePx, sizePx),
+                        layoutDirection = layoutDirection,
+                        density = this
+                    )
+                    Triple(
+                        placed.x.dp.toPx() - (sizePx / 2f),
+                        placed.y.dp.toPx() - (sizePx / 2f),
+                        outline
+                    )
+                }
+                
+                onDrawBehind {
+                    cachedOutlines.forEach { (xPx, yPx, outline) ->
+                        translate(left = xPx, top = yPx) {
+                            drawOutline(
+                                outline = outline,
+                                color = primaryColor,
+                                alpha = 0.05f
+                            )
+                        }
+                    }
+                }
+            }
     ) {
-        shapes.forEach { placed ->
-            val sizeDp = placed.size.dp
-            Box(
-                modifier = Modifier
-                    .size(sizeDp)
-                    .offset(
-                        x = placed.x.dp - (sizeDp / 2), 
-                        y = placed.y.dp - (sizeDp / 2)
-                    )
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), // Very subtle
-                        shape = placed.shape
-                    )
+        // Centered Podcast Icon (Only layout child)
+        Icon(
+            imageVector = podcastIcon,
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier
+                .size(64.dp)
+                .align(Alignment.Center)
+        )
+    }
+}
+
+/**
+ * Custom drawOutline extension function to draw Outline primitives directly,
+ * bypassing version/import discrepancies in compose graphics libraries.
+ */
+fun DrawScope.drawOutline(
+    outline: Outline,
+    color: Color,
+    alpha: Float = 1.0f
+) {
+    when (outline) {
+        is Outline.Rectangle -> {
+            drawRect(
+                color = color,
+                topLeft = outline.rect.topLeft,
+                size = outline.rect.size,
+                alpha = alpha
             )
         }
-        
-        // Centered Podcast Icon
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Podcasts,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.size(64.dp)
+        is Outline.Rounded -> {
+            val rr = outline.roundRect
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(rr.left, rr.top),
+                size = Size(rr.width, rr.height),
+                cornerRadius = rr.topLeftCornerRadius,
+                alpha = alpha
+            )
+        }
+        is Outline.Generic -> {
+            drawPath(
+                path = outline.path,
+                color = color,
+                alpha = alpha
             )
         }
     }
