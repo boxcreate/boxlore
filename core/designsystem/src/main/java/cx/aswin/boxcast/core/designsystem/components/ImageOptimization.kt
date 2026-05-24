@@ -15,12 +15,30 @@ fun String.optimizedImageUrl(width: Int = 400): String {
         return this
     }
     
+    // Dynamically scale width based on screen density and tablet/viewport configuration
+    val scaledWidth = try {
+        val metrics = android.content.res.Resources.getSystem().displayMetrics
+        val density = metrics.density
+        val screenWidthPx = metrics.widthPixels
+        val isLargeScreen = (screenWidthPx / density) >= 600f
+        
+        val scale = when {
+            isLargeScreen -> 2.5f   // Table/large viewports need significantly higher resolution
+            density >= 3.5f -> 1.8f // High-density QHD phones
+            density >= 2.5f -> 1.4f // Medium-high density FHD phones
+            else -> 1.1f
+        }
+        (width * scale).toInt().coerceIn(10, 2048)
+    } catch (e: Exception) {
+        width
+    }
+    
     // Some podcast servers block wsrv.nl, but for most standard URLs it works perfectly.
-    // If we want to be safe, we can try-catch the encoding, though URLEncoder is standard.
     return try {
         val encodedUrl = URLEncoder.encode(this, "UTF-8")
-        "https://wsrv.nl/?url=$encodedUrl&w=$width&output=webp"
+        "https://wsrv.nl/?url=$encodedUrl&w=$scaledWidth&q=85&output=webp"
     } catch (e: Exception) {
         this
     }
 }
+
