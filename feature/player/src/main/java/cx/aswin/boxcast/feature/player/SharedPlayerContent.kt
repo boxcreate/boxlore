@@ -128,6 +128,27 @@ fun SharedPlayerContent(
             
             // Maximize artwork up to 85% of screen width, bounded by available vertical space 
             val optimalArtworkSize = androidx.compose.ui.unit.min(maxWidth * 0.85f, availableHeightForArtwork).coerceAtLeast(150.dp)
+
+            val isVideo = episode?.enclosureType?.startsWith("video/") == true
+            
+            // Landscape video viewport dimensions (16:9 ratio)
+            val videoWidth = if (isVideo) {
+                val targetWidth = maxWidth * 0.95f
+                val targetHeight = targetWidth * (9f / 16f)
+                if (targetHeight > availableHeightForArtwork) {
+                    availableHeightForArtwork * (16f / 9f)
+                } else {
+                    targetWidth
+                }
+            } else {
+                optimalArtworkSize
+            }
+            
+            val videoHeight = if (isVideo) {
+                videoWidth * (9f / 16f)
+            } else {
+                optimalArtworkSize
+            }
             
             // Control sizing for PlayerControls
             val controlRowHeight = if (isCompact) 64.dp else 80.dp
@@ -218,7 +239,8 @@ fun SharedPlayerContent(
                               
                               Surface(
                                   modifier = Modifier
-                                      .size(optimalArtworkSize)
+                                      .width(videoWidth)
+                                      .height(videoHeight)
                                       .shadow(
                                           12.dp, 
                                           RoundedCornerShape(28.dp), 
