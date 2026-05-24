@@ -122,6 +122,19 @@ async function fetchEpisodes(feedId) {
     }
 }
 
+async function fetchFeedInfo(feedId) {
+    try {
+        const headers = generateAuthHeaders();
+        const res = await fetch(`${API_BASE}/podcasts/byfeedid?id=${feedId}`, { headers });
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const data = await res.json();
+        return data.feed || null;
+    } catch (e) {
+        console.error(`Failed to fetch feed info for ${feedId}:`, e.message);
+        return null;
+    }
+}
+
 async function main() {
     console.log("Starting Episode Sync via API...");
 
@@ -142,6 +155,7 @@ async function main() {
         "latest_ep_transcript_url TEXT",  // P2.0
         "latest_ep_persons TEXT",         // P2.0 JSON
         "latest_ep_transcripts TEXT",     // P2.0 JSON
+        "medium TEXT",
         "vector F32(384)",
         "last_ep_sync INTEGER"
     ];
@@ -222,14 +236,17 @@ async function main() {
         }
 
         await Promise.all(batch.map(async (pod) => {
-            const episodes = await fetchEpisodes(pod.id);
+            const [episodes, feedInfo] = await Promise.all([
+                fetchEpisodes(pod.id),
+                fetchFeedInfo(pod.id)
+            ]);
             if (episodes.length === 0) return;
 
             // Find the latest episode (usually first, but ensure by date)
             const latestEp = episodes[0];
 
             try {
-                // Update podcast with latest episode metadata + P2.0 fields
+                // Update podcast with latest episode metadata + P2.0 fields + medium
                 const sql = `
                     UPDATE podcasts SET 
                         latest_ep_id = ?,
@@ -244,6 +261,7 @@ async function main() {
                         latest_ep_transcript_url = ?,
                         latest_ep_persons = ?,
                         latest_ep_transcripts = ?,
+                        medium = ?,
                         vector = NULL, -- Invalidate vector on new content
                         last_ep_sync = ?
                     WHERE id = ?
@@ -254,6 +272,7 @@ async function main() {
                 const transcriptUrl = latestEp.transcriptUrl || null;
                 const personsJson = latestEp.persons ? JSON.stringify(latestEp.persons) : null;
                 const transcriptsJson = latestEp.transcripts ? JSON.stringify(latestEp.transcripts) : null;
+                const medium = feedInfo?.medium || "podcast";
 
                 await executeSQL(sql, [
                     String(latestEp.id),
@@ -268,6 +287,7 @@ async function main() {
                     transcriptUrl,
                     personsJson,
                     transcriptsJson,
+                    medium,
                     Date.now(),
                     String(pod.id)
                 ]);
