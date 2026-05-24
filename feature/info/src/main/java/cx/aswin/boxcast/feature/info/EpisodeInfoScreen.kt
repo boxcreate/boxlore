@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -53,6 +54,7 @@ import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.Tag
 import androidx.compose.material.icons.rounded.Label
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -322,18 +324,51 @@ fun EpisodeInfoScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             // Artwork
-                            Surface(
-                                modifier = Modifier.size(180.dp),
-                                shape = MaterialTheme.shapes.extraLarge, // Match PodcastInfoScreen
-                                shadowElevation = 8.dp
-                            ) {
-                                OptimizedImage(
-                                    url = state.episode.imageUrl?.ifEmpty { null },
-                                    proxyWidth = 600, // 180dp * ~3x density
-                                    contentDescription = state.episode.title,
+                            Box(modifier = Modifier.size(180.dp)) {
+                                Surface(
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
+                                    shape = MaterialTheme.shapes.extraLarge, // Match PodcastInfoScreen
+                                    shadowElevation = 8.dp
+                                ) {
+                                    OptimizedImage(
+                                        url = state.episode.imageUrl?.ifEmpty { null },
+                                        proxyWidth = 600, // 180dp * ~3x density
+                                        contentDescription = state.episode.title,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+
+                                if (state.episode.enclosureType?.startsWith("video/") == true) {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.9f),
+                                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)),
+                                        modifier = Modifier
+                                            .padding(8.dp)
+                                            .align(Alignment.TopEnd)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Videocam,
+                                                contentDescription = "Video Episode",
+                                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Text(
+                                                text = "VIDEO",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(20.dp))
@@ -407,6 +442,35 @@ fun EpisodeInfoScreen(
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
+                                // Video Pill
+                                if (state.episode.enclosureType?.startsWith("video/") == true) {
+                                    item {
+                                        Surface(
+                                            shape = cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes.Pill,
+                                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Videocam,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                                )
+                                                Text(
+                                                    text = "VIDEO",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
                                 // Duration Pill
                                 item {
                                     Surface(
