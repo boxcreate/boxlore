@@ -234,14 +234,17 @@ fun SharedPlayerContent(
                                               androidx.media3.ui.PlayerView(ctx).apply {
                                                   player = controller
                                                   useController = false // Use BoxCast controls instead of default overlay
-                                                  resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                                  resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                                               }
                                           },
                                           update = { playerView ->
-                                              playerView.player = controller
+                                              if (playerView.player != controller) {
+                                                  playerView.player = controller
+                                              }
                                           },
                                           modifier = Modifier
                                               .fillMaxSize()
+                                              .clip(RoundedCornerShape(28.dp))
                                               .pointerInput(isExpanded) {
                                                   if (!isExpanded) return@pointerInput
                                                   
