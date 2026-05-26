@@ -115,8 +115,7 @@ async function main() {
     console.log("[SCHEMA] Creating virtual table 'podcasts_fts'...");
     await executeSQL(`
         CREATE VIRTUAL TABLE IF NOT EXISTS podcasts_fts USING fts5(
-            podcast_id, title, author,
-            content='podcasts', content_rowid='id'
+            podcast_id, title, author
         )
     `);
 
@@ -124,33 +123,30 @@ async function main() {
     console.log("[SCHEMA] Creating triggers for podcasts_fts sync...");
     await executeSQL(`
         CREATE TRIGGER IF NOT EXISTS podcasts_ai AFTER INSERT ON podcasts BEGIN
-            INSERT INTO podcasts_fts(rowid, podcast_id, title, author) 
-            VALUES (new.id, new.id, new.title, new.author);
+            INSERT INTO podcasts_fts(podcast_id, title, author) 
+            VALUES (new.id, new.title, new.author);
         END
     `);
 
     await executeSQL(`
         CREATE TRIGGER IF NOT EXISTS podcasts_ad AFTER DELETE ON podcasts BEGIN
-            INSERT INTO podcasts_fts(podcasts_fts, rowid, podcast_id, title, author) 
-            VALUES ('delete', old.id, old.id, old.title, old.author);
+            DELETE FROM podcasts_fts WHERE podcast_id = old.id;
         END
     `);
 
     await executeSQL(`
         CREATE TRIGGER IF NOT EXISTS podcasts_au AFTER UPDATE ON podcasts BEGIN
-            INSERT INTO podcasts_fts(podcasts_fts, rowid, podcast_id, title, author) 
-            VALUES ('delete', old.id, old.id, old.title, old.author);
-            INSERT INTO podcasts_fts(rowid, podcast_id, title, author) 
-            VALUES (new.id, new.id, new.title, new.author);
+            UPDATE podcasts_fts SET title = new.title, author = new.author 
+            WHERE podcast_id = old.id;
         END
     `);
 
     // 7. Populate FTS5 table with existing podcasts
     console.log("[SCHEMA] Populating podcasts_fts with existing podcasts data...");
     await executeSQL(`
-        INSERT INTO podcasts_fts(rowid, podcast_id, title, author)
-        SELECT id, id, title, author FROM podcasts
-        WHERE id NOT IN (SELECT rowid FROM podcasts_fts)
+        INSERT INTO podcasts_fts(podcast_id, title, author)
+        SELECT id, title, author FROM podcasts
+        WHERE id NOT IN (SELECT podcast_id FROM podcasts_fts)
     `);
 
     console.log("[SCHEMA] Schema initialization complete!");
