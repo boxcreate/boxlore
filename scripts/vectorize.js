@@ -51,14 +51,7 @@ async function executeVectorUpdate(id, embedding) {
     // Format: '[0.1, 0.2, ...]'
     const vectorString = '[' + Array.from(embedding).join(',') + ']';
 
-    // Check if Turso supports vector() function or direct array import
-    // Standard libSQL vector support uses `vector32('...')` or just the raw bytes if using client
-    // Here we use the vector extension syntax if available: vector('[...]')
-    // OR default to raw blob if using official client.
-
-    // Let's assume standard `vector('[...]')` syntax for SQL injection
-
-    const sql = `UPDATE podcasts SET vector = vector(?) WHERE id = ?`;
+    const sql = `UPDATE episodes SET vector = vector(?) WHERE id = ?`;
 
     const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
         method: "POST",
@@ -73,7 +66,7 @@ async function executeVectorUpdate(id, embedding) {
                     sql: sql,
                     args: [
                         { type: "text", value: vectorString },
-                        { type: "text", value: String(id) }
+                        { type: "integer", value: String(id) }
                     ]
                 }
             }, { type: "close" }]
@@ -82,7 +75,6 @@ async function executeVectorUpdate(id, embedding) {
 
     if (!response.ok) {
         console.error(`Update failed: ${response.status}`);
-        // console.error(await response.text());
     }
     return response.json();
 }
@@ -107,19 +99,21 @@ async function main() {
 
     if (country) {
         sql = `
-            SELECT DISTINCT p.id, p.title, p.description, p.latest_ep_title, p.latest_ep_description 
+            SELECT DISTINCT e.id, e.title, e.description, p.title as podcast_title 
             FROM charts c
             JOIN podcasts p ON c.itunes_id = p.itunes_id
-            WHERE p.vector IS NULL AND c.country = ?
+            JOIN episodes e ON e.podcast_id = p.id
+            WHERE e.vector IS NULL AND c.country = ?
             LIMIT ${LIMIT}
         `;
         args = [country];
         console.log(`Filtering vectorization candidates for country: ${country}`);
     } else {
         sql = `
-            SELECT id, title, description, latest_ep_title, latest_ep_description 
-            FROM podcasts 
-            WHERE vector IS NULL 
+            SELECT e.id, e.title, e.description, p.title as podcast_title 
+            FROM episodes e
+            JOIN podcasts p ON e.podcast_id = p.id
+            WHERE e.vector IS NULL 
             LIMIT ${LIMIT}
         `;
     }
@@ -129,11 +123,11 @@ async function main() {
     const rows = res?.results?.[0]?.response?.result?.rows || [];
 
     if (rows.length === 0) {
-        console.log("No podcasts need vectorization.");
+        console.log("No episodes need vectorization.");
         return;
     }
 
-    console.log(`Found ${rows.length} podcasts to vectorize.`);
+    console.log(`Found ${rows.length} episodes to vectorize.`);
 
     // 3. Process
     let success = 0;
@@ -145,20 +139,19 @@ async function main() {
     console.log(`Candidates: ${rows.length}`);
     console.log(`==========================\n`);
 
-    console.log("Processing podcasts...");
+    console.log("Processing episodes...");
 
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const id = row[0].value;
         const title = row[1].value || "";
         const desc = row[2].value || "";
-        const epTitle = row[3].value || "";
-        const epDesc = row[4].value || "";
+        const podcastTitle = row[3].value || "";
 
-        console.log(`[VECTOR] [${i+1}/${rows.length}] Starting vectorization for podcast ${id} ("${title}") | Reason: Missing embedding (new or updated feed)`);
+        console.log(`[VECTOR] [${i+1}/${rows.length}] Starting vectorization for episode ${id} ("${title}") | Podcast: "${podcastTitle}"`);
 
         // Construct Text
-        const text = `Podcast: ${title}. ${desc}. Latest Episode: ${epTitle}. ${epDesc}`
+        const text = `Episode: ${title}. ${desc}. Podcast: ${podcastTitle}`
             .replace(/[\n\r]+/g, ' ')
             .substring(0, 1000);
 
@@ -168,7 +161,7 @@ async function main() {
 
             await executeVectorUpdate(id, embedding);
             success++;
-            console.log(`[VECTOR] [${i+1}/${rows.length}] Successfully vectorized podcast ${id} ("${title}")`);
+            console.log(`[VECTOR] [${i+1}/${rows.length}] Successfully vectorized episode ${id} ("${title}")`);
         } catch (e) {
             console.error(`[VECTOR] [${i+1}/${rows.length}] Failed to vectorize ${id} ("${title}"): ${e.message}`);
             errors++;

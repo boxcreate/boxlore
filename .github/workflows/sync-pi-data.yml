@@ -108,6 +108,14 @@ jobs:
           " > podcasts_export.csv
           echo "[WORKFLOW] Successfully generated 'podcasts_export.csv' with $(wc -l < podcasts_export.csv) lines including headers."
 
+      - name: Create Episodes Table & Indices
+        env:
+          TURSO_URL: ${{ secrets.TURSO_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          echo "[WORKFLOW] Initializing/updating database schema..."
+          node scripts/create-episodes-table.js
+
       - name: Import to Turso
         env:
           TURSO_URL: ${{ secrets.TURSO_URL }}

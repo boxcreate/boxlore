@@ -30,6 +30,19 @@ function generateAuthHeaders() {
     };
 }
 
+function mapArgType(val) {
+    if (val === null || val === undefined || val === "") {
+        return { type: "null", value: null };
+    }
+    if (typeof val === 'number') {
+        return { type: "integer", value: String(val) };
+    }
+    if (typeof val === 'string' && /^\d+$/.test(val)) {
+        return { type: "integer", value: val };
+    }
+    return { type: "text", value: String(val) };
+}
+
 async function executeSQL(sql, args = []) {
     const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
         method: "POST",
@@ -40,7 +53,7 @@ async function executeSQL(sql, args = []) {
         body: JSON.stringify({
             requests: [{
                 type: "execute",
-                stmt: { sql, args: args.map(a => ({ type: a === null ? "null" : "text", value: a === null ? null : String(a) })) }
+                stmt: { sql, args: args.map(mapArgType) }
             }, { type: "close" }]
         })
     });
@@ -58,7 +71,7 @@ async function executeBatch(statements) {
     if (statements.length === 0) return;
     const requests = statements.map(stmt => ({
         type: "execute",
-        stmt: { sql: stmt.sql, args: stmt.args.map(a => ({ type: a === null ? "null" : "text", value: a === null ? null : String(a || "") })) }
+        stmt: { sql: stmt.sql, args: stmt.args.map(mapArgType) }
     }));
     requests.push({ type: "close" });
 
@@ -111,8 +124,8 @@ async function getPodcasts() {
 async function fetchEpisodes(feedId) {
     try {
         const headers = generateAuthHeaders();
-        // max=200 episodes per podcast
-        const res = await fetch(`${API_BASE}/episodes/byfeedid?id=${feedId}&max=200`, { headers });
+        // max=150 episodes per podcast
+        const res = await fetch(`${API_BASE}/episodes/byfeedid?id=${feedId}&max=150`, { headers });
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const data = await res.json();
         return data.items || [];
@@ -280,8 +293,10 @@ async function main() {
             const latestEp = episodes[0];
 
             try {
-                // Update podcast with latest episode metadata + P2.0 fields + medium
-                const sql = `
+                const statements = [];
+
+                // 1. Statement to update podcasts metadata
+                const updatePodcastSql = `
                     UPDATE podcasts SET 
                         latest_ep_id = ?,
                         latest_ep_title = ?,
@@ -301,35 +316,104 @@ async function main() {
                     WHERE id = ?
                 `;
 
-                // P2.0 Fields extraction
                 const chaptersUrl = latestEp.chaptersUrl || null;
                 const transcriptUrl = latestEp.transcriptUrl || null;
                 const personsJson = latestEp.persons ? JSON.stringify(latestEp.persons) : null;
                 const transcriptsJson = latestEp.transcripts ? JSON.stringify(latestEp.transcripts) : null;
                 const medium = feedInfo?.medium || "podcast";
 
-                await executeSQL(sql, [
-                    String(latestEp.id),
-                    latestEp.title || "",
-                    latestEp.datePublished || 0,
-                    latestEp.duration || 0,
-                    latestEp.enclosureUrl || "",
-                    latestEp.image || latestEp.feedImage || "",
-                    latestEp.enclosureType || "audio/mpeg",
-                    (latestEp.description || "").substring(0, 1000), // Truncate description
-                    chaptersUrl,
-                    transcriptUrl,
-                    personsJson,
-                    transcriptsJson,
-                    medium,
-                    Date.now(),
-                    String(pod.id)
-                ]);
+                statements.push({
+                    sql: updatePodcastSql,
+                    args: [
+                        String(latestEp.id),
+                        latestEp.title || "",
+                        latestEp.datePublished || 0,
+                        latestEp.duration || 0,
+                        latestEp.enclosureUrl || "",
+                        latestEp.image || latestEp.feedImage || "",
+                        latestEp.enclosureType || "audio/mpeg",
+                        (latestEp.description || "").substring(0, 1000), // Truncate description
+                        chaptersUrl,
+                        transcriptUrl,
+                        personsJson,
+                        transcriptsJson,
+                        medium,
+                        Date.now(),
+                        String(pod.id)
+                    ]
+                });
 
+                // 2. Statements to insert/upsert each episode into episodes table (up to 150)
+                const upsertEpisodeSql = `
+                    INSERT INTO episodes (
+                        id, podcast_id, title, description, published_date, duration, 
+                        enclosure_url, image_url, explicit, chapters_url, transcript_url, 
+                        persons, transcripts, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        title = excluded.title,
+                        description = excluded.description,
+                        published_date = excluded.published_date,
+                        duration = excluded.duration,
+                        enclosure_url = excluded.enclosure_url,
+                        image_url = excluded.image_url,
+                        explicit = excluded.explicit,
+                        chapters_url = excluded.chapters_url,
+                        transcript_url = excluded.transcript_url,
+                        persons = excluded.persons,
+                        transcripts = excluded.transcripts,
+                        vector = CASE WHEN (title != excluded.title OR description != excluded.description) THEN NULL ELSE vector END
+                `;
+
+                episodes.forEach(ep => {
+                    const epChaptersUrl = ep.chaptersUrl || null;
+                    const epTranscriptUrl = ep.transcriptUrl || null;
+                    const epPersonsJson = ep.persons ? JSON.stringify(ep.persons) : null;
+                    const epTranscriptsJson = ep.transcripts ? JSON.stringify(ep.transcripts) : null;
+
+                    statements.push({
+                        sql: upsertEpisodeSql,
+                        args: [
+                            ep.id,
+                            pod.id,
+                            ep.title || "",
+                            (ep.description || "").substring(0, 1000),
+                            ep.datePublished || 0,
+                            ep.duration || 0,
+                            ep.enclosureUrl || "",
+                            ep.image || ep.feedImage || "",
+                            ep.explicit ? 1 : 0,
+                            epChaptersUrl,
+                            epTranscriptUrl,
+                            epPersonsJson,
+                            epTranscriptsJson,
+                            Date.now()
+                        ]
+                    });
+                });
+
+                // 3. Statement to prune older episodes beyond latest 150
+                const pruneSql = `
+                    DELETE FROM episodes 
+                    WHERE podcast_id = ? 
+                      AND id NOT IN (
+                        SELECT id FROM episodes 
+                        WHERE podcast_id = ? 
+                        ORDER BY published_date DESC 
+                        LIMIT 150
+                      )
+                `;
+                statements.push({
+                    sql: pruneSql,
+                    args: [pod.id, pod.id]
+                });
+
+                // Execute the entire transaction in a single round trip!
+                await executeBatch(statements);
                 totalPodcastsUpdated++;
             } catch (err) {
                 errors++;
-                console.error(`[SYNC] [${seqNum}/${podcasts.length}] Error updating podcast ${pod.id} ("${pod.title}"): ${err.message}`);
+                console.error(`[SYNC] [${seqNum}/${podcasts.length}] Error syncing podcast ${pod.id} ("${pod.title}"): ${err.message}`);
             }
         }));
 
