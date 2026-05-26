@@ -169,39 +169,7 @@ async function executeVectorBatchUpdate(updates) {
     return res;
 }
 
-async function executePodcastVectorBatchUpdate(updates) {
-    if (updates.length === 0) return;
 
-    const requests = updates.map(u => {
-        const vectorString = '[' + Array.from(u.embedding).join(',') + ']';
-        return {
-            type: "execute",
-            stmt: {
-                sql: `UPDATE podcasts SET vector = vector(?) WHERE id = ?`,
-                args: [
-                    { type: "text", value: vectorString },
-                    { type: "integer", value: String(u.id) }
-                ]
-            }
-        };
-    });
-
-    requests.push({ type: "close" });
-
-    const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${TURSO_TOKEN}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ requests })
-    });
-
-    if (!response.ok) {
-        throw new Error(`Podcast batch update failed: ${response.status}`);
-    }
-    return response.json();
-}
 
 async function main() {
     console.log("Starting Vectorization...");
@@ -319,99 +287,7 @@ async function main() {
         console.log(`======================================\n`);
     }
 
-    // === PHASE 2: Curation Podcast Vectorization (384-dim, bge-small) ===
-    console.log("\n=== Phase 2: Starting Curation Podcast Vectorization ===");
-    console.log("Loading model Xenova/bge-small-en-v1.5...");
-    const podcastExtractor = await pipeline('feature-extraction', 'Xenova/bge-small-en-v1.5');
 
-    let podcastsSql;
-    let podcastsArgs = [];
-
-    if (country) {
-        podcastsSql = `
-            SELECT DISTINCT p.id, p.title, p.description, p.latest_ep_title, p.latest_ep_description 
-            FROM charts c
-            JOIN podcasts p ON c.itunes_id = p.itunes_id
-            WHERE p.vector IS NULL AND c.country = ?
-            LIMIT 500
-        `;
-        podcastsArgs = [country];
-    } else {
-        podcastsSql = `
-            SELECT id, title, description, latest_ep_title, latest_ep_description 
-            FROM podcasts 
-            WHERE vector IS NULL 
-            LIMIT 500
-        `;
-    }
-
-    console.log("Fetching podcasts needing curation vectors...");
-    const podcastsRes = await executeSQL(podcastsSql, podcastsArgs);
-    const podcastRows = podcastsRes?.results?.[0]?.response?.result?.rows || [];
-
-    if (podcastRows.length === 0) {
-        console.log("No podcasts need curation vectorization.");
-    } else {
-        console.log(`Found ${podcastRows.length} podcasts to vectorize.`);
-        let podcastSuccess = 0;
-        let podcastErrors = 0;
-        const podcastStartTime = Date.now();
-
-        const pBatch = [];
-        const BATCH_SIZE = 50;
-
-        for (let i = 0; i < podcastRows.length; i++) {
-            const row = podcastRows[i];
-            const pId = row[0].value;
-            const pTitle = row[1].value || "";
-            const pDesc = row[2].value || "";
-            const epTitle = row[3].value || "";
-            const epDesc = row[4].value || "";
-
-            console.log(`[PODCAST-VECTOR] [${i+1}/${podcastRows.length}] Vectorizing podcast ${pId} ("${pTitle}")`);
-
-            const cleanPDesc = cleanDescription(pDesc);
-            const cleanEpDesc = cleanDescription(epDesc);
-            const text = `Podcast: ${pTitle}. ${cleanPDesc}. Latest Episode: ${epTitle}. ${cleanEpDesc}`
-                .replace(/[\n\r]+/g, ' ')
-                .substring(0, 1000);
-
-            try {
-                const output = await podcastExtractor(text, { pooling: 'mean', normalize: true });
-                const embedding = output.data;
-
-                pBatch.push({ id: pId, embedding });
-
-                if (pBatch.length >= BATCH_SIZE) {
-                    console.log(`[PODCAST-VECTOR] Flushing batch of ${pBatch.length} podcast vectors to DB...`);
-                    await executePodcastVectorBatchUpdate(pBatch);
-                    podcastSuccess += pBatch.length;
-                    pBatch.length = 0;
-                }
-            } catch (e) {
-                console.error(`[PODCAST-VECTOR] [${i+1}/${podcastRows.length}] Failed to process/vectorize podcast ${pId}: ${e.message}`);
-                podcastErrors++;
-            }
-        }
-
-        if (pBatch.length > 0) {
-            console.log(`[PODCAST-VECTOR] Flushing final batch of ${pBatch.length} podcast vectors to DB...`);
-            try {
-                await executePodcastVectorBatchUpdate(pBatch);
-                podcastSuccess += pBatch.length;
-            } catch (e) {
-                console.error(`[PODCAST-VECTOR] Failed to flush final podcast batch: ${e.message}`);
-                podcastErrors += pBatch.length;
-            }
-        }
-
-        const podcastElapsed = ((Date.now() - podcastStartTime) / 1000).toFixed(1);
-        console.log(`\n=== Podcast Vectorization Complete ===`);
-        console.log(`Success:  ${podcastSuccess}`);
-        console.log(`Errors:   ${podcastErrors}`);
-        console.log(`Duration: ${podcastElapsed}s`);
-        console.log(`======================================\n`);
-    }
 }
 
 main().catch(console.error);
