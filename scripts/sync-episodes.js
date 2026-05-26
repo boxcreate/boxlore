@@ -124,80 +124,106 @@ function cleanDescription(raw) {
 }
 
 async function executeSQL(sql, args = []) {
-    const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${TURSO_TOKEN}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            requests: [{
-                type: "execute",
-                stmt: { sql, args: args.map(mapArgType) }
-            }, { type: "close" }]
-        })
-    });
-    if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+    const startTime = Date.now();
+    try {
+        const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${TURSO_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                requests: [{
+                    type: "execute",
+                    stmt: { sql, args: args.map(mapArgType) }
+                }, { type: "close" }]
+            })
+        });
+        const duration = Date.now() - startTime;
+        console.log(`[DB] executeSQL - Status: ${response.status} | Time: ${duration}ms | Query: "${sql.trim().split('\n')[0].substring(0, 80)}..."`);
+        if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+        }
+        const res = await response.json();
+        if (res.results && res.results[0] && res.results[0].type === "error") {
+            throw new Error(`SQL execution error: ${res.results[0].error.message}`);
+        }
+        return res;
+    } catch (e) {
+        const duration = Date.now() - startTime;
+        console.error(`[DB] [FAIL] executeSQL failed after ${duration}ms: ${e.message}`);
+        throw e;
     }
-    const res = await response.json();
-    if (res.results && res.results[0] && res.results[0].type === "error") {
-        throw new Error(`SQL execution error: ${res.results[0].error.message}`);
-    }
-    return res;
 }
 
 async function executeBatch(statements) {
     if (statements.length === 0) return;
-    const requests = statements.map(stmt => ({
-        type: "execute",
-        stmt: { sql: stmt.sql, args: stmt.args.map(mapArgType) }
-    }));
-    requests.push({ type: "close" });
+    const startTime = Date.now();
+    try {
+        const requests = statements.map(stmt => ({
+            type: "execute",
+            stmt: { sql: stmt.sql, args: stmt.args.map(mapArgType) }
+        }));
+        requests.push({ type: "close" });
 
-    const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${TURSO_TOKEN}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ requests })
-    });
-    if (!response.ok) throw new Error(`Turso HTTP error: ${response.status}`);
-    
-    const res = await response.json();
-    if (res.results) {
-        for (const result of res.results) {
-            if (result.type === "error") {
-                throw new Error(`Turso SQL batch error: ${result.error.message}`);
+        const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${TURSO_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ requests })
+        });
+        const duration = Date.now() - startTime;
+        console.log(`[DB] executeBatch of ${statements.length} statements - Status: ${response.status} | Time: ${duration}ms`);
+        if (!response.ok) throw new Error(`Turso HTTP error: ${response.status}`);
+        
+        const res = await response.json();
+        if (res.results) {
+            for (const result of res.results) {
+                if (result.type === "error") {
+                    throw new Error(`Turso SQL batch error: ${result.error.message}`);
+                }
             }
         }
+    } catch (e) {
+        const duration = Date.now() - startTime;
+        console.error(`[DB] [FAIL] executeBatch of ${statements.length} statements failed after ${duration}ms: ${e.message}`);
+        throw e;
     }
 }
 
 async function fetchEpisodes(feedId) {
+    const startTime = Date.now();
     try {
         const headers = generateAuthHeaders();
-        // max=150 episodes per podcast
-        const res = await fetch(`${API_BASE}/episodes/byfeedid?id=${feedId}&max=150`, { headers });
+        // max=100 episodes per podcast
+        const res = await fetch(`${API_BASE}/episodes/byfeedid?id=${feedId}&max=100`, { headers });
+        const duration = Date.now() - startTime;
+        console.log(`[API] fetchEpisodes for pod ${feedId} - Status: ${res.status} | Time: ${duration}ms`);
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const data = await res.json();
         return data.items || [];
     } catch (e) {
-        console.error(`Failed to fetch episodes for ${feedId}:`, e.message);
+        const duration = Date.now() - startTime;
+        console.error(`[API] [FAIL] fetchEpisodes for pod ${feedId} failed after ${duration}ms: ${e.message}`);
         return [];
     }
 }
 
 async function fetchFeedInfo(feedId) {
+    const startTime = Date.now();
     try {
         const headers = generateAuthHeaders();
         const res = await fetch(`${API_BASE}/podcasts/byfeedid?id=${feedId}`, { headers });
+        const duration = Date.now() - startTime;
+        console.log(`[API] fetchFeedInfo for pod ${feedId} - Status: ${res.status} | Time: ${duration}ms`);
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const data = await res.json();
         return data.feed || null;
     } catch (e) {
-        console.error(`Failed to fetch feed info for ${feedId}:`, e.message);
+        const duration = Date.now() - startTime;
+        console.error(`[API] [FAIL] fetchFeedInfo for pod ${feedId} failed after ${duration}ms: ${e.message}`);
         return null;
     }
 }
