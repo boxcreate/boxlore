@@ -245,7 +245,7 @@ async function main() {
     const CUTOFF_NEWS = Date.now() - FOUR_HOURS_MS;
 
     let sql = `
-        SELECT DISTINCT p.id, p.itunes_id, p.title, p.last_ep_sync, p.medium, c.category
+        SELECT DISTINCT p.id, p.itunes_id, p.title, p.last_ep_sync, p.medium, c.category, p.latest_ep_id
         FROM charts c
         JOIN podcasts p ON c.itunes_id = p.itunes_id
         WHERE 
@@ -278,7 +278,8 @@ async function main() {
         const lastSync = r[3].value ? parseInt(r[3].value) : null;
         const medium = r[4].value;
         const category = r[5].value;
-        return { id, itunesId, title, lastSync, medium, category };
+        const latestEpId = r[6]?.value;
+        return { id, itunesId, title, lastSync, medium, category, latestEpId };
     }) || [];
 
     let neverSyncedCount = 0;
@@ -335,16 +336,33 @@ async function main() {
 
         await Promise.all(batch.map(async (pod, idx) => {
             const seqNum = i + idx + 1;
-            const [episodes, feedInfo] = await Promise.all([
-                fetchEpisodes(pod.id),
-                fetchFeedInfo(pod.id)
-            ]);
+            const episodes = await fetchEpisodes(pod.id);
             if (episodes.length === 0) {
                 return;
             }
 
             // Find the latest episode (usually first, but ensure by date)
             const latestEp = episodes[0];
+
+            // OPTIMIZATION: If the latest episode matches what is already in DB, 
+            // only update the last_ep_sync timestamp and exit (avoids DB write transaction locks)
+            if (pod.latestEpId && String(latestEp.id) === String(pod.latestEpId)) {
+                try {
+                    const updateTimestampSql = `
+                        UPDATE podcasts SET last_ep_sync = ? WHERE id = ?
+                    `;
+                    await executeSQL(updateTimestampSql, [Date.now(), String(pod.id)]);
+                    totalPodcastsUpdated++;
+                    return;
+                } catch (err) {
+                    errors++;
+                    console.error(`[SYNC] [${seqNum}/${podcasts.length}] Error updating sync timestamp for ${pod.id}: ${err.message}`);
+                    return;
+                }
+            }
+
+            // If mismatch/first-time sync, fetch the full feed metadata to write changes
+            const feedInfo = await fetchFeedInfo(pod.id);
 
             try {
                 const statements = [];
@@ -397,13 +415,41 @@ async function main() {
                     ]
                 });
 
-                // 2. Statements to insert/upsert each episode into episodes table (up to 150)
+                // 2. OPTIMIZATION: Build a single multi-row insert query for episodes
+                const placeholders = [];
+                const flatArgs = [];
+
+                episodes.forEach(ep => {
+                    placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                    const epChaptersUrl = ep.chaptersUrl || null;
+                    const epTranscriptUrl = ep.transcriptUrl || null;
+                    const epPersonsJson = ep.persons ? JSON.stringify(ep.persons) : null;
+                    const epTranscriptsJson = ep.transcripts ? JSON.stringify(ep.transcripts) : null;
+
+                    flatArgs.push(
+                        ep.id,
+                        pod.id,
+                        ep.title || "",
+                        cleanDescription(ep.description),
+                        ep.datePublished || 0,
+                        ep.duration || 0,
+                        ep.enclosureUrl || "",
+                        ep.image || ep.feedImage || "",
+                        ep.explicit ? 1 : 0,
+                        epChaptersUrl,
+                        epTranscriptUrl,
+                        epPersonsJson,
+                        epTranscriptsJson,
+                        Date.now()
+                    );
+                });
+
                 const upsertEpisodeSql = `
                     INSERT INTO episodes (
                         id, podcast_id, title, description, published_date, duration, 
                         enclosure_url, image_url, explicit, chapters_url, transcript_url, 
                         persons, transcripts, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES ${placeholders.join(',')}
                     ON CONFLICT(id) DO UPDATE SET
                         title = excluded.title,
                         description = excluded.description,
@@ -419,31 +465,9 @@ async function main() {
                         vector = CASE WHEN (title != excluded.title OR description != excluded.description) THEN NULL ELSE vector END
                 `;
 
-                episodes.forEach(ep => {
-                    const epChaptersUrl = ep.chaptersUrl || null;
-                    const epTranscriptUrl = ep.transcriptUrl || null;
-                    const epPersonsJson = ep.persons ? JSON.stringify(ep.persons) : null;
-                    const epTranscriptsJson = ep.transcripts ? JSON.stringify(ep.transcripts) : null;
-
-                    statements.push({
-                        sql: upsertEpisodeSql,
-                        args: [
-                            ep.id,
-                            pod.id,
-                            ep.title || "",
-                            cleanDescription(ep.description),
-                            ep.datePublished || 0,
-                            ep.duration || 0,
-                            ep.enclosureUrl || "",
-                            ep.image || ep.feedImage || "",
-                            ep.explicit ? 1 : 0,
-                            epChaptersUrl,
-                            epTranscriptUrl,
-                            epPersonsJson,
-                            epTranscriptsJson,
-                            Date.now()
-                        ]
-                    });
+                statements.push({
+                    sql: upsertEpisodeSql,
+                    args: flatArgs
                 });
 
                 // 3. Statement to prune older episodes beyond latest 150
@@ -462,7 +486,7 @@ async function main() {
                     args: [pod.id, pod.id]
                 });
 
-                // Execute the entire transaction in a single round trip!
+                // Execute the entire transaction in a single round trip! (3 statements instead of 152)
                 await executeBatch(statements);
                 totalPodcastsUpdated++;
             } catch (err) {
