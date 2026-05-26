@@ -69,12 +69,32 @@ function parseCSVLine(line) {
     return result;
 }
 
+// Map JavaScript values dynamically to Turso API types to prevent datatype mismatch
+function mapArgType(val) {
+    if (val === null || val === undefined || val === "") {
+        return { type: "null", value: null };
+    }
+    
+    // Check if it represents an integer or is a number
+    if (typeof val === 'number') {
+        return { type: "integer", value: String(val) };
+    }
+    if (typeof val === 'string' && /^\d+$/.test(val)) {
+        return { type: "integer", value: val };
+    }
+    
+    return { type: "text", value: String(val) };
+}
+
 async function executeBatch(statements) {
     if (statements.length === 0) return;
 
     const requests = statements.map(stmt => ({
         type: "execute",
-        stmt: { sql: stmt.sql, args: stmt.args.map(a => ({ type: a === null ? "null" : "text", value: a === null ? null : String(a || "") })) }
+        stmt: { 
+            sql: stmt.sql, 
+            args: stmt.args.map(mapArgType)
+        }
     }));
     requests.push({ type: "close" });
 
@@ -111,7 +131,10 @@ async function executeSQL(sql, args = []) {
         body: JSON.stringify({
             requests: [{
                 type: "execute",
-                stmt: { sql, args: args.map(a => ({ type: a === null ? "null" : "text", value: a === null ? null : String(a) })) }
+                stmt: { 
+                    sql, 
+                    args: args.map(mapArgType)
+                }
             }, { type: "close" }]
         })
     });
@@ -257,6 +280,9 @@ async function importTable(filename, tableName, limitPerGroupCol = null, limitCo
 async function main() {
     console.log("Starting PI data import...");
 
+    const countryIndex = process.argv.indexOf('--country');
+    const country = countryIndex !== -1 ? process.argv[countryIndex + 1] : null;
+
     const csvExists = fs.existsSync('podcasts_export.csv');
     if (csvExists) {
         console.log("[IMPORT] Found 'podcasts_export.csv'. Proceeding with Bulk DB Dump Import...");
@@ -268,9 +294,16 @@ async function main() {
             process.exit(1);
         }
 
-        // 1. Fetch chart iTunes IDs from Turso
-        console.log("[IMPORT] Fetching active iTunes IDs from charts table...");
-        const chartsRes = await executeSQL("SELECT DISTINCT itunes_id FROM charts;");
+        // 1. Fetch active chart iTunes IDs from Turso (filtering by country matrix if passed)
+        console.log(`[IMPORT] Fetching active iTunes IDs from charts table${country ? ` for country: ${country}` : ''}...`);
+        let chartsSql = "SELECT DISTINCT itunes_id FROM charts";
+        let chartsArgs = [];
+        if (country) {
+            chartsSql = "SELECT DISTINCT itunes_id FROM charts WHERE country = ?";
+            chartsArgs = [country];
+        }
+        
+        const chartsRes = await executeSQL(chartsSql, chartsArgs);
         const chartIds = chartsRes?.results?.[0]?.response?.result?.rows?.map(r => r[0].value).filter(Boolean) || [];
         console.log(`[IMPORT] Found ${chartIds.length} unique iTunes IDs in the charts table.`);
 
@@ -307,7 +340,9 @@ async function main() {
             }
 
             const feed = await fetchPodcastByItunesId(itunesId);
-            if (!feed) {
+            
+            // Robust check: skip empty/null arrays returned by the API when not found
+            if (!feed || (Array.isArray(feed) && feed.length === 0) || !feed.id) {
                 continue;
             }
 
@@ -324,8 +359,8 @@ async function main() {
             ];
             const placeholders = columns.map(() => '?').join(',');
             const values = [
-                String(feed.id),
-                String(feed.itunesId || itunesId),
+                feed.id,
+                feed.itunesId || itunesId,
                 feed.title || "Unknown Title",
                 feed.author || "Unknown Author",
                 (feed.description || "").substring(0, 1000),

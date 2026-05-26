@@ -116,7 +116,7 @@ jobs:
           PODCAST_INDEX_API_SECRET: ${{ secrets.PODCAST_INDEX_API_SECRET }}
         run: |
           echo "[WORKFLOW] Starting import-pi-data.js to load podcasts into Turso DB..."
-          node scripts/import-pi-data.js
+          node scripts/import-pi-data.js --country ${{ matrix.country }}
 
       - name: Sync Episodes via API
         env:
