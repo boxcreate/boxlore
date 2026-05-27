@@ -20,7 +20,7 @@ if (!TURSO_URL || !TURSO_TOKEN) {
 // Configuration
 const MODEL_NAME = 'Xenova/bge-large-en-v1.5';
 const BATCH_SIZE = 10;
-const LIMIT = 2000; // Max items per run to fit within timeout
+const LIMIT = 8000; // Max items per run to fit within timeout
 
 /**
  * Clean episode description for better vectorization quality.
