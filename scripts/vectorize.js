@@ -27,6 +27,7 @@ const MODEL_NAME = 'Xenova/bge-large-en-v1.5';
 const COLLECTION_NAME = 'episodes';
 const BATCH_SIZE = 50;
 const EPISODES_LIMIT = 30; // 30 episodes per podcast
+const MAX_NEW_PODCASTS_PER_RUN = 200; // Cap to prevent GHA timeouts
 
 // Helper: Generate Podcast Index Auth Headers
 function generateAuthHeaders() {
@@ -244,7 +245,13 @@ async function main() {
     const country = countryIndex !== -1 ? process.argv[countryIndex + 1] : null;
 
     let sql = `
-        SELECT DISTINCT p.id, p.title, p.categories
+        SELECT DISTINCT 
+            p.id, 
+            p.title, 
+            p.categories,
+            p.author,
+            p.image_url,
+            p.language
         FROM charts c
         JOIN podcasts p ON c.itunes_id = p.itunes_id
     `;
@@ -260,7 +267,10 @@ async function main() {
     const podcasts = res?.results?.[0]?.response?.result?.rows?.map(r => ({
         id: String(r[0].value),
         title: r[1].value || "Unknown Show",
-        categories: r[2]?.value || "Podcast"
+        categories: r[2]?.value || "Podcast",
+        author: r[3]?.value || "",
+        image_url: r[4]?.value || "",
+        language: r[5]?.value || "en"
     })) || [];
 
     console.log(`[SYNC] Found ${podcasts.length} active podcasts to sync.`);
@@ -269,6 +279,7 @@ async function main() {
     let success = 0;
     let skipped = 0;
     let errors = 0;
+    let vectorizedPodcastsCount = 0;
     const startTime = Date.now();
 
     // 3. Process podcasts sequentially to be polite to APIs and prevent locks
@@ -302,7 +313,14 @@ async function main() {
             continue;
         }
 
+        // Check if we hit our run cap of newly vectorized podcasts
+        if (vectorizedPodcastsCount >= MAX_NEW_PODCASTS_PER_RUN) {
+            console.log(`\n[CAP REACHED] Already vectorized ${MAX_NEW_PODCASTS_PER_RUN} podcasts in this run. Skipping further vectorizations to prevent timeout.`);
+            break;
+        }
+
         console.log(`  -> ${toVectorize.length} new episodes qualify for vectorization.`);
+        vectorizedPodcastsCount++;
         const points = [];
 
         for (const item of toVectorize) {
@@ -328,11 +346,17 @@ async function main() {
 
                 // Build point metadata payload
                 const payload = {
+                    id: parseInt(ep.id) || 0, // Store original numeric episode ID for mobile app compatibility
                     title: epTitle,
+                    description: ep.description || "", // Store original description for the UI
                     podcast_id: parseInt(pod.id) || 0,
                     podcast_title: pod.title,
+                    podcast_author: pod.author || "",
+                    podcast_image_url: pod.image_url || "",
+                    podcast_categories: pod.categories || "",
+                    language: pod.language || "en",
                     audio_url: ep.enclosureUrl || "",
-                    image_url: ep.image || ep.feedImage || "",
+                    image_url: ep.image || ep.feedImage || pod.image_url || "",
                     published_date: ep.datePublished || 0,
                     duration: ep.duration || 0
                 };
