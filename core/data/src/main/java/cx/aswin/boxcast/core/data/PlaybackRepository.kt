@@ -810,7 +810,7 @@ class PlaybackRepository(
                     var episode = Episode(
                         id = lastSession.episodeId,
                         title = lastSession.episodeTitle,
-                        description = "",
+                        description = lastSession.episodeDescription ?: "",
                         audioUrl = lastSession.episodeAudioUrl ?: "",
                         imageUrl = lastSession.episodeImageUrl,
                         duration = (lastSession.durationMs / 1000).toInt(),
@@ -932,7 +932,8 @@ class PlaybackRepository(
             isCompleted = finalCompleted,
             isLiked = state.isLiked,
             lastPlayedAt = lastPlayed,
-            enclosureType = episode.enclosureType
+            enclosureType = episode.enclosureType,
+            episodeDescription = episode.description
         )
     }
     
@@ -1696,7 +1697,8 @@ class PlaybackRepository(
                 isLiked = newStatus,
                 lastPlayedAt = System.currentTimeMillis(),
                 isDirty = true,
-                enclosureType = episode.enclosureType
+                enclosureType = episode.enclosureType,
+                episodeDescription = episode.description
             )
             listeningHistoryDao.upsert(entity)
         }
@@ -1712,7 +1714,8 @@ class PlaybackRepository(
                 isManualCompletion = newStatus,
                 progressMs = 0L,
                 lastPlayedAt = System.currentTimeMillis(),
-                isDirty = true
+                isDirty = true,
+                episodeDescription = existing.episodeDescription ?: episode.description
             )
             listeningHistoryDao.upsert(updated)
         } else {
@@ -1733,7 +1736,8 @@ class PlaybackRepository(
                 isDirty = true,
                 enclosureType = episode.enclosureType,
                 isManualCompletion = newStatus,
-                isBulkCompletion = false
+                isBulkCompletion = false,
+                episodeDescription = episode.description
             )
             listeningHistoryDao.upsert(entity)
         }
@@ -1756,12 +1760,12 @@ class PlaybackRepository(
         val existing = listeningHistoryDao.getHistoryItem(episode.id)
         
         if (existing == null) {
-                if (podcast == null && episode.podcastId == null) {
-                 android.util.Log.e("PlaybackRepo", "markEpisodeAsCompleted: Cannot create history item, podcast is null")
-                 return
-             }
-             android.util.Log.d("PlaybackRepo", "Creating new history item for completed episode")
-             val entity = cx.aswin.boxcast.core.data.database.ListeningHistoryEntity(
+            if (podcast == null && episode.podcastId == null) {
+                android.util.Log.e("PlaybackRepo", "markEpisodeAsCompleted: Cannot create history item, podcast is null")
+                return
+            }
+            android.util.Log.d("PlaybackRepo", "Creating new history item for completed episode")
+            val entity = cx.aswin.boxcast.core.data.database.ListeningHistoryEntity(
                 episodeId = episode.id,
                 podcastId = episode.podcastId ?: podcast!!.id,
                 episodeTitle = episode.title,
@@ -1775,19 +1779,21 @@ class PlaybackRepository(
                 isLiked = false, // We don't know
                 lastPlayedAt = System.currentTimeMillis(),
                 isDirty = true,
-                enclosureType = episode.enclosureType
+                enclosureType = episode.enclosureType,
+                episodeDescription = episode.description
             )
             listeningHistoryDao.upsert(entity)
         } else {
-             // UPDATE timestamp too so it appears in recently played (loop prevention)
-             android.util.Log.d("PlaybackRepo", "Updating existing history item as completed")
-             val updated = existing.copy(
-                 isCompleted = true, 
-                 progressMs = 0L, // Reset progress!
-                 lastPlayedAt = System.currentTimeMillis(),
-                 isDirty = true
-             )
-             listeningHistoryDao.upsert(updated)
+            // UPDATE timestamp too so it appears in recently played (loop prevention)
+            android.util.Log.d("PlaybackRepo", "Updating existing history item as completed")
+            val updated = existing.copy(
+                isCompleted = true, 
+                progressMs = 0L, // Reset progress!
+                lastPlayedAt = System.currentTimeMillis(),
+                isDirty = true,
+                episodeDescription = existing.episodeDescription ?: episode.description
+            )
+            listeningHistoryDao.upsert(updated)
         }
         android.util.Log.d("PlaybackRepo", "markEpisodeAsCompleted: DONE for ${episode.title}")
     }
@@ -1808,7 +1814,8 @@ class PlaybackRepository(
         isCompleted: Boolean,
         isLiked: Boolean,
         lastPlayedAt: Long = System.currentTimeMillis(),
-        enclosureType: String? = null
+        enclosureType: String? = null,
+        episodeDescription: String? = null
     ) {
         android.util.Log.v("PlaybackRepo", "Saving playback state: $episodeTitle, pos=$positionMs, completed=$isCompleted")
         val entity = cx.aswin.boxcast.core.data.database.ListeningHistoryEntity(
@@ -1827,7 +1834,8 @@ class PlaybackRepository(
             isDirty = true,
             enclosureType = enclosureType,
             isManualCompletion = false,
-            isBulkCompletion = false
+            isBulkCompletion = false,
+            episodeDescription = episodeDescription
         )
         listeningHistoryDao.upsert(entity)
     }
@@ -1872,7 +1880,8 @@ class PlaybackRepository(
                     progressMs = 0L,
                     isBulkCompletion = true,
                     lastPlayedAt = currentTime,
-                    isDirty = true
+                    isDirty = true,
+                    episodeDescription = existing.episodeDescription ?: episode.description
                 )
             } else {
                 cx.aswin.boxcast.core.data.database.ListeningHistoryEntity(
@@ -1891,7 +1900,8 @@ class PlaybackRepository(
                     isDirty = true,
                     enclosureType = episode.enclosureType,
                     isManualCompletion = false,
-                    isBulkCompletion = true
+                    isBulkCompletion = true,
+                    episodeDescription = episode.description
                 )
             }
         }
@@ -1944,6 +1954,7 @@ class PlaybackRepository(
             .take(limit)
             .map { entity ->
                 val podcast = podcastDao.getPodcast(entity.podcastId)
+                android.util.Log.d("PlaybackRepo", "Passing history: ${entity.episodeTitle} | Has Description: ${!entity.episodeDescription.isNullOrEmpty()} | Length: ${entity.episodeDescription?.length ?: 0}")
                 cx.aswin.boxcast.core.network.model.HistoryItem(
                     podcastTitle = entity.podcastName,
                     episodeTitle = entity.episodeTitle,
@@ -1953,7 +1964,8 @@ class PlaybackRepository(
                     durationMs = entity.durationMs,
                     progressMs = entity.progressMs,
                     isCompleted = entity.isCompleted,
-                    isLiked = entity.isLiked
+                    isLiked = entity.isLiked,
+                    episodeDescription = entity.episodeDescription
                 )
             }
     }

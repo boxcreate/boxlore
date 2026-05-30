@@ -50,5 +50,6 @@ data class HistoryItem(
     val durationMs: Long? = null,
     val progressMs: Long? = null,
     val isCompleted: Boolean? = null,
-    val isLiked: Boolean? = null
+    val isLiked: Boolean? = null,
+    val episodeDescription: String? = null
 )

@@ -89,7 +89,8 @@ class LibraryBackupManager(
                     lastPlayedAt = entity.lastPlayedAt,
                     isDirty = entity.isDirty,
                     syncedAt = entity.syncedAt,
-                    enclosureType = entity.enclosureType
+                    enclosureType = entity.enclosureType,
+                    episodeDescription = entity.episodeDescription
                 )
                 playbackRepository.upsertHistoryEntity(safeEntity)
             }

@@ -28,5 +28,6 @@ data class ListeningHistoryEntity(
     val syncedAt: Long = 0,
     val enclosureType: String? = null,
     val isManualCompletion: Boolean = false,
-    val isBulkCompletion: Boolean = false
+    val isBulkCompletion: Boolean = false,
+    val episodeDescription: String? = null
 )
