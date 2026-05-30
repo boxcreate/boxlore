@@ -109,6 +109,7 @@ fun CuratedEpisodeCard(
                 Text(
                     text = episode.title,
                     style = MaterialTheme.typography.titleMedium.copy(fontSize = 13.sp),
+                    minLines = 2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -117,6 +118,7 @@ fun CuratedEpisodeCard(
                     text = podcast.title,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    minLines = 1,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
