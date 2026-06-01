@@ -3,7 +3,7 @@ name: Sync Podcast Index Data
 on:
   schedule:
     # Run every 6 hours at minute 30 (avoids collision with boxcast-api cron)
-    - cron: '30 */6 * * *'
+    - cron: '17 */3 * * *'
   workflow_dispatch: # Allow manual trigger
 
 concurrency:
