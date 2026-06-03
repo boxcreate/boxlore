@@ -27,7 +27,7 @@ const MODEL_NAME = 'Xenova/bge-large-en-v1.5';
 const COLLECTION_NAME = 'episodes';
 const BATCH_SIZE = 50;
 const EPISODES_LIMIT = 30; // 30 episodes per podcast
-const MAX_NEW_PODCASTS_PER_RUN = 500; // Cap to prevent GHA timeouts
+const MAX_NEW_PODCASTS_PER_RUN = 1000; // Cap to prevent GHA timeouts
 
 // Helper: Generate Podcast Index Auth Headers
 function generateAuthHeaders() {
