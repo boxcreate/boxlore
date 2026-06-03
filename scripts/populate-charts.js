@@ -140,24 +140,55 @@ async function main() {
 
                 if (podcasts.length === 0) continue;
 
-                // Delete old entries
-                await executeSQL(
-                    "DELETE FROM charts WHERE country = ? AND category = ?",
+                // Fetch existing entries from the DB to compare and update in-place
+                const existingRes = await executeSQL(
+                    "SELECT itunes_id, name, artist, image_url, rank FROM charts WHERE country = ? AND category = ? ORDER BY rank ASC",
                     [country, category]
                 );
+                const existingRows = existingRes?.results?.[0]?.response?.result?.rows?.map(r => ({
+                    itunesId: String(r[0].value),
+                    name: r[1].value || "",
+                    artist: r[2].value || "",
+                    imageUrl: r[3].value || "",
+                    rank: parseInt(r[4].value)
+                })) || [];
 
-                // Insert new entries in batch to maximize speed
                 const statements = [];
-                for (let i = 0; i < podcasts.length; i++) {
-                    const p = podcasts[i];
-                    statements.push({
-                        sql: "INSERT INTO charts (itunes_id, name, artist, image_url, country, category, rank) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        args: [p.itunesId, p.name, p.artist, p.imageUrl, country, category, i + 1]
-                    });
+                const maxLength = Math.max(existingRows.length, podcasts.length);
+                let unchangedCount = 0;
+
+                for (let i = 0; i < maxLength; i++) {
+                    const newPod = podcasts[i];
+                    const oldPod = existingRows[i];
+
+                    if (newPod && oldPod) {
+                        if (String(newPod.itunesId) !== String(oldPod.itunesId) ||
+                            newPod.name !== oldPod.name ||
+                            newPod.artist !== oldPod.artist ||
+                            newPod.imageUrl !== oldPod.imageUrl ||
+                            (i + 1) !== oldPod.rank) {
+                            statements.push({
+                                sql: "UPDATE charts SET itunes_id = ?, name = ?, artist = ?, image_url = ? WHERE country = ? AND category = ? AND rank = ?",
+                                args: [newPod.itunesId, newPod.name, newPod.artist, newPod.imageUrl, country, category, i + 1]
+                            });
+                        } else {
+                            unchangedCount++;
+                        }
+                    } else if (newPod && !oldPod) {
+                        statements.push({
+                            sql: "INSERT INTO charts (itunes_id, name, artist, image_url, country, category, rank) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            args: [newPod.itunesId, newPod.name, newPod.artist, newPod.imageUrl, country, category, i + 1]
+                        });
+                    } else if (!newPod && oldPod) {
+                        statements.push({
+                            sql: "DELETE FROM charts WHERE country = ? AND category = ? AND rank = ?",
+                            args: [country, category, oldPod.rank]
+                        });
+                    }
                 }
 
                 if (statements.length > 0) {
-                    // Custom executeBatch inlined here for simplicity
+                    console.log(`[CHARTS] Updating ${statements.length} rows for ${country}/${category} (skipped ${unchangedCount} unchanged rows)...`);
                     const requests = statements.map(stmt => ({
                         type: "execute",
                         stmt: { 
@@ -187,6 +218,8 @@ async function main() {
                             }
                         }
                     }
+                } else {
+                    console.log(`[CHARTS] Charts for ${country}/${category} are fully up-to-date. 0 database writes executed!`);
                 }
 
                 console.log(`[CHARTS] Successfully inserted ${podcasts.length} charts for ${country}/${category}`);
