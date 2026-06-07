@@ -153,7 +153,7 @@ async function qdrantCheckExistence(ids) {
 // Helper: Qdrant Batch Upsert
 async function qdrantUpsertBatch(points) {
     if (points.length === 0) return;
-    const response = await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points?wait=true`, {
+    const response = await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points?wait=false`, {
         method: "PUT",
         headers: {
             "api-key": QDRANT_API_KEY,
@@ -378,23 +378,26 @@ async function main() {
         }
     }
 
-    // Batch upload to Qdrant
+    // Batch upload to Qdrant and update Turso in chunks of 100
     if (points.length > 0) {
-        console.log(`  -> Uploading ${points.length} vectors to Qdrant...`);
-        try {
-            await qdrantUpsertBatch(points);
-            console.log(`  -> Successful upload to Qdrant!`);
-
-            // Mark successful ones as vectorized in Turso
-            for (const pt of points) {
-                const originalId = pt.payload.id;
-                await executeSQL("UPDATE podcasts SET qdrant_podcast_vectorized = 1 WHERE id = ?", [originalId]);
+        console.log(`  -> Uploading ${points.length} vectors to Qdrant in chunks of 100 (wait=false)...`);
+        const CHUNK_SIZE = 100;
+        for (let i = 0; i < points.length; i += CHUNK_SIZE) {
+            const chunk = points.slice(i, i + CHUNK_SIZE);
+            try {
+                console.log(`  -> [CHUNK] Uploading ${chunk.length} points to Qdrant...`);
+                await qdrantUpsertBatch(chunk);
+                
+                // Mark as vectorized in Turso DB
+                const chunkIds = chunk.map(pt => pt.payload.id);
+                const placeholders = chunkIds.map(() => '?').join(',');
+                console.log(`  -> [CHUNK] Marking ${chunkIds.length} podcasts as vectorized in Turso...`);
+                await executeSQL(`UPDATE podcasts SET qdrant_podcast_vectorized = 1 WHERE id IN (${placeholders})`, chunkIds);
+            } catch (err) {
+                console.error(`  -> [CHUNK ERR] Failed to process chunk starting at index ${i}: ${err.message}`);
+                success -= chunk.length;
+                errors += chunk.length;
             }
-            console.log(`  -> Marked ${points.length} podcasts as vectorized in Turso DB.`);
-        } catch (err) {
-            console.error(`  -> Failed to upload batch to Qdrant: ${err.message}`);
-            success -= points.length;
-            errors += points.length;
         }
     }
 

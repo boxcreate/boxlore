@@ -153,7 +153,7 @@ async function qdrantCheckExistence(ids) {
 // Helper: Qdrant Batch Upsert
 async function qdrantUpsertBatch(points) {
     if (points.length === 0) return;
-    const response = await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points?wait=true`, {
+    const response = await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points?wait=false`, {
         method: "PUT",
         headers: {
             "api-key": QDRANT_API_KEY,
@@ -305,6 +305,30 @@ async function main() {
     let vectorizedPodcastsCount = 0;
     const startTime = Date.now();
 
+    const pointsQueue = [];
+    const dbUpdateQueue = [];
+
+    async function flushQueue() {
+        if (pointsQueue.length === 0) return;
+        console.log(`\n  -> [QDRANT] Flushing ${pointsQueue.length} accumulated vectors to Qdrant (wait=false)...`);
+        try {
+            await qdrantUpsertBatch(pointsQueue);
+            success += pointsQueue.length;
+            console.log(`  -> [QDRANT] Successfully pushed batch to Qdrant queue.`);
+            
+            // Mark as vectorized in Turso DB
+            console.log(`  -> [DATABASE] Updating ${dbUpdateQueue.length} podcasts status in Turso...`);
+            const placeholders = dbUpdateQueue.map(() => '?').join(',');
+            await executeSQL(`UPDATE podcasts SET qdrant_vectorized = 1 WHERE id IN (${placeholders})`, dbUpdateQueue);
+            console.log(`  -> [DATABASE] Marked ${dbUpdateQueue.length} podcasts as vectorized.`);
+        } catch (err) {
+            console.error(`  -> [ERR] Failed to upload batch to Qdrant/Turso: ${err.message}`);
+            errors += pointsQueue.length;
+        }
+        pointsQueue.length = 0;
+        dbUpdateQueue.length = 0;
+    }
+
     // 3. Process podcasts sequentially to be polite to APIs and prevent locks
     for (let idx = 0; idx < podcasts.length; idx++) {
         const pod = podcasts[idx];
@@ -420,22 +444,14 @@ async function main() {
             }
         }
 
-        // Batch upload new points to Qdrant
-        let uploadSuccess = true;
+        // Batch upload new points to Qdrant (using global pointsQueue buffering)
         if (points.length > 0) {
-            console.log(`  -> Uploading ${points.length} vectors to Qdrant...`);
-            try {
-                await qdrantUpsertBatch(points);
-                success += points.length;
-                console.log(`  -> Successful upload to Qdrant!`);
-                
-                // Mark as vectorized in Turso DB
-                await executeSQL("UPDATE podcasts SET qdrant_vectorized = 1 WHERE id = ?", [pod.id]);
-                console.log(`  -> Marked "${pod.title}" as vectorized (uploaded ${points.length} vectors).`);
-            } catch (err) {
-                console.error(`  -> Failed to upload batch to Qdrant: ${err.message}`);
-                errors += points.length;
-                uploadSuccess = false;
+            pointsQueue.push(...points);
+            dbUpdateQueue.push(pod.id);
+            console.log(`  -> Staged ${points.length} vectors. Queue size: ${pointsQueue.length}/100.`);
+            
+            if (pointsQueue.length >= 100) {
+                await flushQueue();
             }
         } else if (toVectorize.length > 0) {
             console.warn(`  -> ${toVectorize.length} episodes were qualified but none were successfully vectorized.`);
@@ -473,6 +489,9 @@ async function main() {
         // Polite API rate limiting delay
         await new Promise(r => setTimeout(r, 400));
     }
+
+    // Flush any remaining vectors in queue
+    await flushQueue();
 
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
