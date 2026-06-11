@@ -54,7 +54,8 @@ data class OnboardingCurriculumPodcastDto(
     @SerialName("image") val image: String? = null,
     @SerialName("artwork") val artwork: String? = null,
     @SerialName("language") val language: String? = null,
-    @SerialName("categories") val categories: Map<String, String>? = null
+    @SerialName("categories") val categories: Map<String, String>? = null,
+    @SerialName("description") val description: String? = null
 )
 
 @Serializable
@@ -88,7 +89,7 @@ fun OnboardingCurriculumPodcastDto.toPodcast(): Podcast {
         title = this.title,
         artist = this.author ?: "Unknown",
         imageUrl = cleanUrl,
-        description = null,
+        description = this.description,
         genre = this.categories?.values?.firstOrNull() ?: "Podcast"
     )
 }
