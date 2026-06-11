@@ -2,6 +2,7 @@ package cx.aswin.boxcast.feature.onboarding
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxcast.core.data.PodcastRepository
@@ -31,6 +32,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 
+enum class AiLoadingStage {
+    IDLE,
+    GENERATING_RESPONSE,
+    SYNTHESIZING_PREFERENCES,
+    FETCHING_CATALOGS,
+    ASSEMBLING_FEED
+}
+
 data class OnboardingUiState(
     val currentStep: OnboardingStep = OnboardingStep.WELCOME,
     val selectedGenres: Set<String> = emptySet(),
@@ -46,22 +55,25 @@ data class OnboardingUiState(
     val selectedPodcasts: Map<String, Podcast> = emptyMap(),
     // AI Onboarding fields
     val aiHistory: List<OnboardingHistoryEntry> = emptyList(),
-    val aiAssistantMessage: String = "What kind of listener are you?",
+    val aiAssistantMessage: String = "Hi! I'm boxcast. To start, what kind of a listener are you?",
     val aiOptions: List<String> = listOf(
-        "I want to get lost in a story or mystery.",
-        "I want to learn or dive deep into a topic.",
-        "I want to laugh or hear casual conversations.",
-        "I want to relax, focus, or wind down."
+        "Storyseeker | Serialized narratives, investigative series, and immersive audio dramas",
+        "Deep Diver | Detailed analysis, long-form research, and intellectual essays",
+        "Conversationalist | Candid guest interviews, unscripted discussions, and casual banter",
+        "Chill Listener | Soothing voices, mindfulness sessions, and relaxing background talk"
     ),
     val aiCurrentTurn: Int = 1,
     val aiCustomInputText: String = "",
     val aiSelectedOptions: Set<String> = emptySet(),
     val isAiLoading: Boolean = false,
-    val aiCurriculumRows: List<OnboardingCurriculumRowDto> = emptyList()
+    val isSynthesizing: Boolean = false,
+    val aiCurriculumRows: List<OnboardingCurriculumRowDto> = emptyList(),
+    val aiLoadingStage: AiLoadingStage = AiLoadingStage.IDLE,
+    val onboardingError: String? = null
 )
 
 enum class OnboardingStep {
-    WELCOME, GENRES, PODCASTS, SEARCH, AI_ONBOARDING
+    WELCOME, GENRES, PODCASTS, SEARCH, AI_ONBOARDING, AI_SUGGESTIONS
 }
 
 class OnboardingViewModel(
@@ -80,6 +92,7 @@ class OnboardingViewModel(
     private var recommendationJob: Job? = null
 
     private val turnHistoryState = mutableListOf<TurnState>()
+    private var lastFailedAction: (() -> Unit)? = null
     
     data class TurnState(
         val assistantMessage: String,
@@ -88,11 +101,6 @@ class OnboardingViewModel(
     )
 
     init {
-        // Init local spellchecker safely on a background thread for the search step
-        viewModelScope.launch {
-            // Offline spellchecker removed - handled at the Edge
-        }
-        
         // Retrieve and initialize region once on startup
         viewModelScope.launch {
             userPrefs.regionStream.take(1).collect { region ->
@@ -138,7 +146,7 @@ class OnboardingViewModel(
         if (genreScreenStartMs == 0L) return 0f
         return (System.currentTimeMillis() - genreScreenStartMs) / 1000f
     }
-
+    
     /** Time spent on the podcast screen in seconds */
     private fun getPodcastScreenTimeSpent(): Float {
         if (podcastScreenStartMs == 0L) return 0f
@@ -254,16 +262,54 @@ class OnboardingViewModel(
     
     fun togglePodcastSubscription(podcastId: String) {
         _uiState.update { state ->
-            val newSelected = if (podcastId in state.selectedPodcasts) {
+            val newSelected = if (podcastId in state.subscribedPodcastIds) {
                 state.selectedPodcasts - podcastId
             } else {
                 val podcast = state.recommendedPodcasts.find { it.id == podcastId }
                     ?: state.searchResults.find { it.id == podcastId }
+                    ?: state.aiCurriculumRows.flatMap { it.podcasts }.map { it.toPodcast() }.find { it.id == podcastId }
                 if (podcast != null) {
                     state.selectedPodcasts + (podcastId to podcast)
                 } else {
                     state.selectedPodcasts
                 }
+            }
+            state.copy(
+                selectedPodcasts = newSelected,
+                subscribedPodcastIds = newSelected.keys
+            )
+        }
+    }
+
+    fun toggleAllCurriculumPodcasts() {
+        _uiState.update { state ->
+            val allPodcasts = state.aiCurriculumRows.flatMap { it.podcasts }.map { it.toPodcast() }
+            val allIds = allPodcasts.map { it.id }.toSet()
+            val allSelected = allIds.isNotEmpty() && allIds.all { it in state.subscribedPodcastIds }
+            
+            val newSelected = if (allSelected) {
+                state.selectedPodcasts.filterKeys { it !in allIds }
+            } else {
+                state.selectedPodcasts + allPodcasts.associateBy { it.id }
+            }
+            state.copy(
+                selectedPodcasts = newSelected,
+                subscribedPodcastIds = newSelected.keys
+            )
+        }
+    }
+
+    fun toggleAllPodcastsInRow(rowTitle: String) {
+        _uiState.update { state ->
+            val row = state.aiCurriculumRows.find { it.rowTitle == rowTitle } ?: return@update state
+            val rowPodcasts = row.podcasts.map { it.toPodcast() }
+            val rowIds = rowPodcasts.map { it.id }.toSet()
+            val allSelected = rowIds.isNotEmpty() && rowIds.all { it in state.subscribedPodcastIds }
+            
+            val newSelected = if (allSelected) {
+                state.selectedPodcasts.filterKeys { it !in rowIds }
+            } else {
+                state.selectedPodcasts + rowPodcasts.associateBy { it.id }
             }
             state.copy(
                 selectedPodcasts = newSelected,
@@ -365,9 +411,6 @@ class OnboardingViewModel(
             podcastId = podcast.id,
             totalSubscribedCount = _uiState.value.subscribedPodcastIds.size
         )
-
-        // Metadata is already captured in the podcast object added to recommendations.
-        // Actual DB write will happen in completeOnboarding to avoid double-toggling issues.
     }
     
     fun completeOnboarding(onDone: () -> Unit) {
@@ -377,7 +420,6 @@ class OnboardingViewModel(
             // Subscribe to all selected podcasts accumulated across regions and search
             val podcastsToSubscribe = state.selectedPodcasts.values
             for (podcast in podcastsToSubscribe) {
-                // Use idempotent subscribe to avoid toggling off existing subs
                 subscriptionRepository.subscribe(podcast)
             }
             
@@ -426,6 +468,7 @@ class OnboardingViewModel(
             OnboardingStep.PODCASTS -> "podcast_screen"
             OnboardingStep.SEARCH -> "search_screen"
             OnboardingStep.AI_ONBOARDING -> "ai_onboarding_screen"
+            OnboardingStep.AI_SUGGESTIONS -> "ai_suggestions_screen"
         }
         val podcastTime = if (_uiState.value.currentStep == OnboardingStep.PODCASTS) getPodcastScreenTimeSpent() else null
         AnalyticsHelper.trackOnboardingSkipped(currentScreen, getGenreScreenTimeSpent(), getTotalOnboardingTime(), podcastTime)
@@ -436,23 +479,46 @@ class OnboardingViewModel(
     }
 
     fun updateAiCustomInput(text: String) {
-        _uiState.update { it.copy(aiCustomInputText = text) }
+        _uiState.update { state ->
+            state.copy(
+                aiCustomInputText = text,
+                aiSelectedOptions = if (text.isNotEmpty()) emptySet() else state.aiSelectedOptions
+            )
+        }
     }
 
     fun toggleAiOption(option: String) {
         _uiState.update { state ->
+            if (state.aiCustomInputText.isNotEmpty()) {
+                return@update state
+            }
             val currentSelected = state.aiSelectedOptions
             val newSelected = if (option in currentSelected) {
                 currentSelected - option
             } else {
                 currentSelected + option
             }
-            state.copy(aiSelectedOptions = newSelected)
+            state.copy(
+                aiSelectedOptions = newSelected
+            )
+        }
+    }
+
+    fun switchToLegacyOnboarding() {
+        _uiState.update { it.copy(currentStep = OnboardingStep.GENRES, onboardingError = null) }
+    }
+
+    fun retryLastAction() {
+        val action = lastFailedAction
+        if (action != null) {
+            _uiState.update { it.copy(onboardingError = null) }
+            action()
         }
     }
 
     fun sendAiTurnInput() {
         val currentState = _uiState.value
+        if (currentState.isAiLoading) return
         val turnInput = (currentState.aiSelectedOptions.toList() + 
             if (currentState.aiCustomInputText.isNotBlank()) listOf(currentState.aiCustomInputText) else emptyList()
         ).joinToString(". ")
@@ -468,190 +534,319 @@ class OnboardingViewModel(
             )
         )
 
-        _uiState.update { it.copy(isAiLoading = true) }
+        val userEntry = OnboardingHistoryEntry(
+            role = "user",
+            parts = listOf(OnboardingPart(text = turnInput))
+        )
+        val newHistory = currentState.aiHistory + userEntry
 
-        viewModelScope.launch {
-            try {
-                val userEntry = OnboardingHistoryEntry(
-                    role = "user",
-                    parts = listOf(OnboardingPart(text = turnInput))
+        _uiState.update {
+            it.copy(
+                aiHistory = newHistory,
+                aiSelectedOptions = emptySet(),
+                aiCustomInputText = "",
+                isAiLoading = true,
+                aiLoadingStage = AiLoadingStage.GENERATING_RESPONSE,
+                onboardingError = null
+            )
+        }
+
+        var action: (() -> Unit)? = null
+        action = {
+            _uiState.update {
+                it.copy(
+                    isAiLoading = true,
+                    aiLoadingStage = AiLoadingStage.GENERATING_RESPONSE,
+                    onboardingError = null
                 )
-                val newHistory = currentState.aiHistory + userEntry
-
-                val response = withContext(Dispatchers.IO) {
-                    podcastRepository.api.getOnboardingNextTurn(
-                        publicKey = podcastRepository.publicKey,
-                        request = OnboardingNextTurnRequest(history = newHistory)
-                    ).execute()
-                }
-
-                if (response.isSuccessful && response.body() != null) {
-                    val body = response.body()!!
-                    val assistantEntry = OnboardingHistoryEntry(
-                        role = "model",
-                        parts = listOf(OnboardingPart(text = body.assistantMessage))
-                    )
-                    _uiState.update {
-                        it.copy(
-                            aiHistory = newHistory + assistantEntry,
-                            aiAssistantMessage = body.assistantMessage,
-                            aiOptions = body.options,
-                            aiCurrentTurn = currentState.aiCurrentTurn + 1,
-                            aiSelectedOptions = emptySet(),
-                            aiCustomInputText = "",
-                            isAiLoading = false
-                        )
+            }
+            viewModelScope.launch {
+                try {
+                    val startTime = System.currentTimeMillis()
+                    val testInput = turnInput.trim().lowercase()
+                    if (testInput == "test_fail" || testInput == "test_error") {
+                        throw java.io.IOException("Simulated network failure")
+                    } else if (testInput == "test_timeout") {
+                        delay(50000)
                     }
-                } else {
-                    // Fail gracefully
-                    _uiState.update {
-                        it.copy(
+
+                    val response = kotlinx.coroutines.withTimeout(45000) {
+                        withContext(Dispatchers.IO) {
+                            podcastRepository.api.getOnboardingNextTurn(
+                                publicKey = podcastRepository.publicKey,
+                                request = OnboardingNextTurnRequest(history = newHistory)
+                            ).execute()
+                        }
+                    }
+
+                    if (testInput == "test_delay" || testInput == "test_slow") {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        val remainingDelay = 20000 - elapsed
+                        if (remainingDelay > 0) {
+                            delay(remainingDelay)
+                        }
+                    }
+
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        val assistantEntry = OnboardingHistoryEntry(
+                            role = "model",
+                            parts = listOf(OnboardingPart(text = body.assistantMessage))
+                        )
+                        if (body.options.isEmpty()) {
+                            _uiState.update { state ->
+                                state.copy(
+                                    aiHistory = state.aiHistory + assistantEntry,
+                                    aiAssistantMessage = body.assistantMessage,
+                                    aiOptions = emptyList(),
+                                    aiCurrentTurn = state.aiCurrentTurn + 1,
+                                    isAiLoading = false,
+                                    aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
+                                    onboardingError = null
+                                )
+                            }
+                            this@OnboardingViewModel.synthesizeAndBuildCurriculum(force = true)
+                        } else {
+                            _uiState.update { state ->
+                                state.copy(
+                                    aiHistory = state.aiHistory + assistantEntry,
+                                    aiAssistantMessage = body.assistantMessage,
+                                    aiOptions = body.options,
+                                    aiCurrentTurn = state.aiCurrentTurn + 1,
+                                    isAiLoading = false,
+                                    aiLoadingStage = AiLoadingStage.IDLE,
+                                    onboardingError = null
+                                )
+                            }
+                        }
+                    } else {
+                        throw Exception("Server returned error ${response.code()}")
+                    }
+                } catch (e: Exception) {
+                    val userFriendlyMsg = when (e) {
+                        is kotlinx.coroutines.TimeoutCancellationException -> "Our AI is taking a moment to catch its breath. Let's try that again."
+                        else -> "We encountered a temporary hiccup. Let's try that again."
+                    }
+                    lastFailedAction = action
+                    _uiState.update { state ->
+                        state.copy(
                             isAiLoading = false,
-                            aiAssistantMessage = "Sorry, I had trouble connecting. Let's try that again. " + currentState.aiAssistantMessage
+                            aiLoadingStage = AiLoadingStage.IDLE,
+                            onboardingError = userFriendlyMsg
                         )
                     }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isAiLoading = false,
-                        aiAssistantMessage = "An error occurred: ${e.localizedMessage}. Please try again."
-                    )
                 }
             }
         }
+        action()
     }
 
-    fun synthesizeAndBuildCurriculum() {
+    fun synthesizeAndBuildCurriculum(force: Boolean = false) {
         val currentState = _uiState.value
+        if (currentState.isAiLoading && !force) return
         val turnInput = (currentState.aiSelectedOptions.toList() + 
             if (currentState.aiCustomInputText.isNotBlank()) listOf(currentState.aiCustomInputText) else emptyList()
         ).joinToString(". ")
 
-        _uiState.update { it.copy(isAiLoading = true) }
+        val newHistoryList = currentState.aiHistory.toMutableList()
+        if (turnInput.isNotBlank()) {
+            newHistoryList.add(
+                OnboardingHistoryEntry(
+                    role = "user",
+                    parts = listOf(OnboardingPart(text = turnInput))
+                )
+            )
+        }
+        if (newHistoryList.isEmpty()) {
+            newHistoryList.add(
+                OnboardingHistoryEntry(
+                    role = "user",
+                    parts = listOf(OnboardingPart(text = "Recommend some top topics like True Crime or Tech"))
+                )
+            )
+        }
 
-        viewModelScope.launch {
-            try {
-                val currentHistory = currentState.aiHistory.toMutableList()
-                if (turnInput.isNotBlank()) {
-                    currentHistory.add(
-                        OnboardingHistoryEntry(
-                            role = "user",
-                            parts = listOf(OnboardingPart(text = turnInput))
-                        )
-                    )
-                }
+        _uiState.update {
+            it.copy(
+                aiHistory = newHistoryList,
+                aiSelectedOptions = emptySet(),
+                aiCustomInputText = "",
+                isAiLoading = true,
+                isSynthesizing = true,
+                aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
+                onboardingError = null
+            )
+        }
 
-                if (currentHistory.isEmpty()) {
-                    currentHistory.add(
-                        OnboardingHistoryEntry(
-                            role = "user",
-                            parts = listOf(OnboardingPart(text = "Recommend some top topics like True Crime or Tech"))
-                        )
-                    )
-                }
-
-                // Call Synthesize to get queries
-                val synthResponse = withContext(Dispatchers.IO) {
-                    podcastRepository.api.onboardingSynthesize(
-                        publicKey = podcastRepository.publicKey,
-                        request = OnboardingNextTurnRequest(history = currentHistory)
-                    ).execute()
-                }
-
-                if (synthResponse.isSuccessful && synthResponse.body() != null) {
-                    val queries = synthResponse.body()!!
-                    
-                    // Call Curriculum with synthesized queries
-                    val curriculumResponse = withContext(Dispatchers.IO) {
-                        podcastRepository.api.getOnboardingCurriculum(
-                            publicKey = podcastRepository.publicKey,
-                            request = OnboardingCurriculumRequest(
-                                queries = queries,
-                                country = currentState.currentRegion
-                            )
-                        ).execute()
-                    }
-
-                    if (curriculumResponse.isSuccessful && curriculumResponse.body() != null) {
-                        val rows = curriculumResponse.body()!!
-                        _uiState.update {
-                            it.copy(
-                                aiHistory = currentHistory,
-                                aiCurriculumRows = rows,
-                                aiCurrentTurn = 4,
-                                isAiLoading = false
-                            )
-                        }
-                    } else {
-                        throw Exception("Failed to load curriculum from synthesis")
-                    }
-                } else {
-                    throw Exception("Failed to synthesize preferences")
-                }
-            } catch (e: Exception) {
-                // Fallback: Create a mock/default row using trending podcasts
+        var action: (() -> Unit)? = null
+        action = {
+            _uiState.update {
+                it.copy(
+                    isAiLoading = true,
+                    isSynthesizing = true,
+                    aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
+                    onboardingError = null
+                )
+            }
+            viewModelScope.launch {
                 try {
-                    val trending = withContext(Dispatchers.IO) {
-                        podcastRepository.getTrendingPodcasts(
-                            country = currentState.currentRegion,
-                            limit = 10
-                        )
+                    val startTime = System.currentTimeMillis()
+                    val testInput = turnInput.trim().lowercase()
+                    if (testInput == "test_fail" || testInput == "test_error") {
+                        throw java.io.IOException("Simulated network failure")
+                    } else if (testInput == "test_timeout") {
+                        delay(50000)
                     }
-                    val dummyPodcastDtos = trending.map { pod ->
-                        OnboardingCurriculumPodcastDto(
-                            id = pod.id.toLongOrNull() ?: 0L,
-                            title = pod.title,
-                            author = pod.artist,
-                            image = pod.imageUrl,
-                            artwork = pod.imageUrl,
-                            categories = mapOf("1" to pod.genre)
-                        )
-                    }
-                    val dummyEpisodeDtos = trending.mapNotNull { pod ->
-                        pod.latestEpisode?.let { ep ->
-                            OnboardingCurriculumEpisodeDto(
-                                id = ep.id.toLongOrNull() ?: 0L,
-                                title = ep.title,
-                                enclosureUrl = ep.audioUrl,
-                                image = ep.imageUrl ?: pod.imageUrl,
-                                feedImage = pod.imageUrl,
-                                feedId = pod.id.toLongOrNull(),
-                                feedTitle = pod.title,
-                                description = ep.description
-                            )
+
+                    // Call Synthesize to get queries
+                    val queries = kotlinx.coroutines.withTimeout(45000) {
+                        val synthResponse = withContext(Dispatchers.IO) {
+                            podcastRepository.api.onboardingSynthesize(
+                                publicKey = podcastRepository.publicKey,
+                                request = OnboardingNextTurnRequest(history = newHistoryList)
+                            ).execute()
+                        }
+                        if (synthResponse.isSuccessful && synthResponse.body() != null) {
+                            synthResponse.body()!!
+                        } else {
+                            throw Exception("Failed to synthesize preferences")
                         }
                     }
 
-                    val fallbackRow = OnboardingCurriculumRowDto(
-                        rowTitle = "Trending Hits",
-                        podcasts = dummyPodcastDtos,
-                        episodes = dummyEpisodeDtos
-                    )
+                    _uiState.update { it.copy(aiLoadingStage = AiLoadingStage.FETCHING_CATALOGS) }
 
-                    _uiState.update {
-                        it.copy(
-                            aiCurriculumRows = listOf(fallbackRow),
+                    // Call Curriculum with synthesized queries
+                    val rows = kotlinx.coroutines.withTimeout(45000) {
+                        val curriculumResponse = withContext(Dispatchers.IO) {
+                            podcastRepository.api.getOnboardingCurriculum(
+                                publicKey = podcastRepository.publicKey,
+                                request = OnboardingCurriculumRequest(
+                                    queries = queries,
+                                    country = currentState.currentRegion
+                                )
+                            ).execute()
+                        }
+                        if (curriculumResponse.isSuccessful && curriculumResponse.body() != null) {
+                            curriculumResponse.body()!!.map {
+                                it.copy(episodes = emptyList())
+                            }
+                        } else {
+                            throw Exception("Failed to load curriculum from synthesis")
+                        }
+                    }
+
+                    _uiState.update { it.copy(aiLoadingStage = AiLoadingStage.ASSEMBLING_FEED) }
+
+                    if (testInput == "test_delay" || testInput == "test_slow") {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        val remainingDelay = 20000 - elapsed
+                        if (remainingDelay > 0) {
+                            delay(remainingDelay)
+                        }
+                    }
+
+                    val newPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }
+                    val defaultSelectedIds = buildSet {
+                        if (rows.size == 1) {
+                            rows.firstOrNull()?.podcasts?.take(2)?.forEach { add(it.id.toString()) }
+                        } else {
+                            rows.forEach { row ->
+                                row.podcasts.firstOrNull()?.let { add(it.id.toString()) }
+                            }
+                        }
+                    }
+                    val defaultSelectedPodcasts = newPodcasts.filter { it.id.toString() in defaultSelectedIds }.associateBy { it.id }
+                    
+                    _uiState.update { state ->
+                        val newSelected = state.selectedPodcasts + defaultSelectedPodcasts
+                        state.copy(
+                            aiHistory = newHistoryList,
+                            aiCurriculumRows = rows,
                             aiCurrentTurn = 4,
-                            isAiLoading = false
+                            isAiLoading = false,
+                            isSynthesizing = false,
+                            aiLoadingStage = AiLoadingStage.IDLE,
+                            selectedPodcasts = newSelected,
+                            subscribedPodcastIds = defaultSelectedIds,
+                            onboardingError = null
                         )
                     }
-                } catch (ex: Exception) {
-                    _uiState.update {
-                        it.copy(
-                            isAiLoading = false,
-                            aiAssistantMessage = "Onboarding synthesis failed: ${e.localizedMessage}. Please retry."
+                } catch (e: Exception) {
+                    try {
+                        _uiState.update { it.copy(aiLoadingStage = AiLoadingStage.FETCHING_CATALOGS) }
+                        val trending = withContext(Dispatchers.IO) {
+                            podcastRepository.getTrendingPodcasts(
+                                country = currentState.currentRegion,
+                                limit = 10
+                            )
+                        }
+                        val dummyPodcastDtos = trending.map { pod ->
+                            OnboardingCurriculumPodcastDto(
+                                id = pod.id.toLongOrNull() ?: 0L,
+                                title = pod.title,
+                                author = pod.artist,
+                                image = pod.imageUrl,
+                                artwork = pod.imageUrl,
+                                categories = mapOf("1" to pod.genre)
+                            )
+                        }
+
+                        val fallbackRow = OnboardingCurriculumRowDto(
+                            rowTitle = "Trending Hits",
+                            podcasts = dummyPodcastDtos,
+                            episodes = emptyList()
                         )
+                        val newPodcasts = listOf(fallbackRow).flatMap { it.podcasts }.map { it.toPodcast() }
+                        val defaultSelectedIds = buildSet {
+                            fallbackRow.podcasts.take(2).forEach { add(it.id.toString()) }
+                        }
+                        val defaultSelectedPodcasts = newPodcasts.filter { it.id.toString() in defaultSelectedIds }.associateBy { it.id }
+                        _uiState.update { state ->
+                            val newSelected = state.selectedPodcasts + defaultSelectedPodcasts
+                            state.copy(
+                                aiHistory = newHistoryList,
+                                aiCurriculumRows = listOf(fallbackRow),
+                                aiCurrentTurn = 4,
+                                isAiLoading = false,
+                                isSynthesizing = false,
+                                aiLoadingStage = AiLoadingStage.IDLE,
+                                selectedPodcasts = newSelected,
+                                subscribedPodcastIds = defaultSelectedIds,
+                                onboardingError = null
+                            )
+                        }
+                    } catch (ex: Exception) {
+                        val userFriendlyMsg = when (e) {
+                            is kotlinx.coroutines.TimeoutCancellationException -> "Our AI is taking a moment to build your feed. Let's try that again."
+                            else -> "We encountered a temporary hiccup. Let's try that again."
+                        }
+                        lastFailedAction = action
+                        _uiState.update { state ->
+                            state.copy(
+                                isAiLoading = false,
+                                isSynthesizing = false,
+                                aiLoadingStage = AiLoadingStage.IDLE,
+                                onboardingError = userFriendlyMsg
+                            )
+                        }
                     }
                 }
             }
         }
+        action()
+    }
+
+    fun navigateToSuggestions() {
+        _uiState.update { it.copy(currentStep = OnboardingStep.AI_SUGGESTIONS) }
+    }
+
+    fun navigateBackFromSuggestions() {
+        _uiState.update { it.copy(currentStep = OnboardingStep.AI_ONBOARDING) }
     }
 
     fun navigateBackInAiOnboarding() {
         val currentState = _uiState.value
         if (currentState.aiCurrentTurn <= 1) {
-            // Go back to welcome screen
             _uiState.update { it.copy(currentStep = OnboardingStep.WELCOME) }
         } else {
             if (turnHistoryState.isNotEmpty()) {
@@ -664,18 +859,21 @@ class OnboardingViewModel(
                         aiCurrentTurn = currentState.aiCurrentTurn - 1,
                         aiSelectedOptions = emptySet(),
                         aiCustomInputText = "",
-                        isAiLoading = false
+                        isAiLoading = false,
+                        isSynthesizing = false,
+                        aiCurriculumRows = emptyList()
                     )
                 }
             } else {
-                // Stack empty somehow, fallback to Turn 1
                 _uiState.update {
                     it.copy(
                         aiCurrentTurn = 1,
                         aiHistory = emptyList(),
                         aiSelectedOptions = emptySet(),
                         aiCustomInputText = "",
-                        isAiLoading = false
+                        isAiLoading = false,
+                        isSynthesizing = false,
+                        aiCurriculumRows = emptyList()
                     )
                 }
             }
@@ -683,19 +881,22 @@ class OnboardingViewModel(
     }
 
     fun finishAiOnboarding(onDone: () -> Unit) {
+        if (_uiState.value.isCompleting) return
         _uiState.update { it.copy(isCompleting = true) }
         viewModelScope.launch {
             try {
-                val rows = _uiState.value.aiCurriculumRows
-                val podcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }.distinctBy { it.id }
-                for (podcast in podcasts) {
+                val state = _uiState.value
+                val selectedIds = state.subscribedPodcastIds
+                val rows = state.aiCurriculumRows
+                val allCurriculumPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }.distinctBy { it.id }
+                val podcastsToSubscribe = allCurriculumPodcasts.filter { it.id in selectedIds }
+                for (podcast in podcastsToSubscribe) {
                     subscriptionRepository.subscribe(podcast)
                 }
 
-                userPrefs.setRegion(_uiState.value.currentRegion)
+                userPrefs.setRegion(state.currentRegion)
                 prefs.edit().putBoolean("onboarding_completed", true).apply()
 
-                // Save selected genres from history (using whatever terms we can find)
                 val userGenres = _uiState.value.aiHistory
                     .filter { it.role == "user" }
                     .flatMap { it.parts }
@@ -705,7 +906,6 @@ class OnboardingViewModel(
 
                 onDone()
             } catch (e: Exception) {
-                // If it fails, still complete so the user isn't stuck
                 prefs.edit().putBoolean("onboarding_completed", true).apply()
                 onDone()
             }

@@ -55,41 +55,37 @@ fun PredictiveBackWrapper(
     val cornerRadius = animatedProgress.value * 24f // 0 -> 24dp
     val elevation = animatedProgress.value * 8f // 0 -> 8dp
     
-    if (enabled) {
-        PredictiveBackHandler(enabled = true) { backEvents: Flow<BackEventCompat> ->
-            try {
-                backEvents.collect { event ->
-                    gestureProgress = event.progress
-                    swipeEdge = if (event.swipeEdge == BackEventCompat.EDGE_LEFT) 1f else -1f
+    PredictiveBackHandler(enabled = enabled) { backEvents: Flow<BackEventCompat> ->
+        try {
+            backEvents.collect { event ->
+                gestureProgress = event.progress
+                swipeEdge = if (event.swipeEdge == BackEventCompat.EDGE_LEFT) 1f else -1f
                     
-                    // Snap to gesture progress during drag
-                    scope.launch {
-                        animatedProgress.snapTo(event.progress)
-                    }
-                }
+                // Snap to gesture progress directly in the current suspend context
+                animatedProgress.snapTo(event.progress)
+            }
                 
-                // Gesture completed - animate to end and trigger back
-                scope.launch {
-                    animatedProgress.animateTo(
-                        targetValue = 1f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
+            // Gesture completed - animate to end and trigger back
+            scope.launch {
+                animatedProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
                     )
-                }
-                onBack()
-            } catch (e: CancellationException) {
-                // Gesture cancelled - animate back to rest
-                scope.launch {
-                    animatedProgress.animateTo(
-                        targetValue = 0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
+                )
+            }
+            onBack()
+        } catch (e: CancellationException) {
+            // Gesture cancelled - animate back to rest
+            scope.launch {
+                animatedProgress.animateTo(
+                    targetValue = 0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
                     )
-                }
+                )
             }
         }
     }
