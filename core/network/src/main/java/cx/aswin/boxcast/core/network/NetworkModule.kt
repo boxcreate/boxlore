@@ -16,7 +16,7 @@ object NetworkModule {
         Log.d("BoxCastAPI", message)
     }.apply {
         level = if (cx.aswin.boxcast.core.network.BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BODY
+            HttpLoggingInterceptor.Level.HEADERS
         } else {
             HttpLoggingInterceptor.Level.NONE
         }
