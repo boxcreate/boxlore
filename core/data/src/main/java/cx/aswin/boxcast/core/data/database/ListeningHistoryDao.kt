@@ -16,14 +16,30 @@ interface ListeningHistoryDao {
     suspend fun upsertAll(historyItems: List<ListeningHistoryEntity>)
     
     // Fetch Top 7 items for the new Split UI (1st is Hero, 2-7 are Grid)
-    @Query("SELECT * FROM listening_history WHERE isCompleted = 0 AND progressMs > 0 ORDER BY lastPlayedAt DESC LIMIT 7")
+    @Query("""
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
+               isLiked, lastPlayedAt, isDirty, syncedAt, enclosureType, 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription 
+        FROM listening_history 
+        WHERE isCompleted = 0 AND progressMs > 0 
+        ORDER BY lastPlayedAt DESC 
+        LIMIT 7
+    """)
     fun getResumeItems(): Flow<List<ListeningHistoryEntity>>
 
     // Suspend version for Android Auto browse tree (non-Flow, one-shot)
     @Query("SELECT * FROM listening_history WHERE isCompleted = 0 AND progressMs > 0 ORDER BY lastPlayedAt DESC LIMIT 20")
     suspend fun getResumeItemsList(): List<ListeningHistoryEntity>
     
-    @Query("SELECT * FROM listening_history ORDER BY lastPlayedAt DESC")
+    @Query("""
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
+               isLiked, lastPlayedAt, isDirty, syncedAt, enclosureType, 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription 
+        FROM listening_history 
+        ORDER BY lastPlayedAt DESC
+    """)
     fun getAllHistory(): Flow<List<ListeningHistoryEntity>>
     
     @Query("SELECT * FROM listening_history WHERE isDirty = 1")
@@ -53,7 +69,15 @@ interface ListeningHistoryDao {
     suspend fun getLastPlayedSessionAny(): ListeningHistoryEntity?
 
     // Like Feature
-    @Query("SELECT * FROM listening_history WHERE isLiked = 1 ORDER BY lastPlayedAt DESC")
+    @Query("""
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
+               isLiked, lastPlayedAt, isDirty, syncedAt, enclosureType, 
+               isManualCompletion, isBulkCompletion, NULL as episodeDescription 
+        FROM listening_history 
+        WHERE isLiked = 1 
+        ORDER BY lastPlayedAt DESC
+    """)
     fun getLikedEpisodes(): Flow<List<ListeningHistoryEntity>>
 
     @Query("UPDATE listening_history SET isLiked = :isLiked WHERE episodeId = :episodeId")
