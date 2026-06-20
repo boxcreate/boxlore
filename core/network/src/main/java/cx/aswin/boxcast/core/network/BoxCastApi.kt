@@ -19,6 +19,8 @@ import cx.aswin.boxcast.core.network.model.OnboardingCurriculumRowDto
 import cx.aswin.boxcast.core.network.model.OnboardingGenreSynthRequest
 import cx.aswin.boxcast.core.network.model.OnboardingSimilarShowsRequest
 import cx.aswin.boxcast.core.network.model.OnboardingSelectedShowDto
+import cx.aswin.boxcast.core.network.model.BootstrapRequest
+import cx.aswin.boxcast.core.network.model.BootstrapResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -226,5 +228,12 @@ interface BoxCastApi {
         @Header("X-App-Key") publicKey: String,
         @Body request: OnboardingSimilarShowsRequest
     ): retrofit2.Call<List<OnboardingCurriculumRowDto>>
+
+    @POST("home/bootstrap")
+    fun getHomeBootstrap(
+        @Header("X-App-Key") publicKey: String,
+        @Header("X-Device-UUID") deviceUuid: String,
+        @Body request: BootstrapRequest
+    ): retrofit2.Call<BootstrapResponse>
 
 }

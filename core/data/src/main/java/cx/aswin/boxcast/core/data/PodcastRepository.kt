@@ -5,6 +5,7 @@ import cx.aswin.boxcast.core.model.Person
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.Transcript
 import cx.aswin.boxcast.core.model.Briefing
+import cx.aswin.boxcast.core.model.Chapter
 import cx.aswin.boxcast.core.network.BoxCastApi
 import cx.aswin.boxcast.core.network.NetworkModule
 import kotlinx.coroutines.Dispatchers
@@ -649,8 +650,89 @@ class PodcastRepository(
         }
     }
 
+    private fun mapToPodcast(feed: cx.aswin.boxcast.core.network.model.TrendingFeed): Podcast {
+        return Podcast(
+            id = feed.id.toString(),
+            title = feed.title,
+            artist = feed.author ?: "Unknown",
+            imageUrl = (feed.artwork ?: feed.image).toHttps(),
+            description = feed.description,
+            genre = resolvePrimaryGenre(feed.categories),
+            latestEpisode = feed.latestEpisode?.let { epItem ->
+                mapToEpisode(epItem)?.copy(
+                    podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
+                    podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
+                )
+            },
+            medium = feed.medium
+        )
+    }
+
+    suspend fun getHomeBootstrapData(
+        country: String,
+        vibeIds: List<String>,
+        history: List<cx.aswin.boxcast.core.network.model.HistoryItem> = emptyList(),
+        interests: List<String> = emptyList(),
+        subscribedPodcastIds: List<String> = emptyList(),
+        subscribedGenres: List<String> = emptyList()
+    ): HomeBootstrapData = withContext(Dispatchers.IO) {
+        try {
+            val recsReq = if (history.isNotEmpty() || interests.isNotEmpty() || subscribedPodcastIds.isNotEmpty()) {
+                cx.aswin.boxcast.core.network.model.RecommendationsRequest(
+                    history = history,
+                    interests = interests,
+                    country = country,
+                    subscribedPodcastIds = subscribedPodcastIds,
+                    subscribedGenres = subscribedGenres
+                )
+            } else {
+                null
+            }
+
+            val request = cx.aswin.boxcast.core.network.model.BootstrapRequest(
+                country = country,
+                vibeIds = vibeIds,
+                deviceUuid = getOrCreateDeviceUuid(),
+                recommendationsRequest = recsReq
+            )
+
+            val response = api.getHomeBootstrap(publicKey, getOrCreateDeviceUuid(), request).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+
+                val trendingList = body.trending.map { mapToPodcast(it) }
+                val recommendationsList = body.recommendations.mapNotNull { mapToEpisode(it) }
+
+                val curatedVibesMap = body.curatedVibes.mapValues { entry ->
+                    entry.value.map { mapToPodcast(it) }
+                }
+
+                HomeBootstrapData(
+                    briefing = body.briefing,
+                    briefingChapters = body.briefingChapters,
+                    trending = trendingList,
+                    curatedVibes = curatedVibesMap,
+                    recommendations = recommendationsList
+                )
+            } else {
+                HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PodcastRepository", "getHomeBootstrapData failed", e)
+            HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
+        }
+    }
+
     companion object {
         private val episodesCache = java.util.concurrent.ConcurrentHashMap<String, Pair<EpisodePage, Long>>()
         private val recommendationsCache = java.util.concurrent.ConcurrentHashMap<String, Pair<List<Episode>, Long>>()
     }
 }
+
+data class HomeBootstrapData(
+    val briefing: cx.aswin.boxcast.core.model.Briefing?,
+    val briefingChapters: List<cx.aswin.boxcast.core.model.Chapter>,
+    val trending: List<Podcast>,
+    val curatedVibes: Map<String, List<Podcast>>,
+    val recommendations: List<Episode>
+)
