@@ -117,10 +117,25 @@ class QueueManager @Inject constructor(
     }
     
     // Overload for Domain Objects (UI)
-    fun playEpisode(episode: cx.aswin.boxcast.core.model.Episode, podcast: cx.aswin.boxcast.core.model.Podcast?, preferredSort: String? = null, entryPointContext: android.os.Bundle? = null) {
+    fun playEpisode(
+        episode: cx.aswin.boxcast.core.model.Episode,
+        podcast: cx.aswin.boxcast.core.model.Podcast?,
+        preferredSort: String? = null,
+        entryPointContext: android.os.Bundle? = null,
+        initialPositionMs: Long? = null
+    ) {
         val currentQueue = playbackRepository.playerState.value.queue
         val currentPodcast = playbackRepository.playerState.value.currentPodcast
 
+        if (episode.id.startsWith("briefing_") && podcast != null) {
+            scope.launch {
+                android.util.Log.d(TAG, "playEpisode briefing intercepted: ${episode.id}")
+                queueRepository.clearQueue()
+                queueRepository.replaceQueue(listOf(episode))
+                playbackRepository.playQueue(listOf(episode), podcast, 0, entryPointContext, initialPositionMs)
+            }
+            return
+        }
 
         // Check if we can just skip to the episode in the existing queue
         if (podcast != null && currentPodcast?.id == podcast.id) {

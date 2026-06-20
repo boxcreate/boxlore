@@ -17,6 +17,11 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
@@ -810,38 +815,87 @@ private fun SelectorCover(
     val cornerRadius by animateDpAsState(targetValue = if (isSelected) 16.dp else 12.dp, label = "cornerRadius")
     val borderStrokeWidth by animateDpAsState(targetValue = if (isSelected) 3.dp else 0.dp, label = "borderStrokeWidth")
 
+    // Slow shimmer animation across the NEW badge background (4 seconds loop)
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val shimmerOffset by infiniteTransition.animateFloat(
+        initialValue = -100f,
+        targetValue = 200f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerOffset"
+    )
+
+    val baseColor = MaterialTheme.colorScheme.primary
+    val shimmerColor = MaterialTheme.colorScheme.primaryContainer
+    
+    val brush = remember(shimmerOffset, baseColor, shimmerColor) {
+        Brush.linearGradient(
+            colors = listOf(
+                baseColor,
+                shimmerColor,
+                baseColor
+            ),
+            start = Offset(shimmerOffset, 0f),
+            end = Offset(shimmerOffset + 80f, 0f)
+        )
+    }
+
     Box(
         modifier = modifier
             .scale(scale)
-            .clip(RoundedCornerShape(cornerRadius))
-            .expressiveClickable(onClick = onClick)
     ) {
-        OptimizedImage(
-            url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
-            proxyWidth = 120,
-            contentDescription = podcast.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().alpha(alpha)
-        )
-        
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerRadius))
+        // Inner Box to apply clipping and clickable to the cover image container
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .expressiveClickable(
+                    shape = RoundedCornerShape(cornerRadius),
+                    onClick = onClick
+                )
+                .clip(RoundedCornerShape(cornerRadius))
+        ) {
+            OptimizedImage(
+                url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
+                proxyWidth = 120,
+                contentDescription = podcast.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().alpha(alpha)
             )
+            
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerRadius))
+                )
+            }
         }
 
-        // New episode dot indicator
+        // New episode "NEW" text chip indicator (overlapping the top right corner) with a slow shimmer effect
         if (hasRecentNew && !isSelected) {
-            Box(
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = Color.Transparent,
+                border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.surface),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = (-2).dp, y = 2.dp)
-                    .size(8.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
-            )
+                    .offset(x = 6.dp, y = (-4).dp)
+                    .background(brush, RoundedCornerShape(6.dp))
+            ) {
+                Text(
+                    text = "NEW",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.5.sp,
+                        lineHeight = 8.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
         }
     }
 }
@@ -1061,30 +1115,38 @@ private fun MixtapeSelectorCover(
     Box(
         modifier = modifier
             .scale(scale)
-            .clip(RoundedCornerShape(cornerRadius))
-            .expressiveClickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .alpha(alpha),
-            contentAlignment = Alignment.Center
+                .expressiveClickable(
+                    shape = RoundedCornerShape(cornerRadius),
+                    onClick = onClick
+                )
+                .clip(RoundedCornerShape(cornerRadius))
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.QueueMusic,
-                contentDescription = "For You",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        
-        if (isSelected) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerRadius))
-            )
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .alpha(alpha),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.QueueMusic,
+                    contentDescription = "For You",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerRadius))
+                )
+            }
         }
     }
 }

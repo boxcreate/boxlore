@@ -68,6 +68,7 @@ import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.designsystem.components.LogRecomposition
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Briefing
 import cx.aswin.boxcast.feature.home.components.DailyBriefingCard
@@ -230,6 +231,8 @@ fun HomeRoute(
         onAiOnboardingClick = onAiOnboardingClick,
         onDismissImportBanner = viewModel::dismissHomeImportBanner,
         onBriefingClick = onBriefingClick,
+        onDismissBriefing = viewModel::dismissBriefingForToday,
+        onDismissBriefingForever = viewModel::dismissBriefingForever,
 
         modifier = modifier
     )
@@ -281,6 +284,8 @@ fun HomeScreen(
     onAiOnboardingClick: () -> Unit = {},
     onDismissImportBanner: () -> Unit = {},
     onBriefingClick: (String) -> Unit = {},
+    onDismissBriefing: () -> Unit = {},
+    onDismissBriefingForever: () -> Unit = {},
 
     modifier: Modifier = Modifier
 ) {
@@ -354,6 +359,7 @@ fun HomeScreen(
                             subscribedItems = uiState.subscribedPodcasts,
                             timeBlock = uiState.timeBlock,
                             briefing = uiState.briefing,
+                            briefingChapters = uiState.briefingChapters,
                             gridItems = uiState.discoverPodcasts,
                             selectedCategory = uiState.selectedCategory,
                             currentPlayingPodcastId = currentPlayingPodcastId,
@@ -391,6 +397,9 @@ fun HomeScreen(
                             onAiOnboardingClick = onAiOnboardingClick,
                             onDismissImportBanner = onDismissImportBanner,
                             onBriefingClick = onBriefingClick,
+                            onDismissBriefing = onDismissBriefing,
+                            onDismissBriefingForever = onDismissBriefingForever,
+                            onFeedbackClick = onFeedbackClick,
                             gridState = gridState
                         )
                     }
@@ -490,7 +499,11 @@ private fun PodcastFeed(
     onAiOnboardingClick: () -> Unit = {},
     onDismissImportBanner: () -> Unit = {},
     briefing: Briefing? = null,
+    briefingChapters: List<cx.aswin.boxcast.core.model.Chapter> = emptyList(),
     onBriefingClick: (String) -> Unit = {},
+    onDismissBriefing: () -> Unit = {},
+    onDismissBriefingForever: () -> Unit = {},
+    onFeedbackClick: () -> Unit = {},
     gridState: androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState,
     modifier: Modifier = Modifier
 ) {
@@ -565,6 +578,8 @@ private fun PodcastFeed(
             }
         }
 
+
+
         // 2. "Your Shows" (Interactive selector grid & filtered stack)
         item(span = StaggeredGridItemSpan.FullLine) {
             // Crossfade: skeleton → your shows → empty (nothing)
@@ -624,6 +639,103 @@ private fun PodcastFeed(
                         )
                     }
                     else -> {} // No subs, render nothing
+                }
+            }
+        }
+
+        // Daily Briefing Card — Shifted above ForYouSection
+        if (briefing != null) {
+            item(key = "daily_briefing", span = StaggeredGridItemSpan.FullLine) {
+                AnimatedVisibility(
+                    visible = true,
+                    enter = expandVertically(
+                        animationSpec = tween(400),
+                        expandFrom = Alignment.Top
+                    ) + fadeIn(animationSpec = tween(400)),
+                    exit = shrinkVertically(
+                        animationSpec = tween(300),
+                        shrinkTowards = Alignment.Top
+                    ) + fadeOut(animationSpec = tween(300))
+                ) {
+                    val briefingId = "briefing_${briefing.region}_${briefing.date}"
+                    val playbackState = episodePlaybackState[briefingId]
+                    LaunchedEffect(briefing.region, briefing.date) {
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingCardImpression(
+                            region = briefing.region,
+                            date = briefing.date,
+                            playbackStatus = playbackState?.first?.name ?: "NOT_STARTED"
+                        )
+                    }
+                    DailyBriefingCard(
+                        briefing = briefing,
+                        chapters = briefingChapters,
+                        isPlaying = isPlaying && currentPlayingEpisodeId == briefingId,
+                        playbackStatus = playbackState?.first,
+                        playbackProgress = playbackState?.second,
+                        onPlayPauseClick = {
+                            val isCurrentPlaying = isPlaying && currentPlayingEpisodeId == briefingId
+                            if (isCurrentPlaying) {
+                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPauseClicked(
+                                    region = briefing.region,
+                                    date = briefing.date,
+                                    source = "home_banner"
+                                )
+                            } else {
+                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPlayClicked(
+                                    region = briefing.region,
+                                    date = briefing.date,
+                                    source = "home_banner"
+                                )
+                            }
+
+                            val publishedDate = try {
+                                java.time.LocalDate.parse(briefing.date)
+                                    .atStartOfDay(java.time.ZoneOffset.UTC)
+                                    .toEpochSecond()
+                            } catch (e: Exception) {
+                                System.currentTimeMillis() / 1000
+                            }
+                            val audioUri = android.net.Uri.parse(briefing.audioUrl)
+                            val version = audioUri.getQueryParameter("v")
+                            val versionParam = if (version != null) "&v=$version" else ""
+                            onPlayEpisode(
+                                cx.aswin.boxcast.core.model.Episode(
+                                    id = briefingId,
+                                    title = briefing.title,
+                                    description = "Your daily AI-generated news briefing for ${briefing.region.uppercase()}.",
+                                    audioUrl = briefing.audioUrl,
+                                    imageUrl = briefing.coverUrl,
+                                    podcastId = "briefing_${briefing.region}",
+                                    podcastTitle = "The Boxcast Brief",
+                                    podcastImageUrl = briefing.coverUrl,
+                                    podcastArtist = "BoxCast AI",
+                                    duration = 180,
+                                    publishedDate = publishedDate,
+                                    transcriptUrl = "https://api.aswin.cx/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+                                    chaptersUrl = "https://api.aswin.cx/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
+                                ),
+                                cx.aswin.boxcast.core.model.Podcast(
+                                    id = "briefing_${briefing.region}",
+                                    title = "The Boxcast Brief",
+                                    artist = "BoxCast AI",
+                                    imageUrl = briefing.coverUrl
+                                )
+                            )
+                        },
+                        onClick = {
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingBannerTapped(
+                                region = briefing.region,
+                                date = briefing.date
+                            )
+                            onBriefingClick(briefing.region)
+                        },
+                        onDismiss = onDismissBriefing,
+                        onDismissForever = onDismissBriefingForever,
+                        onFeedbackClick = onFeedbackClick,
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(horizontal = 8.dp)
+                    )
                 }
             }
         }
@@ -707,98 +819,7 @@ private fun PodcastFeed(
             }
         }
 
-        // Daily Briefing Card
-        if (briefing != null) {
-            item(span = StaggeredGridItemSpan.FullLine) {
-                Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                    // Section Header matching M3 styling
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.PlayArrow,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Daily Briefing",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontFamily = cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            letterSpacing = (-0.5).sp
-                        )
-                    }
 
-                    DailyBriefingCard(
-                        briefing = briefing,
-                        isPlaying = isPlaying && currentPlayingEpisodeId == "briefing_${briefing.region}_${briefing.date}",
-                        onPlayPauseClick = {
-                            val isCurrentPlaying = isPlaying && currentPlayingEpisodeId == "briefing_${briefing.region}_${briefing.date}"
-                            if (isCurrentPlaying) {
-                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPauseClicked(
-                                    region = briefing.region,
-                                    date = briefing.date,
-                                    source = "home_banner"
-                                )
-                            } else {
-                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPlayClicked(
-                                    region = briefing.region,
-                                    date = briefing.date,
-                                    source = "home_banner"
-                                )
-                            }
-
-                            val publishedDate = try {
-                                java.time.LocalDate.parse(briefing.date)
-                                    .atStartOfDay(java.time.ZoneOffset.UTC)
-                                    .toEpochSecond()
-                            } catch (e: Exception) {
-                                System.currentTimeMillis() / 1000
-                            }
-                            val audioUri = android.net.Uri.parse(briefing.audioUrl)
-                            val version = audioUri.getQueryParameter("v")
-                            val versionParam = if (version != null) "&v=$version" else ""
-                            onPlayEpisode(
-                                cx.aswin.boxcast.core.model.Episode(
-                                    id = "briefing_${briefing.region}_${briefing.date}",
-                                    title = briefing.title,
-                                    description = "Your daily AI-generated news briefing for ${briefing.region.uppercase()}.",
-                                    audioUrl = briefing.audioUrl,
-                                    imageUrl = briefing.coverUrl,
-                                    podcastId = "briefing_${briefing.region}",
-                                    podcastTitle = "The Boxcast Brief",
-                                    podcastImageUrl = briefing.coverUrl,
-                                    podcastArtist = "BoxCast AI",
-                                    duration = 180,
-                                    publishedDate = publishedDate,
-                                    transcriptUrl = "https://api.aswin.cx/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
-                                    chaptersUrl = "https://api.aswin.cx/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
-                                ),
-                                cx.aswin.boxcast.core.model.Podcast(
-                                    id = "briefing_${briefing.region}",
-                                    title = "The Boxcast Brief",
-                                    artist = "BoxCast AI",
-                                    imageUrl = briefing.coverUrl
-                                )
-                            )
-                        },
-                        onClick = {
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingBannerTapped(
-                                region = briefing.region,
-                                date = briefing.date
-                            )
-                            onBriefingClick(briefing.region)
-                        }
-                    )
-                }
-            }
-        }
 
         // 4. Discover Section (Header + Chips + Loading State)
         item(span = StaggeredGridItemSpan.FullLine) {
@@ -925,29 +946,32 @@ fun HomeImportBanner(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     // Primary full-width action button
-                    Button(
-                        onClick = onAiOnboardingClick,
+                    Surface(
                         shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .expressiveClickable(onClick = onAiOnboardingClick)
+                            .expressiveClickable(shape = CircleShape, onClick = onAiOnboardingClick)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Find shows with AI",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold
+                        Row(
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
                             )
-                        )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Find shows with AI",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
                     }
 
                     // Secondary split-width action row
@@ -955,52 +979,64 @@ fun HomeImportBanner(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = onSearchClick,
+                        Surface(
                             shape = CircleShape,
+                            color = Color.Transparent,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .weight(1f)
-                                .expressiveClickable(onClick = onSearchClick)
+                                .expressiveClickable(shape = CircleShape, onClick = onSearchClick)
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Search",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
                                 )
-                            )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Search",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
                         }
 
-                        OutlinedButton(
-                            onClick = onImportClick,
+                        Surface(
                             shape = CircleShape,
+                            color = Color.Transparent,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .weight(1f)
-                                .expressiveClickable(onClick = onImportClick)
+                                .expressiveClickable(shape = CircleShape, onClick = onImportClick)
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.DriveFolderUpload,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Import",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.DriveFolderUpload,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
                                 )
-                            )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Import",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
                         }
                     }
                 }

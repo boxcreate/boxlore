@@ -36,7 +36,7 @@ fun ExpressivePlayButton(
         contentColor = accentColor.contrastColor(),
         shape = playPillShape,
         modifier = modifier
-            .width(160.dp)
+            .widthIn(min = 160.dp)
             .expressiveClickable(isolate = true, onClick = onClick)
     ) {
         Box(contentAlignment = Alignment.Center) {

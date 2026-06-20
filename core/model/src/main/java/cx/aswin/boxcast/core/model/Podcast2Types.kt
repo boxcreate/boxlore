@@ -25,7 +25,8 @@ data class Chapter(
     val startTime: Double,  // seconds
     val title: String,
     val img: String? = null,
-    val url: String? = null
+    val url: String? = null,
+    val relatedEpisodes: List<Episode>? = null
 )
 
 /** A recommended podcast recommendation */

@@ -120,6 +120,7 @@ class PlaybackRepository(
                 .map { it.currentEpisode?.id }
                 .distinctUntilChanged()
                 .collect { episodeId ->
+                    android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: collected episodeId=$episodeId")
                     if (episodeId == null) {
                         lastLoadedEpisodeId = null
                         chaptersAndTranscriptFetchJob?.cancel()
@@ -130,15 +131,51 @@ class PlaybackRepository(
                         )
                     } else {
                         if (episodeId == lastLoadedEpisodeId) {
+                            android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: episodeId matches lastLoadedEpisodeId, ignoring")
                             return@collect
                         }
+                        android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: starting fetch job for episodeId=$episodeId")
                         lastLoadedEpisodeId = episodeId
                         chaptersAndTranscriptFetchJob?.cancel()
                         chaptersAndTranscriptFetchJob = launch {
                             var episode = _playerState.value.currentEpisode
+                            android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: currentEpisode title=${episode?.title}, audioUrl=${episode?.audioUrl}, chaptersUrl=${episode?.chaptersUrl}, transcriptUrl=${episode?.transcriptUrl}")
                             
                             // If missing metadata, try to enrich from PodcastRepository
-                            if (episode != null && (episode.chaptersUrl == null || episode.transcriptUrl == null)) {
+                            if (episodeId.startsWith("briefing_")) {
+                                try {
+                                    android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: enriching briefing episode $episodeId")
+                                    val parts = episodeId.split("_")
+                                    android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: parts=$parts, size=${parts.size}")
+                                    if (parts.size >= 3) {
+                                        val region = parts[1]
+                                        val date = parts[2]
+                                        val audioUri = android.net.Uri.parse(episode?.audioUrl ?: "")
+                                        val version = audioUri.getQueryParameter("v")
+                                        val versionParam = if (version != null) "&v=$version" else ""
+                                        android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: region=$region, date=$date, version=$version")
+                                        
+                                        val updatedEpisode = episode?.copy(
+                                            chaptersUrl = "https://api.aswin.cx/briefings/chapters/$region?d=$date$versionParam",
+                                            transcriptUrl = "https://api.aswin.cx/briefings/transcript/$region?d=$date$versionParam"
+                                        )
+                                        android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: updatedEpisode chaptersUrl=${updatedEpisode?.chaptersUrl}, transcriptUrl=${updatedEpisode?.transcriptUrl}")
+                                        if (updatedEpisode != null) {
+                                            val updatedQueue = _playerState.value.queue.map {
+                                                if (it.id == episodeId) updatedEpisode else it
+                                            }
+                                            _playerState.value = _playerState.value.copy(
+                                                currentEpisode = updatedEpisode,
+                                                queue = updatedQueue
+                                            )
+                                            episode = updatedEpisode
+                                            android.util.Log.d("PlaybackRepo", "monitorChaptersAndTranscripts: playerState updated with enriched briefing episode")
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("PlaybackRepo", "Failed to enrich briefing episode $episodeId", e)
+                                }
+                            } else if (episode != null && (episode.chaptersUrl == null || episode.transcriptUrl == null)) {
                                 try {
                                     val enriched = podcastRepository.getEpisode(episodeId)
                                     if (enriched != null && _playerState.value.currentEpisode?.id == episodeId) {
@@ -700,7 +737,26 @@ class PlaybackRepository(
                             finalSlotIndex = slotIndex
                         }
                         
-                        val newEpisode = finalQueue[finalSlotIndex]
+                        var newEpisode = finalQueue[finalSlotIndex]
+                        if (newEpisode.id.startsWith("briefing_")) {
+                            try {
+                                val parts = newEpisode.id.split("_")
+                                if (parts.size >= 3) {
+                                    val region = parts[1]
+                                    val date = parts[2]
+                                    val audioUri = android.net.Uri.parse(newEpisode.audioUrl)
+                                    val version = audioUri.getQueryParameter("v")
+                                    val versionParam = if (version != null) "&v=$version" else ""
+                                    newEpisode = newEpisode.copy(
+                                        chaptersUrl = "https://api.aswin.cx/briefings/chapters/$region?d=$date$versionParam",
+                                        transcriptUrl = "https://api.aswin.cx/briefings/transcript/$region?d=$date$versionParam"
+                                    )
+                                    android.util.Log.d("PlaybackRepo", "onMediaItemTransition: Enriched briefing episode ${newEpisode.id} with chaptersUrl=${newEpisode.chaptersUrl}")
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("PlaybackRepo", "Failed to enrich transition briefing episode ${newEpisode.id}", e)
+                            }
+                        }
                         android.util.Log.d("PlaybackRepo", "Media transition to: ${newEpisode.title}")
                         
                         // 1. Mark PREVIOUS episode as completed (if distinct)
@@ -968,7 +1024,7 @@ class PlaybackRepository(
         }
     }
 
-    suspend fun playQueue(episodes: List<Episode>, podcast: Podcast, startIndex: Int = 0, entryPointContext: android.os.Bundle? = null) {
+    suspend fun playQueue(episodes: List<Episode>, podcast: Podcast, startIndex: Int = 0, entryPointContext: android.os.Bundle? = null, initialPositionMs: Long? = null) {
         Log.d("PlaybackRepo", "playQueue() called: count=${episodes.size}, start=$startIndex, podcastGenre='${podcast.genre}'")
         
         prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, false).apply()
@@ -1005,15 +1061,18 @@ class PlaybackRepository(
             }
             
             // Check for saved progress and liked status in a single DB query
-            var startPosMs = 0L
+            var startPosMs = initialPositionMs ?: 0L
             var initialLikeState = false
             val startEpisodeId = episodes.getOrNull(startIndex)?.id
             if (startEpisodeId != null) {
                 val saved = listeningHistoryDao.getHistoryItem(startEpisodeId)
                 if (saved != null) {
-                    if (!saved.isCompleted) startPosMs = saved.progressMs
+                    if (initialPositionMs == null && !saved.isCompleted) {
+                        startPosMs = saved.progressMs
+                    }
                     initialLikeState = saved.isLiked
                 }
+                listeningHistoryDao.setCompletionStatus(startEpisodeId, false)
             }
             
             // Update local state BEFORE setMediaItems (onMediaItemTransition reads this)
@@ -1225,8 +1284,8 @@ class PlaybackRepository(
         }
     }
 
-    suspend fun playEpisode(episode: Episode, podcast: Podcast, entryPointContext: android.os.Bundle? = null) {
-        playQueue(listOf(episode), podcast, 0, entryPointContext)
+    suspend fun playEpisode(episode: Episode, podcast: Podcast, entryPointContext: android.os.Bundle? = null, initialPositionMs: Long? = null) {
+        playQueue(listOf(episode), podcast, 0, entryPointContext, initialPositionMs)
     }
     
     /**

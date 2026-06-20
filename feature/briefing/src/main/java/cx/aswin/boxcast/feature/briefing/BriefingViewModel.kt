@@ -20,6 +20,7 @@ class BriefingViewModel(
     application: Application,
     private val podcastRepository: PodcastRepository,
     private val playbackRepository: PlaybackRepository,
+    private val queueManager: cx.aswin.boxcast.core.data.QueueManager,
     initialRegion: String? = null
 ) : AndroidViewModel(application) {
 
@@ -30,6 +31,7 @@ class BriefingViewModel(
     private val _briefingChapters = MutableStateFlow<List<Chapter>>(emptyList())
     private val _isLoading = MutableStateFlow(true)
     private val _error = MutableStateFlow<String?>(null)
+    private val _savedSession = MutableStateFlow<cx.aswin.boxcast.core.data.PlaybackSession?>(null)
 
     private val _uiState = MutableStateFlow<BriefingUiState>(BriefingUiState.Loading)
     val uiState: StateFlow<BriefingUiState> = _uiState.asStateFlow()
@@ -39,6 +41,31 @@ class BriefingViewModel(
         viewModelScope.launch {
             _selectedRegion.collect { region ->
                 loadBriefing(region)
+            }
+        }
+
+        // Keep _savedSession updated in real-time when the current briefing is playing
+        viewModelScope.launch {
+            playbackRepository.playerState.collect { playerState ->
+                val briefing = _briefingState.value
+                if (briefing != null) {
+                    val briefingEpisodeId = getBriefingEpisodeId(briefing)
+                    if (playerState.currentEpisode?.id == briefingEpisodeId) {
+                        _savedSession.value = cx.aswin.boxcast.core.data.PlaybackSession(
+                            podcastId = "briefing_${briefing.region}",
+                            episodeId = briefingEpisodeId,
+                            positionMs = playerState.position,
+                            durationMs = playerState.duration,
+                            timestamp = System.currentTimeMillis(),
+                            episodeTitle = briefing.title,
+                            podcastTitle = "The Boxcast Brief",
+                            imageUrl = briefing.coverUrl,
+                            podcastImageUrl = briefing.coverUrl,
+                            audioUrl = briefing.audioUrl,
+                            enclosureType = "audio/mpeg"
+                        )
+                    }
+                }
             }
         }
 
@@ -56,8 +83,9 @@ class BriefingViewModel(
         viewModelScope.launch {
             combine(
                 briefingSubState,
-                playbackRepository.playerState
-            ) { subState, playerState ->
+                playbackRepository.playerState,
+                _savedSession
+            ) { subState, playerState, savedSession ->
                 val briefing = subState.briefing
                 val isLoading = subState.isLoading
                 val error = subState.error
@@ -71,12 +99,15 @@ class BriefingViewModel(
                         val briefingEpisodeId = getBriefingEpisodeId(briefing)
                         val isCurrentBriefing = playerState.currentEpisode?.id == briefingEpisodeId
                         
+                        val currentPos = if (isCurrentBriefing) playerState.position else (savedSession?.positionMs ?: 0L)
+                        val dur = if (isCurrentBriefing) playerState.duration else (savedSession?.durationMs ?: 0L)
+
                         BriefingUiState.Success(
                             briefing = briefing,
                             selectedRegion = region,
                             isPlaying = isCurrentBriefing && playerState.isPlaying,
-                            currentPosition = if (isCurrentBriefing) playerState.position else 0L,
-                            duration = if (isCurrentBriefing) playerState.duration else 0L,
+                            currentPosition = currentPos,
+                            duration = dur,
                             isBuffering = isCurrentBriefing && playerState.isLoading,
                             chapters = chapters
                         )
@@ -98,9 +129,15 @@ class BriefingViewModel(
             _isLoading.value = true
             _error.value = null
             _briefingChapters.value = emptyList()
+            _savedSession.value = null
             val result = podcastRepository.getBriefingMetadata(region)
             if (result != null) {
                 _briefingState.value = result
+                
+                // Fetch saved session progress
+                val briefingEpisodeId = getBriefingEpisodeId(result)
+                _savedSession.value = playbackRepository.getSession(briefingEpisodeId)
+
                 // Fetch chapters asynchronously
                 val audioUri = android.net.Uri.parse(result.audioUrl)
                 val version = audioUri.getQueryParameter("v")
@@ -119,7 +156,7 @@ class BriefingViewModel(
         }
     }
 
-    fun playBriefing(briefing: Briefing) {
+    fun playBriefing(briefing: Briefing, initialPositionMs: Long? = null) {
         viewModelScope.launch {
             val dummyPodcast = Podcast(
                 id = "briefing_${briefing.region}",
@@ -174,11 +211,11 @@ class BriefingViewModel(
                 chaptersUrl = "https://api.aswin.cx/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
             )
 
-            playbackRepository.playEpisode(dummyEpisode, dummyPodcast)
+            queueManager.playEpisode(dummyEpisode, dummyPodcast, initialPositionMs = initialPositionMs)
         }
     }
 
-    fun togglePlayPause(briefing: Briefing) {
+    fun togglePlayPause(briefing: Briefing, initialPositionMs: Long? = null) {
         val state = _uiState.value
         if (state is BriefingUiState.Success) {
             val briefingEpisodeId = getBriefingEpisodeId(briefing)
@@ -188,10 +225,13 @@ class BriefingViewModel(
                 if (playbackRepository.playerState.value.isPlaying) {
                     playbackRepository.pause()
                 } else {
+                    if (initialPositionMs != null) {
+                        playbackRepository.seekTo(initialPositionMs)
+                    }
                     playbackRepository.resume()
                 }
             } else {
-                playBriefing(briefing)
+                playBriefing(briefing, initialPositionMs)
             }
         }
     }

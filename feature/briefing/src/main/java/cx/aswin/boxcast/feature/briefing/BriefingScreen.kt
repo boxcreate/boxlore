@@ -8,6 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
@@ -68,12 +69,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -98,6 +105,7 @@ import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Briefing
+import cx.aswin.boxcast.core.model.Episode
 import java.net.URI
 
 // Color extraction helper
@@ -114,7 +122,9 @@ private fun extractDominantColor(bitmap: android.graphics.Bitmap): Color {
 fun BriefingRoute(
     podcastRepository: cx.aswin.boxcast.core.data.PodcastRepository,
     playbackRepository: cx.aswin.boxcast.core.data.PlaybackRepository,
+    queueManager: cx.aswin.boxcast.core.data.QueueManager,
     onBackClick: () -> Unit,
+    onEpisodeClick: (Episode) -> Unit,
     modifier: Modifier = Modifier,
     initialRegion: String? = null,
     bottomContentPadding: Dp = 0.dp
@@ -128,6 +138,7 @@ fun BriefingRoute(
                     application = application,
                     podcastRepository = podcastRepository,
                     playbackRepository = playbackRepository,
+                    queueManager = queueManager,
                     initialRegion = initialRegion
                 ) as T
             }
@@ -142,6 +153,8 @@ fun BriefingRoute(
         onRegionSelect = viewModel::selectRegion,
         onPlayPauseClick = viewModel::togglePlayPause,
         onSeekTo = viewModel::seekTo,
+        onEpisodeClick = onEpisodeClick,
+        initialRegion = initialRegion,
         bottomContentPadding = bottomContentPadding,
         modifier = modifier
     )
@@ -153,9 +166,11 @@ fun BriefingScreen(
     uiState: BriefingUiState,
     onBackClick: () -> Unit,
     onRegionSelect: (String) -> Unit,
-    onPlayPauseClick: (Briefing) -> Unit,
+    onPlayPauseClick: (Briefing, Long?) -> Unit,
     onSeekTo: (Long) -> Unit,
+    onEpisodeClick: (Episode) -> Unit,
     modifier: Modifier = Modifier,
+    initialRegion: String? = null,
     bottomContentPadding: Dp = 0.dp
 ) {
     val context = LocalContext.current
@@ -175,8 +190,15 @@ fun BriefingScreen(
     val morphThreshold = with(density) { 180.dp.toPx() }
     val scrollFraction = (scrollState.value.toFloat() / morphThreshold).coerceIn(0f, 1f)
 
-    val headerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.4f)
-    val titleAlpha = 1f
+    // Header background: transparent → surfaceContainer on scroll
+    val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
+    val headerColor by animateColorAsState(
+        targetValue = surfaceColor.copy(alpha = scrollFraction),
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "headerColor"
+    )
+    // Title fades in only when header is nearly collapsed
+    val titleAlpha = if (scrollFraction > 0.6f) (scrollFraction - 0.6f) / 0.4f else 0f
 
     // Key only on the state TYPE so Crossfade only animates on Loading→Success→Error
     // transitions, NOT on every playback position update (~200ms).
@@ -203,6 +225,14 @@ fun BriefingScreen(
                 }
                 "success" -> {
                     val successState = uiState as? BriefingUiState.Success ?: return@Crossfade
+
+                    LaunchedEffect(successState.briefing.region, successState.briefing.date) {
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingScreenViewed(
+                            region = successState.briefing.region,
+                            date = successState.briefing.date,
+                            source = initialRegion?.let { "notification" } ?: "home_banner"
+                        )
+                    }
 
                     var extractedColor by remember { mutableStateOf(Color.Transparent) }
                     val accentColor by animateColorAsState(
@@ -244,10 +274,18 @@ fun BriefingScreen(
                         timeText = timeText,
                         accentColor = accentColor,
                         currentPositionMs = successState.currentPosition,
+                        durationMs = successState.duration,
                         currentRegion = successState.selectedRegion,
                         onRegionSelect = onRegionSelect,
-                        onShowSources = { showSourcesBottomSheet = true },
-                        onPlayPauseClick = {
+                        onShowSources = { 
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingSourcesSheetOpened(
+                                region = successState.briefing.region,
+                                date = successState.briefing.date,
+                                sourcesCount = successState.briefing.sources.size
+                            )
+                            showSourcesBottomSheet = true 
+                        },
+                        onPlayPauseClick = { initialPositionMs ->
                             if (successState.isPlaying) {
                                 cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPauseClicked(
                                     region = successState.briefing.region,
@@ -261,9 +299,10 @@ fun BriefingScreen(
                                     source = "briefing_detail"
                                 )
                             }
-                            onPlayPauseClick(successState.briefing)
+                            onPlayPauseClick(successState.briefing, initialPositionMs)
                         },
                         onSeekTo = onSeekTo,
+                        onEpisodeClick = onEpisodeClick,
                         scrollState = scrollState,
                         contentTopPadding = collapsedHeaderHeight,
                         bottomContentPadding = bottomContentPadding
@@ -306,6 +345,12 @@ fun BriefingScreen(
                                                 .expressiveClickable(
                                                     shape = RoundedCornerShape(16.dp),
                                                     onClick = { 
+                                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingSourceClicked(
+                                                            region = successState.briefing.region,
+                                                            date = successState.briefing.date,
+                                                            sourceTitle = source.title,
+                                                            sourceUrl = source.url
+                                                        )
                                                         uriHandler.openUri(source.url)
                                                     }
                                                 )
@@ -363,44 +408,42 @@ fun BriefingScreen(
             }
         }
 
-        // FLOATING HEADER OVERLAY (Immersive, transparent)
+        // FLOATING HEADER OVERLAY — adapts on scroll like other screens
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
+                .height(collapsedHeaderHeight)
+                .background(headerColor)
+                .statusBarsPadding(),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
+            // Centered Title — fades in on scroll
+            Image(
+                painter = painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.ic_boxcast_brief_logo),
+                contentDescription = "The Boxcast Brief",
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .height(40.dp)
+                    .graphicsLayer { alpha = titleAlpha }
+            )
+
+            // Back button on the left
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 8.dp)
             ) {
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier.padding(start = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Go back",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                                shape = androidx.compose.foundation.shape.CircleShape
-                            )
-                            .padding(8.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "The Boxcast Brief",
-                    fontFamily = SectionHeaderFontFamily,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "Go back",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        )
+                        .padding(8.dp)
                 )
             }
         }
@@ -418,20 +461,26 @@ fun BriefingContent(
     timeText: String?,
     accentColor: Color,
     currentPositionMs: Long,
+    durationMs: Long,
     currentRegion: String,
     onRegionSelect: (String) -> Unit,
     onShowSources: () -> Unit,
-    onPlayPauseClick: () -> Unit,
+    onPlayPauseClick: (Long?) -> Unit,
     onSeekTo: (Long) -> Unit,
+    onEpisodeClick: (Episode) -> Unit,
     scrollState: ScrollState = rememberScrollState(),
     contentTopPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    val morphThreshold = with(density) { 180.dp.toPx() }
+    val scrollFraction = (scrollState.value.toFloat() / morphThreshold).coerceIn(0f, 1f)
 
     val pagerState = rememberPagerState(pageCount = { chapters.size })
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+    val scope = rememberCoroutineScope()
+    var userClickedPage by remember { mutableStateOf<Int?>(null) }
 
     // 1. Playback -> UI Paging Sync
     // Find the currently active chapter index based on playback position
@@ -441,8 +490,29 @@ fun BriefingContent(
     }
 
     LaunchedEffect(activeChapterIndex) {
-        if (!isDragged && activeChapterIndex >= 0 && activeChapterIndex < chapters.size) {
-            pagerState.animateScrollToPage(activeChapterIndex)
+        if (!isDragged) {
+            val clickedPage = userClickedPage
+            if (clickedPage != null) {
+                if (activeChapterIndex == clickedPage) {
+                    userClickedPage = null
+                }
+            } else if (activeChapterIndex >= 0 && activeChapterIndex < chapters.size) {
+                pagerState.animateScrollToPage(activeChapterIndex)
+            }
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage) {
+        val chapter = chapters.getOrNull(pagerState.currentPage)
+        if (chapter != null && (isDragged || userClickedPage != null)) {
+            val method = if (isDragged) "swipe" else "click"
+            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingChapterSwiped(
+                region = briefing.region,
+                date = briefing.date,
+                chapterIndex = pagerState.currentPage,
+                chapterTitle = chapter.title,
+                method = method
+            )
         }
     }
 
@@ -453,35 +523,67 @@ fun BriefingContent(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .navigationBarsPadding()
     ) {
-        // Immersive blurred background image filling the whole screen
-        OptimizedImage(
-            url = briefing.coverUrl,
-            proxyWidth = 600,
-            contentDescription = null,
+        // Blurred Background Header (only at the top)
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .blur(32.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded)
-                .alpha(0.9f),
-            contentScale = ContentScale.Crop
-        )
+                .fillMaxWidth()
+                .height(contentTopPadding + 240.dp)
+                .clipToBounds()
+                .graphicsLayer {
+                    translationY = -scrollState.value * 0.5f
+                    alpha = 1f - scrollFraction
+                }
+        ) {
+            OptimizedImage(
+                url = briefing.coverUrl,
+                proxyWidth = 600,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(20.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded)
+                    .alpha(0.55f),
+                contentScale = ContentScale.Crop
+            )
+            // Gradient overlay to blend into the solid background
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color.Transparent,
+                                0.7f to MaterialTheme.colorScheme.background,
+                                1.0f to MaterialTheme.colorScheme.background
+                            )
+                        )
+                    )
+            )
+        }
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
                 .padding(top = contentTopPadding, bottom = bottomContentPadding + 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Subtitle details (Show Region and formatted Date)
-            val regionName = when (briefing.region.lowercase()) {
-                "in" -> "India"
-                "us" -> "United States"
-                "uk" -> "United Kingdom"
-                else -> "Global"
-            }
+            // Page title (visible in body, fades into header on scroll)
+            Image(
+                painter = painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.ic_boxcast_brief_logo),
+                contentDescription = "The Boxcast Brief",
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                modifier = Modifier
+                    .height(72.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Subtitle details (Show formatted Date and Duration)
             val displayDate = remember(briefing.date) {
                 try {
                     val date = java.time.LocalDate.parse(briefing.date)
@@ -491,18 +593,25 @@ fun BriefingContent(
                 }
             }
 
+            val durationMin = remember(durationMs) {
+                val totalSeconds = durationMs / 1000
+                val mins = (totalSeconds + 30) / 60
+                if (mins > 0) mins else 3
+            }
+
             Text(
-                text = "$regionName • $displayDate • 3 min listen".uppercase(),
+                text = "$displayDate • $durationMin min listen".uppercase(),
                 style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 6.dp)
+                fontWeight = FontWeight.Bold
             )
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Title of current briefing
             Text(
                 text = briefing.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -510,6 +619,8 @@ fun BriefingContent(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Region Selector Chips Row
             val regions = listOf(
@@ -519,9 +630,7 @@ fun BriefingContent(
                 "global" to "Global"
             )
             Row(
-                modifier = Modifier
-                    .padding(vertical = 12.dp)
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -540,7 +649,14 @@ fun BriefingContent(
                             .padding(horizontal = 4.dp)
                             .expressiveClickable(
                                 shape = RoundedCornerShape(12.dp),
-                                onClick = { onRegionSelect(code) }
+                                onClick = {
+                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingRegionChanged(
+                                        previousRegion = currentRegion,
+                                        newRegion = code,
+                                        date = briefing.date
+                                    )
+                                    onRegionSelect(code)
+                                }
                             )
                     ) {
                         Text(
@@ -555,7 +671,23 @@ fun BriefingContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Prominent Play Briefing Button
+            ExpressivePlayButton(
+                onClick = { onPlayPauseClick(null) },
+                isPlaying = isPlaying,
+                isResume = isResume,
+                accentColor = accentColor,
+                progress = progress,
+                timeText = timeText,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 48.dp)
+                    .height(56.dp)
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Swipable cards pager
             if (chapters.isNotEmpty()) {
@@ -565,7 +697,7 @@ fun BriefingContent(
                     pageSpacing = 16.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .height(380.dp)
                 ) { page ->
                     val chapter = chapters[page]
                     val paragraph = paragraphs.getOrNull(page) ?: ""
@@ -574,8 +706,8 @@ fun BriefingContent(
                     Card(
                        shape = RoundedCornerShape(24.dp),
                        colors = CardDefaults.cardColors(
-                           containerColor = if (isThisCardActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
-                                           else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)
+                           containerColor = if (isThisCardActive) MaterialTheme.colorScheme.primaryContainer
+                                           else MaterialTheme.colorScheme.surfaceContainerHigh
                        ),
                        border = BorderStroke(
                            1.dp,
@@ -657,6 +789,8 @@ fun BriefingContent(
                                             color = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                                                     else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
+
+
                                     }
                                 }
                             }
@@ -664,29 +798,46 @@ fun BriefingContent(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             // Card prominent play button
-                            Button(
-                                onClick = {
-                                    if (isThisCardActive) {
-                                        onPlayPauseClick()
-                                    } else {
-                                        onSeekTo(chapter.startTime.toLong() * 1000L)
-                                        if (!isPlaying) {
-                                            onPlayPauseClick()
-                                        }
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer
-                                                    else MaterialTheme.colorScheme.primary
-                                ),
+                            Surface(
                                 shape = RoundedCornerShape(16.dp),
+                                color = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp)
+                                    .expressiveClickable(
+                                        shape = RoundedCornerShape(16.dp),
+                                        onClick = {
+                                            if (isThisCardActive) {
+                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingStoryPauseClicked(
+                                                    region = briefing.region,
+                                                    date = briefing.date,
+                                                    chapterIndex = page,
+                                                    chapterTitle = chapter.title,
+                                                    startTimeSeconds = chapter.startTime.toLong()
+                                                )
+                                                onPlayPauseClick(null)
+                                            } else {
+                                                userClickedPage = page
+                                                scope.launch {
+                                                    pagerState.animateScrollToPage(page)
+                                                }
+                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingStoryPlayClicked(
+                                                    region = briefing.region,
+                                                    date = briefing.date,
+                                                    chapterIndex = page,
+                                                    chapterTitle = chapter.title,
+                                                    startTimeSeconds = chapter.startTime.toLong()
+                                                )
+                                                onPlayPauseClick(chapter.startTime.toLong() * 1000L)
+                                            }
+                                        }
+                                    )
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxSize()
                                 ) {
                                     Icon(
                                         imageVector = if (isThisCardActive) Icons.Rounded.Pause
@@ -714,7 +865,7 @@ fun BriefingContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .height(380.dp)
                         .padding(horizontal = 24.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -752,35 +903,105 @@ fun BriefingContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // Dynamic recommendations horizontal row
+            val currentChapter = chapters.getOrNull(pagerState.currentPage)
+            val recs = currentChapter?.relatedEpisodes
+            if (!recs.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(20.dp))
 
-            // Sources Button
+                // Section header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Podcasts,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "RELATED EPISODES",
+                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(recs) { episode ->
+                        VerticalRecommendedEpisodeCard(
+                            episode = episode,
+                            onClick = {
+                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingRelatedEpisodeClicked(
+                                    region = briefing.region,
+                                    date = briefing.date,
+                                    chapterIndex = pagerState.currentPage,
+                                    episodeId = episode.id,
+                                    episodeTitle = episode.title,
+                                    podcastId = episode.podcastId ?: "",
+                                    podcastTitle = episode.podcastTitle ?: ""
+                                )
+                                onEpisodeClick(episode)
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Sources — compact button opening bottom sheet
             if (briefing.sources.isNotEmpty()) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
-                    modifier = Modifier.expressiveClickable(
-                        shape = RoundedCornerShape(16.dp),
-                        onClick = onShowSources
-                    )
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .expressiveClickable(
+                            shape = RoundedCornerShape(16.dp),
+                            onClick = onShowSources
+                        )
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Link,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "${briefing.sources.size} Sources",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                         Icon(
-                            imageVector = Icons.Rounded.Link,
+                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = "${briefing.sources.size} Sources",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -854,5 +1075,115 @@ private fun getDomainName(url: String): String {
         if (domain.startsWith("www.")) domain.substring(4) else domain
     } catch (e: Exception) {
         url
+    }
+}
+
+@Composable
+fun VerticalRecommendedEpisodeCard(
+    episode: Episode,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+        ),
+        modifier = modifier
+            .width(160.dp)
+            .expressiveClickable(
+                shape = RoundedCornerShape(16.dp),
+                onClick = onClick
+            )
+    ) {
+        Column {
+            // Artwork with play overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+            ) {
+                val imageUrl = episode.imageUrl?.takeIf { it.isNotEmpty() }
+                    ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
+
+                OptimizedImage(
+                    url = imageUrl,
+                    proxyWidth = 320,
+                    contentDescription = episode.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Gradient scrim at bottom of artwork
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
+                            )
+                        )
+                )
+
+
+            }
+
+            // Text content
+            Column(
+                modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    text = episode.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
+                )
+                val podTitle = episode.podcastTitle
+                if (!podTitle.isNullOrEmpty()) {
+                    Text(
+                        text = podTitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                val infoText = buildString {
+                    if (episode.duration > 0) {
+                        append("${episode.duration / 60} min")
+                    }
+                    if (episode.publishedDate > 0) {
+                        if (isNotEmpty()) append(" • ")
+                        try {
+                            val instant = java.time.Instant.ofEpochSecond(episode.publishedDate)
+                            val date = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault()).toLocalDate()
+                            append(date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")))
+                        } catch (e: Exception) {
+                            // ignore
+                        }
+                    }
+                }
+                if (infoText.isNotEmpty()) {
+                    Text(
+                        text = infoText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1
+                    )
+                }
+            }
+        }
     }
 }

@@ -34,6 +34,8 @@ class UserPreferencesRepository(context: Context) {
         val HIDE_COMPLETED_IN_HOME = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_home")
         val HIDE_COMPLETED_IN_SUBS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_subs")
         val HAS_DISMISSED_HOME_IMPORT_BANNER = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_home_import_banner")
+        val BRIEFING_DISMISSED_DATE = stringPreferencesKey("briefing_dismissed_date")
+        val BRIEFING_DISMISSED_FOREVER = androidx.datastore.preferences.core.booleanPreferencesKey("briefing_dismissed_forever")
     }
 
     val regionStream: Flow<String> = dataStore.data
@@ -113,6 +115,42 @@ class UserPreferencesRepository(context: Context) {
     suspend fun dismissHomeImportBanner() {
         dataStore.edit { preferences ->
             preferences[Keys.HAS_DISMISSED_HOME_IMPORT_BANNER] = true
+        }
+    }
+
+    val briefingDismissedDate: Flow<String> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[Keys.BRIEFING_DISMISSED_DATE] ?: ""
+        }
+
+    suspend fun dismissBriefing(date: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.BRIEFING_DISMISSED_DATE] = date
+        }
+    }
+
+    val briefingDismissedForever: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[Keys.BRIEFING_DISMISSED_FOREVER] ?: false
+        }
+
+    suspend fun dismissBriefingForever() {
+        dataStore.edit { preferences ->
+            preferences[Keys.BRIEFING_DISMISSED_FOREVER] = true
         }
     }
 

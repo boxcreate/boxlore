@@ -81,6 +81,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material3.ColorScheme
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import coil.request.CachePolicy
 import coil.size.Size
 
 
@@ -261,6 +262,8 @@ fun PlayerContent(
             .data(imageUrl)
             .size(Size(100, 100)) // Low res for palette is fine
             .allowHardware(false)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.DISABLED)
             .build()
     )
     

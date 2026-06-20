@@ -1125,9 +1125,20 @@ class MainActivity : ComponentActivity() {
                                 BriefingRoute(
                                     podcastRepository = podcastRepository,
                                     playbackRepository = playbackRepository,
+                                    queueManager = queueManager,
                                     initialRegion = region,
                                     onBackClick = { navController.popBackStack() },
-                                    bottomContentPadding = miniPlayerPadding
+                                    bottomContentPadding = miniPlayerPadding,
+                                    onEpisodeClick = { episode ->
+                                        fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                                        val route = "episode/${episode.id}/${encode(episode.title)}/" +
+                                            "${encode(episode.description.take(500))}/" +
+                                            "${encode(episode.imageUrl)}/" +
+                                            "${encode(episode.audioUrl)}/" +
+                                            "${episode.duration}/${encode(episode.podcastId ?: "briefing")}/" +
+                                            "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=briefing"
+                                        navController.navigate(route)
+                                    }
                                 )
                             }
                             

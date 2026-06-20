@@ -47,6 +47,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import cx.aswin.boxcast.core.designsystem.components.AdvancedPlayerControls
 import cx.aswin.boxcast.core.designsystem.components.AutoTranscriptState
+import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.feature.player.components.SimplePlayerControls
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -269,6 +270,7 @@ fun SharedPlayerContent(
                                 chapters.lastOrNull { (it.startTime * 1000).toLong() <= positionMs }
                               }
                               val artworkUrl = activeChapter?.img?.takeIf { it.isNotBlank() } ?: episode?.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl
+                              android.util.Log.d("BoxCastPlayer", "artworkUrl=$artworkUrl, activeChapterImg=${activeChapter?.img}, episodeImg=${episode?.imageUrl}, podcastImg=${podcast.imageUrl}")
                               
                               Surface(
                                   modifier = Modifier
@@ -328,12 +330,9 @@ fun SharedPlayerContent(
                                               }
                                       )
                                   } else {
-                                      AsyncImage(
-                                          model = ImageRequest.Builder(context)
-                                              .data(artworkUrl)
-                                              .crossfade(true)
-                                              .allowHardware(false) // Required for Palette if needed, safe to keep
-                                              .build(),
+                                      OptimizedImage(
+                                          url = artworkUrl,
+                                          proxyWidth = 800,
                                           contentDescription = "Album Art",
                                           contentScale = ContentScale.Crop,
                                           modifier = Modifier
@@ -881,8 +880,10 @@ fun LinearBufferedSlider(
                     ) {
                         chapters.forEach { chapter ->
                             val startTimeMs = (chapter.startTime * 1000).toLong()
-                            if (startTimeMs > 0 && startTimeMs < duration) {
-                                val pct = startTimeMs.toFloat() / duration.toFloat()
+                            if (startTimeMs > 0 && startTimeMs < duration + 3000) {
+                                // Cap the draw percentage at 98.5% so that the final chapter tick mark
+                                // remains visible on the seekbar and isn't clipped by rounded corner tracks.
+                                val pct = (startTimeMs.toFloat() / duration.toFloat()).coerceAtMost(0.985f)
                                 
                                 // Skip drawing if notch is under or very close to active seek thumb
                                 if (Math.abs(pct - thumbPct) > 0.015f) {

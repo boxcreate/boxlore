@@ -1,6 +1,7 @@
 package cx.aswin.boxcast.core.data
 
 import cx.aswin.boxcast.core.model.Chapter
+import cx.aswin.boxcast.core.model.Episode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -46,11 +47,32 @@ object ChapterRepository {
             
             val chapters = (0 until chaptersArray.length()).map { i ->
                 val obj = chaptersArray.getJSONObject(i)
+                val recsArray = obj.optJSONArray("relatedEpisodes")
+                val related = recsArray?.let { arr ->
+                    (0 until arr.length()).map { j ->
+                        val epObj = arr.getJSONObject(j)
+                        Episode(
+                            id = epObj.optStringOrNull("id") ?: "",
+                            title = epObj.optStringOrNull("title") ?: "",
+                            description = epObj.optStringOrNull("description") ?: "",
+                            audioUrl = epObj.optStringOrNull("audioUrl") ?: "",
+                            imageUrl = epObj.optStringOrNull("imageUrl"),
+                            podcastImageUrl = epObj.optStringOrNull("podcastImageUrl"),
+                            podcastTitle = epObj.optStringOrNull("podcastTitle"),
+                            podcastId = epObj.optStringOrNull("podcastId"),
+                            podcastGenre = epObj.optStringOrNull("podcastGenre"),
+                            podcastArtist = epObj.optStringOrNull("podcastArtist"),
+                            duration = epObj.optInt("duration", 0),
+                            publishedDate = epObj.optLong("publishedDate", 0L)
+                        )
+                    }
+                }
                 Chapter(
                     startTime = obj.optDouble("startTime", 0.0),
-                    title = obj.optString("title", "Chapter ${i + 1}"),
-                    img = obj.optString("img").takeIf { it.isNotEmpty() },
-                    url = obj.optString("url").takeIf { it.isNotEmpty() }
+                    title = obj.optStringOrNull("title") ?: "Chapter ${i + 1}",
+                    img = obj.optStringOrNull("img"),
+                    url = obj.optStringOrNull("url"),
+                    relatedEpisodes = related
                 )
             }.sortedBy { it.startTime }
             
@@ -143,5 +165,11 @@ object ChapterRepository {
             android.util.Log.w("ChapterRepo", "Failed to parse chapters from description", e)
             return emptyList()
         }
+    }
+
+    private fun JSONObject.optStringOrNull(name: String, fallback: String? = null): String? {
+        if (isNull(name)) return fallback
+        val value = optString(name)
+        return value.takeIf { it.isNotEmpty() && it != "null" } ?: fallback
     }
 }

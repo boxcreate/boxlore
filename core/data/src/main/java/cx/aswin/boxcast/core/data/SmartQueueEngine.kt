@@ -37,6 +37,13 @@ class DefaultSmartQueueEngine @Inject constructor(
             return emptyList()
         }
 
+        // Daily briefings are standalone — they have no feed in the podcast index.
+        // Skip straight to subscriptions/trending fallback, using News genre for trending.
+        if (podcast.id.startsWith("briefing_")) {
+            android.util.Log.d("SmartQueue", "Briefing detected, skipping to Smart Fallback (genre=News)")
+            return getSmartFallbackEpisodes(podcast.copy(genre = "News"))
+        }
+
         // 1. Fetch all episodes for context
         val rawEpisodes = podcastRepository.getEpisodes(podcast.id)
         android.util.Log.d("SmartQueue", "Fetched ${rawEpisodes.size} episodes from repo")

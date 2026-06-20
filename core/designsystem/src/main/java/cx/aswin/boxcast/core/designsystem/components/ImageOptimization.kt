@@ -16,6 +16,11 @@ fun String.optimizedImageUrl(width: Int = 400): String {
         return cleanedUrl
     }
 
+    // Bypass proxy for first-party dynamic briefing images to ensure high resolution and avoid caching issues
+    if (cleanedUrl.contains("aswin.cx", ignoreCase = true)) {
+        return cleanedUrl
+    }
+
     // Upgrade to HTTPS for all requests to satisfy Android cleartext security rules
     val httpsUrl = if (cleanedUrl.startsWith("http://")) {
         cleanedUrl.replaceFirst("http://", "https://")

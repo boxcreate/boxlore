@@ -1280,6 +1280,197 @@ object AnalyticsHelper {
         )
     }
 
+    fun trackDailyBriefingDismissInitiated(region: String, date: String) {
+        PostHog.capture(
+            event = "daily_briefing_dismiss_initiated",
+            properties = mapOf(
+                "region" to region,
+                "date" to date
+            )
+        )
+    }
+
+    fun trackDailyBriefingDismissCancelled(region: String, date: String, previousState: String) {
+        PostHog.capture(
+            event = "daily_briefing_dismiss_cancelled",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "previous_state" to previousState
+            )
+        )
+    }
+
+    fun trackDailyBriefingDismissedToday(region: String, date: String) {
+        PostHog.capture(
+            event = "daily_briefing_dismissed_today",
+            properties = mapOf(
+                "region" to region,
+                "date" to date
+            )
+        )
+    }
+
+    fun trackDailyBriefingDismissForeverInitiated(region: String, date: String) {
+        PostHog.capture(
+            event = "daily_briefing_dismiss_forever_initiated",
+            properties = mapOf(
+                "region" to region,
+                "date" to date
+            )
+        )
+    }
+
+    fun trackDailyBriefingFeedbackClicked(region: String, date: String) {
+        PostHog.capture(
+            event = "daily_briefing_feedback_clicked",
+            properties = mapOf(
+                "region" to region,
+                "date" to date
+            )
+        )
+    }
+
+    fun trackDailyBriefingDismissedForever(region: String, date: String) {
+        PostHog.capture(
+            event = "daily_briefing_dismissed_forever",
+            properties = mapOf(
+                "region" to region,
+                "date" to date
+            )
+        )
+    }
+
+    fun trackDailyBriefingRegionChanged(previousRegion: String, newRegion: String, date: String) {
+        PostHog.capture(
+            event = "daily_briefing_region_changed",
+            properties = mapOf(
+                "previous_region" to previousRegion,
+                "new_region" to newRegion,
+                "date" to date
+            )
+        )
+    }
+
+    fun trackDailyBriefingChapterSwiped(region: String, date: String, chapterIndex: Int, chapterTitle: String, method: String) {
+        PostHog.capture(
+            event = "daily_briefing_chapter_swiped",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "chapter_index" to chapterIndex,
+                "chapter_title" to chapterTitle,
+                "method" to method
+            )
+        )
+    }
+
+    fun trackDailyBriefingStoryPlayClicked(region: String, date: String, chapterIndex: Int, chapterTitle: String, startTimeSeconds: Long) {
+        PostHog.capture(
+            event = "daily_briefing_story_play_clicked",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "chapter_index" to chapterIndex,
+                "chapter_title" to chapterTitle,
+                "start_time_seconds" to startTimeSeconds
+            )
+        )
+    }
+
+    fun trackDailyBriefingStoryPauseClicked(region: String, date: String, chapterIndex: Int, chapterTitle: String, startTimeSeconds: Long) {
+        PostHog.capture(
+            event = "daily_briefing_story_pause_clicked",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "chapter_index" to chapterIndex,
+                "chapter_title" to chapterTitle,
+                "start_time_seconds" to startTimeSeconds
+            )
+        )
+    }
+
+    fun trackDailyBriefingSourcesSheetOpened(region: String, date: String, sourcesCount: Int) {
+        PostHog.capture(
+            event = "daily_briefing_sources_sheet_opened",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "sources_count" to sourcesCount
+            )
+        )
+    }
+
+    fun trackDailyBriefingSourceClicked(region: String, date: String, sourceTitle: String, sourceUrl: String) {
+        PostHog.capture(
+            event = "daily_briefing_source_clicked",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "source_title" to sourceTitle,
+                "source_url" to sourceUrl
+            )
+        )
+    }
+
+    fun trackDailyBriefingRelatedEpisodeClicked(
+        region: String,
+        date: String,
+        chapterIndex: Int,
+        episodeId: String,
+        episodeTitle: String,
+        podcastId: String,
+        podcastTitle: String
+    ) {
+        PostHog.capture(
+            event = "daily_briefing_related_episode_clicked",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "chapter_index" to chapterIndex,
+                "episode_id" to episodeId,
+                "episode_title" to episodeTitle,
+                "podcast_id" to podcastId,
+                "podcast_title" to podcastTitle
+            )
+        )
+    }
+
+    fun trackDailyBriefingCardImpression(region: String, date: String, playbackStatus: String) {
+        PostHog.capture(
+            event = "daily_briefing_card_impression",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "playback_status" to playbackStatus,
+                "user_local_timestamp" to userLocalTimestamp(),
+                "global_ist_timestamp" to globalIstTimestamp()
+            )
+        )
+    }
+
+    fun trackDailyBriefingCardChaptersToggled(region: String, date: String, expanded: Boolean) {
+        PostHog.capture(
+            event = "daily_briefing_card_chapters_toggled",
+            properties = mapOf(
+                "region" to region,
+                "date" to date,
+                "expanded" to expanded
+            )
+        )
+    }
+
+    fun trackDailyBriefingScreenViewed(region: String, date: String, source: String? = null) {
+        val props = mutableMapOf<String, Any>(
+            "region" to region,
+            "date" to date
+        )
+        source?.let { props["source_entry_point"] = it }
+        PostHog.capture(event = "daily_briefing_screen_viewed", properties = props)
+    }
+
+
     fun flush() {
         try {
             PostHog.flush()

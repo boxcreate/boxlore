@@ -59,6 +59,7 @@ import androidx.compose.ui.zIndex
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import coil.request.CachePolicy
 import coil.size.Size
 import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.data.UserPreferencesRepository
@@ -131,6 +132,8 @@ fun UnifiedPlayerSheet(
             .data(episode.imageUrl)
             .size(Size(100, 100))
             .allowHardware(false) // Required for Palette
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.DISABLED)
             .build()
     )
     

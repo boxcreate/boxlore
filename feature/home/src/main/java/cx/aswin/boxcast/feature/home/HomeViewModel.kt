@@ -99,7 +99,8 @@ data class HomeUiState(
     val isSelectedPodcastLoading: Boolean = false,
     val episodePlaybackState: Map<String, Pair<EpisodeStatus, Float>> = emptyMap(),
     val showImportBanner: Boolean = false,
-    val briefing: Briefing? = null
+    val briefing: Briefing? = null,
+    val briefingChapters: List<cx.aswin.boxcast.core.model.Chapter> = emptyList()
 )
 
 data class HomeDataWrapper(
@@ -114,7 +115,10 @@ data class HomeDataWrapper(
     val isCuratedLoaded: Boolean = false,
     val isRecommendationsLoaded: Boolean = false,
     val hasDismissedImportBanner: Boolean = false,
-    val briefing: Briefing? = null
+    val briefing: Briefing? = null,
+    val briefingChapters: List<cx.aswin.boxcast.core.model.Chapter> = emptyList(),
+    val briefingDismissedDate: String = "",
+    val briefingDismissedForever: Boolean = false
 )
 
 /**
@@ -162,11 +166,28 @@ class HomeViewModel(
     private val _isCuratedLoaded = MutableStateFlow(false)
     private val _isRecommendationsLoaded = MutableStateFlow(false)
     private val _briefingState = MutableStateFlow<Briefing?>(null)
+    private val _briefingDismissedDate = MutableStateFlow("")
+    private val _briefingChaptersState = MutableStateFlow<List<cx.aswin.boxcast.core.model.Chapter>>(emptyList())
+    private val _briefingDismissedForever = MutableStateFlow(false)
     
     private val userPrefs = cx.aswin.boxcast.core.data.UserPreferencesRepository(application)
     
     // Expose region to UI
     val currentRegion = userPrefs.regionStream
+
+    init {
+        // Collect briefing dismiss state from DataStore
+        viewModelScope.launch {
+            userPrefs.briefingDismissedDate.collect { dismissedDate ->
+                _briefingDismissedDate.value = dismissedDate
+            }
+        }
+        viewModelScope.launch {
+            userPrefs.briefingDismissedForever.collect { dismissedForever ->
+                _briefingDismissedForever.value = dismissedForever
+            }
+        }
+    }
     
     // Playback state to UI
     val playerState = playbackRepository.playerState
@@ -450,9 +471,25 @@ class HomeViewModel(
                     try {
                         val result = podcastRepository.getBriefingMetadata(region)
                         _briefingState.value = result
+                        if (result != null) {
+                            val audioUri = android.net.Uri.parse(result.audioUrl)
+                            val version = audioUri.getQueryParameter("v")
+                            val versionParam = if (version != null) "&v=$version" else ""
+                            val chaptersUrl = "https://api.aswin.cx/briefings/chapters/${result.region}?d=${result.date}$versionParam"
+                            try {
+                                val chaptersList = cx.aswin.boxcast.core.data.ChapterRepository.getChapters(chaptersUrl)
+                                _briefingChaptersState.value = chaptersList
+                            } catch (e: Exception) {
+                                android.util.Log.e("HomeViewModel", "Failed to fetch briefing chapters", e)
+                                _briefingChaptersState.value = emptyList()
+                            }
+                        } else {
+                            _briefingChaptersState.value = emptyList()
+                        }
                     } catch (e: Exception) {
                         android.util.Log.e("HomeViewModel", "Failed to fetch briefing for $region", e)
                         _briefingState.value = null
+                        _briefingChaptersState.value = emptyList()
                     }
                 }
                 
@@ -521,8 +558,13 @@ class HomeViewModel(
                     _isCuratedLoaded,
                     _isRecommendationsLoaded,
                     userPrefs.hasDismissedHomeImportBannerStream,
-                    _briefingState
+                    _briefingState,
+                    _briefingDismissedDate,
+                    _briefingChaptersState,
+                    _briefingDismissedForever
                 ) { array ->
+                    val dismissedDate = array[13] as String
+                    val dismissedForever = array[15] as Boolean
                     HomeDataWrapper(
                         trending = array[0] as List<Podcast>,
                         resume = array[1] as List<cx.aswin.boxcast.core.data.PlaybackSession>,
@@ -535,7 +577,10 @@ class HomeViewModel(
                         isCuratedLoaded = array[9] as Boolean,
                         isRecommendationsLoaded = array[10] as Boolean,
                         hasDismissedImportBanner = array[11] as Boolean,
-                        briefing = array[12] as Briefing?
+                        briefing = array[12] as Briefing?,
+                        briefingChapters = array[14] as List<cx.aswin.boxcast.core.model.Chapter>,
+                        briefingDismissedDate = dismissedDate,
+                        briefingDismissedForever = dismissedForever
                     )
                 }.collect { wrapper ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -1174,6 +1219,29 @@ class HomeViewModel(
 
                         val initialLoading = !wrapper.isTrendingLoaded || !wrapper.isCuratedLoaded || !wrapper.isRecommendationsLoaded
 
+                        // Daily Briefing visibility filter logic
+                        val rawBriefing = wrapper.briefing
+                        val showBriefing = if (rawBriefing != null) {
+                            val briefingEpisodeId = "briefing_${rawBriefing.region}_${rawBriefing.date}"
+                            val isCompleted = completedEpisodeIds.contains(briefingEpisodeId)
+                            val isDismissed = rawBriefing.date == wrapper.briefingDismissedDate
+                            val isDismissedForever = wrapper.briefingDismissedForever
+                            val isDisplayedInResume = heroList.any { item ->
+                                when (item.type) {
+                                    HeroType.RESUME -> {
+                                        item.podcast.id == "briefing_${rawBriefing.region}"
+                                    }
+                                    HeroType.RESUME_GRID -> {
+                                        item.gridItems.any { it.id == "briefing_${rawBriefing.region}" }
+                                    }
+                                    else -> false
+                                }
+                            }
+                            !isCompleted && !isDismissed && !isDismissedForever && !isDisplayedInResume
+                        } else {
+                            false
+                        }
+
                         _uiState.value = HomeUiState(
                             heroItems = heroList,
                             latestEpisodes = mixtapePodcasts,
@@ -1195,7 +1263,8 @@ class HomeViewModel(
                             isSelectedPodcastLoading = _isSelectedPodcastLoading.value,
                             episodePlaybackState = episodePlaybackState,
                             showImportBanner = sortedSubs.isEmpty() && !wrapper.hasDismissedImportBanner,
-                            briefing = wrapper.briefing
+                            briefing = if (showBriefing) rawBriefing else null,
+                            briefingChapters = if (showBriefing) wrapper.briefingChapters else emptyList()
                         )
                     }
                 }
@@ -1460,6 +1529,21 @@ class HomeViewModel(
     fun dismissHomeImportBanner() {
         viewModelScope.launch {
             userPrefs.dismissHomeImportBanner()
+        }
+    }
+
+    fun dismissBriefingForToday() {
+        val currentBriefing = _briefingState.value
+        if (currentBriefing != null) {
+            viewModelScope.launch {
+                userPrefs.dismissBriefing(currentBriefing.date)
+            }
+        }
+    }
+
+    fun dismissBriefingForever() {
+        viewModelScope.launch {
+            userPrefs.dismissBriefingForever()
         }
     }
 

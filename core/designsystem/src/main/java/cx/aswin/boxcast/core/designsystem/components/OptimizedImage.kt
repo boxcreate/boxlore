@@ -18,10 +18,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 
 /**
  * Global cache of URLs for which the proxy has failed, to avoid repeatedly
@@ -63,6 +65,7 @@ fun OptimizedImage(
         return
     }
 
+    val context = LocalContext.current
     val proxyUrl = remember(url, proxyWidth) { url.optimizedImageUrl(proxyWidth) }
 
     // Check if this url has already failed on the proxy in this app session
@@ -72,7 +75,14 @@ fun OptimizedImage(
     var currentUrl by remember(url) { mutableStateOf(if (isProxyKnownFailed) url else proxyUrl) }
     var hasTriedFallback by remember(url) { mutableStateOf(isProxyKnownFailed) }
 
-    val painter = rememberAsyncImagePainter(model = currentUrl)
+    val painter = rememberAsyncImagePainter(
+        model = remember(currentUrl, proxyWidth) {
+            ImageRequest.Builder(context)
+                .data(currentUrl)
+                .memoryCacheKey("$currentUrl-w$proxyWidth")
+                .build()
+        }
+    )
     val state = painter.state
 
     if (state is AsyncImagePainter.State.Error) {
