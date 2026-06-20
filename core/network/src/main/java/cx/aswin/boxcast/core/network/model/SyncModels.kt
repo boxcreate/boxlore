@@ -1,6 +1,8 @@
 package cx.aswin.boxcast.core.network.model
 
 import kotlinx.serialization.Serializable
+import cx.aswin.boxcast.core.model.Briefing
+import cx.aswin.boxcast.core.model.Chapter
 
 @Serializable
 data class SyncRequest(
@@ -52,4 +54,21 @@ data class HistoryItem(
     val isCompleted: Boolean? = null,
     val isLiked: Boolean? = null,
     val episodeDescription: String? = null
+)
+
+@Serializable
+data class BootstrapRequest(
+    val country: String,
+    val vibeIds: List<String>,
+    val deviceUuid: String? = null,
+    val recommendationsRequest: RecommendationsRequest? = null
+)
+
+@Serializable
+data class BootstrapResponse(
+    val briefing: Briefing? = null,
+    val briefingChapters: List<Chapter> = emptyList(),
+    val trending: List<TrendingFeed> = emptyList(),
+    val curatedVibes: Map<String, List<TrendingFeed>> = emptyMap(),
+    val recommendations: List<EpisodeItem> = emptyList()
 )

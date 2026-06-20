@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxcast.core.data.PodcastRepository
+import cx.aswin.boxcast.core.data.HomeBootstrapData
 import cx.aswin.boxcast.core.data.SubscriptionRepository
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.EpisodeStatus
@@ -463,85 +464,80 @@ class HomeViewModel(
                             isFilterLoading = true
                         )
                     }
-                    fetchPersonalizedRecommendations(region)
                 }
                 activeRegion = region
                 
-                launch {
-                    try {
-                        val result = podcastRepository.getBriefingMetadata(region)
-                        _briefingState.value = result
-                        if (result != null) {
-                            val audioUri = android.net.Uri.parse(result.audioUrl)
-                            val version = audioUri.getQueryParameter("v")
-                            val versionParam = if (version != null) "&v=$version" else ""
-                            val chaptersUrl = "https://api.aswin.cx/briefings/chapters/${result.region}?d=${result.date}$versionParam"
-                            try {
-                                val chaptersList = cx.aswin.boxcast.core.data.ChapterRepository.getChapters(chaptersUrl)
-                                _briefingChaptersState.value = chaptersList
-                            } catch (e: Exception) {
-                                android.util.Log.e("HomeViewModel", "Failed to fetch briefing chapters", e)
-                                _briefingChaptersState.value = emptyList()
-                            }
-                        } else {
-                            _briefingChaptersState.value = emptyList()
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("HomeViewModel", "Failed to fetch briefing for $region", e)
-                        _briefingState.value = null
-                        _briefingChaptersState.value = emptyList()
-                    }
-                }
-                
-                // CRITICAL FIX: getTrendingPodcastsStream is a cold flow{} that COMPLETES 
-                // after parsing the network response. When used directly in combine(), its 
-                // completion kills the entire combine — meaning resumeSessions and history 
-                // Room flows stop being observed. Fix: collect into a hot StateFlow first.
                 val trendingState = MutableStateFlow<List<Podcast>>(emptyList())
+                
                 launch {
                     _isTrendingLoaded.value = false
-                    try {
-                        android.util.Log.d("BoxCastTiming", "VM: Base stream starting for region=$region")
-                        podcastRepository.getTrendingPodcastsStream(region, 50, null)
-                            .collect { trendingState.value = it }
-                        android.util.Log.d("BoxCastTiming", "VM: Trending stream completed (cold flow done). StateFlow keeps combine alive.")
-                    } finally {
-                        _isTrendingLoaded.value = true
-                    }
-                }
-                
-                // Fetch curated vibes asynchronously — does NOT block main UI state
-                val blockConfig = getTimeBlockConfig()
-                val daySeed = java.time.LocalDate.now().toEpochDay()
-                launch {
                     _isCuratedLoaded.value = false
+                    _isRecommendationsLoaded.value = false
+                    
                     try {
-                        android.util.Log.d("BoxCastTiming", "VM: Curated vibes fetch starting")
-                        val sectionJobs = blockConfig.genres.map { genre ->
-                            viewModelScope.async {
-                                try {
-                                    val list = podcastRepository.getCuratedPodcasts(genre.id, region)
-                                    val filtered = list
-                                        .filter { it.latestEpisode != null }
-                                        .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
-                                        .take(10)
-                                    if (filtered.isNotEmpty()) {
-                                        CuratedSectionData(genre.title, genre.id, filtered)
-                                    } else null
-                                } catch (e: Exception) { null }
-                            }
-                        }
-                        val resolvedSections = sectionJobs.awaitAll().filterNotNull()
+                        android.util.Log.d("BoxCastTiming", "VM: Consolidating Home screen load via Bootstrap API for region=$region")
+                        
+                        // Prepare recommendations parameters
+                        val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
+                        val interests = prefs.getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
+                        val history = playbackRepository.getHistoryForRecommendations(15)
+                        
+                        val subscribedIds = subscriptionRepository.subscribedPodcastIds.first().toList()
+                        val subscribedGenres = subscriptionRepository.subscribedPodcasts.first()
+                            .mapNotNull { it.genre }
+                            .distinct()
+                            
+                        val blockConfig = getTimeBlockConfig()
+                        val vibeIds = blockConfig.genres.map { it.id }
+                        
+                        val bootstrapData = podcastRepository.getHomeBootstrapData(
+                            country = region,
+                            vibeIds = vibeIds,
+                            history = history,
+                            interests = interests,
+                            subscribedPodcastIds = subscribedIds,
+                            subscribedGenres = subscribedGenres
+                        )
+                        
+                        // 1. Briefing & Chapters
+                        _briefingState.value = bootstrapData.briefing
+                        _briefingChaptersState.value = bootstrapData.briefingChapters
+                        
+                        // 2. Trending
+                        trendingState.value = bootstrapData.trending
+                        
+                        // 3. Recommendations
+                        val distinctRecs = bootstrapData.recommendations
+                            .distinctBy { it.id }
+                            .distinctBy { it.title.lowercase().trim() }
+                        _recommendations.value = distinctRecs
+                        
+                        // 4. Curated Vibes
+                        val daySeed = java.time.LocalDate.now().toEpochDay()
+                        val resolvedSections = blockConfig.genres.map { genre ->
+                            val list = bootstrapData.curatedVibes[genre.id] ?: emptyList()
+                            val filtered = list
+                                .filter { it.latestEpisode != null }
+                                .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
+                                .take(10)
+                            if (filtered.isNotEmpty()) {
+                                CuratedSectionData(genre.title, genre.id, filtered)
+                            } else null
+                        }.filterNotNull()
+                        
                         val block = if (resolvedSections.isNotEmpty()) {
                             CuratedTimeBlock(blockConfig.title, blockConfig.subtitle, blockConfig.icon, resolvedSections)
                         } else null
-                        android.util.Log.d("BoxCastTiming", "VM: Curated vibes resolved, sections=${resolvedSections.size}")
+                        
                         _timeBlockState.value = block
                         cachedTimeBlock = block
+                        
                     } catch (e: Exception) {
-                        android.util.Log.e("BoxCastTiming", "VM: Curated vibes fetch failed", e)
+                        android.util.Log.e("BoxCastTiming", "VM: Bootstrap API load failed", e)
                     } finally {
+                        _isTrendingLoaded.value = true
                         _isCuratedLoaded.value = true
+                        _isRecommendationsLoaded.value = true
                     }
                 }
                 
