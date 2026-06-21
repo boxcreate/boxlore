@@ -150,6 +150,7 @@ fun PlayerScreen(
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    var showShareSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -164,7 +165,7 @@ fun PlayerScreen(
                     IconButton(onClick = { /* TODO: Cast */ }) {
                         Icon(Icons.Rounded.Cast, contentDescription = "Cast")
                     }
-                    IconButton(onClick = { /* TODO: Share */ }) {
+                    IconButton(onClick = { showShareSheet = true }) {
                         Icon(Icons.Rounded.Share, contentDescription = "Share")
                     }
                 },
@@ -219,6 +220,27 @@ fun PlayerScreen(
                     Text("Error loading player", modifier = Modifier.align(Alignment.Center))
                 }
             }
+        }
+    }
+
+    if (showShareSheet && uiState is PlayerUiState.Success) {
+        val successState = uiState
+        val currentEp = successState.currentEpisode
+        if (currentEp != null) {
+            val context = LocalContext.current
+            cx.aswin.boxcast.core.designsystem.components.ShareBottomSheet(
+                id = currentEp.id,
+                type = "episode",
+                title = currentEp.title,
+                subtitle = successState.podcast.title,
+                onDismissRequest = { showShareSheet = false },
+                durationMs = currentEp.duration * 1000L,
+                currentPositionMs = successState.positionMs,
+                showTimestampOption = true,
+                onShare = { _, _, t ->
+                    cx.aswin.boxcast.core.data.ShareManager.shareEpisode(context, currentEp, successState.podcast.title, t)
+                }
+            )
         }
     }
 }
@@ -389,6 +411,3 @@ fun PlayerContent(
         }
     )
 }
-
-
-

@@ -1237,21 +1237,50 @@ fun PodcastInfoScreen(
                         )
                     }
 
-                    // More Options Dropdown Menu (Top Right)
+                    // Share and More Options Dropdown Menu (Top Right)
                     var showMenu by remember { mutableStateOf(false) }
+                    var showShareSheet by remember { mutableStateOf(false) }
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .padding(end = 4.dp)
                     ) {
-                        IconButton(
-                            onClick = { showMenu = true }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = "More Options",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { showShareSheet = true }
+                            ) {
+                                Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Rounded.Share,
+                                    contentDescription = "Share Podcast",
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            IconButton(
+                                onClick = { showMenu = true }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MoreVert,
+                                    contentDescription = "More Options",
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                        
+                        if (showShareSheet) {
+                            val state = uiState
+                            val sharePodcast = (state as? PodcastInfoUiState.Success)?.podcast
+                            if (sharePodcast != null) {
+                                cx.aswin.boxcast.core.designsystem.components.ShareBottomSheet(
+                                    id = sharePodcast.id,
+                                    type = "podcast",
+                                    title = sharePodcast.title,
+                                    subtitle = sharePodcast.artist,
+                                    onDismissRequest = { showShareSheet = false },
+                                    onShare = { _, _, _ ->
+                                        cx.aswin.boxcast.core.data.ShareManager.sharePodcast(context, sharePodcast)
+                                    }
+                                )
+                            }
                         }
                         
                         DropdownMenu(

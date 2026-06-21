@@ -1599,7 +1599,7 @@ private fun SuggestionBubble(
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = contentColor,
                 modifier = Modifier.weight(1f),
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
 

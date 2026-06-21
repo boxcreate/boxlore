@@ -141,13 +141,13 @@ class EpisodeInfoViewModel(
 
     fun loadEpisode(
         episodeId: String,
-        episodeTitle: String,
-        episodeDescription: String,
-        episodeImageUrl: String,
-        episodeAudioUrl: String,
-        episodeDuration: Int,
-        podcastId: String,
-        podcastTitle: String,
+        episodeTitle: String = "",
+        episodeDescription: String = "",
+        episodeImageUrl: String = "",
+        episodeAudioUrl: String = "",
+        episodeDuration: Int = 0,
+        podcastId: String = "",
+        podcastTitle: String = "",
         entryPointContext: android.os.Bundle? = null
     ) {
         val currentState = _uiState.value
@@ -159,31 +159,67 @@ class EpisodeInfoViewModel(
         viewModelScope.launch {
             _uiState.value = EpisodeInfoUiState.Loading
             try {
-                // 1. Show immediate data (partial)
-                var currentEpisode = Episode(
-                    id = episodeId,
-                    title = episodeTitle,
-                    description = episodeDescription,
-                    imageUrl = episodeImageUrl,
-                    audioUrl = episodeAudioUrl,
-                    duration = episodeDuration,
-                    publishedDate = 0L
-                )
+                val repository = cx.aswin.boxcast.core.data.PodcastRepository(apiBaseUrl, publicKey, getApplication())
                 
+                var finalPodcastId = podcastId
+                var finalPodcastTitle = podcastTitle
+                var finalEpisodeTitle = episodeTitle
+                var finalEpisodeImageUrl = episodeImageUrl
+                var finalEpisodeDescription = episodeDescription
+                var finalEpisodeAudioUrl = episodeAudioUrl
+                var finalEpisodeDuration = episodeDuration
+                
+                var currentEpisode: Episode? = null
+
+                // If essential parameters are missing, resolve them from the network/database first
+                if (finalPodcastId.isEmpty() || finalEpisodeTitle.isEmpty() || finalEpisodeAudioUrl.isEmpty()) {
+                    val fullEpisode = repository.getEpisode(episodeId)
+                    if (fullEpisode != null) {
+                        currentEpisode = fullEpisode
+                        finalPodcastId = fullEpisode.podcastId ?: "unknown"
+                        finalPodcastTitle = fullEpisode.podcastTitle ?: "Podcast"
+                        finalEpisodeTitle = fullEpisode.title
+                        finalEpisodeImageUrl = fullEpisode.imageUrl ?: ""
+                        finalEpisodeDescription = fullEpisode.description
+                        finalEpisodeAudioUrl = fullEpisode.audioUrl
+                        finalEpisodeDuration = fullEpisode.duration
+                    }
+                }
+
+                if (currentEpisode == null) {
+                    currentEpisode = Episode(
+                        id = episodeId,
+                        title = finalEpisodeTitle,
+                        description = finalEpisodeDescription,
+                        imageUrl = finalEpisodeImageUrl,
+                        audioUrl = finalEpisodeAudioUrl,
+                        duration = finalEpisodeDuration,
+                        publishedDate = 0L
+                    )
+                }
+
                 // Check for resume position immediately
                 val resumeSession = playbackRepository.getSession(episodeId)
                 val resumeMs = resumeSession?.positionMs ?: 0L
-                val durationMs = resumeSession?.durationMs ?: (episodeDuration * 1000L)
+                val durationMs = resumeSession?.durationMs ?: (finalEpisodeDuration * 1000L)
                 
                 // Fetch local podcast if exists for immediate metadata
-                val localPodcast = database.podcastDao().getPodcast(podcastId)
+                val localPodcast = if (finalPodcastId.isNotEmpty()) database.podcastDao().getPodcast(finalPodcastId) else null
                 val initialLocation = localPodcast?.location
                 val initialLicense = localPodcast?.license
 
+                // If finalPodcastTitle is empty/generic, try to fetch podcast details from network
+                if (finalPodcastId.isNotEmpty() && (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast")) {
+                    val podcast = repository.getPodcastDetails(finalPodcastId)
+                    if (podcast != null) {
+                        finalPodcastTitle = podcast.title
+                    }
+                }
+
                 _uiState.value = EpisodeInfoUiState.Success(
                     episode = currentEpisode,
-                    podcastId = podcastId,
-                    podcastTitle = podcastTitle,
+                    podcastId = finalPodcastId,
+                    podcastTitle = finalPodcastTitle,
                     resumePositionMs = resumeMs,
                     durationMs = durationMs,
                     location = initialLocation,
@@ -191,14 +227,14 @@ class EpisodeInfoViewModel(
                 )
 
                 // Detect immediately on partial title (triggers search request concurrently)
-                detectCrossPromotion(currentEpisode, podcastTitle)
+                detectCrossPromotion(currentEpisode, finalPodcastTitle)
                 
                 // Track Screen View
                 val props = mutableMapOf<String, Any>().apply {
-                    put("podcast_id", podcastId)
-                    put("podcast_name", podcastTitle)
+                    put("podcast_id", finalPodcastId)
+                    put("podcast_name", finalPodcastTitle)
                     put("episode_id", episodeId)
-                    put("episode_name", episodeTitle)
+                    put("episode_name", finalEpisodeTitle)
                     put("is_partially_played", resumeMs > 0)
                     if (entryPointContext != null) {
                         entryPointContext.getString("entry_point")?.let {
@@ -209,39 +245,56 @@ class EpisodeInfoViewModel(
                 }
                 com.posthog.PostHog.capture("episode_info_screen_viewed", properties = props)
                 
-                // 2. Fetch full details (description, etc.)
-                // Only if description is empty or we suspect it's partial? Always fetch to be safe.
-                // 2. Fetch full details from Network (since we don't have local Episode table yet)
-                val repository = cx.aswin.boxcast.core.data.PodcastRepository(apiBaseUrl, publicKey, getApplication())
-                val fullEpisode = repository.getEpisode(episodeId)
+                // 2. Fetch full details if we haven't already
+                if (finalEpisodeDescription.isEmpty()) {
+                    val fullEpisode = repository.getEpisode(episodeId)
+                    if (fullEpisode != null) {
+                        val netImage = fullEpisode.imageUrl
+                        currentEpisode = fullEpisode.copy(
+                            imageUrl = if (!netImage.isNullOrEmpty()) netImage else finalEpisodeImageUrl
+                        )
+                        
+                        val existingState = _uiState.value as? EpisodeInfoUiState.Success
+                        _uiState.value = EpisodeInfoUiState.Success(
+                            episode = currentEpisode,
+                            podcastId = finalPodcastId,
+                            podcastTitle = finalPodcastTitle,
+                            resumePositionMs = resumeMs,
+                            durationMs = durationMs,
+                            relatedEpisodes = existingState?.relatedEpisodes ?: emptyList(),
+                            relatedEpisodesLoading = existingState?.relatedEpisodesLoading ?: true,
+                            similarEpisodes = existingState?.similarEpisodes ?: emptyList(),
+                            similarEpisodesLoading = existingState?.similarEpisodesLoading ?: true,
+                            location = existingState?.location ?: initialLocation,
+                            license = existingState?.license ?: initialLicense,
+                            crossPromotion = existingState?.crossPromotion,
+                            crossPromoLoading = existingState?.crossPromoLoading ?: false
+                        )
 
-                if (fullEpisode != null) {
-                    val netImage = fullEpisode.imageUrl
-                    currentEpisode = fullEpisode.copy(
-                        // Preserve passed image if network one is missing
-                        imageUrl = if (!netImage.isNullOrEmpty()) netImage else episodeImageUrl
-                    )
-                    
-                    // Preserve existing relatedEpisodes and similarEpisodes state if already loaded
-                    val existingState = _uiState.value as? EpisodeInfoUiState.Success
-                    _uiState.value = EpisodeInfoUiState.Success(
-                        episode = currentEpisode,
-                        podcastId = podcastId,
-                        podcastTitle = podcastTitle,
-                        resumePositionMs = resumeMs,
-                        durationMs = durationMs,
-                        relatedEpisodes = existingState?.relatedEpisodes ?: emptyList(),
-                        relatedEpisodesLoading = existingState?.relatedEpisodesLoading ?: true,
-                        similarEpisodes = existingState?.similarEpisodes ?: emptyList(),
-                        similarEpisodesLoading = existingState?.similarEpisodesLoading ?: true,
-                        location = existingState?.location ?: initialLocation,
-                        license = existingState?.license ?: initialLicense,
-                        crossPromotion = existingState?.crossPromotion,
-                        crossPromoLoading = existingState?.crossPromoLoading ?: false
-                    )
-
-                    detectCrossPromotion(currentEpisode, podcastTitle)
+                        detectCrossPromotion(currentEpisode, finalPodcastTitle)
+                    }
+                } else {
+                    // Fetch network episode anyway to ensure we have any extra metadata
+                    val fullEpisode = repository.getEpisode(episodeId)
+                    if (fullEpisode != null) {
+                        val netImage = fullEpisode.imageUrl
+                        currentEpisode = fullEpisode.copy(
+                            imageUrl = if (!netImage.isNullOrEmpty()) netImage else finalEpisodeImageUrl
+                        )
+                        val existingState = _uiState.value as? EpisodeInfoUiState.Success
+                        _uiState.value = existingState?.copy(episode = currentEpisode) ?: EpisodeInfoUiState.Success(
+                            episode = currentEpisode,
+                            podcastId = finalPodcastId,
+                            podcastTitle = finalPodcastTitle,
+                            resumePositionMs = resumeMs,
+                            durationMs = durationMs,
+                            location = existingState?.location ?: initialLocation,
+                            license = existingState?.license ?: initialLicense
+                        )
+                    }
                 }
+
+                loadRelatedAndSimilar(episodeId, finalPodcastId, finalEpisodeTitle, finalPodcastTitle, finalEpisodeDescription)
                 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -251,6 +304,16 @@ class EpisodeInfoViewModel(
                 }
             }
         }
+    }
+
+    private fun loadRelatedAndSimilar(
+        episodeId: String,
+        podcastId: String,
+        episodeTitle: String,
+        podcastTitle: String,
+        episodeDescription: String
+    ) {
+        if (podcastId.isEmpty() || podcastId == "unknown") return
         
         // 3. Fetch related episodes AND podcast genre INDEPENDENTLY (non-blocking)
         viewModelScope.launch {
@@ -269,17 +332,17 @@ class EpisodeInfoViewModel(
                     .filter { it.id != episodeId }
                     .take(10)
                 
-                    val currentSuccess = _uiState.value as? EpisodeInfoUiState.Success
-                    if (currentSuccess != null && currentSuccess.episode.id == episodeId) {
-                        relatedEpisodesShownCount = relatedEps.size
-                        _uiState.value = currentSuccess.copy(
-                            relatedEpisodes = relatedEps,
-                            relatedEpisodesLoading = false,
-                            podcastGenre = genre.ifEmpty { currentSuccess.podcastGenre },
-                            location = podcast?.location ?: currentSuccess.location,
-                            license = podcast?.license ?: currentSuccess.license
-                        )
-                    }
+                val currentSuccess = _uiState.value as? EpisodeInfoUiState.Success
+                if (currentSuccess != null && currentSuccess.episode.id == episodeId) {
+                    relatedEpisodesShownCount = relatedEps.size
+                    _uiState.value = currentSuccess.copy(
+                        relatedEpisodes = relatedEps,
+                        relatedEpisodesLoading = false,
+                        podcastGenre = genre.ifEmpty { currentSuccess.podcastGenre },
+                        location = podcast?.location ?: currentSuccess.location,
+                        license = podcast?.license ?: currentSuccess.license
+                    )
+                }
             } catch (e: Exception) {
                 android.util.Log.e("EpisodeInfo", "Error fetching related episodes", e)
                 // Mark loading as done even on failure
