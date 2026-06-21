@@ -1012,6 +1012,44 @@ fun EpisodeInfoScreen(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
+
+                    // Share Button
+                    var showShareSheet by remember { mutableStateOf(false) }
+                    IconButton(
+                        onClick = { showShareSheet = true },
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = "Share",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    if (showShareSheet) {
+                        val currentSuccessState = uiState as? cx.aswin.boxcast.feature.info.EpisodeInfoUiState.Success
+                        val shareEpisode = currentSuccessState?.episode ?: cx.aswin.boxcast.core.model.Episode(
+                            id = episodeId,
+                            title = episodeTitle,
+                            description = episodeDescription,
+                            audioUrl = episodeAudioUrl,
+                            imageUrl = episodeImageUrl,
+                            duration = episodeDuration
+                        )
+                        cx.aswin.boxcast.core.designsystem.components.ShareBottomSheet(
+                            id = shareEpisode.id,
+                            type = "episode",
+                            title = shareEpisode.title,
+                            subtitle = podcastTitle,
+                            onDismissRequest = { showShareSheet = false },
+                            durationMs = shareEpisode.duration * 1000L,
+                            currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
+                            showTimestampOption = false,
+                            onShare = { _, _, t ->
+                                cx.aswin.boxcast.core.data.ShareManager.shareEpisode(context, shareEpisode, podcastTitle, t)
+                            }
+                        )
+                    }
                 }
                 
                 // FLOATING TITLE - physically moves from body to header

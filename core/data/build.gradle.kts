@@ -31,6 +31,7 @@ dependencies {
     implementation(projects.core.model)
     implementation(projects.core.network)
     implementation(projects.core.designsystem)
+    implementation(libs.androidx.palette.ktx)
     implementation(libs.androidx.core.ktx)
     implementation(libs.retrofit)
     implementation(libs.kotlinx.coroutines.android)
@@ -56,6 +57,9 @@ dependencies {
 
     // PostHog
     implementation(libs.posthog.android)
+
+    // Install Referrer
+    implementation("com.android.installreferrer:installreferrer:2.2")
 
     // Testing
     testImplementation(libs.junit)

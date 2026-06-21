@@ -86,6 +86,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import cx.aswin.boxcast.core.designsystem.component.BoxCastNavigationBar
 import cx.aswin.boxcast.core.designsystem.component.bottomNavDestinations
 import cx.aswin.boxcast.core.designsystem.theme.BoxCastTheme
@@ -93,6 +94,7 @@ import cx.aswin.boxcast.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxcast.feature.home.HomeRoute
 import cx.aswin.boxcast.feature.player.PlayerRoute
 import cx.aswin.boxcast.feature.briefing.BriefingRoute
+import cx.aswin.boxcast.feature.home.components.FeedbackSheet
 import cx.aswin.boxcast.core.designsystem.component.ExpressiveAnimatedBackground
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
@@ -134,6 +136,9 @@ private const val TRANSITION_DURATION = 350
 private val TRANSITION_EASING = FastOutSlowInEasing
 
 class MainActivity : ComponentActivity() {
+    // Reactive intent state to track incoming intents for deep linking skips
+    private val intentState = androidx.compose.runtime.mutableStateOf<android.content.Intent?>(null)
+
     // State for Player Expansion (Notification handling)
     private var expandPlayerTrigger by androidx.compose.runtime.mutableLongStateOf(0L)
     
@@ -155,6 +160,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        intentState.value = intent
         handlePlayerIntent(intent)
     }
 
@@ -212,6 +218,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        intentState.value = intent
         
         enableEdgeToEdge()
         
@@ -273,10 +280,54 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route ?: "home"
+
+            // Deferred deep link and onboarding states are defined below to satisfy variable ordering
             
             // API config from BuildConfig
             val apiBaseUrl = BuildConfig.BOXCAST_API_BASE_URL
             val publicKey = BuildConfig.BOXCAST_PUBLIC_KEY
+
+            var showFeedbackSheet by remember { mutableStateOf(false) }
+            val onSubmitFeedback: suspend (String, String, String, String) -> Boolean = remember(apiBaseUrl, publicKey) {
+                { category, message, version, email ->
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            val feedbackUrl = "${apiBaseUrl}/feedback"
+                            android.util.Log.d("Feedback", "Posting to: $feedbackUrl")
+                            val url = java.net.URL(feedbackUrl)
+                            val conn = url.openConnection() as java.net.HttpURLConnection
+                            conn.requestMethod = "POST"
+                            conn.setRequestProperty("Content-Type", "application/json")
+                            conn.setRequestProperty("X-App-Key", publicKey)
+                            conn.doOutput = true
+                            conn.connectTimeout = 10000
+                            conn.readTimeout = 10000
+                            
+                            val json = org.json.JSONObject().apply {
+                                put("category", category)
+                                put("message", message)
+                                put("appVersion", version)
+                                if (email.isNotBlank()) {
+                                    put("email", email)
+                                }
+                            }
+                            
+                            conn.outputStream.bufferedWriter().use { it.write(json.toString()) }
+                            val code = conn.responseCode
+                            android.util.Log.d("Feedback", "Response code: $code")
+                            if (code !in 200..299) {
+                                val errBody = try { conn.errorStream?.bufferedReader()?.readText() } catch (_: Exception) { "n/a" }
+                                android.util.Log.e("Feedback", "Server error $code: $errBody")
+                            }
+                            conn.disconnect()
+                            code in 200..299
+                        } catch (e: Exception) {
+                            android.util.Log.e("Feedback", "Submit failed: ${e.javaClass.simpleName}: ${e.message}", e)
+                            false
+                        }
+                    }
+                }
+            }
             
             LaunchedEffect(Unit) {
                 // Save to SharedPreferences so the background Service can access them
@@ -320,7 +371,52 @@ class MainActivity : ComponentActivity() {
             val onboardingViewModel = remember {
                 cx.aswin.boxcast.feature.onboarding.OnboardingViewModel(application, podcastRepository, subscriptionRepository, userPrefs)
             }
-            val onboardingCompleted = remember { onboardingViewModel.isOnboardingCompleted() }
+            
+            // Reactive onboardingCompleted state that automatically checks for direct deep links on cold/warm starts
+            val currentIntent = intentState.value
+            val hasDeepLink = currentIntent?.data != null
+            var onboardingCompleted by remember {
+                mutableStateOf(onboardingViewModel.isOnboardingCompleted() || hasDeepLink)
+            }
+            
+            // Reactively mark onboarding as completed when a deep link intent is received
+            LaunchedEffect(hasDeepLink) {
+                if (hasDeepLink) {
+                    onboardingViewModel.markOnboardingCompletedSilent {
+                        onboardingCompleted = true
+                    }
+                }
+            }
+
+            // 1. Deferred Deep Linking via Install Referrer API
+            val installReferrerManager = remember { cx.aswin.boxcast.core.data.InstallReferrerManager(this@MainActivity) }
+            LaunchedEffect(Unit) {
+                installReferrerManager.checkInstallReferrer()
+            }
+            LaunchedEffect(installReferrerManager) {
+                installReferrerManager.referralFlow.collect { referral ->
+                    android.util.Log.d("MainActivityReferrer", "Received referral: $referral")
+                    val path = when (referral.type) {
+                        "podcast" -> "podcast/${referral.id}?entryPoint=install_referrer"
+                        "episode" -> {
+                            val tQuery = if (referral.timestamp != null) "&t=${referral.timestamp}" else ""
+                            val startQuery = if (referral.start != null) "&start=${referral.start}" else ""
+                            val endQuery = if (referral.end != null) "&end=${referral.end}" else ""
+                            "episode/${referral.id}?entryPoint=install_referrer$tQuery$startQuery$endQuery"
+                        }
+                        else -> null
+                    }
+                    if (path != null) {
+                        // Skip onboarding and navigate to target
+                        onboardingViewModel.markOnboardingCompletedSilent {
+                            onboardingCompleted = true
+                        }
+                        navController.navigate(path) {
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            }
             
             // 5. Smart Queue Engine
             val smartQueueEngine = remember { cx.aswin.boxcast.core.data.DefaultSmartQueueEngine(podcastRepository, database.listeningHistoryDao(), subscriptionRepository) }
@@ -919,6 +1015,7 @@ class MainActivity : ComponentActivity() {
                                 cx.aswin.boxcast.feature.onboarding.OnboardingScreen(
                                     viewModel = onboardingViewModel,
                                     onComplete = {
+                                        onboardingCompleted = true
                                         navController.navigate("home") {
                                             popUpTo("onboarding") { inclusive = true }
                                         }
@@ -1057,44 +1154,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                     },
-                                    onSubmitFeedback = { category, message, version, email ->
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                            try {
-                                                val feedbackUrl = "${apiBaseUrl}/feedback"
-                                                android.util.Log.d("Feedback", "Posting to: $feedbackUrl")
-                                                val url = java.net.URL(feedbackUrl)
-                                                val conn = url.openConnection() as java.net.HttpURLConnection
-                                                conn.requestMethod = "POST"
-                                                conn.setRequestProperty("Content-Type", "application/json")
-                                                conn.setRequestProperty("X-App-Key", publicKey)
-                                                conn.doOutput = true
-                                                conn.connectTimeout = 10000
-                                                conn.readTimeout = 10000
-                                                
-                                                val json = org.json.JSONObject().apply {
-                                                    put("category", category)
-                                                    put("message", message)
-                                                    put("appVersion", version)
-                                                    if (email.isNotBlank()) {
-                                                        put("email", email)
-                                                    }
-                                                }
-                                                
-                                                conn.outputStream.bufferedWriter().use { it.write(json.toString()) }
-                                                val code = conn.responseCode
-                                                android.util.Log.d("Feedback", "Response code: $code")
-                                                if (code !in 200..299) {
-                                                    val errBody = try { conn.errorStream?.bufferedReader()?.readText() } catch (_: Exception) { "n/a" }
-                                                    android.util.Log.e("Feedback", "Server error $code: $errBody")
-                                                }
-                                                conn.disconnect()
-                                                code in 200..299
-                                            } catch (e: Exception) {
-                                                android.util.Log.e("Feedback", "Submit failed: ${e.javaClass.simpleName}: ${e.message}", e)
-                                                false
-                                            }
-                                        }
-                                    },
+                                    onSubmitFeedback = onSubmitFeedback,
                                     onResetSleepNudge = { playbackRepository.resetSleepNudgeForTesting() },
                                     onClearSleepTimer = { playbackRepository.setSleepTimer(0) },
                                     onImportClick = {
@@ -1128,6 +1188,7 @@ class MainActivity : ComponentActivity() {
                                     queueManager = queueManager,
                                     initialRegion = region,
                                     onBackClick = { navController.popBackStack() },
+                                    onFeedbackClick = { showFeedbackSheet = true },
                                     bottomContentPadding = miniPlayerPadding,
                                     onEpisodeClick = { episode ->
                                         fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
@@ -1491,6 +1552,10 @@ class MainActivity : ComponentActivity() {
                                     navArgument("genre") { type = NavType.StringType; nullable = true; defaultValue = null },
                                     navArgument("depth") { type = NavType.StringType; nullable = true; defaultValue = null },
                                     navArgument("query") { type = NavType.StringType; nullable = true; defaultValue = null }
+                                ),
+                                deepLinks = listOf(
+                                    navDeepLink { uriPattern = "boxcast://podcast/{podcastId}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=podcast&id={podcastId}" }
                                 )
                             ) { backStackEntry ->
                                 val podcastId = backStackEntry.arguments?.getString("podcastId") ?: return@composable
@@ -1685,6 +1750,140 @@ class MainActivity : ComponentActivity() {
                                     } else null,
                                     showMarkPlayedTip = !hasSeenMarkPlayedTip,
                                     onMarkPlayedTipDismissed = { scope.launch { userPrefs.markMarkPlayedTipSeen() } }
+                                )
+                            }
+
+                            // Simplified Episode Deep Link Screen
+                            composable(
+                                route = "episode/{episodeId}?entryPoint={entryPoint}&t={t}&start={start}&end={end}",
+                                arguments = listOf(
+                                    navArgument("episodeId") { type = NavType.StringType },
+                                    navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
+                                    navArgument("t") { type = NavType.StringType; nullable = true; defaultValue = null },
+                                    navArgument("start") { type = NavType.StringType; nullable = true; defaultValue = null },
+                                    navArgument("end") { type = NavType.StringType; nullable = true; defaultValue = null }
+                                ),
+                                deepLinks = listOf(
+                                    navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&start={start}&end={end}" },
+                                    navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}" },
+                                    navDeepLink { uriPattern = "boxcast://episode/{episodeId}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}" }
+                                )
+                            ) { backStackEntry ->
+                                val args = backStackEntry.arguments ?: return@composable
+                                val episodeId = args.getString("episodeId") ?: ""
+                                val entryPoint = args.getString("entryPoint")
+                                val t = args.getString("t")?.toLongOrNull()
+                                val start = args.getString("start")?.toLongOrNull()
+                                val end = args.getString("end")?.toLongOrNull()
+
+                                val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxcast.feature.info.EpisodeInfoViewModel>(
+                                    factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                            return cx.aswin.boxcast.feature.info.EpisodeInfoViewModel(
+                                                application, 
+                                                apiBaseUrl, 
+                                                publicKey, 
+                                                playbackRepository,
+                                                downloadRepository,
+                                                queueManager
+                                            ) as T
+                                        }
+                                    }
+                                )
+
+                                LaunchedEffect(episodeId) {
+                                    viewModel.loadEpisode(episodeId = episodeId)
+                                }
+
+                                val coroutineScope = rememberCoroutineScope()
+                                val state by viewModel.uiState.collectAsState()
+
+                                // Handle Autoplay & Seek for deep links
+                                LaunchedEffect(state, t, start, end) {
+                                    val success = state as? cx.aswin.boxcast.feature.info.EpisodeInfoUiState.Success
+                                    if (success != null && success.episode.id == episodeId) {
+                                        val playerState = playbackRepository.playerState.value
+                                        if (playerState.currentEpisode?.id != episodeId) {
+                                            val localPodcastEntity = database.podcastDao().getPodcast(success.podcastId)
+                                            val podcast = localPodcastEntity?.let {
+                                                cx.aswin.boxcast.core.model.Podcast(
+                                                    id = it.podcastId,
+                                                    title = it.title,
+                                                    artist = it.author,
+                                                    imageUrl = it.imageUrl
+                                                )
+                                            } ?: cx.aswin.boxcast.core.model.Podcast(
+                                                id = success.podcastId,
+                                                title = success.podcastTitle,
+                                                artist = "",
+                                                imageUrl = success.episode.podcastImageUrl ?: ""
+                                            )
+                                            queueManager.playEpisode(success.episode, podcast)
+                                        }
+                                        
+                                        // Seek if timestamp / clip is specified
+                                        if (t != null && t > 0L) {
+                                            playbackRepository.seekTo(t * 1000L, play = true)
+                                        } else if (start != null && start > 0L) {
+                                            playbackRepository.seekTo(start * 1000L, play = true)
+                                        }
+                                    }
+                                }
+
+                                val isPlayerVisible by remember(playbackRepository) {
+                                    playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
+                                }.collectAsState(initial = false)
+                                val miniPlayerPadding = if (isPlayerVisible) (62 + 64 + 8).dp else 62.dp
+
+                                val successState = state as? cx.aswin.boxcast.feature.info.EpisodeInfoUiState.Success
+
+                                cx.aswin.boxcast.feature.info.EpisodeInfoScreen(
+                                    episodeId = episodeId,
+                                    episodeTitle = successState?.episode?.title ?: "",
+                                    episodeDescription = successState?.episode?.description ?: "",
+                                    episodeImageUrl = successState?.episode?.imageUrl ?: "",
+                                    episodeAudioUrl = successState?.episode?.audioUrl ?: "",
+                                    episodeDuration = successState?.episode?.duration ?: 0,
+                                    podcastId = successState?.podcastId ?: "",
+                                    podcastTitle = successState?.podcastTitle ?: "Podcast",
+                                    viewModel = viewModel,
+                                    onBack = { navController.popBackStack() },
+                                    onPodcastClick = { pId -> navController.navigate("podcast/$pId?entryPoint=episode_info") },
+                                    onEpisodeClick = { ep ->
+                                        fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                                        val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: (successState?.podcastId ?: "")
+                                        val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: (successState?.podcastTitle ?: "Podcast")
+                                        navController.navigate(
+                                            "episode/${ep.id}/${encode(ep.title)}/${encode(ep.description.take(500))}/${encode(ep.imageUrl)}/${encode(ep.audioUrl)}/${ep.duration}/${encode(targetPodcastId)}/${encode(targetPodcastTitle)}" +
+                                            "?entryPoint=episode_related_episodes"
+                                        )
+                                    },
+                                    onPlay = {
+                                        if (successState != null) {
+                                            coroutineScope.launch {
+                                                val localPodcastEntity = database.podcastDao().getPodcast(successState.podcastId)
+                                                val podcast = localPodcastEntity?.let {
+                                                    cx.aswin.boxcast.core.model.Podcast(
+                                                        id = it.podcastId,
+                                                        title = it.title,
+                                                        artist = it.author,
+                                                        imageUrl = it.imageUrl
+                                                    )
+                                                } ?: cx.aswin.boxcast.core.model.Podcast(
+                                                    id = successState.podcastId,
+                                                    title = successState.podcastTitle,
+                                                    artist = "",
+                                                    imageUrl = successState.episode.podcastImageUrl ?: ""
+                                                )
+                                                queueManager.playEpisode(successState.episode, podcast)
+                                            }
+                                        }
+                                    },
+                                    bottomContentPadding = miniPlayerPadding
                                 )
                             }
                         }
@@ -2096,6 +2295,7 @@ class MainActivity : ComponentActivity() {
                                 )
                                 if (currentState.isJson) {
                                     onboardingViewModel.markOnboardingCompletedSilent {
+                                        onboardingCompleted = true
                                         navController.navigate("home") {
                                             popUpTo("onboarding") { inclusive = true }
                                         }
@@ -2164,6 +2364,29 @@ class MainActivity : ComponentActivity() {
                         importTriggerKey = System.currentTimeMillis()
                     }
                 )
+
+                if (showFeedbackSheet) {
+                    val versionStr = remember {
+                        try {
+                            packageManager.getPackageInfo(packageName, 0).versionName ?: "unknown"
+                        } catch (e: Exception) {
+                            "unknown"
+                        }
+                    }
+                    FeedbackSheet(
+                        appVersion = versionStr,
+                        onSubmit = onSubmitFeedback,
+                        onRateInstead = {
+                            showFeedbackSheet = false
+                            try {
+                                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$packageName")))
+                            } catch (e: Exception) {
+                                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName")))
+                            }
+                        },
+                        onDismissRequest = { showFeedbackSheet = false }
+                    )
+                }
             }
         }
     }

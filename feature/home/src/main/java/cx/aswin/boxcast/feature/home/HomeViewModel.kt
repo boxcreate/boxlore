@@ -101,7 +101,9 @@ data class HomeUiState(
     val episodePlaybackState: Map<String, Pair<EpisodeStatus, Float>> = emptyMap(),
     val showImportBanner: Boolean = false,
     val briefing: Briefing? = null,
-    val briefingChapters: List<cx.aswin.boxcast.core.model.Chapter> = emptyList()
+    val briefingChapters: List<cx.aswin.boxcast.core.model.Chapter> = emptyList(),
+    val isRecommendationsLoading: Boolean = true,
+    val isCuratedLoading: Boolean = true
 )
 
 data class HomeDataWrapper(
@@ -467,24 +469,50 @@ class HomeViewModel(
                 
                 val trendingState = MutableStateFlow<List<Podcast>>(emptyList())
                 
-                launch {
+                // 1. Fast Bootstrap Call (Briefing & Trending)
+                val fastJob = launch {
                     _isTrendingLoaded.value = false
+                    try {
+                        android.util.Log.d("BoxCastTiming", "VM: Fast Home screen load via Bootstrap API (trending & briefing) for region=$region")
+                        
+                        val bootstrapData = podcastRepository.getHomeBootstrapData(
+                            country = region,
+                            vibeIds = emptyList() // No vibes in fast path
+                        )
+                        
+                        _briefingState.value = bootstrapData.briefing
+                        _briefingChaptersState.value = bootstrapData.briefingChapters
+                        trendingState.value = bootstrapData.trending
+                        
+                    } catch (e: Exception) {
+                        android.util.Log.e("BoxCastTiming", "VM: Fast Bootstrap API load failed", e)
+                    } finally {
+                        _isTrendingLoaded.value = true
+                    }
+                }
+
+                // 2. Background Personalized Call (Vibes & Recommendations)
+                launch {
+                    // Wait for the fast path request to complete first
+                    fastJob.join()
+                    
                     _isCuratedLoaded.value = false
                     _isRecommendationsLoaded.value = false
-                    
                     try {
-                        android.util.Log.d("BoxCastTiming", "VM: Consolidating Home screen load via Bootstrap API for region=$region")
+                        android.util.Log.d("BoxCastTiming", "VM: Background personalized Home screen load via Bootstrap API for region=$region")
                         
-                        // Prepare recommendations parameters
                         val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
                         val interests = prefs.getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
-                        val history = playbackRepository.getHistoryForRecommendations(15)
                         
-                        val subscribedIds = subscriptionRepository.subscribedPodcastIds.first().toList()
-                        val subscribedGenres = subscriptionRepository.subscribedPodcasts.first()
-                            .mapNotNull { it.genre }
-                            .distinct()
-                            
+                        val historyDeferred = async { playbackRepository.getHistoryForRecommendations(15) }
+                        val subscribedIdsDeferred = async { subscriptionRepository.subscribedPodcastIds.first().toList() }
+                        val subscribedPodcastsDeferred = async { subscriptionRepository.subscribedPodcasts.first() }
+                        
+                        val history = historyDeferred.await()
+                        val subscribedIds = subscribedIdsDeferred.await()
+                        val subscribedPodcasts = subscribedPodcastsDeferred.await()
+                        val subscribedGenres = subscribedPodcasts.mapNotNull { it.genre }.distinct()
+                        
                         val blockConfig = getTimeBlockConfig()
                         val vibeIds = blockConfig.genres.map { it.id }
                         
@@ -497,20 +525,13 @@ class HomeViewModel(
                             subscribedGenres = subscribedGenres
                         )
                         
-                        // 1. Briefing & Chapters
-                        _briefingState.value = bootstrapData.briefing
-                        _briefingChaptersState.value = bootstrapData.briefingChapters
-                        
-                        // 2. Trending
-                        trendingState.value = bootstrapData.trending
-                        
-                        // 3. Recommendations
+                        // Recommendations
                         val distinctRecs = bootstrapData.recommendations
                             .distinctBy { it.id }
                             .distinctBy { it.title.lowercase().trim() }
                         _recommendations.value = distinctRecs
                         
-                        // 4. Curated Vibes
+                        // Curated Vibes
                         val daySeed = java.time.LocalDate.now().toEpochDay()
                         val resolvedSections = blockConfig.genres.map { genre ->
                             val list = bootstrapData.curatedVibes[genre.id] ?: emptyList()
@@ -531,9 +552,8 @@ class HomeViewModel(
                         cachedTimeBlock = block
                         
                     } catch (e: Exception) {
-                        android.util.Log.e("BoxCastTiming", "VM: Bootstrap API load failed", e)
+                        android.util.Log.e("BoxCastTiming", "VM: Background Bootstrap API load failed", e)
                     } finally {
-                        _isTrendingLoaded.value = true
                         _isCuratedLoaded.value = true
                         _isRecommendationsLoaded.value = true
                     }
@@ -1213,7 +1233,7 @@ class HomeViewModel(
 
                         val shouldShowNudge = !wrapper.hasDismissedRegionNudge && (systemCountry != region)
 
-                        val initialLoading = !wrapper.isTrendingLoaded || !wrapper.isCuratedLoaded || !wrapper.isRecommendationsLoaded
+                        val initialLoading = !wrapper.isTrendingLoaded
 
                         // Daily Briefing visibility filter logic
                         val rawBriefing = wrapper.briefing
@@ -1260,7 +1280,9 @@ class HomeViewModel(
                             episodePlaybackState = episodePlaybackState,
                             showImportBanner = sortedSubs.isEmpty() && !wrapper.hasDismissedImportBanner,
                             briefing = if (showBriefing) rawBriefing else null,
-                            briefingChapters = if (showBriefing) wrapper.briefingChapters else emptyList()
+                            briefingChapters = if (showBriefing) wrapper.briefingChapters else emptyList(),
+                            isRecommendationsLoading = !wrapper.isRecommendationsLoaded,
+                            isCuratedLoading = !wrapper.isCuratedLoaded
                         )
                     }
                 }

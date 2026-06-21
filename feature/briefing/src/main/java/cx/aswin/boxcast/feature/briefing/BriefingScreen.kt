@@ -63,6 +63,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -125,6 +127,7 @@ fun BriefingRoute(
     queueManager: cx.aswin.boxcast.core.data.QueueManager,
     onBackClick: () -> Unit,
     onEpisodeClick: (Episode) -> Unit,
+    onFeedbackClick: () -> Unit,
     modifier: Modifier = Modifier,
     initialRegion: String? = null,
     bottomContentPadding: Dp = 0.dp
@@ -154,6 +157,7 @@ fun BriefingRoute(
         onPlayPauseClick = viewModel::togglePlayPause,
         onSeekTo = viewModel::seekTo,
         onEpisodeClick = onEpisodeClick,
+        onFeedbackClick = onFeedbackClick,
         initialRegion = initialRegion,
         bottomContentPadding = bottomContentPadding,
         modifier = modifier
@@ -169,6 +173,7 @@ fun BriefingScreen(
     onPlayPauseClick: (Briefing, Long?) -> Unit,
     onSeekTo: (Long) -> Unit,
     onEpisodeClick: (Episode) -> Unit,
+    onFeedbackClick: () -> Unit,
     modifier: Modifier = Modifier,
     initialRegion: String? = null,
     bottomContentPadding: Dp = 0.dp
@@ -303,6 +308,7 @@ fun BriefingScreen(
                         },
                         onSeekTo = onSeekTo,
                         onEpisodeClick = onEpisodeClick,
+                        onFeedbackClick = onFeedbackClick,
                         scrollState = scrollState,
                         contentTopPadding = collapsedHeaderHeight,
                         bottomContentPadding = bottomContentPadding
@@ -468,6 +474,7 @@ fun BriefingContent(
     onPlayPauseClick: (Long?) -> Unit,
     onSeekTo: (Long) -> Unit,
     onEpisodeClick: (Episode) -> Unit,
+    onFeedbackClick: () -> Unit,
     scrollState: ScrollState = rememberScrollState(),
     contentTopPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
@@ -517,7 +524,48 @@ fun BriefingContent(
     }
 
     val paragraphs = remember(briefing.script) {
-        briefing.script.split("\n\n").filter { it.isNotBlank() }
+        val raw = briefing.script.split("\n\n").filter { it.isNotBlank() }
+        raw.mapIndexed { index, paragraph ->
+            var text = paragraph.trim()
+            if (index == 0) {
+                val greetingPrefixes = listOf(
+                    "This is the boxcast brief for",
+                    "Welcome to the boxcast brief for",
+                    "Welcome to the daily brief for"
+                )
+                for (prefix in greetingPrefixes) {
+                    if (text.startsWith(prefix, ignoreCase = true)) {
+                        val periodIndex = text.indexOf('.')
+                        if (periodIndex != -1 && periodIndex < 120) {
+                            text = text.substring(periodIndex + 1).trim()
+                        }
+                        break
+                    }
+                }
+            }
+            if (index == raw.lastIndex) {
+                val outroSubstrings = listOf(
+                    "That's your boxcast brief. See you tomorrow.",
+                    "That's your boxcast brief. See you tomorrow",
+                    "See you tomorrow.",
+                    "See you tomorrow"
+                )
+                for (outro in outroSubstrings) {
+                    val outroIndex = text.indexOf(outro, ignoreCase = true)
+                    if (outroIndex != -1) {
+                        text = text.substring(0, outroIndex).trim()
+                        break
+                    }
+                }
+                if (text.contains("boxcast brief", ignoreCase = true) && text.length - text.lastIndexOf("boxcast brief") < 100) {
+                    val lastPeriod = text.lastIndexOf('.', text.length - 2)
+                    if (lastPeriod != -1) {
+                        text = text.substring(0, lastPeriod + 1).trim()
+                    }
+                }
+            }
+            text
+        }.filter { it.isNotBlank() }
     }
 
     Box(
@@ -617,7 +665,7 @@ fun BriefingContent(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Start,
                 color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
@@ -635,43 +683,48 @@ fun BriefingContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.Start,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                regions.forEachIndexed { index, (code, label) ->
+                regions.forEach { (code, label) ->
                     val isSelected = currentRegion == code
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(
-                            1.dp,
-                            if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                        ),
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .expressiveClickable(
-                                shape = RoundedCornerShape(12.dp),
-                                onClick = {
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingRegionChanged(
-                                        previousRegion = currentRegion,
-                                        newRegion = code,
-                                        date = briefing.date
-                                    )
-                                    onRegionSelect(code)
-                                }
+                    FilterChip(
+                        modifier = Modifier.weight(1f),
+                        selected = isSelected,
+                        onClick = {
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingRegionChanged(
+                                previousRegion = currentRegion,
+                                newRegion = code,
+                                date = briefing.date
                             )
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                            onRegionSelect(code)
+                        },
+                        label = {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = Color.Transparent,
+                            selectedBorderColor = MaterialTheme.colorScheme.primary
                         )
-                    }
+                    )
                 }
             }
 
@@ -1006,6 +1059,65 @@ fun BriefingContent(
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Disclaimer & Feedback",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                Text(
+                    text = "This daily briefing contains AI-generated summary content and audio narration. We do not claim ownership of the underlying news stories, which are compiled and attributed to the original sources listed above.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 16.sp
+                )
+                
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .expressiveClickable(
+                            shape = RoundedCornerShape(10.dp),
+                            onClick = onFeedbackClick
+                        )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Report an Issue / Send Feedback",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }

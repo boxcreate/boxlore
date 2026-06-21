@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -102,6 +103,7 @@ fun FullPlayerContent(
     
     // Queue bottom sheet state
     var showQueueSheet by remember { mutableStateOf(false) }
+    var showShareSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     // Chapters bottom sheet state
@@ -237,7 +239,24 @@ fun FullPlayerContent(
             }
             Spacer(modifier = Modifier.weight(1f))
         
-            Box(modifier = Modifier.size(42.dp))
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(colorScheme.onSurface.copy(alpha = 0.1f))
+                    .clickable(onClick = { 
+                        android.util.Log.d("ShareBottomSheet", "Share button clicked in player! Setting showShareSheet = true")
+                        showShareSheet = true 
+                    }),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Share,
+                    contentDescription = "Share",
+                    tint = colorScheme.onSurface,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(12.dp))
@@ -684,6 +703,25 @@ fun FullPlayerContent(
                 }
             }
         }
+
+    }
+
+    android.util.Log.d("ShareBottomSheet", "Recomposing FullPlayerContent: showShareSheet = $showShareSheet")
+    if (showShareSheet) {
+        val context = LocalContext.current
+        cx.aswin.boxcast.core.designsystem.components.ShareBottomSheet(
+            id = episode.id,
+            type = "episode",
+            title = episode.title,
+            subtitle = podcast.title,
+            onDismissRequest = { showShareSheet = false },
+            durationMs = episode.duration * 1000L,
+            currentPositionMs = state.position,
+            showTimestampOption = true,
+            onShare = { _, _, t ->
+                cx.aswin.boxcast.core.data.ShareManager.shareEpisode(context, episode, podcast.title, t)
+            }
+        )
     }
 }
 }

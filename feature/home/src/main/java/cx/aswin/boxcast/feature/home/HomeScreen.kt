@@ -372,6 +372,8 @@ fun HomeScreen(
                             isSelectedPodcastLoading = uiState.isSelectedPodcastLoading,
                             episodePlaybackState = uiState.episodePlaybackState,
                             isLoading = uiState.isLoading,
+                            isRecommendationsLoading = uiState.isRecommendationsLoading,
+                            isCuratedLoading = uiState.isCuratedLoading,
                             onPodcastSelected = onPodcastSelected,
                             onPlayMix = onPlayMix,
                             onPlayEpisode = onPlayEpisode,
@@ -474,6 +476,8 @@ private fun PodcastFeed(
     isSelectedPodcastLoading: Boolean = false,
     episodePlaybackState: Map<String, Pair<EpisodeStatus, Float>> = emptyMap(),
     isLoading: Boolean,
+    isRecommendationsLoading: Boolean = true,
+    isCuratedLoading: Boolean = true,
     onPodcastSelected: (String?) -> Unit = {},
     onPlayMix: () -> Unit = {},
     onPlayEpisode: (Episode, Podcast) -> Unit = { _, _ -> },
@@ -744,7 +748,7 @@ private fun PodcastFeed(
         // Render this item slot unconditionally so its skeleton is shown during loading
         item(span = StaggeredGridItemSpan.FullLine) {
             AnimatedVisibility(
-                visible = isLoading || recommendations.isNotEmpty(),
+                visible = isRecommendationsLoading || recommendations.isNotEmpty(),
                 enter = fadeIn(animationSpec = tween(600)) + expandVertically(
                     animationSpec = tween(500),
                     expandFrom = Alignment.Top
@@ -775,9 +779,9 @@ private fun PodcastFeed(
         item(span = StaggeredGridItemSpan.FullLine) {
             androidx.compose.animation.Crossfade(
                 targetState = when {
-                    isLoading -> "skeleton"
+                    isCuratedLoading -> "skeleton"
                     timeBlock != null -> "content"
-                    else -> "skeleton" // Still loading curated (show shimmer)
+                    else -> "empty"
                 },
                 animationSpec = tween(600),
                 label = "timeblock_crossfade"
@@ -792,6 +796,7 @@ private fun PodcastFeed(
                             onNavigateToExplore?.invoke(null, "home_time_block_see_all", "foryou")
                         }
                     )
+                    "empty" -> {}
                 }
             }
         }
