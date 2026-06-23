@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="images/boxlorelogo.png" width="250" alt="BoxLore Logo"/>
+<img src="images/boxlorelogo.png?v=2" width="250" alt="BoxLore Logo"/>
 
 ### *The Ultimate Podcast App For Android*
 
