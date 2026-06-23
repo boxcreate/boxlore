@@ -14,7 +14,7 @@ import cx.aswin.boxcast.core.data.database.dao.QueueDao
     exportSchema = false
 )
 @TypeConverters(Converters::class)
-abstract class BoxCastDatabase : RoomDatabase() {
+abstract class BoxLoreDatabase : RoomDatabase() {
     abstract fun listeningHistoryDao(): ListeningHistoryDao
     abstract fun podcastDao(): PodcastDao
     abstract fun downloadedEpisodeDao(): DownloadedEpisodeDao
@@ -97,14 +97,36 @@ abstract class BoxCastDatabase : RoomDatabase() {
         }
 
         @Volatile
-        private var INSTANCE: BoxCastDatabase? = null
+        private var INSTANCE: BoxLoreDatabase? = null
 
-        fun getDatabase(context: android.content.Context): BoxCastDatabase {
+
+        private fun renameDatabaseFileIfExists(context: android.content.Context) {
+            val oldDbFile = context.getDatabasePath("boxcast_database")
+            val newDbFile = context.getDatabasePath("boxlore_database")
+            
+            if (oldDbFile.exists()) {
+                oldDbFile.renameTo(newDbFile)
+                
+                // Rename WAL, SHM, and Journal files if they exist
+                val suffixes = listOf("-journal", "-shm", "-wal")
+                for (suffix in suffixes) {
+                    val oldSuffixFile = java.io.File(oldDbFile.path + suffix)
+                    val newSuffixFile = java.io.File(newDbFile.path + suffix)
+                    if (oldSuffixFile.exists()) {
+                        oldSuffixFile.renameTo(newSuffixFile)
+                    }
+                }
+                android.util.Log.d("BoxLoreDatabase", "Successfully migrated database file to boxlore_database")
+            }
+        }
+
+        fun getDatabase(context: android.content.Context): BoxLoreDatabase {
             return INSTANCE ?: synchronized(this) {
+                renameDatabaseFileIfExists(context)
                 val instance = androidx.room.Room.databaseBuilder(
                     context.applicationContext,
-                    BoxCastDatabase::class.java,
-                    "boxcast_database"
+                    BoxLoreDatabase::class.java,
+                    "boxlore_database"
                 )
                 .addMigrations(MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23)
                 .fallbackToDestructiveMigration() // For development simplicity on older versions

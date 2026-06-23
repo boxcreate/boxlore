@@ -41,7 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 @Composable
@@ -156,7 +156,7 @@ fun PlayerControls(
             contentAlignment = Alignment.Center
         ) {
             if (showLoader) {
-                BoxCastLoader.CircularWavy(
+                BoxLoreLoader.CircularWavy(
                     modifier = Modifier.size(36.dp),
                     size = 36.dp,
                     color = colorScheme.onPrimary

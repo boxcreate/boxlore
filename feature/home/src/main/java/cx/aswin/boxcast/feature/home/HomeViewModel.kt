@@ -145,7 +145,7 @@ class HomeViewModel(
 ) : AndroidViewModel(application) {
     
     val podcastRepository = PodcastRepository(baseUrl = apiBaseUrl, publicKey = publicKey, context = application)
-    private val database = cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(application)
+    private val database = cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(application)
     private val subscriptionRepository = cx.aswin.boxcast.core.data.SubscriptionRepository(database.podcastDao())
     // Let's leave SubscriptionRepository as is for now, it's less critical for playback state.
     // But `playbackRepository` MUST be injected.

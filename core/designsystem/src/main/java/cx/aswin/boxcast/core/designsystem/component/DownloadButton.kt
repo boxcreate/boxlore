@@ -48,7 +48,7 @@ fun DownloadButton(
                     )
                 }
                 DownloadState.DOWNLOADING -> {
-                    cx.aswin.boxcast.core.designsystem.components.BoxCastLoader.CircularWavy(
+                    cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader.CircularWavy(
                         progress = progress.takeIf { it > 0f },
                         modifier = Modifier.size(28.dp),
                         color = MaterialTheme.colorScheme.primary,

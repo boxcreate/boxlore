@@ -143,7 +143,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import cx.aswin.boxcast.core.designsystem.component.ExpressiveExtendedFab
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.AnimatedShapesFallback
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.components.LogRecomposition
@@ -370,7 +370,7 @@ fun PodcastInfoScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    BoxCastLoader.Expressive(size = 80.dp)
+                    BoxLoreLoader.Expressive(size = 80.dp)
                 }
             }
             
@@ -1195,7 +1195,7 @@ fun PodcastInfoScreen(
                                     .padding(24.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                BoxCastLoader.CircularWavy(size = 32.dp)
+                                BoxLoreLoader.CircularWavy(size = 32.dp)
                             }
                         }
                     }
@@ -2231,7 +2231,7 @@ fun PodcastInfoSearchOverlay(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    cx.aswin.boxcast.core.designsystem.components.BoxCastLoader.Expressive(
+                    cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader.Expressive(
                         size = 64.dp
                     )
                 }

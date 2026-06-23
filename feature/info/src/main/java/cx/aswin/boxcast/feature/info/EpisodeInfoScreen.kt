@@ -97,7 +97,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import cx.aswin.boxcast.core.designsystem.component.HtmlText
 import cx.aswin.boxcast.core.designsystem.components.AnimatedShapesFallback
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
@@ -245,7 +245,7 @@ fun EpisodeInfoScreen(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                BoxCastLoader.Expressive(size = 80.dp)
+                BoxLoreLoader.Expressive(size = 80.dp)
             }
         }
         is EpisodeInfoUiState.Error -> {

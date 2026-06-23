@@ -378,7 +378,7 @@ private fun WelcomeScreen(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    cx.aswin.boxcast.core.designsystem.components.BoxCastLogo(
+                    cx.aswin.boxcast.core.designsystem.components.BoxLoreLogo(
                         textColor = MaterialTheme.colorScheme.primary
                     )
                 }

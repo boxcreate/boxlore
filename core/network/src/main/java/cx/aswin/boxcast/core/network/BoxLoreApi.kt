@@ -32,7 +32,7 @@ import cx.aswin.boxcast.core.model.Briefing
 /**
  * BoxCast API - Cloudflare Worker proxy for Podcast Index
  */
-interface BoxCastApi {
+interface BoxLoreApi {
 
     @GET("briefings/metadata/{region}")
     fun getBriefingMetadata(

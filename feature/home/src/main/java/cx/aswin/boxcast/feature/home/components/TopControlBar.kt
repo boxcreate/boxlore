@@ -109,7 +109,7 @@ fun TopControlBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 1. Left Section (Logo)
-        cx.aswin.boxcast.core.designsystem.components.BoxCastLogo()
+        cx.aswin.boxcast.core.designsystem.components.BoxLoreLogo()
         
         // Right Side Controls (Toggle + Feedback + Settings)
         Row(

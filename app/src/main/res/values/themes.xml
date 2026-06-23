@@ -2,16 +2,16 @@
 <resources>
     <!-- Simple launch theme -->
     <!-- Base application theme -->
-    <style name="Theme.BoxCast" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.BoxLore" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Edge-to-edge is handled by enableEdgeToEdge() in MainActivity -->
     </style>
 
     <!-- Splash Screen Theme -->
-    <style name="Theme.BoxCast.Splash" parent="Theme.SplashScreen">
+    <style name="Theme.BoxLore.Splash" parent="Theme.SplashScreen">
         <!-- Define primary color for the adaptive logo -->
         <item name="colorPrimary">@color/splash_logo_color</item> 
         <item name="windowSplashScreenBackground">?attr/colorSurface</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
-        <item name="postSplashScreenTheme">@style/Theme.BoxCast</item>
+        <item name="postSplashScreenTheme">@style/Theme.BoxLore</item>
     </style>
 </resources>

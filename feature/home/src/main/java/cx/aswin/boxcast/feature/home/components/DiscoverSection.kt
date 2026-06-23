@@ -20,7 +20,7 @@ import cx.aswin.boxcast.core.model.Podcast
  * Contains:
  * - Section Header ("Discover" or "Top in [Category]")
  * - Genre Selector (FilterChips)
- * - Loading State (BoxCastLoader.Expressive)
+ * - Loading State (BoxLoreLoader.Expressive)
  * - Podcast Grid (via callback - grid is rendered in parent for staggered layout)
  * 
  * @param selectedCategory Current selected category (null = "For You")

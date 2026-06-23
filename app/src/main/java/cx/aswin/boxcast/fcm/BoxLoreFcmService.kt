@@ -18,7 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.google.firebase.messaging.FirebaseMessaging
 
-class BoxCastFcmService : FirebaseMessagingService() {
+class BoxLoreFcmService : FirebaseMessagingService() {
 
     private val CHANNEL_ID = "boxcast_announcements"
 

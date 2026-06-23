@@ -2,7 +2,7 @@ package cx.aswin.boxcast.feature.player
 
 import cx.aswin.boxcast.core.designsystem.theme.simpleSharedElement
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -95,7 +95,7 @@ fun PlayerRoute(
     modifier: Modifier = Modifier
 ) {
     val application = LocalContext.current.applicationContext as android.app.Application
-    val database = androidx.compose.runtime.remember { cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(application) }
+    val database = androidx.compose.runtime.remember { cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(application) }
     val downloadRepository = androidx.compose.runtime.remember { cx.aswin.boxcast.core.data.DownloadRepository(application, database) }
 
     
@@ -186,7 +186,7 @@ fun PlayerScreen(
                 is PlayerUiState.Loading -> {
                     // M3 Expressive: Morphing Loader
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        BoxCastLoader.Expressive()
+                        BoxLoreLoader.Expressive()
                     }
                 }
                 is PlayerUiState.Success -> {

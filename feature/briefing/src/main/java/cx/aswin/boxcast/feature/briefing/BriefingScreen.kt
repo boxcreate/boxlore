@@ -101,7 +101,7 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.ExpressivePlayButton
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily
@@ -225,7 +225,7 @@ fun BriefingScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        BoxCastLoader.Expressive(size = 64.dp)
+                        BoxLoreLoader.Expressive(size = 64.dp)
                     }
                 }
                 "success" -> {

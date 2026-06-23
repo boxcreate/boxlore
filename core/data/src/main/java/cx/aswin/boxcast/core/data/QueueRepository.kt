@@ -1,6 +1,6 @@
 package cx.aswin.boxcast.core.data
 
-import cx.aswin.boxcast.core.data.database.BoxCastDatabase
+import cx.aswin.boxcast.core.data.database.BoxLoreDatabase
 import cx.aswin.boxcast.core.data.database.entities.QueueItem
 import cx.aswin.boxcast.core.network.model.EpisodeItem
 import cx.aswin.boxcast.core.model.Person
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 @Singleton
 class QueueRepository @Inject constructor(
-    private val database: BoxCastDatabase,
+    private val database: BoxLoreDatabase,
     private val podcastRepository: PodcastRepository
 ) {
     private val TAG = "QueueRepository"

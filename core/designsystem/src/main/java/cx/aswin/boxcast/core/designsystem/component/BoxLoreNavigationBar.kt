@@ -91,7 +91,7 @@ val bottomNavDestinations = listOf(
 )
 
 @Composable
-fun BoxCastNavigationBar(
+fun BoxLoreNavigationBar(
     currentRoute: String,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier

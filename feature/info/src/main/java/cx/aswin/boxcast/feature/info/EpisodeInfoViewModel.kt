@@ -48,7 +48,7 @@ class EpisodeInfoViewModel(
     private val queueManager: cx.aswin.boxcast.core.data.QueueManager
 ) : AndroidViewModel(application) {
 
-    private val database = cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(application)
+    private val database = cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(application)
 
     private val _uiState = MutableStateFlow<EpisodeInfoUiState>(EpisodeInfoUiState.Loading)
     val uiState: StateFlow<EpisodeInfoUiState> = _uiState.asStateFlow()

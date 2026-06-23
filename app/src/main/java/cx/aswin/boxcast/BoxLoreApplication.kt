@@ -9,7 +9,7 @@ import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 
-class BoxCastApplication : Application() {
+class BoxLoreApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()

@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.model.Podcast
 
 data class SearchCategoryItem(
@@ -185,7 +185,7 @@ internal fun OnboardingSearchScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    BoxCastLoader.Expressive(size = 100.dp)
+                    BoxLoreLoader.Expressive(size = 100.dp)
                 }
             }
             query.isEmpty() -> {
@@ -209,7 +209,7 @@ internal fun OnboardingSearchScreen(
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
-                            BoxCastLoader.Expressive(size = 80.dp)
+                            BoxLoreLoader.Expressive(size = 80.dp)
                         }
                     } else if (popularPodcasts.isEmpty()) {
                         Box(

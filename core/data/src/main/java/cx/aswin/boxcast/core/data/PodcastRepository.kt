@@ -6,7 +6,7 @@ import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.Transcript
 import cx.aswin.boxcast.core.model.Briefing
 import cx.aswin.boxcast.core.model.Chapter
-import cx.aswin.boxcast.core.network.BoxCastApi
+import cx.aswin.boxcast.core.network.BoxLoreApi
 import cx.aswin.boxcast.core.network.NetworkModule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
@@ -53,7 +53,7 @@ class PodcastRepository(
     val publicKey: String,
     context: android.content.Context
 ) {
-    val api: BoxCastApi = NetworkModule.createBoxCastApi(baseUrl, context)
+    val api: BoxLoreApi = NetworkModule.createBoxLoreApi(baseUrl, context)
 
     suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0): List<Podcast> = withContext(Dispatchers.IO) {
         // Fallback or non-streaming implementation

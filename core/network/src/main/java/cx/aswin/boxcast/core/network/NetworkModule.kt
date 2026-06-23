@@ -53,7 +53,7 @@ object NetworkModule {
      * BoxCast API via Cloudflare Worker proxy
      * Base URL injected from BuildConfig at runtime
      */
-    fun createBoxCastApi(baseUrl: String, context: android.content.Context): BoxCastApi {
+    fun createBoxLoreApi(baseUrl: String, context: android.content.Context): BoxLoreApi {
         val cacheSize = 50L * 1024L * 1024L // 50 MiB
         val cache = okhttp3.Cache(context.cacheDir, cacheSize)
 
@@ -67,6 +67,6 @@ object NetworkModule {
             .client(cacheClient)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
-            .create(BoxCastApi::class.java)
+            .create(BoxLoreApi::class.java)
     }
 }
