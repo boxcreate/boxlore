@@ -2,7 +2,7 @@ package cx.aswin.boxcast.feature.home.components
 
 import cx.aswin.boxcast.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxcast.core.designsystem.components.LogRecomposition
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import androidx.compose.material.icons.rounded.Close
 
@@ -716,7 +716,7 @@ fun YourShowsSection(
                                         .height(200.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    BoxCastLoader.Expressive(size = 48.dp)
+                                    BoxLoreLoader.Expressive(size = 48.dp)
                                 }
                             } else if (selectedPodcastEpisodes.isEmpty()) {
                                 Box(

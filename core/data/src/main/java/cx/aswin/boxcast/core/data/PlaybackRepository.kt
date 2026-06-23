@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.Chapter
-import cx.aswin.boxcast.core.data.service.BoxCastPlaybackService
+import cx.aswin.boxcast.core.data.service.BoxLorePlaybackService
 import cx.aswin.boxcast.core.designsystem.components.AutoTranscriptState
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -553,7 +553,7 @@ class PlaybackRepository(
     }
 
     private fun initializeMediaController() {
-        val sessionToken = SessionToken(context, ComponentName(context, BoxCastPlaybackService::class.java))
+        val sessionToken = SessionToken(context, ComponentName(context, BoxLorePlaybackService::class.java))
         mediaControllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
         mediaControllerFuture?.addListener({
             mediaController = mediaControllerFuture?.get()
@@ -773,7 +773,7 @@ class PlaybackRepository(
                         // 2. Derive podcast context from episode metadata & local DB
                         val newPodcast = if (newEpisode.podcastId != null) {
                             val existingPod = oldState.currentPodcast
-                            val database = cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(context)
+                            val database = cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(context)
                             val dbPodEntity = database.podcastDao().getPodcast(newEpisode.podcastId!!)
                             val dbPodcast = dbPodEntity?.let { entity ->
                                 cx.aswin.boxcast.core.model.Podcast(
@@ -2017,7 +2017,7 @@ class PlaybackRepository(
     }
 
     suspend fun getHistoryForRecommendations(limit: Int = 15): List<cx.aswin.boxcast.core.network.model.HistoryItem> {
-        val database = cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(context)
+        val database = cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(context)
         val podcastDao = database.podcastDao()
         
         // Fetch up to limit * 3 recent items to have room for filtering out accidental skips/taps

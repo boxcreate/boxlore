@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.network.model.toPodcast
 
@@ -243,7 +243,7 @@ internal fun AiSuggestionsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        BoxCastLoader.Expressive(size = 80.dp)
+                        BoxLoreLoader.Expressive(size = 80.dp)
                         Text(
                             text = when {
                                 uiState.reachedSuggestionsViaOpmlFlow -> {
@@ -516,7 +516,7 @@ internal fun AiSuggestionsScreen(
                                             .padding(vertical = 40.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        BoxCastLoader.Expressive(size = 48.dp)
+                                        BoxLoreLoader.Expressive(size = 48.dp)
                                     }
                                 }
                             } else if (uiState.genreChartsPodcasts.isNotEmpty()) {

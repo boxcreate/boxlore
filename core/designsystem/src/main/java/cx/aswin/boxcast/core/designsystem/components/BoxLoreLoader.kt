@@ -29,7 +29,7 @@ import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
  * BoxCast M3 Expressive Loaders.
  * Centralized loading states for the application.
  */
-object BoxCastLoader {
+object BoxLoreLoader {
 
     /**
      * Expressive Morphing Loader.

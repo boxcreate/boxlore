@@ -62,7 +62,7 @@ object TranscriptRepository {
     }
 
     suspend fun getAutoTranscript(
-        api: cx.aswin.boxcast.core.network.BoxCastApi,
+        api: cx.aswin.boxcast.core.network.BoxLoreApi,
         publicKey: String,
         deviceUuid: String,
         episodeId: String,
@@ -130,7 +130,7 @@ object TranscriptRepository {
      * Returns null on network errors.
      */
     suspend fun checkAutoTranscriptStatus(
-        api: cx.aswin.boxcast.core.network.BoxCastApi,
+        api: cx.aswin.boxcast.core.network.BoxLoreApi,
         publicKey: String,
         deviceUuid: String,
         episodeId: String,

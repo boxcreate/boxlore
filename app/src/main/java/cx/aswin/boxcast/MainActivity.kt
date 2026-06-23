@@ -87,7 +87,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import cx.aswin.boxcast.core.designsystem.component.BoxCastNavigationBar
+import cx.aswin.boxcast.core.designsystem.component.BoxLoreNavigationBar
 import cx.aswin.boxcast.core.designsystem.component.bottomNavDestinations
 import cx.aswin.boxcast.core.designsystem.theme.BoxCastTheme
 import cx.aswin.boxcast.core.designsystem.component.PredictiveBackWrapper
@@ -98,7 +98,7 @@ import cx.aswin.boxcast.feature.home.components.FeedbackSheet
 import cx.aswin.boxcast.core.designsystem.component.ExpressiveAnimatedBackground
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
@@ -354,7 +354,7 @@ class MainActivity : ComponentActivity() {
             
             // App-level Repositories
             val application = (applicationContext as android.app.Application)
-            val database = remember { cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(application) }
+            val database = remember { cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(application) }
             
             // 1. Core Data Sources
             // Create a shared PodcastRepository instance
@@ -811,7 +811,7 @@ class MainActivity : ComponentActivity() {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.graphicsLayer { alpha = phase1.value }
                             ) {
-                                cx.aswin.boxcast.core.designsystem.components.BoxCastLogo()
+                                cx.aswin.boxcast.core.designsystem.components.BoxLoreLogo()
                                 
                                 androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
                                 
@@ -1906,7 +1906,7 @@ class MainActivity : ComponentActivity() {
                     // Get system nav bar height for full-screen expanded player
                     val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     
-                    // Only app navbar height - matches BoxCastNavigationBar content height
+                    // Only app navbar height - matches BoxLoreNavigationBar content height
                     val appNavBarHeight = 62.dp 
                     
                     // Container height = full screen + system nav bar + extra buffer to ensure full coverage
@@ -1947,7 +1947,7 @@ class MainActivity : ComponentActivity() {
                             else -> "home"
                         }
 
-                        BoxCastNavigationBar(
+                        BoxLoreNavigationBar(
                             currentRoute = activeTab,
                             onNavigate = { route ->
                                 // Navigation logic for bottom tabs
@@ -2734,7 +2734,7 @@ fun OpmlImportDialog(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                BoxCastLoader.CircularWavy(
+                                BoxLoreLoader.CircularWavy(
                                     size = 72.dp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -2765,7 +2765,7 @@ fun OpmlImportDialog(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                BoxCastLoader.CircularWavy(
+                                BoxLoreLoader.CircularWavy(
                                     size = 72.dp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -2796,7 +2796,7 @@ fun OpmlImportDialog(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                BoxCastLoader.CircularWavy(
+                                BoxLoreLoader.CircularWavy(
                                     progress = state.progress,
                                     size = 80.dp,
                                     color = MaterialTheme.colorScheme.primary
@@ -2852,7 +2852,7 @@ fun OpmlImportDialog(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                BoxCastLoader.CircularWavy(
+                                BoxLoreLoader.CircularWavy(
                                     progress = state.progress,
                                     size = 80.dp,
                                     color = MaterialTheme.colorScheme.primary

@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
  * Reusable BOXCAST logo rendering the vector drawable path data converted from the SVG.
  */
 @Composable
-fun BoxCastLogo(
+fun BoxLoreLogo(
     modifier: Modifier = Modifier,
     textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
     fontSize: TextUnit = 24.sp // Kept for backward compatibility

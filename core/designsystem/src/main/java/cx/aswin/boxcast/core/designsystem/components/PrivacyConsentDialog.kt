@@ -114,7 +114,7 @@ private fun PrivacyHeader() {
                 shape = ExpressiveShapes.Burst,
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
             ) {}
-            BoxCastLogo(
+            BoxLoreLogo(
                 modifier = Modifier.scale(0.8f),
                 textColor = MaterialTheme.colorScheme.primary
             )

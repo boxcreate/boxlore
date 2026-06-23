@@ -106,7 +106,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import cx.aswin.boxcast.core.designsystem.components.AnimatedShapesFallback
-import cx.aswin.boxcast.core.designsystem.components.BoxCastLoader
+import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.components.LogRecomposition
 import cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily
@@ -206,7 +206,7 @@ fun ExploreContent(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center
             ) {
-                BoxCastLoader.Expressive(size = 100.dp)
+                BoxLoreLoader.Expressive(size = 100.dp)
             }
             return
         }
@@ -420,7 +420,7 @@ fun ExploreContent(
                                         .padding(80.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    BoxCastLoader.Expressive(size = 80.dp)
+                                    BoxLoreLoader.Expressive(size = 80.dp)
                                 }
                             }
                         } else if (showEmptyState) {
@@ -485,7 +485,7 @@ fun ExploreContent(
                                             .padding(24.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        BoxCastLoader.Expressive(size = 48.dp)
+                                        BoxLoreLoader.Expressive(size = 48.dp)
                                     }
                                 }
                             }
@@ -520,7 +520,7 @@ fun ExploreContent(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     val loaderSize = if (state.isSearching) 100.dp else 80.dp
-                                    BoxCastLoader.Expressive(size = loaderSize)
+                                    BoxLoreLoader.Expressive(size = loaderSize)
                                 }
                             }
                         } else if (showEmptyState) {
@@ -553,7 +553,7 @@ fun ExploreContent(
                                             .padding(24.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        BoxCastLoader.Expressive(size = 48.dp)
+                                        BoxLoreLoader.Expressive(size = 48.dp)
                                     }
                                 }
                             }
@@ -613,7 +613,7 @@ fun ExploreContent(
                                     .padding(80.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                BoxCastLoader.Expressive(size = 80.dp)
+                                BoxLoreLoader.Expressive(size = 80.dp)
                             }
                         }
                     } else if (showEmptyState) {
@@ -686,7 +686,7 @@ fun ExploreContent(
                                     .padding(80.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                BoxCastLoader.Expressive(size = 80.dp)
+                                BoxLoreLoader.Expressive(size = 80.dp)
                             }
                         }
                     } else if (showEmptyState) {
@@ -721,7 +721,7 @@ fun ExploreContent(
                                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    BoxCastLoader.Expressive(size = 40.dp)
+                                    BoxLoreLoader.Expressive(size = 40.dp)
                                 }
                             }
                         }

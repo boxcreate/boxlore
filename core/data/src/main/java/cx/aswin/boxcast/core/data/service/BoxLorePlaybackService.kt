@@ -19,7 +19,7 @@ import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
-class BoxCastPlaybackService : MediaLibraryService() {
+class BoxLorePlaybackService : MediaLibraryService() {
 
     private var mediaSession: MediaLibrarySession? = null
     private var exoPlayer: ExoPlayer? = null
@@ -33,7 +33,7 @@ class BoxCastPlaybackService : MediaLibraryService() {
 
     // Lazy-init database & repos (avoid creating them if Auto is never used)
     private val database by lazy {
-        cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(this)
+        cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(this)
     }
     private val podcastRepository by lazy {
         val prefs = getSharedPreferences("boxcast_api_config", MODE_PRIVATE)
@@ -648,11 +648,11 @@ class BoxCastPlaybackService : MediaLibraryService() {
         val player = mediaSession?.player
         if (player != null) {
             if (!player.playWhenReady || player.mediaItemCount == 0 || player.playbackState == Player.STATE_ENDED || player.playbackState == Player.STATE_IDLE) {
-                android.util.Log.d("BoxCastPlaybackService", "onTaskRemoved: player not playing or queue empty, stopping service gracefully")
+                android.util.Log.d("BoxLorePlaybackService", "onTaskRemoved: player not playing or queue empty, stopping service gracefully")
                 stopSelf()
                 super.onTaskRemoved(rootIntent)
             } else {
-                android.util.Log.d("BoxCastPlaybackService", "onTaskRemoved: player is playing, keeping service in foreground and bypassing super.onTaskRemoved to prevent notification from disappearing")
+                android.util.Log.d("BoxLorePlaybackService", "onTaskRemoved: player is playing, keeping service in foreground and bypassing super.onTaskRemoved to prevent notification from disappearing")
             }
         } else {
             stopSelf()
@@ -967,7 +967,7 @@ class BoxCastPlaybackService : MediaLibraryService() {
                             isDirty = true
                         )
                         database.listeningHistoryDao().upsert(updated)
-                        android.util.Log.d("BoxCastPlaybackService", "Marked current episode completed: $episodeId")
+                        android.util.Log.d("BoxLorePlaybackService", "Marked current episode completed: $episodeId")
                         
                         cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPlaybackCompleted(
                             podcastId = playbackSessionPodcastId,
@@ -981,7 +981,7 @@ class BoxCastPlaybackService : MediaLibraryService() {
                         )
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("BoxCastPlaybackService", "Failed to mark current episode completed", e)
+                    android.util.Log.e("BoxLorePlaybackService", "Failed to mark current episode completed", e)
                 }
             }
         }
@@ -1136,13 +1136,13 @@ class BoxCastPlaybackService : MediaLibraryService() {
                     android.view.KeyEvent.KEYCODE_MEDIA_NEXT -> {
                         cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("skip_30s")
                         session.player.seekForward()
-                        android.util.Log.d("BoxCastPlaybackService", "onMediaButtonEvent: KEYCODE_MEDIA_NEXT intercepted, seeking forward")
+                        android.util.Log.d("BoxLorePlaybackService", "onMediaButtonEvent: KEYCODE_MEDIA_NEXT intercepted, seeking forward")
                         return true
                     }
                     android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                         cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("replay_10s")
                         session.player.seekBack()
-                        android.util.Log.d("BoxCastPlaybackService", "onMediaButtonEvent: KEYCODE_MEDIA_PREVIOUS intercepted, seeking backward")
+                        android.util.Log.d("BoxLorePlaybackService", "onMediaButtonEvent: KEYCODE_MEDIA_PREVIOUS intercepted, seeking backward")
                         return true
                     }
                 }

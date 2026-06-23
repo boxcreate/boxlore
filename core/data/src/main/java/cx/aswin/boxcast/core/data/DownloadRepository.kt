@@ -12,7 +12,7 @@ import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
-import cx.aswin.boxcast.core.data.database.BoxCastDatabase
+import cx.aswin.boxcast.core.data.database.BoxLoreDatabase
 import cx.aswin.boxcast.core.data.database.DownloadedEpisodeEntity
 import cx.aswin.boxcast.core.data.service.MediaDownloadService
 import cx.aswin.boxcast.core.model.Episode
@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
 
 class DownloadRepository(
     private val context: Context,
-    private val database: BoxCastDatabase
+    private val database: BoxLoreDatabase
 ) {
     private val downloadManager: DownloadManager = getDownloadManager(context)
     

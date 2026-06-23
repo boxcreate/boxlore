@@ -302,7 +302,7 @@ fun AdaptiveControlButton(
                 ) { loading ->
                     if (loading) {
                         val loaderColor = inactiveTint
-                        cx.aswin.boxcast.core.designsystem.components.BoxCastLoader.CircularWavy(
+                        cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader.CircularWavy(
                             modifier = Modifier.size(24.dp),
                             color = loaderColor,
                             trackColor = loaderColor.copy(alpha = 0.2f)
@@ -357,7 +357,7 @@ fun AdaptiveControlButton(
                 ) { loading ->
                     if (loading) {
                         val loaderColor = inactiveTint
-                        cx.aswin.boxcast.core.designsystem.components.BoxCastLoader.CircularWavy(
+                        cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader.CircularWavy(
                             modifier = Modifier.size(iconSize - 2.dp),
                             color = loaderColor,
                             trackColor = loaderColor.copy(alpha = 0.2f)
@@ -424,7 +424,7 @@ fun AdaptiveControlButton(
                 ) { loading ->
                     if (loading) {
                         val loaderColor = inactiveTint
-                        cx.aswin.boxcast.core.designsystem.components.BoxCastLoader.CircularWavy(
+                        cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader.CircularWavy(
                             modifier = Modifier.size(iconSize - 2.dp),
                             color = loaderColor,
                             trackColor = loaderColor.copy(alpha = 0.2f)
@@ -462,7 +462,7 @@ fun AdaptiveControlButton(
                 label = "loader_transition"
             ) { loading ->
                 if (loading) {
-                     cx.aswin.boxcast.core.designsystem.components.BoxCastLoader.CircularWavy(
+                     cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader.CircularWavy(
                         modifier = Modifier.size(20.dp),
                         color = inactiveTint,
                         trackColor = inactiveTint.copy(alpha = 0.2f)

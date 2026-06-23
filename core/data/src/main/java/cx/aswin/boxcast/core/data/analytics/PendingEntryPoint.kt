@@ -8,7 +8,7 @@ package cx.aswin.boxcast.core.data.analytics
  * reliably preserved across Binder serialization. This singleton
  * provides a same-process shortcut: PlaybackRepository writes the
  * context before calling controller.play(), and
- * BoxCastPlaybackService consumes it in startPlaybackSession().
+ * BoxLorePlaybackService consumes it in startPlaybackSession().
  * 
  * Thread-safe via @Synchronized.
  */

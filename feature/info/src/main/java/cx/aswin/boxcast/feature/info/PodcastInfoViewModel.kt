@@ -61,7 +61,7 @@ class PodcastInfoViewModel(
         publicKey = publicKey,
         context = application
     )
-    private val database = cx.aswin.boxcast.core.data.database.BoxCastDatabase.getDatabase(application)
+    private val database = cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(application)
     private val subscriptionRepository = cx.aswin.boxcast.core.data.SubscriptionRepository(database.podcastDao())
 
     private val _uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Loading)
