@@ -306,7 +306,7 @@ private fun ConsentOptions(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 4.dp).clickable {
-                             try { uriHandler.openUri("https://aswin.cx/boxcast/privacy") } catch(_: Exception) {}
+                             try { uriHandler.openUri("https://aswin.cx/boxlore/privacy") } catch(_: Exception) {}
                         }
                     )
                 }

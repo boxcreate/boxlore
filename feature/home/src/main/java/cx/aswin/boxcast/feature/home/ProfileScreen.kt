@@ -526,7 +526,7 @@ fun PrivacySection(
             },
             modifier = Modifier.clickable {
                 cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("privacy_policy_clicked")
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aswin.cx/boxcast/privacy"))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aswin.cx/boxlore/privacy"))
                 try { context.startActivity(intent) } catch (_: Exception) {}
             }
         )

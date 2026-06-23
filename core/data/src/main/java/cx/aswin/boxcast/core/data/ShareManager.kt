@@ -16,8 +16,8 @@ object ShareManager {
     private val shareScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     fun sharePodcast(context: Context, podcast: Podcast) {
-        val shareUrl = "https://aswin.cx/boxcast/share?type=podcast&id=${podcast.id}"
-        val shareText = "*Listen to ${podcast.title} on boxcast*:\n$shareUrl"
+        val shareUrl = "https://aswin.cx/boxlore/share?type=podcast&id=${podcast.id}"
+        val shareText = "*Listen to ${podcast.title} on BoxLore*:\n$shareUrl"
         
         shareWithCompositeImage(
             context = context,
@@ -35,7 +35,7 @@ object ShareManager {
         startMs: Long? = null,
         endMs: Long? = null
     ) {
-        val baseUrl = "https://aswin.cx/boxcast/share?type=episode&id=${episode.id}"
+        val baseUrl = "https://aswin.cx/boxlore/share?type=episode&id=${episode.id}"
         
         val shareUrl = when {
             startMs != null && endMs != null -> {
@@ -57,7 +57,7 @@ object ShareManager {
             else -> ""
         }
 
-        val shareText = "*Listen to \"${episode.title}\" from $podcastTitle$timeSuffix on boxcast*:\n$shareUrl"
+        val shareText = "*Listen to \"${episode.title}\" from $podcastTitle$timeSuffix on BoxLore*:\n$shareUrl"
         
         shareWithCompositeImage(
             context = context,
