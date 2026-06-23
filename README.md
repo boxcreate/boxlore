@@ -81,17 +81,17 @@ Tired of clunky audio players, rigid grids, and missing out on trending shows? *
 
 <table>
   <tr>
-    <td><img src="images/playart_01.jpg" width="200" alt="Discover Podcasts"/></td>
-    <td><img src="images/playart_02.jpg" width="200" alt="Beautiful Player"/></td>
-    <td><img src="images/playart_03.jpg" width="200" alt="Your Library"/></td>
+    <td><img src="images/playart_01.png" width="200" alt="Your Library"/></td>
+    <td><img src="images/playart_02.png" width="200" alt="Minimal Material UI"/></td>
+    <td><img src="images/playart_03.png" width="200" alt="Explore & Discover"/></td>
   </tr>
 </table>
 
 
 <table>
   <tr>
-    <td><img src="images/playart_04.jpg" width="200" alt="Smart Search"/></td>
-    <td><img src="images/playart_05.jpg" width="200" alt="Material 3 Expressive"/></td>
+    <td><img src="images/playart_04.png" width="200" alt="Home Hub"/></td>
+    <td><img src="images/playart_05.png" width="200" alt="Beautiful Player"/></td>
   </tr>
 </table>
 
