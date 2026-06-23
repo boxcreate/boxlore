@@ -36,7 +36,7 @@ function generateAuthHeaders() {
     const hash = crypto.createHash('sha1').update(data4Hash).digest('hex');
 
     return {
-        "User-Agent": "BoxCast/1.0",
+        "User-Agent": "BoxLore/1.0",
         "X-Auth-Key": API_KEY,
         "X-Auth-Date": "" + apiHeaderTime,
         "Authorization": hash

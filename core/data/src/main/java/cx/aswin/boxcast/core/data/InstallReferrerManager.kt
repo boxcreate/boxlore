@@ -107,7 +107,7 @@ class InstallReferrerManager(private val context: Context) {
 
         // 1. Check Query parameter style: type=episode&id=123&t=45
         if (decoded.contains("type=") && (decoded.contains("id=") || decoded.contains("podcastId="))) {
-            val uri = android.net.Uri.parse("boxcast://share?$decoded")
+            val uri = android.net.Uri.parse("boxlore://share?$decoded")
             val type = uri.getQueryParameter("type")
             val id = uri.getQueryParameter("id") ?: uri.getQueryParameter("podcastId")
             if (type != null && id != null) {

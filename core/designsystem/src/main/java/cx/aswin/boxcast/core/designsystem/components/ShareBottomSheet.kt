@@ -213,9 +213,9 @@ private fun generateFinalLink(
     currentPositionMs: Long
 ): String {
     return if (type == "podcast") {
-        "https://aswin.cx/boxcast/share?type=podcast&id=$id"
+        "https://aswin.cx/boxlore/share?type=podcast&id=$id"
     } else {
-        val baseUrl = "https://aswin.cx/boxcast/share?type=episode&id=$id"
+        val baseUrl = "https://aswin.cx/boxlore/share?type=episode&id=$id"
         if (includeTimestamp && currentPositionMs > 0) {
             val tSec = currentPositionMs / 1000
             "$baseUrl&t=$tSec"

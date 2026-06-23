@@ -1562,7 +1562,9 @@ class MainActivity : ComponentActivity() {
                                     navArgument("query") { type = NavType.StringType; nullable = true; defaultValue = null }
                                 ),
                                 deepLinks = listOf(
+                                    navDeepLink { uriPattern = "boxlore://podcast/{podcastId}" },
                                     navDeepLink { uriPattern = "boxcast://podcast/{podcastId}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=podcast&id={podcastId}" },
                                     navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=podcast&id={podcastId}" }
                                 )
                             ) { backStackEntry ->
@@ -1772,9 +1774,15 @@ class MainActivity : ComponentActivity() {
                                     navArgument("end") { type = NavType.StringType; nullable = true; defaultValue = null }
                                 ),
                                 deepLinks = listOf(
+                                    navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}" },
+                                    navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}" },
+                                    navDeepLink { uriPattern = "boxlore://episode/{episodeId}" },
                                     navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&start={start}&end={end}" },
                                     navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}" },
                                     navDeepLink { uriPattern = "boxcast://episode/{episodeId}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}" },
+                                    navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}" },
                                     navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}" },
                                     navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}" },
                                     navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}" }
@@ -2457,7 +2465,7 @@ fun PlaceholderScreen(title: String) {
 @Composable
 fun Greeting(modifier: Modifier = Modifier) {
     Text(
-        text = "Box.Cast",
+        text = "Box.Lore",
         style = MaterialTheme.typography.displayLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier
