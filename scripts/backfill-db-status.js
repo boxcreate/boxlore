@@ -165,7 +165,7 @@ async function main() {
 
     // 3. Fetch all podcasts from Turso
     console.log("[DATABASE] Fetching all podcasts from Turso...");
-    const podcastsRes = await executeSQL("SELECT id, title, qdrant_vectorized, qdrant_podcast_vectorized FROM podcasts;");
+    const podcastsRes = await executeSQL("SELECT id, title, qdrant_vectorized, qdrant_podcast_vectorized, last_ep_sync FROM podcasts;");
     const rows = podcastsRes?.results?.[0]?.response?.result?.rows || [];
     console.log(`[DATABASE] Found ${rows.length} total podcasts in DB.`);
 
@@ -176,18 +176,32 @@ async function main() {
         const title = r[1].value || "Unknown";
         const currentVec = r[2].value ? parseInt(r[2].value) : 0;
         const currentPodVec = r[3].value ? parseInt(r[3].value) : 0;
+        const lastSync = r[4] && r[4].value ? parseInt(r[4].value) : null;
 
         const uuid = generateUUID(id);
 
         const shouldPodVec = qdrantPodcastsUuids.has(uuid) ? 1 : 0;
         const shouldVec = qdrantEpisodePodcastIds.has(id) ? 1 : 0;
 
+        let updateLastSync = null;
+        let needsUpdate = false;
+
         if (shouldVec !== currentVec || shouldPodVec !== currentPodVec) {
+            needsUpdate = true;
+        }
+
+        if (shouldVec === 1 && lastSync === null) {
+            updateLastSync = Date.now();
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
             updates.push({
                 id,
                 title,
                 qdrant_vectorized: shouldVec,
-                qdrant_podcast_vectorized: shouldPodVec
+                qdrant_podcast_vectorized: shouldPodVec,
+                updateLastSync
             });
         }
     }
@@ -204,8 +218,8 @@ async function main() {
     for (let i = 0; i < updates.length; i += BATCH_SIZE) {
         const chunk = updates.slice(i, i + BATCH_SIZE);
         const statements = chunk.map(u => ({
-            sql: "UPDATE podcasts SET qdrant_vectorized = ?, qdrant_podcast_vectorized = ? WHERE id = ?;",
-            args: [u.qdrant_vectorized, u.qdrant_podcast_vectorized, parseInt(u.id)]
+            sql: "UPDATE podcasts SET qdrant_vectorized = ?, qdrant_podcast_vectorized = ?, last_ep_sync = COALESCE(last_ep_sync, ?) WHERE id = ?;",
+            args: [u.qdrant_vectorized, u.qdrant_podcast_vectorized, u.updateLastSync, parseInt(u.id)]
         }));
         
         console.log(`[DATABASE] Executing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(updates.length / BATCH_SIZE)} (${chunk.length} updates)...`);
