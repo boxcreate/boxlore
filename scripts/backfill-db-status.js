@@ -69,6 +69,9 @@ async function executeBatch(statements) {
         type: "execute",
         stmt: { sql: stmt.sql, args: stmt.args.map(mapArgType) }
     }));
+    if (requests.length > 0) {
+        console.log("  [DEBUG] Sample request:", JSON.stringify(requests[0]));
+    }
     requests.push({ type: "close" });
 
     const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
