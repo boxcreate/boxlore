@@ -368,10 +368,13 @@ async function main() {
         console.log(`Filtering sync candidates for country: ${country}`);
     }
 
+    const limitIndex = process.argv.indexOf('--limit');
+    const limit = limitIndex !== -1 ? parseInt(process.argv[limitIndex + 1]) : 500;
     sql += `
         ORDER BY p.last_ep_sync ASC
-        LIMIT 500
+        LIMIT ?
     `;
+    args.push(limit);
 
     console.log("Fetching sync candidates...");
     const res = await executeSQL(sql, args);
