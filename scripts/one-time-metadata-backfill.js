@@ -251,8 +251,7 @@ async function main() {
                         latest_ep_transcripts = ?,
                         medium = ?,
                         vector = NULL,
-                        last_ep_sync = ?,
-                        qdrant_vectorized = 1
+                        last_ep_sync = ?
                     WHERE id = ?;
                 `, [
                     String(latestEp.id),
