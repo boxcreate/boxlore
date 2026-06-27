@@ -1,10 +1,15 @@
 {
-  "lastRun": "2026-06-27T16:21:31.400Z",
+  "lastRun": "2026-06-27T16:26:46.947Z",
   "podcasts": {
     "9926": {
       "lastEpisodeId": "56767913697",
       "lastEpisodeTitle": "The Mind-Bending MK Ultra Experiments of Dr Ewen Cameron",
       "lastCheckedAt": 1782577291933
+    },
+    "947138": {
+      "lastEpisodeId": "56759563861",
+      "lastEpisodeTitle": "Steam Machine is Perfect-ly Divisive!",
+      "lastCheckedAt": 1782577607306
     }
   }
 }
