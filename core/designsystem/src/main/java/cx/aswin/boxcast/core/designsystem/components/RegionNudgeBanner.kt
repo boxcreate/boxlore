@@ -53,11 +53,11 @@ fun RegionNudgeBanner(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
         border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+            width = 0.5.dp,
+            color = MaterialTheme.colorScheme.outlineVariant
         ),
         modifier = modifier
             .fillMaxWidth()

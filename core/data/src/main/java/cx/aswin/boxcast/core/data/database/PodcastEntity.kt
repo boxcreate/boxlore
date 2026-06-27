@@ -37,5 +37,6 @@ data class PodcastEntity(
     val isLocked: Boolean = false,
     
     // User listening style preference: "newest" / "oldest" / null (use type-based default)
-    val preferredSort: String? = null
+    val preferredSort: String? = null,
+    val notificationsEnabled: Boolean = false
 )

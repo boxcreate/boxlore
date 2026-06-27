@@ -45,6 +45,36 @@ class LibraryBackupManager(
         return gson.toJson(backup)
     }
 
+    suspend fun exportLibraryAsOpml(): String {
+        val subscriptions = subscriptionRepository.getAllSubscribedPodcasts().first()
+        val sb = StringBuilder()
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+        sb.append("<opml version=\"2.0\">\n")
+        sb.append("  <head>\n")
+        sb.append("    <title>Boxlore Subscriptions</title>\n")
+        sb.append("  </head>\n")
+        sb.append("  <body>\n")
+        sb.append("    <outline text=\"Subscriptions\" title=\"Subscriptions\">\n")
+        for (entity in subscriptions) {
+            val title = escapeXml(entity.title)
+            val feedUrl = escapeXml("https://api.aswin.cx/episodes?id=${entity.podcastId}")
+            sb.append("      <outline type=\"rss\" text=\"$title\" title=\"$title\" xmlUrl=\"$feedUrl\" />\n")
+        }
+        sb.append("    </outline>\n")
+        sb.append("  </body>\n")
+        sb.append("</opml>")
+        return sb.toString()
+    }
+
+    private fun escapeXml(input: String?): String {
+        if (input.isNullOrEmpty()) return ""
+        return input.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;")
+    }
+
     suspend fun importLibraryFromJson(jsonString: String): Int {
         return try {
             val backup = gson.fromJson(jsonString, BoxCastBackup::class.java)

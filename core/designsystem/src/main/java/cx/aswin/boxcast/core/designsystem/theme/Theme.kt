@@ -24,12 +24,20 @@ object SurfaceStyles {
     const val AMOLED = "amoled"
     const val PURE_WHITE = "purewhite"
     const val HIGH_CONTRAST = "highcontrast"
+    const val DYNAMIC_OLED_WHITE = "dynamic_oled_white"
+    const val CLASSIC_DYNAMIC = "classic_dynamic"
+    const val CLASSIC_DARK = "classic_dark"
+    const val CLASSIC_LIGHT = "classic_light"
 
     /** Display labels for the settings UI. */
     val entries = listOf(
-        Entry(STANDARD, "Standard", "Default Material You surfaces"),
-        Entry(AMOLED, "AMOLED Black", "Pure black · saves battery on OLED"),
-        Entry(PURE_WHITE, "Pure White", "Maximum brightness · clean look"),
+        Entry(CLASSIC_DYNAMIC, "Default", "Swaps dynamically between comfortable blackish in dark mode and whitish in light mode."),
+        Entry(STANDARD, "Material You", "Dynamic theme that adapts to your system wallpaper, or matches your selected custom accent color if dynamic color is disabled."),
+        Entry(CLASSIC_DARK, "Blackish", "Comfortable, non-pitch black dark gray background."),
+        Entry(CLASSIC_LIGHT, "Whitish", "Soft, comfortable off-white gray background."),
+        Entry(DYNAMIC_OLED_WHITE, "Dynamic", "Swaps dynamically between Pitch Black in dark mode and Pure White in light mode."),
+        Entry(AMOLED, "Pitch Black", "Forces pure battery-saving OLED pitch-black background."),
+        Entry(PURE_WHITE, "Pure White", "Forces clean, maximum-brightness white background."),
         Entry(HIGH_CONTRAST, "High Contrast", "Enhanced readability · bolder colors")
     )
 
@@ -41,18 +49,21 @@ fun BoxCastTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     themeBrand: String = "violet",
-    surfaceStyle: String = SurfaceStyles.STANDARD,
+    surfaceStyle: String = SurfaceStyles.CLASSIC_DYNAMIC,
     content: @Composable () -> Unit
 ) {
-    // AMOLED forces dark mode, Pure White forces light mode — ensures correct text contrast
+    // Determine effective darkTheme
     val effectiveDarkTheme = when (surfaceStyle) {
-        SurfaceStyles.AMOLED -> true
-        SurfaceStyles.PURE_WHITE -> false
+        SurfaceStyles.AMOLED, SurfaceStyles.CLASSIC_DARK -> true
+        SurfaceStyles.PURE_WHITE, SurfaceStyles.CLASSIC_LIGHT -> false
         else -> darkTheme
     }
 
+    // Determine effective dynamicColor. All themes support dynamic accent coloring if enabled.
+    val effectiveDynamicColor = dynamicColor
+
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        effectiveDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             val baseScheme = if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             // Apply surface style overrides to dynamic colors
@@ -83,9 +94,55 @@ fun BoxCastTheme(
 /**
  * Applies surface style overrides to an existing ColorScheme (used for dynamic color schemes).
  */
+private fun applyClassicOverrides(base: ColorScheme, isDark: Boolean): ColorScheme {
+    return if (isDark) {
+        base.copy(
+            background = Color(0xFF111316),
+            surface = Color(0xFF111316),
+            surfaceContainerLowest = Color(0xFF111316),
+            surfaceContainerLow = Color(0xFF181B20),
+            surfaceContainer = Color(0xFF181B20),
+            surfaceContainerHigh = Color(0xFF21252B),
+            surfaceContainerHighest = Color(0xFF21252B),
+            onBackground = Color(0xFFE8EAED),
+            onSurface = Color(0xFFE8EAED),
+            surfaceVariant = Color(0xFF181B20),
+            onSurfaceVariant = Color(0xFFA4AAB2),
+            outline = Color(0xFF2C313A),
+            outlineVariant = Color(0xFF2C313A),
+            tertiary = Color(0xFF4FB587),
+            tertiaryContainer = Color(0xFF1E352A),
+            onTertiaryContainer = Color(0xFF4FB587)
+        )
+    } else {
+        base.copy(
+            background = Color(0xFFF0EBE0),
+            surface = Color(0xFFF0EBE0),
+            surfaceContainerLowest = Color(0xFFFFFFFF),
+            surfaceContainerLow = Color(0xFFFBF8F1),
+            surfaceContainer = Color(0xFFFBF8F1),
+            surfaceContainerHigh = Color(0xFFFFFFFF),
+            surfaceContainerHighest = Color(0xFFFFFFFF),
+            onBackground = Color(0xFF211D15),
+            onSurface = Color(0xFF211D15),
+            surfaceVariant = Color(0xFFFBF8F1),
+            onSurfaceVariant = Color(0xFF5F5A50),
+            outline = Color(0xFFE6DFCF),
+            outlineVariant = Color(0xFFE6DFCF),
+            tertiary = Color(0xFF3E9B6E),
+            tertiaryContainer = Color(0xFFE8F5EE),
+            onTertiaryContainer = Color(0xFF3E9B6E)
+        )
+    }
+}
+
 private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: String): ColorScheme {
+    val style = if (surfaceStyle == SurfaceStyles.DYNAMIC_OLED_WHITE) {
+        if (isDark) SurfaceStyles.AMOLED else SurfaceStyles.PURE_WHITE
+    } else surfaceStyle
+
     return when {
-        surfaceStyle == SurfaceStyles.AMOLED && isDark -> base.copy(
+        style == SurfaceStyles.AMOLED && isDark -> base.copy(
             background = Color.Black,
             surface = Color.Black,
             surfaceContainerLowest = Color.Black,
@@ -94,7 +151,7 @@ private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: 
             surfaceContainerHigh = Color(0xFF1A1A1A),
             surfaceContainerHighest = Color(0xFF242424)
         )
-        surfaceStyle == SurfaceStyles.PURE_WHITE && !isDark -> base.copy(
+        style == SurfaceStyles.PURE_WHITE && !isDark -> base.copy(
             background = Color.White,
             surface = Color.White,
             surfaceContainerLowest = Color.White,
@@ -103,7 +160,7 @@ private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: 
             surfaceContainerHigh = Color(0xFFEEEEEE),
             surfaceContainerHighest = Color(0xFFE5E5E5)
         )
-        surfaceStyle == SurfaceStyles.HIGH_CONTRAST && isDark -> base.copy(
+        style == SurfaceStyles.HIGH_CONTRAST && isDark -> base.copy(
             background = Color(0xFF050505),
             surface = Color(0xFF050505),
             surfaceContainerLowest = Color(0xFF020202),
@@ -114,7 +171,7 @@ private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: 
             outline = base.outline.copy(alpha = 1f),
             primary = base.primary.saturate(1.3f)
         )
-        surfaceStyle == SurfaceStyles.HIGH_CONTRAST && !isDark -> base.copy(
+        style == SurfaceStyles.HIGH_CONTRAST && !isDark -> base.copy(
             background = Color.White,
             surface = Color.White,
             surfaceContainerLowest = Color.White,
@@ -125,7 +182,10 @@ private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: 
             outline = base.outline.copy(alpha = 1f),
             primary = base.primary.saturate(1.2f)
         )
-        else -> base
+        style == SurfaceStyles.STANDARD -> base
+        else -> {
+            applyClassicOverrides(base, isDark)
+        }
     }
 }
 
@@ -166,6 +226,11 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
         (baseSat * if (isDark) 1.3f else 1.2f).coerceIn(0.3f, 0.95f)
     } else baseSat
 
+    val isClassic = surfaceStyle == SurfaceStyles.CLASSIC_DYNAMIC ||
+                    surfaceStyle == SurfaceStyles.CLASSIC_DARK ||
+                    surfaceStyle == SurfaceStyles.CLASSIC_LIGHT
+    val contentSat = if (isClassic) 0f else sat
+
     // Surface lightness values vary by surface style
     val surfaceLevels = getSurfaceLevels(isDark, surfaceStyle, hue, sat)
 
@@ -184,13 +249,13 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
             tertiaryContainer = hslToColor(hue + 30f, sat * 0.5f, 0.25f),
             onTertiaryContainer = hslToColor(hue + 30f, sat * 0.3f, 0.9f),
             background = surfaceLevels.background,
-            onBackground = hslToColor(hue, sat * 0.1f, 0.90f),
+            onBackground = hslToColor(hue, contentSat * 0.1f, 0.90f),
             surface = surfaceLevels.surface,
-            onSurface = hslToColor(hue, sat * 0.1f, 0.90f),
-            surfaceVariant = hslToColor(hue, sat * 0.3f, 0.20f),
-            onSurfaceVariant = hslToColor(hue, sat * 0.2f, 0.75f),
-            outline = hslToColor(hue, sat * 0.25f, if (surfaceStyle == SurfaceStyles.HIGH_CONTRAST) 0.70f else 0.60f),
-            outlineVariant = hslToColor(hue, sat * 0.2f, 0.30f),
+            onSurface = hslToColor(hue, contentSat * 0.1f, 0.90f),
+            surfaceVariant = hslToColor(hue, contentSat * 0.3f, 0.20f),
+            onSurfaceVariant = hslToColor(hue, contentSat * 0.2f, 0.75f),
+            outline = hslToColor(hue, contentSat * 0.25f, if (surfaceStyle == SurfaceStyles.HIGH_CONTRAST) 0.70f else 0.60f),
+            outlineVariant = hslToColor(hue, contentSat * 0.2f, 0.30f),
             surfaceContainerLowest = surfaceLevels.containerLowest,
             surfaceContainerLow = surfaceLevels.containerLow,
             surfaceContainer = surfaceLevels.container,
@@ -212,13 +277,13 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
             tertiaryContainer = hslToColor(hue + 30f, sat * 0.5f, 0.9f),
             onTertiaryContainer = hslToColor(hue + 30f, sat * 0.4f, 0.15f),
             background = surfaceLevels.background,
-            onBackground = hslToColor(hue, sat * 0.1f, 0.10f),
+            onBackground = hslToColor(hue, contentSat * 0.1f, 0.10f),
             surface = surfaceLevels.surface,
-            onSurface = hslToColor(hue, sat * 0.1f, 0.10f),
-            surfaceVariant = hslToColor(hue, sat * 0.3f, 0.90f),
-            onSurfaceVariant = hslToColor(hue, sat * 0.2f, 0.30f),
-            outline = hslToColor(hue, sat * 0.25f, if (surfaceStyle == SurfaceStyles.HIGH_CONTRAST) 0.35f else 0.45f),
-            outlineVariant = hslToColor(hue, sat * 0.25f, 0.80f),
+            onSurface = hslToColor(hue, contentSat * 0.1f, 0.10f),
+            surfaceVariant = hslToColor(hue, contentSat * 0.3f, 0.90f),
+            onSurfaceVariant = hslToColor(hue, contentSat * 0.2f, 0.30f),
+            outline = hslToColor(hue, contentSat * 0.25f, if (surfaceStyle == SurfaceStyles.HIGH_CONTRAST) 0.35f else 0.45f),
+            outlineVariant = hslToColor(hue, contentSat * 0.25f, 0.80f),
             surfaceContainerLowest = surfaceLevels.containerLowest,
             surfaceContainerLow = surfaceLevels.containerLow,
             surfaceContainer = surfaceLevels.container,
@@ -246,9 +311,13 @@ private fun getSurfaceLevels(isDark: Boolean, surfaceStyle: String, hue: Float, 
         androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(h, s.coerceIn(0f, 1f), l.coerceIn(0f, 1f)))
     )
 
+    val style = if (surfaceStyle == SurfaceStyles.DYNAMIC_OLED_WHITE) {
+        if (isDark) SurfaceStyles.AMOLED else SurfaceStyles.PURE_WHITE
+    } else surfaceStyle
+
     return when {
         // AMOLED: Pure black background, near-black containers
-        surfaceStyle == SurfaceStyles.AMOLED && isDark -> SurfaceLevels(
+        style == SurfaceStyles.AMOLED && isDark -> SurfaceLevels(
             background = Color.Black,
             surface = Color.Black,
             containerLowest = Color.Black,
@@ -257,11 +326,11 @@ private fun getSurfaceLevels(isDark: Boolean, surfaceStyle: String, hue: Float, 
             containerHigh = hsl(hue, sat * 0.10f, 0.07f),
             containerHighest = hsl(hue, sat * 0.12f, 0.10f)
         )
-        // AMOLED in light mode: behave as standard
-        surfaceStyle == SurfaceStyles.AMOLED && !isDark -> getSurfaceLevels(isDark, SurfaceStyles.STANDARD, hue, sat)
+        // AMOLED in light mode: behave as classic dynamic (default)
+        style == SurfaceStyles.AMOLED && !isDark -> getSurfaceLevels(isDark, SurfaceStyles.CLASSIC_DYNAMIC, hue, sat)
 
         // Pure White: #FFFFFF background, near-white containers
-        surfaceStyle == SurfaceStyles.PURE_WHITE && !isDark -> SurfaceLevels(
+        style == SurfaceStyles.PURE_WHITE && !isDark -> SurfaceLevels(
             background = Color.White,
             surface = Color.White,
             containerLowest = Color.White,
@@ -270,11 +339,11 @@ private fun getSurfaceLevels(isDark: Boolean, surfaceStyle: String, hue: Float, 
             containerHigh = hsl(hue, sat * 0.10f, 0.93f),
             containerHighest = hsl(hue, sat * 0.12f, 0.89f)
         )
-        // Pure White in dark mode: behave as standard
-        surfaceStyle == SurfaceStyles.PURE_WHITE && isDark -> getSurfaceLevels(isDark, SurfaceStyles.STANDARD, hue, sat)
+        // Pure White in dark mode: behave as classic dynamic (default)
+        style == SurfaceStyles.PURE_WHITE && isDark -> getSurfaceLevels(isDark, SurfaceStyles.CLASSIC_DYNAMIC, hue, sat)
 
         // High Contrast Dark: deeper blacks, wider spread
-        surfaceStyle == SurfaceStyles.HIGH_CONTRAST && isDark -> SurfaceLevels(
+        style == SurfaceStyles.HIGH_CONTRAST && isDark -> SurfaceLevels(
             background = hsl(hue, sat * 0.05f, 0.03f),
             surface = hsl(hue, sat * 0.05f, 0.03f),
             containerLowest = hsl(hue, sat * 0.03f, 0.01f),
@@ -284,7 +353,7 @@ private fun getSurfaceLevels(isDark: Boolean, surfaceStyle: String, hue: Float, 
             containerHighest = hsl(hue, sat * 0.15f, 0.22f)
         )
         // High Contrast Light: pure white, wider spread
-        surfaceStyle == SurfaceStyles.HIGH_CONTRAST && !isDark -> SurfaceLevels(
+        style == SurfaceStyles.HIGH_CONTRAST && !isDark -> SurfaceLevels(
             background = Color.White,
             surface = Color.White,
             containerLowest = Color.White,
@@ -293,6 +362,31 @@ private fun getSurfaceLevels(isDark: Boolean, surfaceStyle: String, hue: Float, 
             containerHigh = hsl(hue, sat * 0.15f, 0.88f),
             containerHighest = hsl(hue, sat * 0.18f, 0.82f)
         )
+
+        // Classic styles: neutral grays (no tinting at all)
+        style == SurfaceStyles.CLASSIC_DYNAMIC || style == SurfaceStyles.CLASSIC_DARK || style == SurfaceStyles.CLASSIC_LIGHT -> {
+            if (isDark) {
+                SurfaceLevels(
+                    background = Color(0xFF111316),
+                    surface = Color(0xFF111316),
+                    containerLowest = Color(0xFF111316),
+                    containerLow = Color(0xFF181B20),
+                    container = Color(0xFF181B20),
+                    containerHigh = Color(0xFF21252B),
+                    containerHighest = Color(0xFF21252B)
+                )
+            } else {
+                SurfaceLevels(
+                    background = Color(0xFFF0EBE0),
+                    surface = Color(0xFFF0EBE0),
+                    containerLowest = Color(0xFFFFFFFF),
+                    containerLow = Color(0xFFFBF8F1),
+                    container = Color(0xFFFBF8F1),
+                    containerHigh = Color(0xFFFFFFFF),
+                    containerHighest = Color(0xFFFFFFFF)
+                )
+            }
+        }
 
         // Standard Dark
         isDark -> SurfaceLevels(

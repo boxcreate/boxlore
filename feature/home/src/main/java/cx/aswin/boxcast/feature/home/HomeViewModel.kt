@@ -194,6 +194,13 @@ class HomeViewModel(
     private val _becauseYouLikePodcasts = MutableStateFlow<List<Podcast>>(emptyList())
     private val _isBecauseYouLikeLoading = MutableStateFlow(false)
 
+    // Cached base data (For You)
+    private var cachedRegion: String? = null
+    private var cachedForYouTrending: List<Podcast> = emptyList()
+    private var cachedHeroItems: List<SmartHeroItem> = emptyList()
+    private var cachedTimeBlock: CuratedTimeBlock? = null
+    private var cachedLatestEpisodes: List<Podcast> = emptyList()
+
     private val userPrefs = cx.aswin.boxcast.core.data.UserPreferencesRepository(application)
 
     val candidatePodcasts: Flow<List<Podcast>> = combine(
@@ -269,6 +276,37 @@ class HomeViewModel(
             android.util.Log.e("HomeViewModel", "Failed to load cached because-you-like recommendations", e)
         }
 
+        // Load cached Curated Vibes synchronously
+        try {
+            val prefs = application.getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
+            val cachedVibesJson = prefs.getString("cached_curated_vibes", null)
+            if (cachedVibesJson != null) {
+                val json = Json { ignoreUnknownKeys = true }
+                val cachedVibesMap = json.decodeFromString<Map<String, List<Podcast>>>(cachedVibesJson)
+                val blockConfig = getTimeBlockConfig()
+                val daySeed = java.time.LocalDate.now().toEpochDay()
+                val resolvedSections = blockConfig.genres.map { genre ->
+                    val list = cachedVibesMap[genre.id] ?: emptyList()
+                    val filtered = list
+                        .filter { it.latestEpisode != null }
+                        .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
+                        .take(10)
+                    if (filtered.isNotEmpty()) {
+                        CuratedSectionData(genre.title, genre.id, filtered)
+                    } else null
+                }.filterNotNull()
+
+                if (resolvedSections.isNotEmpty()) {
+                    val block = CuratedTimeBlock(blockConfig.title, blockConfig.subtitle, blockConfig.icon, resolvedSections)
+                    _timeBlockState.value = block
+                    cachedTimeBlock = block
+                    _isCuratedLoaded.value = true
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Failed to load cached curated vibes", e)
+        }
+
         // Start oldest-sort serial episode resolution after a delay
         startOldestSortResolution()
 
@@ -298,13 +336,6 @@ class HomeViewModel(
     
     // Playback state to UI
     val playerState = playbackRepository.playerState
-    
-    // Cached base data (For You)
-    private var cachedRegion: String? = null
-    private var cachedForYouTrending: List<Podcast> = emptyList()
-    private var cachedHeroItems: List<SmartHeroItem> = emptyList()
-    private var cachedTimeBlock: CuratedTimeBlock? = null
-    private var cachedLatestEpisodes: List<Podcast> = emptyList()
     
     // Curated impression dedup — prevents LazyGrid recomposition from re-firing
     private var hasFiredCuratedImpression = false
@@ -588,6 +619,7 @@ class HomeViewModel(
     }
 
     init {
+        android.util.Log.d("BoxCastPerf", "PERF: HomeViewModel init started")
         observeSelectedPodcast()
         loadData()
         startBackgroundSync()
@@ -638,6 +670,7 @@ class HomeViewModel(
 
     private fun loadData() {
         viewModelScope.launch {
+            android.util.Log.d("BoxCastPerf", "PERF: HomeViewModel.loadData launch block started")
             // Seed the WAS_INITIAL_REGION_MATCH if not set yet
             val systemCountry = java.util.Locale.getDefault().country.lowercase().let {
                 if (it == "us" || it == "in" || it == "gb" || it == "uk" || it == "fr") it else "us"
@@ -647,11 +680,13 @@ class HomeViewModel(
                 val isMatch = (systemCountry == currentReg)
                 userPrefs.setWasInitialRegionMatch(isMatch)
             }
+            android.util.Log.d("BoxCastPerf", "PERF: Initial region checks completed")
 
             // --- BASE DATA FLOW (Restarts when Region or dismissal changes) ---
             userPrefs.regionStream
                 .distinctUntilChanged()
                 .collectLatest { region ->
+                android.util.Log.d("BoxCastPerf", "PERF: regionStream emitted region=$region")
                 if (cachedRegion != region) {
                     cachedRegion = region
                     cachedForYouTrending = emptyList()
@@ -674,13 +709,13 @@ class HomeViewModel(
                 val fastJob = launch {
                     _isTrendingLoaded.value = false
                     try {
-                        android.util.Log.d("BoxCastTiming", "VM: Fast Home screen load via Bootstrap API (trending & briefing) for region=$region")
+                        android.util.Log.d("BoxCastPerf", "PERF: Fast Bootstrap API call starting for region=$region")
                         
-                        val bootstrapData = podcastRepository.getHomeBootstrapData(
-                            country = region,
-                            vibeIds = emptyList() // No vibes in fast path
+                        val bootstrapData = podcastRepository.getHomeBootstrapDataFast(
+                            country = region
                         )
                         
+                        android.util.Log.d("BoxCastPerf", "PERF: Fast Bootstrap API call returned data successfully")
                         _briefingState.value = bootstrapData.briefing
                         _briefingChaptersState.value = bootstrapData.briefingChapters
                         trendingState.value = bootstrapData.trending
@@ -689,60 +724,20 @@ class HomeViewModel(
                         android.util.Log.e("BoxCastTiming", "VM: Fast Bootstrap API load failed", e)
                     } finally {
                         _isTrendingLoaded.value = true
+                        android.util.Log.d("BoxCastPerf", "PERF: _isTrendingLoaded set to TRUE")
                     }
                 }
 
-                // 2. Background Personalized Call (Vibes & Recommendations)
+                // 2. Independent Curated Vibes Call (Fast GET)
                 launch {
-                    // Wait for the fast path request to complete first
-                    fastJob.join()
-                    
-                    _isCuratedLoaded.value = false
-                    _isRecommendationsLoaded.value = false
                     try {
-                        android.util.Log.d("BoxCastTiming", "VM: Background personalized Home screen load via Bootstrap API for region=$region")
-                        
-                        val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
-                        val interests = prefs.getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
-                        
-                        val historyDeferred = async { playbackRepository.getHistoryForRecommendations(15) }
-                        val subscribedIdsDeferred = async { subscriptionRepository.subscribedPodcastIds.first().toList() }
-                        val subscribedPodcastsDeferred = async { subscriptionRepository.subscribedPodcasts.first() }
-                        
-                        val history = historyDeferred.await()
-                        val subscribedIds = subscribedIdsDeferred.await()
-                        val subscribedPodcasts = subscribedPodcastsDeferred.await()
-                        val subscribedGenres = subscribedPodcasts.mapNotNull { it.genre }.distinct()
-                        
                         val blockConfig = getTimeBlockConfig()
                         val vibeIds = blockConfig.genres.map { it.id }
+                        val curatedVibesMap = podcastRepository.getCuratedVibes(vibeIds, region)
                         
-                        val bootstrapData = podcastRepository.getHomeBootstrapData(
-                            country = region,
-                            vibeIds = vibeIds,
-                            history = history,
-                            interests = interests,
-                            subscribedPodcastIds = subscribedIds,
-                            subscribedGenres = subscribedGenres
-                        )
-                        
-                        // Recommendations
-                        val distinctRecs = bootstrapData.recommendations
-                            .distinctBy { it.id }
-                            .distinctBy { it.title.lowercase().trim() }
-                        _recommendations.value = distinctRecs
-                        try {
-                            val json = Json { ignoreUnknownKeys = true }
-                            val serialized = json.encodeToString(distinctRecs)
-                            prefs.edit().putString("cached_recommendations", serialized).apply()
-                        } catch (ce: Exception) {
-                            android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
-                        }
-                        
-                        // Curated Vibes
                         val daySeed = java.time.LocalDate.now().toEpochDay()
                         val resolvedSections = blockConfig.genres.map { genre ->
-                            val list = bootstrapData.curatedVibes[genre.id] ?: emptyList()
+                            val list = curatedVibesMap[genre.id] ?: emptyList()
                             val filtered = list
                                 .filter { it.latestEpisode != null }
                                 .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
@@ -759,10 +754,63 @@ class HomeViewModel(
                         _timeBlockState.value = block
                         cachedTimeBlock = block
                         
+                        try {
+                            val json = Json { ignoreUnknownKeys = true }
+                            val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
+                            val serializedVibes = json.encodeToString(curatedVibesMap)
+                            prefs.edit().putString("cached_curated_vibes", serializedVibes).apply()
+                        } catch (ce: Exception) {
+                            android.util.Log.e("HomeViewModel", "Failed to cache curated vibes", ce)
+                        }
                     } catch (e: Exception) {
-                        android.util.Log.e("BoxCastTiming", "VM: Background Bootstrap API load failed", e)
+                        android.util.Log.e("BoxCastTiming", "VM: Curated Vibes load failed", e)
                     } finally {
                         _isCuratedLoaded.value = true
+                    }
+                }
+
+                // 3. Background Personalized Recommendations Call
+                launch {
+                    fastJob.join()
+                    _isRecommendationsLoaded.value = false
+                    try {
+                        android.util.Log.d("BoxCastTiming", "VM: Background personalized Home screen load for region=$region")
+                        
+                        val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
+                        val interests = prefs.getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
+                        
+                        val historyDeferred = async { playbackRepository.getHistoryForRecommendations(15) }
+                        val subscribedIdsDeferred = async { subscriptionRepository.subscribedPodcastIds.first().toList() }
+                        val subscribedPodcastsDeferred = async { subscriptionRepository.subscribedPodcasts.first() }
+                        
+                        val history = historyDeferred.await()
+                        val subscribedIds = subscribedIdsDeferred.await()
+                        val subscribedPodcasts = subscribedPodcastsDeferred.await()
+                        val subscribedGenres = subscribedPodcasts.mapNotNull { it.genre }.distinct()
+                        
+                        val bootstrapData = podcastRepository.getHomeBootstrapData(
+                            country = region,
+                            vibeIds = emptyList(),
+                            history = history,
+                            interests = interests,
+                            subscribedPodcastIds = subscribedIds,
+                            subscribedGenres = subscribedGenres
+                        )
+                        
+                        val distinctRecs = bootstrapData.recommendations
+                            .distinctBy { it.id }
+                            .distinctBy { it.title.lowercase().trim() }
+                        _recommendations.value = distinctRecs
+                        try {
+                            val json = Json { ignoreUnknownKeys = true }
+                            val serialized = json.encodeToString(distinctRecs)
+                            prefs.edit().putString("cached_recommendations", serialized).apply()
+                        } catch (ce: Exception) {
+                            android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("BoxCastTiming", "VM: Recommendations load failed", e)
+                    } finally {
                         _isRecommendationsLoaded.value = true
                     }
                 }
@@ -1647,9 +1695,9 @@ class HomeViewModel(
                 subtitle = if(isWeekend) "Catch up on the week." else "Start your day with these updates.",
                 icon = Icons.Rounded.WbSunny,
                 genres = listOf(
-                    GenreConfig("morning_news", "Top News"),
-                    GenreConfig("morning_motivation", "Daily Motivation"), 
-                    GenreConfig("business_insider", "Business & Tech")
+                    GenreConfig("morning_news", "Global Headlines & Politics"),
+                    GenreConfig("morning_motivation", "Ideas, Culture & Reflections"), 
+                    GenreConfig("business_insider", "Markets, Tech & Business")
                 )
             )
             in 12..16 -> TimeBlockConfig(
@@ -1657,9 +1705,9 @@ class HomeViewModel(
                 subtitle = "Smart conversations to keep you going.",
                 icon = Icons.Rounded.WbSunny,
                 genres = listOf(
-                    GenreConfig("science_explainer", "Science & Discovery"),
-                    GenreConfig("tech_culture", "Tech & Gadgets"),
-                    GenreConfig("creative_focus", "Creative Focus")
+                    GenreConfig("science_explainer", "Science, Cosmos & Exploration"),
+                    GenreConfig("tech_culture", "Digital Culture & Emerging Tech"),
+                    GenreConfig("creative_focus", "Design, Art & Creative Practice")
                 )
             )
             in 17..22 -> TimeBlockConfig(
@@ -1667,9 +1715,9 @@ class HomeViewModel(
                 subtitle = if(isFriday) "Kick off the weekend." else "Relax, laugh, and catch up.",
                 icon = Icons.Rounded.WbTwilight,
                 genres = listOf(
-                    GenreConfig("comedy_gold", "Comedy Gold"),
-                    GenreConfig("tv_film_buff", "TV & Film"),
-                    GenreConfig("sports_fan", "Sports Highlights")
+                    GenreConfig("comedy_gold", "Satire, Comedy & Conversation"),
+                    GenreConfig("tv_film_buff", "Pop Culture, Film & Television"),
+                    GenreConfig("sports_fan", "Sports Culture & Field Analysis")
                 )
             )
             else -> TimeBlockConfig(
@@ -1677,9 +1725,9 @@ class HomeViewModel(
                 subtitle = "Stories for the dark hours.",
                 icon = Icons.Rounded.NightsStay,
                 genres = listOf(
-                    GenreConfig("true_crime_sleep", "True Crime & Chill"),
-                    GenreConfig("history_buff", "History"),
-                    GenreConfig("mystery_thriller", "Mystery & Thrillers")
+                    GenreConfig("true_crime_sleep", "True Crime & Investigative Files"),
+                    GenreConfig("history_buff", "Historical Narratives & Chronicles"),
+                    GenreConfig("mystery_thriller", "Suspense, Thrillers & Drama")
                 )
             )
         }

@@ -91,7 +91,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -104,6 +106,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Velocity
 import cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.EpisodeStatus
@@ -211,7 +214,7 @@ fun YourShowsSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 8.dp),
+                .padding(top = 0.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -284,7 +287,7 @@ fun YourShowsSection(
         // --- The Selector Grid ---
         if (subscribedPodcasts.size <= 4) {
             LazyRow(
-                contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                contentPadding = PaddingValues(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -332,7 +335,7 @@ fun YourShowsSection(
                     .padding(bottom = 16.dp)
             ) {
                 val containerWidth = maxWidth
-                val availableWidth = containerWidth - 16.dp
+                val availableWidth = containerWidth - 8.dp
                 
                 val itemSize = remember(availableWidth) {
                     val minSpacing = 6.dp
@@ -354,11 +357,11 @@ fun YourShowsSection(
                 }
 
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(calculatedSpacing),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -393,7 +396,7 @@ fun YourShowsSection(
                         }
                     }
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(calculatedSpacing),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -425,7 +428,7 @@ fun YourShowsSection(
         } else {
             LazyHorizontalGrid(
                 rows = GridCells.Fixed(2),
-                contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                contentPadding = PaddingValues(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
@@ -471,7 +474,6 @@ fun YourShowsSection(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
                 .animateContentSize() // Animates height changes smoothly with a spring curve!
         ) {
             AnimatedContent(
@@ -488,100 +490,148 @@ fun YourShowsSection(
                     val displayList = latestEpisodes
 
                     if (displayList.isNotEmpty()) {
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f),
-                                            MaterialTheme.colorScheme.surfaceContainerLow
-                                        )
-                                    )
-                                )
                                 .padding(vertical = 16.dp)
                         ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 18.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                // Overlapping artwork stack on the left representing the mix inside expressive shapes
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 18.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                        .width(84.dp)
+                                        .height(44.dp),
+                                    contentAlignment = Alignment.CenterStart
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Rounded.QueueMusic,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                            Text(
-                                                text = "Up Next",
-                                                style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    letterSpacing = (-0.5).sp,
-                                                    fontSize = 21.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
+                                    val uniqueImages = displayList
+                                        .mapNotNull { podcast ->
+                                            val url = podcast.imageUrl?.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl
+                                            url?.takeIf { it.isNotEmpty() }
                                         }
-                                    }
+                                        .distinct()
+                                        .take(5)
+                                    val numImages = uniqueImages.size
+                                    // Reverse so the first image (index 0) is drawn last (on top)
+                                    uniqueImages.reversed().forEachIndexed { index, imageUrl ->
+                                        val stackIndex = numImages - 1 - index
+                                        val shape = when (stackIndex) {
+                                            0 -> ExpressiveShapes.Circle
+                                            1 -> ExpressiveShapes.Puffy
+                                            2 -> ExpressiveShapes.Diamond
+                                            3 -> ExpressiveShapes.Cookie12
+                                            else -> ExpressiveShapes.Burst
+                                        }
+                                        val xOffset = (stackIndex * 10).dp
+                                        val yOffset = when (stackIndex) {
+                                            1 -> 2.dp
+                                            2 -> (-2).dp
+                                            3 -> 3.dp
+                                            4 -> (-3).dp
+                                            else -> 0.dp
+                                        }
+                                        val rotationVal = when (stackIndex) {
+                                            1 -> -6f
+                                            2 -> 6f
+                                            3 -> -10f
+                                            4 -> 10f
+                                            else -> 0f
+                                        }
+                                        val scaleVal = 1f - (stackIndex * 0.06f)
 
-                                    if (unplayedEpisodeCount > 0) {
-                                        Button(
-                                            onClick = onPlayMix,
-                                            shape = CircleShape,
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.primary,
-                                                contentColor = MaterialTheme.colorScheme.onPrimary
-                                            ),
-                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(38.dp)
+                                        OptimizedImage(
+                                            url = imageUrl,
+                                            proxyWidth = 88,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .zIndex(5f - stackIndex)
+                                                .graphicsLayer {
+                                                    translationX = xOffset.toPx()
+                                                    translationY = yOffset.toPx()
+                                                    rotationZ = rotationVal
+                                                    scaleX = scaleVal
+                                                    scaleY = scaleVal
+                                                }
+                                                .clip(shape)
+                                                .border(2.dp, MaterialTheme.colorScheme.surfaceContainerLow, shape)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                if (unplayedEpisodeCount > 0) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(42.dp)
+                                            .expressiveClickable(onClick = onPlayMix)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 20.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Rounded.PlayArrow,
-                                                contentDescription = "Play All",
+                                                contentDescription = "Play Mix",
                                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(20.dp)
                                             )
-                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = "Play All",
+                                                text = "Play My Daily Mix",
                                                 style = MaterialTheme.typography.labelLarge.copy(
-                                                    fontWeight = FontWeight.ExtraBold,
+                                                    fontFamily = SectionHeaderFontFamily,
+                                                    fontWeight = FontWeight.Bold,
                                                     letterSpacing = 0.2.sp
-                                                )
+                                                ),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
                                     }
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 18.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    items(displayList, key = { it.latestEpisode?.id ?: it.id }) { podcast ->
-                                        val episode = podcast.latestEpisode!!
-                                        val state = episodePlaybackState[episode.id]
-                                        MixtapeEpisodeCard(
-                                            episode = episode,
-                                            podcast = podcast,
-                                            onClick = { onEpisodeClick(episode, podcast, "home_mixtape_episodes") },
-                                            onPlay = { onPlayEpisode(episode, podcast) },
-                                            overrideStatus = state?.first,
-                                            overrideProgress = state?.second,
-                                            currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                            isPlaying = isPlaying
-                                        )
-                                    }
+                            androidx.compose.material3.HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(horizontal = 18.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 18.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(displayList, key = { it.latestEpisode?.id ?: it.id }) { podcast ->
+                                    val episode = podcast.latestEpisode!!
+                                    val state = episodePlaybackState[episode.id]
+                                    MixtapeEpisodeCard(
+                                        episode = episode,
+                                        podcast = podcast,
+                                        onClick = { onEpisodeClick(episode, podcast, "home_mixtape_episodes") },
+                                        onPlay = { onPlayEpisode(episode, podcast) },
+                                        overrideStatus = state?.first,
+                                        overrideProgress = state?.second,
+                                        currentPlayingEpisodeId = currentPlayingEpisodeId,
+                                        isPlaying = isPlaying
+                                    )
                                 }
                             }
                         }
@@ -1172,11 +1222,11 @@ private fun MixtapeEpisodeCard(
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.85f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
         modifier = modifier
-            .width(280.dp)
+            .width(240.dp)
             .height(96.dp)
             .expressiveClickable(onClick = onClick)
     ) {

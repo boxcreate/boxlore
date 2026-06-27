@@ -47,7 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import coil.compose.AsyncImage
+import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.model.Episode
 import kotlinx.coroutines.launch
 
@@ -79,8 +79,9 @@ fun MiniPlayerContent(
         ) {
             // Album art - circular with fallback to podcast image
             val imageUrl = episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcastImageUrl
-            AsyncImage(
-                model = imageUrl,
+            OptimizedImage(
+                url = imageUrl,
+                proxyWidth = 88, // 44.dp * 2 for retina sharpness
                 contentDescription = "Album art",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

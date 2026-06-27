@@ -92,7 +92,7 @@ fun TimeBlockSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 12.dp)
+                .padding(top = 0.dp, bottom = 8.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -133,7 +133,10 @@ fun TimeBlockSection(
                 val icon = getGenreStyle(section.category)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 14.dp) // Premium breathing room!
+                    modifier = Modifier.padding(
+                        top = if (index == 0) 8.dp else 16.dp,
+                        bottom = 8.dp
+                    )
                 ) {
                     // Clean, standard floating icon matching Discover & OnTheRise section headers exactly
                     Icon(
@@ -148,6 +151,7 @@ fun TimeBlockSection(
                     Text(
                         text = section.title,
                         style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = (-0.1).sp
                         ),
@@ -185,10 +189,6 @@ fun TimeBlockSection(
                         }
                     }
                 }
-            }
-            
-            if (index < data.sections.size - 1) {
-                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }

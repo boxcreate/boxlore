@@ -24,6 +24,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,6 +72,7 @@ import cx.aswin.boxcast.core.designsystem.theme.contrastColor
 import cx.aswin.boxcast.core.designsystem.theme.m3Shimmer
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
@@ -1105,6 +1107,8 @@ fun PodcastInfoScreen(
                             isSubscribed = state.isSubscribed,
                             onSubscribeClick = { viewModel.toggleSubscription() },
                             accentColor = accentColor,
+                            notificationsEnabled = state.podcast.notificationsEnabled,
+                            onNotificationsToggle = { viewModel.toggleNotifications() },
                             genre = state.podcast.genre,
                             onSearchFocused = { isSearchActive = true }
                         )
@@ -1633,15 +1637,16 @@ fun EpisodeListItem(
     modifier: Modifier = Modifier
 ) {
     LogRecomposition(name = "EpisodeListItem")
-    androidx.compose.material3.ElevatedCard(
+    androidx.compose.material3.OutlinedCard(
         modifier = modifier
             .fillMaxWidth()
             .expressiveClickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
-        colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
+        colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = androidx.compose.material3.CardDefaults.outlinedCardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier.padding(14.dp) // Generous padding inside the card
@@ -1895,6 +1900,8 @@ private fun EpisodeToolbar(
     isSubscribed: Boolean,
     onSubscribeClick: () -> Unit,
     accentColor: Color,
+    notificationsEnabled: Boolean = false,
+    onNotificationsToggle: () -> Unit = {},
     genre: String = "",
     onSearchFocused: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -2084,6 +2091,55 @@ private fun EpisodeToolbar(
                         }
                     }
                 }
+            }
+        }
+
+        if (celebrationPhase == 2) {
+            // Notification Toggle Button (Bell icon)
+            val bellInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            val isBellPressed by bellInteractionSource.collectIsPressedAsState()
+            val bellScale by animateFloatAsState(
+                targetValue = if (isBellPressed) 0.9f else 1f,
+                animationSpec = if (isBellPressed) cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion.QuickSpring else cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion.BouncySpring,
+                label = "bellScale"
+            )
+
+            val bellContainerColor by animateColorAsState(
+                targetValue = if (notificationsEnabled) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerLow
+                },
+                animationSpec = tween(300),
+                label = "bellContainerColor"
+            )
+
+            val bellContentColor by animateColorAsState(
+                targetValue = if (notificationsEnabled) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                animationSpec = tween(300),
+                label = "bellContentColor"
+            )
+
+            IconButton(
+                onClick = onNotificationsToggle,
+                modifier = Modifier
+                    .size(48.dp)
+                    .graphicsLayer {
+                        scaleX = bellScale
+                        scaleY = bellScale
+                    }
+                    .background(bellContainerColor, ExpressiveShapes.Pill)
+            ) {
+                Icon(
+                    imageVector = if (notificationsEnabled) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsNone,
+                    contentDescription = "Toggle notifications",
+                    tint = bellContentColor,
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
 
@@ -2358,14 +2414,16 @@ fun SingleTrailerCard(
         val isPlaying = playState?.isPlaying == true
         val isResume = playState?.isResume == true
 
-        ElevatedCard(
+        OutlinedCard(
             modifier = modifier
                 .fillMaxWidth()
                 .expressiveClickable { onEpisodeClick(episode, globalIndex) },
             shape = MaterialTheme.shapes.large,
-            colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
+            colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-            )
+            ),
+            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+            elevation = androidx.compose.material3.CardDefaults.outlinedCardElevation(defaultElevation = 1.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -2449,14 +2507,16 @@ fun TrailerStackCard(
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     
-    ElevatedCard(
+    OutlinedCard(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
         shape = MaterialTheme.shapes.large,
-        colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
+        colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+        ),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = androidx.compose.material3.CardDefaults.outlinedCardElevation(defaultElevation = 1.dp)
     ) {
         Column {
             // Header Row (Always visible)
@@ -2594,7 +2654,8 @@ private fun RecommendedPodcastCard(
                 onPodcastClick(targetId)
             },
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),

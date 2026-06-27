@@ -368,13 +368,13 @@ fun ExpressiveSolarSystemEmptyState(
     title: String = "Your library is empty",
     description: String = "It's a big universe out there.\nStart exploring.",
     icon: ImageVector = Icons.Rounded.AutoAwesome,
-    actionText: String = "Go Explore",
-    onExploreClick: () -> Unit
+    actionText: String? = "Go Explore",
+    modifier: Modifier = Modifier.verticalScroll(rememberScrollState()),
+    onExploreClick: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp)
             .padding(bottom = 150.dp, top = 32.dp), // Extra bottom padding to avoid mini player
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -398,20 +398,28 @@ fun ExpressiveSolarSystemEmptyState(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        Button(
-            onClick = onExploreClick,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            modifier = Modifier
-                .height(56.dp)
-                .expressiveClickable(onClick = onExploreClick)
-        ) {
-            Text(
-                text = actionText, 
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+        if (!actionText.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            Box(
+                modifier = Modifier
+                    .height(56.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 48.dp)
+                    .expressiveClickable(
+                        shape = RoundedCornerShape(28.dp),
+                        onClick = onExploreClick
+                    )
+                    .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(28.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = actionText, 
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

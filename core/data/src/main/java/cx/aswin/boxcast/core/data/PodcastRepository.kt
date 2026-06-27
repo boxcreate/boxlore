@@ -9,6 +9,8 @@ import cx.aswin.boxcast.core.model.Chapter
 import cx.aswin.boxcast.core.network.BoxLoreApi
 import cx.aswin.boxcast.core.network.NetworkModule
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import com.google.gson.Gson
@@ -716,6 +718,28 @@ class PodcastRepository(
         )
     }
 
+    suspend fun getHomeBootstrapDataFast(country: String): HomeBootstrapData = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getHomeBootstrapGet(publicKey, country).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                val trendingList = body.trending.map { mapToPodcast(it) }
+                HomeBootstrapData(
+                    briefing = body.briefing,
+                    briefingChapters = body.briefingChapters,
+                    trending = trendingList,
+                    curatedVibes = emptyMap(),
+                    recommendations = emptyList()
+                )
+            } else {
+                HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PodcastRepository", "getHomeBootstrapDataFast failed", e)
+            HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
+        }
+    }
+
     suspend fun getHomeBootstrapData(
         country: String,
         vibeIds: List<String>,
@@ -789,6 +813,24 @@ class PodcastRepository(
             android.util.Log.e("PodcastRepository", "getHomeBootstrapData failed", e)
             HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
         }
+    }
+
+    suspend fun getCuratedVibes(vibeIds: List<String>, country: String): Map<String, List<Podcast>> = withContext(Dispatchers.IO) {
+        val result = java.util.concurrent.ConcurrentHashMap<String, List<Podcast>>()
+        vibeIds.map { vibeId ->
+            async {
+                try {
+                    val resp = api.getCuratedVibe(publicKey, vibeId, country).execute()
+                    if (resp.isSuccessful && resp.body() != null) {
+                        val pods = resp.body()!!.feeds.map { mapToPodcast(it) }
+                        result[vibeId] = pods
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("PodcastRepository", "Failed to fetch vibe $vibeId", e)
+                }
+            }
+        }.awaitAll()
+        result
     }
 
     companion object {

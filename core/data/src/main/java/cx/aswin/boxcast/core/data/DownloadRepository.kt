@@ -72,7 +72,7 @@ class DownloadRepository(
         })
     }
 
-    fun addDownload(episode: Episode, podcast: Podcast) {
+    fun addDownload(episode: Episode, podcast: Podcast, isSmartDownloaded: Boolean = false) {
         val downloadRequest = DownloadRequest.Builder(episode.id, android.net.Uri.parse(episode.audioUrl))
             .setCustomCacheKey(episode.id)
             .setData(
@@ -108,7 +108,8 @@ class DownloadRepository(
                     downloadId = 0,
                     downloadedAt = System.currentTimeMillis(),
                     sizeBytes = 0,
-                    status = DownloadedEpisodeEntity.STATUS_DOWNLOADING
+                    status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
+                    isSmartDownloaded = isSmartDownloaded
                 )
                 database.downloadedEpisodeDao().insert(entity)
                 android.util.Log.d("DownloadRepo", "Optimistic insert successful for ${episode.id}")
@@ -155,9 +156,13 @@ class DownloadRepository(
         private fun createDownloadManager(context: Context): DownloadManager {
             val databaseProvider = getDatabaseProvider(context)
             val cache = getDownloadCache(context)
-            val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+            val httpDataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
                 .setUserAgent(androidx.media3.common.util.Util.getUserAgent(context, "BoxLore"))
                 .setAllowCrossProtocolRedirects(true)
+
+            val dataSourceFactory = androidx.media3.datasource.DataSource.Factory {
+                ThrottlingDataSource(httpDataSourceFactory.createDataSource())
+            }
             
             return DownloadManager(
                 context,

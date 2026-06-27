@@ -7,6 +7,7 @@ import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
+import cx.aswin.boxcast.core.model.Episode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
@@ -262,5 +263,45 @@ class LibraryViewModel(
         )
         hasTrackedExit = true
         sessionStartTime = 0L
+    }
+
+    fun removeDownload(episodeId: String) {
+        viewModelScope.launch {
+            genericItemsRemovedCount++
+            downloadRepository.removeDownload(episodeId)
+        }
+    }
+
+    fun removeMultipleDownloads(episodeIds: List<String>) {
+        viewModelScope.launch {
+            genericItemsRemovedCount += episodeIds.size
+            episodeIds.forEach { id ->
+                downloadRepository.removeDownload(id)
+            }
+        }
+    }
+
+    fun playEpisode(episode: Episode, podcast: Podcast) {
+        viewModelScope.launch {
+            playbackRepository.playEpisode(episode, podcast)
+        }
+    }
+
+    fun addToQueue(episode: Episode, podcast: Podcast) {
+        viewModelScope.launch {
+            playbackRepository.addToQueue(episode, podcast)
+        }
+    }
+
+    fun addToQueueNext(episode: Episode, podcast: Podcast) {
+        viewModelScope.launch {
+            playbackRepository.addToQueueNext(episode, podcast)
+        }
+    }
+
+    fun playQueue(episodes: List<Episode>, podcast: Podcast) {
+        viewModelScope.launch {
+            playbackRepository.playQueue(episodes, podcast)
+        }
     }
 }

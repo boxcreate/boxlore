@@ -40,7 +40,8 @@ class SubscriptionRepository(
                     location = entity.location,
                     license = entity.license,
                     isLocked = entity.isLocked,
-                    preferredSort = entity.preferredSort
+                    preferredSort = entity.preferredSort,
+                    notificationsEnabled = entity.notificationsEnabled
                 )
             }
         }
@@ -52,9 +53,10 @@ class SubscriptionRepository(
         if (isCurrentlySubscribed) {
             // Unsubscribe
             existing?.let {
-                val updated = it.copy(isSubscribed = false, subscribedAt = 0L)
+                val updated = it.copy(isSubscribed = false, subscribedAt = 0L, notificationsEnabled = false)
                 podcastDao.upsert(updated)
             } ?: podcastDao.setSubscribed(podcast.id, false)
+            updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
         } else {
             // Subscribe (Upsert to ensure we have data for offline/Jump Back In)
             val entity = PodcastEntity(
@@ -83,7 +85,8 @@ class SubscriptionRepository(
                 location = podcast.location,
                 license = podcast.license,
                 isLocked = podcast.isLocked,
-                preferredSort = existing?.preferredSort // Preserve existing sort preference
+                preferredSort = existing?.preferredSort, // Preserve existing sort preference
+                notificationsEnabled = false // Off by default
             )
             podcastDao.upsert(entity)
         }
@@ -123,9 +126,39 @@ class SubscriptionRepository(
             location = existing?.location ?: podcast.location,
             license = existing?.license ?: podcast.license,
             isLocked = existing?.isLocked ?: podcast.isLocked,
-            preferredSort = preferredSortVal
+            preferredSort = preferredSortVal,
+            notificationsEnabled = false // Off by default
         )
         podcastDao.upsert(entity)
+    }
+
+    suspend fun setNotificationsEnabled(podcast: Podcast, enabled: Boolean) {
+        podcastDao.setNotificationsEnabled(podcast.id, enabled)
+        updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, enabled)
+    }
+
+    private fun updateFirebaseSubscription(podcastId: String, title: String, imageUrl: String, isSubscribed: Boolean) {
+        try {
+            if (isSubscribed) {
+                val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance()
+                    .getReference("tracked_podcasts")
+                    .child(podcastId)
+                
+                val data = mapOf(
+                    "title" to title,
+                    "imageUrl" to imageUrl
+                )
+                dbRef.setValue(data)
+                
+                com.google.firebase.messaging.FirebaseMessaging.getInstance()
+                    .subscribeToTopic("new_ep_$podcastId")
+            } else {
+                com.google.firebase.messaging.FirebaseMessaging.getInstance()
+                    .unsubscribeFromTopic("new_ep_$podcastId")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SubscriptionRepository", "Firebase update failed for $podcastId", e)
+        }
     }
 
     suspend fun updateLatestEpisode(podcastId: String, episode: cx.aswin.boxcast.core.model.Episode?) {

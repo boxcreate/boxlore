@@ -400,9 +400,10 @@ class EpisodeInfoViewModel(
         val currentState = _uiState.value
         if (currentState is EpisodeInfoUiState.Success) {
             viewModelScope.launch {
-                // Check if already downloaded
+                // Check if already downloaded or currently downloading
                 val isDownloaded = downloadRepository.isDownloaded(episode.id).first()
-                if (isDownloaded) {
+                val isDownloading = downloadRepository.isDownloading(episode.id).first()
+                if (isDownloaded || isDownloading) {
                     downloadRepository.removeDownload(episode.id)
                 } else {
                     val podcast = cx.aswin.boxcast.core.model.Podcast(
@@ -414,7 +415,6 @@ class EpisodeInfoViewModel(
                         genre = currentState.podcastGenre
                     )
                     downloadRepository.addDownload(episode, podcast)
-
                 }
             }
         }

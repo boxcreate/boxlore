@@ -618,6 +618,24 @@ class PodcastInfoViewModel(
         }
     }
 
+    fun toggleNotifications() {
+        val currentState = _uiState.value
+        if (currentState is PodcastInfoUiState.Success) {
+            viewModelScope.launch {
+                val currentEnabled = currentState.podcast.notificationsEnabled
+                val newEnabled = !currentEnabled
+                
+                subscriptionRepository.setNotificationsEnabled(currentState.podcast, newEnabled)
+                
+                // Refresh UI State
+                val updatedPodcast = currentState.podcast.copy(notificationsEnabled = newEnabled)
+                _uiState.value = currentState.copy(podcast = updatedPodcast)
+                
+                android.util.Log.d("PodcastInfoViewModel", "Notifications toggled for ${currentState.podcast.title}: $newEnabled")
+            }
+        }
+    }
+
     fun toggleQueue(episode: Episode) {
         val currentState = _uiState.value
         if (currentState is PodcastInfoUiState.Success) {

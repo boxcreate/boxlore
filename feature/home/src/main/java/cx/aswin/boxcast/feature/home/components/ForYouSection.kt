@@ -10,6 +10,7 @@ import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,11 +57,12 @@ fun ForYouSection(
     val items = recommendations.take(9)
 
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        modifier = modifier.fillMaxWidth()
     ) {
         if (showTasteHeader) {
-            ForYouHeader()
+            ForYouHeader(
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
         }
 
         androidx.compose.animation.Crossfade(
@@ -357,7 +359,7 @@ private fun ForYouBentoCard(
 ) {
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier.expressiveClickable(onClick = onClick)
     ) {
@@ -433,17 +435,24 @@ private fun ForYouHeader(
 ) {
     Row(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 12.dp),
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(
+            painter = painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.interests_24),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = "Based on Your Taste",
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontFamily = SectionHeaderFontFamily,
-                fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.1).sp
             ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -470,7 +479,7 @@ private fun ForYouBentoSkeleton(
 ) {
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier.fillMaxWidth()
     ) {

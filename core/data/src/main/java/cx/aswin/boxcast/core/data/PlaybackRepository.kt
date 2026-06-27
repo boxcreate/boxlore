@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.Chapter
@@ -80,6 +81,9 @@ class PlaybackRepository(
     // Preferences for session state
     private val prefs = context.getSharedPreferences("boxcast_player", Context.MODE_PRIVATE)
     private val KEY_PLAYER_DISMISSED = "player_dismissed"
+    
+    private val userPreferencesRepository = UserPreferencesRepository(context)
+    private var currentSkipBehavior: String = "just_skip"
 
     fun getOrCreateDeviceUuid(): String {
         val key = "device_uuid"
@@ -108,6 +112,11 @@ class PlaybackRepository(
         initializeMediaController()
         monitorLikeState()
         monitorChaptersAndTranscripts()
+        repositoryScope.launch {
+            userPreferencesRepository.skipBehaviorStream.collect {
+                currentSkipBehavior = it
+            }
+        }
     }
 
     private var chaptersAndTranscriptFetchJob: Job? = null
@@ -587,29 +596,40 @@ class PlaybackRepository(
                     _playerState.value = _playerState.value.copy(isLoading = isLoading)
                     
                     if (playbackState == androidx.media3.common.Player.STATE_ENDED) {
-                        Log.d("PlaybackRepo", "Playback ENDED. Cancelling pending saves and marking completed.")
+                        Log.d("PlaybackRepo", "Playback ENDED. Cancelling pending saves.")
                         pendingSaveJob?.cancel() // CRITICAL: Prevent "Pause" save from overwriting completion
                         
-                        // Sleep Timer: End of Episode — stop everything if EOE is active
-                        if (_playerState.value.sleepAtEndOfEpisode) {
-                            Log.d("PlaybackRepo", "Sleep Timer (EOE): Episode ended, stopping playback.")
-                            mediaController?.stop()
-                            mediaController?.clearMediaItems()
-                            sleepTimerJob?.cancel()
-                            stopProgressTicker()
-                            _playerState.value = _playerState.value.copy(
-                                isPlaying = false, position = 0,
-                                sleepTimerEnd = null, sleepAtEndOfEpisode = false
-                            )
-                            repositoryScope.launch { markCurrentEpisodeAsCompleted() }
-                            return
-                        }
+                        val controller = mediaController
+                        val hasMedia = controller != null && controller.mediaItemCount > 0
+                        val reachedEnd = controller != null && controller.duration > 0 && 
+                                (controller.currentPosition >= controller.duration - 10000 || controller.currentPosition >= controller.duration * 0.95)
                         
-                        _playerState.value = _playerState.value.copy(isPlaying = false, position = 0)
-                        stopProgressTicker()
-                        // Mark as completed
-                        repositoryScope.launch {
-                            markCurrentEpisodeAsCompleted()
+                        if (hasMedia && reachedEnd) {
+                            // Sleep Timer: End of Episode — stop everything if EOE is active
+                            if (_playerState.value.sleepAtEndOfEpisode) {
+                                Log.d("PlaybackRepo", "Sleep Timer (EOE): Episode ended, stopping playback.")
+                                mediaController?.stop()
+                                mediaController?.clearMediaItems()
+                                sleepTimerJob?.cancel()
+                                stopProgressTicker()
+                                _playerState.value = _playerState.value.copy(
+                                    isPlaying = false, position = 0,
+                                    sleepTimerEnd = null, sleepAtEndOfEpisode = false
+                                )
+                                repositoryScope.launch { markCurrentEpisodeAsCompleted() }
+                                return
+                            }
+                            
+                            _playerState.value = _playerState.value.copy(isPlaying = false, position = 0)
+                            stopProgressTicker()
+                            // Mark as completed
+                            repositoryScope.launch {
+                                markCurrentEpisodeAsCompleted()
+                            }
+                        } else {
+                            Log.d("PlaybackRepo", "Playback ended but not naturally completed (hasMedia=$hasMedia, reachedEnd=$reachedEnd). Skipping completion marking.")
+                            _playerState.value = _playerState.value.copy(isPlaying = false)
+                            stopProgressTicker()
                         }
                     }
                 }
@@ -761,12 +781,15 @@ class PlaybackRepository(
                         }
                         android.util.Log.d("PlaybackRepo", "Media transition to: ${newEpisode.title}")
                         
-                        // 1. Mark PREVIOUS episode as completed (if distinct)
+                        // 1. Mark PREVIOUS episode as completed (if distinct and transition reason permits)
                         val previousEpisode = oldState.currentEpisode
                         val previousPodcast = oldState.currentPodcast 
                         
-                        if (previousEpisode != null && previousEpisode.id != newEpisode.id) {
-                            android.util.Log.d("PlaybackRepo", "Transition: Marking previous episode as COMPLETED: ${previousEpisode.title} (ID: ${previousEpisode.id})")
+                        val shouldMarkCompleted = reason == androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || 
+                            (reason == androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_SEEK && currentSkipBehavior == "mark_completed_skip")
+
+                        if (previousEpisode != null && previousEpisode.id != newEpisode.id && shouldMarkCompleted) {
+                            android.util.Log.d("PlaybackRepo", "Transition (ShouldMarkCompleted): Marking previous episode as COMPLETED: ${previousEpisode.title} (ID: ${previousEpisode.id}), reason: $reason, skipBehavior: $currentSkipBehavior")
                             markEpisodeAsCompleted(previousEpisode, previousPodcast)
                         }
                         
@@ -1040,14 +1063,14 @@ class PlaybackRepository(
             // For now, full reload ensures queue is correct.
             
             val mediaItems = episodes.map { episode ->
+                 val resolvedUrl = episode.imageUrl?.takeIf { it.isNotBlank() } 
+                         ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() } 
+                         ?: podcast.imageUrl
+                 Log.d("PlaybackRepo", "playQueue: epId=${episode.id}, title='${episode.title}', resolvedImageUrl='$resolvedUrl'")
                  val metadata = androidx.media3.common.MediaMetadata.Builder()
                     .setTitle(episode.title)
                     .setArtist(episode.podcastTitle ?: podcast.title)
-                    .setArtworkUri(android.net.Uri.parse(
-                         episode.imageUrl?.takeIf { it.isNotBlank() } 
-                         ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() } 
-                         ?: podcast.imageUrl
-                    ))
+                    .setArtworkUri(android.net.Uri.parse(resolvedUrl))
                     .setDisplayTitle(episode.title) // Required for notification
                     .setSubtitle(episode.podcastTitle ?: podcast.title)
                     .setGenre(episode.podcastGenre ?: podcast.genre)
@@ -1159,10 +1182,12 @@ class PlaybackRepository(
         
         mediaController?.let { controller ->
              Log.d("PlaybackRepo", "addToQueue: mediaController ready, mediaItemCount=${controller.mediaItemCount}")
+             val resolvedUrl = episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl
+             Log.d("PlaybackRepo", "addToQueue: epId=${episode.id}, resolvedImageUrl='$resolvedUrl'")
              val metadata = androidx.media3.common.MediaMetadata.Builder()
                 .setTitle(episode.title)
                 .setArtist(podcast.title)
-                .setArtworkUri(android.net.Uri.parse(episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl))
+                .setArtworkUri(android.net.Uri.parse(resolvedUrl))
                 .setDisplayTitle(episode.title)
                 .setSubtitle(podcast.title)
                 .setGenre(episode.podcastGenre ?: podcast.genre)
@@ -1182,6 +1207,7 @@ class PlaybackRepository(
              val currentQueue = _playerState.value.queue
              _playerState.value = _playerState.value.copy(queue = currentQueue + episode)
              Log.d("PlaybackRepo", "addToQueue: Updated local state, queue size=${_playerState.value.queue.size}")
+             syncQueueToDb()
         } ?: Log.e("PlaybackRepo", "addToQueue: mediaController still NULL after await!")
      }
 
@@ -1191,10 +1217,12 @@ class PlaybackRepository(
         }
         
         mediaController?.let { controller ->
+             val resolvedUrl = episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl
+             Log.d("PlaybackRepo", "addToQueueNext: epId=${episode.id}, resolvedImageUrl='$resolvedUrl'")
              val metadata = androidx.media3.common.MediaMetadata.Builder()
                 .setTitle(episode.title)
                 .setArtist(podcast.title)
-                .setArtworkUri(android.net.Uri.parse(episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl))
+                .setArtworkUri(android.net.Uri.parse(resolvedUrl))
                 .setDisplayTitle(episode.title)
                 .setSubtitle(podcast.title)
                 .setGenre(episode.podcastGenre ?: podcast.genre)
@@ -1235,6 +1263,7 @@ class PlaybackRepository(
              }
              
              _playerState.value = _playerState.value.copy(queue = newQueue)
+             syncQueueToDb()
         }
     }
 
@@ -1267,22 +1296,26 @@ class PlaybackRepository(
             android.util.Log.e("PlaybackRepo", "Failed to track skip for $episodeId", e)
         }
 
+        var removedFromController = false
         mediaController?.let { controller ->
             for (i in 0 until controller.mediaItemCount) {
                 val item = controller.getMediaItemAt(i)
                 if (item.mediaId == episodeId) {
                     controller.removeMediaItem(i)
-                    
-                    // Update local state
-                    val currentQueue = _playerState.value.queue
-                    val newQueue = currentQueue.filter { it.id != episodeId }
-                    _playerState.value = _playerState.value.copy(queue = newQueue)
-                    
-                    // Sync the updated queue to the database
-                    syncQueueToDb()
+                    removedFromController = true
                     break
                 }
             }
+        }
+
+        // Always update local state and sync to DB, even if the item wasn't in Media3 playlist
+        val currentQueue = _playerState.value.queue
+        val existsInLocalQueue = currentQueue.any { it.id == episodeId }
+        
+        if (existsInLocalQueue || !removedFromController) {
+            val newQueue = currentQueue.filter { it.id != episodeId }
+            _playerState.value = _playerState.value.copy(queue = newQueue)
+            syncQueueToDb()
         }
     }
 

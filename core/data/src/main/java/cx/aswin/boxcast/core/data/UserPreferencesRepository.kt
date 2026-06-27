@@ -17,6 +17,19 @@ val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataS
 
 class UserPreferencesRepository(context: Context) {
     private val dataStore = context.userPreferencesDataStore
+    private val syncPrefs = context.getSharedPreferences("boxcast_theme_fast_cache", Context.MODE_PRIVATE)
+
+    val cachedThemeConfig: String
+        get() = syncPrefs.getString("theme_config", null) ?: "system"
+
+    val cachedSurfaceStyle: String
+        get() = syncPrefs.getString("surface_style", null) ?: "classic_dynamic"
+
+    val cachedThemeBrand: String
+        get() = syncPrefs.getString("theme_brand", null) ?: "violet"
+
+    val cachedUseDynamicColor: Boolean
+        get() = syncPrefs.getBoolean("use_dynamic_color", false)
 
     private object Keys {
         val REGION = stringPreferencesKey("region")
@@ -39,6 +52,13 @@ class UserPreferencesRepository(context: Context) {
         val BRIEFING_DISMISSED_DATE = stringPreferencesKey("briefing_dismissed_date")
         val BRIEFING_DISMISSED_FOREVER = androidx.datastore.preferences.core.booleanPreferencesKey("briefing_dismissed_forever")
         val OVERRIDDEN_REC_PODCAST_ID = stringPreferencesKey("overridden_rec_podcast_id")
+        val SMART_DOWNLOADS_ENABLED = androidx.datastore.preferences.core.booleanPreferencesKey("smart_downloads_enabled")
+        val SMART_DOWNLOADS_MAX_EPISODES = androidx.datastore.preferences.core.intPreferencesKey("smart_downloads_max_episodes")
+        val SMART_DOWNLOADS_STORAGE_BUDGET = androidx.datastore.preferences.core.longPreferencesKey("smart_downloads_storage_budget")
+        val SMART_DOWNLOADS_WIFI_ONLY = androidx.datastore.preferences.core.booleanPreferencesKey("smart_downloads_wifi_only")
+        val SMART_DOWNLOADS_CHARGING_ONLY = androidx.datastore.preferences.core.booleanPreferencesKey("smart_downloads_charging_only")
+        val SMART_DOWNLOADS_CLEANUP_RULE = stringPreferencesKey("smart_downloads_cleanup_rule")
+        val SMART_DOWNLOADS_LAST_SYNC_TIME = androidx.datastore.preferences.core.longPreferencesKey("smart_downloads_last_sync_time")
     }
 
     val regionStream: Flow<String> = dataStore.data
@@ -191,11 +211,14 @@ class UserPreferencesRepository(context: Context) {
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         .map { preferences ->
-            preferences[Keys.THEME_CONFIG] ?: "system"
+            val config = preferences[Keys.THEME_CONFIG] ?: "system"
+            syncPrefs.edit().putString("theme_config", config).apply()
+            config
         }
         .distinctUntilChanged()
 
     suspend fun setThemeConfig(themeConfig: String) {
+        syncPrefs.edit().putString("theme_config", themeConfig).apply()
         dataStore.edit { preferences ->
             preferences[Keys.THEME_CONFIG] = themeConfig
         }
@@ -206,11 +229,14 @@ class UserPreferencesRepository(context: Context) {
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         .map { preferences ->
-            preferences[Keys.USE_DYNAMIC_COLOR] ?: true
+            val enabled = preferences[Keys.USE_DYNAMIC_COLOR] ?: false
+            syncPrefs.edit().putBoolean("use_dynamic_color", enabled).apply()
+            enabled
         }
         .distinctUntilChanged()
 
     suspend fun setUseDynamicColor(useDynamicColor: Boolean) {
+        syncPrefs.edit().putBoolean("use_dynamic_color", useDynamicColor).apply()
         dataStore.edit { preferences ->
             preferences[Keys.USE_DYNAMIC_COLOR] = useDynamicColor
         }
@@ -221,11 +247,14 @@ class UserPreferencesRepository(context: Context) {
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         .map { preferences ->
-            preferences[Keys.THEME_BRAND] ?: "violet"
+            val brand = preferences[Keys.THEME_BRAND] ?: "violet"
+            syncPrefs.edit().putString("theme_brand", brand).apply()
+            brand
         }
         .distinctUntilChanged()
 
     suspend fun setThemeBrand(themeBrand: String) {
+        syncPrefs.edit().putString("theme_brand", themeBrand).apply()
         dataStore.edit { preferences ->
             preferences[Keys.THEME_BRAND] = themeBrand
         }
@@ -236,11 +265,14 @@ class UserPreferencesRepository(context: Context) {
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         .map { preferences ->
-            preferences[Keys.SURFACE_STYLE] ?: "standard"
+            val style = preferences[Keys.SURFACE_STYLE] ?: "classic_dynamic"
+            syncPrefs.edit().putString("surface_style", style).apply()
+            style
         }
         .distinctUntilChanged()
 
     suspend fun setSurfaceStyle(surfaceStyle: String) {
+        syncPrefs.edit().putString("surface_style", surfaceStyle).apply()
         dataStore.edit { preferences ->
             preferences[Keys.SURFACE_STYLE] = surfaceStyle
         }
@@ -569,6 +601,111 @@ class UserPreferencesRepository(context: Context) {
             } else {
                 preferences[Keys.OVERRIDDEN_REC_PODCAST_ID] = podcastId
             }
+        }
+    }
+
+    val smartDownloadsEnabledStream: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_ENABLED] ?: false
+        }
+        .distinctUntilChanged()
+
+    suspend fun setSmartDownloadsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_ENABLED] = enabled
+        }
+    }
+
+    val smartDownloadsMaxEpisodesStream: Flow<Int> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_MAX_EPISODES] ?: 10
+        }
+        .distinctUntilChanged()
+
+    suspend fun setSmartDownloadsMaxEpisodes(maxEpisodes: Int) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_MAX_EPISODES] = maxEpisodes
+        }
+    }
+
+    val smartDownloadsStorageBudgetStream: Flow<Long> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_STORAGE_BUDGET] ?: 1000L
+        }
+        .distinctUntilChanged()
+
+    suspend fun setSmartDownloadsStorageBudget(budgetMb: Long) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_STORAGE_BUDGET] = budgetMb
+        }
+    }
+
+    val smartDownloadsWifiOnlyStream: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_WIFI_ONLY] ?: true
+        }
+        .distinctUntilChanged()
+
+    suspend fun setSmartDownloadsWifiOnly(wifiOnly: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_WIFI_ONLY] = wifiOnly
+        }
+    }
+
+    val smartDownloadsChargingOnlyStream: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_CHARGING_ONLY] ?: false
+        }
+        .distinctUntilChanged()
+
+    suspend fun setSmartDownloadsChargingOnly(chargingOnly: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_CHARGING_ONLY] = chargingOnly
+        }
+    }
+
+    val smartDownloadsCleanupRuleStream: Flow<String> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_CLEANUP_RULE] ?: "after_24h"
+        }
+        .distinctUntilChanged()
+
+    suspend fun setSmartDownloadsCleanupRule(rule: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_CLEANUP_RULE] = rule
+        }
+    }
+
+    val smartDownloadsLastSyncTimeStream: Flow<Long> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_LAST_SYNC_TIME] ?: 0L
+        }
+        .distinctUntilChanged()
+
+    suspend fun setSmartDownloadsLastSyncTime(lastSyncTime: Long) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SMART_DOWNLOADS_LAST_SYNC_TIME] = lastSyncTime
         }
     }
 }

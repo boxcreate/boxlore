@@ -1,7 +1,9 @@
 package cx.aswin.boxcast.core.data.service
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
+import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -199,6 +201,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
         // SmartQueue auto-refill: when queue runs low, fetch more episodes
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                android.util.Log.d("BoxCastPlayer", "onMediaItemTransition: mediaId=${mediaItem?.mediaId}, title=${mediaItem?.mediaMetadata?.title}, artworkUri=${mediaItem?.mediaMetadata?.artworkUri}, reason=$reason")
                 // Telemetry: Transition implies the previous item stopped
                 val wasAutoCompleted = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO
                 endPlaybackSession(forceCompleted = wasAutoCompleted, isTransition = true)
@@ -306,7 +309,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
         })
 
         val intent = Intent()
-        intent.component = android.content.ComponentName("cx.aswin.boxcast", "cx.aswin.boxcast.MainActivity")
+        intent.component = android.content.ComponentName(packageName, "cx.aswin.boxcast.MainActivity")
         intent.putExtra("EXTRA_OPEN_PLAYER", true) // Notification Click -> Open Player
         
         val pendingIntent = android.app.PendingIntent.getActivity(
@@ -352,9 +355,13 @@ class BoxLorePlaybackService : MediaLibraryService() {
             .setSessionCommand(androidx.media3.session.SessionCommand("SEEK_FORWARD", Bundle.EMPTY))
             .build()
 
+        val coilBitmapLoader = CoilBitmapLoader(this, serviceScope)
+        val cacheBitmapLoader = androidx.media3.session.CacheBitmapLoader(coilBitmapLoader)
+
         mediaSession = MediaLibrarySession.Builder(this, forwardingPlayer, LibrarySessionCallback())
             .setSessionActivity(pendingIntent)
             .setCustomLayout(listOf(seekBackAction, seekForwardAction))
+            .setBitmapLoader(cacheBitmapLoader)
             .build()
     }
     
@@ -735,8 +742,11 @@ class BoxLorePlaybackService : MediaLibraryService() {
                         return@forEach
                     }
                     
-                    val artworkUri = (ep.image ?: ep.feedImage ?: pod.imageUrl)
-                        .let { android.net.Uri.parse(it) }
+                    val epImageUrl = ep.image
+                    val podImageUrl = ep.feedImage ?: pod.imageUrl
+                    val finalImageUrl = epImageUrl ?: podImageUrl
+                    android.util.Log.d("BoxCastPlayer", "refillQueue: epId=${ep.id}, ep.image='$epImageUrl', pod.imageUrl='$podImageUrl', finalImageUrl='$finalImageUrl'")
+                    val artworkUri = finalImageUrl.let { android.net.Uri.parse(it) }
                     
                     // Use raw ID — same format as PlaybackRepository (L1 fix)
                     val mediaItem = MediaItem.Builder()
@@ -1613,6 +1623,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
          * Resolve a single MediaItem into a playable one with a proper URI.
          */
         private suspend fun resolveMediaItem(item: MediaItem): MediaItem {
+            android.util.Log.d("BoxCastPlayer", "resolveMediaItem: mediaId=${item.mediaId}, initialArtworkUri=${item.mediaMetadata.artworkUri}")
             // Try to get the URI from various sources
             val uri = item.localConfiguration?.uri ?: item.requestMetadata.mediaUri
             
@@ -1625,6 +1636,8 @@ class BoxLorePlaybackService : MediaLibraryService() {
             // Try history DB first
             val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
             if (historyItem?.episodeAudioUrl != null) {
+                val histArtworkUriStr = historyItem.episodeImageUrl ?: historyItem.podcastImageUrl
+                android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved from history: '$histArtworkUriStr'")
                 return MediaItem.Builder()
                     .setMediaId(item.mediaId)
                     .setUri(historyItem.episodeAudioUrl)
@@ -1633,8 +1646,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
                             .setTitle(historyItem.episodeTitle)
                             .setArtist(historyItem.podcastName)
                             .setArtworkUri(
-                                (historyItem.episodeImageUrl ?: historyItem.podcastImageUrl)
-                                    ?.let { android.net.Uri.parse(it) }
+                                histArtworkUriStr?.let { android.net.Uri.parse(it) }
                             )
                             .build()
                     )
@@ -1644,6 +1656,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
             // Try API
             val episode = podcastRepository.getEpisode(episodeId)
             if (episode != null) {
+                android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved from API: '${episode.imageUrl}'")
                 return MediaItem.Builder()
                     .setMediaId(item.mediaId)
                     .setUri(episode.audioUrl)
@@ -2079,3 +2092,56 @@ class BoxLorePlaybackService : MediaLibraryService() {
         }
     }
 }
+
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+private class CoilBitmapLoader(
+    private val context: android.content.Context,
+    private val serviceScope: kotlinx.coroutines.CoroutineScope
+) : androidx.media3.common.util.BitmapLoader {
+
+    override fun supportsMimeType(mimeType: String): Boolean {
+        return true
+    }
+
+    override fun decodeBitmap(data: ByteArray): com.google.common.util.concurrent.ListenableFuture<android.graphics.Bitmap> {
+        return try {
+            val bitmap = android.graphics.BitmapFactory.decodeByteArray(data, 0, data.size)
+            if (bitmap != null) {
+                com.google.common.util.concurrent.Futures.immediateFuture(bitmap)
+            } else {
+                com.google.common.util.concurrent.Futures.immediateFailedFuture(
+                    IllegalArgumentException("Could not decode bitmap")
+                )
+            }
+        } catch (e: Exception) {
+            com.google.common.util.concurrent.Futures.immediateFailedFuture(e)
+        }
+    }
+
+    override fun loadBitmap(uri: android.net.Uri): com.google.common.util.concurrent.ListenableFuture<android.graphics.Bitmap> {
+        return serviceScope.future {
+            try {
+                android.util.Log.d("BoxCastPlayer", "CoilBitmapLoader: loadBitmap started for $uri")
+                val loader = coil.Coil.imageLoader(context)
+                val request = coil.request.ImageRequest.Builder(context)
+                    .data(uri)
+                    .allowHardware(false) // Required: system notifications cannot use hardware-backed bitmaps
+                    .build()
+                val result = loader.execute(request)
+                val bitmap = (result as? coil.request.SuccessResult)?.drawable?.toBitmap()
+                if (bitmap != null) {
+                    android.util.Log.d("BoxCastPlayer", "CoilBitmapLoader: loadBitmap succeeded for $uri")
+                    bitmap
+                } else {
+                    val errorMsg = "CoilBitmapLoader: result is not a success or drawable could not be converted to bitmap for $uri"
+                    android.util.Log.e("BoxCastPlayer", errorMsg)
+                    throw IllegalArgumentException(errorMsg)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("BoxCastPlayer", "CoilBitmapLoader: loadBitmap failed for $uri", e)
+                throw e
+            }
+        }
+    }
+}
+

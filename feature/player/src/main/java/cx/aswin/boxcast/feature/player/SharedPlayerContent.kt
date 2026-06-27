@@ -275,13 +275,7 @@ fun SharedPlayerContent(
                               Surface(
                                   modifier = Modifier
                                       .width(videoWidth)
-                                      .height(videoHeight)
-                                      .shadow(
-                                          12.dp, 
-                                          RoundedCornerShape(28.dp), 
-                                          ambientColor = controlTint.copy(alpha = 0.3f), 
-                                          spotColor = controlTint.copy(alpha = 0.5f)
-                                      ),
+                                      .height(videoHeight),
                                   shape = RoundedCornerShape(28.dp),
                                   color = colorScheme.surfaceVariant
                               ) {

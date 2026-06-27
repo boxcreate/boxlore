@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -302,16 +303,15 @@ fun UnifiedPlayerSheet(
     val velocityTracker = remember { VelocityTracker() }
     var accumulatedDragYSinceStart by remember { mutableFloatStateOf(0f) }
     
-    // The sheet Surface
-    Surface(
+    // The sheet container — Box instead of Surface to avoid clipping the mini player's drop shadow
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .offset { IntOffset(0, currentSheetTranslationY.value.roundToInt()) }
-            .height(playerContentAreaHeightDp), // Fix: Height animates so it doesn't cover navbar
-        shadowElevation = 0.dp,
-        color = Color.Transparent
+            .graphicsLayer { clip = false }
+            .height(playerContentAreaHeightDp) // Fix: Height animates so it doesn't cover navbar
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().graphicsLayer { clip = false }) {
             // Player content area with drag handling
             Box(
                 modifier = Modifier
@@ -341,7 +341,12 @@ fun UnifiedPlayerSheet(
                             bottomEnd = playerContentBottomRadius
                         )
                     )
-                    .clipToBounds()
+                    .clip(RoundedCornerShape(
+                            topStart = overallSheetTopCornerRadius,
+                            topEnd = overallSheetTopCornerRadius,
+                            bottomStart = playerContentBottomRadius,
+                            bottomEnd = playerContentBottomRadius
+                        ))
                     .pointerInput(isFullscreenVideo) {
                         if (isFullscreenVideo) return@pointerInput
                         var initialFractionOnDragStart = 0f

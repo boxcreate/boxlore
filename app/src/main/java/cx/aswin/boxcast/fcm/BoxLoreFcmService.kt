@@ -42,19 +42,104 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
         val data = message.data
         if (data.isNotEmpty()) {
+            val type = data["type"]
+            if (type == "new_episode") {
+                handleNewEpisodeMessage(data)
+                return
+            }
+
             val title = data["title"] ?: "BoxCast Update"
             val body = data["body"] ?: "Check out what's new in BoxCast!"
-            val type = data["type"] ?: "both" // push, in-app, both
+            val messageType = type ?: "both" // push, in-app, both
             val route = data["route"]
             val imageUrl = data["image"]
 
-            if (type == "in-app" || type == "both") {
+            if (messageType == "in-app" || messageType == "both") {
                 saveInAppAnnouncement(title, body, route, imageUrl)
             }
 
-            if (type == "push" || type == "both") {
+            if (messageType == "push" || messageType == "both") {
                 showPushNotification(title, body, route, imageUrl)
             }
+        }
+    }
+
+    private fun handleNewEpisodeMessage(data: Map<String, String>) {
+        val podcastId = data["podcastId"] ?: return
+        val episodeId = data["episodeId"] ?: return
+        val podcastTitle = data["podcastTitle"] ?: "New Release"
+        val episodeTitle = data["episodeTitle"] ?: "New Episode"
+        val imageUrl = data["image"] ?: data["imageUrl"]
+        val route = data["route"] ?: "boxcast://podcast/$podcastId"
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "boxcast_new_episodes"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "New Episodes",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Alerts for new podcast episodes"
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("from_push", true)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            podcastId.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(cx.aswin.boxcast.R.drawable.ic_notification)
+            .setColor(android.graphics.Color.parseColor("#000000"))
+            .setContentTitle("🎙️ $podcastTitle")
+            .setContentText(episodeTitle)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+
+        if (!imageUrl.isNullOrBlank()) {
+            try {
+                val url = java.net.URL(imageUrl)
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.doInput = true
+                connection.connect()
+                val bitmap = android.graphics.BitmapFactory.decodeStream(connection.inputStream)
+                if (bitmap != null) {
+                    notificationBuilder.setStyle(
+                        NotificationCompat.BigPictureStyle()
+                            .bigPicture(bitmap)
+                            .bigLargeIcon(null as android.graphics.Bitmap?)
+                    )
+                    notificationBuilder.setLargeIcon(bitmap)
+                }
+            } catch (e: Exception) {
+                // Ignore image fetch failure
+            }
+        }
+
+        notificationManager.notify(podcastId.hashCode(), notificationBuilder.build())
+
+        // Trigger Smart Download sync automatically to fetch new content in background
+        triggerSmartDownloadSync()
+    }
+
+    private fun triggerSmartDownloadSync() {
+        try {
+            val workRequest = androidx.work.OneTimeWorkRequestBuilder<cx.aswin.boxcast.core.data.SmartDownloadWorker>()
+                .build()
+            androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+            android.util.Log.d("BoxLoreFcmService", "Triggered immediate SmartDownloadWorker sync due to new episode push notification")
+        } catch (e: Exception) {
+            android.util.Log.e("BoxLoreFcmService", "Failed to trigger background sync", e)
         }
     }
 

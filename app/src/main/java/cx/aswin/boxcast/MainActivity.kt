@@ -71,6 +71,7 @@ import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import java.net.URLEncoder
 import java.net.URLDecoder
 import androidx.compose.ui.Modifier
@@ -433,6 +434,34 @@ class MainActivity : ComponentActivity() {
             val queueManager = remember { 
                 cx.aswin.boxcast.core.data.QueueManager(queueRepository, smartQueueEngine, playbackRepository, podcastRepository)
             }
+
+            val smartDownloadManager = remember {
+                cx.aswin.boxcast.core.data.SmartDownloadManager(
+                    context = application,
+                    database = database,
+                    podcastRepository = podcastRepository,
+                    playbackRepository = playbackRepository,
+                    downloadRepository = downloadRepository,
+                    subscriptionRepository = subscriptionRepository,
+                    userPrefs = userPrefs
+                )
+            }
+
+            // Catch-up foreground check (respects Wi-Fi constraints, bypasses charging)
+            LaunchedEffect(smartDownloadManager) {
+                try {
+                    val lastSyncTime = userPrefs.smartDownloadsLastSyncTimeStream.first()
+                    val isEnabled = userPrefs.smartDownloadsEnabledStream.first()
+                    if (isEnabled && System.currentTimeMillis() - lastSyncTime > 24 * 3600 * 1000L) {
+                        android.util.Log.d("MainActivity", "Last smart sync > 24h ago. Triggering graceful catch-up sync.")
+                        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            smartDownloadManager.performSync(isForeground = true)
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("MainActivity", "Failed to check catch-up sync status", e)
+                }
+            }
             
             // Check Consent Status
             // Initial = true to prevent flashing dialog while DataStore loads.
@@ -444,14 +473,14 @@ class MainActivity : ComponentActivity() {
             val currentRegion by userPrefs.regionStream.collectAsState(initial = "us")
             
             // Theme Preferences
-            val themeConfig by userPrefs.themeConfigStream.collectAsState(initial = "system")
+            val themeConfig by userPrefs.themeConfigStream.collectAsState(initial = remember { userPrefs.cachedThemeConfig })
             val skipBehavior by userPrefs.skipBehaviorStream.collectAsState(initial = "just_skip")
             val hideCompletedInHome by userPrefs.hideCompletedInHomeStream.collectAsState(initial = true)
             val hideCompletedInSubs by userPrefs.hideCompletedInSubsStream.collectAsState(initial = true)
             val hideCompletedInShowDetails by userPrefs.hideCompletedInShowDetailsStream.collectAsState(initial = false)
-            val useDynamicColor by userPrefs.useDynamicColorStream.collectAsState(initial = true)
-            val themeBrand by userPrefs.themeBrandStream.collectAsState(initial = "violet")
-            val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(initial = "standard")
+            val useDynamicColor by userPrefs.useDynamicColorStream.collectAsState(initial = remember { userPrefs.cachedUseDynamicColor })
+            val themeBrand by userPrefs.themeBrandStream.collectAsState(initial = remember { userPrefs.cachedThemeBrand })
+            val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(initial = remember { userPrefs.cachedSurfaceStyle })
             val hasSeenMarkPlayedTip by userPrefs.hasSeenMarkPlayedTip.collectAsState(initial = true)
             val hasLoggedFirstPlay by userPrefs.hasLoggedFirstPlay.collectAsState(initial = true)
             val activeAnnouncement by userPrefs.activeAnnouncementStream.collectAsState(initial = null)
@@ -467,6 +496,50 @@ class MainActivity : ComponentActivity() {
             }.collectAsState(initial = null)
             val isRadioMode by userPrefs.isRadioModeStream.collectAsState(initial = false)
             val isModeSwitching by cx.aswin.boxcast.feature.home.ModeSwitchState.isSwitching.collectAsState()
+
+            var isConnectionFast by remember { mutableStateOf(true) }
+            val connectivityManager = remember {
+                getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            }
+            
+            androidx.compose.runtime.DisposableEffect(connectivityManager) {
+                val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+                    override fun onCapabilitiesChanged(
+                        network: android.net.Network,
+                        networkCapabilities: android.net.NetworkCapabilities
+                    ) {
+                        val bandwidthKbps = networkCapabilities.linkDownstreamBandwidthKbps
+                        // Fast if > 15 Mbps (15,000 Kbps)
+                        isConnectionFast = bandwidthKbps > 15000
+                    }
+                }
+                try {
+                    connectivityManager.registerDefaultNetworkCallback(callback)
+                } catch (e: Exception) {
+                    android.util.Log.e("MainActivity", "Failed to register network callback", e)
+                }
+                
+                onDispose {
+                    try {
+                        connectivityManager.unregisterNetworkCallback(callback)
+                    } catch (e: Exception) {
+                        // Ignore
+                    }
+                }
+            }
+
+            LaunchedEffect(isPlaying, isConnectionFast) {
+                if (isConnectionFast) {
+                    cx.aswin.boxcast.core.data.DownloadSpeedLimiter.speedLimitBps = 0L
+                    android.util.Log.d("MainActivity", "Connection is fast. Disabling download throttling.")
+                } else if (isPlaying) {
+                    cx.aswin.boxcast.core.data.DownloadSpeedLimiter.speedLimitBps = 250 * 1024L
+                    android.util.Log.d("MainActivity", "Throttling downloads to 250 KB/s (playback active, connection slow)")
+                } else {
+                    cx.aswin.boxcast.core.data.DownloadSpeedLimiter.speedLimitBps = 750 * 1024L
+                    android.util.Log.d("MainActivity", "Setting downloads limit to 750 KB/s (playback inactive, connection slow)")
+                }
+            }
             
             // Shared bottom padding calculation for Mini Player + NavBar clearance
             val miniPlayerPadding = remember(currentEpisode) {
@@ -931,9 +1004,56 @@ class MainActivity : ComponentActivity() {
                                 return fromIndex < 10 && toIndex < 10
                             }
 
+                            val context = androidx.compose.ui.platform.LocalContext.current
+                            var isOnline by remember {
+                                mutableStateOf(
+                                    try {
+                                        val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+                                        val activeNetwork = cm?.activeNetwork
+                                        val capabilities = cm?.getNetworkCapabilities(activeNetwork)
+                                        capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                                    } catch (e: Exception) {
+                                        true
+                                    }
+                                )
+                            }
+                            var isSyncingSmartDownloads by remember { mutableStateOf(false) }
+                            androidx.compose.runtime.DisposableEffect(context) {
+                                val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+                                val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+                                    override fun onAvailable(network: android.net.Network) {
+                                        isOnline = true
+                                    }
+                                    override fun onLost(network: android.net.Network) {
+                                        val activeNetwork = cm?.activeNetwork
+                                        val capabilities = cm?.getNetworkCapabilities(activeNetwork)
+                                        isOnline = capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                                    }
+                                }
+                                try {
+                                    cm?.registerDefaultNetworkCallback(callback)
+                                } catch (e: Exception) {}
+                                onDispose {
+                                    try {
+                                        cm?.unregisterNetworkCallback(callback)
+                                    } catch (e: Exception) {}
+                                }
+                            }
+
+                            val isOfflineOnLaunch = remember { !isOnline }
+                            val computedStartDestination = remember {
+                                if (!onboardingCompleted) {
+                                    "onboarding"
+                                } else if (isOfflineOnLaunch && !hasDeepLink) {
+                                    "library/downloads"
+                                } else {
+                                    "home"
+                                }
+                            }
+
                             NavHost(
                                 navController = navController,
-                                startDestination = if (onboardingCompleted) "home" else "onboarding",
+                                startDestination = computedStartDestination,
                                 modifier = Modifier, // No padding(innerPadding) -> Fixes GAP issue
                                 enterTransition = {
                                     val fromRoute = initialState.destination.route
@@ -1259,12 +1379,26 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                     },
+                                    onExportOpml = { uri -> 
+                                        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                            try {
+                                                val opmlXml = cx.aswin.boxcast.core.data.backup.LibraryBackupManager(subscriptionRepository, playbackRepository, podcastRepository).exportLibraryAsOpml()
+                                                application.contentResolver.openOutputStream(uri)?.use { it.write(opmlXml.toByteArray()) }
+                                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Subscriptions Exported as OPML", android.widget.Toast.LENGTH_SHORT).show() }
+                                            } catch(e: Exception){
+                                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { android.widget.Toast.makeText(application, "Failed to export OPML: ${e.message}", android.widget.Toast.LENGTH_SHORT).show() }
+                                            }
+                                        }
+                                    },
                                     onImportJson = { uri ->
                                         performJsonImport(uri)
                                     },
                                     onImportOpml = { uri ->
                                         opmlImportState = OpmlImportState.Parsing(uri)
                                         importTriggerKey = System.currentTimeMillis()
+                                    },
+                                    onNavigateToSmartDownloads = {
+                                        navController.navigate("library/downloads/settings")
                                     }
                                 )
                             }
@@ -1531,6 +1665,77 @@ class MainActivity : ComponentActivity() {
                                 
                                 cx.aswin.boxcast.feature.library.DownloadedEpisodesScreen(
                                     viewModel = viewModel,
+                                    userPrefs = userPrefs,
+                                    isOffline = !isOnline,
+                                    onBack = { navController.popBackStack() },
+                                    onPodcastShowClick = { podcastId, podcastTitle ->
+                                        android.util.Log.d("MainActivityNav", "onPodcastShowClick invoked with id: $podcastId, title: $podcastTitle")
+                                        val encodedTitle = android.net.Uri.encode(podcastTitle.ifEmpty { "_" })
+                                        val encodedId = android.net.Uri.encode(podcastId.ifEmpty { "_" })
+                                        android.util.Log.d("MainActivityNav", "navigating to: library/downloads/show?podcastId=$encodedId&podcastTitle=$encodedTitle")
+                                        navController.navigate("library/downloads/show?podcastId=$encodedId&podcastTitle=$encodedTitle")
+                                    },
+                                    onExploreClick = {
+                                        navController.navigate("explore?entryPoint=library_downloads_empty_state") {
+                                            popUpTo("home")
+                                        }
+                                    },
+                                    onSettingsClick = {
+                                        navController.navigate("library/downloads/settings")
+                                    },
+                                    isSyncing = isSyncingSmartDownloads,
+                                    onSyncNow = {
+                                        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                            isSyncingSmartDownloads = true
+                                            try {
+                                                smartDownloadManager.performSync(isManual = true)
+                                            } finally {
+                                                isSyncingSmartDownloads = false
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+
+                            composable("library/downloads/settings") {
+                                cx.aswin.boxcast.feature.library.SmartDownloadsSettingsScreen(
+                                    userPrefs = userPrefs,
+                                    onBack = { navController.popBackStack() }
+                                )
+                            }
+
+                            composable(
+                                route = "library/downloads/show?podcastId={podcastId}&podcastTitle={podcastTitle}",
+                                arguments = listOf(
+                                    navArgument("podcastId") { type = NavType.StringType; defaultValue = "" },
+                                    navArgument("podcastTitle") { type = NavType.StringType; defaultValue = "" }
+                                )
+                            ) { backStackEntry ->
+                                val podcastId = backStackEntry.arguments?.getString("podcastId") ?: ""
+                                val podcastTitle = backStackEntry.arguments?.getString("podcastTitle") ?: ""
+
+                                val podcastDao = remember { database.podcastDao() }
+                                val subscriptionRepository = remember { cx.aswin.boxcast.core.data.SubscriptionRepository(podcastDao) }
+                                val downloadRepository = remember { cx.aswin.boxcast.core.data.DownloadRepository(application, database) }
+                                
+                                val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxcast.feature.library.LibraryViewModel>(
+                                    factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                            return cx.aswin.boxcast.feature.library.LibraryViewModel(
+                                                subscriptionRepository,
+                                                playbackRepository,
+                                                downloadRepository,
+                                                userPrefs
+                                            ) as T
+                                        }
+                                    }
+                                )
+
+                                cx.aswin.boxcast.feature.library.DownloadedShowEpisodesScreen(
+                                    viewModel = viewModel,
+                                    podcastId = podcastId,
+                                    podcastTitle = podcastTitle,
                                     onBack = { navController.popBackStack() },
                                     onEpisodeClick = { episode, podcast ->
                                         fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
@@ -1543,11 +1748,6 @@ class MainActivity : ComponentActivity() {
                                             "${encode(podcast.title)}" +
                                             "?entryPoint=library_downloaded_episodes"
                                         )
-                                    },
-                                    onExploreClick = {
-                                        navController.navigate("explore?entryPoint=library_downloads_empty_state") {
-                                            popUpTo("home")
-                                        }
                                     }
                                 )
                             }

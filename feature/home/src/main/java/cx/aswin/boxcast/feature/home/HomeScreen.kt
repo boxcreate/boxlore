@@ -305,6 +305,9 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     LogRecomposition(name = "HomeScreen")
+    LaunchedEffect(uiState.isLoading) {
+        android.util.Log.d("BoxCastPerf", "PERF: HomeScreen uiState.isLoading changed to = ${uiState.isLoading}")
+    }
     // Track scroll state for collapsing top bar
     val gridState = rememberLazyStaggeredGridState()
     var showDebugDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -560,7 +563,7 @@ private fun PodcastFeed(
         columns = StaggeredGridCells.Adaptive(150.dp),
         contentPadding = PaddingValues(bottom = 160.dp, start = 16.dp, end = 16.dp), // Clear navbar + mini player 
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalItemSpacing = 16.dp,
+        verticalItemSpacing = 24.dp,
         modifier = modifier.fillMaxSize()
     ) {
 
@@ -574,9 +577,7 @@ private fun PodcastFeed(
                     label = "hero_crossfade"
                 ) { loaded ->
                     if (!loaded) {
-                        cx.aswin.boxcast.feature.home.components.HeroSkeleton(
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
+                        cx.aswin.boxcast.feature.home.components.HeroSkeleton()
                     } else {
                         HeroCarousel(
                             heroItems = heroItems,
@@ -594,7 +595,7 @@ private fun PodcastFeed(
                             onArrowClick = onHeroArrowClick,
                             onToggleSubscription = onToggleSubscription,
                             onTogglePlayback = onTogglePlayback,
-                            modifier = Modifier.padding(horizontal = 8.dp) 
+                            modifier = Modifier
                         )
                     }
                 }
@@ -615,7 +616,7 @@ private fun PodcastFeed(
                         activeRegion = activeRegionCode,
                         onSwitchRegion = onSwitchRegion,
                         onDismiss = onDismissNudge,
-                        modifier = Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 0.dp)
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
             }
@@ -778,7 +779,6 @@ private fun PodcastFeed(
                         onFeedbackClick = onFeedbackClick,
                         modifier = Modifier
                             .animateItem()
-                            .padding(horizontal = 8.dp)
                     )
                 }
             }
@@ -796,7 +796,7 @@ private fun PodcastFeed(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 12.dp),
+                            .padding(top = 0.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -849,8 +849,12 @@ private fun PodcastFeed(
                                 onPodcastClick(podcast, "home_because_you_like", null, null)
                             },
                             onChangePodcastClick = onChangePodcastClick,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier
                         )
+                    }
+
+                    if (hasBecauseYouLike && hasRecommendations) {
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
 
                     // "For You" normal recommendations section
@@ -868,7 +872,7 @@ private fun PodcastFeed(
                                 onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou")
                             },
                             showTasteHeader = hasBecauseYouLike,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier
                         )
                     }
                 }
@@ -901,28 +905,7 @@ private fun PodcastFeed(
             }
         }
 
-        // "See All Recommendations" button — between timeblock and discover
-        if (!isLoading && recommendations.isNotEmpty()) {
-            item(span = StaggeredGridItemSpan.FullLine) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    androidx.compose.material3.OutlinedButton(
-                        onClick = {
-                            onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou")
-                        }
-                    ) {
-                        androidx.compose.material3.Text(
-                            text = "See All Recommendations",
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
+
 
 
 
@@ -989,7 +972,7 @@ fun HomeImportBanner(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(vertical = 8.dp),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer

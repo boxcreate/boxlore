@@ -22,7 +22,8 @@ data class DownloadedEpisodeEntity(
     val downloadId: Long,      // ID from DownloadManager (if using system manager)
     val downloadedAt: Long,
     val sizeBytes: Long,
-    val status: Int = STATUS_QUEUED
+    val status: Int = STATUS_QUEUED,
+    val isSmartDownloaded: Boolean = false
 ) {
     companion object {
         const val STATUS_QUEUED = 0

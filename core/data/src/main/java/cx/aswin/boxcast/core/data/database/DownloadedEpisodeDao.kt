@@ -11,6 +11,9 @@ interface DownloadedEpisodeDao {
     @Query("SELECT * FROM downloaded_episodes ORDER BY downloadedAt DESC")
     fun getAllDownloads(): Flow<List<DownloadedEpisodeEntity>>
 
+    @Query("SELECT * FROM downloaded_episodes")
+    suspend fun getAllDownloadsSync(): List<DownloadedEpisodeEntity>
+
     @Query("SELECT * FROM downloaded_episodes WHERE episodeId = :episodeId")
     suspend fun getDownload(episodeId: String): DownloadedEpisodeEntity?
 

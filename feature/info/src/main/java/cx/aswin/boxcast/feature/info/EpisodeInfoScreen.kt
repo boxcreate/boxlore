@@ -44,6 +44,9 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material.icons.rounded.Subscriptions
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.automirrored.rounded.Label
 import androidx.compose.material.icons.outlined.Download
@@ -726,11 +729,14 @@ fun EpisodeInfoScreen(
                     // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
                     if (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty()) {
                         item {
-                            Surface(
+                            androidx.compose.material3.OutlinedCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                ),
+                                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
                                 shape = MaterialTheme.shapes.extraLarge
                             ) {
                                 Column(
@@ -741,14 +747,23 @@ fun EpisodeInfoScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 24.dp)
-                                            .padding(bottom = 16.dp),
+                                            .padding(horizontal = 20.dp)
+                                            .padding(bottom = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
                                         Text(
-                                            text = "More like this",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.SemiBold,
+                                            text = "More Like This",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = (-0.1).sp
+                                            ),
                                             color = MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.weight(1f),
                                             maxLines = 1,
@@ -800,11 +815,12 @@ fun EpisodeInfoScreen(
                                             }
                                         } else {
                                             items(state.similarEpisodes) { episode ->
-                                                androidx.compose.material3.ElevatedCard(
-                                                    shape = MaterialTheme.shapes.large,
-                                                    colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
-                                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                                androidx.compose.material3.OutlinedCard(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
                                                     ),
+                                                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
                                                     modifier = Modifier
                                                         .width(140.dp)
                                                         .expressiveClickable { 
@@ -818,18 +834,38 @@ fun EpisodeInfoScreen(
                                                             contentDescription = episode.title,
                                                             modifier = Modifier
                                                                 .size(140.dp)
-                                                                .clip(MaterialTheme.shapes.medium),
+                                                                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                                                             contentScale = ContentScale.Crop
                                                         )
-                                                        Text(
-                                                            text = episode.title,
-                                                            style = MaterialTheme.typography.labelMedium,
-                                                            color = MaterialTheme.colorScheme.onSurface,
-                                                            minLines = 3,
-                                                            maxLines = 3,
-                                                            overflow = TextOverflow.Ellipsis,
-                                                            modifier = Modifier.padding(12.dp)
-                                                        )
+                                                        Column(
+                                                            modifier = Modifier.padding(10.dp),
+                                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = episode.title,
+                                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    lineHeight = 14.sp
+                                                                ),
+                                                                color = MaterialTheme.colorScheme.onSurface,
+                                                                minLines = 2,
+                                                                maxLines = 2,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                            val podTitle = episode.podcastTitle
+                                                            if (!podTitle.isNullOrEmpty()) {
+                                                                Text(
+                                                                    text = podTitle,
+                                                                    style = MaterialTheme.typography.bodySmall.copy(
+                                                                        fontSize = 11.sp,
+                                                                        fontWeight = FontWeight.Medium
+                                                                    ),
+                                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -842,11 +878,14 @@ fun EpisodeInfoScreen(
 
                     // UNIFIED "MORE FROM PODCAST" SECTION -> Card
                     item {
-                        Surface(
+                        androidx.compose.material3.OutlinedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
                             shape = MaterialTheme.shapes.extraLarge
                         ) {
                             Column(
@@ -854,33 +893,41 @@ fun EpisodeInfoScreen(
                                     .fillMaxWidth()
                                     .padding(vertical = 16.dp)
                             ) {
-                                // Clickable header - "More from Podcast" with arrow
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .expressiveClickable { 
-                                            viewModel.onPodcastLinkClicked()
-                                            onPodcastClick(state.podcastId) 
-                                        }
-                                        .padding(horizontal = 24.dp)
-                                        .padding(bottom = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "More from ${state.podcastTitle}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                                        contentDescription = "Go to podcast",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                     modifier = Modifier
+                                         .fillMaxWidth()
+                                         .expressiveClickable { 
+                                             viewModel.onPodcastLinkClicked()
+                                             onPodcastClick(state.podcastId) 
+                                         }
+                                         .padding(horizontal = 20.dp)
+                                         .padding(bottom = 12.dp),
+                                     verticalAlignment = Alignment.CenterVertically
+                                 ) {
+                                     Icon(
+                                         imageVector = Icons.Rounded.Subscriptions,
+                                         contentDescription = null,
+                                         tint = MaterialTheme.colorScheme.primary,
+                                         modifier = Modifier.size(20.dp)
+                                     )
+                                     Spacer(modifier = Modifier.width(10.dp))
+                                     Text(
+                                         text = "More from ${state.podcastTitle}",
+                                         style = MaterialTheme.typography.titleMedium.copy(
+                                             fontWeight = FontWeight.Bold,
+                                             letterSpacing = (-0.1).sp
+                                         ),
+                                         color = MaterialTheme.colorScheme.onSurface,
+                                         modifier = Modifier.weight(1f),
+                                         maxLines = 1,
+                                         overflow = TextOverflow.Ellipsis
+                                     )
+                                     Icon(
+                                         imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                         contentDescription = "Go to podcast",
+                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                     )
+                                 }
                                 
                                 // Horizontal episodes row
                                 val relatedListState = rememberLazyListState()
@@ -936,45 +983,48 @@ fun EpisodeInfoScreen(
                                             }
                                         }
                                     } else if (state.relatedEpisodes.isNotEmpty()) {
-                                        // Actual episodes - ElevatedCard style like RisingCard
-                                        items(state.relatedEpisodes) { episode ->
-                                            androidx.compose.material3.ElevatedCard(
-                                                shape = MaterialTheme.shapes.large,
-                                                colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
-                                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                                ),
-                                                modifier = Modifier
-                                                    .width(140.dp)
-                                                    .expressiveClickable { 
-                                                        viewModel.onRelatedEpisodeClicked()
-                                                        onEpisodeClick(episode) 
-                                                    }
-                                            ) {
-                                                Column {
-                                                    // Episode Artwork
-                                                    OptimizedImage(
-                                                        url = episode.imageUrl?.ifEmpty { state.episode.podcastImageUrl },
-                                                        proxyWidth = 300, // 140dp thumbnails
-                                                        contentDescription = episode.title,
-                                                        modifier = Modifier
-                                                            .size(140.dp)
-                                                            .clip(MaterialTheme.shapes.medium),
-                                                        contentScale = ContentScale.Crop
-                                                    )
-                                                    
-                                                    // Title in card footer - minLines for even sizing
-                                                    Text(
-                                                        text = episode.title,
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                        minLines = 3,
-                                                        maxLines = 3,
-                                                        overflow = TextOverflow.Ellipsis,
-                                                        modifier = Modifier.padding(12.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
+                                         items(state.relatedEpisodes) { episode ->
+                                             androidx.compose.material3.OutlinedCard(
+                                                 shape = RoundedCornerShape(16.dp),
+                                                 colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
+                                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                                                 ),
+                                                 border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                                                 modifier = Modifier
+                                                     .width(140.dp)
+                                                     .expressiveClickable { 
+                                                         viewModel.onRelatedEpisodeClicked()
+                                                         onEpisodeClick(episode) 
+                                                     }
+                                             ) {
+                                                 Column {
+                                                     // Episode Artwork
+                                                     OptimizedImage(
+                                                         url = episode.imageUrl?.ifEmpty { state.episode.podcastImageUrl },
+                                                         proxyWidth = 300, // 140dp thumbnails
+                                                         contentDescription = episode.title,
+                                                         modifier = Modifier
+                                                             .size(140.dp)
+                                                             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                                                         contentScale = ContentScale.Crop
+                                                     )
+                                                     
+                                                     // Title in card footer - minLines for even sizing
+                                                     Text(
+                                                         text = episode.title,
+                                                         style = MaterialTheme.typography.labelMedium.copy(
+                                                             fontWeight = FontWeight.SemiBold,
+                                                             lineHeight = 14.sp
+                                                         ),
+                                                         color = MaterialTheme.colorScheme.onSurface,
+                                                         minLines = 3,
+                                                         maxLines = 3,
+                                                         overflow = TextOverflow.Ellipsis,
+                                                         modifier = Modifier.padding(12.dp)
+                                                     )
+                                                 }
+                                             }
+                                         }
                                     } else {
                                         // No episodes message
                                         item {

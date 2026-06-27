@@ -6,10 +6,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Subscriptions
+import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,18 +41,16 @@ fun BecauseYouLikeSection(
 ) {
 
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.fillMaxWidth()
     ) {
         // --- Seed Podcast Card (Matching OutlinedCard Bento style) ---
         OutlinedCard(
-            onClick = { onPodcastClick(podcast) },
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
+            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp)
+                .expressiveClickable(onClick = { onPodcastClick(podcast) })
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -71,10 +71,10 @@ fun BecauseYouLikeSection(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
+                            painter = painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.mood_heart_24),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(12.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "BECAUSE YOU LIKE",
@@ -109,19 +109,33 @@ fun BecauseYouLikeSection(
 
         // --- Subsection 1: Suggested Shows (OutlinedCard Grid Matching CuratedEpisodeCard) ---
         if (suggestedPodcasts.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "SIMILAR SHOWS",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    letterSpacing = 0.5.sp
-                )
+            Spacer(modifier = Modifier.height(16.dp))
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Subscriptions,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Similar Shows",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.1).sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(suggestedPodcasts, key = { it.id }) { suggestedPodcast ->
@@ -136,19 +150,33 @@ fun BecauseYouLikeSection(
 
         // --- Subsection 2: Recommended Episodes ---
         if (recommendations.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "RECOMMENDED EPISODES",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    letterSpacing = 0.5.sp
-                )
+            Spacer(modifier = Modifier.height(16.dp))
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.PlaylistPlay,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Recommended Episodes",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.1).sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
 
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(recommendations, key = { it.id }) { episode ->
@@ -180,7 +208,7 @@ private fun SuggestedPodcastCard(
 ) {
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .width(140.dp)
