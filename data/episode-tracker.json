@@ -1,30 +1,40 @@
 {
-  "lastRun": "2026-06-27T16:45:14.493Z",
+  "lastRun": "2026-06-27T16:59:57.831Z",
   "podcasts": {
     "2123": {
-      "lastEpisodeId": "999999",
+      "lastEpisodeId": "56772272198",
       "lastEpisodeTitle": "Rewind: CEO Jim Farley on Ford's EV gamble",
-      "lastCheckedAt": 1782578714919
+      "lastCheckedAt": 1782579598357
     },
     "9926": {
-      "lastEpisodeId": "999999",
+      "lastEpisodeId": "56767913697",
       "lastEpisodeTitle": "The Mind-Bending MK Ultra Experiments of Dr Ewen Cameron",
-      "lastCheckedAt": 1782578715108
+      "lastCheckedAt": 1782579598636
     },
     "311214": {
-      "lastEpisodeId": "999999",
+      "lastEpisodeId": "56710834661",
       "lastEpisodeTitle": "The Cemetery Shadow Man",
-      "lastCheckedAt": 1782578715248
+      "lastCheckedAt": 1782579598920
+    },
+    "448245": {
+      "lastEpisodeId": "56601446692",
+      "lastEpisodeTitle": "Back To Our Roots",
+      "lastCheckedAt": 1782579598999
     },
     "947138": {
-      "lastEpisodeId": "999999",
+      "lastEpisodeId": "56759563861",
       "lastEpisodeTitle": "Steam Machine is Perfect-ly Divisive!",
-      "lastCheckedAt": 1782578715371
+      "lastCheckedAt": 1782579599314
     },
     "1258562": {
-      "lastEpisodeId": "999999",
+      "lastEpisodeId": "53310059829",
       "lastEpisodeTitle": "190. The Reality Show Triple Murder: Villupuram Case",
-      "lastCheckedAt": 1782578715983
+      "lastCheckedAt": 1782579599672
+    },
+    "5377667": {
+      "lastEpisodeId": "22189360071",
+      "lastEpisodeTitle": "#92 | FREE COMIC BOOK DAY 2024!!!",
+      "lastCheckedAt": 1782579599774
     }
   }
 }
