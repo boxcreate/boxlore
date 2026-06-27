@@ -25,7 +25,7 @@ jobs:
 
       - name: Authenticate GCP/Firebase
         run: |
-          echo '${{ secrets.GCP_SA_KEY }}' > gcp-key.json
+          echo '${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}' > gcp-key.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/gcp-key.json" >> $GITHUB_ENV
 
       - name: Run New Episode Check
