@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-06-27T17:19:46.952Z",
+  "lastRun": "2026-06-27T18:44:30.235Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "56772272198",
@@ -20,6 +20,11 @@
       "lastEpisodeId": "56601446692",
       "lastEpisodeTitle": "Back To Our Roots",
       "lastCheckedAt": 1782580346423
+    },
+    "555427": {
+      "lastEpisodeId": "38607417022",
+      "lastEpisodeTitle": "Special announcement - a new podcast",
+      "lastCheckedAt": 1782585870863
     },
     "947138": {
       "lastEpisodeId": "56759563861",
