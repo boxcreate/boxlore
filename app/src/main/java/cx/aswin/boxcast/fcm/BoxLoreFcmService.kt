@@ -71,7 +71,12 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         val podcastTitle = data["podcastTitle"] ?: "New Release"
         val episodeTitle = data["episodeTitle"] ?: "New Episode"
         val imageUrl = data["image"] ?: data["imageUrl"]
-        val route = data["route"] ?: "boxlore://podcast/$podcastId"
+        val rawRoute = data["route"] ?: "boxlore://podcast/$podcastId"
+        val route = if (rawRoute.startsWith("boxlore://episode/")) {
+            "boxlore://episode/$episodeId?autoplay=false&podcastId=${Uri.encode(podcastId)}&podcastTitle=${Uri.encode(podcastTitle)}"
+        } else {
+            rawRoute
+        }
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "boxcast_new_episodes"

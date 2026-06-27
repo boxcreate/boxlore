@@ -171,18 +171,40 @@ class EpisodeInfoViewModel(
                 
                 var currentEpisode: Episode? = null
 
-                // If essential parameters are missing, resolve them from the network/database first
+                // If essential parameters are missing, resolve them from local DB first, then network
+                val localDownload = database.downloadedEpisodeDao().getDownload(episodeId)
+                if (localDownload != null) {
+                    if (finalPodcastId.isEmpty()) finalPodcastId = localDownload.podcastId
+                    if (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast") finalPodcastTitle = localDownload.podcastName
+                    if (finalEpisodeTitle.isEmpty()) finalEpisodeTitle = localDownload.episodeTitle
+                    if (finalEpisodeImageUrl.isEmpty()) finalEpisodeImageUrl = localDownload.episodeImageUrl ?: ""
+                    if (finalEpisodeDescription.isEmpty()) finalEpisodeDescription = localDownload.episodeDescription ?: ""
+                    if (finalEpisodeAudioUrl.isEmpty()) finalEpisodeAudioUrl = localDownload.localFilePath
+                    if (finalEpisodeDuration == 0) finalEpisodeDuration = (localDownload.durationMs / 1000L).toInt()
+                }
+
+                val localHistory = database.listeningHistoryDao().getHistoryItem(episodeId)
+                if (localHistory != null) {
+                    if (finalPodcastId.isEmpty()) finalPodcastId = localHistory.podcastId
+                    if (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast") finalPodcastTitle = localHistory.podcastName
+                    if (finalEpisodeTitle.isEmpty()) finalEpisodeTitle = localHistory.episodeTitle
+                    if (finalEpisodeImageUrl.isEmpty()) finalEpisodeImageUrl = localHistory.episodeImageUrl ?: ""
+                    if (finalEpisodeDescription.isEmpty()) finalEpisodeDescription = localHistory.episodeDescription ?: ""
+                    if (finalEpisodeAudioUrl.isEmpty()) finalEpisodeAudioUrl = localHistory.episodeAudioUrl ?: ""
+                    if (finalEpisodeDuration == 0) finalEpisodeDuration = (localHistory.durationMs / 1000L).toInt()
+                }
+
                 if (finalPodcastId.isEmpty() || finalEpisodeTitle.isEmpty() || finalEpisodeAudioUrl.isEmpty()) {
                     val fullEpisode = repository.getEpisode(episodeId)
                     if (fullEpisode != null) {
                         currentEpisode = fullEpisode
-                        finalPodcastId = fullEpisode.podcastId ?: "unknown"
-                        finalPodcastTitle = fullEpisode.podcastTitle ?: "Podcast"
-                        finalEpisodeTitle = fullEpisode.title
-                        finalEpisodeImageUrl = fullEpisode.imageUrl ?: ""
-                        finalEpisodeDescription = fullEpisode.description
-                        finalEpisodeAudioUrl = fullEpisode.audioUrl
-                        finalEpisodeDuration = fullEpisode.duration
+                        if (finalPodcastId.isEmpty()) finalPodcastId = fullEpisode.podcastId ?: "unknown"
+                        if (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast") finalPodcastTitle = fullEpisode.podcastTitle ?: "Podcast"
+                        if (finalEpisodeTitle.isEmpty()) finalEpisodeTitle = fullEpisode.title
+                        if (finalEpisodeImageUrl.isEmpty()) finalEpisodeImageUrl = fullEpisode.imageUrl ?: ""
+                        if (finalEpisodeDescription.isEmpty()) finalEpisodeDescription = fullEpisode.description
+                        if (finalEpisodeAudioUrl.isEmpty()) finalEpisodeAudioUrl = fullEpisode.audioUrl
+                        if (finalEpisodeDuration == 0) finalEpisodeDuration = fullEpisode.duration
                     }
                 }
 
@@ -207,6 +229,10 @@ class EpisodeInfoViewModel(
                 val localPodcast = if (finalPodcastId.isNotEmpty()) database.podcastDao().getPodcast(finalPodcastId) else null
                 val initialLocation = localPodcast?.location
                 val initialLicense = localPodcast?.license
+
+                if (localPodcast != null && (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast")) {
+                    finalPodcastTitle = localPodcast.title
+                }
 
                 // If finalPodcastTitle is empty/generic, try to fetch podcast details from network
                 if (finalPodcastId.isNotEmpty() && (finalPodcastTitle.isEmpty() || finalPodcastTitle == "Podcast")) {

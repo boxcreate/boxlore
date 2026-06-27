@@ -91,9 +91,18 @@ class AutoDownloadWorker(
             val podcastRepository = PodcastRepository(apiBaseUrl, publicKey, app)
             val downloadRepository = DownloadRepository(app, database)
 
-            // Fetch full episode metadata
+            // Fetch full episode metadata with fallbacks
             Log.i("BoxLore_BackgroundTrace", "[Worker] Fetching episode metadata from repository for episodeId: $episodeId...")
-            val episode = podcastRepository.getEpisode(episodeId)
+            var episode = podcastRepository.getEpisode(episodeId)
+            if (episode == null) {
+                Log.w("BoxLore_BackgroundTrace", "[Worker] Direct getEpisode failed for $episodeId. Attempting paginated list fallback for podcast $podcastId...")
+                val page = podcastRepository.getEpisodesPaginated(podcastId, limit = 50)
+                episode = page.episodes.find { it.id == episodeId }
+            }
+            if (episode == null && podcastEntity.latestEpisode?.id == episodeId) {
+                Log.w("BoxLore_BackgroundTrace", "[Worker] Using local podcastEntity.latestEpisode fallback for $episodeId.")
+                episode = podcastEntity.latestEpisode
+            }
             if (episode == null) {
                 Log.e("BoxLore_BackgroundTrace", "[Worker] Failed to fetch episode metadata for episodeId: $episodeId. Retrying later.")
                 return Result.retry()
