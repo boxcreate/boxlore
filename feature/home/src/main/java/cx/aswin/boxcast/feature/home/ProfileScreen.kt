@@ -8,6 +8,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -52,6 +55,7 @@ fun ProfileScreen(
     currentSurfaceStyle: String = "standard",
     onSetSurfaceStyle: (String) -> Unit = {},
     onExportJson: (android.net.Uri) -> Unit = {},
+    onExportOpml: (android.net.Uri) -> Unit = {},
     onImportJson: (android.net.Uri) -> Unit = {},
     onImportOpml: (android.net.Uri) -> Unit = {},
     skipBehavior: String = "just_skip",
@@ -61,7 +65,8 @@ fun ProfileScreen(
     hideCompletedInSubs: Boolean = true,
     onSetHideCompletedInSubs: (Boolean) -> Unit = {},
     hideCompletedInShowDetails: Boolean = false,
-    onSetHideCompletedInShowDetails: (Boolean) -> Unit = {}
+    onSetHideCompletedInShowDetails: (Boolean) -> Unit = {},
+    onNavigateToSmartDownloads: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var showResetDialog by remember { mutableStateOf(false) }
@@ -71,6 +76,10 @@ fun ProfileScreen(
     val exportJsonLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
         onResult = { uri -> uri?.let { onExportJson(it) } }
+    )
+    val exportOpmlLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("text/x-opml"),
+        onResult = { uri -> uri?.let { onExportOpml(it) } }
     )
     val importJsonLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
@@ -109,26 +118,40 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 200.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                SectionCard("App Behaviour", Icons.Rounded.Tune) {
-                    AppBehaviourSection(
-                        skipBehavior = skipBehavior,
-                        onSetSkipBehavior = onSetSkipBehavior,
-                        hideCompletedInHome = hideCompletedInHome,
-                        onSetHideCompletedInHome = onSetHideCompletedInHome,
-                        hideCompletedInSubs = hideCompletedInSubs,
-                        onSetHideCompletedInSubs = onSetHideCompletedInSubs,
-                        hideCompletedInShowDetails = hideCompletedInShowDetails,
-                        onSetHideCompletedInShowDetails = onSetHideCompletedInShowDetails
+                SectionCard("Library & Content", Icons.AutoMirrored.Rounded.LibraryBooks, isCollapsible = false) {
+                    ContentLibrarySection(
+                        currentRegion = currentRegion,
+                        onSetRegion = { 
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
+                            onSetRegion(it) 
+                        },
+                        onExport = { 
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("library_export")
+                            exportJsonLauncher.launch("boxcast_backup_${System.currentTimeMillis()}.json") 
+                        },
+                        onExportOpml = { 
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("library_export_opml")
+                            exportOpmlLauncher.launch("boxlore_subscriptions_${System.currentTimeMillis()}.opml") 
+                        },
+                        onImportJson = { 
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("library_import_json")
+                            importJsonLauncher.launch(arrayOf("application/json")) 
+                        },
+                        onImportOpml = { 
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("library_import_opml")
+                            importOpmlLauncher.launch(arrayOf("*/*")) 
+                        },
+                        onSmartDownloadsClick = onNavigateToSmartDownloads
                     )
                 }
             }
 
             item {
-                SectionCard("Appearance", Icons.Rounded.Palette) {
+                SectionCard("Appearance", Icons.Rounded.Palette, isCollapsible = true, initiallyExpanded = false) {
                     AppearanceSection(
                         currentThemeConfig = currentThemeConfig, 
                         onSetThemeConfig = { 
@@ -155,32 +178,23 @@ fun ProfileScreen(
             }
 
             item {
-                SectionCard("Library & Content", Icons.AutoMirrored.Rounded.LibraryBooks) {
-                    ContentLibrarySection(
-                        currentRegion, 
-                        { 
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
-                            onSetRegion(it) 
-                        },
-                        { 
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("library_export")
-                            exportJsonLauncher.launch("boxcast_backup_${System.currentTimeMillis()}.json") 
-                        },
-                        { 
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("library_import_json")
-                            importJsonLauncher.launch(arrayOf("application/json")) 
-                        },
-                        { 
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("library_import_opml")
-                            importOpmlLauncher.launch(arrayOf("*/*")) 
-                        }
+                SectionCard("App Behaviour", Icons.Rounded.Tune, isCollapsible = true, initiallyExpanded = false) {
+                    AppBehaviourSection(
+                        skipBehavior = skipBehavior,
+                        onSetSkipBehavior = onSetSkipBehavior,
+                        hideCompletedInHome = hideCompletedInHome,
+                        onSetHideCompletedInHome = onSetHideCompletedInHome,
+                        hideCompletedInSubs = hideCompletedInSubs,
+                        onSetHideCompletedInSubs = onSetHideCompletedInSubs,
+                        hideCompletedInShowDetails = hideCompletedInShowDetails,
+                        onSetHideCompletedInShowDetails = onSetHideCompletedInShowDetails
                     )
                 }
             }
 
             item {
-                SectionCard("Data & Privacy", Icons.Rounded.Security) {
-                    PrivacySection(
+                SectionCard("Data Management", Icons.Rounded.Storage, isCollapsible = true, initiallyExpanded = true) {
+                    DataManagementSection(
                         appInstanceId = appInstanceId,
                         onResetAnalytics = onResetAnalytics,
                         showResetDialog = showResetDialog,
@@ -192,8 +206,8 @@ fun ProfileScreen(
             }
 
             item {
-                SectionCard("Community", Icons.Rounded.Public) {
-                    CommunitySection(context)
+                SectionCard("Powered by Podcast Index", Icons.Rounded.Info, isCollapsible = false) {
+                    PodcastIndexSection()
                 }
             }
         }
@@ -254,7 +268,14 @@ fun ProfileScreen(
 // -------------------------------------------------------------------------------------------------
 
 @Composable
-fun SectionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable () -> Unit) {
+fun SectionCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isCollapsible: Boolean = false,
+    initiallyExpanded: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -263,13 +284,36 @@ fun SectionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVe
         ),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 20.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (isCollapsible) {
+                        Modifier.clickable { expanded = !expanded }
+                    } else Modifier
+                )
+                .padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                 Spacer(Modifier.width(12.dp))
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                if (isCollapsible) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            content()
+            AnimatedVisibility(visible = !isCollapsible || expanded) {
+                Column(modifier = Modifier.padding(top = 20.dp)) {
+                    content()
+                }
+            }
         }
     }
 }
@@ -281,178 +325,360 @@ fun AppearanceSection(
     currentThemeBrand: String, onSetThemeBrand: (String) -> Unit,
     currentSurfaceStyle: String = "standard", onSetSurfaceStyle: (String) -> Unit = {}
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    val isThemeModeLocked = currentSurfaceStyle == "amoled" || currentSurfaceStyle == "purewhite" ||
+                            currentSurfaceStyle == "classic_dark" || currentSurfaceStyle == "classic_light"
+    val lockedThemeModeLabel = if (currentSurfaceStyle == "amoled" || currentSurfaceStyle == "classic_dark") "Dark" else "Light"
 
-        // ── Theme Mode (Segmented Pill Bar) ──
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Theme Mode", style = MaterialTheme.typography.titleMedium)
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+
+        // ── Theme Mode (Standard M3 Segmented Button Row) ──
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val modes = listOf(
+                Text(
+                    text = "Theme Mode", 
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (isThemeModeLocked) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                    ) {
+                        Text(
+                            text = "Forced $lockedThemeModeLabel",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+            
+            @OptIn(ExperimentalMaterial3Api::class)
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val themes = listOf(
                     "system" to "System",
                     "light" to "Light",
                     "dark" to "Dark"
                 )
-                modes.forEach { (mode, label) ->
-                    val isSelected = currentThemeConfig == mode
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                else Color.Transparent
-                            )
-                            .clickable { onSetThemeConfig(mode) }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                themes.forEachIndexed { index, (mode, label) ->
+                    val isSelected = if (isThemeModeLocked) {
+                        (lockedThemeModeLabel == "Dark" && mode == "dark") || (lockedThemeModeLabel == "Light" && mode == "light")
+                    } else {
+                        currentThemeConfig == mode
                     }
-                }
-            }
-        }
-
-        // ── Surface Style ──
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Surface Style", style = MaterialTheme.typography.titleMedium)
-
-            cx.aswin.boxcast.core.designsystem.theme.SurfaceStyles.entries.forEach { entry ->
-                val isSelected = currentSurfaceStyle == entry.key
-                val swatchColor = when (entry.key) {
-                    "amoled" -> Color.Black
-                    "purewhite" -> Color.White
-                    "highcontrast" -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.surfaceContainerHighest
-                }
-                val swatchBorder = when (entry.key) {
-                    "purewhite" -> MaterialTheme.colorScheme.outlineVariant
-                    else -> Color.Transparent
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                            else Color.Transparent
-                        )
-                        .clickable { onSetSurfaceStyle(entry.key) }
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(swatchColor)
-                            .border(1.dp, swatchBorder, CircleShape)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            entry.label,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                        )
-                        Text(
-                            entry.subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    RadioButton(
+                    
+                    SegmentedButton(
                         selected = isSelected,
-                        onClick = null
+                        onClick = {
+                            if (isThemeModeLocked) {
+                                val clickedLockedValue = if (lockedThemeModeLabel == "Dark") "dark" else "light"
+                                if (mode != clickedLockedValue) {
+                                    onSetSurfaceStyle("classic_dynamic")
+                                }
+                            }
+                            onSetThemeConfig(mode)
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = themes.size),
+                        label = { Text(label) }
                     )
+                }
+            }
+            
+            if (isThemeModeLocked) {
+                val styleName = when (currentSurfaceStyle) {
+                    "amoled" -> "Pitch Black"
+                    "purewhite" -> "Pure White"
+                    "classic_dark" -> "Blackish"
+                    "classic_light" -> "Whitish"
+                    else -> "Locked"
+                }
+                Text(
+                    text = "Locked by '$styleName' style. Selecting another mode reverts background to Default.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+
+        // ── Surface Background Style (Grouped Cards) ──
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(
+                text = "Surface Background Style", 
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            val entries = cx.aswin.boxcast.core.designsystem.theme.SurfaceStyles.entries.filter { it.key != "highcontrast" }
+
+            // 1. Standalone Default (Almost Dynamic) Option
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            ) {
+                val defaultEntry = entries.first { it.key == "classic_dynamic" }
+                SurfaceStyleItem(
+                    entry = defaultEntry,
+                    isSelected = currentSurfaceStyle == "classic_dynamic",
+                    onSelect = {
+                        onSetSurfaceStyle("classic_dynamic")
+                        onSetThemeConfig("system")
+                        onToggleDynamicColor(false)
+                        onSetThemeBrand("violet")
+                    }
+                )
+            }
+
+            // 1.5. Standalone Material You Option
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            ) {
+                val standardEntry = entries.first { it.key == "standard" }
+                SurfaceStyleItem(
+                    entry = standardEntry,
+                    isSelected = currentSurfaceStyle == "standard",
+                    onSelect = {
+                        onSetSurfaceStyle("standard")
+                        onSetThemeConfig("system")
+                        onToggleDynamicColor(true)
+                    }
+                )
+            }
+
+            // 2. Almost Group
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Almost",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+                ) {
+                    Column {
+                        val almostKeys = listOf("classic_dark", "classic_light")
+                        val almostEntries = entries.filter { it.key in almostKeys }
+                        almostEntries.forEachIndexed { index, entry ->
+                            val isSelected = currentSurfaceStyle == entry.key
+                            SurfaceStyleItem(
+                                entry = entry,
+                                isSelected = isSelected,
+                                onSelect = {
+                                    onSetSurfaceStyle(entry.key)
+                                    onToggleDynamicColor(false)
+                                }
+                            )
+                            if (index < almostEntries.size - 1) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Pitch & Pure Group
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Pitch & Pure",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+                ) {
+                    Column {
+                        val pitchPureKeys = listOf("dynamic_oled_white", "amoled", "purewhite")
+                        val pitchPureEntries = entries.filter { it.key in pitchPureKeys }
+                        pitchPureEntries.forEachIndexed { index, entry ->
+                            val isSelected = currentSurfaceStyle == entry.key
+                            SurfaceStyleItem(
+                                entry = entry,
+                                isSelected = isSelected,
+                                onSelect = {
+                                    onSetSurfaceStyle(entry.key)
+                                    if (entry.key == "dynamic_oled_white") {
+                                        onSetThemeConfig("system")
+                                    }
+                                    onToggleDynamicColor(false)
+                                }
+                            )
+                            if (index < pitchPureEntries.size - 1) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // ── Color ──
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Dynamic Color toggle
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .clickable { onToggleDynamicColor(!isDynamicColorEnabled) }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+        // ── Accent Colors (Dynamic Switch & Brand Seed Palette) ──
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "Accent Colors", 
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Dynamic Color", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Use wallpaper colors (Android 12+)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(checked = isDynamicColorEnabled, onCheckedChange = onToggleDynamicColor)
-            }
-
-            // Accent Color palette (when dynamic color is off)
-            AnimatedVisibility(visible = !isDynamicColorEnabled) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Accent Color", style = MaterialTheme.typography.titleMedium)
-                        val currentBrandLabel = cx.aswin.boxcast.core.designsystem.theme.BrandSeeds[currentThemeBrand]?.first ?: ""
-                        Text(
-                            text = currentBrandLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Material You (Dynamic)", 
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Use accent colors generated from your system wallpaper (Android 12+).",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 16.sp
+                            )
+                        }
+                        Switch(
+                            checked = isDynamicColorEnabled, 
+                            onCheckedChange = onToggleDynamicColor
                         )
                     }
 
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        cx.aswin.boxcast.core.designsystem.theme.BrandSeeds.forEach { (id, pair) ->
-                            val (_, color) = pair
-                            val isSelected = currentThemeBrand == id
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .then(
-                                        if (isSelected) Modifier.border(
-                                            2.dp,
-                                            MaterialTheme.colorScheme.primary,
-                                            CircleShape
-                                        ) else Modifier
-                                    )
-                                    .padding(if (isSelected) 3.dp else 0.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                                    .clickable { onSetThemeBrand(id) },
-                                contentAlignment = Alignment.Center
+                    AnimatedVisibility(visible = !isDynamicColorEnabled) {
+                        Column {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (isSelected) {
+                                Text(
+                                    text = "Accent Palette", 
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                val currentBrandLabel = cx.aswin.boxcast.core.designsystem.theme.BrandSeeds[currentThemeBrand]?.first ?: ""
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                ) {
+                                    Text(
+                                        text = currentBrandLabel,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            @OptIn(ExperimentalLayoutApi::class)
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                cx.aswin.boxcast.core.designsystem.theme.BrandSeeds.forEach { (id, pair) ->
+                                    val (_, color) = pair
+                                    val isSelected = currentThemeBrand == id
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .then(
+                                                if (isSelected) Modifier.border(
+                                                    2.dp,
+                                                    MaterialTheme.colorScheme.primary,
+                                                    CircleShape
+                                                ) else Modifier
+                                            )
+                                            .padding(if (isSelected) 3.dp else 0.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                            .clickable { onSetThemeBrand(id) },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (isSelected) {
+                                            Icon(
+                                                Icons.Rounded.Check,
+                                                null,
+                                                tint = color.contrastColor(),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    AnimatedVisibility(visible = isDynamicColorEnabled) {
+                        Column {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     Icon(
-                                        Icons.Rounded.Check,
-                                        null,
-                                        tint = color.contrastColor(),
-                                        modifier = Modifier.size(16.dp)
+                                        imageVector = Icons.Rounded.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = "Active theme uses system wallpaper colors. Disable dynamic mode to choose a custom brand color.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 16.sp
                                     )
                                 }
                             }
@@ -466,9 +692,16 @@ fun AppearanceSection(
 
 @Composable
 fun ContentLibrarySection(
-    currentRegion: String, onSetRegion: (String) -> Unit,
-    onExport: () -> Unit, onImportJson: () -> Unit, onImportOpml: () -> Unit
+    currentRegion: String, 
+    onSetRegion: (String) -> Unit,
+    onExport: () -> Unit, 
+    onExportOpml: () -> Unit, 
+    onImportJson: () -> Unit, 
+    onImportOpml: () -> Unit,
+    onSmartDownloadsClick: () -> Unit
 ) {
+    var backupExpanded by remember { mutableStateOf(false) }
+
     Column {
         Text("Content Region", style = MaterialTheme.typography.titleMedium)
         Text("Select your region for localized recommendations and feeds.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -516,35 +749,102 @@ fun ContentLibrarySection(
         HorizontalDivider()
         Spacer(Modifier.height(16.dp))
 
-        Text("Backup & Restore", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp))
-        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { backupExpanded = !backupExpanded }
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Backup & Restore",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Icon(
+                imageVector = if (backupExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                contentDescription = if (backupExpanded) "Collapse Backup Options" else "Expand Backup Options",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        
+        AnimatedVisibility(visible = backupExpanded) {
+            Column {
+                Spacer(Modifier.height(8.dp))
+                ListItem(
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    headlineContent = { Text("Export Library Backup (JSON)") },
+                    supportingContent = { Text("Save subscriptions & liked episodes to JSON") },
+                    leadingContent = { Icon(Icons.Rounded.FileUpload, null, tint = MaterialTheme.colorScheme.primary) },
+                    modifier = Modifier.clickable { onExport() }
+                )
+                ListItem(
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    headlineContent = { Text("Export Subscriptions (OPML)") },
+                    supportingContent = { Text("Export OPML XML for other podcast apps") },
+                    leadingContent = { Icon(Icons.Rounded.FileUpload, null, tint = MaterialTheme.colorScheme.primary) },
+                    modifier = Modifier.clickable { onExportOpml() }
+                )
+                ListItem(
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    headlineContent = { Text("Import Library Backup") },
+                    supportingContent = { Text("Restore a previous JSON backup") },
+                    leadingContent = { Icon(Icons.Rounded.FileDownload, null, tint = MaterialTheme.colorScheme.primary) },
+                    modifier = Modifier.clickable { onImportJson() }
+                )
+                ListItem(
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    headlineContent = { Text("Import from OPML") },
+                    supportingContent = { Text("Migrate subscriptions from other apps") },
+                    leadingContent = { Icon(Icons.Rounded.FileDownload, null, tint = MaterialTheme.colorScheme.primary) },
+                    modifier = Modifier.clickable { onImportOpml() }
+                )
+            }
+        }
 
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text("Export Library Backup") },
-            supportingContent = { Text("Save subscriptions & liked episodes to JSON") },
-            leadingContent = { Icon(Icons.Rounded.Download, null, tint = MaterialTheme.colorScheme.primary) },
-            modifier = Modifier.clickable { onExport() }
-        )
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text("Import Library Backup") },
-            supportingContent = { Text("Restore a previous JSON backup") },
-            leadingContent = { Icon(Icons.Rounded.Upload, null, tint = MaterialTheme.colorScheme.primary) },
-            modifier = Modifier.clickable { onImportJson() }
-        )
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text("Import from OPML") },
-            supportingContent = { Text("Migrate subscriptions from other apps") },
-            leadingContent = { Icon(Icons.Rounded.ImportExport, null, tint = MaterialTheme.colorScheme.primary) },
-            modifier = Modifier.clickable { onImportOpml() }
-        )
+        Spacer(Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onSmartDownloadsClick() }
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.CloudDownload,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "Smart Downloads",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
 @Composable
-fun PrivacySection(
+fun DataManagementSection(
     appInstanceId: String?,
     onResetAnalytics: () -> Unit,
     showResetDialog: Boolean,
@@ -616,42 +916,6 @@ fun PrivacySection(
             }
         }
 
-        Spacer(Modifier.height(20.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(20.dp))
-
-        // GitHub Link Button
-        OutlinedButton(
-            onClick = {
-                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("github_repo_clicked")
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ashwkun/box.lore.android"))
-                try { context.startActivity(intent) } catch(_:Exception){}
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(androidx.compose.ui.res.painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.ic_github), null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Review the code on Github")
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-
-
-        // Privacy Policy Link
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text("Read Privacy Policy") },
-            leadingContent = {
-                Icon(Icons.Rounded.Policy, null, tint = MaterialTheme.colorScheme.onSurface)
-            },
-            modifier = Modifier.clickable {
-                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("privacy_policy_clicked")
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aswin.cx/boxlore/privacy"))
-                try { context.startActivity(intent) } catch (_: Exception) {}
-            }
-        )
-        
         Spacer(Modifier.height(16.dp))
         
         // DANGER ZONE INTEGRATED
@@ -742,7 +1006,7 @@ fun PrivacySection(
                                 cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("delete_email_clicked")
                                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                                     data = Uri.parse("mailto:")
-                                    putExtra(Intent.EXTRA_EMAIL, arrayOf("privacy@aswin.cx"))
+                                    putExtra(Intent.EXTRA_EMAIL, arrayOf("support@aswin.cx"))
                                     putExtra(Intent.EXTRA_SUBJECT, "Data Deletion Request")
                                     putExtra(Intent.EXTRA_TEXT, "Please delete data associated with Instance ID: ${cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.getDistinctId()}")
                                 }
@@ -755,7 +1019,7 @@ fun PrivacySection(
                         ) {
                             Icon(Icons.Rounded.Email, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Email privacy@aswin.cx")
+                            Text("Email support@aswin.cx")
                         }
                     }
                 }
@@ -765,60 +1029,71 @@ fun PrivacySection(
 }
 
 @Composable
-fun CommunitySection(context: android.content.Context) {
-    Column {
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text("GitHub Repository") },
-            supportingContent = { Text("Open Source. Star, fork, or contribute!") },
-            leadingContent = {
-                Icon(
-                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_github),
-                    contentDescription = "GitHub",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            modifier = Modifier.clickable {
-                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("github_repo_clicked")
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ashwkun/box.lore.android"))
-                try { context.startActivity(intent) } catch(_:Exception){}
-            }
+fun PodcastIndexSection() {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Logo
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.ic_podcast_index_logo),
+            contentDescription = "Podcast Index Logo",
+            modifier = Modifier
+                .height(96.dp)
+                .padding(vertical = 4.dp),
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit
         )
-        HorizontalDivider()
-
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = { Text("Podcast Index") },
-            supportingContent = { Text("Powered by the decentralized index.") },
-            leadingContent = {
-                Icon(Icons.Rounded.Search, contentDescription = null, tint = Color(0xFFE22828))
-            },
-            modifier = Modifier.clickable {
-                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("podcast_index_clicked")
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://podcastindex.org"))
-                try { context.startActivity(intent) } catch(_:Exception){}
-            }
-        )
-        HorizontalDivider()
-
-        Spacer(Modifier.height(16.dp))
         
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Text Description
+        Text(
+            text = "The Podcast Index is here to preserve, protect and extend the open, independent podcasting ecosystem.\n\n" +
+                   "We do this by enabling developers to have access to an open, categorized index that will always be available for free, for any use.\n\n" +
+                   "Try a new podcast app integrated with Podcast index today and see how much better the experience can be.",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Spacer(modifier = Modifier.height(20.dp))
+        
+        // Visit Podcast Index Button
+        Button(
+            onClick = {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction("podcast_index_homepage_clicked")
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://podcastindex.org"))
+                try { context.startActivity(intent) } catch(_: Exception) {}
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            val versionName = remember {
-                try {
-                    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
-                } catch (e: Exception) {
-                    "Unknown"
-                }
-            }
-            Text("boxcast v$versionName", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Made with ❤️", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+            Icon(
+                imageVector = Icons.Rounded.Launch,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Visit Podcast Index")
         }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        val versionName = remember {
+            try {
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
+            } catch (e: Exception) {
+                "Unknown"
+            }
+        }
+        Text("boxcast v$versionName", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+        Spacer(modifier = Modifier.height(4.dp))
+        Text("Made with ❤️", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
     }
 }
 
@@ -916,3 +1191,61 @@ fun AppBehaviourSection(
         }
     }
 }
+
+@Composable
+private fun SurfaceStyleItem(
+    entry: cx.aswin.boxcast.core.designsystem.theme.SurfaceStyles.Entry,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    ListItem(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect() },
+        colors = ListItemDefaults.colors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                             else Color.Transparent
+        ),
+        headlineContent = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = entry.label,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                )
+                if (entry.key == "amoled" || entry.key == "classic_dark" || entry.key == "purewhite" || entry.key == "classic_light") {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Text(
+                            text = if (entry.key == "amoled" || entry.key == "classic_dark") "Dark Only" else "Light Only",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+        },
+        supportingContent = {
+            Text(
+                text = entry.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 16.sp
+            )
+        },
+        trailingContent = {
+            RadioButton(
+                selected = isSelected,
+                onClick = onSelect
+            )
+        }
+    )
+}
+

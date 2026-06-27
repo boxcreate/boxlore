@@ -11,7 +11,7 @@ val SeedPurple = Color(0xFF6750A4) // M3 Baseline Purple (matches launcher icon)
  * Each entry maps a theme key to its seed color used by generateBrandColorScheme().
  */
 val BrandSeeds: LinkedHashMap<String, Pair<String, Color>> = linkedMapOf(
-    "violet" to ("Violet" to Color(0xFF6750A4)),
+    "violet" to ("Violet" to Color(0xFF5B5BD6)),
     "emerald" to ("Emerald" to Color(0xFF006C4C)),
     "ocean" to ("Ocean" to Color(0xFF0061A4)),
     "sakura" to ("Sakura" to Color(0xFFBC004B)),

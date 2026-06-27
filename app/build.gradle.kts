@@ -24,8 +24,8 @@ android {
         applicationId = "cx.aswin.boxlore"
         minSdk = 31
         targetSdk = 36
-        versionCode = 42
-        versionName = "2.6.7"
+        versionCode = 2
+        versionName = "0.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -137,6 +137,9 @@ dependencies {
     implementation(libs.firebase.database)
     
     
+    // WorkManager
+    implementation(libs.androidx.work.runtime)
+
     // PostHog
     implementation(libs.posthog.android)
 

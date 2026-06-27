@@ -45,6 +45,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxcast.core.designsystem.R
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 
 private const val TAG = "StylizedLogo"
 
@@ -118,48 +125,78 @@ fun TopControlBar(
         ) {
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Feedback
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier
-                    .size(36.dp)
-                    .combinedClickable(
-                        onClick = onFeedbackClick,
-                        onLongClick = onFeedbackLongClick
-                    )
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.ChatBubbleOutline,
-                        contentDescription = "Send Feedback",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                val feedbackInteractionSource = remember { MutableInteractionSource() }
+                val isFeedbackPressed by feedbackInteractionSource.collectIsPressedAsState()
+                val feedbackScale by animateFloatAsState(
+                    targetValue = if (isFeedbackPressed) 0.90f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    ),
+                    label = "feedbackBounce"
+                )
+
+                // Feedback
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .scale(feedbackScale)
+                        .clip(CircleShape)
+                        .combinedClickable(
+                            interactionSource = feedbackInteractionSource,
+                            indication = androidx.compose.foundation.LocalIndication.current,
+                            onClick = onFeedbackClick,
+                            onLongClick = onFeedbackLongClick
+                        )
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.ChatBubbleOutline,
+                            contentDescription = "Send Feedback",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                val settingsInteractionSource = remember { MutableInteractionSource() }
+                val isSettingsPressed by settingsInteractionSource.collectIsPressedAsState()
+                val settingsScale by animateFloatAsState(
+                    targetValue = if (isSettingsPressed) 0.90f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    ),
+                    label = "settingsBounce"
+                )
+                
+                // Profile/Settings
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .scale(settingsScale)
+                        .clip(CircleShape)
+                        .combinedClickable(
+                            interactionSource = settingsInteractionSource,
+                            indication = androidx.compose.foundation.LocalIndication.current,
+                            onClick = onAvatarClick,
+                            onLongClick = onAvatarLongClick
+                        )
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Settings",
+                            modifier = Modifier.size(22.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-            
-            // Profile/Settings
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier
-                    .size(36.dp)
-                    .combinedClickable(
-                        onClick = onAvatarClick,
-                        onLongClick = onAvatarLongClick
-                    )
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.Settings,
-                        contentDescription = "Settings",
-                        modifier = Modifier.size(22.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
     }
 }
 }

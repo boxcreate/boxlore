@@ -30,4 +30,7 @@ interface PodcastDao {
 
     @Query("UPDATE podcasts SET preferredSort = :sort, type = :type WHERE podcastId = :id")
     suspend fun updatePreferredSortAndType(id: String, sort: String?, type: String)
+
+    @Query("UPDATE podcasts SET notificationsEnabled = :enabled WHERE podcastId = :id")
+    suspend fun setNotificationsEnabled(id: String, enabled: Boolean)
 }

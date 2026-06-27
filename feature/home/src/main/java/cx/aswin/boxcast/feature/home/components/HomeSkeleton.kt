@@ -157,16 +157,16 @@ fun SkeletonBlock(
 }
 
 @Composable
-fun YourShowsSkeleton(subscribedCount: Int = 0) {
+fun YourShowsSkeleton(subscribedCount: Int = 0, modifier: Modifier = Modifier) {
     val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
     val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
 
-    Column(modifier = Modifier.padding(bottom = 16.dp)) {
+    Column(modifier = modifier.padding(bottom = 16.dp)) {
         // Section Header Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -193,7 +193,7 @@ fun YourShowsSkeleton(subscribedCount: Int = 0) {
             ) {
                 // Row 1 shimmers
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -208,7 +208,7 @@ fun YourShowsSkeleton(subscribedCount: Int = 0) {
                 }
                 // Row 2 shimmers
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -225,7 +225,7 @@ fun YourShowsSkeleton(subscribedCount: Int = 0) {
         } else {
             // 1-row layout (LazyRow) matching the height 84.dp
             LazyRow(
-                contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = 4.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically

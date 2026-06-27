@@ -62,6 +62,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -435,7 +436,7 @@ fun BriefingScreen(
             Image(
                 painter = painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.ic_boxlore_brief_logo),
                 contentDescription = "The Boxlore Brief",
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .height(40.dp)
                     .graphicsLayer { alpha = titleAlpha }
@@ -648,7 +649,7 @@ fun BriefingContent(
             Image(
                 painter = painterResource(id = cx.aswin.boxcast.core.designsystem.R.drawable.ic_boxlore_brief_logo),
                 contentDescription = "The Boxlore Brief",
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                colorFilter = ColorFilter.tint(accentColor),
                 modifier = Modifier
                     .height(72.dp)
                     .padding(horizontal = 24.dp)
@@ -778,7 +779,7 @@ fun BriefingContent(
                     pageSpacing = 16.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(380.dp)
+                        .height(500.dp)
                 ) { page ->
                     val chapter = chapters[page]
                     val paragraph = paragraphs.getOrNull(page) ?: ""
@@ -874,6 +875,68 @@ fun BriefingContent(
 
                                     }
                                 }
+                            }
+
+                            // Related Episodes inline (compact row)
+                            val recs = chapter.relatedEpisodes
+                            if (!recs.isNullOrEmpty()) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 12.dp),
+                                    thickness = 0.8.dp,
+                                    color = if (isThisCardActive) Color.White.copy(alpha = 0.15f)
+                                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Podcasts,
+                                            contentDescription = null,
+                                            tint = if (isThisCardActive) Color.White.copy(alpha = 0.6f)
+                                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = "LISTEN DEEPER",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                letterSpacing = 1.2.sp,
+                                                fontSize = 9.sp
+                                            ),
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isThisCardActive) Color.White.copy(alpha = 0.7f)
+                                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        items(recs) { episode ->
+                                            CompactEpisodeChip(
+                                                episode = episode,
+                                                isActiveCard = isThisCardActive,
+                                                accentColor = accentColor,
+                                                onClick = {
+                                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingRelatedEpisodeClicked(
+                                                        region = briefing.region,
+                                                        date = briefing.date,
+                                                        chapterIndex = page,
+                                                        episodeId = episode.id,
+                                                        episodeTitle = episode.title,
+                                                        podcastId = episode.podcastId ?: "",
+                                                        podcastTitle = episode.podcastTitle ?: ""
+                                                    )
+                                                    onEpisodeClick(episode)
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -984,60 +1047,7 @@ fun BriefingContent(
                 }
             }
 
-            // Dynamic recommendations horizontal row
-            val currentChapter = chapters.getOrNull(pagerState.currentPage)
-            val recs = currentChapter?.relatedEpisodes
-            if (!recs.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(20.dp))
 
-                // Section header
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Podcasts,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "RELATED EPISODES",
-                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(recs) { episode ->
-                        VerticalRecommendedEpisodeCard(
-                            episode = episode,
-                            onClick = {
-                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingRelatedEpisodeClicked(
-                                    region = briefing.region,
-                                    date = briefing.date,
-                                    chapterIndex = pagerState.currentPage,
-                                    episodeId = episode.id,
-                                    episodeTitle = episode.title,
-                                    podcastId = episode.podcastId ?: "",
-                                    podcastTitle = episode.podcastTitle ?: ""
-                                )
-                                onEpisodeClick(episode)
-                            }
-                        )
-                    }
-                }
-            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -1327,3 +1337,104 @@ fun VerticalRecommendedEpisodeCard(
         }
     }
 }
+
+@Composable
+private fun CompactEpisodeChip(
+    episode: Episode,
+    isActiveCard: Boolean,
+    accentColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (isActiveCard) Color.White.copy(alpha = 0.12f)
+                else MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(
+            0.5.dp,
+            if (isActiveCard) Color.White.copy(alpha = 0.15f)
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        ),
+        modifier = modifier
+            .width(260.dp)
+            .expressiveClickable(
+                shape = RoundedCornerShape(16.dp),
+                onClick = onClick
+            )
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            val imageUrl = episode.imageUrl?.takeIf { it.isNotEmpty() }
+                ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
+            OptimizedImage(
+                url = imageUrl,
+                proxyWidth = 120,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = episode.title,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp
+                    ),
+                    color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val podTitle = episode.podcastTitle
+                if (!podTitle.isNullOrEmpty()) {
+                    Text(
+                        text = podTitle,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = if (isActiveCard) accentColor.copy(alpha = 0.85f)
+                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                val infoText = buildString {
+                    if (episode.duration > 0) {
+                        append("${episode.duration / 60} min")
+                    }
+                    if (episode.publishedDate > 0) {
+                        if (isNotEmpty()) append(" • ")
+                        try {
+                            val instant = java.time.Instant.ofEpochSecond(episode.publishedDate)
+                            val date = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault()).toLocalDate()
+                            append(date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")))
+                        } catch (e: Exception) {
+                            // ignore
+                        }
+                    }
+                }
+                if (infoText.isNotEmpty()) {
+                    Text(
+                        text = infoText,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+

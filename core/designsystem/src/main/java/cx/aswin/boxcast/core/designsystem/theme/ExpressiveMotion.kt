@@ -15,6 +15,15 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.foundation.gestures.awaitFirstDown
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
 
 /**
  * Material 3 Expressive Motion Physics.
@@ -75,22 +84,10 @@ fun Modifier.expressiveClickable(
     @Suppress("UNUSED_PARAMETER") isolate: Boolean = false,
     onClick: () -> Unit
 ): Modifier = composed {
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
     val scale = remember { Animatable(1f) }
 
-    LaunchedEffect(isPressed) {
-        if (isPressed) {
-            scale.animateTo(
-                targetValue = 0.85f,
-                animationSpec = ExpressiveMotion.QuickSpring
-            )
-        } else {
-            scale.animateTo(
-                targetValue = 1f,
-                animationSpec = ExpressiveMotion.BouncySpring
-            )
-        }
+    LaunchedEffect(onClick) {
+        scale.snapTo(1f)
     }
 
     this
@@ -103,11 +100,56 @@ fun Modifier.expressiveClickable(
             }
         }
         .clickable(
-            interactionSource = interactionSource,
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
             indication = null,
             enabled = enabled,
             onClick = onClick
         )
+        .pointerInput(enabled) {
+            if (!enabled) return@pointerInput
+            val pointerInputScope = this
+            coroutineScope {
+                while (true) {
+                    try {
+                        val down = pointerInputScope.awaitPointerEventScope {
+                            awaitFirstDown(requireUnconsumed = true, pass = PointerEventPass.Main)
+                        }
+                        val startTime = System.currentTimeMillis()
+
+                        val animJob = launch {
+                            try {
+                                scale.animateTo(0.85f, ExpressiveMotion.QuickSpring)
+                            } catch (_: Exception) {}
+                        }
+
+                        try {
+                            pointerInputScope.awaitPointerEventScope {
+                                var released = false
+                                while (!released) {
+                                    val event = awaitPointerEvent(pass = PointerEventPass.Main)
+                                    val change = event.changes.firstOrNull { it.id == down.id }
+                                    if (change == null || !change.pressed || event.type == PointerEventType.Release) {
+                                        released = true
+                                    }
+                                }
+                            }
+
+                            val elapsed = System.currentTimeMillis() - startTime
+                            if (elapsed < 80) {
+                                delay(80 - elapsed)
+                            }
+                        } finally {
+                            animJob.cancel()
+                            withContext(NonCancellable) {
+                                scale.animateTo(1f, ExpressiveMotion.BouncySpring)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                    }
+                }
+            }
+        }
 }
 
 // Keep backward compatibility for callers passing interactionSource
@@ -119,21 +161,10 @@ fun Modifier.expressiveClickable(
     onClick: () -> Unit
 ): Modifier = composed {
     val localInteractionSource = interactionSource ?: remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val isPressed by localInteractionSource.collectIsPressedAsState()
     val scale = remember { Animatable(1f) }
 
-    LaunchedEffect(isPressed) {
-        if (isPressed) {
-            scale.animateTo(
-                targetValue = 0.85f,
-                animationSpec = ExpressiveMotion.QuickSpring
-            )
-        } else {
-            scale.animateTo(
-                targetValue = 1f,
-                animationSpec = ExpressiveMotion.BouncySpring
-            )
-        }
+    LaunchedEffect(onClick) {
+        scale.snapTo(1f)
     }
 
     this
@@ -151,4 +182,49 @@ fun Modifier.expressiveClickable(
             enabled = enabled,
             onClick = onClick
         )
+        .pointerInput(enabled) {
+            if (!enabled) return@pointerInput
+            val pointerInputScope = this
+            coroutineScope {
+                while (true) {
+                    try {
+                        val down = pointerInputScope.awaitPointerEventScope {
+                            awaitFirstDown(requireUnconsumed = true, pass = PointerEventPass.Main)
+                        }
+                        val startTime = System.currentTimeMillis()
+
+                        val animJob = launch {
+                            try {
+                                scale.animateTo(0.85f, ExpressiveMotion.QuickSpring)
+                            } catch (_: Exception) {}
+                        }
+
+                        try {
+                            pointerInputScope.awaitPointerEventScope {
+                                var released = false
+                                while (!released) {
+                                    val event = awaitPointerEvent(pass = PointerEventPass.Main)
+                                    val change = event.changes.firstOrNull { it.id == down.id }
+                                    if (change == null || !change.pressed || event.type == PointerEventType.Release) {
+                                        released = true
+                                    }
+                                }
+                            }
+
+                            val elapsed = System.currentTimeMillis() - startTime
+                            if (elapsed < 80) {
+                                delay(80 - elapsed)
+                            }
+                        } finally {
+                            animJob.cancel()
+                            withContext(NonCancellable) {
+                                scale.animateTo(1f, ExpressiveMotion.BouncySpring)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                    }
+                }
+            }
+        }
 }

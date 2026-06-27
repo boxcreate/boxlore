@@ -12,7 +12,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -139,6 +141,11 @@ fun DailyBriefingCard(
             .clip(RoundedCornerShape(24.dp))
             .shadow(8.dp, RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surface)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                shape = RoundedCornerShape(24.dp)
+            )
             .expressiveClickable(
                 shape = RoundedCornerShape(24.dp),
                 onClick = onClick
@@ -203,6 +210,8 @@ fun DailyBriefingCard(
                 verticalAlignment = Alignment.Top
             ) {
                 // Boxlore Brief logo and date column
+                val primaryColor = MaterialTheme.colorScheme.primary
+                
                 Column(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -215,19 +224,19 @@ fun DailyBriefingCard(
                         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White)
                     )
                     
-                    // Date chip
+                    // Date chip: using opaque Material 3 container colors to avoid transparency visibility issues on dark backdrop
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color.White.copy(alpha = 0.28f),
+                        color = MaterialTheme.colorScheme.primaryContainer,
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
-                            Color.White.copy(alpha = 0.2f)
+                            primaryColor.copy(alpha = 0.4f)
                         ),
                         modifier = Modifier.padding(start = 4.dp)
                     ) {
                         Text(
                             text = formattedDate,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.3.sp,
@@ -307,7 +316,7 @@ fun DailyBriefingCard(
                                     .height(48.dp)
                                     .widthIn(min = 180.dp)
                                     .clip(RoundedCornerShape(24.dp))
-                                    .clickable { onPlayPauseClick() }
+                                    .expressiveClickable(onClick = onPlayPauseClick)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 24.dp),

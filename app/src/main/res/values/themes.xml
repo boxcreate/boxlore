@@ -10,7 +10,7 @@
     <style name="Theme.BoxLore.Splash" parent="Theme.SplashScreen">
         <!-- Define primary color for the adaptive logo -->
         <item name="colorPrimary">@color/splash_logo_color</item> 
-        <item name="windowSplashScreenBackground">?attr/colorSurface</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.BoxLore</item>
     </style>

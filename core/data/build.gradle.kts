@@ -51,15 +51,19 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.ui)
     
-    // Firebase (database only)
+    // Firebase (database and messaging)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
+    implementation(libs.firebase.messaging)
 
     // PostHog
     implementation(libs.posthog.android)
 
     // Install Referrer
     implementation("com.android.installreferrer:installreferrer:2.2")
+
+    // WorkManager
+    implementation(libs.androidx.work.runtime)
 
     // Testing
     testImplementation(libs.junit)

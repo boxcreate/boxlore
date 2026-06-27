@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Foreground color that contrasts with the adaptive background -->
-    <color name="ic_launcher_foreground_color">#000000</color>
-    <color name="ic_launcher_background_color">#FFFFFF</color>
+    <color name="ic_launcher_foreground_color">#FFFFFF</color>
+    <color name="ic_launcher_background_color">#5B5BD6</color>
 </resources>

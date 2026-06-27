@@ -244,4 +244,9 @@ interface BoxLoreApi {
         @Body request: BootstrapRequest
     ): retrofit2.Call<BootstrapResponse>
 
+    @GET("home/bootstrap")
+    fun getHomeBootstrapGet(
+        @Header("X-App-Key") publicKey: String,
+        @retrofit2.http.Query("country") country: String
+    ): retrofit2.Call<BootstrapResponse>
 }

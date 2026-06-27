@@ -10,7 +10,7 @@ import cx.aswin.boxcast.core.data.database.dao.QueueDao
 
 @Database(
     entities = [ListeningHistoryEntity::class, PodcastEntity::class, DownloadedEpisodeEntity::class, QueueItem::class],
-    version = 23, // Add episodeDescription to listening_history table
+    version = 25, // Add notificationsEnabled to podcasts table
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -96,6 +96,18 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE downloaded_episodes ADD COLUMN isSmartDownloaded INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        private val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE podcasts ADD COLUMN notificationsEnabled INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @Volatile
         private var INSTANCE: BoxLoreDatabase? = null
 
@@ -128,7 +140,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
                     BoxLoreDatabase::class.java,
                     "boxlore_database"
                 )
-                .addMigrations(MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23)
+                .addMigrations(MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25)
                 .fallbackToDestructiveMigration() // For development simplicity on older versions
                 .build()
                 INSTANCE = instance

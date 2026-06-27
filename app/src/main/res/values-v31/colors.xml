@@ -2,5 +2,5 @@
 <resources>
     <!-- Use System Accent 1 (Primary) for Splash Logo on API 31+ -->
     <!-- 600 is standard for Light Mode Primary -->
-    <color name="splash_logo_color">@android:color/system_accent1_600</color>
+    <color name="splash_logo_color">#FFFFFF</color>
 </resources>

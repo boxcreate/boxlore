@@ -32,5 +32,6 @@ data class Podcast(
     val isLocked: Boolean = false,
     val podroll: List<PodrollItem>? = null,
     // User listening style: "newest" / "oldest" / null (default by type)
-    val preferredSort: String? = null
+    val preferredSort: String? = null,
+    val notificationsEnabled: Boolean = false
 )

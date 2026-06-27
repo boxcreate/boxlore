@@ -42,7 +42,7 @@ fun CuratedEpisodeCard(
 
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .width(140.dp)

@@ -40,7 +40,7 @@ fun DiscoverSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, top = 4.dp, end = 8.dp, bottom = 8.dp),
+                .padding(top = 0.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween 
         ) {
