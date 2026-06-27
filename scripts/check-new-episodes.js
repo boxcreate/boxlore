@@ -121,7 +121,7 @@ async function run() {
                         episodeId: String(latestEpId),
                         duration: String(latestEp.duration ? Math.round(Number(latestEp.duration) / 60) : '0'),
                         image: String(latestEp.image || latestEp.feedImage || imageUrl || ''),
-                        route: `boxlore://episode/${latestEpId}`
+                        route: `boxlore://episode/${latestEpId}?autoplay=false`
                     }
                 };
 
