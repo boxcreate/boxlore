@@ -33,4 +33,7 @@ interface PodcastDao {
 
     @Query("UPDATE podcasts SET notificationsEnabled = :enabled WHERE podcastId = :id")
     suspend fun setNotificationsEnabled(id: String, enabled: Boolean)
+
+    @Query("UPDATE podcasts SET autoDownloadEnabled = :enabled WHERE podcastId = :id")
+    suspend fun setAutoDownloadEnabled(id: String, enabled: Boolean)
 }

@@ -41,7 +41,8 @@ class SubscriptionRepository(
                     license = entity.license,
                     isLocked = entity.isLocked,
                     preferredSort = entity.preferredSort,
-                    notificationsEnabled = entity.notificationsEnabled
+                    notificationsEnabled = entity.notificationsEnabled,
+                    autoDownloadEnabled = entity.autoDownloadEnabled
                 )
             }
         }
@@ -53,7 +54,7 @@ class SubscriptionRepository(
         if (isCurrentlySubscribed) {
             // Unsubscribe
             existing?.let {
-                val updated = it.copy(isSubscribed = false, subscribedAt = 0L, notificationsEnabled = false)
+                val updated = it.copy(isSubscribed = false, subscribedAt = 0L, notificationsEnabled = false, autoDownloadEnabled = false)
                 podcastDao.upsert(updated)
             } ?: podcastDao.setSubscribed(podcast.id, false)
             updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
@@ -86,7 +87,8 @@ class SubscriptionRepository(
                 license = podcast.license,
                 isLocked = podcast.isLocked,
                 preferredSort = existing?.preferredSort, // Preserve existing sort preference
-                notificationsEnabled = false // Off by default
+                notificationsEnabled = false, // Off by default
+                autoDownloadEnabled = false
             )
             podcastDao.upsert(entity)
         }
@@ -127,7 +129,8 @@ class SubscriptionRepository(
             license = existing?.license ?: podcast.license,
             isLocked = existing?.isLocked ?: podcast.isLocked,
             preferredSort = preferredSortVal,
-            notificationsEnabled = false // Off by default
+            notificationsEnabled = false, // Off by default
+            autoDownloadEnabled = false
         )
         podcastDao.upsert(entity)
     }
@@ -194,5 +197,9 @@ class SubscriptionRepository(
     suspend fun updatePreferredSort(podcastId: String, sort: String?) {
         val type = if (sort == "oldest") "serial" else "episodic"
         podcastDao.updatePreferredSortAndType(podcastId, sort, type)
+    }
+
+    suspend fun setAutoDownloadEnabled(podcastId: String, enabled: Boolean) {
+        podcastDao.setAutoDownloadEnabled(podcastId, enabled)
     }
 }

@@ -37,7 +37,9 @@ private fun PodcastEntity.toPodcast(): Podcast {
         location = this.location,
         license = this.license,
         isLocked = this.isLocked,
-        preferredSort = this.preferredSort
+        preferredSort = this.preferredSort,
+        notificationsEnabled = this.notificationsEnabled,
+        autoDownloadEnabled = this.autoDownloadEnabled
     )
 }
 

@@ -38,5 +38,6 @@ data class PodcastEntity(
     
     // User listening style preference: "newest" / "oldest" / null (use type-based default)
     val preferredSort: String? = null,
-    val notificationsEnabled: Boolean = false
+    val notificationsEnabled: Boolean = false,
+    val autoDownloadEnabled: Boolean = false
 )

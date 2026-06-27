@@ -625,13 +625,58 @@ class PodcastInfoViewModel(
                 val currentEnabled = currentState.podcast.notificationsEnabled
                 val newEnabled = !currentEnabled
                 
+                // If notifications are turned OFF, auto-download must also turn OFF automatically
+                val updatedAutoDownload = if (!newEnabled) false else currentState.podcast.autoDownloadEnabled
+                if (!newEnabled && currentState.podcast.autoDownloadEnabled) {
+                    subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, false)
+                }
+
                 subscriptionRepository.setNotificationsEnabled(currentState.podcast, newEnabled)
                 
                 // Refresh UI State
-                val updatedPodcast = currentState.podcast.copy(notificationsEnabled = newEnabled)
+                val updatedPodcast = currentState.podcast.copy(
+                    notificationsEnabled = newEnabled,
+                    autoDownloadEnabled = updatedAutoDownload
+                )
                 _uiState.value = currentState.copy(podcast = updatedPodcast)
                 
                 android.util.Log.d("PodcastInfoViewModel", "Notifications toggled for ${currentState.podcast.title}: $newEnabled")
+            }
+        }
+    }
+
+    fun toggleAutoDownload() {
+        val currentState = _uiState.value
+        if (currentState is PodcastInfoUiState.Success) {
+            viewModelScope.launch {
+                val currentEnabled = currentState.podcast.autoDownloadEnabled
+                val newEnabled = !currentEnabled
+                
+                subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, newEnabled)
+                
+                // Refresh UI State
+                val updatedPodcast = currentState.podcast.copy(autoDownloadEnabled = newEnabled)
+                _uiState.value = currentState.copy(podcast = updatedPodcast)
+                
+                android.util.Log.d("PodcastInfoViewModel", "Auto-download toggled for ${currentState.podcast.title}: $newEnabled")
+            }
+        }
+    }
+
+    fun enableBothNotificationsAndAutoDownload() {
+        val currentState = _uiState.value
+        if (currentState is PodcastInfoUiState.Success) {
+            viewModelScope.launch {
+                subscriptionRepository.setNotificationsEnabled(currentState.podcast, true)
+                subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, true)
+                
+                val updatedPodcast = currentState.podcast.copy(
+                    notificationsEnabled = true,
+                    autoDownloadEnabled = true
+                )
+                _uiState.value = currentState.copy(podcast = updatedPodcast)
+                
+                android.util.Log.d("PodcastInfoViewModel", "Enabled both notifications & auto-download for ${currentState.podcast.title}")
             }
         }
     }

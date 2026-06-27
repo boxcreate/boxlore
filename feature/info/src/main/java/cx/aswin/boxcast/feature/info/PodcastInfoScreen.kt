@@ -16,6 +16,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
@@ -256,6 +258,7 @@ fun PodcastInfoScreen(
     
     // Search State
     var isSearchActive by remember { mutableStateOf(false) }
+    var toolbarWarning by remember { mutableStateOf(ToolbarWarning.NONE) }
     var showMarkAllPlayedDialog by remember { mutableStateOf(false) }
     var showMarkAllUnplayedDialog by remember { mutableStateOf(false) }
 
@@ -1108,10 +1111,113 @@ fun PodcastInfoScreen(
                             onSubscribeClick = { viewModel.toggleSubscription() },
                             accentColor = accentColor,
                             notificationsEnabled = state.podcast.notificationsEnabled,
-                            onNotificationsToggle = { viewModel.toggleNotifications() },
+                            onNotificationsToggle = {
+                                if (!areAppNotificationsEnabled(context)) {
+                                    toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED
+                                } else {
+                                    viewModel.toggleNotifications()
+                                }
+                            },
+                            autoDownloadEnabled = state.podcast.autoDownloadEnabled,
+                            onAutoDownloadToggle = {
+                                if (!state.podcast.notificationsEnabled) {
+                                    toolbarWarning = ToolbarWarning.NOTIFICATIONS_REQUIRED
+                                } else {
+                                    viewModel.toggleAutoDownload()
+                                }
+                            },
                             genre = state.podcast.genre,
                             onSearchFocused = { isSearchActive = true }
                         )
+                    }
+
+                    // TOOLBAR WARNING BANNER (Space Reveal)
+                    item(key = "toolbar_warning") {
+                        AnimatedVisibility(
+                            visible = toolbarWarning != ToolbarWarning.NONE,
+                            enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                            exit = shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut()
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                shape = MaterialTheme.shapes.medium,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.WarningAmber,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    
+                                    val text = when (toolbarWarning) {
+                                        ToolbarWarning.NOTIFICATIONS_REQUIRED -> "Auto-download requires alerts to be active."
+                                        ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "App alerts are blocked in Android settings."
+                                        else -> ""
+                                    }
+                                    
+                                    val actionText = when (toolbarWarning) {
+                                        ToolbarWarning.NOTIFICATIONS_REQUIRED -> "Enable Both"
+                                        ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Settings"
+                                        else -> ""
+                                    }
+                                    
+                                    Text(
+                                        text = text,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    
+                                    TextButton(
+                                        onClick = {
+                                            when (toolbarWarning) {
+                                                ToolbarWarning.NOTIFICATIONS_REQUIRED -> {
+                                                    viewModel.enableBothNotificationsAndAutoDownload()
+                                                }
+                                                ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> {
+                                                    openAppNotificationSettings(context)
+                                                }
+                                                else -> {}
+                                            }
+                                            toolbarWarning = ToolbarWarning.NONE
+                                        },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.error
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = actionText,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
+                                    
+                                    IconButton(
+                                        onClick = { toolbarWarning = ToolbarWarning.NONE },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Close,
+                                            contentDescription = "Dismiss",
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                     
                     // Episodes
@@ -1902,6 +2008,8 @@ private fun EpisodeToolbar(
     accentColor: Color,
     notificationsEnabled: Boolean = false,
     onNotificationsToggle: () -> Unit = {},
+    autoDownloadEnabled: Boolean = false,
+    onAutoDownloadToggle: () -> Unit = {},
     genre: String = "",
     onSearchFocused: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -2138,6 +2246,55 @@ private fun EpisodeToolbar(
                     imageVector = if (notificationsEnabled) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsNone,
                     contentDescription = "Toggle notifications",
                     tint = bellContentColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(4.dp))
+
+            // Auto-Download Toggle Button
+            val downloadInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            val isDownloadPressed by downloadInteractionSource.collectIsPressedAsState()
+            val downloadScale by animateFloatAsState(
+                targetValue = if (isDownloadPressed) 0.9f else 1f,
+                animationSpec = if (isDownloadPressed) cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion.QuickSpring else cx.aswin.boxcast.core.designsystem.theme.ExpressiveMotion.BouncySpring,
+                label = "downloadScale"
+            )
+
+            val downloadContainerColor by animateColorAsState(
+                targetValue = if (autoDownloadEnabled) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerLow
+                },
+                animationSpec = tween(300),
+                label = "downloadContainerColor"
+            )
+
+            val downloadContentColor by animateColorAsState(
+                targetValue = if (autoDownloadEnabled) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                animationSpec = tween(300),
+                label = "downloadContentColor"
+            )
+
+            IconButton(
+                onClick = onAutoDownloadToggle,
+                modifier = Modifier
+                    .size(48.dp)
+                    .graphicsLayer {
+                        scaleX = downloadScale
+                        scaleY = downloadScale
+                    }
+                    .background(downloadContainerColor, ExpressiveShapes.Pill)
+            ) {
+                Icon(
+                    imageVector = if (autoDownloadEnabled) Icons.Rounded.FileDownload else Icons.Rounded.FileDownloadOff,
+                    contentDescription = "Toggle auto-download",
+                    tint = downloadContentColor,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -2691,4 +2848,37 @@ fun EpisodePlayStateWrapper(
     }
     val playState by playStateFlow.collectAsState(initial = null)
     content(playState)
+}
+
+private enum class ToolbarWarning {
+    NONE,
+    NOTIFICATIONS_REQUIRED,
+    SYSTEM_PERMISSION_BLOCKED
+}
+
+private fun areAppNotificationsEnabled(context: android.content.Context): Boolean {
+    val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+        notificationManager.areNotificationsEnabled()
+    } else {
+        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+}
+
+private fun openAppNotificationSettings(context: android.content.Context) {
+    val intent = android.content.Intent().apply {
+        when {
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O -> {
+                action = android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+            }
+            else -> {
+                action = "android.settings.APP_NOTIFICATION_SETTINGS"
+                putExtra("app_package", context.packageName)
+                putExtra("app_uid", context.applicationInfo.uid)
+            }
+        }
+        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    context.startActivity(intent)
 }
