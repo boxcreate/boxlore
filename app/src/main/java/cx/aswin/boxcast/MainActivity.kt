@@ -1990,16 +1990,21 @@ class MainActivity : ComponentActivity() {
 
                             // Simplified Episode Deep Link Screen
                             composable(
-                                route = "episode/{episodeId}?entryPoint={entryPoint}&t={t}&start={start}&end={end}&autoplay={autoplay}",
+                                route = "episode/{episodeId}?entryPoint={entryPoint}&t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}",
                                 arguments = listOf(
                                     navArgument("episodeId") { type = NavType.StringType },
                                     navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
                                     navArgument("t") { type = NavType.StringType; nullable = true; defaultValue = null },
                                     navArgument("start") { type = NavType.StringType; nullable = true; defaultValue = null },
                                     navArgument("end") { type = NavType.StringType; nullable = true; defaultValue = null },
-                                    navArgument("autoplay") { type = NavType.StringType; nullable = true; defaultValue = "true" }
+                                    navArgument("autoplay") { type = NavType.StringType; nullable = true; defaultValue = "true" },
+                                    navArgument("podcastId") { type = NavType.StringType; nullable = true; defaultValue = "" },
+                                    navArgument("podcastTitle") { type = NavType.StringType; nullable = true; defaultValue = "" }
                                 ),
                                 deepLinks = listOf(
+                                    navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
+                                    navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
+                                    navDeepLink { uriPattern = "boxlore://episode/{episodeId}?podcastId={podcastId}&podcastTitle={podcastTitle}" },
                                     navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
                                     navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&autoplay={autoplay}" },
                                     navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}" },
@@ -2025,6 +2030,8 @@ class MainActivity : ComponentActivity() {
                                 val start = args.getString("start")?.toLongOrNull()
                                 val end = args.getString("end")?.toLongOrNull()
                                 val autoplay = args.getString("autoplay") ?: "true"
+                                val podcastIdArg = args.getString("podcastId") ?: ""
+                                val podcastTitleArg = args.getString("podcastTitle") ?: ""
  
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxcast.feature.info.EpisodeInfoViewModel>(
                                     factory = object : androidx.lifecycle.ViewModelProvider.Factory {
@@ -2042,8 +2049,8 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
  
-                                LaunchedEffect(episodeId) {
-                                    viewModel.loadEpisode(episodeId = episodeId)
+                                LaunchedEffect(episodeId, podcastIdArg, podcastTitleArg) {
+                                    viewModel.loadEpisode(episodeId = episodeId, podcastId = podcastIdArg, podcastTitle = podcastTitleArg)
                                 }
  
                                 val coroutineScope = rememberCoroutineScope()
