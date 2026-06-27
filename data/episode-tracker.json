@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-06-27T16:33:35.500Z",
+  "lastRun": "2026-06-27T16:36:45.576Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "56772272198",
@@ -10,6 +10,11 @@
       "lastEpisodeId": "56767913697",
       "lastEpisodeTitle": "The Mind-Bending MK Ultra Experiments of Dr Ewen Cameron",
       "lastCheckedAt": 1782578016322
+    },
+    "311214": {
+      "lastEpisodeId": "56710834661",
+      "lastEpisodeTitle": "The Cemetery Shadow Man",
+      "lastCheckedAt": 1782578206040
     },
     "947138": {
       "lastEpisodeId": "56759563861",
