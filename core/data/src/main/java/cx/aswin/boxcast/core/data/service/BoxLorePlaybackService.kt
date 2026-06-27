@@ -39,8 +39,8 @@ class BoxLorePlaybackService : MediaLibraryService() {
     }
     private val podcastRepository by lazy {
         val prefs = getSharedPreferences("boxcast_api_config", MODE_PRIVATE)
-        val baseUrl = prefs.getString("base_url", null) ?: "https://api.aswin.cx"
-        val publicKey = prefs.getString("public_key", null) ?: "boxcast-app-c47580b27dd94ec1"
+        val baseUrl = prefs.getString("base_url", null) ?: cx.aswin.boxcast.core.data.BuildConfig.BOXCAST_API_BASE_URL
+        val publicKey = prefs.getString("public_key", null) ?: cx.aswin.boxcast.core.data.BuildConfig.BOXCAST_PUBLIC_KEY
         cx.aswin.boxcast.core.data.PodcastRepository(baseUrl, publicKey, this)
     }
     private val subscriptionRepository by lazy {
