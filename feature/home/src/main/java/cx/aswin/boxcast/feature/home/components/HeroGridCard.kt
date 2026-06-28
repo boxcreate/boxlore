@@ -26,6 +26,8 @@ import androidx.compose.ui.geometry.Size
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxcast.core.designsystem.components.drawOutline
 
+private val sessionSeed = kotlin.random.Random.nextInt()
+
 /**
  * Hero Grid Card — Progressive Density Layout
  *
@@ -47,11 +49,17 @@ fun HeroGridCard(
     val primaryColor = MaterialTheme.colorScheme.primary
     
     val shapes = remember(title) {
-        when {
-            title.contains("JUMP", ignoreCase = true) -> Pair(ExpressiveShapes.Flower, ExpressiveShapes.Sunny)
-            title.contains("NEW", ignoreCase = true) -> Pair(ExpressiveShapes.Boom, ExpressiveShapes.Heart)
-            else -> Pair(ExpressiveShapes.Puffy, ExpressiveShapes.Diamond)
-        }
+        val random = kotlin.random.Random(sessionSeed + title.hashCode())
+        val allShapes = listOf(
+            ExpressiveShapes.Sunny, ExpressiveShapes.VerySunny, 
+            ExpressiveShapes.Cookie4, ExpressiveShapes.Cookie6, ExpressiveShapes.Cookie9, ExpressiveShapes.Cookie12,
+            ExpressiveShapes.Burst, ExpressiveShapes.SoftBurst, ExpressiveShapes.Boom, ExpressiveShapes.SoftBoom,
+            ExpressiveShapes.Flower, ExpressiveShapes.Puffy, ExpressiveShapes.PuffyDiamond,
+            ExpressiveShapes.Heart, ExpressiveShapes.Bun, ExpressiveShapes.GhostIsh,
+            ExpressiveShapes.Diamond, ExpressiveShapes.Gem, ExpressiveShapes.Pentagon
+        )
+        val shuffled = allShapes.shuffled(random)
+        Pair(shuffled[0], shuffled[1])
     }
     val shape1 = shapes.first
     val shape2 = shapes.second
