@@ -75,3 +75,4 @@ gcp-key.json
 # Editor settings
 .vscode/
 .claude/
+CHANGELOG.md
