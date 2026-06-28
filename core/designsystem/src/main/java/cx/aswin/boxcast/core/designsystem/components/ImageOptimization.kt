@@ -24,68 +24,80 @@ private fun calculateScaledWidth(originalWidth: Int): Int {
     }
 }
 
-private fun optimizeKnownCdns(httpsUrl: String, scaledWidth: Int): String? {
+private fun optimizeBbcCdn(httpsUrl: String, scaledWidth: Int): String? {
+    if (httpsUrl.contains("ichef.bbci.co.uk")) {
+        val ichefRegex = Regex("/images/ic/\\d+x\\d+/")
+        if (ichefRegex.containsMatchIn(httpsUrl)) {
+            return httpsUrl.replace(ichefRegex, "/images/ic/${scaledWidth}x${scaledWidth}/")
+        }
+    }
+    return null
+}
+
+private fun optimizeSimplecastCdn(httpsUrl: String, scaledWidth: Int): String? {
+    if (httpsUrl.contains("simplecastcdn.com")) {
+        val simplecastRegex = Regex("/\\d+x\\d+/")
+        if (simplecastRegex.containsMatchIn(httpsUrl)) {
+            return httpsUrl.replace(simplecastRegex, "/${scaledWidth}x${scaledWidth}/")
+        }
+    }
+    return null
+}
+
+private fun optimizeCaptivateCdn(httpsUrl: String, scaledWidth: Int): String? {
+    if (httpsUrl.contains("captivate.fm")) {
+        val captivateRegex1 = Regex("/\\d+x\\d+-")
+        if (captivateRegex1.containsMatchIn(httpsUrl)) {
+            return httpsUrl.replace(captivateRegex1, "/${scaledWidth}x${scaledWidth}-")
+        }
+        val captivateRegex2 = Regex("-\\d+x\\d+\\.")
+        if (captivateRegex2.containsMatchIn(httpsUrl)) {
+            return httpsUrl.replace(captivateRegex2, "-${scaledWidth}x${scaledWidth}.")
+        }
+    }
+    return null
+}
+
+private fun optimizeImgixCdn(httpsUrl: String, scaledWidth: Int): String? {
     try {
-        // 1. BBC / ichef
-        if (httpsUrl.contains("ichef.bbci.co.uk")) {
-            val ichefRegex = Regex("/images/ic/\\d+x\\d+/")
-            if (ichefRegex.containsMatchIn(httpsUrl)) {
-                return httpsUrl.replace(ichefRegex, "/images/ic/${scaledWidth}x${scaledWidth}/")
-            }
-        }
-
-        // 2. Simplecast CDN
-        if (httpsUrl.contains("simplecastcdn.com")) {
-            val simplecastRegex = Regex("/\\d+x\\d+/")
-            if (simplecastRegex.containsMatchIn(httpsUrl)) {
-                return httpsUrl.replace(simplecastRegex, "/${scaledWidth}x${scaledWidth}/")
-            }
-        }
-
-        // 3. Captivate FM
-        if (httpsUrl.contains("captivate.fm")) {
-            // Replaces patterns like /3000x3000-CN-Pod-Logo.png with /400x400-CN-Pod-Logo.png
-            val captivateRegex1 = Regex("/\\d+x\\d+-")
-            if (captivateRegex1.containsMatchIn(httpsUrl)) {
-                return httpsUrl.replace(captivateRegex1, "/${scaledWidth}x${scaledWidth}-")
-            }
-            // Or -3000x3000.png
-            val captivateRegex2 = Regex("-\\d+x\\d+\\.")
-            if (captivateRegex2.containsMatchIn(httpsUrl)) {
-                return httpsUrl.replace(captivateRegex2, "-${scaledWidth}x${scaledWidth}.")
-            }
-        }
-
-        // 4. Imgix / Megaphone / Vox Media (and other Imgix-powered CDNs)
-        if (httpsUrl.contains("imgix.net") || httpsUrl.contains("megaphone.fm") || httpsUrl.contains("voxmedia.com")) {
-            val uri = android.net.Uri.parse(httpsUrl)
-            val builder = uri.buildUpon()
-            builder.clearQuery()
-            
-            // Rebuild query, keeping original parameters except sizing/format
-            for (key in uri.queryParameterNames) {
-                if (key != "w" && key != "h" && key != "max-w" && key != "max-h" && key != "width" && key != "height" && key != "fit" && key != "auto" && key != "q" && key != "format") {
-                    for (value in uri.getQueryParameters(key)) {
-                        builder.appendQueryParameter(key, value)
-                    }
+        val uri = android.net.Uri.parse(httpsUrl)
+        val builder = uri.buildUpon()
+        builder.clearQuery()
+        
+        for (key in uri.queryParameterNames) {
+            if (key != "w" && key != "h" && key != "max-w" && key != "max-h" && key != "width" && key != "height" && key != "fit" && key != "auto" && key != "q" && key != "format") {
+                for (value in uri.getQueryParameters(key)) {
+                    builder.appendQueryParameter(key, value)
                 }
             }
-            // Append optimal sizing parameters
-            builder.appendQueryParameter("w", scaledWidth.toString())
-            builder.appendQueryParameter("h", scaledWidth.toString())
-            builder.appendQueryParameter("fit", "crop")
-            builder.appendQueryParameter("auto", "format,compress")
-            builder.appendQueryParameter("q", "80")
-            return builder.build().toString()
+        }
+        builder.appendQueryParameter("w", scaledWidth.toString())
+        builder.appendQueryParameter("h", scaledWidth.toString())
+        builder.appendQueryParameter("fit", "crop")
+        builder.appendQueryParameter("auto", "format,compress")
+        builder.appendQueryParameter("q", "80")
+        return builder.build().toString()
+    } catch (e: Exception) {
+        return null
+    }
+}
+
+private fun optimizeKnownCdns(httpsUrl: String, scaledWidth: Int): String? {
+    try {
+        optimizeBbcCdn(httpsUrl, scaledWidth)?.let { return it }
+        optimizeSimplecastCdn(httpsUrl, scaledWidth)?.let { return it }
+        optimizeCaptivateCdn(httpsUrl, scaledWidth)?.let { return it }
+        
+        if (httpsUrl.contains("imgix.net") || httpsUrl.contains("megaphone.fm") || httpsUrl.contains("voxmedia.com")) {
+            return optimizeImgixCdn(httpsUrl, scaledWidth)
         }
         
-        // 5. Generic size pattern in path (e.g. /3000x3000/ or /1400x1400/)
         val genericPathRegex = Regex("/\\d{3,4}x\\d{3,4}/")
         if (genericPathRegex.containsMatchIn(httpsUrl)) {
             return httpsUrl.replace(genericPathRegex, "/${scaledWidth}x${scaledWidth}/")
         }
     } catch (e: Exception) {
-        // Fallback to default wsrv.nl proxy on parsing/formatting exception
+        // Fallback to default wsrv.nl proxy
     }
     return null
 }

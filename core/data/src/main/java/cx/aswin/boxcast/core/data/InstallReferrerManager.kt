@@ -117,27 +117,21 @@ class InstallReferrerManager(private val context: Context) {
     }
 
     private fun parseUnderscoreReferrer(decoded: String): ReferralIntent? {
-        if (decoded.contains("type_") && (decoded.contains("_id_") || decoded.contains("_podcast_id_"))) {
-            val parts = decoded.split("_")
-            var type: String? = null
-            var id: String? = null
-            var t: Long? = null
-            var start: Long? = null
-            var end: Long? = null
-
-            for (i in parts.indices) {
-                when (parts[i]) {
-                    "type" -> if (i + 1 < parts.size) type = parts[i + 1]
-                    "id" -> if (i + 1 < parts.size) id = parts[i + 1]
-                    "t" -> if (i + 1 < parts.size) t = parts[i + 1].toLongOrNull()
-                    "start" -> if (i + 1 < parts.size) start = parts[i + 1].toLongOrNull()
-                    "end" -> if (i + 1 < parts.size) end = parts[i + 1].toLongOrNull()
-                }
-            }
-
-            if (type != null && id != null) {
-                return ReferralIntent(type, id, t, start, end)
-            }
+        if (!decoded.contains("type_") || (!decoded.contains("_id_") && !decoded.contains("_podcast_id_"))) {
+            return null
+        }
+        val parts = decoded.split("_")
+        val map = mutableMapOf<String, String>()
+        for (i in 0 until parts.size - 1 step 2) {
+            map[parts[i]] = parts[i + 1]
+        }
+        val type = map["type"]
+        val id = map["id"] ?: map["podcast_id"]
+        if (type != null && id != null) {
+            val t = map["t"]?.toLongOrNull()
+            val start = map["start"]?.toLongOrNull()
+            val end = map["end"]?.toLongOrNull()
+            return ReferralIntent(type, id, t, start, end)
         }
         return null
     }
