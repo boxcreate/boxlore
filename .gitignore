@@ -68,3 +68,9 @@ scratch/
 
 # GCP service account key (ephemeral, never commit)
 gcp-key.json
+
+# Firebase local cache
+.firebase/
+
+# Editor settings
+.vscode/
