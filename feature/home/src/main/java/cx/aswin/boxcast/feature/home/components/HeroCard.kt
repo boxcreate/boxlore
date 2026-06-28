@@ -70,16 +70,8 @@ fun HeroCard(
             .expressiveClickable(onClick = onArrowClick)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Image Logic: Episode Art -> Podcast Art -> Shapes
-            val episodeImage = item.podcast.latestEpisode?.imageUrl?.takeIf { it.isNotEmpty() }
-            val fallbackImage = item.podcast.fallbackImageUrl?.takeIf { it.isNotEmpty() }
-            val podcastImage = item.podcast.imageUrl.takeIf { it.isNotEmpty() }
-            
-            // Best available image: Episode -> Podcast -> Fallback
-            val bestImageUrl = episodeImage ?: podcastImage ?: fallbackImage
-            
             OptimizedImage(
-                url = bestImageUrl,
+                url = resolveHeroImageUrl(item),
                 proxyWidth = 800, // Full-width hero needs high res
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
@@ -110,20 +102,8 @@ fun HeroCard(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // TOP: Context Badge
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Text(
-                        text = item.label.uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
+                HeroBadge(label = item.label)
+
                 
                 // BOTTOM: Text + Button
                 Column {
@@ -252,3 +232,28 @@ fun HeroCard(
         }
     }
 }
+
+private fun resolveHeroImageUrl(item: SmartHeroItem): String? {
+    val episodeImage = item.podcast.latestEpisode?.imageUrl?.takeIf { it.isNotEmpty() }
+    val fallbackImage = item.podcast.fallbackImageUrl?.takeIf { it.isNotEmpty() }
+    val podcastImage = item.podcast.imageUrl.takeIf { it.isNotEmpty() }
+    return episodeImage ?: podcastImage ?: fallbackImage
+}
+
+@Composable
+private fun HeroBadge(label: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+        shape = MaterialTheme.shapes.small
+    ) {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(
+                letterSpacing = 0.5.sp
+            ),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+

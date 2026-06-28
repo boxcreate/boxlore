@@ -81,7 +81,8 @@ fun Color.contrastColor(alpha: Float): Color =
  * Returns the luminance value for this color (0.0 = pure black, 1.0 = pure white).
  * Convenience wrapper around the Compose Color.luminance() extension.
  */
-private fun Color.luminance(): Float {
+fun Color.luminance(): Float {
     // sRGB relative luminance per ITU-R BT.709
     return 0.2126f * red + 0.7152f * green + 0.0722f * blue
 }
+

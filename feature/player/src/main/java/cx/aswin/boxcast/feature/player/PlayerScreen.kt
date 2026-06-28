@@ -78,6 +78,7 @@ import kotlin.random.Random
 import cx.aswin.boxcast.feature.player.components.SimplePlayerControls
 import cx.aswin.boxcast.core.designsystem.components.AdvancedPlayerControls
 import cx.aswin.boxcast.core.designsystem.theme.generateBrandColorScheme
+import cx.aswin.boxcast.core.designsystem.theme.luminance
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.ColorScheme
@@ -286,7 +287,7 @@ fun PlayerContent(
 ) {
     // 1. Color Extraction Logic
     val context = LocalContext.current
-    val isDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     var extractedColorScheme by remember { mutableStateOf<ColorScheme?>(null) }
     val colorScheme = extractedColorScheme ?: MaterialTheme.colorScheme
     
@@ -302,7 +303,7 @@ fun PlayerContent(
             .build()
     )
     
-    LaunchedEffect(imageUrl, painter.state) {
+    LaunchedEffect(imageUrl, painter.state, isDarkTheme) {
         val state = painter.state
         if (state is coil.compose.AsyncImagePainter.State.Success) {
              val bitmap = (state.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
@@ -312,6 +313,7 @@ fun PlayerContent(
              }
         }
     }
+
 
     // 2. State Observations
     // Use the downloadRepository to observe download state
@@ -370,57 +372,73 @@ fun PlayerContent(
 
         modifier = Modifier.fillMaxSize(),
 
-        footerContent = {
-             Spacer(modifier = Modifier.height(32.dp))
-             
-             // Up Next
-             Text(
-                 text = "Up Next",
-                 style = MaterialTheme.typography.titleLarge,
-                 fontWeight = FontWeight.Bold,
-                 modifier = Modifier.align(Alignment.Start)
+         footerContent = {
+             UpNextFooter(
+                 episodes = episodes,
+                 currentEpisodeId = currentEpisode?.id,
+                 listState = listState,
+                 onEpisodeClick = onEpisodeClick
              )
-             
-             Spacer(modifier = Modifier.height(8.dp))
-             
-             // M3 Expressive: Segmented Episode List
-             androidx.compose.foundation.lazy.LazyColumn(
-                 state = listState,
-                 modifier = Modifier
-                     .fillMaxWidth()
-                     .weight(1f),
-                 contentPadding = PaddingValues(bottom = 16.dp),
-                 verticalArrangement = Arrangement.spacedBy(8.dp)
-             ) {
-                 items(episodes.filter { it.id != currentEpisode?.id }) { ep ->
-                      androidx.compose.material3.ElevatedCard(
-                          onClick = { onEpisodeClick(ep) },
-                          modifier = Modifier.fillMaxWidth(),
-                          shape = MaterialTheme.shapes.medium
-                      ) {
-                          Row(
-                              modifier = Modifier.padding(12.dp),
-                              verticalAlignment = Alignment.CenterVertically
-                          ) {
-                              AsyncImage(
-                                  model = ep.imageUrl,
-                                  contentDescription = null,
-                                  modifier = Modifier
-                                      .size(48.dp)
-                                      .clip(MaterialTheme.shapes.small),
-                                  contentScale = ContentScale.Crop
-                              )
-                              Spacer(modifier = Modifier.width(12.dp))
-                              Text(
-                                  text = ep.title,
-                                  style = MaterialTheme.typography.bodyMedium,
-                                  maxLines = 2,
-                                  overflow = TextOverflow.Ellipsis
-                              )
-                          }
-                      }
-                 }
-             }
-        }
+         }
     )
 }
+
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.UpNextFooter(
+    episodes: List<Episode>,
+    currentEpisodeId: String?,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    onEpisodeClick: (Episode) -> Unit
+) {
+    Spacer(modifier = Modifier.height(32.dp))
+    
+    Text(
+        text = "Up Next",
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.align(Alignment.Start)
+    )
+    
+    Spacer(modifier = Modifier.height(8.dp))
+    
+    androidx.compose.foundation.lazy.LazyColumn(
+        state = listState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f),
+        contentPadding = PaddingValues(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(episodes.filter { it.id != currentEpisodeId }) { ep ->
+
+                 androidx.compose.material3.ElevatedCard(
+                     onClick = { onEpisodeClick(ep) },
+                     modifier = Modifier.fillMaxWidth(),
+                     shape = MaterialTheme.shapes.medium
+                 ) {
+                     Row(
+                         modifier = Modifier.padding(12.dp),
+                         verticalAlignment = Alignment.CenterVertically
+                     ) {
+                         AsyncImage(
+                             model = ep.imageUrl,
+                             contentDescription = null,
+                             modifier = Modifier
+                                 .size(48.dp)
+                                 .clip(MaterialTheme.shapes.small),
+                             contentScale = ContentScale.Crop
+                         )
+                         Spacer(modifier = Modifier.width(12.dp))
+                         Text(
+                             text = ep.title,
+                             style = MaterialTheme.typography.bodyMedium,
+                             maxLines = 2,
+                             overflow = TextOverflow.Ellipsis
+                         )
+                     }
+                 }
+            }
+        }
+}
+
+

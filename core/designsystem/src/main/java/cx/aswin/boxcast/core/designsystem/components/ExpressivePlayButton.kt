@@ -28,37 +28,17 @@ fun ExpressivePlayButton(
     timeText: String? = null,
     modifier: Modifier = Modifier
 ) {
-    // Stadium / Pill Shape (M3 Standard)
-    val playPillShape = CircleShape
-
     Surface(
         color = accentColor,
         contentColor = accentColor.contrastColor(),
-        shape = playPillShape,
+        shape = CircleShape,
         modifier = modifier
             .widthIn(min = 160.dp)
             .expressiveClickable(isolate = true, onClick = onClick)
     ) {
         Box(contentAlignment = Alignment.Center) {
-            // INTEGRATED PROGRESS BAR (Bottom Strip)
-            if (isResume && progress > 0f) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp), // Thin strip at bottom
-                        color = accentColor.contrastColor(alpha = 0.5f), // Lighter tint of content
-                        trackColor = Color.Transparent,
-                        drawStopIndicator = {}
-                    )
-                }
-            }
+            PlayButtonProgressStrip(isResume = isResume, progress = progress, accentColor = accentColor)
 
-            // CONTENT
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -69,23 +49,10 @@ fun ExpressivePlayButton(
                     contentDescription = if (isPlaying) "Pause" else "Play",
                     modifier = Modifier.size(24.dp)
                 )
-                
-                // Show text if there is space (implied, or always show for this component)
                 Spacer(modifier = Modifier.width(6.dp))
                 
-                // Formatted Text: "Resume • 12m left" or "Play"
-                val displayText = if (isPlaying) {
-                    "Pause"
-                } else if (isResume && timeText != null) {
-                    "Resume • $timeText"
-                } else if (isResume) {
-                    "Resume"
-                } else {
-                    "Play"
-                }
-                
                 Text(
-                    text = displayText,
+                    text = getPlayButtonDisplayText(isPlaying, isResume, timeText),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -98,3 +65,41 @@ fun ExpressivePlayButton(
         }
     }
 }
+
+@Composable
+private fun PlayButtonProgressStrip(
+    isResume: Boolean,
+    progress: Float,
+    accentColor: Color
+) {
+    if (isResume && progress > 0f) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp),
+                color = accentColor.contrastColor(alpha = 0.5f),
+                trackColor = Color.Transparent,
+                drawStopIndicator = {}
+            )
+        }
+    }
+}
+
+private fun getPlayButtonDisplayText(
+    isPlaying: Boolean,
+    isResume: Boolean,
+    timeText: String?
+): String {
+    return when {
+        isPlaying -> "Pause"
+        isResume && timeText != null -> "Resume • $timeText"
+        isResume -> "Resume"
+        else -> "Play"
+    }
+}
+

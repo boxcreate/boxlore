@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import cx.aswin.boxcast.core.designsystem.theme.generateBrandColorScheme
+import cx.aswin.boxcast.core.designsystem.theme.luminance
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -114,13 +115,15 @@ fun UnifiedPlayerSheet(
     val hasSeenTitleTapTip by userPrefs.hasSeenTitleTapTip.collectAsState(initial = true)
     val hasSeenSwipeMinimizeTip by userPrefs.hasSeenSwipeMinimizeTip.collectAsState(initial = true)
 
+    val effectiveDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
     SideEffect {
         window?.let { win ->
              val insetsController = androidx.core.view.WindowCompat.getInsetsController(win, win.decorView)
              
              // Light/Dark icons based on theme
-             insetsController.isAppearanceLightStatusBars = !isDarkTheme
-             insetsController.isAppearanceLightNavigationBars = !isDarkTheme
+             insetsController.isAppearanceLightStatusBars = !effectiveDarkTheme
+             insetsController.isAppearanceLightNavigationBars = !effectiveDarkTheme
         }
     }
     // Color extraction state
@@ -138,16 +141,17 @@ fun UnifiedPlayerSheet(
             .build()
     )
     
-    LaunchedEffect(episode.imageUrl, painter.state, isDarkTheme) {
+    LaunchedEffect(episode.imageUrl, painter.state, effectiveDarkTheme) {
         val painterState = painter.state
         if (painterState is AsyncImagePainter.State.Success) {
             val bitmap = (painterState.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
             if (bitmap != null) {
                 val seedColor = extractSeedColor(bitmap)
-                extractedColorScheme = generateBrandColorScheme(seedColor, isDarkTheme)
+                extractedColorScheme = generateBrandColorScheme(seedColor, effectiveDarkTheme)
             }
         }
     }
+
     
     // Sheet state (internal)
     var currentSheetContentState by remember { mutableStateOf(PlayerSheetState.COLLAPSED) }

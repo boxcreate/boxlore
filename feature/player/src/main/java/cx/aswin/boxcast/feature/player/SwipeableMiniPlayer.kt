@@ -75,48 +75,16 @@ fun SwipeableMiniPlayer(
     
     // Static outer container - doesn't move
     Box(modifier = modifier) {
-        // Dismiss pill BEHIND the player (visible when player slides away)
-        AnimatedVisibility(
+        DismissPill(
             visible = showConfirmPill,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(150)),
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(0f)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = if (swipeDirection > 0) Alignment.CenterStart else Alignment.CenterEnd
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .clickable {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            autoHideJob?.cancel()
-                            onDismiss()
-                        }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.Close,
-                        contentDescription = "Dismiss",
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        "Dismiss",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
+            swipeDirection = swipeDirection,
+            onDismiss = {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                autoHideJob?.cancel()
+                onDismiss()
             }
-        }
+        )
+
         
         // Player content - THIS moves with swipe (with its own background)
         Box(
@@ -246,3 +214,49 @@ fun SwipeableMiniPlayer(
         }
     }
 }
+
+@Composable
+private fun DismissPill(
+    visible: Boolean,
+    swipeDirection: Int,
+    onDismiss: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(200)),
+        exit = fadeOut(tween(150)),
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(0f)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = if (swipeDirection > 0) Alignment.CenterStart else Alignment.CenterEnd
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .clickable { onDismiss() }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Dismiss",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "Dismiss",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    }
+}
+
