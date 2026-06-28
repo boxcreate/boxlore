@@ -2,13 +2,12 @@ name: Sync Podcast Index Data
 
 on:
   schedule:
-    # Optimized triggers for early morning daily news in targeted country commutes
-    - cron: '0 1 * * *'   # 01:00 UTC (Optimal for India morning)
-    - cron: '0 5 * * *'   # 05:00 UTC (Optimal for Europe/UK morning)
-    - cron: '0 9 * * *'   # 09:00 UTC (Optimal for US East early-birds / India midday)
-    - cron: '0 12 * * *'  # 12:00 UTC (Optimal for US East standard commute)
-    - cron: '0 16 * * *'  # 16:00 UTC (Optimal for US West commute / UK evening)
-    - cron: '0 21 * * *'  # 21:00 UTC (Optimal for US East evening / evening catch-up)
+    # Optimized triggers for fresh morning news across key timezones (5x/day)
+    - cron: '0 0 * * *'   # 00:00 UTC → India morning (5:30 AM IST)
+    - cron: '0 5 * * *'   # 05:00 UTC → UK/Europe morning (6:00 AM BST)
+    - cron: '0 11 * * *'  # 11:00 UTC → US East morning (7:00 AM EDT)
+    - cron: '0 14 * * *'  # 14:00 UTC → US West morning (7:00 AM PDT)
+    - cron: '0 20 * * *'  # 20:00 UTC → Overnight refresh for next-day Asia/India
   workflow_dispatch: # Allow manual trigger
 
 
