@@ -101,11 +101,7 @@ class InstallReferrerManager(private val context: Context) {
         }
     }
 
-    private fun parseReferrer(referrer: String): ReferralIntent? {
-        val decoded = android.net.Uri.decode(referrer)
-        Log.d(TAG, "Parsing decoded referrer: $decoded")
-
-        // 1. Check Query parameter style: type=episode&id=123&t=45
+    private fun parseQueryReferrer(decoded: String): ReferralIntent? {
         if (decoded.contains("type=") && (decoded.contains("id=") || decoded.contains("podcastId="))) {
             val uri = android.net.Uri.parse("boxlore://share?$decoded")
             val type = uri.getQueryParameter("type")
@@ -117,8 +113,10 @@ class InstallReferrerManager(private val context: Context) {
                 return ReferralIntent(type, id, t, start, end)
             }
         }
+        return null
+    }
 
-        // 2. Check Underscore style: type_episode_id_67890_t_150 or type_podcast_id_12345
+    private fun parseUnderscoreReferrer(decoded: String): ReferralIntent? {
         if (decoded.contains("type_") && (decoded.contains("_id_") || decoded.contains("_podcast_id_"))) {
             val parts = decoded.split("_")
             var type: String? = null
@@ -141,8 +139,10 @@ class InstallReferrerManager(private val context: Context) {
                 return ReferralIntent(type, id, t, start, end)
             }
         }
+        return null
+    }
 
-        // 3. Simple fallback format (e.g. "episode_12345", "podcast_67890")
+    private fun parseSimpleReferrer(decoded: String): ReferralIntent? {
         if (decoded.startsWith("episode_")) {
             val parts = decoded.split("_")
             val id = parts.getOrNull(1)
@@ -156,7 +156,15 @@ class InstallReferrerManager(private val context: Context) {
                 return ReferralIntent("podcast", id)
             }
         }
-
         return null
+    }
+
+    private fun parseReferrer(referrer: String): ReferralIntent? {
+        val decoded = android.net.Uri.decode(referrer)
+        Log.d(TAG, "Parsing decoded referrer: $decoded")
+
+        return parseQueryReferrer(decoded)
+            ?: parseUnderscoreReferrer(decoded)
+            ?: parseSimpleReferrer(decoded)
     }
 }

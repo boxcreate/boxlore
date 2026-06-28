@@ -2,34 +2,11 @@ package cx.aswin.boxcast.core.designsystem.components
 
 import java.net.URLEncoder
 
-/**
- * Optimizes an image URL by passing it through a resizing CDN (wsrv.nl).
- * This significantly improves loading times for lists and grids by preventing
- * the app from downloading 5MB uncompressed podcast cover arts.
- * 
- * @param width The desired maximum width in pixels.
- * @return The optimized URL, or the original if it's not an HTTP/HTTPS URL.
- */
-fun String.optimizedImageUrl(width: Int = 400): String {
-    val cleanedUrl = this.cleanImageUrl()
-    if (cleanedUrl.isBlank() || (!cleanedUrl.startsWith("http://") && !cleanedUrl.startsWith("https://"))) {
-        return cleanedUrl
-    }
+private const val SCHEME_HTTP = "http://"
+private const val SCHEME_HTTPS = "https://"
 
-    // Bypass proxy for first-party dynamic briefing images to ensure high resolution and avoid caching issues
-    if (cleanedUrl.contains("aswin.cx", ignoreCase = true)) {
-        return cleanedUrl
-    }
-
-    // Upgrade to HTTPS for all requests to satisfy Android cleartext security rules
-    val httpsUrl = if (cleanedUrl.startsWith("http://")) {
-        cleanedUrl.replaceFirst("http://", "https://")
-    } else {
-        cleanedUrl
-    }
-    
-    // Dynamically scale width based on screen density and tablet/viewport configuration
-    val scaledWidth = try {
+private fun calculateScaledWidth(originalWidth: Int): Int {
+    return try {
         val metrics = android.content.res.Resources.getSystem().displayMetrics
         val density = metrics.density
         val screenWidthPx = metrics.widthPixels
@@ -41,12 +18,13 @@ fun String.optimizedImageUrl(width: Int = 400): String {
             density >= 2.5f -> 1.4f // Medium-high density FHD phones
             else -> 1.1f
         }
-        (width * scale).toInt().coerceIn(10, 2048)
+        (originalWidth * scale).toInt().coerceIn(10, 2048)
     } catch (e: Exception) {
-        width
+        originalWidth
     }
-    
-    // NATIVE CDN OPTIMIZATIONS (Completely bypasses third-party proxy lag/failure!)
+}
+
+private fun optimizeKnownCdns(httpsUrl: String, scaledWidth: Int): String? {
     try {
         // 1. BBC / ichef
         if (httpsUrl.contains("ichef.bbci.co.uk")) {
@@ -108,6 +86,43 @@ fun String.optimizedImageUrl(width: Int = 400): String {
         }
     } catch (e: Exception) {
         // Fallback to default wsrv.nl proxy on parsing/formatting exception
+    }
+    return null
+}
+
+/**
+ * Optimizes an image URL by passing it through a resizing CDN (wsrv.nl).
+ * This significantly improves loading times for lists and grids by preventing
+ * the app from downloading 5MB uncompressed podcast cover arts.
+ * 
+ * @param width The desired maximum width in pixels.
+ * @return The optimized URL, or the original if it's not an HTTP/HTTPS URL.
+ */
+fun String.optimizedImageUrl(width: Int = 400): String {
+    val cleanedUrl = this.cleanImageUrl()
+    if (cleanedUrl.isBlank() || (!cleanedUrl.startsWith(SCHEME_HTTP) && !cleanedUrl.startsWith(SCHEME_HTTPS))) {
+        return cleanedUrl
+    }
+
+    // Bypass proxy for first-party dynamic briefing images to ensure high resolution and avoid caching issues
+    if (cleanedUrl.contains("aswin.cx", ignoreCase = true)) {
+        return cleanedUrl
+    }
+
+    // Upgrade to HTTPS for all requests to satisfy Android cleartext security rules
+    val httpsUrl = if (cleanedUrl.startsWith(SCHEME_HTTP)) {
+        cleanedUrl.replaceFirst(SCHEME_HTTP, SCHEME_HTTPS)
+    } else {
+        cleanedUrl
+    }
+    
+    // Dynamically scale width based on screen density and tablet/viewport configuration
+    val scaledWidth = calculateScaledWidth(width)
+    
+    // NATIVE CDN OPTIMIZATIONS (Completely bypasses third-party proxy lag/failure!)
+    val optimizedCdnUrl = optimizeKnownCdns(httpsUrl, scaledWidth)
+    if (optimizedCdnUrl != null) {
+        return optimizedCdnUrl
     }
 
     // Default fallback to wsrv.nl proxy
