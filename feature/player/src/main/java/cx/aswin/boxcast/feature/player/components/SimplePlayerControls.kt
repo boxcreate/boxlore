@@ -156,49 +156,19 @@ private fun SpeedSectionContent(
                 }
             }
             PlayerControlMode.Speed -> {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    IconButton(onClick = { onModeChange(PlayerControlMode.None) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Rounded.Close, null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
-                    }
-
-                    val options = listOf(0.5f, 0.8f, 1.0f, 1.25f, 1.5f)
-
-                    androidx.compose.foundation.lazy.LazyRow(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        items(options) { speed ->
-                            val isSelected = speed == playbackSpeed
-                            Box(
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .clip(CircleShape)
-                                    .background(if (isSelected) colorScheme.primary else Color.Transparent)
-                                    .clickable {
-                                        onSpeedChange(speed)
-                                        onModeChange(PlayerControlMode.None)
-                                    }
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "${speed}x",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isSelected) colorScheme.onPrimary else colorScheme.primary
-                                )
-                            }
-                        }
-                    }
-                }
+                val speeds = listOf(0.5f, 0.8f, 1.0f, 1.25f, 1.5f)
+                val options = speeds.map { it to "${it}x" }
+                ControlOptionsSelector(
+                    options = options,
+                    selectedPredicate = { speed -> speed == playbackSpeed },
+                    onOptionSelected = { speed ->
+                        onSpeedChange(speed)
+                        onModeChange(PlayerControlMode.None)
+                    },
+                    onClose = { onModeChange(PlayerControlMode.None) },
+                    colorScheme = colorScheme,
+                    closeOnLeft = true
+                )
             }
             PlayerControlMode.Sleep -> {
                 Spacer(Modifier.width(0.dp))
@@ -268,51 +238,19 @@ private fun SleepSectionContent(
                 }
             }
             PlayerControlMode.Sleep -> {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    val options = listOf(0 to "Off", 15 to "15m", 30 to "30m", 60 to "1 hr", 120 to "2 hr", 999 to "End")
-
-                    androidx.compose.foundation.lazy.LazyRow(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        items(options) { (mins, label) ->
-                            val isTimerActive = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
-                            val isSelected = if (mins == 0) !isTimerActive else false
-
-                            Box(
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .clip(CircleShape)
-                                    .background(if (isSelected) colorScheme.primary else Color.Transparent)
-                                    .clickable {
-                                        onSleepClick(mins)
-                                        onModeChange(PlayerControlMode.None)
-                                    }
-                                    .padding(horizontal = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isSelected) colorScheme.onPrimary else colorScheme.primary
-                                )
-                            }
-                        }
-                    }
-
-                    IconButton(onClick = { onModeChange(PlayerControlMode.None) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Rounded.Close, null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
-                    }
-                }
+                val options = listOf(0 to "Off", 15 to "15m", 30 to "30m", 60 to "1 hr", 120 to "2 hr", 999 to "End")
+                val isTimerActive = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
+                ControlOptionsSelector(
+                    options = options,
+                    selectedPredicate = { mins -> if (mins == 0) !isTimerActive else false },
+                    onOptionSelected = { mins ->
+                        onSleepClick(mins)
+                        onModeChange(PlayerControlMode.None)
+                    },
+                    onClose = { onModeChange(PlayerControlMode.None) },
+                    colorScheme = colorScheme,
+                    closeOnLeft = false
+                )
             }
             PlayerControlMode.Speed -> {
                 Spacer(Modifier.width(0.dp))
@@ -320,6 +258,65 @@ private fun SleepSectionContent(
         }
     }
 }
+
+@Composable
+private fun <T> ControlOptionsSelector(
+    options: List<Pair<T, String>>,
+    selectedPredicate: (T) -> Boolean,
+    onOptionSelected: (T) -> Unit,
+    onClose: () -> Unit,
+    colorScheme: ColorScheme,
+    closeOnLeft: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        if (closeOnLeft) {
+            IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Rounded.Close, null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
+            }
+        }
+
+        androidx.compose.foundation.lazy.LazyRow(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items(options) { (item, label) ->
+                val isSelected = selectedPredicate(item)
+                Box(
+                    modifier = Modifier
+                        .height(36.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) colorScheme.primary else Color.Transparent)
+                        .clickable { onOptionSelected(item) }
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isSelected) colorScheme.onPrimary else colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        if (!closeOnLeft) {
+            IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Rounded.Close, null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+}
+
+
 
 
 private enum class PlayerControlMode {
