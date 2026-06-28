@@ -411,6 +411,98 @@ private fun DailyBriefingChapterRow(
 }
 
 @Composable
+private fun DailyBriefingPlayButton(
+    isPlaying: Boolean,
+    isBuffering: Boolean,
+    playbackStatus: EpisodeStatus?,
+    timeLeftMin: Int,
+    durationMin: Int,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        modifier = Modifier
+            .padding(horizontal = 20.dp)
+            .height(48.dp)
+            .widthIn(min = 180.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .expressiveClickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isBuffering) {
+                BoxLoreLoader.CircularWavy(
+                    size = 20.dp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause briefing" else "Play briefing",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = when {
+                    isPlaying -> "Playing"
+                    playbackStatus == EpisodeStatus.IN_PROGRESS -> "Resume · ${timeLeftMin} min left"
+                    else -> "Listen Now · ${durationMin} min"
+                },
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary,
+                letterSpacing = 0.3.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun DailyBriefingChaptersList(
+    chapters: List<cx.aswin.boxcast.core.model.Chapter>,
+    briefingRegion: String,
+    briefingDate: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit
+) {
+    if (chapters.isNotEmpty()) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val visibleChapters = if (expanded) chapters else chapters.take(3)
+            visibleChapters.forEachIndexed { index, chapter ->
+                DailyBriefingChapterRow(
+                    chapter = chapter,
+                    index = index,
+                    totalChapters = chapters.size,
+                    expanded = expanded,
+                    onToggleExpanded = {
+                        val nextExpanded = !expanded
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingCardChaptersToggled(
+                            region = briefingRegion,
+                            date = briefingDate,
+                            expanded = nextExpanded
+                        )
+                        onExpandedChange(nextExpanded)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun DailyBriefingNormalContent(
     state: DailyBriefingVisualState,
     onPlayPauseClick: () -> Unit,
@@ -433,80 +525,22 @@ private fun DailyBriefingNormalContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Listen Now / Playing pill button
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .height(48.dp)
-                .widthIn(min = 180.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .expressiveClickable(onClick = onPlayPauseClick)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                if (state.isBuffering) {
-                    BoxLoreLoader.CircularWavy(
-                        size = 20.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Icon(
-                        imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (state.isPlaying) "Pause briefing" else "Play briefing",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = when {
-                        state.isPlaying -> "Playing"
-                        state.playbackStatus == EpisodeStatus.IN_PROGRESS -> "Resume · ${state.timeLeftMin} min left"
-                        else -> "Listen Now · ${state.durationMin} min"
-                    },
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    letterSpacing = 0.3.sp
-                )
-            }
-        }
+        DailyBriefingPlayButton(
+            isPlaying = state.isPlaying,
+            isBuffering = state.isBuffering,
+            playbackStatus = state.playbackStatus,
+            timeLeftMin = state.timeLeftMin,
+            durationMin = state.durationMin,
+            onClick = onPlayPauseClick
+        )
 
-        // Vertical chapters list (showing 3 by default, max 1 line per chapter)
-        if (state.chapters.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val visibleChapters = if (expanded) state.chapters else state.chapters.take(3)
-                visibleChapters.forEachIndexed { index, chapter ->
-                    DailyBriefingChapterRow(
-                        chapter = chapter,
-                        index = index,
-                        totalChapters = state.chapters.size,
-                        expanded = expanded,
-                        onToggleExpanded = {
-                            val nextExpanded = !expanded
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingCardChaptersToggled(
-                                region = state.briefing.region,
-                                date = state.briefing.date,
-                                expanded = nextExpanded
-                            )
-                            onExpandedChange(nextExpanded)
-                        }
-                    )
-                }
-            }
-        }
+        DailyBriefingChaptersList(
+            chapters = state.chapters,
+            briefingRegion = state.briefing.region,
+            briefingDate = state.briefing.date,
+            expanded = expanded,
+            onExpandedChange = onExpandedChange
+        )
 
         // Bottom padding
         Spacer(modifier = Modifier.height(16.dp))
