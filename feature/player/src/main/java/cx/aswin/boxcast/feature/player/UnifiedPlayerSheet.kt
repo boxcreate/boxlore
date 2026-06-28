@@ -14,8 +14,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import cx.aswin.boxcast.core.designsystem.theme.generateBrandColorScheme
-import cx.aswin.boxcast.core.designsystem.theme.luminance
-import cx.aswin.boxcast.core.designsystem.theme.SurfaceStyles
+import cx.aswin.boxcast.core.designsystem.theme.LocalSurfaceStyle
+import cx.aswin.boxcast.core.designsystem.theme.LocalEffectiveDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -116,13 +116,8 @@ fun UnifiedPlayerSheet(
     val hasSeenTitleTapTip by userPrefs.hasSeenTitleTapTip.collectAsState(initial = true)
     val hasSeenSwipeMinimizeTip by userPrefs.hasSeenSwipeMinimizeTip.collectAsState(initial = true)
 
-    val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(initial = remember { userPrefs.cachedSurfaceStyle })
-
-    val effectiveDarkTheme = when (surfaceStyle) {
-        SurfaceStyles.AMOLED, SurfaceStyles.CLASSIC_DARK -> true
-        SurfaceStyles.PURE_WHITE, SurfaceStyles.CLASSIC_LIGHT -> false
-        else -> MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    }
+    val surfaceStyle = LocalSurfaceStyle.current
+    val effectiveDarkTheme = LocalEffectiveDarkTheme.current
 
     SideEffect {
         window?.let { win ->
@@ -548,7 +543,7 @@ fun UnifiedPlayerSheet(
                             FullPlayerContent(
                                 playbackRepository = playbackRepository,
                                 downloadRepository = downloadRepository,
-                                isDarkTheme = isDarkTheme,
+                                isDarkTheme = effectiveDarkTheme,
                                 colorScheme = scheme,
                                 isFullscreenVideo = isFullscreenVideo,
                                 onFullscreenVideoChange = { isFullscreenVideo = it },
