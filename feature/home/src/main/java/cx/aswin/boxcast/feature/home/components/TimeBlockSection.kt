@@ -196,147 +196,16 @@ fun TimeBlockSection(
 
 @Composable
 fun AnimatedTimeBlockIcon(title: String, themeColor: Color, fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector) {
-    when (title) {
-        "Good Morning", "Afternoon Break" -> {
-            val infiniteTransition = rememberInfiniteTransition(label = "sunrise")
-            val rayRotation by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(12000, easing = androidx.compose.animation.core.LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "ray_rotation"
-            )
-            val sunPulse by infiniteTransition.animateFloat(
-                initialValue = 0.92f,
-                targetValue = 1.08f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1800, easing = EaseInOutSine),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "sun_pulse"
-            )
-
-            Box(
-                modifier = Modifier.size(28.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.WbSunny,
-                    contentDescription = null,
-                    tint = themeColor.copy(alpha = 0.4f),
-                    modifier = Modifier
-                        .size(28.dp)
-                        .graphicsLayer { rotationZ = rayRotation }
-                )
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .graphicsLayer {
-                            scaleX = sunPulse
-                            scaleY = sunPulse
-                        }
-                        .background(themeColor, CircleShape)
-                )
-            }
-        }
-        "Evening Unwind" -> {
-            val infiniteTransition = rememberInfiniteTransition(label = "sunset")
-            val sunYOffset by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 16f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(3200, easing = EaseInOutSine),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "sun_y"
-            )
-
-            Box(
-                modifier = Modifier.size(28.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 28.dp, height = 20.dp)
-                        .align(Alignment.TopCenter)
-                        .clipToBounds()
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.WbSunny,
-                        contentDescription = null,
-                        tint = themeColor,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .align(Alignment.TopCenter)
-                            .graphicsLayer { translationY = sunYOffset.dp.toPx() }
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .background(themeColor.copy(alpha = 0.8f))
-                )
-            }
-        }
-        "Late Night Listen" -> {
-            val infiniteTransition = rememberInfiniteTransition(label = "stars")
-            val star1Alpha by infiniteTransition.animateFloat(
-                initialValue = 0.1f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1400, easing = EaseInOutSine),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "star1"
-            )
-            val star2Alpha by infiniteTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = 0.2f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1900, easing = EaseInOutSine),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "star2"
-            )
-
-            Box(modifier = Modifier.size(28.dp)) {
-                Icon(
-                    imageVector = Icons.Rounded.NightsStay,
-                    contentDescription = null,
-                    tint = themeColor,
-                    modifier = Modifier
-                        .size(22.dp)
-                        .align(Alignment.CenterStart)
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 2.dp, end = 2.dp)
-                        .size(5.dp)
-                        .graphicsLayer { alpha = star1Alpha }
-                        .background(themeColor, CircleShape)
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(bottom = 6.dp, end = 4.dp)
-                        .size(3.5.dp)
-                        .graphicsLayer { alpha = star2Alpha }
-                        .background(themeColor, CircleShape)
-                )
-            }
-        }
-        else -> {
-            Icon(
-                imageVector = fallbackIcon,
-                contentDescription = null,
-                tint = themeColor,
-                modifier = Modifier.size(28.dp)
-            )
-        }
+    val icon = when (title) {
+        "Good Morning", "Afternoon Break" -> Icons.Rounded.WbSunny
+        "Evening Unwind" -> Icons.Rounded.WbSunny
+        "Late Night Listen" -> Icons.Rounded.NightsStay
+        else -> fallbackIcon
     }
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = themeColor,
+        modifier = Modifier.size(24.dp)
+    )
 }

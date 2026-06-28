@@ -81,6 +81,8 @@ fun OptimizedImage(
                 .data(currentUrl)
                 .size(coil.size.Size(proxyWidth, proxyWidth))
                 .memoryCacheKey("$currentUrl-w$proxyWidth")
+                .allowHardware(true)
+                .crossfade(150)
                 .build()
         }
     )

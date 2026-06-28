@@ -62,7 +62,7 @@ private const val TAG = "StylizedLogo"
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TopControlBar(
-    scrollFraction: Float = 0f,
+    scrollFractionProvider: () -> Float = { 0f },
     modifier: Modifier = Modifier,
     onFeedbackClick: () -> Unit = {},
     onFeedbackLongClick: () -> Unit = {},
@@ -77,31 +77,28 @@ fun TopControlBar(
     val expandedColor = MaterialTheme.colorScheme.surface
     val collapsedColor = MaterialTheme.colorScheme.surfaceContainerLow
     
-    // Animate based on scroll fraction
-    val verticalPadding by animateDpAsState(
-        targetValue = androidx.compose.ui.unit.lerp(expandedPadding, collapsedPadding, scrollFraction.coerceIn(0f, 1f)),
-        animationSpec = tween(durationMillis = 150),
-        label = "paddingAnimation"
-    )
+    val fraction = scrollFractionProvider().coerceIn(0f, 1f)
     
-    val backgroundColor by animateColorAsState(
-        targetValue = lerp(expandedColor, collapsedColor, scrollFraction.coerceIn(0f, 1f)),
-        animationSpec = tween(durationMillis = 150),
-        label = "colorAnimation"
-    )
+    val verticalPadding = remember(fraction) {
+        androidx.compose.ui.unit.lerp(expandedPadding, collapsedPadding, fraction)
+    }
+    
+    val backgroundColor = remember(fraction) {
+        lerp(expandedColor, collapsedColor, fraction)
+    }
     
     // Update system status bar icon color to match background
     val view = LocalView.current
     if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            
-            // Calculate luminance to determine icon color
-            // High luminance (light bg) = dark icons, Low luminance (dark bg) = light icons
+        val isLightStatusBar = remember(backgroundColor) {
             val luminance = (0.299f * backgroundColor.red + 
                             0.587f * backgroundColor.green + 
                             0.114f * backgroundColor.blue)
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = luminance > 0.5f
+            luminance > 0.5f
+        }
+        LaunchedEffect(isLightStatusBar) {
+            val window = (view.context as Activity).window
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isLightStatusBar
         }
     }
     

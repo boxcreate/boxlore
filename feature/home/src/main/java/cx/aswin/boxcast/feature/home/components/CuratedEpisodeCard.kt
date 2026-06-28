@@ -1,6 +1,7 @@
 package cx.aswin.boxcast.feature.home.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -67,12 +68,12 @@ fun CuratedEpisodeCard(
 
                 // New badge (top left)
                 if (isNew) {
-                    Surface(
-                        shape = MaterialTheme.shapes.extraSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                    Box(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(6.dp)
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .background(MaterialTheme.colorScheme.primary)
                     ) {
                         Text(
                             text = "NEW",
@@ -86,12 +87,12 @@ fun CuratedEpisodeCard(
 
                 // Duration pill (bottom right)
                 if (episode.duration > 0) {
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = Color.Black.copy(alpha = 0.6f),
+                    Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(6.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(Color.Black.copy(alpha = 0.6f))
                     ) {
                         Text(
                             text = formatDuration(episode.duration),

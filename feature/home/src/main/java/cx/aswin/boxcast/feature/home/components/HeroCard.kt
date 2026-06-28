@@ -49,6 +49,8 @@ import cx.aswin.boxcast.feature.home.SmartHeroItem
 import cx.aswin.boxcast.core.designsystem.components.AnimatedShapesFallback
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 
+import androidx.compose.ui.draw.drawWithContent
+
 @Composable
 fun HeroCard(
     item: SmartHeroItem,
@@ -59,6 +61,18 @@ fun HeroCard(
     isPlaying: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val gradientBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(
+                Color.Black.copy(alpha = 0.15f),
+                Color.Black.copy(alpha = 0.35f),
+                Color.Black.copy(alpha = 0.55f),
+                Color.Black.copy(alpha = 0.75f),
+                Color.Black.copy(alpha = 0.92f)
+            )
+        )
+    }
+
     Card(
         // Remove standard onClick to avoid double ripple/no-bounce
         shape = MaterialTheme.shapes.extraLarge, 
@@ -74,26 +88,13 @@ fun HeroCard(
                 url = resolveHeroImageUrl(item),
                 proxyWidth = 800, // Full-width hero needs high res
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            
-            // Strong Gradient Overlay for text visibility
-            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.15f),
-                                Color.Black.copy(alpha = 0.35f),
-                                Color.Black.copy(alpha = 0.55f), // Stronger middle
-                                Color.Black.copy(alpha = 0.75f),
-                                Color.Black.copy(alpha = 0.92f)
-                            ),
-                            startY = 0f
-                        )
-                    )
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(gradientBrush)
+                    },
+                contentScale = ContentScale.Crop
             )
             // Content - Distributed Layout
             Column(

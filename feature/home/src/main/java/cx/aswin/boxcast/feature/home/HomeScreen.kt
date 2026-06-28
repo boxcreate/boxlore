@@ -344,7 +344,7 @@ fun HomeScreen(
         // Main content underneath
         Column(modifier = Modifier.fillMaxSize()) {
             TopControlBar(
-                scrollFraction = scrollFraction,
+                scrollFractionProvider = { scrollFraction },
 
                 onFeedbackClick = {
                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTopControlbarInteraction("feedback_clicked", "home")
@@ -680,107 +680,94 @@ private fun PodcastFeed(
         // Daily Briefing Card — Shifted above ForYouSection
         if (briefing != null) {
             item(key = "daily_briefing", span = StaggeredGridItemSpan.FullLine) {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = expandVertically(
-                        animationSpec = tween(400),
-                        expandFrom = Alignment.Top
-                    ) + fadeIn(animationSpec = tween(400)),
-                    exit = shrinkVertically(
-                        animationSpec = tween(300),
-                        shrinkTowards = Alignment.Top
-                    ) + fadeOut(animationSpec = tween(300))
-                ) {
-                    val briefingId = "briefing_${briefing.region}_${briefing.date}"
-                    val playbackState = episodePlaybackState[briefingId]
-                    LaunchedEffect(briefing.region, briefing.date) {
-                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingCardImpression(
-                            region = briefing.region,
-                            date = briefing.date,
-                            playbackStatus = playbackState?.first?.name ?: "NOT_STARTED"
-                        )
-                    }
-                    DailyBriefingCard(
-                        briefing = briefing,
-                        chapters = briefingChapters,
-                        isPlaying = isPlaying && currentPlayingEpisodeId == briefingId,
-                        playbackStatus = playbackState?.first,
-                        playbackProgress = playbackState?.second,
-                        isBuffering = isPlayerLoading && currentPlayingEpisodeId == briefingId,
-                        onPlayPauseClick = {
-                            val isCurrentPlaying = isPlaying && currentPlayingEpisodeId == briefingId
-                            if (isCurrentPlaying) {
-                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPauseClicked(
-                                    region = briefing.region,
-                                    date = briefing.date,
-                                    source = "home_banner"
-                                )
-                            } else {
-                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPlayClicked(
-                                    region = briefing.region,
-                                    date = briefing.date,
-                                    source = "home_banner"
-                                )
-                            }
-
-                            val publishedDate = try {
-                                java.time.LocalDate.parse(briefing.date)
-                                    .atStartOfDay(java.time.ZoneOffset.UTC)
-                                    .toEpochSecond()
-                            } catch (e: Exception) {
-                                System.currentTimeMillis() / 1000
-                            }
-                            val audioUri = android.net.Uri.parse(briefing.audioUrl)
-                            val version = audioUri.getQueryParameter("v")
-                            val versionParam = if (version != null) "&v=$version" else ""
-                            
-                            val packageName = context.packageName
-                            val resId = when (briefing.region.lowercase()) {
-                                "in", "ind" -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_india
-                                "uk", "gb" -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_uk
-                                "us", "usa" -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_usa
-                                else -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_global
-                            }
-                            val localCoverUrl = "android.resource://$packageName/$resId"
-
-                            onPlayEpisode(
-                                cx.aswin.boxcast.core.model.Episode(
-                                    id = briefingId,
-                                    title = briefing.title,
-                                    description = "Your daily AI-generated news briefing for ${briefing.region.uppercase()}.",
-                                    audioUrl = briefing.audioUrl,
-                                    imageUrl = localCoverUrl,
-                                    podcastId = "briefing_${briefing.region}",
-                                    podcastTitle = "The Boxlore Brief",
-                                    podcastImageUrl = localCoverUrl,
-                                    podcastArtist = "BoxCast AI",
-                                    duration = 180,
-                                    publishedDate = publishedDate,
-                                    transcriptUrl = "https://api.aswin.cx/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
-                                    chaptersUrl = "https://api.aswin.cx/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
-                                ),
-                                cx.aswin.boxcast.core.model.Podcast(
-                                    id = "briefing_${briefing.region}",
-                                    title = "The Boxlore Brief",
-                                    artist = "BoxCast AI",
-                                    imageUrl = localCoverUrl
-                                )
-                            )
-                        },
-                        onClick = {
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingBannerTapped(
-                                region = briefing.region,
-                                date = briefing.date
-                            )
-                            onBriefingClick(briefing.region)
-                        },
-                        onDismiss = onDismissBriefing,
-                        onDismissForever = onDismissBriefingForever,
-                        onFeedbackClick = onFeedbackClick,
-                        modifier = Modifier
-                            .animateItem()
+                val briefingId = "briefing_${briefing.region}_${briefing.date}"
+                val playbackState = episodePlaybackState[briefingId]
+                LaunchedEffect(briefing.region, briefing.date) {
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingCardImpression(
+                        region = briefing.region,
+                        date = briefing.date,
+                        playbackStatus = playbackState?.first?.name ?: "NOT_STARTED"
                     )
                 }
+                DailyBriefingCard(
+                    briefing = briefing,
+                    chapters = briefingChapters,
+                    isPlaying = isPlaying && currentPlayingEpisodeId == briefingId,
+                    playbackStatus = playbackState?.first,
+                    playbackProgress = playbackState?.second,
+                    isBuffering = isPlayerLoading && currentPlayingEpisodeId == briefingId,
+                    onPlayPauseClick = {
+                        val isCurrentPlaying = isPlaying && currentPlayingEpisodeId == briefingId
+                        if (isCurrentPlaying) {
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPauseClicked(
+                                region = briefing.region,
+                                date = briefing.date,
+                                source = "home_banner"
+                            )
+                        } else {
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingPlayClicked(
+                                region = briefing.region,
+                                date = briefing.date,
+                                source = "home_banner"
+                            )
+                        }
+
+                        val publishedDate = try {
+                            java.time.LocalDate.parse(briefing.date)
+                                .atStartOfDay(java.time.ZoneOffset.UTC)
+                                .toEpochSecond()
+                        } catch (e: Exception) {
+                            System.currentTimeMillis() / 1000
+                        }
+                        val audioUri = android.net.Uri.parse(briefing.audioUrl)
+                        val version = audioUri.getQueryParameter("v")
+                        val versionParam = if (version != null) "&v=$version" else ""
+                        
+                        val packageName = context.packageName
+                        val resId = when (briefing.region.lowercase()) {
+                            "in", "ind" -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_india
+                            "uk", "gb" -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_uk
+                            "us", "usa" -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_usa
+                            else -> cx.aswin.boxcast.core.designsystem.R.drawable.daily_briefing_global
+                        }
+                        val localCoverUrl = "android.resource://$packageName/$resId"
+
+                        onPlayEpisode(
+                            cx.aswin.boxcast.core.model.Episode(
+                                id = briefingId,
+                                title = briefing.title,
+                                description = "Your daily AI-generated news briefing for ${briefing.region.uppercase()}.",
+                                audioUrl = briefing.audioUrl,
+                                imageUrl = localCoverUrl,
+                                podcastId = "briefing_${briefing.region}",
+                                podcastTitle = "The Boxlore Brief",
+                                podcastImageUrl = localCoverUrl,
+                                podcastArtist = "BoxCast AI",
+                                duration = 180,
+                                publishedDate = publishedDate,
+                                transcriptUrl = "https://api.aswin.cx/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+                                chaptersUrl = "https://api.aswin.cx/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
+                            ),
+                            cx.aswin.boxcast.core.model.Podcast(
+                                id = "briefing_${briefing.region}",
+                                title = "The Boxlore Brief",
+                                artist = "BoxCast AI",
+                                imageUrl = localCoverUrl
+                            )
+                        )
+                    },
+                    onClick = {
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingBannerTapped(
+                            region = briefing.region,
+                            date = briefing.date
+                        )
+                        onBriefingClick(briefing.region)
+                    },
+                    onDismiss = onDismissBriefing,
+                    onDismissForever = onDismissBriefingForever,
+                    onFeedbackClick = onFeedbackClick,
+                    modifier = Modifier
+                )
             }
         }
 

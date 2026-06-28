@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
@@ -204,42 +205,38 @@ private fun GridCell(
     val currentPodcast by androidx.compose.runtime.rememberUpdatedState(podcast)
     val currentOnPlayClick by androidx.compose.runtime.rememberUpdatedState(onPlayClick)
 
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        shadowElevation = 0.dp,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+    val gradientBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(
+                Color.Transparent,
+                Color.Black.copy(alpha = 0.15f),
+                Color.Black.copy(alpha = 0.55f),
+                Color.Black.copy(alpha = 0.85f),
+                Color.Black.copy(alpha = 0.95f)
+            )
+        )
+    }
+
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .expressiveClickable {
                 currentOnPlayClick(currentPodcast)
             }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            OptimizedImage(
-                url = podcast.imageUrl.ifEmpty { podcast.fallbackImageUrl.orEmpty() },
-                proxyWidth = 400,
-                contentDescription = podcast.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-
-            // Strong gradient overlay — covers bottom 60% of cell for text readability
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.15f),
-                                Color.Black.copy(alpha = 0.55f),
-                                Color.Black.copy(alpha = 0.85f),
-                                Color.Black.copy(alpha = 0.95f)
-                            ),
-                            startY = 0f
-                        )
-                    )
-            )
+        OptimizedImage(
+            url = podcast.imageUrl.ifEmpty { podcast.fallbackImageUrl.orEmpty() },
+            proxyWidth = 400,
+            contentDescription = podcast.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    drawContent()
+                    drawRect(gradientBrush)
+                }
+        )
 
             // Bottom content: Title + progress
             Column(
@@ -286,7 +283,6 @@ private fun GridCell(
                 }
             }
         }
-    }
 }
 
 @Composable
