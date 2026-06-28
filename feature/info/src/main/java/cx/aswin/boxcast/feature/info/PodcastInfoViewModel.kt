@@ -267,34 +267,9 @@ class PodcastInfoViewModel(
         _currentPodcastIdFlow.value = podcastId
         currentOffset = 0
         viewModelScope.launch {
-            // 1. Instantly load from local database if available
             val localPodcastEntity = database.podcastDao().getPodcast(podcastId)
             val isSubscribed = subscriptionRepository.isSubscribed(podcastId)
-            var currentPodcast: Podcast? = localPodcastEntity?.let { entity ->
-                Podcast(
-                    id = entity.podcastId,
-                    title = entity.title,
-                    artist = entity.author ?: "Unknown",
-                    imageUrl = entity.imageUrl ?: "",
-                    fallbackImageUrl = entity.latestEpisode?.imageUrl ?: "",
-                    description = entity.description,
-                    genre = entity.genre ?: "Podcast",
-                    type = entity.type,
-                    latestEpisode = entity.latestEpisode,
-                    subscribedAt = entity.subscribedAt,
-                    podcastGuid = entity.podcastGuid,
-                    fundingUrl = entity.fundingUrl,
-                    fundingMessage = entity.fundingMessage,
-                    medium = entity.medium,
-                    hasValue = entity.hasValue,
-                    updateFrequency = entity.updateFrequency,
-                    location = entity.location,
-                    license = entity.license,
-                    isLocked = entity.isLocked,
-                    notificationsEnabled = entity.notificationsEnabled,
-                    autoDownloadEnabled = entity.autoDownloadEnabled
-                )
-            }
+            var currentPodcast = localPodcastEntity?.let { mapEntityToPodcast(it) }
 
             if (currentPodcast != null) {
                 if (wasSubscribedAtStart == null) {
@@ -313,61 +288,19 @@ class PodcastInfoViewModel(
 
             try {
                 val initialType = currentPodcast?.type ?: "episodic"
-                // Use persisted sort preference if available, otherwise fall back to type-based default
-                val initialSort = when (localPodcastEntity?.preferredSort) {
-                    "oldest" -> EpisodeSort.OLDEST
-                    "newest" -> EpisodeSort.NEWEST
-                    else -> if (initialType == "serial") EpisodeSort.OLDEST else EpisodeSort.NEWEST
-                }
+                val initialSort = resolveInitialSort(localPodcastEntity?.preferredSort, initialType)
                 val limit = if (initialSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
                 val sortParam = if (initialSort == EpisodeSort.OLDEST) "oldest" else "newest"
                 
-                val apiPodcast: Podcast?
-                val page: cx.aswin.boxcast.core.data.PodcastRepository.EpisodePage
-
-                if (podcastId.startsWith("url:") || podcastId.startsWith("guid:")) {
-                    // Fetch details first sequentially to resolve the real numeric ID
-                    apiPodcast = repository.getPodcastDetails(podcastId)
-                    if (apiPodcast != null) {
-                        val realId = apiPodcast.id
-                        val episodesDeferred = async { repository.getEpisodesPaginated(realId, limit, 0, sortParam) }
-                        page = episodesDeferred.await()
-                    } else {
-                        page = cx.aswin.boxcast.core.data.PodcastRepository.EpisodePage(emptyList(), false)
-                    }
-                } else {
-                    // Fetch details and episodes in parallel using coroutine async
-                    val podcastDeferred = async { repository.getPodcastDetails(podcastId) }
-                    val episodesDeferred = async { repository.getEpisodesPaginated(podcastId, limit, 0, sortParam) }
-                    apiPodcast = podcastDeferred.await()
-                    page = episodesDeferred.await()
-                }
+                val (apiPodcast, page) = fetchPodcastAndEpisodes(podcastId, limit, sortParam)
 
                 if (apiPodcast != null) {
-                    val apiPodcastWithFallback = apiPodcast.copy(
-                        fallbackImageUrl = apiPodcast.fallbackImageUrl.takeIf { !it.isNullOrBlank() }
-                            ?: currentPodcast?.fallbackImageUrl
-                            ?: page.episodes.firstOrNull()?.imageUrl,
-                        subscribedAt = currentPodcast?.subscribedAt ?: 0L,
-                        notificationsEnabled = localPodcastEntity?.notificationsEnabled ?: false,
-                        autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false,
-                        latestEpisode = apiPodcast.latestEpisode 
-                            ?: currentPodcast?.latestEpisode 
-                            ?: (if (sortParam == "newest") page.episodes.firstOrNull() else page.episodes.maxByOrNull { it.publishedDate })
-                    )
+                    val apiPodcastWithFallback = enrichPodcastWithFallback(apiPodcast, currentPodcast, localPodcastEntity, page, sortParam)
                     currentPodcast = apiPodcastWithFallback
-                    currentPodcastId = apiPodcastWithFallback.id // Update to the real numeric ID
+                    currentPodcastId = apiPodcastWithFallback.id
                     _currentPodcastIdFlow.value = apiPodcastWithFallback.id
                     
-                    // Track screen viewed with podcast name
-                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
-                        podcastId = apiPodcastWithFallback.id,
-                        podcastName = apiPodcastWithFallback.title,
-                        entryPoint = entryPoint,
-                        genreFilter = genreFilter,
-                        scrollDepth = scrollDepth,
-                        searchQuery = searchQuery
-                    )
+                    trackScreenViewed(apiPodcastWithFallback.id, apiPodcastWithFallback.title)
 
                     if (wasSubscribedAtStart == null) {
                         wasSubscribedAtStart = isSubscribed
@@ -383,88 +316,169 @@ class PodcastInfoViewModel(
                         isLoadingMore = false
                     )
 
-                    // 3. Asynchronously fetch RSS metadata in background without blocking UI
                     launch {
-                        try {
-                            val meta = repository.getPodcastMeta(podcastId)
-                            if (meta != null) {
-                                val state = _uiState.value
-                                if (state is PodcastInfoUiState.Success && (state.podcast.id == podcastId || state.podcast.id == apiPodcast.id)) {
-                                    val enrichedPodcast = state.podcast.copy(
-                                        location = meta.location,
-                                        license = meta.license,
-                                        isLocked = meta.locked == 1,
-                                        updateFrequency = meta.updateFrequency,
-                                        podroll = meta.podroll?.map { cx.aswin.boxcast.core.model.PodrollItem(title = it.title, url = it.url, uuid = it.uuid) }
-                                    )
-                                    _uiState.value = state.copy(podcast = enrichedPodcast)
-                                    
-                                    // If subscribed, persist enriched values in database
-                                    if (isSubscribed) {
-                                        val preferredSortVal = localPodcastEntity?.preferredSort ?: "newest"
-                                        val typeVal = if (preferredSortVal == "oldest") "serial" else "episodic"
-                                        val updatedEntity = cx.aswin.boxcast.core.data.database.PodcastEntity(
-                                            podcastId = enrichedPodcast.id,
-                                            title = enrichedPodcast.title,
-                                            author = enrichedPodcast.artist,
-                                            imageUrl = enrichedPodcast.imageUrl.takeIf { it.isNotEmpty() } ?: localPodcastEntity?.imageUrl ?: "",
-                                            description = enrichedPodcast.description,
-                                            genre = enrichedPodcast.genre,
-                                            type = typeVal,
-                                            isSubscribed = true,
-                                            subscribedAt = enrichedPodcast.subscribedAt,
-                                            lastRefreshed = System.currentTimeMillis(),
-                                            latestEpisode = enrichedPodcast.latestEpisode,
-                                            podcastGuid = enrichedPodcast.podcastGuid,
-                                            fundingUrl = enrichedPodcast.fundingUrl,
-                                            fundingMessage = enrichedPodcast.fundingMessage,
-                                            medium = enrichedPodcast.medium,
-                                            hasValue = enrichedPodcast.hasValue,
-                                            updateFrequency = enrichedPodcast.updateFrequency,
-                                            location = enrichedPodcast.location,
-                                            license = enrichedPodcast.license,
-                                            isLocked = enrichedPodcast.isLocked,
-                                            preferredSort = preferredSortVal,
-                                            notificationsEnabled = localPodcastEntity?.notificationsEnabled ?: false,
-                                            autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false
-                                        )
-                                        database.podcastDao().upsert(updatedEntity)
-                                    }
-                                }
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+                        fetchAndApplyPodcastMeta(podcastId, apiPodcast.id, isSubscribed, localPodcastEntity)
                     }
                 } else {
                     if (currentPodcast == null) {
-                        // Fallback tracking without podcast name
-                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
-                            podcastId = podcastId,
-                            podcastName = null,
-                            entryPoint = entryPoint,
-                            genreFilter = genreFilter,
-                            scrollDepth = scrollDepth,
-                            searchQuery = searchQuery
-                        )
+                        trackScreenViewed(podcastId, null)
                         _uiState.value = PodcastInfoUiState.Error
                     }
                 }
             } catch (e: Exception) {
                 if (currentPodcast == null) {
-                    // Fallback tracking without podcast name
-                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
-                        podcastId = podcastId,
-                        podcastName = null,
-                        entryPoint = entryPoint,
-                        genreFilter = genreFilter,
-                        scrollDepth = scrollDepth,
-                        searchQuery = searchQuery
-                    )
-                    e.printStackTrace()
+                    trackScreenViewed(podcastId, null)
                     _uiState.value = PodcastInfoUiState.Error
                 }
             }
+        }
+    }
+
+    private fun mapEntityToPodcast(entity: cx.aswin.boxcast.core.data.database.PodcastEntity): Podcast {
+        return Podcast(
+            id = entity.podcastId,
+            title = entity.title,
+            artist = entity.author ?: "Unknown",
+            imageUrl = entity.imageUrl ?: "",
+            fallbackImageUrl = entity.latestEpisode?.imageUrl ?: "",
+            description = entity.description,
+            genre = entity.genre ?: "Podcast",
+            type = entity.type,
+            latestEpisode = entity.latestEpisode,
+            subscribedAt = entity.subscribedAt,
+            podcastGuid = entity.podcastGuid,
+            fundingUrl = entity.fundingUrl,
+            fundingMessage = entity.fundingMessage,
+            medium = entity.medium,
+            hasValue = entity.hasValue,
+            updateFrequency = entity.updateFrequency,
+            location = entity.location,
+            license = entity.license,
+            isLocked = entity.isLocked,
+            notificationsEnabled = entity.notificationsEnabled,
+            autoDownloadEnabled = entity.autoDownloadEnabled
+        )
+    }
+
+    private fun resolveInitialSort(preferredSort: String?, initialType: String): EpisodeSort {
+        return when (preferredSort) {
+            "oldest" -> EpisodeSort.OLDEST
+            "newest" -> EpisodeSort.NEWEST
+            else -> if (initialType == "serial") EpisodeSort.OLDEST else EpisodeSort.NEWEST
+        }
+    }
+
+    private suspend fun kotlinx.coroutines.CoroutineScope.fetchPodcastAndEpisodes(
+        podcastId: String,
+        limit: Int,
+        sortParam: String
+    ): Pair<Podcast?, cx.aswin.boxcast.core.data.PodcastRepository.EpisodePage> {
+        val apiPodcast: Podcast?
+        val page: cx.aswin.boxcast.core.data.PodcastRepository.EpisodePage
+
+        if (podcastId.startsWith("url:") || podcastId.startsWith("guid:")) {
+            apiPodcast = repository.getPodcastDetails(podcastId)
+            if (apiPodcast != null) {
+                val realId = apiPodcast.id
+                val episodesDeferred = async { repository.getEpisodesPaginated(realId, limit, 0, sortParam) }
+                page = episodesDeferred.await()
+            } else {
+                page = cx.aswin.boxcast.core.data.PodcastRepository.EpisodePage(emptyList(), false)
+            }
+        } else {
+            val podcastDeferred = async { repository.getPodcastDetails(podcastId) }
+            val episodesDeferred = async { repository.getEpisodesPaginated(podcastId, limit, 0, sortParam) }
+            apiPodcast = podcastDeferred.await()
+            page = episodesDeferred.await()
+        }
+        return Pair(apiPodcast, page)
+    }
+
+    private fun enrichPodcastWithFallback(
+        apiPodcast: Podcast,
+        currentPodcast: Podcast?,
+        localPodcastEntity: cx.aswin.boxcast.core.data.database.PodcastEntity?,
+        page: cx.aswin.boxcast.core.data.PodcastRepository.EpisodePage,
+        sortParam: String
+    ): Podcast {
+        return apiPodcast.copy(
+            fallbackImageUrl = apiPodcast.fallbackImageUrl.takeIf { !it.isNullOrBlank() }
+                ?: currentPodcast?.fallbackImageUrl
+                ?: page.episodes.firstOrNull()?.imageUrl,
+            subscribedAt = currentPodcast?.subscribedAt ?: 0L,
+            notificationsEnabled = localPodcastEntity?.notificationsEnabled ?: false,
+            autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false,
+            latestEpisode = apiPodcast.latestEpisode 
+                ?: currentPodcast?.latestEpisode 
+                ?: (if (sortParam == "newest") page.episodes.firstOrNull() else page.episodes.maxByOrNull { it.publishedDate })
+        )
+    }
+
+    private fun trackScreenViewed(podcastId: String, podcastName: String?) {
+        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackPodcastInfoScreenViewed(
+            podcastId = podcastId,
+            podcastName = podcastName,
+            entryPoint = entryPoint,
+            genreFilter = genreFilter,
+            scrollDepth = scrollDepth,
+            searchQuery = searchQuery
+        )
+    }
+
+    private suspend fun fetchAndApplyPodcastMeta(
+        podcastId: String,
+        apiPodcastId: String,
+        isSubscribed: Boolean,
+        localPodcastEntity: cx.aswin.boxcast.core.data.database.PodcastEntity?
+    ) {
+        try {
+            val meta = repository.getPodcastMeta(podcastId)
+            if (meta != null) {
+                val state = _uiState.value
+                if (state is PodcastInfoUiState.Success && (state.podcast.id == podcastId || state.podcast.id == apiPodcastId)) {
+                    val enrichedPodcast = state.podcast.copy(
+                        location = meta.location,
+                        license = meta.license,
+                        isLocked = meta.locked == 1,
+                        updateFrequency = meta.updateFrequency,
+                        podroll = meta.podroll?.map { cx.aswin.boxcast.core.model.PodrollItem(title = it.title, url = it.url, uuid = it.uuid) }
+                    )
+                    _uiState.value = state.copy(podcast = enrichedPodcast)
+                    
+                    if (isSubscribed) {
+                        val preferredSortVal = localPodcastEntity?.preferredSort ?: "newest"
+                        val typeVal = if (preferredSortVal == "oldest") "serial" else "episodic"
+                        val updatedEntity = cx.aswin.boxcast.core.data.database.PodcastEntity(
+                            podcastId = enrichedPodcast.id,
+                            title = enrichedPodcast.title,
+                            author = enrichedPodcast.artist,
+                            imageUrl = enrichedPodcast.imageUrl.takeIf { it.isNotEmpty() } ?: localPodcastEntity?.imageUrl ?: "",
+                            description = enrichedPodcast.description,
+                            genre = enrichedPodcast.genre,
+                            type = typeVal,
+                            isSubscribed = true,
+                            subscribedAt = enrichedPodcast.subscribedAt,
+                            lastRefreshed = System.currentTimeMillis(),
+                            latestEpisode = enrichedPodcast.latestEpisode,
+                            podcastGuid = enrichedPodcast.podcastGuid,
+                            fundingUrl = enrichedPodcast.fundingUrl,
+                            fundingMessage = enrichedPodcast.fundingMessage,
+                            medium = enrichedPodcast.medium,
+                            hasValue = enrichedPodcast.hasValue,
+                            updateFrequency = enrichedPodcast.updateFrequency,
+                            location = enrichedPodcast.location,
+                            license = enrichedPodcast.license,
+                            isLocked = enrichedPodcast.isLocked,
+                            preferredSort = preferredSortVal,
+                            notificationsEnabled = localPodcastEntity?.notificationsEnabled ?: false,
+                            autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false
+                        )
+                        database.podcastDao().upsert(updatedEntity)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
