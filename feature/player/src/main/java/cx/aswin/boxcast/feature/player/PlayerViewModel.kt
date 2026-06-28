@@ -12,6 +12,8 @@ import cx.aswin.boxcast.core.model.Podcast
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 sealed interface PlayerUiState {
@@ -55,28 +57,30 @@ class PlayerViewModel(
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
     init {
-        // Observe Playback Repository State
+        // Observe Playback Repository State, distinct until changes that aren't position updates
         viewModelScope.launch {
-            playbackRepository.playerState.collect { playerState ->
-                 val currentUi = _uiState.value
-                 if (currentUi is PlayerUiState.Success) {
-                     // Sync player state to UI
-                     // Note: We might want to trust the Repository's current episode if it matches the podcast context
-                     val syncedEpisode = playerState.currentEpisode ?: currentUi.currentEpisode
-                     
-                     
-                     _uiState.value = currentUi.copy(
-                         currentEpisode = syncedEpisode,
-                         isPlaying = playerState.isPlaying,
-                         isLoading = playerState.isLoading, // Add this mapping
-                         positionMs = playerState.position,
-                         durationMs = playerState.duration,
-                         playbackSpeed = playerState.playbackSpeed,
-                         sleepTimerEnd = playerState.sleepTimerEnd,
-                         isLiked = playerState.isLiked
-                     )
-                 }
-            }
+            playbackRepository.playerState
+                .map { it.copy(position = 0, bufferedPosition = 0) }
+                .distinctUntilChanged()
+                .collect { playerState ->
+                     val currentUi = _uiState.value
+                     if (currentUi is PlayerUiState.Success) {
+                         // Sync player state to UI
+                         // Note: We might want to trust the Repository's current episode if it matches the podcast context
+                         val syncedEpisode = playerState.currentEpisode ?: currentUi.currentEpisode
+                         
+                         _uiState.value = currentUi.copy(
+                             currentEpisode = syncedEpisode,
+                             isPlaying = playerState.isPlaying,
+                             isLoading = playerState.isLoading, // Add this mapping
+                             positionMs = 0L, // Keep positionMs stable to prevent screen-wide recompositions
+                             durationMs = playerState.duration,
+                             playbackSpeed = playerState.playbackSpeed,
+                             sleepTimerEnd = playerState.sleepTimerEnd,
+                             isLiked = playerState.isLiked
+                         )
+                     }
+                }
         }
     }
 

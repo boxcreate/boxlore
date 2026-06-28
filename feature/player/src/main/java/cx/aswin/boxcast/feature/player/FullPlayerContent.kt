@@ -50,6 +50,8 @@ import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.DisposableEffect
 import androidx.activity.compose.BackHandler
@@ -89,7 +91,14 @@ fun FullPlayerContent(
     onTitleTipDismissed: () -> Unit = {},
     isExpanded: Boolean = true // Added so timers only tick when visible
 ) {
-    val state by playbackRepository.playerState.collectAsState()
+    val state by remember(playbackRepository) {
+        playbackRepository.playerState
+            .map { it.copy(position = 0, bufferedPosition = 0) }
+            .distinctUntilChanged()
+    }.collectAsState(initial = playbackRepository.playerState.value)
+    
+    val positionProvider = remember(playbackRepository) { { playbackRepository.playerState.value.position } }
+    
     val episode = state.currentEpisode ?: return
     val podcast = state.currentPodcast ?: return
     
@@ -275,7 +284,7 @@ fun FullPlayerContent(
             episode = episode,
             isPlaying = state.isPlaying,
             isLoading = state.isLoading,
-            positionMs = state.position,
+            positionProvider = positionProvider,
             durationMs = state.duration,
             bufferedPositionMs = state.bufferedPosition,
             playbackSpeed = state.playbackSpeed,
@@ -442,7 +451,7 @@ fun FullPlayerContent(
         ) {
             ChaptersSheetContent(
                 chapters = state.currentChapters,
-                positionMs = state.position,
+                positionProvider = positionProvider,
                 colorScheme = colorScheme,
                 onSeek = { seekPos ->
                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("chapters_list")
@@ -466,7 +475,7 @@ fun FullPlayerContent(
     ) {
         FullscreenTranscriptScreen(
             transcript = state.currentTranscript,
-            positionMs = state.position,
+            positionProvider = positionProvider,
             isPlaying = state.isPlaying,
             isLoading = state.isLoading,
             durationMs = state.duration,

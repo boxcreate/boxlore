@@ -29,7 +29,6 @@ fun SimplePlayerControls(
     playbackSpeed: Float,
     sleepTimerEnd: Long?,
     duration: Long,
-    position: Long,
     colorScheme: ColorScheme,
     onSpeedChange: (Float) -> Unit,
     onSleepClick: (Int) -> Unit,

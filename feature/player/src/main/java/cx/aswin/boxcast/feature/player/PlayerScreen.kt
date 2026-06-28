@@ -113,11 +113,13 @@ fun PlayerRoute(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    val positionProvider = remember(playbackRepository) { { playbackRepository.playerState.value.position } }
     
     PlayerScreen(
         uiState = uiState,
         downloadRepository = downloadRepository,
         controller = viewModel.controller,
+        positionProvider = positionProvider,
         onBackClick = onBackClick,
         onPlayPause = viewModel::togglePlayPause,
         onEpisodeClick = viewModel::playEpisode,
@@ -137,6 +139,7 @@ fun PlayerScreen(
     uiState: PlayerUiState,
     downloadRepository: cx.aswin.boxcast.core.data.DownloadRepository,
     controller: Player?,
+    positionProvider: () -> Long,
     onBackClick: () -> Unit,
     onPlayPause: () -> Unit,
     onEpisodeClick: (Episode) -> Unit,
@@ -196,7 +199,7 @@ fun PlayerScreen(
                             currentEpisode = uiState.currentEpisode,
                             isPlaying = uiState.isPlaying,
                             isLoading = uiState.isLoading,
-                            positionMs = uiState.positionMs,
+                            positionProvider = positionProvider,
                             durationMs = uiState.durationMs,
                             playbackSpeed = uiState.playbackSpeed,
                             sleepTimerEnd = uiState.sleepTimerEnd,
@@ -235,7 +238,7 @@ fun PlayerScreen(
                 subtitle = successState.podcast.title,
                 onDismissRequest = { showShareSheet = false },
                 durationMs = currentEp.duration * 1000L,
-                currentPositionMs = successState.positionMs,
+                currentPositionMs = positionProvider(),
                 showTimestampOption = true,
                 onShare = { _, _, t ->
                     cx.aswin.boxcast.core.data.ShareManager.shareEpisode(context, currentEp, successState.podcast.title, t)
@@ -252,7 +255,7 @@ fun PlayerContent(
     currentEpisode: Episode?,
     isPlaying: Boolean,
     isLoading: Boolean,
-    positionMs: Long,
+    positionProvider: () -> Long,
     durationMs: Long,
     playbackSpeed: Float,
     sleepTimerEnd: Long?,
@@ -321,7 +324,7 @@ fun PlayerContent(
         episode = currentEpisode,
         isPlaying = isPlaying,
         isLoading = isLoading,
-        positionMs = positionMs,
+        positionProvider = positionProvider,
         durationMs = durationMs,
         bufferedPositionMs = 0L, // No buffer info in this screen yet
         playbackSpeed = playbackSpeed,

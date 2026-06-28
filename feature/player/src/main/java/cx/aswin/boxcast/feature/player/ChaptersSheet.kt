@@ -10,6 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,7 +28,7 @@ import cx.aswin.boxcast.core.model.Chapter
 @Composable
 fun ChaptersSheetContent(
     chapters: List<Chapter>,
-    positionMs: Long,
+    positionProvider: () -> Long,
     colorScheme: ColorScheme,
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
@@ -126,7 +129,12 @@ fun ChaptersSheetContent(
                         } else {
                             Long.MAX_VALUE
                         }
-                        val isActive = positionMs >= startMs && positionMs < endMs
+                        val isActive by remember(startMs, endMs) {
+                            derivedStateOf {
+                                val currentPos = positionProvider()
+                                currentPos >= startMs && currentPos < endMs
+                            }
+                        }
                         
                         ChapterRow(
                             chapter = chapter,

@@ -23,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -82,7 +83,7 @@ fun SharedPlayerContent(
     episode: Episode?, // Nullable
     isPlaying: Boolean,
     isLoading: Boolean,
-    positionMs: Long,
+    positionProvider: () -> Long,
     durationMs: Long,
     bufferedPositionMs: Long,
     playbackSpeed: Float,
@@ -222,7 +223,7 @@ fun SharedPlayerContent(
                         ) {
                             TranscriptView(
                                 transcript = transcript,
-                                positionMs = positionMs,
+                                positionProvider = positionProvider,
                                 colorScheme = colorScheme,
                                 onSeek = { seekPos ->
                                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("transcript_tap")
@@ -266,8 +267,11 @@ fun SharedPlayerContent(
                         ) {
                             Spacer(modifier = Modifier.height(spacingSmall))
                             // 1. Album Art - responsive sizing
-                            val activeChapter = remember(chapters, positionMs) {
-                                chapters.lastOrNull { (it.startTime * 1000).toLong() <= positionMs }
+                            val activeChapter by remember(chapters) {
+                                derivedStateOf {
+                                    val currentPos = positionProvider()
+                                    chapters.lastOrNull { (it.startTime * 1000).toLong() <= currentPos }
+                                }
                               }
                               val artworkUrl = activeChapter?.img?.takeIf { it.isNotBlank() } ?: episode?.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl
                               android.util.Log.d("BoxCastPlayer", "artworkUrl=$artworkUrl, activeChapterImg=${activeChapter?.img}, episodeImg=${episode?.imageUrl}, podcastImg=${podcast.imageUrl}")
@@ -484,7 +488,7 @@ fun SharedPlayerContent(
                 val bufferedPercentage = (bufferedPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                 
                 LinearBufferedSlider(
-                    position = positionMs,
+                    positionProvider = positionProvider,
                     duration = durationMs,
                     bufferedPercentage = bufferedPercentage,
                     onSeek = onSeek,
@@ -520,7 +524,6 @@ fun SharedPlayerContent(
                  playbackSpeed = playbackSpeed,
                  sleepTimerEnd = sleepTimerEnd,
                  duration = durationMs, // Pass duration
-                 position = positionMs, // Pass position
                  colorScheme = colorScheme,
                  onSpeedChange = onSetSpeed,
                  onSleepClick = onSetSleepTimer,
@@ -757,7 +760,7 @@ fun SharedPlayerContent(
 
 @Composable
 fun LinearBufferedSlider(
-    position: Long,
+    positionProvider: () -> Long,
     duration: Long,
     bufferedPercentage: Float,
     onSeek: (Long) -> Unit,
@@ -839,7 +842,7 @@ fun LinearBufferedSlider(
             
             // 2. Slider (middle - draws native thick active M3 track and thumb)
             Slider(
-                value = dragValue ?: position.toFloat(),
+                value = dragValue ?: positionProvider().toFloat(),
                 onValueChange = { 
                     dragValue = it
                     onSeek(it.toLong())
@@ -859,7 +862,7 @@ fun LinearBufferedSlider(
             // 3. Chapter Ticks / Differentiators (on top of Slider track)
             if (chapters.isNotEmpty() && duration > 0) {
                 val tickColor = MaterialTheme.colorScheme.surface
-                val thumbTime = dragValue ?: position.toFloat()
+                val thumbTime = dragValue ?: positionProvider().toFloat()
                 val thumbPct = thumbTime / duration.toFloat().coerceAtLeast(1f)
                 
                 Box(
@@ -906,14 +909,14 @@ fun LinearBufferedSlider(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = formatTime(position),
+                text = formatTime(positionProvider()),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
                 color = color.copy(alpha = 0.85f)
             )
             Text(
-                text = "-" + formatTime((duration - position).coerceAtLeast(0)),
+                text = "-" + formatTime((duration - positionProvider()).coerceAtLeast(0)),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
