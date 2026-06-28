@@ -15,6 +15,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import cx.aswin.boxcast.core.designsystem.theme.generateBrandColorScheme
 import cx.aswin.boxcast.core.designsystem.theme.luminance
+import cx.aswin.boxcast.core.designsystem.theme.SurfaceStyles
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -115,7 +116,13 @@ fun UnifiedPlayerSheet(
     val hasSeenTitleTapTip by userPrefs.hasSeenTitleTapTip.collectAsState(initial = true)
     val hasSeenSwipeMinimizeTip by userPrefs.hasSeenSwipeMinimizeTip.collectAsState(initial = true)
 
-    val effectiveDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(initial = remember { userPrefs.cachedSurfaceStyle })
+
+    val effectiveDarkTheme = when (surfaceStyle) {
+        SurfaceStyles.AMOLED, SurfaceStyles.CLASSIC_DARK -> true
+        SurfaceStyles.PURE_WHITE, SurfaceStyles.CLASSIC_LIGHT -> false
+        else -> MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    }
 
     SideEffect {
         window?.let { win ->
@@ -141,16 +148,17 @@ fun UnifiedPlayerSheet(
             .build()
     )
     
-    LaunchedEffect(episode.imageUrl, painter.state, effectiveDarkTheme) {
+    LaunchedEffect(episode.imageUrl, painter.state, effectiveDarkTheme, surfaceStyle) {
         val painterState = painter.state
         if (painterState is AsyncImagePainter.State.Success) {
             val bitmap = (painterState.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
             if (bitmap != null) {
                 val seedColor = extractSeedColor(bitmap)
-                extractedColorScheme = generateBrandColorScheme(seedColor, effectiveDarkTheme)
+                extractedColorScheme = generateBrandColorScheme(seedColor, effectiveDarkTheme, surfaceStyle)
             }
         }
     }
+
 
     
     // Sheet state (internal)

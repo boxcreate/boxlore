@@ -79,6 +79,8 @@ import cx.aswin.boxcast.feature.player.components.SimplePlayerControls
 import cx.aswin.boxcast.core.designsystem.components.AdvancedPlayerControls
 import cx.aswin.boxcast.core.designsystem.theme.generateBrandColorScheme
 import cx.aswin.boxcast.core.designsystem.theme.luminance
+import cx.aswin.boxcast.core.designsystem.theme.SurfaceStyles
+import cx.aswin.boxcast.core.data.UserPreferencesRepository
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.ColorScheme
@@ -287,7 +289,15 @@ fun PlayerContent(
 ) {
     // 1. Color Extraction Logic
     val context = LocalContext.current
-    val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val userPrefs = remember(context) { UserPreferencesRepository(context) }
+    val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(initial = remember { userPrefs.cachedSurfaceStyle })
+
+    val effectiveDarkTheme = when (surfaceStyle) {
+        SurfaceStyles.AMOLED, SurfaceStyles.CLASSIC_DARK -> true
+        SurfaceStyles.PURE_WHITE, SurfaceStyles.CLASSIC_LIGHT -> false
+        else -> MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    }
+
     var extractedColorScheme by remember { mutableStateOf<ColorScheme?>(null) }
     val colorScheme = extractedColorScheme ?: MaterialTheme.colorScheme
     
@@ -303,16 +313,17 @@ fun PlayerContent(
             .build()
     )
     
-    LaunchedEffect(imageUrl, painter.state, isDarkTheme) {
+    LaunchedEffect(imageUrl, painter.state, effectiveDarkTheme, surfaceStyle) {
         val state = painter.state
         if (state is coil.compose.AsyncImagePainter.State.Success) {
              val bitmap = (state.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
              if (bitmap != null) {
                  val seed = extractSeedColor(bitmap)
-                 extractedColorScheme = generateBrandColorScheme(seed, isDarkTheme)
+                 extractedColorScheme = generateBrandColorScheme(seed, effectiveDarkTheme, surfaceStyle)
              }
         }
     }
+
 
 
     // 2. State Observations
