@@ -222,10 +222,10 @@ class SmartDownloadManager(
     ): Pair<PodcastEntity, Episode>? {
         val sort = pod.preferredSort ?: "newest"
         val ep = if (sort == "oldest") {
-            resolvedSerial[pod.podcastId]
+            resolvedSerial[pod.podcastId] ?: pod.latestEpisode
         } else {
-            null
-        } ?: pod.latestEpisode ?: return null
+            pod.latestEpisode
+        } ?: return null
 
         val history = historyByEpisode[ep.id]
         val isUnplayed = history == null || (history.progressMs == 0L && !history.isCompleted)
@@ -268,7 +268,7 @@ class SmartDownloadManager(
         }
     }
 
-    private fun shouldIncludeCandidate(cand: MixtapeCandidate, slots: MutableSet<Boolean>): Boolean {
+    private fun shouldIncludeCandidate(cand: MixtapeCandidate, slots: Set<Boolean>): Boolean {
         if (cand.isProgress !in slots) {
             return true
         }
