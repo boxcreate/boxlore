@@ -98,11 +98,15 @@ fun TopControlBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .drawBehind {
-                val fraction = scrollFractionProvider().coerceIn(0f, 1f)
-                val color = lerp(expandedColor, collapsedColor, fraction)
-                drawRect(color)
-            }
+            .then(
+                remember(expandedColor, collapsedColor) {
+                    Modifier.drawBehind {
+                        val fraction = scrollFractionProvider().coerceIn(0f, 1f)
+                        val color = lerp(expandedColor, collapsedColor, fraction)
+                        drawRect(color)
+                    }
+                }
+            )
             .statusBarsPadding()
             .layout { measurable, constraints ->
                 val fraction = scrollFractionProvider().coerceIn(0f, 1f)
