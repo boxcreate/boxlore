@@ -11,9 +11,6 @@ import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.core.content.ContextCompat
-import cx.aswin.boxcast.core.designsystem.performance.JankTracker
-import cx.aswin.boxcast.core.designsystem.performance.LocalJankTracker
-import androidx.compose.runtime.CompositionLocalProvider
 import coil.Coil
 import coil.ImageLoader
 import coil.disk.DiskCache
@@ -274,20 +271,6 @@ class MainActivity : ComponentActivity() {
         Coil.setImageLoader(imageLoader)
         
         setContent {
-            val jankTracker = remember {
-                JankTracker(window = window)
-            }
-            androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle.addObserver(
-                object : androidx.lifecycle.DefaultLifecycleObserver {
-                    override fun onResume(owner: androidx.lifecycle.LifecycleOwner) {
-                        jankTracker.startTracking()
-                    }
-                    override fun onPause(owner: androidx.lifecycle.LifecycleOwner) {
-                        jankTracker.stopTracking()
-                    }
-                }
-            )
-
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
             
@@ -301,10 +284,6 @@ class MainActivity : ComponentActivity() {
             }
             val navBackStackEntry = navController.currentBackStackEntryAsState().value
             val currentRoute = navBackStackEntry?.destination?.route ?: "home"
-
-            LaunchedEffect(currentRoute) {
-                jankTracker.updateUiState("screen", currentRoute)
-            }
 
             // Deferred deep link and onboarding states are defined below to satisfy variable ordering
             
@@ -744,8 +723,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            CompositionLocalProvider(LocalJankTracker provides jankTracker) {
-                BoxCastTheme(
+            BoxCastTheme(
                 darkTheme = darkTheme,
                 dynamicColor = useDynamicColor,
                 themeBrand = themeBrand,
@@ -2637,7 +2615,6 @@ class MainActivity : ComponentActivity() {
                         },
                         onDismissRequest = { showFeedbackSheet = false }
                     )
-                }
                 }
             }
         }

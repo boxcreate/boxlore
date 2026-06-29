@@ -79,10 +79,6 @@ fun TopControlBar(
     
     val expandedColor = MaterialTheme.colorScheme.surface
     val collapsedColor = MaterialTheme.colorScheme.surfaceContainerLow
-    
-    val fractionProvider = remember(scrollFractionProvider) {
-        { scrollFractionProvider().coerceIn(0f, 1f) }
-    }
 
     // Update system status bar icon color to match background (evaluated once per theme change, not on scroll)
     val view = LocalView.current
@@ -103,13 +99,13 @@ fun TopControlBar(
         modifier = modifier
             .fillMaxWidth()
             .drawBehind {
-                val fraction = fractionProvider()
+                val fraction = scrollFractionProvider().coerceIn(0f, 1f)
                 val color = lerp(expandedColor, collapsedColor, fraction)
                 drawRect(color)
             }
             .statusBarsPadding()
             .layout { measurable, constraints ->
-                val fraction = fractionProvider()
+                val fraction = scrollFractionProvider().coerceIn(0f, 1f)
                 val currentPadding = androidx.compose.ui.unit.lerp(expandedPadding, collapsedPadding, fraction)
                 val paddingPx = currentPadding.roundToPx()
                 

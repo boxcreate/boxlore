@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavController
-import cx.aswin.boxcast.core.designsystem.performance.LocalJankTracker
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -321,18 +320,6 @@ fun HomeScreen(
     }
     // Track scroll state for collapsing top bar
     val scrollState = rememberScrollState()
-    
-    val jankTracker = LocalJankTracker.current
-    val isScrolling by remember {
-        derivedStateOf { scrollState.isScrollInProgress }
-    }
-    LaunchedEffect(isScrolling) {
-        if (isScrolling) {
-            jankTracker?.updateUiState("scroll", "home_list")
-        } else {
-            jankTracker?.clearUiState("scroll")
-        }
-    }
     var showDebugDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     var showChangePodcastSheet by remember { androidx.compose.runtime.mutableStateOf(false) }
     
@@ -642,7 +629,6 @@ private fun PodcastFeed(
                 subscribedItems.list.isNotEmpty() -> YourShowsSection(
                     subscribedPodcasts = subscribedItems,
                     latestEpisodes = latestItems,
-                    unplayedEpisodeCount = unplayedEpisodeCount,
                     selectedPodcastId = selectedPodcastId,
                     selectedPodcastEpisodes = selectedPodcastEpisodes,
                     isSelectedPodcastLoading = isSelectedPodcastLoading,

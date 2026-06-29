@@ -120,7 +120,6 @@ import cx.aswin.boxcast.core.model.Podcast
 fun YourShowsSection(
     subscribedPodcasts: StablePodcastList,
     latestEpisodes: StablePodcastList, // Enriched with latest episodes
-    unplayedEpisodeCount: Int = 0,
     selectedPodcastId: String?,
     selectedPodcastEpisodes: StableEpisodeList,
     isSelectedPodcastLoading: Boolean,
@@ -521,7 +520,6 @@ fun YourShowsSection(
                                         }
                                         .distinct()
                                         .take(5)
-                                    val numImages = uniqueImages.size
                                     // Reverse so the first image (index 0) is drawn last (on top)
                                     uniqueImages.reversed().forEachIndexed { index, imageUrl ->
                                         val offsetVal = when (index) {
