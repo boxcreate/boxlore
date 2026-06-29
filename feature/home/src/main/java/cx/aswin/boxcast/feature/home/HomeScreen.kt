@@ -379,7 +379,6 @@ fun HomeScreen(
                         PodcastFeed(
                             heroItems = StableHeroList(uiState.heroItems),
                             latestItems = StablePodcastList(uiState.latestEpisodes),
-                            unplayedEpisodeCount = uiState.unplayedEpisodeCount,
                             subscribedItems = StablePodcastList(uiState.subscribedPodcasts),
                             timeBlock = uiState.timeBlock,
                             briefing = uiState.briefing,
@@ -413,7 +412,6 @@ fun HomeScreen(
                             onCuratedImpression = onCuratedImpression,
                             onPlayClick = { podcast, bundle -> onPlayClick?.invoke(podcast, bundle) },
                             onNavigateToLibrary = onNavigateToLibrary,
-                            onNavigateToLatestEpisodes = onNavigateToLatestEpisodes,
                             onNavigateToExplore = onNavigateToExplore,
                             onToggleSubscription = onToggleSubscription,
                             onTogglePlayback = onTogglePlayback,
@@ -501,7 +499,6 @@ fun HomeScreen(
 private fun PodcastFeed(
     heroItems: StableHeroList,
     latestItems: StablePodcastList,
-    unplayedEpisodeCount: Int,
     subscribedItems: StablePodcastList,
     timeBlock: CuratedTimeBlock?,
     gridItems: StablePodcastList,
@@ -534,7 +531,6 @@ private fun PodcastFeed(
     onCuratedImpression: (String, List<String>) -> Unit = { _, _ -> },
     onPlayClick: ((Podcast, android.os.Bundle?) -> Unit)?,
     onNavigateToLibrary: (() -> Unit)?,
-    onNavigateToLatestEpisodes: (() -> Unit)?,
     onNavigateToExplore: ((String?, String, String?) -> Unit)?,
     onToggleSubscription: (String) -> Unit,
     onTogglePlayback: (android.os.Bundle?) -> Unit,
