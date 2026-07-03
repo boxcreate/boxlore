@@ -141,6 +141,7 @@ fun YourShowsSection(
 ) {
     LogRecomposition(name = "YourShowsSection")
     if (subscribedPodcasts.list.isEmpty()) return
+    val lastSeenEpisodes = LocalLastSeenEpisodes.current
 
 
     val interleavedPodcasts = remember(subscribedPodcasts) {
@@ -314,6 +315,7 @@ fun YourShowsSection(
                 items(subscribedPodcasts.list, key = { it.id }) { podcast ->
                     SelectorCover(
                         podcast = podcast,
+                        lastSeenId = lastSeenEpisodes[podcast.id],
                         isSelected = selectedPodcastId == podcast.id,
                         isAnyPodcastSelected = selectedPodcastId != null,
                         onClick = {
@@ -386,6 +388,7 @@ fun YourShowsSection(
                             } else if (item is Podcast) {
                                 SelectorCover(
                                     podcast = item,
+                                    lastSeenId = lastSeenEpisodes[item.id],
                                     isSelected = selectedPodcastId == item.id,
                                     isAnyPodcastSelected = selectedPodcastId != null,
                                     onClick = {
@@ -406,6 +409,7 @@ fun YourShowsSection(
                             if (item is Podcast) {
                                 SelectorCover(
                                     podcast = item,
+                                    lastSeenId = lastSeenEpisodes[item.id],
                                     isSelected = selectedPodcastId == item.id,
                                     isAnyPodcastSelected = selectedPodcastId != null,
                                     onClick = {
@@ -439,6 +443,7 @@ fun YourShowsSection(
                 items(interleavedPodcasts, key = { it.id }) { podcast ->
                     SelectorCover(
                         podcast = podcast,
+                        lastSeenId = lastSeenEpisodes[podcast.id],
                         isSelected = selectedPodcastId == podcast.id,
                         isAnyPodcastSelected = selectedPodcastId != null,
                         onClick = {
@@ -838,24 +843,33 @@ fun YourShowsSection(
     }
 }
 
+private fun isEpisodeNew(
+    subscribedAt: Long,
+    latestEpisode: Episode?,
+    lastSeenId: String?
+): Boolean {
+    if (latestEpisode == null) return false
+    if (subscribedAt <= 0L) return false
+    if (latestEpisode.publishedDate <= (subscribedAt / 1000L)) return false
+    if (latestEpisode.id == lastSeenId) return false
+    val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - latestEpisode.publishedDate) / 3600.0
+    return hoursSinceRelease <= 48.0
+}
+
 @Composable
 private fun SelectorCover(
     podcast: Podcast,
+    lastSeenId: String?,
     isSelected: Boolean,
     isAnyPodcastSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier.size(60.dp)
 ) {
-    val lastSeenEpisodes = LocalLastSeenEpisodes.current
-    val hasRecentNew = remember(podcast.subscribedAt, podcast.latestEpisode, lastSeenEpisodes) {
-        val ep = podcast.latestEpisode
-        if (ep != null && podcast.subscribedAt > 0L && ep.publishedDate > (podcast.subscribedAt / 1000L)) {
-            val lastSeenId = lastSeenEpisodes[podcast.id]
-            if (ep.id != lastSeenId) {
-                val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
-                hoursSinceRelease <= 48.0
-            } else false
-        } else false
+    val latestEpisodeId = podcast.latestEpisode?.id
+    val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
+    
+    val hasRecentNew = remember(podcast.subscribedAt, latestEpisodeId, latestEpisodePubDate, lastSeenId) {
+        isEpisodeNew(podcast.subscribedAt, podcast.latestEpisode, lastSeenId)
     }
 
     val scale by animateFloatAsState(targetValue = if (isSelected) 1.05f else 0.95f, label = "scale")

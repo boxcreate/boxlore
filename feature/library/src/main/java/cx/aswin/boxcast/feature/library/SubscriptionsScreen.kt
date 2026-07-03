@@ -781,8 +781,10 @@ private fun ShowsTabContent(
                 }
 
                 items(items = distinctPodcasts, key = { it.id }) { podcast ->
+                    val lastSeenEpisodes = LocalLastSeenEpisodes.current
                     SubscriptionGridCard(
                         podcast = podcast,
+                        lastSeenId = lastSeenEpisodes[podcast.id],
                         onClick = { onPodcastClick(podcast.id) }
                     )
                 }
@@ -1251,22 +1253,31 @@ private fun LatestEpisodeRow(
     }
 }
 
+private fun isEpisodeNew(
+    subscribedAt: Long,
+    latestEpisode: Episode?,
+    lastSeenId: String?
+): Boolean {
+    if (latestEpisode == null) return false
+    if (subscribedAt <= 0L) return false
+    if (latestEpisode.publishedDate <= (subscribedAt / 1000L)) return false
+    if (latestEpisode.id == lastSeenId) return false
+    val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - latestEpisode.publishedDate) / 3600.0
+    return hoursSinceRelease <= 48.0
+}
+
 @Composable
 private fun SubscriptionGridCard(
     podcast: Podcast,
+    lastSeenId: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val lastSeenEpisodes = LocalLastSeenEpisodes.current
-    val hasRecentNew = remember(podcast.subscribedAt, podcast.latestEpisode, lastSeenEpisodes) {
-        val ep = podcast.latestEpisode
-        if (ep != null && podcast.subscribedAt > 0L && ep.publishedDate > (podcast.subscribedAt / 1000L)) {
-            val lastSeenId = lastSeenEpisodes[podcast.id]
-            if (ep.id != lastSeenId) {
-                val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
-                hoursSinceRelease <= 48.0
-            } else false
-        } else false
+    val latestEpisodeId = podcast.latestEpisode?.id
+    val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
+    
+    val hasRecentNew = remember(podcast.subscribedAt, latestEpisodeId, latestEpisodePubDate, lastSeenId) {
+        isEpisodeNew(podcast.subscribedAt, podcast.latestEpisode, lastSeenId)
     }
 
     // Slow shimmer animation across the NEW badge background (4 seconds loop)
