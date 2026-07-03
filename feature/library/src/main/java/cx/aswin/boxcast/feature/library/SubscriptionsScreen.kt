@@ -2,6 +2,7 @@ package cx.aswin.boxcast.feature.library
 
 import cx.aswin.boxcast.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
+import cx.aswin.boxcast.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxcast.core.data.PodcastScoring
 import cx.aswin.boxcast.core.data.toScorable
 
@@ -1268,33 +1269,6 @@ private fun SubscriptionGridCard(
         podcast.isLatestEpisodeNew(lastSeenId)
     }
 
-    // Slow shimmer animation across the NEW badge background (4 seconds loop)
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-    val shimmerOffset by infiniteTransition.animateFloat(
-        initialValue = -100f,
-        targetValue = 200f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerOffset"
-    )
-
-    val baseColor = MaterialTheme.colorScheme.primary
-    val shimmerColor = MaterialTheme.colorScheme.primaryContainer
-    
-    val brush = remember(shimmerOffset, baseColor, shimmerColor) {
-        Brush.linearGradient(
-            colors = listOf(
-                baseColor,
-                shimmerColor,
-                baseColor
-            ),
-            start = Offset(shimmerOffset, 0f),
-            end = Offset(shimmerOffset + 80f, 0f)
-        )
-    }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -1318,27 +1292,7 @@ private fun SubscriptionGridCard(
 
         // New episode "NEW" text chip indicator (overlapping the top right corner) with a slow shimmer effect
         if (hasRecentNew) {
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 4.dp, end = 4.dp)
-                    .background(brush, RoundedCornerShape(6.dp))
-            ) {
-                Text(
-                    text = "NEW",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 7.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.5.sp,
-                        lineHeight = 8.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
-            }
+            NewEpisodeBadge()
         }
     }
 }

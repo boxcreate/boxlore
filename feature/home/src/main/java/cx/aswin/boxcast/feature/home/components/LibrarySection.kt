@@ -7,6 +7,7 @@ import cx.aswin.boxcast.feature.home.StablePlaybackStateMap
 import cx.aswin.boxcast.core.designsystem.components.LogRecomposition
 import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
+import cx.aswin.boxcast.core.designsystem.components.NewEpisodeBadge
 import androidx.compose.material.icons.rounded.Close
 
 import androidx.compose.animation.animateColorAsState
@@ -865,33 +866,6 @@ private fun SelectorCover(
     val cornerRadius by animateDpAsState(targetValue = if (isSelected) 16.dp else 12.dp, label = "cornerRadius")
     val borderStrokeWidth by animateDpAsState(targetValue = if (isSelected) 3.dp else 0.dp, label = "borderStrokeWidth")
 
-    // Slow shimmer animation across the NEW badge background (4 seconds loop)
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-    val shimmerOffset by infiniteTransition.animateFloat(
-        initialValue = -100f,
-        targetValue = 200f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerOffset"
-    )
-
-    val baseColor = MaterialTheme.colorScheme.primary
-    val shimmerColor = MaterialTheme.colorScheme.primaryContainer
-    
-    val brush = remember(shimmerOffset, baseColor, shimmerColor) {
-        Brush.linearGradient(
-            colors = listOf(
-                baseColor,
-                shimmerColor,
-                baseColor
-            ),
-            start = Offset(shimmerOffset, 0f),
-            end = Offset(shimmerOffset + 80f, 0f)
-        )
-    }
-
     Box(
         modifier = modifier
             .scale(scale)
@@ -925,27 +899,9 @@ private fun SelectorCover(
 
         // New episode "NEW" text chip indicator (overlapping the top right corner) with a slow shimmer effect
         if (hasRecentNew && !isSelected) {
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 6.dp, y = (-4).dp)
-                    .background(brush, RoundedCornerShape(6.dp))
-            ) {
-                Text(
-                    text = "NEW",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 7.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.5.sp,
-                        lineHeight = 8.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
-            }
+            NewEpisodeBadge(
+                modifier = Modifier.offset(x = 6.dp, y = (-4).dp)
+            )
         }
     }
 }
