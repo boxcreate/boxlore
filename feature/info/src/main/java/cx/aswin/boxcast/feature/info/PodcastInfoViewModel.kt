@@ -283,10 +283,12 @@ class PodcastInfoViewModel(
                     hasMoreEpisodes = true,
                     isLoadingMore = true
                 )
-                currentPodcast.let { podcast ->
-                    podcast.latestEpisode?.id?.let { episodeId ->
-                        launch {
-                            userPrefs.setLastSeenEpisodeId(podcast.id, episodeId)
+                if (isSubscribed) {
+                    currentPodcast?.let { podcast ->
+                        podcast.latestEpisode?.id?.let { episodeId ->
+                            launch {
+                                userPrefs.setLastSeenEpisodeId(podcast.id, episodeId)
+                            }
                         }
                     }
                 }
@@ -324,9 +326,11 @@ class PodcastInfoViewModel(
                         isLoadingMore = false
                     )
 
-                    apiPodcastWithFallback.latestEpisode?.id?.let { episodeId ->
-                        launch {
-                            userPrefs.setLastSeenEpisodeId(apiPodcastWithFallback.id, episodeId)
+                    if (isSubscribed) {
+                        apiPodcastWithFallback.latestEpisode?.id?.let { episodeId ->
+                            launch {
+                                userPrefs.setLastSeenEpisodeId(apiPodcastWithFallback.id, episodeId)
+                            }
                         }
                     }
 

@@ -231,7 +231,9 @@ class HomeViewModel(
 
     fun markPodcastEpisodeAsSeen(podcastId: String, episodeId: String) {
         viewModelScope.launch {
-            userPrefs.setLastSeenEpisodeId(podcastId, episodeId)
+            if (subscriptionRepository.isSubscribed(podcastId)) {
+                userPrefs.setLastSeenEpisodeId(podcastId, episodeId)
+            }
         }
     }
 

@@ -38,6 +38,7 @@ data class Podcast(
 )
 
 fun Podcast.isLatestEpisodeNew(lastSeenId: String?): Boolean {
+    if (episodeStatus != EpisodeStatus.UNPLAYED) return false
     val ep = latestEpisode ?: return false
     if (subscribedAt <= 0L) return false
     if (ep.publishedDate <= (subscribedAt / 1000L)) return false
