@@ -502,7 +502,7 @@ fun YourShowsSection(
                                 ) {
                                     val uniqueImages = displayList
                                         .mapNotNull { podcast ->
-                                            val url = podcast.imageUrl?.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl
+                                            val url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl
                                             url?.takeIf { it.isNotEmpty() }
                                         }
                                         .distinct()

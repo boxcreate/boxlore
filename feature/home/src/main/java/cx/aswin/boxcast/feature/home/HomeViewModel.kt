@@ -157,6 +157,7 @@ object ModeSwitchState {
 }
 
 
+@Suppress("kotlin:S6310")
 class HomeViewModel(
     application: Application,
     apiBaseUrl: String,
