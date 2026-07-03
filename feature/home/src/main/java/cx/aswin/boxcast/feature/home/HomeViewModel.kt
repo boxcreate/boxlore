@@ -221,6 +221,19 @@ class HomeViewModel(
 
     private val userPrefs = cx.aswin.boxcast.core.data.UserPreferencesRepository(application)
 
+    val lastSeenEpisodes: StateFlow<Map<String, String>> = userPrefs.lastSeenEpisodesStream
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
+
+    fun markPodcastEpisodeAsSeen(podcastId: String, episodeId: String) {
+        viewModelScope.launch {
+            userPrefs.setLastSeenEpisodeId(podcastId, episodeId)
+        }
+    }
+
     val candidatePodcasts: Flow<List<Podcast>> = combine(
         subscriptionRepository.subscribedPodcasts,
         playbackRepository.getAllHistory()
@@ -382,8 +395,14 @@ class HomeViewModel(
     fun selectPodcast(podcastId: String?) {
         _selectedPodcastId.value = podcastId
         if (podcastId != null) {
-            val title = uiState.value.subscribedPodcasts.find { it.id == podcastId }?.title ?: ""
+            val podcast = uiState.value.subscribedPodcasts.find { it.id == podcastId }
+            val title = podcast?.title ?: ""
             cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackHomePodcastFiltered(podcastId, title)
+            
+            // Mark as seen when filtered in "Your Shows"
+            podcast?.latestEpisode?.id?.let { episodeId ->
+                markPodcastEpisodeAsSeen(podcastId, episodeId)
+            }
         }
     }
 

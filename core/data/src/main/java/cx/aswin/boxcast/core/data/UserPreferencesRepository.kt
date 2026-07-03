@@ -738,5 +738,22 @@ class UserPreferencesRepository(context: Context) {
             preferences[Keys.AUTO_DOWNLOAD_DELETE_COMPLETED] = deleteCompleted
         }
     }
+
+    val lastSeenEpisodesStream: Flow<Map<String, String>> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences.asMap().entries
+                .filter { it.key.name.startsWith("last_seen_episode_id_") }
+                .associate { it.key.name.removePrefix("last_seen_episode_id_") to (it.value as String) }
+        }
+        .distinctUntilChanged()
+
+    suspend fun setLastSeenEpisodeId(podcastId: String, episodeId: String) {
+        dataStore.edit { preferences ->
+            preferences[stringPreferencesKey("last_seen_episode_id_$podcastId")] = episodeId
+        }
+    }
 }
 

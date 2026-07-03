@@ -118,6 +118,8 @@ import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
 
+val LocalLastSeenEpisodes = androidx.compose.runtime.compositionLocalOf<Map<String, String>> { emptyMap() }
+
 @Composable
 fun YourShowsSection(
     subscribedPodcasts: StablePodcastList,
@@ -382,18 +384,10 @@ fun YourShowsSection(
                                     modifier = itemModifier
                                 )
                             } else if (item is Podcast) {
-                                val hasRecentNew = remember(item.subscribedAt, item.latestEpisode?.publishedDate) {
-                                    val ep = item.latestEpisode
-                                    if (ep != null && item.subscribedAt > 0L && ep.publishedDate > (item.subscribedAt / 1000L)) {
-                                        val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
-                                        hoursSinceRelease <= 48.0
-                                    } else false
-                                }
                                 SelectorCover(
                                     podcast = item,
                                     isSelected = selectedPodcastId == item.id,
                                     isAnyPodcastSelected = selectedPodcastId != null,
-                                    hasRecentNew = hasRecentNew,
                                     onClick = {
                                         onPodcastSelected(if (selectedPodcastId == item.id) null else item.id)
                                     },
@@ -410,18 +404,10 @@ fun YourShowsSection(
                         row2Items.forEach { item ->
                             val itemModifier = Modifier.size(itemSize)
                             if (item is Podcast) {
-                                val hasRecentNew = remember(item.subscribedAt, item.latestEpisode?.publishedDate) {
-                                    val ep = item.latestEpisode
-                                    if (ep != null && item.subscribedAt > 0L && ep.publishedDate > (item.subscribedAt / 1000L)) {
-                                        val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
-                                        hoursSinceRelease <= 48.0
-                                    } else false
-                                }
                                 SelectorCover(
                                     podcast = item,
                                     isSelected = selectedPodcastId == item.id,
                                     isAnyPodcastSelected = selectedPodcastId != null,
-                                    hasRecentNew = hasRecentNew,
                                     onClick = {
                                         onPodcastSelected(if (selectedPodcastId == item.id) null else item.id)
                                     },
@@ -451,18 +437,10 @@ fun YourShowsSection(
                     )
                 }
                 items(interleavedPodcasts, key = { it.id }) { podcast ->
-                    val hasRecentNew = remember(podcast.subscribedAt, podcast.latestEpisode?.publishedDate) {
-                        val ep = podcast.latestEpisode
-                        if (ep != null && podcast.subscribedAt > 0L && ep.publishedDate > (podcast.subscribedAt / 1000L)) {
-                            val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
-                            hoursSinceRelease <= 48.0
-                        } else false
-                    }
                     SelectorCover(
                         podcast = podcast,
                         isSelected = selectedPodcastId == podcast.id,
                         isAnyPodcastSelected = selectedPodcastId != null,
-                        hasRecentNew = hasRecentNew,
                         onClick = {
                             onPodcastSelected(if (selectedPodcastId == podcast.id) null else podcast.id)
                         },
@@ -865,10 +843,21 @@ private fun SelectorCover(
     podcast: Podcast,
     isSelected: Boolean,
     isAnyPodcastSelected: Boolean,
-    hasRecentNew: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier.size(60.dp)
 ) {
+    val lastSeenEpisodes = LocalLastSeenEpisodes.current
+    val hasRecentNew = remember(podcast.subscribedAt, podcast.latestEpisode, lastSeenEpisodes) {
+        val ep = podcast.latestEpisode
+        if (ep != null && podcast.subscribedAt > 0L && ep.publishedDate > (podcast.subscribedAt / 1000L)) {
+            val lastSeenId = lastSeenEpisodes[podcast.id]
+            if (ep.id != lastSeenId) {
+                val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
+                hoursSinceRelease <= 48.0
+            } else false
+        } else false
+    }
+
     val scale by animateFloatAsState(targetValue = if (isSelected) 1.05f else 0.95f, label = "scale")
     val alpha by animateFloatAsState(targetValue = if (isSelected) 1f else if (isAnyPodcastSelected) 0.6f else 1f, label = "alpha")
     val cornerRadius by animateDpAsState(targetValue = if (isSelected) 16.dp else 12.dp, label = "cornerRadius")
