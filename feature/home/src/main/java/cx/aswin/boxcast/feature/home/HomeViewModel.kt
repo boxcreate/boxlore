@@ -1687,6 +1687,8 @@ mixtapePodcasts = cachedMix
                             e.printStackTrace()
                         }
                     }
+                } else {
+                    userPrefs.removeLastSeenEpisodeId(podcastId)
                 }
             }
         }

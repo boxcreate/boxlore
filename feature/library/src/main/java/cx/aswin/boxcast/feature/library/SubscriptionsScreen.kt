@@ -102,6 +102,16 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -118,6 +128,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+val LocalLastSeenEpisodes = compositionLocalOf<Map<String, String>> { emptyMap() }
 
 /**
  * Unified Subscriptions screen with M3 Expressive tab switcher.
@@ -139,6 +151,11 @@ fun SubscriptionsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState(initialPage = initialTab) { 2 }
+    val lastSeenEpisodes by viewModel.lastSeenEpisodes.collectAsStateWithLifecycle()
+
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalLastSeenEpisodes provides lastSeenEpisodes
+    ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     
@@ -469,6 +486,7 @@ fun SubscriptionsScreen(
             }
         }
     }
+}
 }
 
 // ─── M3 Expressive Tab Switcher ─────────────────────────────────────────────
@@ -1239,10 +1257,44 @@ private fun SubscriptionGridCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val latestEp = podcast.latestEpisode
-    val hasNewEpisode = latestEp != null &&
-                        podcast.episodeStatus == EpisodeStatus.UNPLAYED &&
-                        latestEp.publishedDate > (podcast.subscribedAt / 1000L)
+    val lastSeenEpisodes = LocalLastSeenEpisodes.current
+    val hasRecentNew = remember(podcast.subscribedAt, podcast.latestEpisode, lastSeenEpisodes) {
+        val ep = podcast.latestEpisode
+        if (ep != null && podcast.subscribedAt > 0L && ep.publishedDate > (podcast.subscribedAt / 1000L)) {
+            val lastSeenId = lastSeenEpisodes[podcast.id]
+            if (ep.id != lastSeenId) {
+                val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
+                hoursSinceRelease <= 48.0
+            } else false
+        } else false
+    }
+
+    // Slow shimmer animation across the NEW badge background (4 seconds loop)
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val shimmerOffset by infiniteTransition.animateFloat(
+        initialValue = -100f,
+        targetValue = 200f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerOffset"
+    )
+
+    val baseColor = MaterialTheme.colorScheme.primary
+    val shimmerColor = MaterialTheme.colorScheme.primaryContainer
+    
+    val brush = remember(shimmerOffset, baseColor, shimmerColor) {
+        Brush.linearGradient(
+            colors = listOf(
+                baseColor,
+                shimmerColor,
+                baseColor
+            ),
+            start = Offset(shimmerOffset, 0f),
+            end = Offset(shimmerOffset + 80f, 0f)
+        )
+    }
 
     Box(
         modifier = modifier
@@ -1265,16 +1317,29 @@ private fun SubscriptionGridCard(
                 )
         )
 
-        // New Episode Badge (Vibrant solid blue dot on the top right)
-        if (hasNewEpisode) {
-            Box(
+        // New episode "NEW" text chip indicator (overlapping the top right corner) with a slow shimmer effect
+        if (hasRecentNew) {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = Color.Transparent,
+                border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.surface),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(10.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
-            )
+                    .padding(top = 4.dp, end = 4.dp)
+                    .background(brush, RoundedCornerShape(6.dp))
+            ) {
+                Text(
+                    text = "NEW",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.5.sp,
+                        lineHeight = 8.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
         }
     }
 }

@@ -755,5 +755,11 @@ class UserPreferencesRepository(context: Context) {
             preferences[stringPreferencesKey("last_seen_episode_id_$podcastId")] = episodeId
         }
     }
+
+    suspend fun removeLastSeenEpisodeId(podcastId: String) {
+        dataStore.edit { preferences ->
+            preferences.remove(stringPreferencesKey("last_seen_episode_id_$podcastId"))
+        }
+    }
 }
 

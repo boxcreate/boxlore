@@ -282,6 +282,13 @@ class PodcastInfoViewModel(
                     hasMoreEpisodes = true,
                     isLoadingMore = true
                 )
+                currentPodcast?.let { podcast ->
+                    podcast.latestEpisode?.id?.let { episodeId ->
+                        launch {
+                            userPrefs.setLastSeenEpisodeId(podcast.id, episodeId)
+                        }
+                    }
+                }
             } else {
                 _uiState.value = PodcastInfoUiState.Loading
             }
@@ -315,6 +322,12 @@ class PodcastInfoViewModel(
                         currentSort = initialSort,
                         isLoadingMore = false
                     )
+
+                    apiPodcastWithFallback.latestEpisode?.id?.let { episodeId ->
+                        launch {
+                            userPrefs.setLastSeenEpisodeId(apiPodcastWithFallback.id, episodeId)
+                        }
+                    }
 
                     launch {
                         fetchAndApplyPodcastMeta(podcastId, apiPodcast.id, isSubscribed, localPodcastEntity)
@@ -638,7 +651,7 @@ class PodcastInfoViewModel(
                         }
                     }
                 } else if (!isSubscribed && wasSubscribed) {
-
+                    userPrefs.removeLastSeenEpisodeId(currentState.podcast.id)
                 }
             }
         }
