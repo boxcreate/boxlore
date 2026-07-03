@@ -1589,6 +1589,46 @@ class PlaybackRepository(
         seekTo((_playerState.value.position - 10000).coerceAtLeast(0))
     }
 
+    private fun reinitializePlaybackIfEmpty(
+        controller: androidx.media3.session.MediaController,
+        index: Int,
+        entryPoint: PlaybackEntryPoint
+    ): Boolean {
+        if (controller.mediaItemCount == 0 && _playerState.value.queue.isNotEmpty()) {
+             android.util.Log.d("PlaybackRepo", "skipToEpisode: Controller empty but local queue exists. Re-initializing playback.")
+             val queue = _playerState.value.queue
+             val podcast = _playerState.value.currentPodcast
+             
+             if (index in queue.indices && podcast != null) {
+                 repositoryScope.launch {
+                     playQueue(queue, podcast, index, entryPoint)
+                 }
+                 return true
+             }
+        }
+        return false
+    }
+
+    private fun restorePositionAndSeek(
+        controller: androidx.media3.session.MediaController,
+        targetEpisodeId: String,
+        mediaIndex: Int
+    ) {
+        repositoryScope.launch {
+            val saved = listeningHistoryDao.getHistoryItem(targetEpisodeId)
+            val savedPosMs = if (saved != null && !saved.isCompleted && saved.progressMs > 2000) {
+                android.util.Log.d("PlaybackRepo", "skipToEpisode: Restoring saved position ${saved.progressMs}ms for $targetEpisodeId")
+                saved.progressMs
+            } else {
+                0L
+            }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                controller.seekTo(mediaIndex, savedPosMs)
+                controller.play()
+            }
+        }
+    }
+
     fun skipToEpisode(index: Int, entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC) {
         val controller = mediaController
         android.util.Log.d("PlaybackRepo", "skipToEpisode: index=$index, controller=${controller != null}, mediaItemCount=${controller?.mediaItemCount ?: -1}")
@@ -1606,54 +1646,20 @@ class PlaybackRepository(
             null
         }
 
-        // If controller is empty but we have a local queue, re-initialize playback
-        if (controller.mediaItemCount == 0 && _playerState.value.queue.isNotEmpty()) {
-             android.util.Log.d("PlaybackRepo", "skipToEpisode: Controller empty but local queue exists. Re-initializing playback.")
-             val queue = _playerState.value.queue
-             val podcast = _playerState.value.currentPodcast
-             
-             if (index in queue.indices && podcast != null) {
-                 repositoryScope.launch {
-                     playQueue(queue, podcast, index, entryPoint)
-                 }
-                 return
-             }
+        if (reinitializePlaybackIfEmpty(controller, index, entryPoint)) {
+            return
         }
         
-        // Find the matching Media3 index by mediaId (more reliable than assuming indices match)
         val targetEpisode = _playerState.value.queue.getOrNull(index)
         if (targetEpisode != null) {
             for (i in 0 until controller.mediaItemCount) {
                 if (controller.getMediaItemAt(i).mediaId == targetEpisode.id) {
                     android.util.Log.d("PlaybackRepo", "skipToEpisode: Found mediaId=${targetEpisode.id} at Media3 index $i")
                     
-                    // Set entry point context via static holder (IPC-safe)
-                    if (entryPointContext != null) {
-                        val map = mutableMapOf<String, Any>()
-                        entryPointContext.keySet().forEach { key ->
-                            entryPointContext.get(key)?.let { map[key] = it }
-                        }
-                        if (map.isNotEmpty()) {
-                            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(map)
-                        }
-                    }
+                    storePendingEntryPoint(entryPointContext)
                     
                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("transition")
-                    // Look up saved position from listening history to resume where the user left off
-                    val mediaIndex = i
-                    repositoryScope.launch {
-                        val saved = listeningHistoryDao.getHistoryItem(targetEpisode.id)
-                        val savedPosMs = if (saved != null && !saved.isCompleted && saved.progressMs > 2000) {
-                            android.util.Log.d("PlaybackRepo", "skipToEpisode: Restoring saved position ${saved.progressMs}ms for ${targetEpisode.id}")
-                            saved.progressMs
-                        } else {
-                            0L
-                        }
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                            controller.seekTo(mediaIndex, savedPosMs)
-                            controller.play()
-                        }
-                    }
+                    restorePositionAndSeek(controller, targetEpisode.id, i)
                     return
                 }
             }
