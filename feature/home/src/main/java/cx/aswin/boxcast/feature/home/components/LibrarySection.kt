@@ -117,6 +117,7 @@ import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
+import cx.aswin.boxcast.core.model.isLatestEpisodeNew
 
 val LocalLastSeenEpisodes = androidx.compose.runtime.compositionLocalOf<Map<String, String>> { emptyMap() }
 
@@ -843,19 +844,6 @@ fun YourShowsSection(
     }
 }
 
-private fun isEpisodeNew(
-    subscribedAt: Long,
-    latestEpisode: Episode?,
-    lastSeenId: String?
-): Boolean {
-    if (latestEpisode == null) return false
-    if (subscribedAt <= 0L) return false
-    if (latestEpisode.publishedDate <= (subscribedAt / 1000L)) return false
-    if (latestEpisode.id == lastSeenId) return false
-    val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - latestEpisode.publishedDate) / 3600.0
-    return hoursSinceRelease <= 48.0
-}
-
 @Composable
 private fun SelectorCover(
     podcast: Podcast,
@@ -869,7 +857,7 @@ private fun SelectorCover(
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
     
     val hasRecentNew = remember(podcast.subscribedAt, latestEpisodeId, latestEpisodePubDate, lastSeenId) {
-        isEpisodeNew(podcast.subscribedAt, podcast.latestEpisode, lastSeenId)
+        podcast.isLatestEpisodeNew(lastSeenId)
     }
 
     val scale by animateFloatAsState(targetValue = if (isSelected) 1.05f else 0.95f, label = "scale")

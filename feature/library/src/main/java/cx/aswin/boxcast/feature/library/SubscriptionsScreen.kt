@@ -122,6 +122,7 @@ import coil.compose.AsyncImage
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
+import cx.aswin.boxcast.core.model.isLatestEpisodeNew
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -1253,19 +1254,6 @@ private fun LatestEpisodeRow(
     }
 }
 
-private fun isEpisodeNew(
-    subscribedAt: Long,
-    latestEpisode: Episode?,
-    lastSeenId: String?
-): Boolean {
-    if (latestEpisode == null) return false
-    if (subscribedAt <= 0L) return false
-    if (latestEpisode.publishedDate <= (subscribedAt / 1000L)) return false
-    if (latestEpisode.id == lastSeenId) return false
-    val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - latestEpisode.publishedDate) / 3600.0
-    return hoursSinceRelease <= 48.0
-}
-
 @Composable
 private fun SubscriptionGridCard(
     podcast: Podcast,
@@ -1277,7 +1265,7 @@ private fun SubscriptionGridCard(
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
     
     val hasRecentNew = remember(podcast.subscribedAt, latestEpisodeId, latestEpisodePubDate, lastSeenId) {
-        isEpisodeNew(podcast.subscribedAt, podcast.latestEpisode, lastSeenId)
+        podcast.isLatestEpisodeNew(lastSeenId)
     }
 
     // Slow shimmer animation across the NEW badge background (4 seconds loop)
