@@ -14,9 +14,8 @@ import cx.aswin.boxcast.core.data.database.PodcastEntity
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 private fun PodcastEntity.toPodcast(): Podcast {
@@ -629,21 +628,19 @@ class SmartDownloadManager(
             }
         }
 
-        fun purgeAllSmartDownloads(context: Context) {
+        suspend fun purgeAllSmartDownloads(context: Context) = withContext(Dispatchers.IO) {
             val database = BoxLoreDatabase.getDatabase(context)
             val downloadRepository = DownloadRepository(context, database)
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()
-                    for (download in existingDownloads) {
-                        if (download.isSmartDownloaded) {
-                            writeLogToFile(context, "Purging smart-downloaded episode: '${download.episodeTitle}' due to smart downloads disabled.")
-                            downloadRepository.removeDownload(download.episodeId)
-                        }
+            try {
+                val existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()
+                for (download in existingDownloads) {
+                    if (download.isSmartDownloaded) {
+                        writeLogToFile(context, "Purging smart-downloaded episode: '${download.episodeTitle}' due to smart downloads disabled.")
+                        downloadRepository.removeDownload(download.episodeId)
                     }
-                } catch (e: Exception) {
-                    Log.e("SmartDownloadManager", "Failed to purge smart downloads", e)
                 }
+            } catch (e: Exception) {
+                Log.e("SmartDownloadManager", "Failed to purge smart downloads", e)
             }
         }
 
