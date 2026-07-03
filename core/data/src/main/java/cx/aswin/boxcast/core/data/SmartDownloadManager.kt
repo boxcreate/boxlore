@@ -14,6 +14,8 @@ import cx.aswin.boxcast.core.data.database.PodcastEntity
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 private fun PodcastEntity.toPodcast(): Podcast {
@@ -363,8 +365,7 @@ class SmartDownloadManager(
                 
                 val filteredRecs = recs.filter { ep ->
                     ep.id !in chosenSubsIds &&
-                    ep.id !in completedEpisodeIds &&
-                    existingDownloads.none { it.episodeId == ep.id }
+                    ep.id !in completedEpisodeIds
                 }.distinctBy { it.id }
                 
                 chosenRecs.addAll(filteredRecs.take(targetSize))
@@ -396,8 +397,7 @@ class SmartDownloadManager(
                 val filteredTrends = trendingEpisodes.filter { ep ->
                     ep.id !in chosenSubsIds &&
                     ep.id !in chosenRecsIds &&
-                    ep.id !in completedEpisodeIds &&
-                    existingDownloads.none { it.episodeId == ep.id }
+                    ep.id !in completedEpisodeIds
                 }.distinctBy { it.id }
                 
                 chosenTrends.addAll(filteredTrends.take(targetSize))
@@ -625,6 +625,22 @@ class SmartDownloadManager(
                 writeLogToFile(context, "WorkManager periodic task cancelled.")
             } catch (e: Exception) {
                 Log.e("SmartDownloadManager", "Failed to cancel periodic sync work", e)
+            }
+        }
+
+        suspend fun purgeAllSmartDownloads(context: Context) = withContext(Dispatchers.IO) {
+            val database = BoxLoreDatabase.getDatabase(context)
+            val downloadRepository = DownloadRepository(context, database)
+            try {
+                val existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()
+                for (download in existingDownloads) {
+                    if (download.isSmartDownloaded) {
+                        writeLogToFile(context, "Purging smart-downloaded episode: '${download.episodeTitle}' due to smart downloads disabled.")
+                        downloadRepository.removeDownload(download.episodeId)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SmartDownloadManager", "Failed to purge smart downloads", e)
             }
         }
 
