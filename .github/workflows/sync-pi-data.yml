@@ -10,6 +10,8 @@ on:
     - cron: '0 20 * * *'  # 20:00 UTC → Overnight refresh for next-day Asia/India
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -198,6 +200,7 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/sync_cache.json data/db_cost_history.json data/db_cost_report.md || true
           git commit -m "chore: update sync cache and db stats [skip ci]" || true
+          git reset --hard || true
           git pull --rebase origin master || true
           git push || true
 
