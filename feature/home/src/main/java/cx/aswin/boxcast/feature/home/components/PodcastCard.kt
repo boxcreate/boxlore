@@ -4,6 +4,8 @@ import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,22 +43,83 @@ fun PodcastCard(
     modifier: Modifier = Modifier,
     showGenreChip: Boolean = false
 ) {
+    FeedMediaCard(
+        imageUrl = podcast.imageUrl,
+        title = podcast.title.replace("+", " "),
+        subtitle = podcast.artist.replace("+", " "),
+        onClick = onClick,
+        modifier = modifier,
+        imageBadge = {
+            if (showGenreChip && podcast.genre.isNotEmpty()) {
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopStart)
+                ) {
+                    Text(
+                        text = podcast.genre.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        },
+        imageOverlay = {
+            if (podcast.medium == "video" || podcast.latestEpisode?.enclosureType?.startsWith("video/") == true) {
+                Surface(
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    color = Color.Black.copy(alpha = 0.55f),
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopEnd)
+                ) {
+                    Box(
+                        modifier = Modifier.padding(6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Videocam,
+                            contentDescription = "Video",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun FeedMediaCard(
+    imageUrl: String,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    imageBadge: @Composable (BoxScope.() -> Unit)? = null,
+    imageOverlay: @Composable (BoxScope.() -> Unit)? = null
+) {
     OutlinedCard( 
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
-            .expressiveClickable(onClick = onClick)
+        modifier = modifier.expressiveClickable(onClick = onClick)
     ) {
         Column {
-            // Image Container with Genre Chip
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
             ) {
                 OptimizedImage(
-                    url = podcast.imageUrl,
+                    url = imageUrl,
                     proxyWidth = 400,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
@@ -65,48 +128,12 @@ fun PodcastCard(
                         .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
                 )
                 
-                // Genre Chip (Top Left) - only shown when showGenreChip is true
-                if (showGenreChip && podcast.genre.isNotEmpty()) {
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .align(Alignment.TopStart)
-                    ) {
-                        Text(
-                            text = podcast.genre.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
+                if (imageBadge != null) {
+                    imageBadge()
                 }
 
-                // Video Badge overlay on image
-                if (podcast.medium == "video" || podcast.latestEpisode?.enclosureType?.startsWith("video/") == true) {
-                    Surface(
-                        shape = androidx.compose.foundation.shape.CircleShape,
-                        color = Color.Black.copy(alpha = 0.55f),
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .align(Alignment.TopEnd)
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Videocam,
-                                contentDescription = "Video",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
+                if (imageOverlay != null) {
+                    imageOverlay()
                 }
             }
             
@@ -116,14 +143,14 @@ fun PodcastCard(
                     .height(58.dp)
             ) {
                 Text(
-                    text = podcast.title.replace("+", " "),
+                    text = title,
                     style = MaterialTheme.typography.titleMedium.copy(fontSize = 13.sp, lineHeight = 17.sp),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = podcast.artist.replace("+", " "),
+                    text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
