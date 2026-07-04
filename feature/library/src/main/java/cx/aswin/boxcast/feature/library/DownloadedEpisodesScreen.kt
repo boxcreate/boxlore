@@ -227,14 +227,6 @@ fun DownloadedEpisodesScreen(
 
     val totalSizeBytes = remember(downloads) { downloads.sumOf { it.sizeBytes } }
 
-    val bottomBarPadding by animateDpAsState(
-        targetValue = if (isPlayerActive) 154.dp else 88.dp,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "bottomBarClearance"
-    )
 
     val listBottomPadding = remember(downloads, isSelectionMode, isPlayerActive) {
         if (downloads.isNotEmpty() && !isSelectionMode) {
@@ -434,51 +426,21 @@ fun DownloadedEpisodesScreen(
 
             // Play All FAB aligned to bottom right
             if (downloads.isNotEmpty() && !isSelectionMode) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(bottom = bottomBarPadding, end = 16.dp)
-                        .expressiveClickable(
-                            shape = CircleShape,
-                            onClick = {
-                                val episodes = downloads.map { it.toEpisode() }
-                                val dummyPodcast = Podcast(
-                                    id = "downloads_all",
-                                    title = "All Downloads",
-                                    artist = "",
-                                    imageUrl = "",
-                                    description = "",
-                                    genre = ""
-                                )
-                                viewModel.playQueue(episodes, dummyPodcast)
-                            }
-                        ),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    tonalElevation = 6.dp,
-                    shadowElevation = 6.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .height(56.dp)
-                            .padding(horizontal = 20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
+                PlayAllFab(
+                    isPlayerActive = isPlayerActive,
+                    onClick = {
+                        val episodes = downloads.map { it.toEpisode() }
+                        val dummyPodcast = Podcast(
+                            id = "downloads_all",
+                            title = "All Downloads",
+                            artist = "",
+                            imageUrl = "",
+                            description = "",
+                            genre = ""
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Play All",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        viewModel.playQueue(episodes, dummyPodcast)
                     }
-                }
+                )
             }
 
             if (deleteConfirmSelectedDialog) {
