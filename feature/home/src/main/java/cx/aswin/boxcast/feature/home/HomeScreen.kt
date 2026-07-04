@@ -990,9 +990,9 @@ private fun PodcastFeed(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                GridSkeletonItem(isTall = columnIndex == 0)
-                                GridSkeletonItem(isTall = columnIndex == 1)
-                                GridSkeletonItem(isTall = columnIndex == 0)
+                                GridSkeletonItem()
+                                GridSkeletonItem()
+                                GridSkeletonItem()
                             }
                         }
                     }
