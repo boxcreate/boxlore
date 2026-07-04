@@ -912,7 +912,7 @@ private fun PodcastFeed(
                 onHeaderClick = { onNavigateToExplore?.invoke(selectedCategory ?: "All", "home_discover_header", null) }
             )
 
-            val gridState = remember(isLoading, isFilterLoading, gridItems.list) {
+            val gridState = remember(isLoading, isFilterLoading, gridItems.list.isEmpty()) {
                 when {
                     isLoading || isFilterLoading || gridItems.list.isEmpty() -> "loading"
                     else -> "content"
