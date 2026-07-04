@@ -91,8 +91,8 @@ fun ForYouSection(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            ForYouBentoSkeleton(baseColor = baseColor, highlightColor = highlightColor, modifier = Modifier.weight(1f))
-                            ForYouBentoSkeleton(baseColor = baseColor, highlightColor = highlightColor, modifier = Modifier.weight(1f))
+                            GridSkeletonItem(modifier = Modifier.weight(1f))
+                            GridSkeletonItem(modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -367,62 +367,6 @@ private fun ForYouHeroSkeleton(
     )
 }
 
-@Composable
-private fun ForYouBentoSkeleton(
-    baseColor: Color,
-    highlightColor: Color,
-    modifier: Modifier = Modifier
-) {
-    OutlinedCard(
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column {
-            // Image area skeleton matching aspect ratio 1f
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-                    .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-            )
-            
-            // Text area skeleton matching padding and layout
-            Column(
-                modifier = Modifier.padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Title line 1
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .height(14.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp))
-                )
-                // Title line 2
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(14.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp))
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                // Podcast title line
-                Box(
-                    modifier = Modifier
-                        .width(80.dp)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp))
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun ForYouHorizontalBentoCard(
