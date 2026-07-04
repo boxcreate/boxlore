@@ -43,6 +43,28 @@
         "reads": 11988,
         "writes": 11
       }
+    },
+    "gb": {
+      "populate-charts": {
+        "reads": 20144,
+        "writes": 11010
+      },
+      "import-pi-data": {
+        "reads": 10986,
+        "writes": 171
+      },
+      "sync-episodes": {
+        "reads": 15447,
+        "writes": 167
+      },
+      "vectorize": {
+        "reads": 12542,
+        "writes": 167
+      },
+      "vectorize-podcasts": {
+        "reads": 12105,
+        "writes": 57
+      }
     }
   }
 }
