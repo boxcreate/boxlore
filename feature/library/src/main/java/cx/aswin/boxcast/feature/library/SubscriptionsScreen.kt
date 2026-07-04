@@ -278,7 +278,7 @@ fun SubscriptionsScreen(
                         }
                     )
                 } else {
-                    LargeTopAppBar(
+                    TopAppBar(
                         title = {
                             Text(
                                 text = "Subscriptions",
@@ -422,7 +422,7 @@ fun SubscriptionsScreen(
                             pagerState.animateScrollToPage(index)
                         }
                     },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
                 )
             }
         },
@@ -504,27 +504,27 @@ private fun ExpressiveTabSwitcher(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(Color.Transparent)
-            .padding(4.dp)
+            .padding(2.dp)
     ) {
         val tabWidth = maxWidth / tabs.size
         val indicatorOffset by animateDpAsState(
             targetValue = tabWidth * selectedIndex,
             animationSpec = spring(
-                dampingRatio = 0.5f,
+                dampingRatio = 0.6f,
                 stiffness = 400f
             ),
             label = "indicatorOffset"
         )
         
-        // Bouncy Sliding Indicator
+        // Bouncy Sliding Indicator (More compact)
         Surface(
             modifier = Modifier
                 .width(tabWidth)
-                .height(48.dp) // Fixed height to match row below
+                .height(36.dp)
                 .offset(x = indicatorOffset),
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.primaryContainer
         ) {}
         
@@ -563,7 +563,7 @@ private fun RowScope.TabItemContent(
     Box(
         modifier = Modifier
             .weight(1f)
-            .height(48.dp)
+            .height(36.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -577,7 +577,7 @@ private fun RowScope.TabItemContent(
         ) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = textColor
             )
@@ -910,7 +910,7 @@ private fun LatestTabContent(
 
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 180.dp, top = 4.dp),
+                contentPadding = PaddingValues(bottom = 240.dp, top = 4.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 item {
