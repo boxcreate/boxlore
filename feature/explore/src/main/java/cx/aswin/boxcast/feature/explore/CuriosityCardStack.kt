@@ -141,15 +141,17 @@ fun CuriosityCardStack(
                 // Lower cards in stack
                 val stackLevel = questions.indexOf(daily) // 1 or 2
                 val scale = if (stackLevel == 1) 0.95f else 0.90f
-                val verticalOffset = if (stackLevel == 1) 12.dp else 24.dp
+                val verticalOffset = if (stackLevel == 1) 16.dp else 32.dp
+                val rotationAngle = if (stackLevel == 1) -2f else 2f
 
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = verticalOffset)
+                        .offset(y = verticalOffset)
                         .scale(scale)
                         .graphicsLayer {
-                            alpha = if (stackLevel == 1) 0.85f else 0.6f
+                            rotationZ = rotationAngle
+                            alpha = if (stackLevel == 1) 0.9f else 0.7f
                         }
                 ) {
                     CuriosityCardContent(
