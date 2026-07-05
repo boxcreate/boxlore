@@ -30,6 +30,7 @@ This report tracks the Turso SQLite read and write metrics for the background sy
 |  | `vectorize` | 12,540 | 150 |
 |  | `vectorize-podcasts` | 12,147 | 51 |
 | | *Subtotal (US)* | *71,132* | *11,644* |
+| | **Total (All)** | **285,424** | **51,891** |
 
 ---
 
@@ -61,6 +62,7 @@ This report tracks the Turso SQLite read and write metrics for the background sy
 |  | `vectorize` | 12,296 | 88 |
 |  | `vectorize-podcasts` | 11,988 | 11 |
 | | *Subtotal (US)* | *58,524* | *235* |
+| | **Total (All)** | **255,628** | **23,336** |
 
 ---
 

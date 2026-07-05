@@ -93,6 +93,9 @@ async function main() {
         md += `| Country | Sync Step | DB Reads | DB Writes |\n`;
         md += `| :--- | :--- | :---: | :---: |\n`;
 
+        let dailyReads = 0;
+        let dailyWrites = 0;
+
         const countries = Object.keys(history[date]).sort();
         for (const c of countries) {
             const steps = Object.keys(history[date][c]).sort();
@@ -111,9 +114,15 @@ async function main() {
                 firstRow = false;
             }
             
+            dailyReads += countryReads;
+            dailyWrites += countryWrites;
+
             // Add a subtotal summary row for the country
             md += `| | *Subtotal (${c.toUpperCase()})* | *${countryReads.toLocaleString()}* | *${countryWrites.toLocaleString()}* |\n`;
         }
+        
+        // Add a grand total row for the entire day across all countries and jobs
+        md += `| | **Total (All)** | **${dailyReads.toLocaleString()}** | **${dailyWrites.toLocaleString()}** |\n`;
         md += `\n---\n\n`;
     }
 
