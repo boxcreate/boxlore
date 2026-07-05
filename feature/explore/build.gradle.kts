@@ -43,6 +43,7 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:data"))
     implementation(project(":core:model"))
+    implementation(project(":core:network"))
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
@@ -59,6 +60,9 @@ dependencies {
 
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Palette
+    implementation(libs.androidx.palette.ktx)
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
