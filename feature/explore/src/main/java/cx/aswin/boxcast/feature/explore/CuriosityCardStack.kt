@@ -3,6 +3,7 @@ package cx.aswin.boxcast.feature.explore
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -184,130 +185,183 @@ private fun CuriosityCardContent(
                     .graphicsLayer {
                         this.rotationY = 180f
                     }
-                    .padding(24.dp)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(
-                        text = "EXPLANATION",
-                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = daily.explanation ?: "No explanation available.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        lineHeight = 22.sp,
-                        maxLines = 6,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val showArt = daily.episode.image ?: daily.episode.feedImage ?: ""
-                        OptimizedImage(
-                            url = showArt,
-                            proxyWidth = 100,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = daily.episode.feedTitle ?: "Podcast Episode",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            val durationSec = daily.episode.duration
-                            val durationMin = if (durationSec != null && durationSec > 0) {
-                                "${durationSec / 60} min"
-                            } else {
-                                "Unknown duration"
-                            }
-                            Text(
-                                text = durationMin,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        FilledTonalButton(
-                            onClick = onPlayClick,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = if (isCurrentlyPlaying) {
-                                ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            } else {
-                                ButtonDefaults.filledTonalButtonColors()
-                            },
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isCurrentlyPlaying) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isCurrentlyPlaying) "Playing" else "Listen",
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
-                    }
-                }
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
+                    .padding(20.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text(
-                            text = "CURIOSITY OF THE DAY",
-                            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
+                        // Header Row with Episode details
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val showArt = daily.episode.image ?: daily.episode.feedImage ?: ""
+                            OptimizedImage(
+                                url = showArt,
+                                proxyWidth = 120,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            )
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = daily.episode.feedTitle ?: "Podcast",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                val durationSec = daily.episode.duration
+                                val durationMin = if (durationSec != null && durationSec > 0) {
+                                    "${durationSec / 60} min"
+                                } else {
+                                    "Daily micro-story"
+                                }
+                                Text(
+                                    text = durationMin,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Explanation text
                         Text(
-                            text = daily.question,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            lineHeight = 34.sp
+                            text = daily.explanation ?: "No explanation available.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 24.sp,
+                            maxLines = 6,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
+
+                    // Premium full-width listen action button
+                    FilledTonalButton(
+                        onClick = onPlayClick,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = if (isCurrentlyPlaying) {
+                            ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        } else {
+                            ButtonDefaults.filledTonalButtonColors()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isCurrentlyPlaying) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isCurrentlyPlaying) "Playing micro-story" else "Listen to micro-story",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        } else {
+            // Front side card structure
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Top Cover Artwork (occupies 60% height)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.6f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    val coverArt = daily.episode.image ?: daily.episode.feedImage ?: ""
+                    OptimizedImage(
+                        url = coverArt,
+                        proxyWidth = 600,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    // Overlay pill containing curiosity score or tag
+                    Surface(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .align(Alignment.TopEnd),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "★ ${daily.curiosityScore ?: 5}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+
+                    // Feed Title Pill
+                    Surface(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .align(Alignment.TopStart),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Text(
+                            text = daily.episode.feedTitle ?: "Micro-story",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // Bottom Content Container (occupies 40% height)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.4f)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = daily.question,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 22.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -315,14 +369,16 @@ private fun CuriosityCardContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Tap to flip details",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            text = "Tap to Reveal Details",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Swipe to skip/queue",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            text = "Swipe to Skip / Queue",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
