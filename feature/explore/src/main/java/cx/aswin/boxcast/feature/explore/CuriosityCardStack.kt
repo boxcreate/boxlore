@@ -14,8 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -168,6 +170,8 @@ private fun CuriosityCardContent(
     onPlayClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val coverArt = daily.episode.image ?: daily.episode.feedImage ?: ""
+
     OutlinedCard(
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.outlinedCardColors(
@@ -179,16 +183,32 @@ private fun CuriosityCardContent(
             .expressiveClickable(onClick = onFlipToggle)
     ) {
         if (rotationY > 90f) {
+            // Back Side (Flipped View)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
                         this.rotationY = 180f
                     }
-                    .padding(20.dp)
             ) {
+                // Background cover art with solid container tint for legibility
+                OptimizedImage(
+                    url = coverArt,
+                    proxyWidth = 300,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f))
+                )
+
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
@@ -197,9 +217,8 @@ private fun CuriosityCardContent(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val showArt = daily.episode.image ?: daily.episode.feedImage ?: ""
                             OptimizedImage(
-                                url = showArt,
+                                url = coverArt,
                                 proxyWidth = 120,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
@@ -248,7 +267,7 @@ private fun CuriosityCardContent(
                         )
                     }
 
-                    // Premium full-width listen action button
+                    // Premium listen button
                     FilledTonalButton(
                         onClick = onPlayClick,
                         shape = RoundedCornerShape(16.dp),
@@ -280,75 +299,104 @@ private fun CuriosityCardContent(
                 }
             }
         } else {
-            // Front side card structure
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Top Cover Artwork (occupies 60% height)
+            // Front side card structure: Unified Full Image Background with Blurred Bottom Panel
+            Box(modifier = Modifier.fillMaxSize()) {
+                // 1. Full Image Background
+                OptimizedImage(
+                    url = coverArt,
+                    proxyWidth = 600,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // 2. Blurred Bottom Panel (Glassy/premium effect using replica of artwork)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.6f)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .height(170.dp)
+                        .align(Alignment.BottomCenter)
                 ) {
-                    val coverArt = daily.episode.image ?: daily.episode.feedImage ?: ""
-                    OptimizedImage(
-                        url = coverArt,
-                        proxyWidth = 600,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                    // Overlay pill containing curiosity score or tag
-                    Surface(
+                    // Blurred Artwork Layer
+                    Box(
                         modifier = Modifier
-                            .padding(16.dp)
-                            .align(Alignment.TopEnd),
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary)
+                            .fillMaxSize()
+                            .blur(24.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "★ ${daily.curiosityScore ?: 5}",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
+                        OptimizedImage(
+                            url = coverArt,
+                            proxyWidth = 300,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
-
-                    // Feed Title Pill
-                    Surface(
+                    
+                    // Dark/surface overlay on top of blurred artwork to ensure clean text contrast
+                    Box(
                         modifier = Modifier
-                            .padding(16.dp)
-                            .align(Alignment.TopStart),
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+                                        MaterialTheme.colorScheme.surfaceContainerHigh
+                                    )
+                                )
+                            )
+                    )
+                }
+
+                // 3. Floating Overlays (Badges at the top)
+                // Score Badge (Top End)
+                Surface(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .align(Alignment.TopEnd),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = daily.episode.feedTitle ?: "Micro-story",
+                            text = "★ ${daily.curiosityScore ?: 5}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
 
-                // Bottom Content Container (occupies 40% height)
+                // Feed Title Badge (Top Start)
+                Surface(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .align(Alignment.TopStart),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Text(
+                        text = daily.episode.feedTitle ?: "Micro-story",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // 4. Question & Interaction text overlayed on the scrim
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.4f)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
                     Text(
                         text = daily.question,
@@ -357,11 +405,10 @@ private fun CuriosityCardContent(
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = 22.sp,
-                        modifier = Modifier.weight(1f)
+                        lineHeight = 22.sp
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
