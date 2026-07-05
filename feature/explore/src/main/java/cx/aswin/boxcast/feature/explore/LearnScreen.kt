@@ -74,9 +74,7 @@ import cx.aswin.boxcast.core.network.model.DailyCuriosityDto
 fun LearnScreen(
     viewModel: LearnViewModel,
     playbackRepository: cx.aswin.boxcast.core.data.PlaybackRepository,
-    queueManager: cx.aswin.boxcast.core.data.QueueManager,
     bottomContentPadding: Dp,
-    onBackClick: () -> Unit,
     onEpisodeClick: (Episode) -> Unit,
     onPodcastClick: (feedId: Long?, itunesId: Long?, feedUrl: String, title: String) -> Unit,
     modifier: Modifier = Modifier
@@ -296,6 +294,25 @@ private fun CuriosityOfTheDayCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val durationSec = daily.episode.duration
+    val durationMin = if (durationSec != null && durationSec > 0) {
+        "${durationSec / 60} min"
+    } else {
+        "Unknown duration"
+    }
+
+    val buttonColors = if (isCurrentlyPlaying) {
+        ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    } else {
+        ButtonDefaults.filledTonalButtonColors()
+    }
+
+    val buttonIcon = if (isCurrentlyPlaying) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow
+    val buttonText = if (isCurrentlyPlaying) "Playing" else "Listen"
+
     OutlinedCard(
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.outlinedCardColors(
@@ -374,12 +391,6 @@ private fun CuriosityOfTheDayCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     
-                    val durationSec = daily.episode.duration
-                    val durationMin = if (durationSec != null && durationSec > 0) {
-                        "${durationSec / 60} min"
-                    } else {
-                        "Unknown duration"
-                    }
                     Text(
                         text = durationMin,
                         style = MaterialTheme.typography.labelSmall,
@@ -393,24 +404,17 @@ private fun CuriosityOfTheDayCard(
                 FilledTonalButton(
                     onClick = onClick,
                     shape = RoundedCornerShape(12.dp),
-                    colors = if (isCurrentlyPlaying) {
-                        ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    } else {
-                        ButtonDefaults.filledTonalButtonColors()
-                    },
+                    colors = buttonColors,
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
                 ) {
                     Icon(
-                        imageVector = if (isCurrentlyPlaying) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow,
+                        imageVector = buttonIcon,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (isCurrentlyPlaying) "Playing" else "Listen",
+                        text = buttonText,
                         style = MaterialTheme.typography.labelMedium
                     )
                 }

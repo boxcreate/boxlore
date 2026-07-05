@@ -1303,9 +1303,7 @@ class MainActivity : ComponentActivity() {
                                 cx.aswin.boxcast.feature.explore.LearnScreen(
                                     viewModel = viewModel,
                                     playbackRepository = playbackRepository,
-                                    queueManager = queueManager,
                                     bottomContentPadding = miniPlayerPadding,
-                                    onBackClick = { navController.popBackStack() },
                                     onEpisodeClick = { episode ->
                                         fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                                         val route = "episode/${episode.id}/${encode(episode.title)}/" +
@@ -2194,18 +2192,23 @@ class MainActivity : ComponentActivity() {
                                 for (i in backStack.size - 2 downTo 0) {
                                     val entry = backStack.getOrNull(i)
                                     val route = entry?.destination?.route ?: continue
-                                    if (route.startsWith("learn")) {
-                                        foundTab = "learn"
-                                        break
-                                    } else if (route.startsWith("explore")) {
-                                        foundTab = "explore"
-                                        break
-                                    } else if (route.startsWith("library")) {
-                                        foundTab = "library"
-                                        break
-                                    } else if (route == "home") {
-                                        foundTab = "home"
-                                        break
+                                    when {
+                                        route.startsWith("learn") -> {
+                                            foundTab = "learn"
+                                            break
+                                        }
+                                        route.startsWith("explore") -> {
+                                            foundTab = "explore"
+                                            break
+                                        }
+                                        route.startsWith("library") -> {
+                                            foundTab = "library"
+                                            break
+                                        }
+                                        route == "home" -> {
+                                            foundTab = "home"
+                                            break
+                                        }
                                     }
                                 }
                                 foundTab
