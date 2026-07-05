@@ -51,6 +51,8 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -97,13 +99,46 @@ fun LearnScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         
-        // Setup Pull to Refresh wrapper
         val isRefreshing = (uiState as? LearnUiState.Success)?.isRefreshing == true
-        
+        val pullToRefreshState = rememberPullToRefreshState()
+
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refresh() },
-            modifier = Modifier.fillMaxSize()
+            state = pullToRefreshState,
+            modifier = Modifier.fillMaxSize(),
+            indicator = {
+                val density = LocalDensity.current
+                val pullProgress = pullToRefreshState.distanceFraction
+
+                if (pullProgress > 0f || isRefreshing) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 16.dp)
+                            .graphicsLayer {
+                                val scale = if (isRefreshing) 1f else pullProgress.coerceIn(0f, 1f)
+                                scaleX = scale
+                                scaleY = scale
+                                alpha = scale
+                                translationY = if (isRefreshing) {
+                                    with(density) { 24.dp.toPx() }
+                                } else {
+                                    pullProgress * with(density) { 32.dp.toPx() }
+                                }
+                            }
+                            .size(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        tonalElevation = 6.dp,
+                        shadowElevation = 6.dp
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            BoxLoreLoader.Expressive(size = 30.dp)
+                        }
+                    }
+                }
+            }
         ) {
             when (val state = uiState) {
                 is LearnUiState.Loading -> {
