@@ -102,9 +102,7 @@ fun LearnScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refresh() },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = innerPadding.calculateTopPadding())
+            modifier = Modifier.fillMaxSize()
         ) {
             when (val state = uiState) {
                 is LearnUiState.Loading -> {
