@@ -69,8 +69,8 @@ fun CuriosityCardStack(
             .height(360.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Render up to 3 cards in stack representation (reversed order so top is drawn last)
-        val cardsToShow = questions.take(3).reversed()
+        // Render up to 4 cards in stack representation (reversed order so top is drawn last)
+        val cardsToShow = questions.take(4).reversed()
 
         cardsToShow.forEach { daily ->
             val isTopCard = daily.episode.id.toString() == questions.first().episode.id.toString()
@@ -138,11 +138,23 @@ fun CuriosityCardStack(
                     )
                 }
             } else {
-                // Lower cards in stack
-                val stackLevel = questions.indexOf(daily) // 1 or 2
-                val scale = if (stackLevel == 1) 0.95f else 0.90f
-                val verticalOffset = if (stackLevel == 1) 10.dp else 18.dp
-                val rotationAngle = if (stackLevel == 1) -4.5f else 3.5f
+                // Lower cards in stack (up to 3 background levels)
+                val stackLevel = questions.indexOf(daily) // 1, 2, or 3
+                val scale = when (stackLevel) {
+                    1 -> 0.95f
+                    2 -> 0.90f
+                    else -> 0.85f
+                }
+                val verticalOffset = when (stackLevel) {
+                    1 -> 10.dp
+                    2 -> 18.dp
+                    else -> 26.dp
+                }
+                val rotationAngle = when (stackLevel) {
+                    1 -> -7f
+                    2 -> 7f
+                    else -> -3.5f
+                }
 
                 Box(
                     modifier = Modifier
@@ -151,7 +163,11 @@ fun CuriosityCardStack(
                         .scale(scale)
                         .graphicsLayer {
                             rotationZ = rotationAngle
-                            alpha = if (stackLevel == 1) 0.85f else 0.65f
+                            alpha = when (stackLevel) {
+                                1 -> 0.85f
+                                2 -> 0.65f
+                                else -> 0.45f
+                            }
                         }
                 ) {
                     CuriosityCardContent(
