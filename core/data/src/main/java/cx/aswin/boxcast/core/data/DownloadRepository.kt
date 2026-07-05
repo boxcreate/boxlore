@@ -76,7 +76,7 @@ class DownloadRepository(
         if (imageUrl.isNullOrBlank()) return null
         try {
             val cleanUrlStr = if (imageUrl.startsWith("//")) "https:$imageUrl" else imageUrl
-            val url = java.net.URL(cleanUrlStr)
+            val url = java.net.URI.create(cleanUrlStr).toURL()
             val dir = File(context.filesDir, subDir)
             if (!dir.exists()) {
                 dir.mkdirs()
@@ -91,6 +91,22 @@ class DownloadRepository(
         } catch (e: Exception) {
             android.util.Log.e("DownloadRepo", "Failed to download artwork: $imageUrl", e)
             return null
+        }
+    }
+
+    private fun deleteLocalFileIfValid(path: String?) {
+        if (path.isNullOrBlank()) return
+        val prefix = "file://"
+        if (path.startsWith("/") || path.startsWith(prefix)) {
+            val cleanPath = path.removePrefix(prefix)
+            try {
+                val file = File(cleanPath)
+                if (file.exists()) {
+                    file.delete()
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("DownloadRepo", "Failed to delete file: $cleanPath", e)
+            }
         }
     }
 
@@ -165,24 +181,8 @@ class DownloadRepository(
             try {
                 val existing = database.downloadedEpisodeDao().getDownload(episodeId)
                 if (existing != null) {
-                    existing.episodeImageUrl?.let { path ->
-                        if (path.startsWith("/") || path.startsWith("file://")) {
-                            val cleanPath = path.replace("file://", "")
-                            val file = File(cleanPath)
-                            if (file.exists()) {
-                                file.delete()
-                            }
-                        }
-                    }
-                    existing.podcastImageUrl?.let { path ->
-                        if (path.startsWith("/") || path.startsWith("file://")) {
-                            val cleanPath = path.replace("file://", "")
-                            val file = File(cleanPath)
-                            if (file.exists()) {
-                                file.delete()
-                            }
-                        }
-                    }
+                    deleteLocalFileIfValid(existing.episodeImageUrl)
+                    deleteLocalFileIfValid(existing.podcastImageUrl)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("DownloadRepo", "Failed to clean up artwork files for $episodeId", e)
