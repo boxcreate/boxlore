@@ -42,7 +42,7 @@ interface BoxLoreApi {
         @Path("region") region: String
     ): retrofit2.Call<Briefing>
 
-    @GET("curated/curiosity")
+    @GET("curated/curiosity-v2")
     fun getCuratedCuriosity(
         @Header("X-App-Key") publicKey: String,
         @Query("cb") cacheBuster: String? = null
