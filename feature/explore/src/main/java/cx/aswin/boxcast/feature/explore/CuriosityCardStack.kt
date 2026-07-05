@@ -489,8 +489,6 @@ private fun CuriosityCardContent(
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
                             lineHeight = 36.sp
                         )
                     }
