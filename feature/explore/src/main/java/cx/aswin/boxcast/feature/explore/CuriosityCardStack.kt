@@ -323,8 +323,9 @@ private fun CuriosityCardContent(
                         .padding(16.dp)
                         .align(Alignment.TopStart),
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+                    shadowElevation = 3.dp
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -352,8 +353,9 @@ private fun CuriosityCardContent(
                         .padding(16.dp)
                         .align(Alignment.TopCenter),
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+                    shadowElevation = 3.dp
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -381,8 +383,9 @@ private fun CuriosityCardContent(
                         .padding(16.dp)
                         .align(Alignment.TopEnd),
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+                    shadowElevation = 3.dp
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -453,10 +456,10 @@ private fun CuriosityCardContent(
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        Color.Black.copy(alpha = 0.5f),
-                                        Color.Black.copy(alpha = 0.95f),
-                                        Color.Black,
-                                        Color.Black
+                                        Color(0xFF1A1A1E).copy(alpha = 0.5f),
+                                        Color(0xFF1A1A1E).copy(alpha = 0.95f),
+                                        Color(0xFF1A1A1E),
+                                        Color(0xFF1A1A1E)
                                     )
                                 )
                             )
