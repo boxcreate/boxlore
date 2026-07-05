@@ -317,7 +317,7 @@ private fun CuriosityCardContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(220.dp)
                         .align(Alignment.BottomCenter)
                         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                         .drawWithContent {
@@ -338,7 +338,7 @@ private fun CuriosityCardContent(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .blur(24.dp)
+                            .blur(48.dp)
                     ) {
                         OptimizedImage(
                             url = coverArt,
@@ -356,14 +356,13 @@ private fun CuriosityCardContent(
                             .background(
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
-                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f),
+                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f),
                                         MaterialTheme.colorScheme.surfaceContainerHigh
                                     )
                                 )
                             )
                     )
                 }
-
 
                 // 4. Question & Interaction text overlayed on the scrim
                 Column(
@@ -374,12 +373,12 @@ private fun CuriosityCardContent(
                 ) {
                     Text(
                         text = daily.question,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = 30.sp
+                        lineHeight = 36.sp
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
