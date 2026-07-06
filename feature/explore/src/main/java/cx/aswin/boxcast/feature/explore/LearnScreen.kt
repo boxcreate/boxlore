@@ -263,6 +263,42 @@ fun LearnScreen(
                         }
                     }
                     is LearnUiState.Success -> {
+                        val handleDismiss: (DailyCuriosityDto) -> Unit = { daily ->
+                            viewModel.trackCardDismissed()
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardDismissed(
+                                episodeId = daily.episode.id.toString(),
+                                episodeTitle = daily.episode.title,
+                                podcastId = daily.episode.feedId?.toString(),
+                                podcastTitle = daily.episode.feedTitle
+                            )
+                            viewModel.dismissCuriosity(daily.episode.id.toString())
+                        }
+
+                        val handleQueue: (DailyCuriosityDto) -> Unit = { daily ->
+                            viewModel.trackCardQueued()
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardQueued(
+                                episodeId = daily.episode.id.toString(),
+                                episodeTitle = daily.episode.title,
+                                podcastId = daily.episode.feedId?.toString(),
+                                podcastTitle = daily.episode.feedTitle
+                            )
+                            val mappedEpisode = mapToEpisode(daily.episode)
+                            onQueueEpisode(mappedEpisode)
+                            viewModel.dismissCuriosity(daily.episode.id.toString())
+                        }
+
+                        val handleInfo: (DailyCuriosityDto) -> Unit = { daily ->
+                            viewModel.trackInfoClicked()
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardInfoClicked(
+                                episodeId = daily.episode.id.toString(),
+                                episodeTitle = daily.episode.title,
+                                podcastId = daily.episode.feedId?.toString(),
+                                podcastTitle = daily.episode.feedTitle
+                            )
+                            val mappedEpisode = mapToEpisode(daily.episode)
+                            onEpisodeClick(mappedEpisode)
+                        }
+
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -287,28 +323,8 @@ fun LearnScreen(
                                 questions = state.questionsStack,
                                 isCurrentlyPlaying = { id -> playerState.currentEpisode?.id == id && playerState.isPlaying },
                                 isCurrentlyLoading = { id -> playerState.currentEpisode?.id == id && playerState.isLoading },
-                                onSwipeLeft = { daily ->
-                                    viewModel.trackCardDismissed()
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardDismissed(
-                                        episodeId = daily.episode.id.toString(),
-                                        episodeTitle = daily.episode.title,
-                                        podcastId = daily.episode.feedId?.toString(),
-                                        podcastTitle = daily.episode.feedTitle
-                                    )
-                                    viewModel.dismissCuriosity(daily.episode.id.toString())
-                                },
-                                onSwipeRight = { daily ->
-                                    viewModel.trackCardQueued()
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardQueued(
-                                        episodeId = daily.episode.id.toString(),
-                                        episodeTitle = daily.episode.title,
-                                        podcastId = daily.episode.feedId?.toString(),
-                                        podcastTitle = daily.episode.feedTitle
-                                    )
-                                    val mappedEpisode = mapToEpisode(daily.episode)
-                                    onQueueEpisode(mappedEpisode)
-                                    viewModel.dismissCuriosity(daily.episode.id.toString())
-                                },
+                                onSwipeLeft = handleDismiss,
+                                onSwipeRight = handleQueue,
                                 onPlayClick = { daily ->
                                     viewModel.trackPlayClicked()
                                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardPlayClicked(
@@ -338,17 +354,7 @@ fun LearnScreen(
                                         }
                                     }
                                 },
-                                onEpisodeClick = { daily ->
-                                    viewModel.trackInfoClicked()
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardInfoClicked(
-                                        episodeId = daily.episode.id.toString(),
-                                        episodeTitle = daily.episode.title,
-                                        podcastId = daily.episode.feedId?.toString(),
-                                        podcastTitle = daily.episode.feedTitle
-                                    )
-                                    val mappedEpisode = mapToEpisode(daily.episode)
-                                    onEpisodeClick(mappedEpisode)
-                                },
+                                onEpisodeClick = handleInfo,
                                 onPodcastClick = { daily ->
                                     viewModel.trackPodcastClicked()
                                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardPodcastClicked(
@@ -376,43 +382,13 @@ fun LearnScreen(
                             DeckControlsRow(
                                 activeCard = activeCard,
                                 onDismissClick = {
-                                    activeCard?.let { daily ->
-                                        viewModel.trackCardDismissed()
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardDismissed(
-                                            episodeId = daily.episode.id.toString(),
-                                            episodeTitle = daily.episode.title,
-                                            podcastId = daily.episode.feedId?.toString(),
-                                            podcastTitle = daily.episode.feedTitle
-                                        )
-                                        viewModel.dismissCuriosity(daily.episode.id.toString())
-                                    }
+                                    activeCard?.let(handleDismiss)
                                 },
                                 onInfoClick = {
-                                    activeCard?.let { daily ->
-                                        viewModel.trackInfoClicked()
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardInfoClicked(
-                                            episodeId = daily.episode.id.toString(),
-                                            episodeTitle = daily.episode.title,
-                                            podcastId = daily.episode.feedId?.toString(),
-                                            podcastTitle = daily.episode.feedTitle
-                                        )
-                                        val mappedEpisode = mapToEpisode(daily.episode)
-                                        onEpisodeClick(mappedEpisode)
-                                    }
+                                    activeCard?.let(handleInfo)
                                 },
                                 onQueueClick = {
-                                    activeCard?.let { daily ->
-                                        viewModel.trackCardQueued()
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnCardQueued(
-                                            episodeId = daily.episode.id.toString(),
-                                            episodeTitle = daily.episode.title,
-                                            podcastId = daily.episode.feedId?.toString(),
-                                            podcastTitle = daily.episode.feedTitle
-                                        )
-                                        val mappedEpisode = mapToEpisode(daily.episode)
-                                        onQueueEpisode(mappedEpisode)
-                                        viewModel.dismissCuriosity(daily.episode.id.toString())
-                                    }
+                                    activeCard?.let(handleQueue)
                                 }
                             )
 
