@@ -93,6 +93,7 @@ import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.network.model.CuratedCuriosityPodcastDto
 import cx.aswin.boxcast.core.network.model.DailyCuriosityDto
 import cx.aswin.boxcast.core.data.toEpisode
+import cx.aswin.boxcast.core.designsystem.theme.TrackScreenSession
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,21 +116,10 @@ fun LearnScreen(
         cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackLearnScreenViewed()
     }
 
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            when (event) {
-                androidx.lifecycle.Lifecycle.Event.ON_STOP -> viewModel.trackScreenExit()
-                androidx.lifecycle.Lifecycle.Event.ON_START -> viewModel.onScreenResume()
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.trackScreenExit()
-        }
-    }
+    TrackScreenSession(
+        onSessionResume = viewModel::onScreenResume,
+        onSessionExit = viewModel::trackScreenExit
+    )
 
     // Extract dominant color state at screen level
     var extractedColor by remember { mutableStateOf<Color?>(null) }
