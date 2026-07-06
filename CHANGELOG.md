@@ -51,11 +51,14 @@ Finding your next favorite show is now instantaneous, even on slower cellular ne
 - **Refined OPML Importer**: Migrate all your subscriptions from other apps instantly with zero failures or skipped shows.
 - **Bulk Completed Tagging**: Easily organize and clean up large backlogs by marking multiple episodes or entire series as completed in a single tap.
 
+### 8. ⚡ Optimized Episode Sync Pipeline
+- **Removed Medium Column Dependency**: De-coupled the `medium` database column from candidate selection in `sync-episodes.js`. This eliminates redundant background API fetches and Turso writes for dead, empty, or unchanged feeds, optimizing the nightly workflow performance.
+
 ---
 
 ## 🎨 Tier 3: Medium Impact (UI/UX Refinements & Aesthetics)
 
-### 8. 🎨 Material 3 Layout & Curated Vibes (TimeBlock)
+### 9. 🎨 Material 3 Layout & Curated Vibes (TimeBlock)
 - **TimeBlock Curated Vibes**: Replaced standard designs with themed accent indicator bars, soft gradient glows, and dynamic weather icons that animate based on the local conditions.
 - **Social Link Extraction**: Episode descriptions parse and format raw links into beautiful, brand-colored social chips.
 - **Spotlight Region Fixes**: Fixed regional trending filters by mapping `"gb"` and `"uk"` codes case-insensitively, ensuring skipped Mixtape items never break the `#1 IN UK` trending label on the first visible card.
