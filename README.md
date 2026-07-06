@@ -9,7 +9,7 @@
 <br/>
 
 <!-- Real, functional download release APK badge -->
-<a href="https://github.com/ashwkun/box.lore.android/releases/latest/download/boxlore-release.apk">
+<a href="https://github.com/ashwkun/box.lore.android/releases/latest/download/app-release.apk">
   <img src="https://img.shields.io/badge/⬇_DOWNLOAD_APK-Latest_Release-2ebbca?style=for-the-badge&logo=android&logoColor=white&labelColor=0f172a" alt="Download APK"/>
 </a>
 
