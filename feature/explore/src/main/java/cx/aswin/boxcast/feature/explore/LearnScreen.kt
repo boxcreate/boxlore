@@ -263,26 +263,59 @@ fun LearnScreen(
                         }
                     }
                     is LearnUiState.Success -> {
-                        val handleDismiss: (DailyCuriosityDto) -> Unit = { daily ->
+                        val handleLearnCardAction: (String, DailyCuriosityDto) -> Unit = { action, daily ->
                             val mappedEpisode = mapToEpisode(daily.episode)
-                            viewModel.trackCardDismissed()
-                            trackLearnCardAction("dismiss", mappedEpisode)
-                            viewModel.dismissCuriosity(mappedEpisode.id)
-                        }
-
-                        val handleQueue: (DailyCuriosityDto) -> Unit = { daily ->
-                            val mappedEpisode = mapToEpisode(daily.episode)
-                            viewModel.trackCardQueued()
-                            trackLearnCardAction("queue", mappedEpisode)
-                            onQueueEpisode(mappedEpisode)
-                            viewModel.dismissCuriosity(mappedEpisode.id)
-                        }
-
-                        val handleInfo: (DailyCuriosityDto) -> Unit = { daily ->
-                            val mappedEpisode = mapToEpisode(daily.episode)
-                            viewModel.trackInfoClicked()
-                            trackLearnCardAction("info", mappedEpisode)
-                            onEpisodeClick(mappedEpisode)
+                            when (action) {
+                                "dismiss" -> {
+                                    viewModel.trackCardDismissed()
+                                    trackLearnCardAction("dismiss", mappedEpisode)
+                                    viewModel.dismissCuriosity(mappedEpisode.id)
+                                }
+                                "queue" -> {
+                                    viewModel.trackCardQueued()
+                                    trackLearnCardAction("queue", mappedEpisode)
+                                    onQueueEpisode(mappedEpisode)
+                                    viewModel.dismissCuriosity(mappedEpisode.id)
+                                }
+                                "info" -> {
+                                    viewModel.trackInfoClicked()
+                                    trackLearnCardAction("info", mappedEpisode)
+                                    onEpisodeClick(mappedEpisode)
+                                }
+                                "play" -> {
+                                    viewModel.trackPlayClicked()
+                                    trackLearnCardAction("play", mappedEpisode)
+                                    val isCurrent = playerState.currentEpisode?.id == mappedEpisode.id
+                                    if (isCurrent) {
+                                        playbackRepository.togglePlayPause()
+                                    } else {
+                                        val podcast = cx.aswin.boxcast.core.model.Podcast(
+                                            id = mappedEpisode.podcastId ?: "learn_fallback",
+                                            title = mappedEpisode.podcastTitle ?: "Podcast",
+                                            artist = mappedEpisode.podcastTitle ?: "Unknown",
+                                            imageUrl = mappedEpisode.imageUrl ?: ""
+                                        )
+                                        coroutineScope.launch {
+                                            playbackRepository.playQueue(
+                                                episodes = listOf(mappedEpisode),
+                                                podcast = podcast,
+                                                startIndex = 0,
+                                                entryPoint = cx.aswin.boxcast.core.model.PlaybackEntryPoint.LEARN
+                                            )
+                                        }
+                                    }
+                                }
+                                "podcast" -> {
+                                    viewModel.trackPodcastClicked()
+                                    trackLearnCardAction("podcast", mappedEpisode)
+                                    onPodcastClick(
+                                        mappedEpisode.podcastId?.toLongOrNull(),
+                                        null,
+                                        "",
+                                        mappedEpisode.podcastTitle ?: "Podcast"
+                                    )
+                                }
+                            }
                         }
 
                         Column(
@@ -309,44 +342,11 @@ fun LearnScreen(
                                 questions = state.questionsStack,
                                 isCurrentlyPlaying = { id -> playerState.currentEpisode?.id == id && playerState.isPlaying },
                                 isCurrentlyLoading = { id -> playerState.currentEpisode?.id == id && playerState.isLoading },
-                                onSwipeLeft = handleDismiss,
-                                onSwipeRight = handleQueue,
-                                onPlayClick = { daily ->
-                                    val mappedEpisode = mapToEpisode(daily.episode)
-                                    viewModel.trackPlayClicked()
-                                    trackLearnCardAction("play", mappedEpisode)
-                                    val isCurrent = playerState.currentEpisode?.id == mappedEpisode.id
-                                    if (isCurrent) {
-                                        playbackRepository.togglePlayPause()
-                                    } else {
-                                        val podcast = cx.aswin.boxcast.core.model.Podcast(
-                                            id = mappedEpisode.podcastId ?: "learn_fallback",
-                                            title = mappedEpisode.podcastTitle ?: "Podcast",
-                                            artist = mappedEpisode.podcastTitle ?: "Unknown",
-                                            imageUrl = mappedEpisode.imageUrl ?: ""
-                                        )
-                                        coroutineScope.launch {
-                                            playbackRepository.playQueue(
-                                                episodes = listOf(mappedEpisode),
-                                                podcast = podcast,
-                                                startIndex = 0,
-                                                entryPoint = cx.aswin.boxcast.core.model.PlaybackEntryPoint.LEARN
-                                            )
-                                        }
-                                    }
-                                },
-                                onEpisodeClick = handleInfo,
-                                onPodcastClick = { daily ->
-                                    val mappedEpisode = mapToEpisode(daily.episode)
-                                    viewModel.trackPodcastClicked()
-                                    trackLearnCardAction("podcast", mappedEpisode)
-                                    onPodcastClick(
-                                        mappedEpisode.podcastId?.toLongOrNull(),
-                                        null,
-                                        "",
-                                        mappedEpisode.podcastTitle ?: "Podcast"
-                                    )
-                                },
+                                onSwipeLeft = { handleLearnCardAction("dismiss", it) },
+                                onSwipeRight = { handleLearnCardAction("queue", it) },
+                                onPlayClick = { handleLearnCardAction("play", it) },
+                                onEpisodeClick = { handleLearnCardAction("info", it) },
+                                onPodcastClick = { handleLearnCardAction("podcast", it) },
                                 accentColor = animatedAccentColor,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -361,13 +361,13 @@ fun LearnScreen(
                             DeckControlsRow(
                                 activeCard = activeCard,
                                 onDismissClick = {
-                                    activeCard?.let(handleDismiss)
+                                    activeCard?.let { handleLearnCardAction("dismiss", it) }
                                 },
                                 onInfoClick = {
-                                    activeCard?.let(handleInfo)
+                                    activeCard?.let { handleLearnCardAction("info", it) }
                                 },
                                 onQueueClick = {
-                                    activeCard?.let(handleQueue)
+                                    activeCard?.let { handleLearnCardAction("queue", it) }
                                 }
                             )
 
