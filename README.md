@@ -223,7 +223,7 @@ This project is licensed under the **GNU General Public License v3.0** — see t
 <br/>
 
 <!-- Streak stats under stats -->
-<img src="https://github-readme-streak-stats.herokuapp.com/?user=ashwkun&theme=tokyonight&hide_border=true&background=0f172a&ring=2ebbca&fire=7F52FF&sideNums=94a3b8&sideLabels=94a3b8" alt="GitHub Streak Stats" width="100%"/>
+<img src="https://streak-stats.demolab.com/?user=ashwkun&theme=tokyonight&hide_border=true&background=0f172a&ring=2ebbca&fire=7F52FF&sideNums=94a3b8&sideLabels=94a3b8" alt="GitHub Streak Stats" width="100%"/>
 
 <br/><br/>
 
