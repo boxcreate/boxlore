@@ -92,6 +92,7 @@ import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.network.model.CuratedCuriosityPodcastDto
 import cx.aswin.boxcast.core.network.model.DailyCuriosityDto
+import cx.aswin.boxcast.core.data.toEpisode
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -264,7 +265,7 @@ fun LearnScreen(
                     }
                     is LearnUiState.Success -> {
                         val handleLearnCardAction: (String, DailyCuriosityDto) -> Unit = { action, daily ->
-                            val mappedEpisode = mapToEpisode(daily.episode)
+                            val mappedEpisode = daily.episode.toEpisode()
                             when (action) {
                                 "dismiss" -> {
                                     viewModel.trackCardDismissed()
@@ -507,24 +508,6 @@ private fun DeckControlsRow(
             }
         }
     }
-}
-
-private fun mapToEpisode(item: cx.aswin.boxcast.core.network.model.EpisodeItem): Episode = item.run {
-    Episode(
-        id = id.toString(),
-        title = title,
-        description = description.orEmpty(),
-        audioUrl = enclosureUrl.orEmpty(),
-        imageUrl = image ?: feedImage ?: "",
-        podcastImageUrl = feedImage,
-        podcastTitle = feedTitle,
-        podcastId = feedId?.toString(),
-        duration = duration ?: 0,
-        publishedDate = datePublished ?: 0L,
-        chaptersUrl = chaptersUrl,
-        transcriptUrl = transcriptUrl,
-        enclosureType = enclosureType
-    )
 }
 
 private fun extractDominantColor(bitmap: android.graphics.Bitmap): Color {
