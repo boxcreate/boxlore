@@ -32,17 +32,6 @@
 <img src="https://img.shields.io/github/commit-activity/m/ashwkun/box.lore.android?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Monthly Activity"/>
 <img src="https://img.shields.io/github/languages/code-size/ashwkun/box.lore.android?style=flat-square&color=7F52FF" alt="Code Size"/>
 
-<br/><br/>
-
-<!-- Collaboration credits -->
-<table>
-  <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/ashwkun/BOXBOXBOX-F1/master/screenshots/antigravity_logo.png" width="40" alt="Antigravity"/><br/><sub><b>Antigravity</b></sub></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/ashwkun/BOXBOXBOX-F1/master/screenshots/gemini_logo.png" width="40" alt="Gemini"/><br/><sub><b>Gemini 1.5</b></sub></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/ashwkun/BOXBOXBOX-F1/master/screenshots/claude_logo.png" width="40" alt="Claude"/><br/><sub><b>Claude 3.5</b></sub></td>
-  </tr>
-</table>
-
 </div>
 
 ---
