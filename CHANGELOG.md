@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed default candidate caps and episode limit counts across background sync and vectorization scripts (`sync-episodes.js`, `vectorize.js`, `vectorize-podcasts.js`).
 - De-coupled `medium` column check from sync candidate selection in `sync-episodes.js`.
 - Optimized Home screen transitions by deferring heavy below-the-fold content sections during slide navigation.
+### Fixed
+- Supported region code aliases (`uk`/`ind`) in Settings and Onboarding segmented control country selectors.
+- Configured the explore screen semantic search results hero card to display a `"FEATURED RESULT"` badge.
+- Recreated the active `MainActivity` immediately upon a successful JSON backup restore to update the active theme, region, and subscriptions reactively.
+
 
 ## [v0.0.4] - 2026-07-05
 ### Added
