@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[[rules]]
+  id = "boxcast-app-key"
+  description = "BoxCast X-App-Key"
+  regex = '''(?i)boxcast-app-[a-f0-9]{16}'''
+  keywords = [
+    "boxcast-app"
+  ]
