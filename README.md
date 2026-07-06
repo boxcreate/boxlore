@@ -55,24 +55,15 @@ BoxLore is a modern, open-source podcast client built from the ground up to show
 <div align="center">
 <table>
   <tr>
-    <td align="center"><b>Library & Player</b></td>
-    <td align="center"><b>Curiosity Cards</b></td>
-    <td align="center"><b>Explore Charts</b></td>
+    <td><img src="images/playart_01.png" width="220" alt="Screen 1"/></td>
+    <td><img src="images/playart_02.png" width="220" alt="Screen 2"/></td>
+    <td><img src="images/playart_03.png" width="220" alt="Screen 3"/></td>
   </tr>
   <tr>
-    <td><img src="images/playart_01.png" width="220" alt="Your Library"/></td>
-    <td><img src="images/playart_02.png" width="220" alt="Curiosity Deck"/></td>
-    <td><img src="images/playart_03.png" width="220" alt="Explore & Discover"/></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Home Hub</b></td>
-    <td align="center"><b>Now Playing</b></td>
-    <td align="center"><b>Settings</b></td>
-  </tr>
-  <tr>
-    <td><img src="images/playart_04.png" width="220" alt="Home Hub"/></td>
-    <td><img src="images/playart_05.png" width="220" alt="Beautiful Player"/></td>
-    <td><img src="images/playart_03.png" width="220" alt="Settings & Filters"/></td>
+    <td colspan="3" align="center">
+      <img src="images/playart_04.png" width="220" alt="Screen 4"/>&nbsp;&nbsp;&nbsp;&nbsp;
+      <img src="images/playart_05.png" width="220" alt="Screen 5"/>
+    </td>
   </tr>
 </table>
 </div>
