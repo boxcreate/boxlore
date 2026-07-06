@@ -24,6 +24,14 @@
 <img src="https://img.shields.io/badge/Telemetry-PostHog-F5C518?style=flat-square&logo=posthog&logoColor=white" alt="PostHog"/>
 <img src="https://img.shields.io/badge/License-GPLv3-ff0080?style=flat-square&logo=github&logoColor=white" alt="License"/>
 
+<br/>
+
+<!-- Real-time development status badges -->
+<img src="https://img.shields.io/github/downloads/ashwkun/box.lore.android/total?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Downloads"/>
+<img src="https://img.shields.io/github/last-commit/ashwkun/box.lore.android?style=flat-square&logo=git&logoColor=white&color=7F52FF" alt="Last Commit"/>
+<img src="https://img.shields.io/github/commit-activity/m/ashwkun/box.lore.android?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Monthly Activity"/>
+<img src="https://img.shields.io/github/languages/code-size/ashwkun/box.lore.android?style=flat-square&color=7F52FF" alt="Code Size"/>
+
 <br/><br/>
 
 <!-- Collaboration credits -->
@@ -203,29 +211,7 @@ This project is licensed under the **GNU General Public License v3.0** — see t
 
 <div align="center">
 
-<!-- Trophies at the top -->
-<img src="https://github-profile-trophy.vercel.app/?username=ashwkun&theme=tokyonight&no-bg=true&no-frame=true&column=7" alt="GitHub Trophies"/>
 
-<br/><br/>
-
-<!-- Stats and Languages side-by-side -->
-<table width="100%" border="0" cellspacing="0" cellpadding="0">
-  <tr>
-    <td width="50%" align="center">
-      <img src="https://github-readme-stats.vercel.app/api?username=ashwkun&show_icons=true&theme=tokyonight&hide_border=true&bg_color=0f172a&title_color=2ebbca&icon_color=7F52FF&text_color=94a3b8" alt="GitHub Stats" width="95%"/>
-    </td>
-    <td width="50%" align="center">
-      <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=ashwkun&layout=compact&theme=tokyonight&hide_border=true&bg_color=0f172a&title_color=2ebbca&text_color=94a3b8" alt="Top Languages" width="95%"/>
-    </td>
-  </tr>
-</table>
-
-<br/>
-
-<!-- Streak stats under stats -->
-<img src="https://streak-stats.demolab.com/?user=ashwkun&theme=tokyonight&hide_border=true&background=0f172a&ring=2ebbca&fire=7F52FF&sideNums=94a3b8&sideLabels=94a3b8" alt="GitHub Streak Stats" width="100%"/>
-
-<br/><br/>
 
 <!-- Contribution Activity graph -->
 <img src="https://github-readme-activity-graph.vercel.app/graph?username=ashwkun&theme=tokyonight&bg_color=0f172a&color=94a3b8&line=2ebbca&point=7F52FF&area=true&hide_border=true" alt="Commit Activity Graph" width="100%"/>
