@@ -53,6 +53,7 @@ Finding your next favorite show is now instantaneous, even on slower cellular ne
 
 ### 8. ⚡ Optimized Episode Sync Pipeline
 - **Removed Medium Column Dependency**: De-coupled the `medium` database column from candidate selection in `sync-episodes.js`. This eliminates redundant background API fetches and Turso writes for dead, empty, or unchanged feeds, optimizing the nightly workflow performance.
+- **Uncapped Processing Limits**: Removed candidate and episode processing limits (caps) across all background sync and vectorization scripts (`sync-episodes.js`, `vectorize.js`, `vectorize-podcasts.js`). This ensures that scheduled nightly workflows process the complete set of stale feeds and episodes without truncating.
 
 ---
 
