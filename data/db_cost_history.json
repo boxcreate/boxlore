@@ -178,5 +178,25 @@
         "writes": 183
       }
     }
+  },
+  "2026-07-06": {
+    "us": {
+      "import-pi-data": {
+        "reads": 16785,
+        "writes": 60
+      },
+      "sync-episodes": {
+        "reads": 15358,
+        "writes": 2
+      },
+      "vectorize": {
+        "reads": 11992,
+        "writes": 13
+      },
+      "vectorize-podcasts": {
+        "reads": 12290,
+        "writes": 86
+      }
+    }
   }
 }
