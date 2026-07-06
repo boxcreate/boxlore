@@ -48,6 +48,11 @@ class LearnViewModel(
         if (hasTrackedExit) {
             sessionStartTime = System.currentTimeMillis()
             hasTrackedExit = false
+            cardsDismissedCount = 0
+            cardsQueuedCount = 0
+            playsCount = 0
+            podcastsClickedCount = 0
+            infosClickedCount = 0
         }
     }
 
