@@ -53,10 +53,6 @@ Personalized episode picks on Home and Explore, based on what you've listened to
 
 On the Learn tab, swipe through question cards that point you at episodes you might not have found on your own. Swipe right to queue, left to dismiss, tap to play. Dismissals are remembered so you don't see the same card twice.
 
-### OPML import & export
-
-
-
 ### No ads, forever
 
 No banner ads, no sponsored inserts, no premium tier to unlock search or recommendations.
