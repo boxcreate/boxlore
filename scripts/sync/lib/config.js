@@ -58,7 +58,7 @@ module.exports = {
     EPISODES_PER_SHOW: 30,          // strict: latest 30 episodes per show
     // Per-run embedding budget (NOT a show cap). Incremental updates cost ~1
     // embedding per show; cold-start shows cost up to EPISODES_PER_SHOW.
-    MAX_EMBEDDINGS_PER_RUN: parseInt(process.env.MAX_EMBEDDINGS_PER_RUN || '3000', 10),
+    MAX_EMBEDDINGS_PER_RUN: parseInt(process.env.MAX_EMBEDDINGS_PER_RUN || '6000', 10),
     PAYLOAD_DESCRIPTION_MAX: 1000,  // cap description text stored in Qdrant payloads
 
     // --- Episode sync staleness tiers ---

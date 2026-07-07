@@ -40,7 +40,7 @@ jobs:
   sync:
     if: github.event_name == 'schedule' || inputs.job == 'sync'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -115,7 +115,7 @@ jobs:
 
       - name: 'Stage 4: Vectorize episodes'
         env:
-          MAX_EMBEDDINGS_PER_RUN: ${{ inputs.embedding_budget || '3000' }}
+          MAX_EMBEDDINGS_PER_RUN: ${{ inputs.embedding_budget || '6000' }}
         run: node scripts/sync/04-vectorize-episodes.js
 
       - name: 'Stage 5: Vectorize shows'
