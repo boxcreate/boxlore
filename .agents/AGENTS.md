@@ -5,3 +5,7 @@
 
 - **UI & Styling Constraints**:
   - **No Glassmorphism for Cards**: Card containers, panels, and card background composables in Jetpack Compose must strictly use solid Material 3 surface colors (e.g. `MaterialTheme.colorScheme.surfaceContainerHigh`). Do not apply transparency, alpha reductions (like `.copy(alpha = ...)`), or frosted-glass styling to card backgrounds. Card borders must also remain solid and follow standard Material 3 outline color tokens.
+
+- **Build & Development Constraints**:
+  - **Default Variant for Builds**: When the user requests to compile, build, install, or deploy the application (e.g., via `installDebug`, `assembleRelease`, etc.), you must default to using the `play` variant (e.g., `./gradlew installPlayDebug`, `./gradlew assemblePlayRelease`) unless the user explicitly requests the `foss` variant.
+
