@@ -19,7 +19,7 @@ const cfg = require('./lib/config');
 
 const ITUNES_SPACING_MS = 600;
 const ITUNES_RETRIES = 5;
-const ITUNES_USER_AGENT = 'BoxLore/1.0 (github.com/ashwkun/box.lore.android; podcast-chart-sync)';
+const ITUNES_USER_AGENT = 'BoxLore/1.0 (github.com/ashwkun/boxlore; podcast-chart-sync)';
 
 async function fetchItunesChart(country, category) {
     const genreParam = category === 'all' ? '' : `/genre=${cfg.GENRE_MAP[category]}`;

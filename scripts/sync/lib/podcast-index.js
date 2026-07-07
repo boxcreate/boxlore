@@ -36,7 +36,7 @@ function authHeaders() {
     const t = Math.floor(Date.now() / 1000);
     const hash = crypto.createHash('sha1').update(API_KEY + API_SECRET + t).digest('hex');
     return {
-        'User-Agent': 'BoxLore/1.0 (github.com/ashwkun/box.lore.android; podcast-sync)',
+        'User-Agent': 'BoxLore/1.0 (github.com/ashwkun/boxlore; podcast-sync)',
         'X-Auth-Key': API_KEY,
         'X-Auth-Date': String(t),
         'Authorization': hash,

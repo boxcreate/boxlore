@@ -77,7 +77,7 @@ jobs:
         if: steps.precheck.outputs.need_dump == 'true'
         run: |
           echo "Missing ${{ steps.precheck.outputs.missing_count }} shows - downloading PI dump"
-          curl -L -f -A "BoxLore/1.0 (github.com/ashwkun/box.lore.android)" \
+          curl -L -f -A "BoxLore/1.0 (github.com/ashwkun/boxlore)" \
             -o podcastindex_feeds.db.tgz https://public.podcastindex.org/podcastindex_feeds.db.tgz
           tar -xzf podcastindex_feeds.db.tgz
 

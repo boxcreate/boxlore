@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Google_Play-Get_it_on_Play-414141?style=for-the-badge&logo=googleplay&logoColor=white&labelColor=0f172a" alt="Get it on Google Play"/>
 </a>
 &nbsp;
-<a href="https://github.com/ashwkun/box.lore.android/releases/latest/download/app-release.apk">
+<a href="https://github.com/ashwkun/boxlore/releases/latest/download/app-release.apk">
   <img src="https://img.shields.io/badge/⬇_DOWNLOAD_APK-Latest_Release-2ebbca?style=for-the-badge&logo=android&logoColor=white&labelColor=0f172a" alt="Download APK"/>
 </a>
 
@@ -21,7 +21,7 @@
 <a href="LICENSE">
   <img src="https://img.shields.io/badge/License-GPLv3-ff0080?style=flat-square&logo=gnu&logoColor=white" alt="GPL v3"/>
 </a>
-<img src="https://img.shields.io/github/downloads/ashwkun/box.lore.android/total?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Total downloads"/>
+<img src="https://img.shields.io/github/downloads/ashwkun/boxlore/total?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Total downloads"/>
 
 </div>
 
@@ -237,8 +237,8 @@ Subscriptions, downloaded episodes, listening history, and liked episodes in one
 ### Build from source
 
 ```bash
-git clone https://github.com/ashwkun/box.lore.android.git
-cd box.lore.android
+git clone https://github.com/ashwkun/boxlore.git
+cd boxlore
 ./gradlew assembleDebug
 ./gradlew installDebug
 ```
@@ -271,8 +271,8 @@ boxlore is **free and open source** under the [GNU General Public License v3.0](
 ## Contributors
 
 <div align="center">
-  <a href="https://github.com/ashwkun/box.lore.android/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=ashwkun/box.lore.android" alt="Contributors Grid"/>
+  <a href="https://github.com/ashwkun/boxlore/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=ashwkun/boxlore" alt="Contributors Grid"/>
   </a>
 </div>
 
