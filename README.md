@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- Featured project banner -->
-<img src="images/featured_image.png" width="800" alt="boxlore Feature Banner"/>
+<img src="images/featured_image.jpg" width="800" alt="boxlore Feature Banner"/>
 
 ### *The Ultimate Podcast App For Android*
 *Built completely with Jetpack Compose featuring a beautiful Material 3 Design.*
