@@ -1,87 +1,79 @@
-# 📊 Turso Database Cost Report (Last 30 Days)
+# Turso Database Cost Report (Last 30 Days)
 
-This report tracks the Turso SQLite read and write metrics for the background synchronization pipeline, bifurcated by country and step.
+Daily totals accumulated across all runs of the sync pipeline.
 
-## 📅 Date: 2026-07-06
+## 2026-07-07
 
-| Country | Sync Step | DB Reads | DB Writes |
-| :--- | :--- | :---: | :---: |
-| **`GB`** | `import-pi-data` | 13,237 | 300 |
-|  | `populate-charts` | 20,264 | 12,244 |
-|  | `sync-episodes` | 15,425 | 123 |
-|  | `vectorize` | 12,383 | 126 |
-|  | `vectorize-podcasts` | 12,293 | 102 |
-| | *Subtotal (GB)* | *73,602* | *12,895* |
-| **`US`** | `import-pi-data` | 16,785 | 60 |
-|  | `sync-episodes` | 15,358 | 2 |
-|  | `vectorize` | 11,992 | 13 |
-|  | `vectorize-podcasts` | 12,290 | 86 |
-| | *Subtotal (US)* | *56,425* | *161* |
-| | **Total (All)** | **130,027** | **13,056** |
+| Scope | Step | Runs | DB Reads | DB Writes |
+| :--- | :--- | ---: | ---: | ---: |
+| `global` | `import-podcasts` | 1 | 31,478 | 0 |
+|  | `refresh-charts` | 1 | 16,799 | 622 |
+| | **Day total** | | **48,277** | **622** |
 
----
+## 2026-07-06
 
-## 📅 Date: 2026-07-05
+| Scope | Step | Runs | DB Reads | DB Writes |
+| :--- | :--- | ---: | ---: | ---: |
+| `gb` | `import-pi-data` | - | 13,237 | 300 |
+|  | `populate-charts` | - | 20,264 | 12,244 |
+|  | `sync-episodes` | - | 15,425 | 123 |
+|  | `vectorize` | - | 12,383 | 126 |
+|  | `vectorize-podcasts` | - | 12,293 | 102 |
+| `us` | `import-pi-data` | - | 16,785 | 60 |
+|  | `sync-episodes` | - | 15,358 | 2 |
+|  | `vectorize` | - | 11,992 | 13 |
+|  | `vectorize-podcasts` | - | 12,290 | 86 |
+| | **Day total** | | **130,027** | **13,056** |
 
-| Country | Sync Step | DB Reads | DB Writes |
-| :--- | :--- | :---: | :---: |
-| **`FR`** | `import-pi-data` | 11,407 | 0 |
-|  | `populate-charts` | 20,305 | 12,434 |
-|  | `sync-episodes` | 14,592 | 34 |
-|  | `vectorize` | 11,228 | 34 |
-|  | `vectorize-podcasts` | 11,785 | 183 |
-| | *Subtotal (FR)* | *69,317* | *12,685* |
-| **`GB`** | `import-pi-data` | 15,444 | 0 |
-|  | `populate-charts` | 20,231 | 11,750 |
-|  | `sync-episodes` | 15,326 | 39 |
-|  | `vectorize` | 12,043 | 39 |
-|  | `vectorize-podcasts` | 11,903 | 4 |
-| | *Subtotal (GB)* | *74,947* | *11,832* |
-| **`IN`** | `import-pi-data` | 11,407 | 0 |
-|  | `populate-charts` | 20,374 | 12,574 |
-|  | `sync-episodes` | 15,172 | 44 |
-|  | `vectorize` | 11,901 | 44 |
-|  | `vectorize-podcasts` | 12,614 | 235 |
-| | *Subtotal (IN)* | *71,468* | *12,897* |
-| **`US`** | `import-pi-data` | 15,425 | 0 |
-|  | `populate-charts` | 20,123 | 11,144 |
-|  | `sync-episodes` | 15,432 | 85 |
-|  | `vectorize` | 12,280 | 85 |
-|  | `vectorize-podcasts` | 12,147 | 51 |
-| | *Subtotal (US)* | *75,407* | *11,365* |
-| | **Total (All)** | **291,139** | **48,779** |
+## 2026-07-05
 
----
+| Scope | Step | Runs | DB Reads | DB Writes |
+| :--- | :--- | ---: | ---: | ---: |
+| `fr` | `import-pi-data` | - | 11,407 | 0 |
+|  | `populate-charts` | - | 20,305 | 12,434 |
+|  | `sync-episodes` | - | 14,592 | 34 |
+|  | `vectorize` | - | 11,228 | 34 |
+|  | `vectorize-podcasts` | - | 11,785 | 183 |
+| `gb` | `import-pi-data` | - | 15,444 | 0 |
+|  | `populate-charts` | - | 20,231 | 11,750 |
+|  | `sync-episodes` | - | 15,326 | 39 |
+|  | `vectorize` | - | 12,043 | 39 |
+|  | `vectorize-podcasts` | - | 11,903 | 4 |
+| `in` | `import-pi-data` | - | 11,407 | 0 |
+|  | `populate-charts` | - | 20,374 | 12,574 |
+|  | `sync-episodes` | - | 15,172 | 44 |
+|  | `vectorize` | - | 11,901 | 44 |
+|  | `vectorize-podcasts` | - | 12,614 | 235 |
+| `us` | `import-pi-data` | - | 15,425 | 0 |
+|  | `populate-charts` | - | 20,123 | 11,144 |
+|  | `sync-episodes` | - | 15,432 | 85 |
+|  | `vectorize` | - | 12,280 | 85 |
+|  | `vectorize-podcasts` | - | 12,147 | 51 |
+| | **Day total** | | **291,139** | **48,779** |
 
-## 📅 Date: 2026-07-04
+## 2026-07-04
 
-| Country | Sync Step | DB Reads | DB Writes |
-| :--- | :--- | :---: | :---: |
-| **`FR`** | `import-pi-data` | 10,817 | 0 |
-|  | `populate-charts` | 20,191 | 11,388 |
-|  | `sync-episodes` | 14,654 | 84 |
-|  | `vectorize` | 11,438 | 84 |
-|  | `vectorize-podcasts` | 11,516 | 108 |
-| | *Subtotal (FR)* | *68,616* | *11,664* |
-| **`GB`** | `import-pi-data` | 14,831 | 87 |
-|  | `populate-charts` | 20,144 | 11,010 |
-|  | `sync-episodes` | 15,359 | 55 |
-|  | `vectorize` | 12,130 | 64 |
-|  | `vectorize-podcasts` | 11,952 | 12 |
-| | *Subtotal (GB)* | *74,416* | *11,228* |
-| **`IN`** | `import-pi-data` | 10,788 | 0 |
-|  | `populate-charts` | 4,020 | 0 |
-|  | `sync-episodes` | 15,203 | 56 |
-|  | `vectorize` | 11,953 | 56 |
-|  | `vectorize-podcasts` | 12,108 | 97 |
-| | *Subtotal (IN)* | *54,072* | *209* |
-| **`US`** | `import-pi-data` | 14,791 | 48 |
-|  | `populate-charts` | 4,019 | 0 |
-|  | `sync-episodes` | 15,430 | 88 |
-|  | `vectorize` | 12,296 | 88 |
-|  | `vectorize-podcasts` | 11,988 | 11 |
-| | *Subtotal (US)* | *58,524* | *235* |
-| | **Total (All)** | **255,628** | **23,336** |
-
----
+| Scope | Step | Runs | DB Reads | DB Writes |
+| :--- | :--- | ---: | ---: | ---: |
+| `fr` | `import-pi-data` | - | 10,817 | 0 |
+|  | `populate-charts` | - | 20,191 | 11,388 |
+|  | `sync-episodes` | - | 14,654 | 84 |
+|  | `vectorize` | - | 11,438 | 84 |
+|  | `vectorize-podcasts` | - | 11,516 | 108 |
+| `gb` | `import-pi-data` | - | 14,831 | 87 |
+|  | `populate-charts` | - | 20,144 | 11,010 |
+|  | `sync-episodes` | - | 15,359 | 55 |
+|  | `vectorize` | - | 12,130 | 64 |
+|  | `vectorize-podcasts` | - | 11,952 | 12 |
+| `in` | `import-pi-data` | - | 10,788 | 0 |
+|  | `populate-charts` | - | 4,020 | 0 |
+|  | `sync-episodes` | - | 15,203 | 56 |
+|  | `vectorize` | - | 11,953 | 56 |
+|  | `vectorize-podcasts` | - | 12,108 | 97 |
+| `us` | `import-pi-data` | - | 14,791 | 48 |
+|  | `populate-charts` | - | 4,019 | 0 |
+|  | `sync-episodes` | - | 15,430 | 88 |
+|  | `vectorize` | - | 12,296 | 88 |
+|  | `vectorize-podcasts` | - | 11,988 | 11 |
+| | **Day total** | | **255,628** | **23,336** |
 
