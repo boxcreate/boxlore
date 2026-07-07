@@ -1,6 +1,6 @@
 <div align="center" id="top">
 
-<img src="images/featured_image.jpg" width="800" alt="boxlore Feature Banner"/>
+<img src="docs/images/featured_image.jpg" width="800" alt="boxlore Feature Banner"/>
 
 ### A podcast app that actually gets personal
 
@@ -67,44 +67,44 @@ No banner ads, no sponsored inserts, no premium tier to unlock search or recomme
     <td align="center" width="25%">
       <b>Onboarding</b><br/>
       <sub>Pick genres and region</sub><br/><br/>
-      <img src="images/onboarding.png" width="180" alt="Onboarding Screen"/>
+      <img src="docs/images/onboarding.png" width="180" alt="Onboarding Screen"/>
     </td>
     <td align="center" width="25%">
       <b>Home</b><br/>
       <sub>Mixtape, For You, briefing</sub><br/><br/>
-      <img src="images/homescreen.png" width="180" alt="Homescreen Screen"/>
+      <img src="docs/images/homescreen.png" width="180" alt="Homescreen Screen"/>
     </td>
     <td align="center" width="25%">
       <b>Daily Briefing</b><br/>
       <sub>AI news audio — optional</sub><br/><br/>
-      <img src="images/daily_brief.png" width="180" alt="Daily Briefing Screen"/>
+      <img src="docs/images/daily_brief.png" width="180" alt="Daily Briefing Screen"/>
     </td>
     <td align="center" width="25%">
       <b>Curiosity Cards</b><br/>
       <sub>Swipe to discover</sub><br/><br/>
-      <img src="images/curiosity_cards.png" width="180" alt="Curiosity Cards Screen"/>
+      <img src="docs/images/curiosity_cards.png" width="180" alt="Curiosity Cards Screen"/>
     </td>
   </tr>
   <tr>
     <td align="center">
       <b>Semantic Search</b><br/>
       <sub>Natural-language episode search</sub><br/><br/>
-      <img src="images/semantic_search.png" width="180" alt="Semantic Search Screen"/>
+      <img src="docs/images/semantic_search.png" width="180" alt="Semantic Search Screen"/>
     </td>
     <td align="center">
       <b>For You</b><br/>
       <sub>Personalized recommendations</sub><br/><br/>
-      <img src="images/recommendation_engine.png" width="180" alt="Recommendation Engine Screen"/>
+      <img src="docs/images/recommendation_engine.png" width="180" alt="Recommendation Engine Screen"/>
     </td>
     <td align="center">
       <b>Library</b><br/>
       <sub>Subs, downloads, history</sub><br/><br/>
-      <img src="images/library.png" width="180" alt="Library Screen"/>
+      <img src="docs/images/library.png" width="180" alt="Library Screen"/>
     </td>
     <td align="center">
       <b>Player</b><br/>
       <sub>Chapters, transcript, video</sub><br/><br/>
-      <img src="images/player.png" width="180" alt="Player Screen"/>
+      <img src="docs/images/player.png" width="180" alt="Player Screen"/>
     </td>
   </tr>
 </table>

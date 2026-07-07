@@ -49,7 +49,7 @@ async function run() {
     }
 
     // 3. Read state file (local json)
-    const statePath = path.join(__dirname, '../data/episode-tracker.json');
+    const statePath = path.join(__dirname, 'data/episode-tracker.json');
     
     // Ensure the data directory exists
     const dataDir = path.dirname(statePath);

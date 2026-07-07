@@ -83,9 +83,9 @@ module.exports = {
     CLEANUP_SAFETY_MIN_CHARTS: 500, // abort cleanup if charts look wiped
 
     // --- State / files ---
-    STATE_FILE: 'data/sync_cache.json',
-    HISTORY_FILE: 'data/db_cost_history.json',
-    REPORT_FILE: 'data/db_cost_report.md',
+    STATE_FILE: 'scripts/data/sync_cache.json',
+    HISTORY_FILE: 'scripts/data/db_cost_history.json',
+    REPORT_FILE: 'scripts/data/db_cost_report.md',
     RUN_STATS_FILE: '/tmp/db_run_stats.json',
 
     // Fixed column whitelist for the podcasts table import path (no auto-ALTER).

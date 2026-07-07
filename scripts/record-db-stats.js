@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
  * Record database read/write counts for GHA runs
- * Maintains a 30-day sliding window of history in data/db_cost_history.json
- * Auto-generates a human-readable Markdown table in data/db_cost_report.md
+ * Maintains a 30-day sliding window of history in scripts/data/db_cost_history.json
+ * Auto-generates a human-readable Markdown table in scripts/data/db_cost_report.md
  */
 
 const fs = require('fs');
 const path = require('path');
 
 const STATS_FILE = '/tmp/db_run_stats.json';
-const HISTORY_FILE = 'data/db_cost_history.json';
-const REPORT_FILE = 'data/db_cost_report.md';
+const HISTORY_FILE = 'scripts/data/db_cost_history.json';
+const REPORT_FILE = 'scripts/data/db_cost_report.md';
 
 function ensureDirectoryExists(filePath) {
     const dir = path.dirname(filePath);

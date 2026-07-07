@@ -414,7 +414,7 @@ async function main() {
     const country = countryIndex !== -1 ? process.argv[countryIndex + 1] : null;
 
     let syncCache = {};
-    const cachePath = 'data/sync_cache.json';
+    const cachePath = 'scripts/data/sync_cache.json';
     try {
         if (fs.existsSync(cachePath)) {
             syncCache = JSON.parse(fs.readFileSync(cachePath, 'utf8') || '{}');

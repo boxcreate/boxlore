@@ -1,78 +1,70 @@
+# Android / Gradle
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-.idea
-build
-.gradle
-*.apk
-*.ap_
-# Android Studio
-*.iml
-.idea
-.gradle
+.gradle/
 build/
 app/build/
 feature/*/build/
 core/*/build/
-.DS_Store
-local.properties
 captures/
 .externalNativeBuild
 .cxx
-API_GUIDE.md
+local.properties
+.DS_Store
+*.apk
+*.ap_
+*.hprof
+
+# Android Studio / Kotlin
+.idea/
+.kotlin/
+
+# Node
 node_modules/
-# Standalone Proxy - Moved to standalone ashwkun/Proxy repository.
-# Do NOT recreate or commit a proxy/ directory inside this repository.
-proxy/
-# Sensitive files
+
+# Firebase (client config — keep local only; workflows use FCM_SERVICE_ACCOUNT_KEY)
+app/google-services.json
+.firebase/
+
+# Secrets & keys
 *.keystore
-*.log
-*_logcat.txt
 *.jks
+gcp-key.json
 google-services.json
 bench_node.js
+*.log
+*_logcat.txt
 
-# Reference Files
+# Standalone Proxy — lives in github.com/ashwkun/Proxy
+proxy/
+
+# Sub-projects (local only)
+admin-panel/
+telemetry-worker/
+
+# Transformers model cache
+.cache/
+
+# Sync pipeline temp artifacts (local runs)
+podcastindex_feeds.db
+podcastindex_feeds.db.tgz
+podcasts_export.csv
+missing_itunes_ids.txt
+
+# Scratch
+scratch/
+
+# Local reference docs (not for repo)
+CHANGELOG.md
 rules.md
 RELEASE_NOTES.md
 ROADMAP.md
 API_GUIDE.md
-
-# Sub-projects
-admin-panel/
-telemetry-worker/
-
-# Local reference and scratch files
 playstore_changelogs.md
 telemetry_events.md
 podcasting_features.md
 posthog-setup-report.md
 
-# Transformers model cache
-.cache/
-
-# Scratch files
-scratch/
-
-# GCP service account key (ephemeral, never commit)
-gcp-key.json
-
-# Firebase local cache
-.firebase/
-
-# Editor settings
+# Editor / agent settings
 .vscode/
 .claude/
-CHANGELOG.md
+.agents/

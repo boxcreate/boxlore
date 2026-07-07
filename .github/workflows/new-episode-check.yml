@@ -19,9 +19,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci --prefix scripts
 
       - name: Authenticate GCP/Firebase
         run: |
@@ -38,7 +40,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/episode-tracker.json
+          git add scripts/data/episode-tracker.json
           rm -f gcp-key.json
           git checkout -- . || true
           git clean -fd || true

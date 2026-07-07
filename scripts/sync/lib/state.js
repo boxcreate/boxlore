@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Pipeline state persisted in git (data/sync_cache.json).
+ * Pipeline state persisted in git (scripts/data/sync_cache.json).
  *
  * Format v2 (compact keys to keep the committed file small):
  * {

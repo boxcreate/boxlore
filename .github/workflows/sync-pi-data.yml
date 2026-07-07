@@ -52,6 +52,7 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
 
       - name: Cache embedding model
         uses: actions/cache@v4
@@ -62,7 +63,7 @@ jobs:
             transformers-cache-
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --prefix scripts
 
       - name: 'Stage 1: Refresh charts (daily at 00:00 + manual)'
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
@@ -129,7 +130,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/sync_cache.json data/db_cost_history.json data/db_cost_report.md
+          git add scripts/data/sync_cache.json scripts/data/db_cost_history.json scripts/data/db_cost_report.md
           if git diff --cached --quiet; then
             echo "No state changes to commit"
             exit 0
@@ -167,9 +168,10 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --prefix scripts
 
       - name: 'Stage 6: Cleanup non-chart shows (7-day grace)'
         run: node scripts/sync/06-cleanup-non-chart.js
@@ -179,7 +181,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase origin master
-          git add data/sync_cache.json
+          git add scripts/data/sync_cache.json
           if git diff --cached --quiet; then
             echo "No state changes to commit"
             exit 0
@@ -212,9 +214,10 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --prefix scripts
 
       - name: Run Qdrant remediation
         run: |
