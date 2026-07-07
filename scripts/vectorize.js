@@ -425,6 +425,32 @@ async function main() {
         }
 
         vectorizedPodcastsCount++;
+
+        // Prune older episodes in Qdrant FIRST to free up WAL and disk space before generating/inserting new ones
+        if (uuids.length > 0) {
+            try {
+                await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points/delete`, {
+                    method: "POST",
+                    headers: {
+                        "api-key": QDRANT_API_KEY,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        filter: {
+                            must: [
+                                { key: "podcast_id", match: { value: parseInt(pod.id) || 0 } }
+                            ],
+                            must_not: [
+                                { has_id: uuids }
+                            ]
+                        }
+                    })
+                });
+            } catch (pruneErr) {
+                console.warn(`  -> Pruning failed for "${pod.title}":`, pruneErr.message);
+            }
+        }
+
         const points = [];
 
         for (const item of toVectorize) {
@@ -485,31 +511,6 @@ async function main() {
             
             if (pointsQueue.length >= 100) {
                 await flushQueue();
-            }
-        }
-
-        // Rolling Window Delete: Keep only the latest 30 episodes in Qdrant for this podcast
-        if (uuids.length > 0) {
-            try {
-                await fetch(`${QDRANT_URL}/collections/${COLLECTION_NAME}/points/delete`, {
-                    method: "POST",
-                    headers: {
-                        "api-key": QDRANT_API_KEY,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        filter: {
-                            must: [
-                                { key: "podcast_id", match: { value: parseInt(pod.id) || 0 } }
-                            ],
-                            must_not: [
-                                { has_id: uuids }
-                            ]
-                        }
-                    })
-                });
-            } catch (pruneErr) {
-                console.warn(`  -> Pruning failed for "${pod.title}":`, pruneErr.message);
             }
         }
         
