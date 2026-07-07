@@ -27,7 +27,7 @@ if (!TURSO_URL || !TURSO_TOKEN || !QDRANT_URL || !QDRANT_API_KEY || !API_KEY || 
 const MODEL_NAME = 'Xenova/bge-large-en-v1.5';
 const COLLECTION_NAME = 'episodes';
 const BATCH_SIZE = 50;
-const EPISODES_LIMIT = 10000; // Unlimited episodes per podcast
+const EPISODES_LIMIT = 30; // Limit to latest 30 episodes per podcast
 const MAX_NEW_PODCASTS_PER_RUN = Infinity; // Unlimited podcasts per run
 
 // Helper: Generate Podcast Index Auth Headers
