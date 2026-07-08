@@ -47,7 +47,7 @@ async function main() {
     const res = await turso.execute(`
         SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language
         FROM podcasts p
-        WHERE (p.qdrant_vectorized = 0 OR p.qdrant_vectorized IS NULL)
+        WHERE p.qdrant_vectorized = 0
           AND p.itunes_id IN (
               SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
           )

@@ -68,3 +68,4 @@ posthog-setup-report.md
 .vscode/
 .claude/
 .agents/
+.cursor/

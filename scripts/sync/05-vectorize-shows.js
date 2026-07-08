@@ -40,7 +40,7 @@ async function main() {
         SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language,
                p.description, p.feed_url, p.website_url
         FROM podcasts p
-        WHERE (p.qdrant_podcast_vectorized = 0 OR p.qdrant_podcast_vectorized IS NULL)
+        WHERE p.qdrant_podcast_vectorized = 0
           AND p.itunes_id IN (
               SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
           )

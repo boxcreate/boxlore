@@ -20,8 +20,10 @@ const cfg = require('./lib/config');
 const SCOPE = 'global'; // single-pass pipeline; legacy history had per-country scopes
 
 // Turso free tier: 500M row reads / 10M row writes per month.
-const FREE_TIER_DAILY_READS = Math.floor(500_000_000 / 30);
-const FREE_TIER_DAILY_WRITES = Math.floor(10_000_000 / 30);
+const FREE_TIER_MONTHLY_READS = 500_000_000;
+const FREE_TIER_MONTHLY_WRITES = 10_000_000;
+const FREE_TIER_DAILY_READS = Math.floor(FREE_TIER_MONTHLY_READS / 30);
+const FREE_TIER_DAILY_WRITES = Math.floor(FREE_TIER_MONTHLY_WRITES / 30);
 
 function main() {
     log.banner('Stage 7 · Record DB Cost Stats');
@@ -73,8 +75,32 @@ function main() {
     log.info(`History updated: ${cfg.HISTORY_FILE}`);
 
     // --- Regenerate markdown report ---
+    // --- Monthly rollup (calendar month to date) ---
+    const monthPrefix = today.slice(0, 7); // 'YYYY-MM'
+    let monthR = 0;
+    let monthW = 0;
+    for (const [date, scopes] of Object.entries(history)) {
+        if (!date.startsWith(monthPrefix)) continue;
+        for (const steps of Object.values(scopes)) {
+            for (const c of Object.values(steps)) {
+                monthR += c.reads || 0;
+                monthW += c.writes || 0;
+            }
+        }
+    }
+    const monthReadPct = ((monthR / FREE_TIER_MONTHLY_READS) * 100).toFixed(1);
+    const monthWritePct = ((monthW / FREE_TIER_MONTHLY_WRITES) * 100).toFixed(1);
+
     let md = '# Turso Database Cost Report (Last 30 Days)\n\n';
     md += 'Daily totals accumulated across all runs of the sync pipeline.\n\n';
+
+    // Monthly summary at the top
+    md += `## ${monthPrefix} — Month to Date\n\n`;
+    md += '| | Reads | Writes |\n';
+    md += '| :--- | ---: | ---: |\n';
+    md += `| Month total | ${monthR.toLocaleString()} | ${monthW.toLocaleString()} |\n`;
+    md += `| Free-tier budget | 500,000,000 | 10,000,000 |\n`;
+    md += `| **% used** | **${monthReadPct}%** | **${monthWritePct}%** |\n\n`;
 
     for (const date of Object.keys(history).sort().reverse()) {
         md += `## ${date}\n\n`;
@@ -124,6 +150,8 @@ function main() {
     console.log(`  ${'This run'.padEnd(24)} ${totalR.toLocaleString().padStart(10)} ${totalW.toLocaleString().padStart(12)}`);
     console.log(`  ${'Today (all runs)'.padEnd(24)} ${dayR.toLocaleString().padStart(10)} ${dayW.toLocaleString().padStart(12)}`);
     console.log(`  ${'Free-tier daily budget'.padEnd(24)} ${(readPct + '%').padStart(10)} ${(writePct + '%').padStart(12)}`);
+    console.log(`  ${'Month to date'.padEnd(24)} ${monthR.toLocaleString().padStart(10)} ${monthW.toLocaleString().padStart(12)}`);
+    console.log(`  ${'Free-tier monthly budget'.padEnd(24)} ${(monthReadPct + '%').padStart(10)} ${(monthWritePct + '%').padStart(12)}`);
     console.log('');
 
     // --- GHA step summary ---
@@ -133,9 +161,14 @@ function main() {
     }
     summary += `| **This run** | **${totalR.toLocaleString()}** | **${totalW.toLocaleString()}** |\n`;
     summary += `| **Today (all runs)** | **${dayR.toLocaleString()}** | **${dayW.toLocaleString()}** |\n`;
+    summary += `| **${monthPrefix} month to date** | **${monthR.toLocaleString()}** | **${monthW.toLocaleString()}** |\n`;
     summary += `\nToday is at **${readPct}%** of the pro-rated daily read budget and **${writePct}%** of the write budget (free tier: 500M reads / 10M writes per month).\n`;
+    summary += `Month to date: **${monthReadPct}%** reads and **${monthWritePct}%** writes of the monthly free-tier budget.\n`;
     if (parseFloat(readPct) > 80 || parseFloat(writePct) > 80) {
         log.warn(`Turso usage today is high: ${readPct}% reads / ${writePct}% writes of the pro-rated daily free-tier budget`);
+    }
+    if (parseFloat(monthReadPct) > 80 || parseFloat(monthWritePct) > 80) {
+        log.warn(`Turso monthly budget is high: ${monthReadPct}% reads / ${monthWritePct}% writes of the monthly free-tier budget`);
     }
     log.stepSummary(summary);
 

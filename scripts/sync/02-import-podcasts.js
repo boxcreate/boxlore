@@ -126,7 +126,8 @@ async function importFromCSV() {
             }
             const placeholders = headers.map(() => '?').join(',');
             return {
-                sql: `INSERT OR IGNORE INTO podcasts (${headers.join(',')}) VALUES (${placeholders})`,
+                sql: `INSERT OR IGNORE INTO podcasts (${headers.join(',')}, qdrant_vectorized, qdrant_podcast_vectorized)
+                      VALUES (${placeholders}, 0, 0)`,
                 args: values,
             };
         });
@@ -172,7 +173,8 @@ async function importFromAPI() {
             ? sortCategories(Object.values(feed.categories).join(', '))
             : '';
         statements.push({
-            sql: `INSERT INTO podcasts (${cols.join(',')}) VALUES (${placeholders})
+            sql: `INSERT INTO podcasts (${cols.join(',')}, qdrant_vectorized, qdrant_podcast_vectorized)
+                  VALUES (${placeholders}, 0, 0)
                   ON CONFLICT(id) DO UPDATE SET itunes_id = excluded.itunes_id
                   WHERE itunes_id IS NULL OR itunes_id != excluded.itunes_id`,
             args: [
