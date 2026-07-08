@@ -557,9 +557,14 @@ class PodcastRepository(
         }
     }
     
-    suspend fun submitFeedback(category: String, message: String, appVersion: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun submitFeedback(
+        category: String,
+        message: String,
+        appVersion: String,
+        email: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val request = cx.aswin.boxcast.core.network.model.FeedbackRequest(category, message, appVersion)
+            val request = cx.aswin.boxcast.core.network.model.FeedbackRequest(category, message, appVersion, email)
             val response = api.submitFeedback(publicKey, request).execute()
             response.isSuccessful && response.body()?.success == true
         } catch (e: Exception) {

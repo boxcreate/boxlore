@@ -293,44 +293,18 @@ class MainActivity : ComponentActivity() {
             val publicKey = BuildConfig.BOXCAST_PUBLIC_KEY
 
             var showFeedbackSheet by remember { mutableStateOf(false) }
-            val onSubmitFeedback: suspend (String, String, String, String) -> Boolean = remember(apiBaseUrl, publicKey) {
+            // Route feedback through the shared repository (OkHttp) so it carries
+            // the App Check token and can be enforced like every other write.
+            val feedbackRepository = remember(apiBaseUrl, publicKey) {
+                cx.aswin.boxcast.core.data.PodcastRepository(
+                    apiBaseUrl,
+                    publicKey,
+                    applicationContext as android.app.Application
+                )
+            }
+            val onSubmitFeedback: suspend (String, String, String, String) -> Boolean = remember(feedbackRepository) {
                 { category, message, version, email ->
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        try {
-                            val feedbackUrl = "${apiBaseUrl}/feedback"
-                            android.util.Log.d("Feedback", "Posting to: $feedbackUrl")
-                            val url = java.net.URL(feedbackUrl)
-                            val conn = url.openConnection() as java.net.HttpURLConnection
-                            conn.requestMethod = "POST"
-                            conn.setRequestProperty("Content-Type", "application/json")
-                            conn.setRequestProperty("X-App-Key", publicKey)
-                            conn.doOutput = true
-                            conn.connectTimeout = 10000
-                            conn.readTimeout = 10000
-                            
-                            val json = org.json.JSONObject().apply {
-                                put("category", category)
-                                put("message", message)
-                                put("appVersion", version)
-                                if (email.isNotBlank()) {
-                                    put("email", email)
-                                }
-                            }
-                            
-                            conn.outputStream.bufferedWriter().use { it.write(json.toString()) }
-                            val code = conn.responseCode
-                            android.util.Log.d("Feedback", "Response code: $code")
-                            if (code !in 200..299) {
-                                val errBody = try { conn.errorStream?.bufferedReader()?.readText() } catch (_: Exception) { "n/a" }
-                                android.util.Log.e("Feedback", "Server error $code: $errBody")
-                            }
-                            conn.disconnect()
-                            code in 200..299
-                        } catch (e: Exception) {
-                            android.util.Log.e("Feedback", "Submit failed: ${e.javaClass.simpleName}: ${e.message}", e)
-                            false
-                        }
-                    }
+                    feedbackRepository.submitFeedback(category, message, version, email.ifBlank { null })
                 }
             }
             
