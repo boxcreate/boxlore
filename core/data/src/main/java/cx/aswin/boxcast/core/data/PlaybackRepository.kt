@@ -878,8 +878,7 @@ class PlaybackRepository(
 
                         // 6. Auto-refill when queue is running low
                         val currentQueueSize = _playerState.value.queue.size
-                        val currentItem = mediaController?.currentMediaItem
-                        val isLearn = currentItem?.mediaMetadata?.extras?.getString("entry_point") == "learn"
+                        val isLearn = mediaItem?.mediaId?.startsWith("learn:") == true
                         if (currentQueueSize < QUEUE_REFILL_THRESHOLD && newPodcast != null && !isLearn) {
                             android.util.Log.d("PlaybackRepo", "Queue running low ($currentQueueSize items). Triggering auto-refill.")
                             queueRefillCallback?.invoke(newEpisode, newPodcast)

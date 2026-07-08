@@ -1631,9 +1631,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     return@future handlePlayAllNewEpisodes()
                 }
                 
+                android.util.Log.d("BoxCastPlayer", "onAddMediaItems: selectedItem.mediaId=${selectedItem.mediaId}, extrasKeys=${selectedItem.mediaMetadata.extras?.keySet()?.joinToString(", ")}")
                 val resolvedItem = resolveMediaItem(selectedItem)
                 val episodeId = selectedItem.mediaId.removePrefix("learn:").removePrefix("episode:").removePrefix("queue:")
-                android.util.Log.d("AutoBrowse", "Returning episode instantly: $episodeId")
+                android.util.Log.d("AutoBrowse", "Returning episode instantly: $episodeId, startsWithLearn=${selectedItem.mediaId.startsWith("learn:")}")
                 
                 val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
                 if (historyItem != null && historyItem.progressMs > 2000 && !historyItem.isCompleted) {
@@ -1646,6 +1647,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 }
                 
                 val isLearn = selectedItem.mediaId.startsWith("learn:")
+                android.util.Log.d("AutoBrowse", "onAddMediaItems check isLearn=$isLearn")
                 if (!isLearn) {
                     buildAndAppendQueueAsync(episodeId, mediaSession)
                 } else {
