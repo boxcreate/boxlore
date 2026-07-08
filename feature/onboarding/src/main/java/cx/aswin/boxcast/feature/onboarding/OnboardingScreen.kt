@@ -241,7 +241,7 @@ fun OnboardingScreen(
                     onOptionToggle = viewModel::toggleAiOption,
                     onCustomInputChange = viewModel::updateAiCustomInput,
                     onContinue = {
-                        if (uiState.aiOptions.isEmpty() || uiState.aiCurrentTurn >= 7) {
+                        if (uiState.aiOptions.isEmpty() || uiState.aiCurrentTurn >= 5) {
                             viewModel.synthesizeAndBuildCurriculum()
                         } else {
                             viewModel.sendAiTurnInput()
@@ -250,7 +250,8 @@ fun OnboardingScreen(
                     onRevealSuggestions = viewModel::navigateToSuggestions,
                     onRetryCuration = viewModel::retryLastAction,
                     onSwitchToManual = viewModel::switchToLegacyOnboarding,
-                    onBuildFeedNow = viewModel::synthesizeAndBuildCurriculum
+                    onBuildFeedNow = viewModel::synthesizeAndBuildCurriculum,
+                    onSearchInstead = viewModel::switchToSearchFromAi
                 )
             }
             OnboardingStep.AI_SUGGESTIONS -> {

@@ -693,6 +693,46 @@ private fun AiChatOnboardingScreen(
                                         .fillMaxWidth()
                                         .padding(bottom = 12.dp)
                                 ) {
+                                    uiState.aiSearchSuggestion?.let { suggestion ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                                    shape = RoundedCornerShape(16.dp)
+                                                )
+                                                .expressiveClickable(shape = RoundedCornerShape(16.dp)) {
+                                                    focusManager.clearFocus()
+                                                    onSearchInstead(suggestion)
+                                                }
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Search,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "Search for \u201C$suggestion\u201D",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = "Fastest way to find that exact show",
+                                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     uiState.aiOptions.forEach { option ->
                                         SuggestionBubble(
                                             option = option,
@@ -705,7 +745,7 @@ private fun AiChatOnboardingScreen(
                                         )
                                     }
 
-                                    if (uiState.aiCurrentTurn >= 4) {
+                                    if (uiState.aiCurrentTurn >= 2) {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -889,6 +929,23 @@ private fun AiChatOnboardingScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
+                        }
+
+                        val hasNonLatinInput = remember(uiState.aiCustomInputText) {
+                            uiState.aiCustomInputText.any { ch ->
+                                val script = Character.UnicodeScript.of(ch.code)
+                                script != Character.UnicodeScript.LATIN &&
+                                    script != Character.UnicodeScript.COMMON &&
+                                    script != Character.UnicodeScript.INHERITED
+                            }
+                        }
+                        AnimatedVisibility(visible = hasNonLatinInput) {
+                            Text(
+                                text = "Tip: podcast coverage is strongest in English, but I'll do my best in your language.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 6.dp, start = 8.dp, end = 8.dp)
+                            )
                         }
                     }
                 }

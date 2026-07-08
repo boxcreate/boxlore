@@ -1500,6 +1500,7 @@ class OnboardingViewModel(
                         aiCurrentTurn = currentState.aiCurrentTurn - 1,
                         aiSelectedOptions = emptySet(),
                         aiCustomInputText = "",
+                        aiSearchSuggestion = null,
                         isAiLoading = false,
                         isSynthesizing = false,
                         aiCurriculumRows = emptyList()
