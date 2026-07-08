@@ -9,7 +9,7 @@
 <br/>
 
 <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-  <img src="https://img.shields.io/badge/Google_Play-Get_it_on_Play-414141?style=for-the-badge&logo=googleplay&logoColor=white&labelColor=0f172a" alt="Get it on Google Play (Coming Soon)"/>
+  <img src="https://img.shields.io/badge/Google_Play-Get_it_on_Play_(Coming_Soon)-414141?style=for-the-badge&logo=googleplay&logoColor=white&labelColor=0f172a" alt="Get it on Google Play (Coming Soon)"/>
 </a>
 &nbsp;
 <a href="https://github.com/ashwkun/boxlore/releases/latest/download/app-release.apk">
