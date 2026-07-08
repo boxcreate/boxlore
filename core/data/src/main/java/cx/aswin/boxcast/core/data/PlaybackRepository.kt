@@ -1061,7 +1061,7 @@ class PlaybackRepository(
     }
 
     private fun buildMediaItems(episodes: List<Episode>, podcast: Podcast, entryPointContext: android.os.Bundle?): List<MediaItem> {
-        val entryPoint = entryPointContext?.getString("entry_point")
+        val entryPoint = entryPointContext?.getString("entrypoint") ?: entryPointContext?.getString("entry_point")
         val isLearn = entryPoint == "learn"
         return episodes.map { episode ->
             val resolvedUrl = episode.imageUrl?.takeIf { it.isNotBlank() } 
