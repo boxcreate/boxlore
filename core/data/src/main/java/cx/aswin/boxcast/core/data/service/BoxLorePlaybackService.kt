@@ -222,7 +222,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 val remaining = player.mediaItemCount - player.currentMediaItemIndex - 1
                 android.util.Log.d("AutoQueue", "onMediaItemTransition: remaining=$remaining, reason=$reason")
 
-                if (remaining <= 2 && !isRefilling && player.mediaItemCount > 0) {
+                val currentItem = player.currentMediaItem
+                val isLearn = currentItem?.mediaMetadata?.extras?.getString("entry_point") == "learn"
+
+                if (remaining <= 2 && !isRefilling && player.mediaItemCount > 0 && !isLearn) {
                     isRefilling = true
                     serviceScope.launch {
                         try {
@@ -1643,7 +1646,12 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     pendingSeekEpisodeId = null
                 }
                 
-                buildAndAppendQueueAsync(episodeId, mediaSession)
+                val isLearn = selectedItem.mediaMetadata.extras?.getString("entry_point") == "learn"
+                if (!isLearn) {
+                    buildAndAppendQueueAsync(episodeId, mediaSession)
+                } else {
+                    android.util.Log.d("AutoBrowse", "Learn screen entry point detected: skipping async queue append")
+                }
                 mutableListOf(resolvedItem)
             }
         }
