@@ -1167,9 +1167,6 @@ class MainActivity : ComponentActivity() {
                                     playbackRepository = playbackRepository,
                                     navController = navController,
                                     onPodcastClick = { podcast, entryPointStr, genreStr, depthVal ->
-                                        if (entryPointStr == "home_hero_card") {
-                                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
-                                        }
                                         var route = "podcast/${podcast.id}"
                                         val params = mutableListOf<String>()
                                         params.add("entryPoint=$entryPointStr")
@@ -1179,7 +1176,6 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(route)
                                     },
                                     onPlayClick = { podcast, bundle -> 
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
                                         // Start Playback via QueueManager (Smart Queue)
                                         val episode = podcast.latestEpisode
                                         if (episode != null) {
@@ -1190,7 +1186,6 @@ class MainActivity : ComponentActivity() {
                                         // Do not navigate, just play. Mini player appears.
                                     },
                                     onHeroArrowClick = { heroItem, carouselPos ->
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
                                         val ep = heroItem.podcast.latestEpisode
                                         if (ep != null) {
                                             fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
@@ -1209,9 +1204,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onEpisodeClick = { episode, podcast, entryPointStr ->
-                                        if (entryPointStr == "home_hero_card") {
-                                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
-                                        }
                                         fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                                         val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
                                         navController.navigate(
@@ -1225,7 +1217,6 @@ class MainActivity : ComponentActivity() {
                                         )
                                     },
                                     onCuratedEpisodeClick = { episode, podcast, vibeId, carouselPos ->
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
                                         fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                                         navController.navigate(
                                             "episode/${encode(episode.id)}/${encode(episode.title)}/" +

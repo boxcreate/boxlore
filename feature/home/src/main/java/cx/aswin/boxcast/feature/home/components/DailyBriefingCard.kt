@@ -249,16 +249,18 @@ fun DailyBriefingCard(
                 IconButton(
                     onClick = {
                         if (cardState == DailyBriefingCardState.NORMAL) {
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingDismissInitiated(
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                                action = "dismiss_initiated",
                                 region = briefing.region,
                                 date = briefing.date
                             )
                             cardState = DailyBriefingCardState.CONFIRM_DISMISS
                         } else {
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingDismissCancelled(
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                                action = "dismiss_cancelled",
                                 region = briefing.region,
                                 date = briefing.date,
-                                previousState = cardState.name
+                                extraProps = mapOf("previous_state" to cardState.name)
                             )
                             cardState = DailyBriefingCardState.NORMAL
                         }
@@ -489,10 +491,11 @@ private fun DailyBriefingChaptersList(
                     expanded = expanded,
                     onToggleExpanded = {
                         val nextExpanded = !expanded
-                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingCardChaptersToggled(
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                            action = "card_chapters_toggled",
                             region = briefingRegion,
                             date = briefingDate,
-                            expanded = nextExpanded
+                            extraProps = mapOf("expanded" to nextExpanded)
                         )
                         onExpandedChange(nextExpanded)
                     }
@@ -568,7 +571,8 @@ private fun DailyBriefingDismissContent(
                 .widthIn(min = 180.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .clickable {
-                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingDismissedToday(
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                        action = "dismissed_today",
                         region = briefing.region,
                         date = briefing.date
                     )
@@ -602,7 +606,8 @@ private fun DailyBriefingDismissContent(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
                 .clickable {
-                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingDismissForeverInitiated(
+                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                        action = "dismiss_forever_initiated",
                         region = briefing.region,
                         date = briefing.date
                     )
@@ -664,7 +669,8 @@ private fun DailyBriefingForeverContent(
                     .weight(1f)
                     .clip(RoundedCornerShape(24.dp))
                     .clickable {
-                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingFeedbackClicked(
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                            action = "feedback_clicked",
                             region = briefing.region,
                             date = briefing.date
                         )
@@ -694,7 +700,8 @@ private fun DailyBriefingForeverContent(
                     .weight(1f)
                     .clip(RoundedCornerShape(24.dp))
                     .clickable {
-                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingDismissedForever(
+                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                            action = "dismissed_forever",
                             region = briefing.region,
                             date = briefing.date
                         )

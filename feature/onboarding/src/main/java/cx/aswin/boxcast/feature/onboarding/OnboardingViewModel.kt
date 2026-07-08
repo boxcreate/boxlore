@@ -62,6 +62,7 @@ data class OnboardingUiState(
     ),
     val aiCurrentTurn: Int = 1,
     val aiCustomInputText: String = "",
+    val aiSearchSuggestion: String? = null,
     val aiSelectedOptions: Set<String> = emptySet(),
     val isAiLoading: Boolean = false,
     val isSynthesizing: Boolean = false,
@@ -362,7 +363,6 @@ class OnboardingViewModel(
         
         val finalAction: () -> Unit = {
             synthesisStartMs = System.currentTimeMillis()
-            AnalyticsHelper.trackOnboardingAiSynthesisStarted(0)
             _uiState.update { it.copy(isLoadingPodcasts = true, onboardingError = null) }
             viewModelScope.launch {
                 try {
@@ -635,6 +635,32 @@ class OnboardingViewModel(
             selectedSearchGenre = null
         ) }
         selectSearchGenre(null)
+    }
+
+    /**
+     * Jump from the AI chat to the search flow, optionally pre-filling the
+     * query the AI detected (e.g. the user typed a specific show name).
+     */
+    fun switchToSearchFromAi(prefillQuery: String? = null) {
+        AnalyticsHelper.trackOnboardingAiSearchRedirect(
+            turnNumber = _uiState.value.aiCurrentTurn,
+            suggestedQuery = prefillQuery
+        )
+        searchEntryPoint = "ai_onboarding"
+        searchesPerformedCount = 0
+        podcastsSubscribedInSearchCount = 0
+        searchScreenStartMs = System.currentTimeMillis()
+
+        _uiState.update { it.copy(
+            currentStep = OnboardingStep.SEARCH,
+            searchQuery = "",
+            searchResults = emptyList(),
+            selectedSearchGenre = null
+        ) }
+        selectSearchGenre(null)
+        if (!prefillQuery.isNullOrBlank()) {
+            updateSearchQuery(prefillQuery)
+        }
     }
 
     fun selectSearchGenre(genreValue: String?) {
@@ -1100,6 +1126,7 @@ class OnboardingViewModel(
                 aiHistory = newHistory,
                 aiSelectedOptions = emptySet(),
                 aiCustomInputText = "",
+                aiSearchSuggestion = null,
                 isAiLoading = true,
                 aiLoadingStage = AiLoadingStage.GENERATING_RESPONSE,
                 onboardingError = null
@@ -1145,12 +1172,19 @@ class OnboardingViewModel(
                         val body = response.body()!!
                         
                         val durationSec = (System.currentTimeMillis() - startTime) / 1000f
+                        val detectedIntent = when {
+                            body.searchSuggestion != null -> "named_show"
+                            body.assistantMessage.startsWith("I can only help you discover podcasts") -> "guardrail_refusal"
+                            body.assistantMessage.startsWith("Got it — you've been clear") -> "repetition_finish"
+                            else -> null
+                        }
                         AnalyticsHelper.trackOnboardingAiResponseReceived(
                             turnNumber = currentState.aiCurrentTurn,
                             assistantMessage = body.assistantMessage,
                             optionsCount = body.options.size,
                             optionsList = body.options,
-                            durationSeconds = durationSec
+                            durationSeconds = durationSec,
+                            detectedIntent = detectedIntent
                         )
 
                         val assistantEntry = OnboardingHistoryEntry(
@@ -1176,6 +1210,7 @@ class OnboardingViewModel(
                                     aiHistory = state.aiHistory + assistantEntry,
                                     aiAssistantMessage = body.assistantMessage,
                                     aiOptions = body.options,
+                                    aiSearchSuggestion = body.searchSuggestion,
                                     aiCurrentTurn = state.aiCurrentTurn + 1,
                                     isAiLoading = false,
                                     aiLoadingStage = AiLoadingStage.IDLE,
@@ -1256,7 +1291,6 @@ class OnboardingViewModel(
 
         val finalAction: () -> Unit = {
             synthesisStartMs = System.currentTimeMillis()
-            AnalyticsHelper.trackOnboardingAiSynthesisStarted(currentState.aiCurrentTurn)
             _uiState.update {
                 it.copy(
                     isAiLoading = true,

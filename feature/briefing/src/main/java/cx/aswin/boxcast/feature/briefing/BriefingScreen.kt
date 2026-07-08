@@ -292,10 +292,11 @@ fun BriefingScreen(
                         currentRegion = successState.selectedRegion,
                         onRegionSelect = onRegionSelect,
                         onShowSources = { 
-                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingSourcesSheetOpened(
+                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                                action = "sources_sheet_opened",
                                 region = successState.briefing.region,
                                 date = successState.briefing.date,
-                                sourcesCount = successState.briefing.sources.size
+                                extraProps = mapOf("sources_count" to successState.briefing.sources.size)
                             )
                             showSourcesBottomSheet = true 
                         },
@@ -360,11 +361,14 @@ fun BriefingScreen(
                                                 .expressiveClickable(
                                                     shape = RoundedCornerShape(16.dp),
                                                     onClick = { 
-                                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingSourceClicked(
+                                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                                                            action = "source_clicked",
                                                             region = successState.briefing.region,
                                                             date = successState.briefing.date,
-                                                            sourceTitle = source.title,
-                                                            sourceUrl = source.url
+                                                            extraProps = mapOf(
+                                                                "source_title" to source.title,
+                                                                "source_url" to source.url
+                                                            )
                                                         )
                                                         uriHandler.openUri(source.url)
                                                     }
@@ -523,12 +527,15 @@ fun BriefingContent(
         val chapter = chapters.getOrNull(pagerState.currentPage)
         if (chapter != null && (isDragged || userClickedPage != null)) {
             val method = if (isDragged) "swipe" else "click"
-            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingChapterSwiped(
+            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                action = "chapter_swiped",
                 region = briefing.region,
                 date = briefing.date,
-                chapterIndex = pagerState.currentPage,
-                chapterTitle = chapter.title,
-                method = method
+                extraProps = mapOf(
+                    "chapter_index" to pagerState.currentPage,
+                    "chapter_title" to chapter.title,
+                    "method" to method
+                )
             )
         }
     }
@@ -952,13 +959,17 @@ fun BriefingContent(
                                     .expressiveClickable(
                                         shape = RoundedCornerShape(16.dp),
                                         onClick = {
+                                            val storyProps = mapOf(
+                                                "chapter_index" to page,
+                                                "chapter_title" to chapter.title,
+                                                "start_time_seconds" to chapter.startTime.toLong()
+                                            )
                                             if (isThisCardActive) {
-                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingStoryPauseClicked(
+                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                                                    action = "story_pause_clicked",
                                                     region = briefing.region,
                                                     date = briefing.date,
-                                                    chapterIndex = page,
-                                                    chapterTitle = chapter.title,
-                                                    startTimeSeconds = chapter.startTime.toLong()
+                                                    extraProps = storyProps
                                                 )
                                                 onPlayPauseClick(null)
                                             } else {
@@ -966,12 +977,11 @@ fun BriefingContent(
                                                 scope.launch {
                                                     pagerState.animateScrollToPage(page)
                                                 }
-                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingStoryPlayClicked(
+                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                                                    action = "story_play_clicked",
                                                     region = briefing.region,
                                                     date = briefing.date,
-                                                    chapterIndex = page,
-                                                    chapterTitle = chapter.title,
-                                                    startTimeSeconds = chapter.startTime.toLong()
+                                                    extraProps = storyProps
                                                 )
                                                 onPlayPauseClick(chapter.startTime.toLong() * 1000L)
                                             }
