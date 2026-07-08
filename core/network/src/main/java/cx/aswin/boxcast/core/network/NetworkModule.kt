@@ -11,7 +11,31 @@ import retrofit2.Retrofit
 object NetworkModule {
     private val json = Json { ignoreUnknownKeys = true }
     private val contentType = "application/json".toMediaType()
-    
+
+    /**
+     * Supplies a Firebase App Check token for outgoing API requests. Set by the
+     * app module at startup (keeps this module free of Firebase dependencies).
+     * Must return null quickly on any failure so requests proceed without the
+     * header (fail-open): the Worker only observes tokens for now.
+     */
+    @Volatile
+    var appCheckTokenProvider: (() -> String?)? = null
+
+    private val appCheckInterceptor = okhttp3.Interceptor { chain ->
+        val token = try {
+            appCheckTokenProvider?.invoke()
+        } catch (e: Exception) {
+            Log.w("BoxCastAPI", "App Check token fetch failed; proceeding without", e)
+            null
+        }
+        val request = if (token.isNullOrEmpty()) {
+            chain.request()
+        } else {
+            chain.request().newBuilder().header("X-Firebase-AppCheck", token).build()
+        }
+        chain.proceed(request)
+    }
+
     private val loggingInterceptor = HttpLoggingInterceptor { message ->
         Log.d("BoxCastAPI", message)
     }.apply {
@@ -23,6 +47,7 @@ object NetworkModule {
     }
     
     private val okHttpClient = OkHttpClient.Builder().apply {
+        addInterceptor(appCheckInterceptor)
         addInterceptor(loggingInterceptor)
         connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)

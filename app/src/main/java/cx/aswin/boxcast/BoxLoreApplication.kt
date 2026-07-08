@@ -5,14 +5,22 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
+import cx.aswin.boxcast.core.network.NetworkModule
+import java.util.concurrent.TimeUnit
 
 class BoxLoreApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        setupAppCheck()
 
         val config = PostHogAndroidConfig(
             apiKey = BuildConfig.POSTHOG_API_KEY,
@@ -62,6 +70,38 @@ class BoxLoreApplication : Application() {
             })
         } catch (e: Exception) {
             android.util.Log.e("BoxCastApp", "Failed to register connectivity observer", e)
+        }
+    }
+
+    /**
+     * Firebase App Check attests that requests come from the genuine app.
+     * Debug builds use the debug provider (token must be registered in the
+     * Firebase console); release builds attest via Play Integrity. Tokens are
+     * attached to API calls as X-Firebase-AppCheck. Everything fails open:
+     * requests still go out without the header if attestation is unavailable,
+     * since the Worker is in log-only mode.
+     */
+    private fun setupAppCheck() {
+        try {
+            val appCheck = FirebaseAppCheck.getInstance()
+            if (BuildConfig.DEBUG) {
+                appCheck.installAppCheckProviderFactory(DebugAppCheckProviderFactory.getInstance())
+            } else {
+                appCheck.installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())
+            }
+            NetworkModule.appCheckTokenProvider = {
+                try {
+                    // Called from OkHttp's background threads; returns the cached
+                    // token instantly unless it needs a refresh
+                    val task = FirebaseAppCheck.getInstance().getAppCheckToken(false)
+                    Tasks.await(task, 5, TimeUnit.SECONDS).token
+                } catch (e: Exception) {
+                    android.util.Log.w("BoxCastApp", "App Check token unavailable: ${e.message}")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("BoxCastApp", "App Check setup failed", e)
         }
     }
 }
