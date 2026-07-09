@@ -23,15 +23,26 @@ require_estimate_effort_to_review = true
 # Domain-specific constraints and strict issue formatting
 extra_instructions = """\
 Focus on Android application performance, Jetpack Compose stability, and data safety. \
-For every finding, you MUST format your response exactly as follows: \
-**Issue:** [Clear description of the flaw] \
-**Impact:** [What happens if this is not fixed (e.g., UI stutter, memory leak, main thread block)] \
-**Fix:** [Actionable code suggestion] \
+For every finding in the Recommended focus areas section, you MUST format your response exactly as follows: \
+### 🔴 [SECURITY] - [Short Title] (or ⚡ [PERFORMANCE] or 🐛 [BUG] or 📝 [STYLE])
+- **Issue:** [Clear description of the flaw]
+- **Impact:** [What happens if this is not fixed (e.g., UI stutter, memory leak, main thread block)]
+- **Fix:** [Actionable code suggestion]
 \
 Domain Rules: \
 1. Flag unnecessary Jetpack Compose recompositions and unstable parameters. \
 2. Ensure Turso/local database operations and network calls never execute on the Main Thread. \
 3. Verify comprehensive exception handling is present for Crashlytics.\
+"""
+
+[pr_code_suggestions]
+# Limits suggestions to high quality only
+extra_instructions = """\
+For each suggestion, use one of these category names:
+- 🔴 [SECURITY]
+- ⚡ [PERFORMANCE]
+- 🐛 [BUG]
+- 📝 [STYLE]
 """
 
 [pr_description]
