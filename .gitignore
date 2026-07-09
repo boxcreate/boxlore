@@ -54,7 +54,6 @@ missing_itunes_ids.txt
 scratch/
 
 # Local reference docs (not for repo)
-CHANGELOG.md
 rules.md
 RELEASE_NOTES.md
 ROADMAP.md
