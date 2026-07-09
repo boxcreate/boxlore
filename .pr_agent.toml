@@ -7,6 +7,7 @@ auto_improve = true
 [config]
 # Enables AI-driven custom label generation
 enable_custom_labels = true
+custom_model_max_tokens = 32000
 
 [pr_reviewer]
 # Limits noise by forcing the AI to rank and surface only the top 4 issues
