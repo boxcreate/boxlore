@@ -280,6 +280,7 @@ private fun CuriosityCardContent(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .expressiveClickable(onClick = { onAction(CardAction.PodcastClick) })
