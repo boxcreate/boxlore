@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed AppCheck telemetry initialization race condition on app startup.
 - Redacted sensitive security tokens (App Check and API key) from OkHttp header logcat output.
 - Fixed candidate cache type-mixing and delayed news-flag sync issues on podcast import.
+- Fixed skip-gate clock skew sensitivity and failure tracking in iTunes charts sync script.
 
 ## [v0.0.5] - 2026-07-08
 ### Added
