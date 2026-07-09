@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.*
 import androidx.compose.ui.Alignment
+import cx.aswin.boxcast.core.model.SleepTimerConstants
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -238,7 +239,7 @@ private fun SleepSectionContent(
                 }
             }
             PlayerControlMode.Sleep -> {
-                val options = listOf(0 to "Off", 15 to "15m", 30 to "30m", 60 to "1 hr", 120 to "2 hr", 999 to "End")
+                val options = listOf(0 to "Off", 15 to "15m", 30 to "30m", 60 to "1 hr", 120 to "2 hr", SleepTimerConstants.END_OF_EPISODE_MINUTES to "End")
                 val isTimerActive = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
                 ControlOptionsSelector(
                     options = options,
