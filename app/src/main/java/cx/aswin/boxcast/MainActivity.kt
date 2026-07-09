@@ -2395,9 +2395,12 @@ class MainActivity : ComponentActivity() {
                                 // is effectively complete. Mark it unconditionally — idempotent when
                                 // already completed (e.g. restoring from Settings) — so an import
                                 // during onboarding never bounces the user back to the welcome screen.
-                                // Relying on currentRoute here was fragile: it falls back to "home"
-                                // whenever the nav back-stack entry is momentarily null. Then recreate
-                                // to load the restored library fresh.
+                                if (currentRoute == "onboarding") {
+                                    onboardingCompleted = true
+                                    navController.navigate("home") {
+                                        popUpTo("onboarding") { inclusive = true }
+                                    }
+                                }
                                 onboardingViewModel.markOnboardingCompletedSilent {
                                     this@MainActivity.recreate()
                                 }

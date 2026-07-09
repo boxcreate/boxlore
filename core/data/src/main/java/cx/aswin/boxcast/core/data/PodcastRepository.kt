@@ -37,7 +37,7 @@ private fun String?.toHttps(): String {
 fun mapRegionForBriefing(region: String): String {
     return when (region.lowercase().trim()) {
         "us" -> "us"
-        "in" -> "in"
+        "in", "ind" -> "in"
         "uk", "gb" -> "uk"
         else -> "global"
     }

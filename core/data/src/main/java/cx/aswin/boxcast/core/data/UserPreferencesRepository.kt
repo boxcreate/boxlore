@@ -65,6 +65,15 @@ class UserPreferencesRepository(context: Context) {
         val AUTO_DOWNLOAD_DELETE_COMPLETED = androidx.datastore.preferences.core.booleanPreferencesKey("auto_download_delete_completed")
     }
 
+    private fun normalizeRegionCode(region: String): String {
+        val normalized = region.trim().lowercase()
+        return when (normalized) {
+            "ind" -> "in"
+            "uk" -> "gb"
+            else -> normalized
+        }
+    }
+
     val regionStream: Flow<String> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
@@ -74,10 +83,13 @@ class UserPreferencesRepository(context: Context) {
             }
         }
         .map { preferences ->
-            preferences[Keys.REGION] ?: run {
+            val stored = preferences[Keys.REGION]
+            if (stored != null) {
+                normalizeRegionCode(stored)
+            } else {
                 val localeCountry = java.util.Locale.getDefault().country.lowercase()
                 if (localeCountry == "in" || localeCountry == "gb" || localeCountry == "uk") {
-                    localeCountry
+                    normalizeRegionCode(localeCountry)
                 } else {
                     "us"
                 }
@@ -86,8 +98,9 @@ class UserPreferencesRepository(context: Context) {
         .distinctUntilChanged()
 
     suspend fun setRegion(region: String) {
+        val normalized = normalizeRegionCode(region)
         dataStore.edit { preferences ->
-            preferences[Keys.REGION] = region
+            preferences[Keys.REGION] = normalized
             preferences[Keys.HAS_DISMISSED_REGION_NUDGE] = true
         }
     }
