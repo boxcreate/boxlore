@@ -47,8 +47,7 @@ You MUST format the PR title (the 'title' field in the YAML response) strictly a
 - For the scope, use the main area affected (e.g., 'onboarding', 'ci', etc.). \
 - Example: 'feat(onboarding): increase conversation limit to 7 turns'. \
 \
-You MUST rewrite the entire PR description to strictly follow this Markdown format. \
-Do not output anything outside of this exact structure: \
+Format the 'description' field in the YAML response to strictly follow this Markdown format: \
 \
 ## 🎯 Objective \
 [1-2 sentences explaining why this PR exists based on the code diff] \
