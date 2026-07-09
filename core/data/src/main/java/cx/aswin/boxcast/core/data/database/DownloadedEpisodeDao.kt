@@ -26,6 +26,9 @@ interface DownloadedEpisodeDao {
     @Query("SELECT COALESCE(SUM(sizeBytes), 0) FROM downloaded_episodes")
     fun getTotalSizeBytes(): Flow<Long>
 
+    @Query("SELECT COUNT(*) FROM downloaded_episodes WHERE podcastId = :podcastId AND episodeId != :excludeEpisodeId")
+    suspend fun countOthersByPodcastId(podcastId: String, excludeEpisodeId: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: DownloadedEpisodeEntity)
 

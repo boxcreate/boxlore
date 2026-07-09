@@ -171,22 +171,52 @@ class DownloadRepository(
     }
     
     fun removeDownload(episodeId: String) {
-         DownloadService.sendRemoveDownload(
-            context,
-            MediaDownloadService::class.java,
-            episodeId,
-            false
-        )
+        // Capture artwork paths BEFORE triggering removal to avoid a race with
+        // the DownloadManager listener (which deletes the DB row on STATE_REMOVING).
         CoroutineScope(Dispatchers.IO).launch {
+            var episodeImgPath: String? = null
+            var podcastImgPath: String? = null
+            var podcastId: String? = null
             try {
                 val existing = database.downloadedEpisodeDao().getDownload(episodeId)
                 if (existing != null) {
-                    deleteLocalFileIfValid(existing.episodeImageUrl)
-                    deleteLocalFileIfValid(existing.podcastImageUrl)
+                    episodeImgPath = existing.episodeImageUrl
+                    podcastImgPath = existing.podcastImageUrl
+                    podcastId = existing.podcastId
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("DownloadRepo", "Failed to read artwork paths for $episodeId", e)
+            }
+
+            // Now send the remove request
+            try {
+                DownloadService.sendRemoveDownload(
+                    context,
+                    MediaDownloadService::class.java,
+                    episodeId,
+                    false
+                )
+            } catch (e: Exception) {
+                android.util.Log.w("DownloadRepo", "sendRemoveDownload failed for $episodeId", e)
+            }
+
+            // Clean up artwork files
+            try {
+                deleteLocalFileIfValid(episodeImgPath)
+
+                // Only delete shared podcast artwork when no other episodes
+                // from the same podcast still reference it.
+                if (podcastId != null && podcastImgPath != null) {
+                    val othersCount = database.downloadedEpisodeDao()
+                        .countOthersByPodcastId(podcastId, episodeId)
+                    if (othersCount == 0) {
+                        deleteLocalFileIfValid(podcastImgPath)
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("DownloadRepo", "Failed to clean up artwork files for $episodeId", e)
             }
+
             database.downloadedEpisodeDao().delete(episodeId)
         }
     }
