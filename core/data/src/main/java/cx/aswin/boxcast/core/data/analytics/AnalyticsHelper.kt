@@ -2,10 +2,7 @@ package cx.aswin.boxcast.core.data.analytics
 
 import android.content.Context
 import com.posthog.PostHog
-import java.util.Calendar
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 object AnalyticsHelper {
 
@@ -34,22 +31,6 @@ object AnalyticsHelper {
 
     private const val PREFS_NAME = "boxcast_analytics_prefs"
     private const val KEY_FIRST_LAUNCH = "is_first_launch"
-
-    // ── Timestamp Helpers ──────────────────────────────────────────
-    
-    /** User's local timestamp in ISO format (e.g., 2026-05-09T14:30:00-04:00) */
-    private fun userLocalTimestamp(): String {
-        return DateTimeFormatter.ISO_OFFSET_DATE_TIME
-            .withZone(ZoneId.systemDefault())
-            .format(Instant.now())
-    }
-
-    /** Global timestamp always in IST (Asia/Kolkata) */
-    private fun globalIstTimestamp(): String {
-        return DateTimeFormatter.ISO_OFFSET_DATE_TIME
-            .withZone(ZoneId.of("Asia/Kolkata"))
-            .format(Instant.now())
-    }
 
     // ── Genre Persona Logic ────────────────────────────────────────
 
@@ -134,6 +115,22 @@ object AnalyticsHelper {
         }
     }
 
+    /**
+     * App Check health/adoption. Captured once per launch on builds that ship
+     * App Check. `token_obtained` = whether the SDK produced an attestation
+     * token; `provider` distinguishes debug vs Play Integrity. App version is
+     * attached automatically by PostHog, so adoption can be sliced by build.
+     */
+    fun trackAppCheckStatus(tokenObtained: Boolean, provider: String) {
+        PostHog.capture(
+            "app_check_status",
+            properties = mapOf(
+                "token_obtained" to tokenObtained,
+                "provider" to provider
+            )
+        )
+    }
+
     fun trackFirstEpisodePlayed() {
         PostHog.capture(
             "first_episode_played",
@@ -146,34 +143,18 @@ object AnalyticsHelper {
     // ── Home Import Banner (Empty State) ───────────────────────────
 
     fun trackHomeImportBannerImpression() {
-        PostHog.capture(
-            event = "home_import_banner_impression",
-            properties = mapOf(
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
-            )
-        )
+        PostHog.capture(event = "home_import_banner_impression")
     }
 
     fun trackHomeImportBannerClicked(action: String) {
         PostHog.capture(
             event = "home_import_banner_clicked",
-            properties = mapOf(
-                "action" to action,
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
-            )
+            properties = mapOf("action" to action)
         )
     }
 
     fun trackHomeImportBannerDismissed() {
-        PostHog.capture(
-            event = "home_import_banner_dismissed",
-            properties = mapOf(
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
-            )
-        )
+        PostHog.capture(event = "home_import_banner_dismissed")
     }
 
     // ── 2. Onboarding Started & Flow Selection ──────────────────────
@@ -181,11 +162,7 @@ object AnalyticsHelper {
     fun trackOnboardingStarted(entryPoint: String = "welcome_screen") {
         PostHog.capture(
             event = "onboarding_started",
-            properties = mapOf(
-                "entry_point" to entryPoint,
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
-            )
+            properties = mapOf("entry_point" to entryPoint)
         )
     }
 
@@ -244,26 +221,29 @@ object AnalyticsHelper {
         assistantMessage: String,
         optionsCount: Int,
         optionsList: List<String>,
-        durationSeconds: Float
+        durationSeconds: Float,
+        detectedIntent: String? = null
     ) {
         PostHog.capture(
             event = "onboarding_ai_response_received",
-            properties = mapOf(
-                "turn_number" to turnNumber,
-                "assistant_message" to assistantMessage.take(500),
-                "options_count" to optionsCount,
-                "options_list" to optionsList,
-                "duration_seconds" to durationSeconds
-            )
+            properties = buildMap {
+                put("turn_number", turnNumber)
+                put("assistant_message", assistantMessage.take(500))
+                put("options_count", optionsCount)
+                put("options_list", optionsList)
+                put("duration_seconds", durationSeconds)
+                detectedIntent?.let { put("detected_intent", it) }
+            }
         )
     }
 
-    fun trackOnboardingAiSynthesisStarted(totalTurns: Int) {
+    fun trackOnboardingAiSearchRedirect(turnNumber: Int, suggestedQuery: String?) {
         PostHog.capture(
-            event = "onboarding_ai_synthesis_started",
-            properties = mapOf(
-                "total_turns" to totalTurns
-            )
+            event = "onboarding_ai_search_redirect",
+            properties = buildMap {
+                put("turn_number", turnNumber)
+                suggestedQuery?.let { put("suggested_query", it) }
+            }
         )
     }
 
@@ -1155,35 +1135,6 @@ object AnalyticsHelper {
         )
     }
 
-    fun trackTimeBlockTapped(blockId: String, activeVibeIds: List<String>, userLocalHour: Int) {
-        PostHog.capture(
-            event = "time_block_tapped",
-            properties = mapOf(
-                "block_id" to blockId,
-                "active_vibe_ids" to activeVibeIds,
-                "user_local_hour" to userLocalHour
-            )
-        )
-    }
-
-    fun trackTimeBlockTapped() {
-        val cal = Calendar.getInstance()
-        val hour = cal.get(Calendar.HOUR_OF_DAY)
-        val blockId = when (hour) {
-            in 5..11 -> "morning_news"
-            in 12..16 -> "afternoon_break"
-            in 17..22 -> "evening_unwind"
-            else -> "late_night_listen"
-        }
-        val activeVibeIds = when (hour) {
-            in 5..11 -> listOf("morning_news", "morning_motivation", "business_insider")
-            in 12..16 -> listOf("science_explainer", "tech_culture", "creative_focus")
-            in 17..22 -> listOf("comedy_gold", "tv_film_buff", "sports_fan")
-            else -> listOf("true_crime_sleep", "history_buff", "mystery_thriller")
-        }
-        trackTimeBlockTapped(blockId, activeVibeIds, hour)
-    }
-
     // ── 14. AI Chapters & Transcripts ──────────────────────────────
 
     fun trackAutoChaptersRequested(episodeId: String, podcastId: String?, audioUrl: String) {
@@ -1247,9 +1198,7 @@ object AnalyticsHelper {
             event = "daily_briefing_banner_tapped",
             properties = mapOf(
                 "region" to region,
-                "date" to date,
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
+                "date" to date
             )
         )
     }
@@ -1260,9 +1209,7 @@ object AnalyticsHelper {
             properties = mapOf(
                 "region" to region,
                 "date" to date,
-                "source" to source,
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
+                "source" to source
             )
         )
     }
@@ -1273,72 +1220,29 @@ object AnalyticsHelper {
             properties = mapOf(
                 "region" to region,
                 "date" to date,
-                "source" to source,
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
+                "source" to source
             )
         )
     }
 
-    fun trackDailyBriefingDismissInitiated(region: String, date: String) {
-        PostHog.capture(
-            event = "daily_briefing_dismiss_initiated",
-            properties = mapOf(
-                "region" to region,
-                "date" to date
-            )
+    /**
+     * Consolidated event for low-volume briefing interactions (dismiss flow, feedback,
+     * sources sheet, story play/pause, chapter navigation). Discriminated by [action],
+     * mirroring the settings_interaction / mini_player_interaction pattern.
+     */
+    fun trackDailyBriefingInteraction(
+        action: String,
+        region: String,
+        date: String,
+        extraProps: Map<String, Any> = emptyMap()
+    ) {
+        val props = mutableMapOf<String, Any>(
+            "action" to action,
+            "region" to region,
+            "date" to date
         )
-    }
-
-    fun trackDailyBriefingDismissCancelled(region: String, date: String, previousState: String) {
-        PostHog.capture(
-            event = "daily_briefing_dismiss_cancelled",
-            properties = mapOf(
-                "region" to region,
-                "date" to date,
-                "previous_state" to previousState
-            )
-        )
-    }
-
-    fun trackDailyBriefingDismissedToday(region: String, date: String) {
-        PostHog.capture(
-            event = "daily_briefing_dismissed_today",
-            properties = mapOf(
-                "region" to region,
-                "date" to date
-            )
-        )
-    }
-
-    fun trackDailyBriefingDismissForeverInitiated(region: String, date: String) {
-        PostHog.capture(
-            event = "daily_briefing_dismiss_forever_initiated",
-            properties = mapOf(
-                "region" to region,
-                "date" to date
-            )
-        )
-    }
-
-    fun trackDailyBriefingFeedbackClicked(region: String, date: String) {
-        PostHog.capture(
-            event = "daily_briefing_feedback_clicked",
-            properties = mapOf(
-                "region" to region,
-                "date" to date
-            )
-        )
-    }
-
-    fun trackDailyBriefingDismissedForever(region: String, date: String) {
-        PostHog.capture(
-            event = "daily_briefing_dismissed_forever",
-            properties = mapOf(
-                "region" to region,
-                "date" to date
-            )
-        )
+        props.putAll(extraProps)
+        PostHog.capture(event = "daily_briefing_interaction", properties = props)
     }
 
     fun trackDailyBriefingRegionChanged(previousRegion: String, newRegion: String, date: String) {
@@ -1348,68 +1252,6 @@ object AnalyticsHelper {
                 "previous_region" to previousRegion,
                 "new_region" to newRegion,
                 "date" to date
-            )
-        )
-    }
-
-    fun trackDailyBriefingChapterSwiped(region: String, date: String, chapterIndex: Int, chapterTitle: String, method: String) {
-        PostHog.capture(
-            event = "daily_briefing_chapter_swiped",
-            properties = mapOf(
-                "region" to region,
-                "date" to date,
-                "chapter_index" to chapterIndex,
-                "chapter_title" to chapterTitle,
-                "method" to method
-            )
-        )
-    }
-
-    fun trackDailyBriefingStoryPlayClicked(region: String, date: String, chapterIndex: Int, chapterTitle: String, startTimeSeconds: Long) {
-        PostHog.capture(
-            event = "daily_briefing_story_play_clicked",
-            properties = mapOf(
-                "region" to region,
-                "date" to date,
-                "chapter_index" to chapterIndex,
-                "chapter_title" to chapterTitle,
-                "start_time_seconds" to startTimeSeconds
-            )
-        )
-    }
-
-    fun trackDailyBriefingStoryPauseClicked(region: String, date: String, chapterIndex: Int, chapterTitle: String, startTimeSeconds: Long) {
-        PostHog.capture(
-            event = "daily_briefing_story_pause_clicked",
-            properties = mapOf(
-                "region" to region,
-                "date" to date,
-                "chapter_index" to chapterIndex,
-                "chapter_title" to chapterTitle,
-                "start_time_seconds" to startTimeSeconds
-            )
-        )
-    }
-
-    fun trackDailyBriefingSourcesSheetOpened(region: String, date: String, sourcesCount: Int) {
-        PostHog.capture(
-            event = "daily_briefing_sources_sheet_opened",
-            properties = mapOf(
-                "region" to region,
-                "date" to date,
-                "sources_count" to sourcesCount
-            )
-        )
-    }
-
-    fun trackDailyBriefingSourceClicked(region: String, date: String, sourceTitle: String, sourceUrl: String) {
-        PostHog.capture(
-            event = "daily_briefing_source_clicked",
-            properties = mapOf(
-                "region" to region,
-                "date" to date,
-                "source_title" to sourceTitle,
-                "source_url" to sourceUrl
             )
         )
     }
@@ -1443,20 +1285,7 @@ object AnalyticsHelper {
             properties = mapOf(
                 "region" to region,
                 "date" to date,
-                "playback_status" to playbackStatus,
-                "user_local_timestamp" to userLocalTimestamp(),
-                "global_ist_timestamp" to globalIstTimestamp()
-            )
-        )
-    }
-
-    fun trackDailyBriefingCardChaptersToggled(region: String, date: String, expanded: Boolean) {
-        PostHog.capture(
-            event = "daily_briefing_card_chapters_toggled",
-            properties = mapOf(
-                "region" to region,
-                "date" to date,
-                "expanded" to expanded
+                "playback_status" to playbackStatus
             )
         )
     }

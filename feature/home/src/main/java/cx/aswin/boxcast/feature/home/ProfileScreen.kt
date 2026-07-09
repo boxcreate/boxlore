@@ -909,7 +909,7 @@ fun DataManagementSection(
                 Text("Our Philosophy", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "boxlore is a 0-monetary-gain, exploratory pet project. We track anonymous app usage (including device models and approximate regions via PostHog) solely to understand what features work and what to build next. Your data is completely anonymous and will never be sold. 0 ads, forever.",
+                    "boxlore is a 0-monetary-gain, exploratory pet project. To understand what features work and what to build next, we collect usage data via PostHog — things like what you play, the screens you visit, searches, your device model, and approximate region. There are no accounts, so none of it is tied to your name or email. It's used solely to make boxlore better, never sold, and never shown to advertisers. 0 ads, forever.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

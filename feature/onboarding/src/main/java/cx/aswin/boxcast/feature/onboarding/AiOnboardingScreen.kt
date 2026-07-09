@@ -68,7 +68,8 @@ internal fun AiOnboardingScreen(
     onRevealSuggestions: () -> Unit,
     onRetryCuration: () -> Unit,
     onSwitchToManual: () -> Unit,
-    onBuildFeedNow: () -> Unit
+    onBuildFeedNow: () -> Unit,
+    onSearchInstead: (String?) -> Unit
 ) {
     AiChatOnboardingScreen(
         uiState = uiState,
@@ -79,7 +80,8 @@ internal fun AiOnboardingScreen(
         onRevealSuggestions = onRevealSuggestions,
         onRetryCuration = onRetryCuration,
         onSwitchToManual = onSwitchToManual,
-        onBuildFeedNow = onBuildFeedNow
+        onBuildFeedNow = onBuildFeedNow,
+        onSearchInstead = onSearchInstead
     )
 }
 
@@ -94,7 +96,8 @@ private fun AiChatOnboardingScreen(
     onRevealSuggestions: () -> Unit,
     onRetryCuration: () -> Unit,
     onSwitchToManual: () -> Unit,
-    onBuildFeedNow: () -> Unit
+    onBuildFeedNow: () -> Unit,
+    onSearchInstead: (String?) -> Unit
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.secondary
@@ -105,7 +108,7 @@ private fun AiChatOnboardingScreen(
         
         list.add(
             ChatMessage.ModelMessage(
-                text = "Hi! I'm boxlore. To start, what kind of a listener are you?",
+                text = "Hi! I'm boxlore. I'll ask a few quick questions to learn your taste and build your feed. To start, what kind of a listener are you?",
                 key = "init_model"
             )
         )
@@ -177,10 +180,16 @@ private fun AiChatOnboardingScreen(
     val suggestionsVisible = !isCurriculumReady && uiState.onboardingError == null && !uiState.isSynthesizing && !uiState.isAiLoading
     val suggestionsEnabled = !isTextFieldFocused && !isKeyboardVisible && uiState.aiCustomInputText.isEmpty() && !uiState.isAiLoading
 
-    LaunchedEffect(chatMessages.size, uiState.isAiLoading, isKeyboardVisible, isTextFieldFocused, suggestionsVisible) {
+    LaunchedEffect(chatMessages.size, uiState.isAiLoading, isKeyboardVisible, isTextFieldFocused, suggestionsVisible, uiState.aiSearchSuggestion) {
         if (chatMessages.size > 1) {
-            val targetIndex = chatMessages.size + 1
-            delay(100)
+            // Target the last *message* (item 0 is the header), not the trailing
+            // spacer — scrolling the spacer to the viewport top pushes the
+            // message off screen when the bottom options block is tall.
+            val targetIndex = chatMessages.size
+            // Wait for the bottom options/search-chip block to finish expanding
+            // (300ms animation) before scrolling, or the last message ends up
+            // pushed above the shrunken viewport.
+            delay(350)
             listState.animateScrollToItem(targetIndex)
         } else if (chatMessages.isNotEmpty()) {
             delay(100)
@@ -249,6 +258,23 @@ private fun AiChatOnboardingScreen(
                             Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
                         }
                     },
+                    actions = {
+                        TextButton(onClick = { onSearchInstead(null) }) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Search",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent
                     )
@@ -282,7 +308,7 @@ private fun AiChatOnboardingScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Answer a few questions to help our AI customize your podcast experience.",
+                                text = "A few quick questions to learn your taste and build your feed.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -662,6 +688,46 @@ private fun AiChatOnboardingScreen(
                                         .fillMaxWidth()
                                         .padding(bottom = 12.dp)
                                 ) {
+                                    uiState.aiSearchSuggestion?.let { suggestion ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                                    shape = RoundedCornerShape(16.dp)
+                                                )
+                                                .expressiveClickable(shape = RoundedCornerShape(16.dp)) {
+                                                    focusManager.clearFocus()
+                                                    onSearchInstead(suggestion)
+                                                }
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Search,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "Search for \u201C$suggestion\u201D",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = "Fastest way to find that exact show",
+                                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     uiState.aiOptions.forEach { option ->
                                         SuggestionBubble(
                                             option = option,
@@ -674,7 +740,7 @@ private fun AiChatOnboardingScreen(
                                         )
                                     }
 
-                                    if (uiState.aiCurrentTurn >= 4) {
+                                    if (uiState.aiCurrentTurn >= 2) {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -858,6 +924,35 @@ private fun AiChatOnboardingScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
+                        }
+
+                        val hasNonLatinInput = remember(uiState.aiCustomInputText) {
+                            uiState.aiCustomInputText.any { ch ->
+                                val script = Character.UnicodeScript.of(ch.code)
+                                script != Character.UnicodeScript.LATIN &&
+                                    script != Character.UnicodeScript.COMMON &&
+                                    script != Character.UnicodeScript.INHERITED
+                            }
+                        }
+
+                        AnimatedVisibility(visible = !hasNonLatinInput) {
+                            Text(
+                                text = "Chats here are anonymous and only used to improve recommendations.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                            )
+                        }
+
+                        AnimatedVisibility(visible = hasNonLatinInput) {
+                            Text(
+                                text = "Tip: podcast coverage is strongest in English, but I'll do my best in your language.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                            )
                         }
                     }
                 }

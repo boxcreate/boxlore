@@ -97,15 +97,7 @@ fun OptimizedImage(
                 proxyFailedUrls.add(url)
                 hasTriedFallback = true
                 currentUrl = url
-                
-                // Track the fallback so we can monitor proxy reliability
-                com.posthog.PostHog.capture(
-                    "proxy_fallback_triggered",
-                    properties = mapOf(
-                        "original_url" to url,
-                        "proxy_width" to proxyWidth
-                    )
-                )
+                trackProxyFallback(url, proxyWidth)
             }
         }
     }
@@ -143,5 +135,23 @@ fun OptimizedImage(
                 }
             }
         }
+    }
+}
+
+private fun trackProxyFallback(url: String, proxyWidth: Int) {
+    if (kotlin.random.Random.nextInt(10) == 0) {
+        val imageHost = try {
+            android.net.Uri.parse(url).host ?: "unknown"
+        } catch (e: Exception) {
+            "unknown"
+        }
+        com.posthog.PostHog.capture(
+            "proxy_fallback_triggered",
+            properties = mapOf(
+                "image_host" to imageHost,
+                "proxy_width" to proxyWidth,
+                "sample_multiplier" to 10
+            )
+        )
     }
 }

@@ -10,6 +10,9 @@ data class Briefing(
     val script: String,
     val audioUrl: String,
     val coverUrl: String,
+    // Signed asset URLs from the server; fall back to hand-built URLs when absent
+    val chaptersUrl: String? = null,
+    val transcriptUrl: String? = null,
     val sources: List<BriefingSource> = emptyList()
 )
 

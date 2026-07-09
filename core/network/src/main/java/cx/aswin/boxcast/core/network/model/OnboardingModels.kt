@@ -25,7 +25,8 @@ data class OnboardingNextTurnRequest(
 @Serializable
 data class OnboardingNextTurnResponse(
     @SerialName("assistantMessage") val assistantMessage: String,
-    @SerialName("options") val options: List<String> = emptyList()
+    @SerialName("options") val options: List<String> = emptyList(),
+    @SerialName("searchSuggestion") val searchSuggestion: String? = null
 )
 
 @Serializable

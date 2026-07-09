@@ -212,6 +212,7 @@ fun OnboardingScreen(
                 )
             }
             OnboardingStep.SEARCH -> {
+                val isAiSideTrip = viewModel.isSearchFromAiChat()
                 OnboardingSearchScreen(
                     query = uiState.searchQuery,
                     results = uiState.searchResults,
@@ -221,11 +222,18 @@ fun OnboardingScreen(
                     onQueryChange = viewModel::updateSearchQuery,
                     onSubscribe = viewModel::toggleSubscriptionFromSearch,
                     onBack = viewModel::navigateBackFromSearch,
-                    onDone = handleComplete,
+                    onDone = {
+                        if (isAiSideTrip) {
+                            viewModel.returnToAiChatFromSearch()
+                        } else {
+                            handleComplete()
+                        }
+                    },
                     popularPodcasts = uiState.popularPodcasts,
                     isPopularLoading = uiState.isPopularLoading,
                     selectedSearchGenre = uiState.selectedSearchGenre,
-                    onGenreSelect = viewModel::selectSearchGenre
+                    onGenreSelect = viewModel::selectSearchGenre,
+                    isAiSideTrip = isAiSideTrip
                 )
             }
             OnboardingStep.AI_ONBOARDING -> {
@@ -241,7 +249,7 @@ fun OnboardingScreen(
                     onOptionToggle = viewModel::toggleAiOption,
                     onCustomInputChange = viewModel::updateAiCustomInput,
                     onContinue = {
-                        if (uiState.aiOptions.isEmpty() || uiState.aiCurrentTurn >= 7) {
+                        if (uiState.aiOptions.isEmpty() || uiState.aiCurrentTurn >= 5) {
                             viewModel.synthesizeAndBuildCurriculum()
                         } else {
                             viewModel.sendAiTurnInput()
@@ -250,7 +258,8 @@ fun OnboardingScreen(
                     onRevealSuggestions = viewModel::navigateToSuggestions,
                     onRetryCuration = viewModel::retryLastAction,
                     onSwitchToManual = viewModel::switchToLegacyOnboarding,
-                    onBuildFeedNow = viewModel::synthesizeAndBuildCurriculum
+                    onBuildFeedNow = viewModel::synthesizeAndBuildCurriculum,
+                    onSearchInstead = viewModel::switchToSearchFromAi
                 )
             }
             OnboardingStep.AI_SUGGESTIONS -> {

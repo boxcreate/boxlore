@@ -62,6 +62,7 @@ data class OnboardingUiState(
     ),
     val aiCurrentTurn: Int = 1,
     val aiCustomInputText: String = "",
+    val aiSearchSuggestion: String? = null,
     val aiSelectedOptions: Set<String> = emptySet(),
     val isAiLoading: Boolean = false,
     val isSynthesizing: Boolean = false,
@@ -362,7 +363,6 @@ class OnboardingViewModel(
         
         val finalAction: () -> Unit = {
             synthesisStartMs = System.currentTimeMillis()
-            AnalyticsHelper.trackOnboardingAiSynthesisStarted(0)
             _uiState.update { it.copy(isLoadingPodcasts = true, onboardingError = null) }
             viewModelScope.launch {
                 try {
@@ -637,6 +637,32 @@ class OnboardingViewModel(
         selectSearchGenre(null)
     }
 
+    /**
+     * Jump from the AI chat to the search flow, optionally pre-filling the
+     * query the AI detected (e.g. the user typed a specific show name).
+     */
+    fun switchToSearchFromAi(prefillQuery: String? = null) {
+        AnalyticsHelper.trackOnboardingAiSearchRedirect(
+            turnNumber = _uiState.value.aiCurrentTurn,
+            suggestedQuery = prefillQuery
+        )
+        searchEntryPoint = "ai_onboarding"
+        searchesPerformedCount = 0
+        podcastsSubscribedInSearchCount = 0
+        searchScreenStartMs = System.currentTimeMillis()
+
+        _uiState.update { it.copy(
+            currentStep = OnboardingStep.SEARCH,
+            searchQuery = "",
+            searchResults = emptyList(),
+            selectedSearchGenre = null
+        ) }
+        selectSearchGenre(null)
+        if (!prefillQuery.isNullOrBlank()) {
+            updateSearchQuery(prefillQuery)
+        }
+    }
+
     fun selectSearchGenre(genreValue: String?) {
         _uiState.update { it.copy(selectedSearchGenre = genreValue, isPopularLoading = true) }
         viewModelScope.launch {
@@ -701,11 +727,26 @@ class OnboardingViewModel(
         val backStep = when (searchEntryPoint) {
             "welcome_screen" -> OnboardingStep.WELCOME
             "genre_screen" -> if (state.selectedGenres.isNotEmpty()) OnboardingStep.SUB_GENRES else OnboardingStep.GENRES
+            "ai_onboarding" -> OnboardingStep.AI_ONBOARDING
             else -> OnboardingStep.WELCOME
         }
         _uiState.update { it.copy(currentStep = backStep, searchQuery = "", searchResults = emptyList()) }
     }
     
+    fun isSearchFromAiChat(): Boolean = searchEntryPoint == "ai_onboarding"
+
+    /**
+     * Ends a search side-trip started from the AI chat: keeps any subscriptions
+     * picked in search and returns to the chat so the taste profile can continue.
+     */
+    fun returnToAiChatFromSearch() {
+        _uiState.update { it.copy(
+            currentStep = OnboardingStep.AI_ONBOARDING,
+            searchQuery = "",
+            searchResults = emptyList()
+        ) }
+    }
+
     fun updateSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
         
@@ -1100,6 +1141,7 @@ class OnboardingViewModel(
                 aiHistory = newHistory,
                 aiSelectedOptions = emptySet(),
                 aiCustomInputText = "",
+                aiSearchSuggestion = null,
                 isAiLoading = true,
                 aiLoadingStage = AiLoadingStage.GENERATING_RESPONSE,
                 onboardingError = null
@@ -1145,12 +1187,19 @@ class OnboardingViewModel(
                         val body = response.body()!!
                         
                         val durationSec = (System.currentTimeMillis() - startTime) / 1000f
+                        val detectedIntent = when {
+                            body.searchSuggestion != null -> "named_show"
+                            body.assistantMessage.startsWith("I can only help you discover podcasts") -> "guardrail_refusal"
+                            body.assistantMessage.startsWith("Got it — you've been clear") -> "repetition_finish"
+                            else -> null
+                        }
                         AnalyticsHelper.trackOnboardingAiResponseReceived(
                             turnNumber = currentState.aiCurrentTurn,
                             assistantMessage = body.assistantMessage,
                             optionsCount = body.options.size,
                             optionsList = body.options,
-                            durationSeconds = durationSec
+                            durationSeconds = durationSec,
+                            detectedIntent = detectedIntent
                         )
 
                         val assistantEntry = OnboardingHistoryEntry(
@@ -1176,6 +1225,7 @@ class OnboardingViewModel(
                                     aiHistory = state.aiHistory + assistantEntry,
                                     aiAssistantMessage = body.assistantMessage,
                                     aiOptions = body.options,
+                                    aiSearchSuggestion = body.searchSuggestion,
                                     aiCurrentTurn = state.aiCurrentTurn + 1,
                                     isAiLoading = false,
                                     aiLoadingStage = AiLoadingStage.IDLE,
@@ -1256,7 +1306,6 @@ class OnboardingViewModel(
 
         val finalAction: () -> Unit = {
             synthesisStartMs = System.currentTimeMillis()
-            AnalyticsHelper.trackOnboardingAiSynthesisStarted(currentState.aiCurrentTurn)
             _uiState.update {
                 it.copy(
                     isAiLoading = true,
@@ -1355,7 +1404,9 @@ class OnboardingViewModel(
                             isSynthesizing = false,
                             aiLoadingStage = AiLoadingStage.IDLE,
                             selectedPodcasts = newSelected,
-                            subscribedPodcastIds = defaultSelectedIds,
+                            // Merge, don't replace — keeps shows picked during a
+                            // search side-trip from the AI chat.
+                            subscribedPodcastIds = state.subscribedPodcastIds + defaultSelectedIds,
                             onboardingError = null
                         )
                     }
@@ -1402,7 +1453,7 @@ class OnboardingViewModel(
                                 isSynthesizing = false,
                                 aiLoadingStage = AiLoadingStage.IDLE,
                                 selectedPodcasts = newSelected,
-                                subscribedPodcastIds = defaultSelectedIds,
+                                subscribedPodcastIds = state.subscribedPodcastIds + defaultSelectedIds,
                                 onboardingError = null
                             )
                         }
@@ -1466,6 +1517,7 @@ class OnboardingViewModel(
                         aiCurrentTurn = currentState.aiCurrentTurn - 1,
                         aiSelectedOptions = emptySet(),
                         aiCustomInputText = "",
+                        aiSearchSuggestion = null,
                         isAiLoading = false,
                         isSynthesizing = false,
                         aiCurriculumRows = emptyList()
@@ -1497,7 +1549,11 @@ class OnboardingViewModel(
                 val selectedIds = state.subscribedPodcastIds
                 val rows = state.aiCurriculumRows
                 val allCurriculumPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }.distinctBy { it.id }
-                val podcastsToSubscribe = allCurriculumPodcasts.filter { it.id in selectedIds }
+                // Include shows picked during a search side-trip from the AI chat
+                // (they live in selectedPodcasts but not in the curriculum rows).
+                val podcastsToSubscribe = (allCurriculumPodcasts + state.selectedPodcasts.values)
+                    .distinctBy { it.id }
+                    .filter { it.id in selectedIds }
                 for (podcast in podcastsToSubscribe) {
                     subscriptionRepository.subscribe(podcast)
                 }

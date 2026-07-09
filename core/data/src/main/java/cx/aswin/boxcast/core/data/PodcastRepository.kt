@@ -54,7 +54,8 @@ data class SearchResult(
 class PodcastRepository(
     private val baseUrl: String,
     val publicKey: String,
-    context: android.content.Context
+    context: android.content.Context,
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
 ) {
     val api: BoxLoreApi = NetworkModule.createBoxLoreApi(baseUrl, context)
 
@@ -557,9 +558,14 @@ class PodcastRepository(
         }
     }
     
-    suspend fun submitFeedback(category: String, message: String, appVersion: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun submitFeedback(
+        category: String,
+        message: String,
+        appVersion: String,
+        email: String? = null
+    ): Boolean = withContext(ioDispatcher) {
         try {
-            val request = cx.aswin.boxcast.core.network.model.FeedbackRequest(category, message, appVersion)
+            val request = cx.aswin.boxcast.core.network.model.FeedbackRequest(category, message, appVersion, email)
             val response = api.submitFeedback(publicKey, request).execute()
             response.isSuccessful && response.body()?.success == true
         } catch (e: Exception) {
@@ -639,7 +645,7 @@ class PodcastRepository(
     suspend fun getBriefingMetadata(region: String): Briefing? = withContext(Dispatchers.IO) {
         val mappedRegion = mapRegionForBriefing(region)
         try {
-            val response = api.getBriefingMetadata(mappedRegion).execute()
+            val response = api.getBriefingMetadata(publicKey, mappedRegion).execute()
             if (response.isSuccessful) {
                 response.body()
             } else {
@@ -742,7 +748,8 @@ class PodcastRepository(
                         val audioUri = android.net.Uri.parse(fallbackBriefing.audioUrl)
                         val version = audioUri.getQueryParameter("v")
                         val versionParam = if (version != null) "&v=$version" else ""
-                        val chaptersUrl = "https://api.aswin.cx/briefings/chapters/${fallbackBriefing.region}?d=${fallbackBriefing.date}$versionParam"
+                        val chaptersUrl = fallbackBriefing.chaptersUrl
+                            ?: "https://api.aswin.cx/briefings/chapters/${fallbackBriefing.region}?d=${fallbackBriefing.date}$versionParam"
                         try {
                             briefingChapters = cx.aswin.boxcast.core.data.ChapterRepository.getChapters(chaptersUrl)
                         } catch (e: Exception) {

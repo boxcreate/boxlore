@@ -142,7 +142,8 @@ class BriefingViewModel(
                 val audioUri = android.net.Uri.parse(result.audioUrl)
                 val version = audioUri.getQueryParameter("v")
                 val versionParam = if (version != null) "&v=$version" else ""
-                val chaptersUrl = "https://api.aswin.cx/briefings/chapters/${result.region}?d=${result.date}$versionParam"
+                val chaptersUrl = result.chaptersUrl
+                    ?: "https://api.aswin.cx/briefings/chapters/${result.region}?d=${result.date}$versionParam"
                 try {
                     val chaptersList = ChapterRepository.getChapters(chaptersUrl)
                     _briefingChapters.value = chaptersList
@@ -207,8 +208,10 @@ class BriefingViewModel(
                 podcastArtist = dummyPodcast.artist,
                 duration = 180,
                 publishedDate = publishedDate,
-                transcriptUrl = "https://api.aswin.cx/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
-                chaptersUrl = "https://api.aswin.cx/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
+                transcriptUrl = briefing.transcriptUrl
+                    ?: "https://api.aswin.cx/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+                chaptersUrl = briefing.chaptersUrl
+                    ?: "https://api.aswin.cx/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
             )
 
             queueManager.playEpisode(dummyEpisode, dummyPodcast, initialPositionMs = initialPositionMs)

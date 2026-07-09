@@ -24,6 +24,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -293,44 +294,18 @@ class MainActivity : ComponentActivity() {
             val publicKey = BuildConfig.BOXCAST_PUBLIC_KEY
 
             var showFeedbackSheet by remember { mutableStateOf(false) }
-            val onSubmitFeedback: suspend (String, String, String, String) -> Boolean = remember(apiBaseUrl, publicKey) {
+            // Route feedback through the shared repository (OkHttp) so it carries
+            // the App Check token and can be enforced like every other write.
+            val feedbackRepository = remember(apiBaseUrl, publicKey) {
+                cx.aswin.boxcast.core.data.PodcastRepository(
+                    apiBaseUrl,
+                    publicKey,
+                    applicationContext as android.app.Application
+                )
+            }
+            val onSubmitFeedback: suspend (String, String, String, String) -> Boolean = remember(feedbackRepository) {
                 { category, message, version, email ->
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        try {
-                            val feedbackUrl = "${apiBaseUrl}/feedback"
-                            android.util.Log.d("Feedback", "Posting to: $feedbackUrl")
-                            val url = java.net.URL(feedbackUrl)
-                            val conn = url.openConnection() as java.net.HttpURLConnection
-                            conn.requestMethod = "POST"
-                            conn.setRequestProperty("Content-Type", "application/json")
-                            conn.setRequestProperty("X-App-Key", publicKey)
-                            conn.doOutput = true
-                            conn.connectTimeout = 10000
-                            conn.readTimeout = 10000
-                            
-                            val json = org.json.JSONObject().apply {
-                                put("category", category)
-                                put("message", message)
-                                put("appVersion", version)
-                                if (email.isNotBlank()) {
-                                    put("email", email)
-                                }
-                            }
-                            
-                            conn.outputStream.bufferedWriter().use { it.write(json.toString()) }
-                            val code = conn.responseCode
-                            android.util.Log.d("Feedback", "Response code: $code")
-                            if (code !in 200..299) {
-                                val errBody = try { conn.errorStream?.bufferedReader()?.readText() } catch (_: Exception) { "n/a" }
-                                android.util.Log.e("Feedback", "Server error $code: $errBody")
-                            }
-                            conn.disconnect()
-                            code in 200..299
-                        } catch (e: Exception) {
-                            android.util.Log.e("Feedback", "Submit failed: ${e.javaClass.simpleName}: ${e.message}", e)
-                            false
-                        }
-                    }
+                    feedbackRepository.submitFeedback(category, message, version, email.ifBlank { null })
                 }
             }
             
@@ -1167,9 +1142,6 @@ class MainActivity : ComponentActivity() {
                                     playbackRepository = playbackRepository,
                                     navController = navController,
                                     onPodcastClick = { podcast, entryPointStr, genreStr, depthVal ->
-                                        if (entryPointStr == "home_hero_card") {
-                                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
-                                        }
                                         var route = "podcast/${podcast.id}"
                                         val params = mutableListOf<String>()
                                         params.add("entryPoint=$entryPointStr")
@@ -1179,7 +1151,6 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(route)
                                     },
                                     onPlayClick = { podcast, bundle -> 
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
                                         // Start Playback via QueueManager (Smart Queue)
                                         val episode = podcast.latestEpisode
                                         if (episode != null) {
@@ -1190,7 +1161,6 @@ class MainActivity : ComponentActivity() {
                                         // Do not navigate, just play. Mini player appears.
                                     },
                                     onHeroArrowClick = { heroItem, carouselPos ->
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
                                         val ep = heroItem.podcast.latestEpisode
                                         if (ep != null) {
                                             fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
@@ -1209,9 +1179,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onEpisodeClick = { episode, podcast, entryPointStr ->
-                                        if (entryPointStr == "home_hero_card") {
-                                            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
-                                        }
                                         fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                                         val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
                                         navController.navigate(
@@ -1225,7 +1192,6 @@ class MainActivity : ComponentActivity() {
                                         )
                                     },
                                     onCuratedEpisodeClick = { episode, podcast, vibeId, carouselPos ->
-                                        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackTimeBlockTapped()
                                         fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                                         navController.navigate(
                                             "episode/${encode(episode.id)}/${encode(episode.title)}/" +
@@ -2425,12 +2391,14 @@ class MainActivity : ComponentActivity() {
                         val currentState = opmlImportState
                         if (currentState is OpmlImportState.Success) {
                             if (currentState.isJson) {
-                                // For JSON backup restore, mark onboarding completed if we are in onboarding, then recreate the activity to load everything fresh
-                                if (currentRoute == "onboarding") {
-                                    onboardingViewModel.markOnboardingCompletedSilent {
-                                        this@MainActivity.recreate()
-                                    }
-                                } else {
+                                // A JSON restore always yields a fully set-up library, so onboarding
+                                // is effectively complete. Mark it unconditionally — idempotent when
+                                // already completed (e.g. restoring from Settings) — so an import
+                                // during onboarding never bounces the user back to the welcome screen.
+                                // Relying on currentRoute here was fragile: it falls back to "home"
+                                // whenever the nav back-stack entry is momentarily null. Then recreate
+                                // to load the restored library fresh.
+                                onboardingViewModel.markOnboardingCompletedSilent {
                                     this@MainActivity.recreate()
                                 }
                             } else {

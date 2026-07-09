@@ -25,7 +25,8 @@ data class SyncItem(
 data class FeedbackRequest(
     val category: String,
     val message: String,
-    val appVersion: String
+    val appVersion: String,
+    val email: String? = null
 )
 
 @Serializable

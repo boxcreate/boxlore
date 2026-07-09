@@ -39,6 +39,7 @@ interface BoxLoreApi {
 
     @GET("briefings/metadata/{region}")
     fun getBriefingMetadata(
+        @Header("X-App-Key") publicKey: String,
         @Path("region") region: String
     ): retrofit2.Call<Briefing>
 
