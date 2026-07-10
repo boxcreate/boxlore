@@ -311,24 +311,24 @@
  "2026-07-10": {
   "global": {
    "import-podcasts": {
-    "reads": 34117,
+    "reads": 68234,
     "writes": 0,
-    "runs": 1
+    "runs": 2
    },
    "sync-episodes": {
-    "reads": 49206,
-    "writes": 1052,
-    "runs": 1
+    "reads": 50380,
+    "writes": 3400,
+    "runs": 2
    },
    "vectorize-episodes": {
-    "reads": 35751,
-    "writes": 206,
-    "runs": 1
+    "reads": 72050,
+    "writes": 430,
+    "runs": 2
    },
    "vectorize-shows": {
-    "reads": 19620,
+    "reads": 39240,
     "writes": 0,
-    "runs": 1
+    "runs": 2
    }
   }
  }
