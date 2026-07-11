@@ -115,7 +115,7 @@ fun BoxLoreNavigationBar(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainer,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         shadowElevation = 4.dp,
     ) {
         Row(

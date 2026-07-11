@@ -1,4 +1,4 @@
-package cx.aswin.boxcast.feature.player
+package cx.aswin.boxcast.feature.player.v2.mini
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
@@ -35,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -42,107 +42,104 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import cx.aswin.boxcast.feature.player.v2.chrome.PlayerChromeGeometry
+import cx.aswin.boxcast.feature.player.v2.chrome.playerSheetShape
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
- * Swipeable wrapper for mini player - only swipeable when paused
- * Player slides to reveal dismiss pill behind it
+ * Swipeable wrapper for mini player V2 — only swipeable when paused.
+ * Player slides to reveal a dismiss pill behind it.
  */
 @Composable
-fun SwipeableMiniPlayer(
+fun SwipeableMiniPlayerV2(
     isPlaying: Boolean,
     onDismiss: () -> Unit,
     backgroundColor: Color,
     showSwipeTip: Boolean = false,
     onSwipeTipDismissed: () -> Unit = {},
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
     val hapticFeedback = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
-    
-    // Swipe state
+
     val offsetX = remember { Animatable(0f) }
     var showConfirmPill by remember { mutableStateOf(false) }
-    var swipeDirection by remember { mutableStateOf(0) } // -1 = left, 1 = right
-    var autoHideJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
-    
-    // Thresholds
+    var swipeDirection by remember { mutableStateOf(0) }
+    var autoHideJob by remember { mutableStateOf<Job?>(null) }
+
     val dismissThreshold = with(density) { 100.dp.toPx() }
-    
-    // Static outer container - doesn't move
+    val playerShape = playerSheetShape(
+        topStart = PlayerChromeGeometry.MiniPlayerCollapsedCorner,
+        topEnd = PlayerChromeGeometry.MiniPlayerCollapsedCorner,
+        bottomStart = PlayerChromeGeometry.MiniPlayerDockedBottomCorner,
+        bottomEnd = PlayerChromeGeometry.MiniPlayerDockedBottomCorner,
+    )
+
     Box(modifier = modifier) {
-        DismissPill(
+        DismissPillV2(
             visible = showConfirmPill,
             swipeDirection = swipeDirection,
             onDismiss = {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 autoHideJob?.cancel()
                 onDismiss()
-            }
+            },
         )
 
-        
-        // Player content - THIS moves with swipe (with its own background)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(1f)
                 .offset { IntOffset(offsetX.value.toInt(), 0) }
-                .background(
-                    color = backgroundColor,
-                    shape = RoundedCornerShape(28.dp)
-                )
-                .clip(RoundedCornerShape(28.dp))
+                .background(color = backgroundColor, shape = playerShape)
+                .clip(playerShape)
                 .pointerInput(isPlaying) {
-                    if (isPlaying) return@pointerInput // No swipe when playing
-                    
+                    if (isPlaying) return@pointerInput
+
                     detectHorizontalDragGestures(
-                        onDragStart = { 
+                        onDragStart = {
                             autoHideJob?.cancel()
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         },
                         onDragEnd = {
                             coroutineScope.launch {
-                                if (kotlin.math.abs(offsetX.value) > dismissThreshold) {
-                                    // Show confirm pill
+                                if (abs(offsetX.value) > dismissThreshold) {
                                     swipeDirection = if (offsetX.value < 0) -1 else 1
                                     showConfirmPill = true
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    
-                                    // Animate to reveal pill
+
                                     offsetX.animateTo(
                                         targetValue = swipeDirection * dismissThreshold * 1.5f,
                                         animationSpec = spring(
                                             dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium
-                                        )
+                                            stiffness = Spring.StiffnessMedium,
+                                        ),
                                     )
-                                    
-                                    // Auto-restore after 3 seconds
+
                                     autoHideJob = coroutineScope.launch {
-                                        kotlinx.coroutines.delay(3000)
+                                        delay(3000)
                                         showConfirmPill = false
                                         offsetX.animateTo(
                                             targetValue = 0f,
                                             animationSpec = spring(
                                                 dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessLow
-                                            )
+                                                stiffness = Spring.StiffnessLow,
+                                            ),
                                         )
                                     }
                                 } else {
-                                    // Snap back
                                     showConfirmPill = false
                                     offsetX.animateTo(
                                         targetValue = 0f,
                                         animationSpec = spring(
                                             dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium
-                                        )
+                                            stiffness = Spring.StiffnessMedium,
+                                        ),
                                     )
                                 }
                             }
@@ -156,34 +153,31 @@ fun SwipeableMiniPlayer(
                         onHorizontalDrag = { _, dragAmount ->
                             coroutineScope.launch {
                                 offsetX.snapTo(offsetX.value + dragAmount)
-                                // Show pill when user swipes far enough
-                                if (kotlin.math.abs(offsetX.value) > dismissThreshold * 0.5f && !showConfirmPill) {
+                                if (abs(offsetX.value) > dismissThreshold * 0.5f && !showConfirmPill) {
                                     swipeDirection = if (offsetX.value < 0) -1 else 1
                                     showConfirmPill = true
                                 }
-                                // Hide pill if user drags back
-                                if (showConfirmPill && kotlin.math.abs(offsetX.value) < dismissThreshold * 0.3f) {
+                                if (showConfirmPill && abs(offsetX.value) < dismissThreshold * 0.3f) {
                                     showConfirmPill = false
                                     autoHideJob?.cancel()
                                 }
                             }
-                        }
+                        },
                     )
-                }
+                },
         ) {
             content()
         }
-        
-        // One-time swipe tip overlay
+
         if (showSwipeTip && !isPlaying) {
             var tipVisible by remember { mutableStateOf(true) }
-            
+
             LaunchedEffect(Unit) {
                 delay(4000)
                 tipVisible = false
                 onSwipeTipDismissed()
             }
-            
+
             AnimatedVisibility(
                 visible = tipVisible,
                 enter = fadeIn(tween(300)),
@@ -191,11 +185,11 @@ fun SwipeableMiniPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .zIndex(2f)
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.BottomCenter),
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "← Swipe to dismiss →",
@@ -205,9 +199,9 @@ fun SwipeableMiniPlayer(
                         modifier = Modifier
                             .background(
                                 MaterialTheme.colorScheme.surfaceContainer,
-                                RoundedCornerShape(12.dp)
+                                playerSheetShape(12.dp, 12.dp, 12.dp, 12.dp),
                             )
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                     )
                 }
             }
@@ -216,47 +210,48 @@ fun SwipeableMiniPlayer(
 }
 
 @Composable
-private fun DismissPill(
+private fun DismissPillV2(
     visible: Boolean,
     swipeDirection: Int,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
+    val pillShape = playerSheetShape(24.dp, 24.dp, 24.dp, 24.dp)
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(tween(200)),
         exit = fadeOut(tween(150)),
         modifier = Modifier
             .fillMaxSize()
-            .zIndex(0f)
+            .zIndex(0f),
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = if (swipeDirection > 0) Alignment.CenterStart else Alignment.CenterEnd
+            contentAlignment = if (swipeDirection > 0) Alignment.CenterStart else Alignment.CenterEnd,
         ) {
             Row(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .clip(pillShape)
+                    .background(MaterialTheme.colorScheme.errorContainer, pillShape)
                     .clickable { onDismiss() }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     Icons.Rounded.Close,
                     contentDescription = "Dismiss",
                     tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
                 Text(
                     "Dismiss",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
         }
     }
 }
-

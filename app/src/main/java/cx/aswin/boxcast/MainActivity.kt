@@ -96,7 +96,6 @@ import cx.aswin.boxcast.core.designsystem.component.bottomNavDestinations
 import cx.aswin.boxcast.core.designsystem.theme.BoxCastTheme
 import cx.aswin.boxcast.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxcast.feature.home.HomeRoute
-import cx.aswin.boxcast.feature.player.PlayerRoute
 import cx.aswin.boxcast.feature.briefing.BriefingRoute
 import cx.aswin.boxcast.feature.home.components.FeedbackSheet
 import cx.aswin.boxcast.core.designsystem.component.ExpressiveAnimatedBackground
@@ -379,7 +378,7 @@ class MainActivity : ComponentActivity() {
             }
             
             // Show bottom nav on all screens except player and onboarding
-            val showBottomNav = !currentRoute.startsWith("player") && currentRoute != "onboarding"
+            val showBottomNav = currentRoute != "onboarding"
             
             // Check if we can go back (for predictive back)
             val canGoBack = navController.previousBackStackEntry != null
@@ -2460,7 +2459,7 @@ class MainActivity : ComponentActivity() {
                     // Unified Player Sheet - PixelPlayer architecture (Last so it draws ON TOP)
                     // Hidden during mode switch animation
                     if (!isModeSwitching) {
-                    cx.aswin.boxcast.feature.player.UnifiedPlayerSheet(
+                    cx.aswin.boxcast.feature.player.v2.PlayerSheetV2(
                         playbackRepository = playbackRepository,
                         downloadRepository = downloadRepository,
                         userPrefs = userPrefs,
