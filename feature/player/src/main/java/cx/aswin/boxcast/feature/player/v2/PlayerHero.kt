@@ -33,7 +33,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.viewinterop.AndroidView
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import kotlinx.coroutines.flow.Flow
@@ -100,7 +100,7 @@ fun PlayerHero(
         label = "heroScale"
     )
 
-    val chapterArt by artwork.chapterArtFlow.collectAsState(initial = null)
+    val chapterArt by artwork.chapterArtFlow.collectAsStateWithLifecycle(initialValue = null)
     val displayedArt = chapterArt?.takeIf { it.isNotBlank() } ?: artwork.artworkUrl
 
     val heroShape = MaterialTheme.shapes.extraLarge

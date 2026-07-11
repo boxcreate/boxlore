@@ -30,7 +30,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,8 +49,13 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxcast.core.model.Chapter
 import cx.aswin.boxcast.feature.player.formatTime
+import cx.aswin.boxcast.feature.player.v2.logic.chapterAtPosition
+import cx.aswin.boxcast.feature.player.v2.logic.playbackFraction
+import cx.aswin.boxcast.feature.player.v2.logic.seekPosition
+import cx.aswin.boxcast.feature.player.v2.logic.seekPreviewText
 import kotlinx.coroutines.isActive
 import kotlin.math.PI
 import kotlin.math.abs
@@ -79,16 +83,16 @@ fun PlayerSeekbar(
     chapters: List<Chapter> = emptyList(),
     modifier: Modifier = Modifier
 ) {
-    val position by progressFlows.position.collectAsState(initial = 0L)
-    val bufferedPosition by progressFlows.bufferedPosition.collectAsState(initial = 0L)
+    val position by progressFlows.position.collectAsStateWithLifecycle(initialValue = 0L)
+    val bufferedPosition by progressFlows.bufferedPosition.collectAsStateWithLifecycle(initialValue = 0L)
     val haptics = LocalHapticFeedback.current
 
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     var showTotalDuration by rememberSaveable { mutableStateOf(false) }
 
     val duration = durationMs.coerceAtLeast(1L)
-    val playedFraction = (dragFraction ?: (position.toFloat() / duration)).coerceIn(0f, 1f)
-    val bufferedFraction = (bufferedPosition.toFloat() / duration).coerceIn(0f, 1f)
+    val playedFraction = dragFraction ?: playbackFraction(position, duration)
+    val bufferedFraction = playbackFraction(bufferedPosition, duration)
 
     // Wave amplitude: full while playing, flat when paused or scrubbing
     val amplitudeFactor by animateFloatAsState(
@@ -121,13 +125,8 @@ fun PlayerSeekbar(
             exit = fadeOut(tween(250)) + slideOutVertically(targetOffsetY = { it / 2 })
         ) {
             val fraction = dragFraction ?: 0f
-            val seekTime = (fraction * duration).toLong()
-            val matchingChapter = chapters.lastOrNull { (it.startTime * 1000).toLong() <= seekTime }
-            val previewText = if (matchingChapter != null) {
-                "${formatTime(seekTime)} • ${matchingChapter.title}"
-            } else {
-                formatTime(seekTime)
-            }
+            val seekTime = seekPosition(fraction, duration)
+            val previewText = seekPreviewText(seekTime, chapterAtPosition(chapters, seekTime))
             Surface(
                 modifier = Modifier
                     .padding(bottom = 6.dp)

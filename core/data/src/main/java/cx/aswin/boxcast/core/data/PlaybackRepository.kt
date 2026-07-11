@@ -1160,6 +1160,7 @@ class PlaybackRepository(
         }.distinctBy { it.id }
         android.util.Log.d("PlaybackRepo", "reconcileQueueWithController: ${latestQueue.size} -> ${newQueue.size} items")
         _playerState.value = _playerState.value.copy(queue = newQueue)
+        syncQueueToDb()
     }
 
     private suspend fun loadPersistedQueueById(
@@ -1167,6 +1168,8 @@ class PlaybackRepository(
     ): Map<String, Episode> {
         return try {
             queueRepository.getQueueSnapshot().associateBy { it.id }
+        } catch (exception: kotlinx.coroutines.CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             android.util.Log.w("PlaybackRepo", "Unable to read persisted queue snapshot", exception)
             fallback

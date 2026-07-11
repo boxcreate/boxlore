@@ -89,7 +89,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.data.PlayerState
@@ -102,6 +101,9 @@ import cx.aswin.boxcast.feature.player.FullscreenTranscriptScreen
 import cx.aswin.boxcast.feature.player.QueueSheetActions
 import cx.aswin.boxcast.feature.player.QueueSheetContent
 import cx.aswin.boxcast.feature.player.formatTime
+import cx.aswin.boxcast.feature.player.v2.logic.ResponsiveHeroLayout
+import cx.aswin.boxcast.feature.player.v2.logic.calculateResponsiveHeroLayout
+import cx.aswin.boxcast.feature.player.v2.logic.resolveQueuePodcast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -561,11 +563,6 @@ private data class FullPlayerBodyResources(
     val modifier: Modifier
 )
 
-private data class ResponsiveHeroLayout(
-    val isCompact: Boolean,
-    val dimensions: HeroDimensions
-)
-
 private data class FullPlayerScrollResources(
     val scope: CoroutineScope,
     val layout: ResponsiveHeroLayout
@@ -628,23 +625,6 @@ private fun FullPlayerBody(
                 .padding(bottom = 16.dp)
         )
     }
-}
-
-private fun calculateResponsiveHeroLayout(maxWidth: Dp, maxHeight: Dp, isVideo: Boolean): ResponsiveHeroLayout {
-    val isCompact = maxHeight < 620.dp
-    val availableHeight = maxHeight * (if (isCompact) 0.28f else 0.34f)
-    if (!isVideo) {
-        val size = min(maxWidth * 0.68f, availableHeight).coerceAtLeast(138.dp)
-        return ResponsiveHeroLayout(isCompact, HeroDimensions(size, size))
-    }
-    val targetWidth = maxWidth * 0.95f - 48.dp
-    val targetHeight = targetWidth * (9f / 16f)
-    val dimensions = if (targetHeight > availableHeight) {
-        HeroDimensions(availableHeight * (16f / 9f), availableHeight)
-    } else {
-        HeroDimensions(targetWidth, targetHeight)
-    }
-    return ResponsiveHeroLayout(isCompact, dimensions)
 }
 
 @Composable
@@ -880,7 +860,7 @@ private fun MarqueeMetadataText(
         maxLines = 1,
         overflow = TextOverflow.Clip,
         textAlign = if (overflows) TextAlign.Start else TextAlign.Center,
-        onTextLayout = { if (it.hasVisualOverflow) overflows = true },
+        onTextLayout = { overflows = it.hasVisualOverflow },
         modifier = Modifier
             .fillMaxWidth()
             .clipToBounds()
@@ -1172,19 +1152,6 @@ private fun queueSheetActions(
         }
     }
 )
-
-private fun resolveQueuePodcast(episode: Episode, currentPodcast: Podcast): Podcast {
-    val podcastId = episode.podcastId
-    if (podcastId == null || podcastId == currentPodcast.id) return currentPodcast
-    return Podcast(
-        id = podcastId,
-        title = episode.podcastTitle ?: "Unknown",
-        artist = episode.podcastArtist ?: "",
-        imageUrl = episode.podcastImageUrl ?: "",
-        description = null,
-        genre = episode.podcastGenre ?: ""
-    )
-}
 
 private suspend fun handleQueueRemoval(
     playbackRepository: PlaybackRepository,

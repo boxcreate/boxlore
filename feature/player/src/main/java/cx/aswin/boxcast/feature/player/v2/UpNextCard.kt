@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -32,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
-import cx.aswin.boxcast.feature.player.queueSourceLabel
+import cx.aswin.boxcast.feature.player.v2.logic.queueSourceLabel
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 /**
@@ -85,6 +86,10 @@ fun UpNextCard(
                 }
                 FilledTonalButton(
                     onClick = onOpenQueue,
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = colorScheme.primaryContainer,
+                        contentColor = colorScheme.onPrimaryContainer
+                    ),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
                 ) {
                     Icon(

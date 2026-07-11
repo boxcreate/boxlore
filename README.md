@@ -227,8 +227,8 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
       <img src="docs/images/library.png" width="180" alt="Library" style="border-radius: 14px;"/>
     </td>
     <td align="center">
-      <b>Player</b><br/><sub>Transcript · chapters</sub><br/><br/>
-      <img src="docs/images/player.png" width="180" alt="Player" style="border-radius: 14px;"/>
+      <b>Player</b><br/><sub>Artwork-matched · expressive</sub><br/><br/>
+      <img src="docs/images/player.png" width="180" alt="Artwork-matched expressive podcast player" style="border-radius: 14px;"/>
     </td>
   </tr>
 </table>

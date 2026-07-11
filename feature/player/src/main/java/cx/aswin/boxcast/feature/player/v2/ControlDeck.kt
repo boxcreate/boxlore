@@ -85,6 +85,9 @@ import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.SleepTimerConstants
 import cx.aswin.boxcast.feature.player.formatTime
+import cx.aswin.boxcast.feature.player.v2.logic.downloadLabel
+import cx.aswin.boxcast.feature.player.v2.logic.formatSpeedLabel
+import cx.aswin.boxcast.feature.player.v2.logic.targetControlWeight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.collectLatest
@@ -214,14 +217,6 @@ fun PrimaryControls(
                 .height(88.dp)
         )
     }
-}
-
-private fun targetControlWeight(index: Int, activeIndex: Int?, baseWeights: List<Float>): Float {
-    if (activeIndex == null) return baseWeights[index]
-    val extra = baseWeights[activeIndex] * 0.14f
-    if (index == activeIndex) return baseWeights[index] + extra
-    val otherTotal = baseWeights.sum() - baseWeights[activeIndex]
-    return baseWeights[index] - extra * (baseWeights[index] / otherTotal)
 }
 
 private data class TransportIcon(
@@ -573,7 +568,7 @@ private fun QuickActionsTopRow(
         )
         UtilityAction(
             icon = if (library.isDownloaded) Icons.Outlined.DownloadDone else Icons.Outlined.Download,
-            label = downloadLabel(library),
+            label = downloadLabel(library.isDownloaded, library.isDownloading),
             state = UtilityActionState(
                 active = library.isDownloaded,
                 loading = library.isDownloading
@@ -654,12 +649,6 @@ private fun QuickActionsBottomRow(
             modifier = Modifier.weight(1f)
         )
     }
-}
-
-private fun downloadLabel(library: SecondaryLibraryState): String = when {
-    library.isDownloading -> "Saving"
-    library.isDownloaded -> "Saved"
-    else -> "Download"
 }
 
 @Composable
@@ -1070,9 +1059,6 @@ private fun SleepAction(
         modifier = modifier
     )
 }
-
-private fun formatSpeedLabel(speed: Float): String =
-    if (speed == speed.toInt().toFloat()) "${speed.toInt()}×" else "${speed}×"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

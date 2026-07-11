@@ -48,16 +48,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
-import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.data.UserPreferencesRepository
 import cx.aswin.boxcast.core.designsystem.theme.LocalEffectiveDarkTheme
+import cx.aswin.boxcast.feature.player.v2.logic.calculatePlayerSheetGeometry
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class PlayerSheetValue { Collapsed, Expanded }
 
@@ -88,7 +92,19 @@ fun PlayerSheetScaffold(
     actions: PlayerSheetActions = PlayerSheetActions(),
     modifier: Modifier = Modifier
 ) {
-    val state by playbackRepository.playerState.collectAsStateWithLifecycle()
+    val stablePlayerState = remember(playbackRepository) {
+        playbackRepository.playerState
+            .map { it.copy(position = 0L, bufferedPosition = 0L) }
+            .distinctUntilChanged()
+    }
+    val positionFlow = remember(playbackRepository) {
+        playbackRepository.playerState
+            .map { it.position }
+            .distinctUntilChanged()
+    }
+    val state by stablePlayerState.collectAsStateWithLifecycle(
+        initialValue = cx.aswin.boxcast.core.data.PlayerState()
+    )
     val episode = state.currentEpisode
     val podcast = state.currentPodcast
 
@@ -147,7 +163,10 @@ fun PlayerSheetScaffold(
             stateHolder = playerStateHolder,
             scope = scope,
             haptics = haptics,
-            nestedScrollConnection = sheetNestedScrollConnection
+            flows = PlayerSheetFlows(
+                nestedScrollConnection = sheetNestedScrollConnection,
+                position = positionFlow
+            )
         ),
         callbacks = PlayerSheetCallbacks(
             onExpand = { requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
@@ -194,7 +213,12 @@ private data class PlayerSheetResources(
     val stateHolder: androidx.compose.runtime.saveable.SaveableStateHolder,
     val scope: kotlinx.coroutines.CoroutineScope,
     val haptics: androidx.compose.ui.hapticfeedback.HapticFeedback,
-    val nestedScrollConnection: NestedScrollConnection
+    val flows: PlayerSheetFlows
+)
+
+private data class PlayerSheetFlows(
+    val nestedScrollConnection: NestedScrollConnection,
+    val position: Flow<Long>
 )
 
 private data class PlayerSheetCallbacks(
@@ -217,24 +241,25 @@ private fun rememberPlayerSheetGeometry(
             if (raw.isNaN()) layout.collapsedTargetY else raw.coerceIn(0f, layout.collapsedTargetY)
         }
     }
-    val expansionFraction = if (layout.collapsedTargetY <= 0f) {
-        0f
-    } else {
-        (1f - sheetOffset / layout.collapsedTargetY).coerceIn(0f, 1f)
-    }
-    val fullAlpha = ((expansionFraction - 0.25f).coerceIn(0f, 0.75f) / 0.75f)
     val fullEntranceOffsetPx = remember(density) { with(density) { 24.dp.toPx() } }
+    val values = calculatePlayerSheetGeometry(
+        sheetOffset = sheetOffset,
+        collapsedTargetY = layout.collapsedTargetY,
+        containerHeight = layout.containerHeight,
+        collapsedHorizontalPadding = layout.collapsedHorizontalPadding,
+        fullEntranceOffsetPx = fullEntranceOffsetPx
+    )
     return PlayerSheetGeometry(
         sheetOffset = sheetOffset,
-        expansionFraction = expansionFraction,
-        sheetHeight = lerp(MiniPlayerHeight, layout.containerHeight, expansionFraction),
-        topCornerRadius = lerp(26.dp, 0.dp, expansionFraction),
-        bottomCornerRadius = lerp(14.dp, 0.dp, expansionFraction),
-        horizontalPadding = lerp(layout.collapsedHorizontalPadding, 0.dp, expansionFraction),
-        sheetElevation = lerp(3.dp, 16.dp, expansionFraction),
-        miniAlpha = (1f - expansionFraction * 2f).coerceIn(0f, 1f),
-        fullAlpha = fullAlpha,
-        fullTranslationY = lerp(fullEntranceOffsetPx, 0f, fullAlpha)
+        expansionFraction = values.expansionFraction,
+        sheetHeight = values.sheetHeight,
+        topCornerRadius = values.topCornerRadius,
+        bottomCornerRadius = values.bottomCornerRadius,
+        horizontalPadding = values.horizontalPadding,
+        sheetElevation = values.sheetElevation,
+        miniAlpha = values.miniAlpha,
+        fullAlpha = values.fullAlpha,
+        fullTranslationY = values.fullTranslationY
     )
 }
 
@@ -342,6 +367,7 @@ private fun MiniPlayerLayer(
     resources: PlayerSheetResources
 ) {
     if (!visible) return
+    val position by resources.flows.position.collectAsStateWithLifecycle(initialValue = 0L)
     resources.stateHolder.SaveableStateProvider("miniPlayer") {
         MiniPlayerV2(
             content = MiniPlayerContent(
@@ -350,7 +376,7 @@ private fun MiniPlayerLayer(
                 podcastImageUrl = content.podcast?.imageUrl,
                 isPlaying = content.playerState.isPlaying,
                 isLoading = content.playerState.isLoading,
-                position = content.playerState.position,
+                position = position,
                 duration = content.playerState.duration
             ),
             colors = MiniPlayerColors(
@@ -444,7 +470,7 @@ private fun FullPlayerLayer(
                 display = FullPlayerDisplay(
                     colorScheme = content.colorScheme,
                     isFullscreenVideo = content.isFullscreenVideo,
-                    sheetNestedScrollConnection = resources.nestedScrollConnection,
+                    sheetNestedScrollConnection = resources.flows.nestedScrollConnection,
                     isExpanded = geometry.expansionFraction >= 0.5f,
                     showSwipeMinimizeTip = !content.hasSeenSwipeMinimizeTip
                 ),
@@ -559,7 +585,9 @@ private fun PlayerSheetPredictiveBack(
             }
             sheetState.animateTo(PlayerSheetValue.Collapsed)
         } catch (exception: CancellationException) {
-            sheetState.animateTo(PlayerSheetValue.Expanded)
+            withContext(NonCancellable) {
+                sheetState.animateTo(PlayerSheetValue.Expanded)
+            }
             throw exception
         }
     }

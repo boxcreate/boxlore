@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -86,7 +87,10 @@ fun NotesPreviewCard(
                     color = colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onOpenEpisodeInfo) {
+                TextButton(
+                    onClick = onOpenEpisodeInfo,
+                    colors = ButtonDefaults.textButtonColors(contentColor = colorScheme.primary)
+                ) {
                     Text("Episode details")
                 }
             }
@@ -105,7 +109,10 @@ fun NotesPreviewCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            TextButton(onClick = { expanded = !expanded }) {
+            TextButton(
+                onClick = { expanded = !expanded },
+                colors = ButtonDefaults.textButtonColors(contentColor = colorScheme.primary)
+            ) {
                 Text(
                     text = if (expanded) "Show less" else "Read more",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)

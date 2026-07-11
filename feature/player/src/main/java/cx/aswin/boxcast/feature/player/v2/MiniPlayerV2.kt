@@ -68,6 +68,11 @@ import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
+import cx.aswin.boxcast.feature.player.v2.logic.ConfirmationVisibility
+import cx.aswin.boxcast.feature.player.v2.logic.confirmationTarget
+import cx.aswin.boxcast.feature.player.v2.logic.confirmationVisibility
+import cx.aswin.boxcast.feature.player.v2.logic.dismissDirection
+import cx.aswin.boxcast.feature.player.v2.logic.shouldConfirmDismiss
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -120,20 +125,23 @@ private class MiniSwipeState {
     fun onDrag(scope: CoroutineScope, dragAmount: Float, threshold: Float) {
         scope.launch {
             offsetX.snapTo(offsetX.value + dragAmount)
-            if (kotlin.math.abs(offsetX.value) > threshold * 0.5f && !showConfirmPill) {
-                direction = if (offsetX.value < 0) -1 else 1
-                showConfirmPill = true
-            }
-            if (showConfirmPill && kotlin.math.abs(offsetX.value) < threshold * 0.3f) {
-                showConfirmPill = false
-                autoHideJob?.cancel()
+            when (confirmationVisibility(offsetX.value, threshold, showConfirmPill)) {
+                ConfirmationVisibility.SHOW -> {
+                    direction = dismissDirection(offsetX.value)
+                    showConfirmPill = true
+                }
+                ConfirmationVisibility.HIDE -> {
+                    showConfirmPill = false
+                    autoHideJob?.cancel()
+                }
+                ConfirmationVisibility.UNCHANGED -> Unit
             }
         }
     }
 
     fun onDragEnd(scope: CoroutineScope, threshold: Float, haptics: HapticFeedback) {
         scope.launch {
-            if (kotlin.math.abs(offsetX.value) > threshold) {
+            if (shouldConfirmDismiss(offsetX.value, threshold)) {
                 revealConfirmation(scope, threshold, haptics)
             } else {
                 hideConfirmation()
@@ -156,11 +164,11 @@ private class MiniSwipeState {
         threshold: Float,
         haptics: HapticFeedback
     ) {
-        direction = if (offsetX.value < 0) -1 else 1
+        direction = dismissDirection(offsetX.value)
         showConfirmPill = true
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         offsetX.animateTo(
-            targetValue = direction * threshold * 1.5f,
+            targetValue = confirmationTarget(offsetX.value, threshold),
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
                 stiffness = Spring.StiffnessMedium

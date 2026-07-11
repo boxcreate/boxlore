@@ -32,6 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import cx.aswin.boxcast.feature.player.v2.logic.TranscriptDialogState
+import cx.aswin.boxcast.feature.player.v2.logic.estimateTranscriptTime
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 /**
@@ -56,28 +58,6 @@ fun GenerateTranscriptDialog(
     Dialog(onDismissRequest = onDismiss) {
         TranscriptDialogContent(dialogState, colorScheme, onConfirm, onDismiss)
     }
-}
-
-private data class TranscriptDialogState(
-    val estimatedTime: String,
-    val remainingGenerations: Int?
-) {
-    val limitReached: Boolean get() = remainingGenerations == 0
-    val canGenerate: Boolean get() = remainingGenerations == null || remainingGenerations > 0
-    val supportingText: String
-        get() = if (limitReached) {
-            "Daily AI limit reached. Please try again tomorrow."
-        } else {
-            "AI transcription is in beta and may contain errors."
-        }
-}
-
-private fun estimateTranscriptTime(durationSeconds: Long): String = when {
-    durationSeconds <= 0 -> "~1-2 min"
-    durationSeconds < 600 -> "~30s"
-    durationSeconds < 1800 -> "~1 min"
-    durationSeconds < 3600 -> "~1-2 min"
-    else -> "~2-3 min"
 }
 
 @Composable
