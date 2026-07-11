@@ -88,12 +88,6 @@ fun PlayerSheetScaffold(
     actions: PlayerSheetActions = PlayerSheetActions(),
     modifier: Modifier = Modifier
 ) {
-    val sheetCollapsedTargetY = layout.collapsedTargetY
-    val containerHeight = layout.containerHeight
-    val collapsedStateHorizontalPadding = layout.collapsedHorizontalPadding
-    val expandTrigger = layout.expandTrigger
-    val onEpisodeInfoClick = actions.onEpisodeInfoClick
-    val onPodcastInfoClick = actions.onPodcastInfoClick
     val state by playbackRepository.playerState.collectAsStateWithLifecycle()
     val episode = state.currentEpisode
     val podcast = state.currentPodcast
@@ -101,28 +95,17 @@ fun PlayerSheetScaffold(
     if (episode == null) return
 
     var isFullscreenVideo by rememberSaveable(inputs = arrayOf(episode.id)) { mutableStateOf(false) }
-
     val density = LocalDensity.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val playerStateHolder = rememberSaveableStateHolder()
     val haptics = LocalHapticFeedback.current
     val window = (context as? android.app.Activity)?.window
-
-    // Tooltips
     val hasSeenSwipeDismissTip by userPrefs.hasSeenSwipeDismissTip.collectAsStateWithLifecycle(initialValue = true)
     val hasSeenSwipeMinimizeTip by userPrefs.hasSeenSwipeMinimizeTip.collectAsStateWithLifecycle(initialValue = true)
-
     val effectiveDarkTheme = LocalEffectiveDarkTheme.current
     PlayerSheetSystemBars(window, effectiveDarkTheme)
-
-    // Artwork-seeded color scheme
     val colorScheme = rememberPlayerColorScheme(episode.imageUrl)
-
-    // ------------------------------------------------------------------
-    // Anchored draggable sheet state
-    // ------------------------------------------------------------------
-
     val sheetState = remember(density) {
         AnchoredDraggableState(
             initialValue = PlayerSheetValue.Collapsed,
@@ -135,239 +118,346 @@ fun PlayerSheetScaffold(
             decayAnimationSpec = exponentialDecay()
         )
     }
-
-    ConfigurePlayerSheetAnchors(sheetState, sheetCollapsedTargetY)
-
-    val sheetOffset by remember(sheetState, sheetCollapsedTargetY) {
-        derivedStateOf {
-            val raw = sheetState.offset
-            if (raw.isNaN()) sheetCollapsedTargetY else raw.coerceIn(0f, sheetCollapsedTargetY)
-        }
-    }
-    val expansionFraction by remember(sheetCollapsedTargetY) {
-        derivedStateOf {
-            if (sheetCollapsedTargetY <= 0f) 0f
-            else (1f - sheetOffset / sheetCollapsedTargetY).coerceIn(0f, 1f)
-        }
-    }
+    ConfigurePlayerSheetAnchors(sheetState, layout.collapsedTargetY)
+    val geometry = rememberPlayerSheetGeometry(sheetState, layout)
     val isExpanded = sheetState.currentValue == PlayerSheetValue.Expanded
-
-    fun expandSheet() {
-        if (sheetState.isAnimationRunning || sheetOffset <= 0.5f) return
-        scope.launch { sheetState.animateTo(PlayerSheetValue.Expanded) }
-    }
-
-    fun collapseSheet() {
-        if (sheetState.isAnimationRunning || sheetOffset >= sheetCollapsedTargetY - 0.5f) return
-        scope.launch { sheetState.animateTo(PlayerSheetValue.Collapsed) }
-    }
-
     PlayerSheetSettledEffects(sheetState, haptics, episode, podcast)
-    PlayerSheetExternalExpansion(sheetState, expandTrigger)
+    PlayerSheetExternalExpansion(sheetState, layout.expandTrigger)
     PlayerSheetPredictiveBack(
         enabled = isExpanded && !isFullscreenVideo,
         sheetState = sheetState,
-        collapsedTargetY = sheetCollapsedTargetY
+        collapsedTargetY = layout.collapsedTargetY
     )
-
-    // Nested-scroll handoff: the full player's inner scroll drives the sheet when
-    // pulling down from the top or when the sheet sits between anchors.
     val sheetNestedScrollConnection = rememberPlayerSheetNestedScrollConnection(sheetState)
+    PlayerSheetSurface(
+        geometry = geometry,
+        content = PlayerSheetContentState(
+            playerState = state,
+            episode = episode,
+            podcast = podcast,
+            colorScheme = colorScheme,
+            isFullscreenVideo = isFullscreenVideo,
+            hasSeenSwipeDismissTip = hasSeenSwipeDismissTip,
+            hasSeenSwipeMinimizeTip = hasSeenSwipeMinimizeTip
+        ),
+        resources = PlayerSheetResources(
+            playbackRepository = playbackRepository,
+            downloadRepository = downloadRepository,
+            userPrefs = userPrefs,
+            stateHolder = playerStateHolder,
+            scope = scope,
+            haptics = haptics,
+            nestedScrollConnection = sheetNestedScrollConnection
+        ),
+        callbacks = PlayerSheetCallbacks(
+            onExpand = { requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
+            onCollapse = {
+                requestSheetCollapse(sheetState, geometry.sheetOffset, layout.collapsedTargetY, scope)
+            },
+            onFullscreenVideoChange = { isFullscreenVideo = it },
+            onEpisodeInfoClick = actions.onEpisodeInfoClick,
+            onPodcastInfoClick = actions.onPodcastInfoClick
+        ),
+        sheetState = sheetState,
+        containerHeight = layout.containerHeight,
+        modifier = modifier
+    )
+}
 
-    // ------------------------------------------------------------------
-    // Geometry derived from the expansion fraction
-    // ------------------------------------------------------------------
+private data class PlayerSheetGeometry(
+    val sheetOffset: Float,
+    val expansionFraction: Float,
+    val sheetHeight: Dp,
+    val topCornerRadius: Dp,
+    val bottomCornerRadius: Dp,
+    val horizontalPadding: Dp,
+    val sheetElevation: Dp,
+    val miniAlpha: Float,
+    val fullAlpha: Float,
+    val fullTranslationY: Float
+)
 
-    val sheetHeight by remember(containerHeight) {
-        derivedStateOf { lerp(MiniPlayerHeight, containerHeight, expansionFraction) }
+private data class PlayerSheetContentState(
+    val playerState: cx.aswin.boxcast.core.data.PlayerState,
+    val episode: cx.aswin.boxcast.core.model.Episode,
+    val podcast: cx.aswin.boxcast.core.model.Podcast?,
+    val colorScheme: ColorScheme,
+    val isFullscreenVideo: Boolean,
+    val hasSeenSwipeDismissTip: Boolean,
+    val hasSeenSwipeMinimizeTip: Boolean
+)
+
+private data class PlayerSheetResources(
+    val playbackRepository: PlaybackRepository,
+    val downloadRepository: cx.aswin.boxcast.core.data.DownloadRepository,
+    val userPrefs: UserPreferencesRepository,
+    val stateHolder: androidx.compose.runtime.saveable.SaveableStateHolder,
+    val scope: kotlinx.coroutines.CoroutineScope,
+    val haptics: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    val nestedScrollConnection: NestedScrollConnection
+)
+
+private data class PlayerSheetCallbacks(
+    val onExpand: () -> Unit,
+    val onCollapse: () -> Unit,
+    val onFullscreenVideoChange: (Boolean) -> Unit,
+    val onEpisodeInfoClick: (cx.aswin.boxcast.core.model.Episode) -> Unit,
+    val onPodcastInfoClick: (cx.aswin.boxcast.core.model.Podcast) -> Unit
+)
+
+@Composable
+private fun rememberPlayerSheetGeometry(
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    layout: PlayerSheetLayout
+): PlayerSheetGeometry {
+    val density = LocalDensity.current
+    val sheetOffset by remember(sheetState, layout.collapsedTargetY) {
+        derivedStateOf {
+            val raw = sheetState.offset
+            if (raw.isNaN()) layout.collapsedTargetY else raw.coerceIn(0f, layout.collapsedTargetY)
+        }
     }
-    val topCornerRadius by remember {
-        derivedStateOf { lerp(26.dp, 0.dp, expansionFraction) }
+    val expansionFraction = if (layout.collapsedTargetY <= 0f) {
+        0f
+    } else {
+        (1f - sheetOffset / layout.collapsedTargetY).coerceIn(0f, 1f)
     }
-    val bottomCornerRadius by remember {
-        derivedStateOf { lerp(14.dp, 0.dp, expansionFraction) }
-    }
-    val horizontalPadding by remember(collapsedStateHorizontalPadding) {
-        derivedStateOf { lerp(collapsedStateHorizontalPadding, 0.dp, expansionFraction) }
-    }
-    val sheetElevation by remember {
-        derivedStateOf { lerp(3.dp, 16.dp, expansionFraction) }
-    }
-    val miniAlpha by remember {
-        derivedStateOf { (1f - expansionFraction * 2f).coerceIn(0f, 1f) }
-    }
-    val fullAlpha by remember {
-        derivedStateOf { ((expansionFraction - 0.25f).coerceIn(0f, 0.75f) / 0.75f) }
-    }
+    val fullAlpha = ((expansionFraction - 0.25f).coerceIn(0f, 0.75f) / 0.75f)
     val fullEntranceOffsetPx = remember(density) { with(density) { 24.dp.toPx() } }
-    val fullTranslationY by remember {
-        derivedStateOf { lerp(fullEntranceOffsetPx, 0f, fullAlpha) }
-    }
+    return PlayerSheetGeometry(
+        sheetOffset = sheetOffset,
+        expansionFraction = expansionFraction,
+        sheetHeight = lerp(MiniPlayerHeight, layout.containerHeight, expansionFraction),
+        topCornerRadius = lerp(26.dp, 0.dp, expansionFraction),
+        bottomCornerRadius = lerp(14.dp, 0.dp, expansionFraction),
+        horizontalPadding = lerp(layout.collapsedHorizontalPadding, 0.dp, expansionFraction),
+        sheetElevation = lerp(3.dp, 16.dp, expansionFraction),
+        miniAlpha = (1f - expansionFraction * 2f).coerceIn(0f, 1f),
+        fullAlpha = fullAlpha,
+        fullTranslationY = lerp(fullEntranceOffsetPx, 0f, fullAlpha)
+    )
+}
 
-    // ------------------------------------------------------------------
-    // Sheet UI
-    // ------------------------------------------------------------------
+private fun requestSheetExpansion(
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    sheetOffset: Float,
+    scope: kotlinx.coroutines.CoroutineScope
+) {
+    if (sheetState.isAnimationRunning || sheetOffset <= 0.5f) return
+    scope.launch { sheetState.animateTo(PlayerSheetValue.Expanded) }
+}
 
+private fun requestSheetCollapse(
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    sheetOffset: Float,
+    collapsedTargetY: Float,
+    scope: kotlinx.coroutines.CoroutineScope
+) {
+    if (sheetState.isAnimationRunning || sheetOffset >= collapsedTargetY - 0.5f) return
+    scope.launch { sheetState.animateTo(PlayerSheetValue.Collapsed) }
+}
+
+@Composable
+private fun PlayerSheetSurface(
+    geometry: PlayerSheetGeometry,
+    content: PlayerSheetContentState,
+    resources: PlayerSheetResources,
+    callbacks: PlayerSheetCallbacks,
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    containerHeight: Dp,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(
+        topStart = geometry.topCornerRadius,
+        topEnd = geometry.topCornerRadius,
+        bottomStart = geometry.bottomCornerRadius,
+        bottomEnd = geometry.bottomCornerRadius
+    )
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .offset { IntOffset(0, sheetOffset.roundToInt()) }
+            .offset { IntOffset(0, geometry.sheetOffset.roundToInt()) }
             .graphicsLayer { clip = false }
-            .height(sheetHeight)
+            .height(geometry.sheetHeight)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = horizontalPadding)
-                .height(sheetHeight)
-                .shadow(
-                    elevation = sheetElevation,
-                    shape = RoundedCornerShape(
-                        topStart = topCornerRadius,
-                        topEnd = topCornerRadius,
-                        bottomStart = bottomCornerRadius,
-                        bottomEnd = bottomCornerRadius
-                    ),
-                    clip = false
-                )
-                .background(
-                    color = miniSheetColor(colorScheme),
-                    shape = RoundedCornerShape(
-                        topStart = topCornerRadius,
-                        topEnd = topCornerRadius,
-                        bottomStart = bottomCornerRadius,
-                        bottomEnd = bottomCornerRadius
-                    )
-                )
-                .clip(
-                    RoundedCornerShape(
-                        topStart = topCornerRadius,
-                        topEnd = topCornerRadius,
-                        bottomStart = bottomCornerRadius,
-                        bottomEnd = bottomCornerRadius
-                    )
-                )
+                .padding(horizontal = geometry.horizontalPadding)
+                .height(geometry.sheetHeight)
+                .shadow(elevation = geometry.sheetElevation, shape = shape, clip = false)
+                .background(color = miniSheetColor(content.colorScheme), shape = shape)
+                .clip(shape)
                 .anchoredDraggable(
                     state = sheetState,
                     orientation = Orientation.Vertical,
-                    enabled = !isFullscreenVideo
+                    enabled = !content.isFullscreenVideo
                 )
                 .clickable(
-                    enabled = !isExpanded && !isFullscreenVideo,
+                    enabled = sheetState.currentValue != PlayerSheetValue.Expanded &&
+                        !content.isFullscreenVideo,
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    expandSheet()
+                    resources.haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    callbacks.onExpand()
                 }
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (expansionFraction < 0.999f) {
-                    playerStateHolder.SaveableStateProvider("miniPlayer") {
-                        // MINI PLAYER
-                        MiniPlayerV2(
-                            content = MiniPlayerContent(
-                                episode = episode,
-                                podcastTitle = podcast?.title ?: "",
-                                podcastImageUrl = podcast?.imageUrl,
-                                isPlaying = state.isPlaying,
-                                isLoading = state.isLoading,
-                                position = state.position,
-                                duration = state.duration
-                            ),
-                            colors = MiniPlayerColors(
-                                colorScheme = colorScheme,
-                                backgroundColor = miniSheetColor(colorScheme)
-                            ),
-                            actions = MiniPlayerActions(
-                                onPlayPause = {
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction(
-                                        "play_pause", podcast?.id, episode.id, podcast?.title, episode.title
-                                    )
-                                    if (state.isPlaying) {
-                                        playbackRepository.pause()
-                                    } else {
-                                        playbackRepository.resume(
-                                            android.os.Bundle().apply {
-                                                putString("entry_point", "resume_mini_player")
-                                            }
-                                        )
-                                    }
-                                },
-                                onReplay = {
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction(
-                                        "previous", podcast?.id, episode.id, podcast?.title, episode.title
-                                    )
-                                    playbackRepository.skipBackward()
-                                },
-                                onForward = {
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction(
-                                        "next", podcast?.id, episode.id, podcast?.title, episode.title
-                                    )
-                                    playbackRepository.skipForward()
-                                },
-                                onDismiss = {
-                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction(
-                                        "dismissed", podcast?.id, episode.id, podcast?.title, episode.title
-                                    )
-                                    playbackRepository.clearSession()
-                                }
-                            ),
-                            swipeTip = MiniPlayerSwipeTip(
-                                visible = !hasSeenSwipeDismissTip && !state.isPlaying,
-                                onDismissed = { scope.launch { userPrefs.markSwipeDismissTipSeen() } }
-                            ),
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .height(MiniPlayerHeight)
-                                .fillMaxWidth()
-                                .graphicsLayer { alpha = miniAlpha }
-                                .zIndex(if (expansionFraction < 0.5f) 1f else 0f)
-                        )
-                    }
-                }
+            PlayerSheetLayers(geometry, content, resources, callbacks, containerHeight)
+        }
+    }
+}
 
-                if (expansionFraction > 0.001f) {
-                    playerStateHolder.SaveableStateProvider("fullPlayer") {
-                        // FULL PLAYER
-                    Box(
-                        modifier = Modifier
-                            .height(containerHeight) // Fixed height prevents layout thrash while morphing
-                            .graphicsLayer {
-                                alpha = fullAlpha
-                                translationY = fullTranslationY
-                            }
-                            .zIndex(if (expansionFraction >= 0.5f) 1f else 0f)
-                            .offset {
-                                if (expansionFraction <= 0.01f) IntOffset(0, 10000) else IntOffset.Zero
-                            }
-                    ) {
-                        FullPlayerV2(
-                            dependencies = FullPlayerDependencies(
-                                playbackRepository = playbackRepository,
-                                downloadRepository = downloadRepository
-                            ),
-                            display = FullPlayerDisplay(
-                                colorScheme = colorScheme,
-                                isFullscreenVideo = isFullscreenVideo,
-                                sheetNestedScrollConnection = sheetNestedScrollConnection,
-                                isExpanded = expansionFraction >= 0.5f,
-                                showSwipeMinimizeTip = !hasSeenSwipeMinimizeTip
-                            ),
-                            actions = FullPlayerActions(
-                                onFullscreenVideoChange = { isFullscreenVideo = it },
-                                onCollapse = { collapseSheet() },
-                                onEpisodeInfoClick = onEpisodeInfoClick,
-                                onPodcastInfoClick = onPodcastInfoClick,
-                                onSwipeMinimizeTipDismissed = {
-                                    scope.launch { userPrefs.markSwipeMinimizeTipSeen() }
-                                }
-                            )
-                        )
-                    }
-                    }
+@Composable
+private fun PlayerSheetLayers(
+    geometry: PlayerSheetGeometry,
+    content: PlayerSheetContentState,
+    resources: PlayerSheetResources,
+    callbacks: PlayerSheetCallbacks,
+    containerHeight: Dp
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        MiniPlayerLayer(
+            visible = geometry.expansionFraction < 0.999f,
+            geometry = geometry,
+            content = content,
+            resources = resources
+        )
+        FullPlayerLayer(
+            visible = geometry.expansionFraction > 0.001f,
+            geometry = geometry,
+            content = content,
+            resources = resources,
+            callbacks = callbacks,
+            containerHeight = containerHeight
+        )
+    }
+}
+
+@Composable
+private fun MiniPlayerLayer(
+    visible: Boolean,
+    geometry: PlayerSheetGeometry,
+    content: PlayerSheetContentState,
+    resources: PlayerSheetResources
+) {
+    if (!visible) return
+    resources.stateHolder.SaveableStateProvider("miniPlayer") {
+        MiniPlayerV2(
+            content = MiniPlayerContent(
+                episode = content.episode,
+                podcastTitle = content.podcast?.title ?: "",
+                podcastImageUrl = content.podcast?.imageUrl,
+                isPlaying = content.playerState.isPlaying,
+                isLoading = content.playerState.isLoading,
+                position = content.playerState.position,
+                duration = content.playerState.duration
+            ),
+            colors = MiniPlayerColors(
+                colorScheme = content.colorScheme,
+                backgroundColor = miniSheetColor(content.colorScheme)
+            ),
+            actions = miniPlayerActions(content, resources),
+            swipeTip = MiniPlayerSwipeTip(
+                visible = !content.hasSeenSwipeDismissTip && !content.playerState.isPlaying,
+                onDismissed = {
+                    resources.scope.launch { resources.userPrefs.markSwipeDismissTipSeen() }
                 }
-            }
+            ),
+            modifier = Modifier
+                .height(MiniPlayerHeight)
+                .fillMaxWidth()
+                .graphicsLayer { alpha = geometry.miniAlpha }
+                .zIndex(if (geometry.expansionFraction < 0.5f) 1f else 0f)
+        )
+    }
+}
+
+private fun miniPlayerActions(
+    content: PlayerSheetContentState,
+    resources: PlayerSheetResources
+): MiniPlayerActions = MiniPlayerActions(
+    onPlayPause = {
+        trackMiniPlayerAction("play_pause", content)
+        if (content.playerState.isPlaying) {
+            resources.playbackRepository.pause()
+        } else {
+            resources.playbackRepository.resume(
+                android.os.Bundle().apply {
+                    putString("entry_point", "resume_mini_player")
+                }
+            )
+        }
+    },
+    onReplay = {
+        trackMiniPlayerAction("previous", content)
+        resources.playbackRepository.skipBackward()
+    },
+    onForward = {
+        trackMiniPlayerAction("next", content)
+        resources.playbackRepository.skipForward()
+    },
+    onDismiss = {
+        trackMiniPlayerAction("dismissed", content)
+        resources.playbackRepository.clearSession()
+    }
+)
+
+private fun trackMiniPlayerAction(action: String, content: PlayerSheetContentState) {
+    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction(
+        action,
+        content.podcast?.id,
+        content.episode.id,
+        content.podcast?.title,
+        content.episode.title
+    )
+}
+
+@Composable
+private fun FullPlayerLayer(
+    visible: Boolean,
+    geometry: PlayerSheetGeometry,
+    content: PlayerSheetContentState,
+    resources: PlayerSheetResources,
+    callbacks: PlayerSheetCallbacks,
+    containerHeight: Dp
+) {
+    if (!visible) return
+    resources.stateHolder.SaveableStateProvider("fullPlayer") {
+        Box(
+            modifier = Modifier
+                .height(containerHeight)
+                .graphicsLayer {
+                    alpha = geometry.fullAlpha
+                    translationY = geometry.fullTranslationY
+                }
+                .zIndex(if (geometry.expansionFraction >= 0.5f) 1f else 0f)
+                .offset {
+                    if (geometry.expansionFraction <= 0.01f) IntOffset(0, 10000) else IntOffset.Zero
+                }
+        ) {
+            FullPlayerV2(
+                dependencies = FullPlayerDependencies(
+                    playbackRepository = resources.playbackRepository,
+                    downloadRepository = resources.downloadRepository
+                ),
+                display = FullPlayerDisplay(
+                    colorScheme = content.colorScheme,
+                    isFullscreenVideo = content.isFullscreenVideo,
+                    sheetNestedScrollConnection = resources.nestedScrollConnection,
+                    isExpanded = geometry.expansionFraction >= 0.5f,
+                    showSwipeMinimizeTip = !content.hasSeenSwipeMinimizeTip
+                ),
+                actions = FullPlayerActions(
+                    onFullscreenVideoChange = callbacks.onFullscreenVideoChange,
+                    onCollapse = callbacks.onCollapse,
+                    onEpisodeInfoClick = callbacks.onEpisodeInfoClick,
+                    onPodcastInfoClick = callbacks.onPodcastInfoClick,
+                    onSwipeMinimizeTipDismissed = {
+                        resources.scope.launch { resources.userPrefs.markSwipeMinimizeTipSeen() }
+                    }
+                )
+            )
         }
     }
 }
@@ -481,12 +571,7 @@ private fun rememberPlayerSheetNestedScrollConnection(
 ): NestedScrollConnection = remember(sheetState) {
     object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            val delta = available.y
-            return if (delta < 0 && sheetState.requireOffset() > 0f) {
-                Offset(0f, sheetState.dispatchRawDelta(delta))
-            } else {
-                Offset.Zero
-            }
+            return consumePlayerSheetPreScroll(sheetState, available)
         }
 
         override fun onPostScroll(
@@ -494,20 +579,54 @@ private fun rememberPlayerSheetNestedScrollConnection(
             available: Offset,
             source: NestedScrollSource
         ): Offset {
-            if (source != NestedScrollSource.UserInput) return Offset.Zero
-            return Offset(0f, sheetState.dispatchRawDelta(available.y))
+            return consumePlayerSheetPostScroll(sheetState, available, source)
         }
 
         override suspend fun onPreFling(available: Velocity): Velocity {
-            if (available.y >= 0 || sheetState.requireOffset() <= 0f) return Velocity.Zero
-            sheetState.settle(available.y)
-            return available
+            return settlePlayerSheetPreFling(sheetState, available)
         }
 
         override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-            if (available.y == 0f || sheetState.isAnimationRunning) return Velocity.Zero
-            sheetState.settle(available.y)
-            return available
+            return settlePlayerSheetPostFling(sheetState, available)
         }
     }
+}
+
+private fun consumePlayerSheetPreScroll(
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    available: Offset
+): Offset {
+    val delta = available.y
+    return if (delta < 0 && sheetState.requireOffset() > 0f) {
+        Offset(0f, sheetState.dispatchRawDelta(delta))
+    } else {
+        Offset.Zero
+    }
+}
+
+private fun consumePlayerSheetPostScroll(
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    available: Offset,
+    source: NestedScrollSource
+): Offset {
+    if (source != NestedScrollSource.UserInput) return Offset.Zero
+    return Offset(0f, sheetState.dispatchRawDelta(available.y))
+}
+
+private suspend fun settlePlayerSheetPreFling(
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    available: Velocity
+): Velocity {
+    if (available.y >= 0 || sheetState.requireOffset() <= 0f) return Velocity.Zero
+    sheetState.settle(available.y)
+    return available
+}
+
+private suspend fun settlePlayerSheetPostFling(
+    sheetState: AnchoredDraggableState<PlayerSheetValue>,
+    available: Velocity
+): Velocity {
+    if (available.y == 0f || sheetState.isAnimationRunning) return Velocity.Zero
+    sheetState.settle(available.y)
+    return available
 }

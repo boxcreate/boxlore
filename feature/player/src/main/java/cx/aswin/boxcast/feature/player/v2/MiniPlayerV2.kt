@@ -201,203 +201,227 @@ fun MiniPlayerV2(
     swipeTip: MiniPlayerSwipeTip = MiniPlayerSwipeTip(),
     modifier: Modifier = Modifier
 ) {
-    val episode = content.episode
-    val podcastTitle = content.podcastTitle
-    val podcastImageUrl = content.podcastImageUrl
-    val isPlaying = content.isPlaying
-    val isLoading = content.isLoading
-    val position = content.position
-    val duration = content.duration
-    val colorScheme = colors.colorScheme
-    val backgroundColor = colors.backgroundColor
-    val onPlayPause = actions.onPlayPause
-    val onReplay = actions.onReplay
-    val onForward = actions.onForward
-    val onDismiss = actions.onDismiss
-    val showSwipeTip = swipeTip.visible
-    val onSwipeTipDismissed = swipeTip.onDismissed
     val density = LocalDensity.current
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-
-    // Swipe-to-dismiss (only while paused)
     val swipeState = remember { MiniSwipeState() }
     val dismissThreshold = with(density) { 100.dp.toPx() }
 
     Box(modifier = modifier) {
-        // Dismiss pill revealed behind the sliding content
-        AnimatedVisibility(
-            visible = swipeState.showConfirmPill,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(150)),
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(0f)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = if (swipeState.direction > 0) Alignment.CenterStart else Alignment.CenterEnd
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .clickable {
-                            swipeState.confirmDismiss(haptics, onDismiss)
-                        }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.Close,
-                        contentDescription = "Dismiss",
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        "Dismiss",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-            }
-        }
+        MiniDismissConfirmation(swipeState, haptics, actions.onDismiss)
+        MiniPlayerCard(content, colors, actions, swipeState, scope, haptics, dismissThreshold)
+        MiniSwipeTipOverlay(
+            visible = swipeTip.visible && !content.isPlaying,
+            onDismissed = swipeTip.onDismissed,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
 
-        // Sliding content
+@Composable
+private fun MiniDismissConfirmation(
+    swipeState: MiniSwipeState,
+    haptics: HapticFeedback,
+    onDismiss: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = swipeState.showConfirmPill,
+        enter = fadeIn(tween(200)),
+        exit = fadeOut(tween(150)),
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(0f)
+    ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(1f)
-                .offset { IntOffset(swipeState.offsetX.value.toInt(), 0) }
-                .background(
-                    color = backgroundColor,
-                    shape = RoundedCornerShape(
-                        topStart = 26.dp,
-                        topEnd = 26.dp,
-                        bottomStart = 14.dp,
-                        bottomEnd = 14.dp
-                    )
-                )
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 26.dp,
-                        topEnd = 26.dp,
-                        bottomStart = 14.dp,
-                        bottomEnd = 14.dp
-                    )
-                )
-                .pointerInput(isPlaying) {
-                    if (isPlaying) return@pointerInput // No swipe-dismiss while playing
-                    detectHorizontalDragGestures(
-                        onDragStart = { swipeState.onDragStart(haptics) },
-                        onDragEnd = { swipeState.onDragEnd(scope, dismissThreshold, haptics) },
-                        onDragCancel = { swipeState.onDragCancel(scope) },
-                        onHorizontalDrag = { _, dragAmount ->
-                            swipeState.onDrag(scope, dragAmount, dismissThreshold)
-                        }
-                    )
-                }
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = if (swipeState.direction > 0) Alignment.CenterStart else Alignment.CenterEnd
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(MiniPlayerHeight)
-                    .padding(start = 8.dp, end = 10.dp, top = 8.dp, bottom = 9.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .clickable { swipeState.confirmDismiss(haptics, onDismiss) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val imageUrl = episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcastImageUrl
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(
-                            AbsoluteSmoothCornerShape(
-                                cornerRadiusTL = 16.dp, smoothnessAsPercentTL = 60,
-                                cornerRadiusTR = 16.dp, smoothnessAsPercentTR = 60,
-                                cornerRadiusBL = 16.dp, smoothnessAsPercentBL = 60,
-                                cornerRadiusBR = 16.dp, smoothnessAsPercentBR = 60
-                            )
-                        )
-                        .background(colorScheme.surfaceVariant)
-                ) {
-                    OptimizedImage(
-                        url = imageUrl,
-                        proxyWidth = 160,
-                        contentDescription = "Episode artwork",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { alpha = if (isLoading) 0.62f else 1f }
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(11.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    Text(
-                        text = episode.title.replace("+", " "),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = (-0.15).sp
-                        ),
-                        color = colorScheme.onPrimaryContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = podcastTitle.replace("+", " "),
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontSize = 12.sp,
-                            letterSpacing = 0.sp
-                        ),
-                        color = colorScheme.onPrimaryContainer.copy(alpha = 0.68f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (duration > 0) {
-                        val progress = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
-                        Spacer(modifier = Modifier.height(3.dp))
-                        androidx.compose.material3.LinearProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                                .clip(RoundedCornerShape(2.dp)),
-                            color = colorScheme.primary,
-                            trackColor = colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                MiniTransportButtons(
-                    isPlaying = isPlaying,
-                    isLoading = isLoading,
-                    colorScheme = colorScheme,
-                    onPlayPause = onPlayPause,
-                    onReplay = onReplay,
-                    onForward = onForward
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Dismiss",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "Dismiss",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
+    }
+}
 
-        // One-time swipe tip overlay
-        if (showSwipeTip && !isPlaying) {
-            SwipeDismissTip(
-                onDismissed = onSwipeTipDismissed,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .zIndex(2f)
-                    .align(Alignment.BottomCenter)
-            )
+@Composable
+private fun MiniPlayerCard(
+    content: MiniPlayerContent,
+    colors: MiniPlayerColors,
+    actions: MiniPlayerActions,
+    swipeState: MiniSwipeState,
+    scope: CoroutineScope,
+    haptics: HapticFeedback,
+    dismissThreshold: Float
+) {
+    val shape = RoundedCornerShape(
+        topStart = 26.dp,
+        topEnd = 26.dp,
+        bottomStart = 14.dp,
+        bottomEnd = 14.dp
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(1f)
+            .offset { IntOffset(swipeState.offsetX.value.toInt(), 0) }
+            .background(color = colors.backgroundColor, shape = shape)
+            .clip(shape)
+            .miniSwipeGesture(content.isPlaying, swipeState, scope, haptics, dismissThreshold)
+    ) {
+        MiniPlayerRow(content, colors.colorScheme, actions)
+    }
+}
+
+private fun Modifier.miniSwipeGesture(
+    isPlaying: Boolean,
+    swipeState: MiniSwipeState,
+    scope: CoroutineScope,
+    haptics: HapticFeedback,
+    dismissThreshold: Float
+): Modifier = pointerInput(isPlaying) {
+    if (isPlaying) return@pointerInput
+    detectHorizontalDragGestures(
+        onDragStart = { swipeState.onDragStart(haptics) },
+        onDragEnd = { swipeState.onDragEnd(scope, dismissThreshold, haptics) },
+        onDragCancel = { swipeState.onDragCancel(scope) },
+        onHorizontalDrag = { _, dragAmount ->
+            swipeState.onDrag(scope, dragAmount, dismissThreshold)
         }
+    )
+}
+
+@Composable
+private fun MiniPlayerRow(
+    content: MiniPlayerContent,
+    colorScheme: ColorScheme,
+    actions: MiniPlayerActions
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(MiniPlayerHeight)
+            .padding(start = 8.dp, end = 10.dp, top = 8.dp, bottom = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        MiniPlayerArtwork(content, colorScheme)
+        Spacer(modifier = Modifier.width(11.dp))
+        MiniPlayerMetadata(content, colorScheme, Modifier.weight(1f))
+        Spacer(modifier = Modifier.width(6.dp))
+        MiniTransportButtons(
+            isPlaying = content.isPlaying,
+            isLoading = content.isLoading,
+            colorScheme = colorScheme,
+            onPlayPause = actions.onPlayPause,
+            onReplay = actions.onReplay,
+            onForward = actions.onForward
+        )
+    }
+}
+
+@Composable
+private fun MiniPlayerArtwork(content: MiniPlayerContent, colorScheme: ColorScheme) {
+    val imageUrl = content.episode.imageUrl?.takeIf { it.isNotBlank() } ?: content.podcastImageUrl
+    Box(
+        modifier = Modifier
+            .size(52.dp)
+            .clip(
+                AbsoluteSmoothCornerShape(
+                    cornerRadiusTL = 16.dp, smoothnessAsPercentTL = 60,
+                    cornerRadiusTR = 16.dp, smoothnessAsPercentTR = 60,
+                    cornerRadiusBL = 16.dp, smoothnessAsPercentBL = 60,
+                    cornerRadiusBR = 16.dp, smoothnessAsPercentBR = 60
+                )
+            )
+            .background(colorScheme.surfaceVariant)
+    ) {
+        OptimizedImage(
+            url = imageUrl,
+            proxyWidth = 160,
+            contentDescription = "Episode artwork",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = if (content.isLoading) 0.62f else 1f }
+        )
+    }
+}
+
+@Composable
+private fun MiniPlayerMetadata(
+    content: MiniPlayerContent,
+    colorScheme: ColorScheme,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Text(
+            text = content.episode.title.replace("+", " "),
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.15).sp
+            ),
+            color = colorScheme.onPrimaryContainer,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = content.podcastTitle.replace("+", " "),
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 12.sp,
+                letterSpacing = 0.sp
+            ),
+            color = colorScheme.onPrimaryContainer.copy(alpha = 0.68f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        MiniPlayerProgress(content.position, content.duration, colorScheme)
+    }
+}
+
+@Composable
+private fun MiniPlayerProgress(position: Long, duration: Long, colorScheme: ColorScheme) {
+    if (duration <= 0) return
+    val progress = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
+    Spacer(modifier = Modifier.height(3.dp))
+    androidx.compose.material3.LinearProgressIndicator(
+        progress = { progress },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(3.dp)
+            .clip(RoundedCornerShape(2.dp)),
+        color = colorScheme.primary,
+        trackColor = colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
+    )
+}
+
+@Composable
+private fun MiniSwipeTipOverlay(
+    visible: Boolean,
+    onDismissed: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(visible = visible, modifier = modifier.fillMaxWidth().zIndex(2f)) {
+        SwipeDismissTip(onDismissed = onDismissed)
     }
 }
 
@@ -453,7 +477,6 @@ private fun MiniTransportButtons(
     onReplay: () -> Unit,
     onForward: () -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
     val playShape = AbsoluteSmoothCornerShape(
         cornerRadiusTL = 14.dp, smoothnessAsPercentTL = 60,
         cornerRadiusTR = 14.dp, smoothnessAsPercentTR = 60,
@@ -474,48 +497,7 @@ private fun MiniTransportButtons(
             onClick = onReplay
         )
 
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(playShape)
-                .background(colorScheme.primary)
-                .expressiveClickable(
-                    shape = playShape,
-                    indication = ripple(bounded = false),
-                    enabled = !isLoading
-                ) {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onPlayPause()
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Crossfade(
-                targetState = isLoading,
-                animationSpec = tween(220),
-                label = "miniLoading"
-            ) { loading ->
-                if (loading) {
-                    BoxLoreLoader.CircularWavy(
-                        modifier = Modifier.size(24.dp),
-                        color = colorScheme.onPrimary,
-                        trackColor = colorScheme.onPrimary.copy(alpha = 0.24f)
-                    )
-                } else {
-                    Crossfade(
-                        targetState = isPlaying,
-                        animationSpec = tween(180),
-                        label = "miniPlayPause"
-                    ) { playing ->
-                        Icon(
-                            if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = if (playing) "Pause" else "Play",
-                            tint = colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-        }
+        MiniPlayButton(isPlaying, isLoading, colorScheme, playShape, onPlayPause)
 
         MiniSeekButton(
             icon = Icons.Rounded.Forward30,
@@ -524,6 +506,68 @@ private fun MiniTransportButtons(
             colorScheme = colorScheme,
             shape = RoundedCornerShape(13.dp),
             onClick = onForward
+        )
+    }
+}
+
+@Composable
+private fun MiniPlayButton(
+    isPlaying: Boolean,
+    isLoading: Boolean,
+    colorScheme: ColorScheme,
+    shape: Shape,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(shape)
+            .background(colorScheme.primary)
+            .expressiveClickable(
+                shape = shape,
+                indication = ripple(bounded = false),
+                enabled = !isLoading
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Crossfade(
+            targetState = isLoading,
+            animationSpec = tween(220),
+            label = "miniLoading"
+        ) { loading ->
+            MiniPlayButtonContent(loading, isPlaying, colorScheme)
+        }
+    }
+}
+
+@Composable
+private fun MiniPlayButtonContent(
+    isLoading: Boolean,
+    isPlaying: Boolean,
+    colorScheme: ColorScheme
+) {
+    if (isLoading) {
+        BoxLoreLoader.CircularWavy(
+            modifier = Modifier.size(24.dp),
+            color = colorScheme.onPrimary,
+            trackColor = colorScheme.onPrimary.copy(alpha = 0.24f)
+        )
+        return
+    }
+    Crossfade(
+        targetState = isPlaying,
+        animationSpec = tween(180),
+        label = "miniPlayPause"
+    ) { playing ->
+        Icon(
+            if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = if (playing) "Pause" else "Play",
+            tint = colorScheme.onPrimary,
+            modifier = Modifier.size(24.dp)
         )
     }
 }

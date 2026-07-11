@@ -46,114 +46,154 @@ fun GenerateTranscriptDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val estimatedTime = remember(episodeDurationSec) {
-        when {
-            episodeDurationSec <= 0 -> "~1-2 min"
-            episodeDurationSec < 600 -> "~30s"
-            episodeDurationSec < 1800 -> "~1 min"
-            episodeDurationSec < 3600 -> "~1-2 min"
-            else -> "~2-3 min"
-        }
+    val dialogState = remember(episodeDurationSec, autoTranscriptLimitLeft) {
+        TranscriptDialogState(
+            estimatedTime = estimateTranscriptTime(episodeDurationSec),
+            remainingGenerations = autoTranscriptLimitLeft
+        )
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = squircle(28.dp),
-            color = colorScheme.surfaceContainerHigh,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = colorScheme.tertiaryContainer,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = null,
-                            tint = colorScheme.onTertiaryContainer,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
+        TranscriptDialogContent(dialogState, colorScheme, onConfirm, onDismiss)
+    }
+}
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    "Generate Transcript",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    if (autoTranscriptLimitLeft == 0) {
-                        "Daily AI limit reached. Please try again tomorrow."
-                    } else {
-                        "AI transcription is in beta and may contain errors."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (autoTranscriptLimitLeft == 0) colorScheme.error else colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    InfoPill(
-                        icon = Icons.Rounded.Timer,
-                        text = "Est. $estimatedTime",
-                        containerColor = colorScheme.surfaceContainerHighest,
-                        contentColor = colorScheme.onSurfaceVariant
-                    )
-
-                    if (autoTranscriptLimitLeft != null) {
-                        val limitReached = autoTranscriptLimitLeft == 0
-                        InfoPill(
-                            icon = Icons.Rounded.AutoAwesome,
-                            text = "$autoTranscriptLimitLeft left for the day",
-                            containerColor = if (limitReached) colorScheme.errorContainer else colorScheme.tertiaryContainer,
-                            contentColor = if (limitReached) colorScheme.onErrorContainer else colorScheme.onTertiaryContainer
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                val canGenerate = autoTranscriptLimitLeft == null || autoTranscriptLimitLeft > 0
-                Button(
-                    enabled = canGenerate,
-                    onClick = onConfirm,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = squircle(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorScheme.primary,
-                        disabledContainerColor = colorScheme.onSurface.copy(alpha = 0.12f),
-                        disabledContentColor = colorScheme.onSurface.copy(alpha = 0.38f)
-                    )
-                ) {
-                    Text(
-                        if (canGenerate) "Generate" else "Limit Reached",
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                    Text("Cancel", color = colorScheme.onSurfaceVariant)
-                }
-            }
+private data class TranscriptDialogState(
+    val estimatedTime: String,
+    val remainingGenerations: Int?
+) {
+    val limitReached: Boolean get() = remainingGenerations == 0
+    val canGenerate: Boolean get() = remainingGenerations == null || remainingGenerations > 0
+    val supportingText: String
+        get() = if (limitReached) {
+            "Daily AI limit reached. Please try again tomorrow."
+        } else {
+            "AI transcription is in beta and may contain errors."
         }
+}
+
+private fun estimateTranscriptTime(durationSeconds: Long): String = when {
+    durationSeconds <= 0 -> "~1-2 min"
+    durationSeconds < 600 -> "~30s"
+    durationSeconds < 1800 -> "~1 min"
+    durationSeconds < 3600 -> "~1-2 min"
+    else -> "~2-3 min"
+}
+
+@Composable
+private fun TranscriptDialogContent(
+    state: TranscriptDialogState,
+    colorScheme: ColorScheme,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Surface(
+        shape = squircle(28.dp),
+        color = colorScheme.surfaceContainerHigh,
+        tonalElevation = 6.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TranscriptDialogHeader(state, colorScheme)
+            Spacer(modifier = Modifier.height(16.dp))
+            TranscriptInfoRow(state, colorScheme)
+            Spacer(modifier = Modifier.height(24.dp))
+            TranscriptDialogActions(state, colorScheme, onConfirm, onDismiss)
+        }
+    }
+}
+
+@Composable
+private fun TranscriptDialogHeader(state: TranscriptDialogState, colorScheme: ColorScheme) {
+    Surface(
+        shape = CircleShape,
+        color = colorScheme.tertiaryContainer,
+        modifier = Modifier.size(56.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Icons.Rounded.AutoAwesome,
+                contentDescription = null,
+                tint = colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        "Generate Transcript",
+        style = MaterialTheme.typography.titleMedium,
+        color = colorScheme.onSurface
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        state.supportingText,
+        style = MaterialTheme.typography.bodySmall,
+        color = if (state.limitReached) colorScheme.error else colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun TranscriptInfoRow(state: TranscriptDialogState, colorScheme: ColorScheme) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        InfoPill(
+            icon = Icons.Rounded.Timer,
+            text = "Est. ${state.estimatedTime}",
+            containerColor = colorScheme.surfaceContainerHighest,
+            contentColor = colorScheme.onSurfaceVariant
+        )
+        state.remainingGenerations?.let { remaining ->
+            InfoPill(
+                icon = Icons.Rounded.AutoAwesome,
+                text = "$remaining left for the day",
+                containerColor = if (state.limitReached) {
+                    colorScheme.errorContainer
+                } else {
+                    colorScheme.tertiaryContainer
+                },
+                contentColor = if (state.limitReached) {
+                    colorScheme.onErrorContainer
+                } else {
+                    colorScheme.onTertiaryContainer
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TranscriptDialogActions(
+    state: TranscriptDialogState,
+    colorScheme: ColorScheme,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Button(
+        enabled = state.canGenerate,
+        onClick = onConfirm,
+        modifier = Modifier.fillMaxWidth(),
+        shape = squircle(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colorScheme.primary,
+            disabledContainerColor = colorScheme.onSurface.copy(alpha = 0.12f),
+            disabledContentColor = colorScheme.onSurface.copy(alpha = 0.38f)
+        )
+    ) {
+        Text(
+            if (state.canGenerate) "Generate" else "Limit Reached",
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+        Text("Cancel", color = colorScheme.onSurfaceVariant)
     }
 }
 

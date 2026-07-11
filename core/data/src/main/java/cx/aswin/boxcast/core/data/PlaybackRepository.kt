@@ -1150,8 +1150,13 @@ class PlaybackRepository(
 
         val known = latestQueue.associateBy { it.id }
         val newQueue = idsNow.mapIndexed { offset, id ->
-            known[id] ?: dbItems[id]
-                ?: buildEpisodeFromMediaItem(controllerNow.getMediaItemAt(startNow + offset), id)
+            val currentEpisode = known[id]
+            val persistedEpisode = dbItems[id]
+            when {
+                currentEpisode != null -> currentEpisode
+                persistedEpisode != null -> persistedEpisode
+                else -> buildEpisodeFromMediaItem(controllerNow.getMediaItemAt(startNow + offset), id)
+            }
         }.distinctBy { it.id }
         android.util.Log.d("PlaybackRepo", "reconcileQueueWithController: ${latestQueue.size} -> ${newQueue.size} items")
         _playerState.value = _playerState.value.copy(queue = newQueue)

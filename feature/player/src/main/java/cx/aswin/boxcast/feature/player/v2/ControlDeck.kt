@@ -523,103 +523,136 @@ private fun QuickActionsGrid(
         availability.autoChaptersState == AutoTranscriptState.GENERATING
     val transcriptBusy = availability.autoTranscriptState == AutoTranscriptState.GENERATING
     Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            UtilityAction(
-                icon = Icons.Rounded.Speed,
-                label = formatSpeedLabel(playback.playbackSpeed),
-                state = UtilityActionState(
-                    active = kotlin.math.abs(playback.playbackSpeed - 1f) > 0.001f,
-                    status = formatSpeedLabel(playback.playbackSpeed)
-                        .takeIf { kotlin.math.abs(playback.playbackSpeed - 1f) > 0.001f }
-                ),
-                colorScheme = colorScheme,
-                shape = shapes.topStart,
-                onClick = navigation.onSpeedClick,
-                modifier = Modifier.weight(1f)
-            )
-            SleepAction(
-                sleepTimerEnd = playback.sleepTimerEnd,
-                sleepAtEndOfEpisode = playback.sleepAtEndOfEpisode,
-                colorScheme = colorScheme,
-                shape = shapes.middle,
-                onClick = navigation.onSleepClick,
-                modifier = Modifier.weight(1f)
-            )
-            UtilityAction(
-                icon = if (library.isDownloaded) Icons.Outlined.DownloadDone else Icons.Outlined.Download,
-                label = downloadLabel(library),
-                state = UtilityActionState(
-                    active = library.isDownloaded,
-                    loading = library.isDownloading
-                ),
-                colorScheme = colorScheme,
-                shape = shapes.middle,
-                onClick = clickActions.onDownloadClick,
-                modifier = Modifier.weight(1f)
-            )
-            UtilityAction(
-                icon = Icons.AutoMirrored.Rounded.QueueMusic,
-                label = "Queue",
-                colorScheme = colorScheme,
-                shape = shapes.topEnd,
-                onClick = clickActions.onQueueClick,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        QuickActionsTopRow(playback, library, colorScheme, shapes, navigation, clickActions)
         Spacer(Modifier.height(3.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            UtilityAction(
-                icon = if (library.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                label = if (library.isLiked) "Liked" else "Like",
-                state = UtilityActionState(active = library.isLiked),
-                colorScheme = colorScheme,
-                shape = shapes.bottomStart,
-                onClick = clickActions.onLikeClick,
-                modifier = Modifier.weight(1f)
-            )
-            UtilityAction(
-                icon = Icons.AutoMirrored.Rounded.Toc,
-                label = "Chapters",
-                state = UtilityActionState(
-                    enabled = !chaptersBusy,
-                    loading = chaptersBusy,
-                    subdued = !availability.hasChapters && !chaptersBusy
-                ),
-                colorScheme = colorScheme,
-                shape = shapes.middle,
-                onClick = clickActions.onChaptersClick,
-                modifier = Modifier.weight(1f)
-            )
-            UtilityAction(
-                icon = Icons.Rounded.Description,
-                label = "Transcript",
-                state = UtilityActionState(
-                    active = availability.isTranscriptVisible,
-                    enabled = availability.hasTranscript && !transcriptBusy,
-                    loading = transcriptBusy,
-                    subdued = !availability.hasTranscript && !transcriptBusy
-                ),
-                colorScheme = colorScheme,
-                shape = shapes.middle,
-                onClick = clickActions.onTranscriptClick,
-                modifier = Modifier.weight(1f)
-            )
-            UtilityAction(
-                icon = if (library.isPlayed) Icons.Rounded.CheckCircle else Icons.Outlined.CheckCircle,
-                label = if (library.isPlayed) "Played" else "Complete",
-                state = UtilityActionState(active = library.isPlayed),
-                colorScheme = colorScheme,
-                shape = shapes.bottomEnd,
-                onClick = clickActions.onMarkPlayedClick,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        QuickActionsBottomRow(
+            availability,
+            library,
+            colorScheme,
+            shapes,
+            clickActions,
+            chaptersBusy,
+            transcriptBusy
+        )
+    }
+}
+
+@Composable
+private fun QuickActionsTopRow(
+    playback: SecondaryPlaybackState,
+    library: SecondaryLibraryState,
+    colorScheme: ColorScheme,
+    shapes: QuickControlShapes,
+    navigation: QuickControlNavigation,
+    clickActions: SecondaryClickActions
+) {
+    val speedIsCustom = kotlin.math.abs(playback.playbackSpeed - 1f) > 0.001f
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        UtilityAction(
+            icon = Icons.Rounded.Speed,
+            label = formatSpeedLabel(playback.playbackSpeed),
+            state = UtilityActionState(
+                active = speedIsCustom,
+                status = formatSpeedLabel(playback.playbackSpeed).takeIf { speedIsCustom }
+            ),
+            colorScheme = colorScheme,
+            shape = shapes.topStart,
+            onClick = navigation.onSpeedClick,
+            modifier = Modifier.weight(1f)
+        )
+        SleepAction(
+            sleepTimerEnd = playback.sleepTimerEnd,
+            sleepAtEndOfEpisode = playback.sleepAtEndOfEpisode,
+            colorScheme = colorScheme,
+            shape = shapes.middle,
+            onClick = navigation.onSleepClick,
+            modifier = Modifier.weight(1f)
+        )
+        UtilityAction(
+            icon = if (library.isDownloaded) Icons.Outlined.DownloadDone else Icons.Outlined.Download,
+            label = downloadLabel(library),
+            state = UtilityActionState(
+                active = library.isDownloaded,
+                loading = library.isDownloading
+            ),
+            colorScheme = colorScheme,
+            shape = shapes.middle,
+            onClick = clickActions.onDownloadClick,
+            modifier = Modifier.weight(1f)
+        )
+        UtilityAction(
+            icon = Icons.AutoMirrored.Rounded.QueueMusic,
+            label = "Queue",
+            colorScheme = colorScheme,
+            shape = shapes.topEnd,
+            onClick = clickActions.onQueueClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun QuickActionsBottomRow(
+    availability: SecondaryAvailabilityState,
+    library: SecondaryLibraryState,
+    colorScheme: ColorScheme,
+    shapes: QuickControlShapes,
+    clickActions: SecondaryClickActions,
+    chaptersBusy: Boolean,
+    transcriptBusy: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        UtilityAction(
+            icon = if (library.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            label = if (library.isLiked) "Liked" else "Like",
+            state = UtilityActionState(active = library.isLiked),
+            colorScheme = colorScheme,
+            shape = shapes.bottomStart,
+            onClick = clickActions.onLikeClick,
+            modifier = Modifier.weight(1f)
+        )
+        UtilityAction(
+            icon = Icons.AutoMirrored.Rounded.Toc,
+            label = "Chapters",
+            state = UtilityActionState(
+                enabled = !chaptersBusy,
+                loading = chaptersBusy,
+                subdued = !availability.hasChapters && !chaptersBusy
+            ),
+            colorScheme = colorScheme,
+            shape = shapes.middle,
+            onClick = clickActions.onChaptersClick,
+            modifier = Modifier.weight(1f)
+        )
+        UtilityAction(
+            icon = Icons.Rounded.Description,
+            label = "Transcript",
+            state = UtilityActionState(
+                active = availability.isTranscriptVisible,
+                enabled = availability.hasTranscript && !transcriptBusy,
+                loading = transcriptBusy,
+                subdued = !availability.hasTranscript && !transcriptBusy
+            ),
+            colorScheme = colorScheme,
+            shape = shapes.middle,
+            onClick = clickActions.onTranscriptClick,
+            modifier = Modifier.weight(1f)
+        )
+        UtilityAction(
+            icon = if (library.isPlayed) Icons.Rounded.CheckCircle else Icons.Outlined.CheckCircle,
+            label = if (library.isPlayed) "Played" else "Complete",
+            state = UtilityActionState(active = library.isPlayed),
+            colorScheme = colorScheme,
+            shape = shapes.bottomEnd,
+            onClick = clickActions.onMarkPlayedClick,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
