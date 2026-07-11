@@ -43,7 +43,7 @@ interface BoxLoreApi {
         @Path("region") region: String
     ): retrofit2.Call<Briefing>
 
-    @GET("curated/curiosity-v2")
+    @GET("curated/curiosity-v3")
     fun getCuratedCuriosity(
         @Header("X-App-Key") publicKey: String,
         @Query("page") page: Int? = 1,

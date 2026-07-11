@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxcast.core.data.PodcastRepository
-import cx.aswin.boxcast.core.network.model.CuratedCuriosityResponseDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,10 +17,11 @@ sealed interface LearnUiState {
     data object Loading : LearnUiState
     
     data class Success(
-        val data: CuratedCuriosityResponseDto,
         val questionsStack: List<DailyCuriosityDto>,
         val isRefreshing: Boolean = false
     ) : LearnUiState
+
+    data class CaughtUp(val isRefreshing: Boolean = false) : LearnUiState
     
     data class Error(val message: String) : LearnUiState
 }
@@ -61,13 +61,20 @@ class LearnViewModel(
         val restored = historyStore.consumePendingRestores()
         if (restored.isEmpty()) return
 
-        val currentState = _uiState.value
-        if (currentState !is LearnUiState.Success) return
-
         val restoredCards = restored.map { it.toDailyCuriosityDto() }
-        val restoredIds = restoredCards.map { it.episode.id }.toSet()
-        val merged = restoredCards + currentState.questionsStack.filterNot { it.episode.id in restoredIds }
-        _uiState.value = currentState.copy(questionsStack = merged)
+        _uiState.update { currentState ->
+            when (currentState) {
+                is LearnUiState.Success -> {
+                    val restoredIds = restoredCards.map { it.episode.id }.toSet()
+                    val merged = restoredCards + currentState.questionsStack.filterNot {
+                        it.episode.id in restoredIds
+                    }
+                    currentState.copy(questionsStack = merged)
+                }
+                is LearnUiState.CaughtUp -> LearnUiState.Success(restoredCards)
+                else -> currentState
+            }
+        }
     }
 
     fun trackScreenExit() {
@@ -115,6 +122,26 @@ class LearnViewModel(
 
     private fun getDismissedIds(): Set<String> = historyStore.getDismissedIds()
 
+    private suspend fun loadFirstAvailableDeck(
+        bypassCache: Boolean
+    ): InitialCuriosityDeckResult = findFirstUnseenCuriosityDeck(
+        dismissedIds = getDismissedIds(),
+        fetchPage = { page ->
+            podcastRepository.getCuratedCuriosity(
+                page = page,
+                bypassCache = bypassCache
+            )
+        }
+    )
+
+    private fun showDeck(result: InitialCuriosityDeckResult.Found) {
+        currentPage = result.page
+        val shuffled = weightedShuffle(result.unseenItems)
+        _uiState.value = LearnUiState.Success(
+            questionsStack = shuffled
+        )
+    }
+
     fun dismissCuriosity(daily: DailyCuriosityDto, action: LearnHistoryAction) {
         val episodeId = daily.episode.id.toString()
         historyStore.recordDismissal(daily, action)
@@ -122,8 +149,12 @@ class LearnViewModel(
         val currentState = _uiState.value
         if (currentState is LearnUiState.Success) {
             val updatedStack = currentState.questionsStack.filterNot { it.episode.id.toString() == episodeId }
-            _uiState.value = currentState.copy(questionsStack = updatedStack)
+            if (updatedStack.isEmpty() && isEndOfContent) {
+                _uiState.value = LearnUiState.CaughtUp()
+                return
+            }
 
+            _uiState.value = currentState.copy(questionsStack = updatedStack)
             if (updatedStack.size < 3) {
                 fetchNextPage()
             }
@@ -217,14 +248,16 @@ class LearnViewModel(
             isEndOfContent = false
             isLoadingMore = false
             try {
-                val res = podcastRepository.getCuratedCuriosity(page = 1, bypassCache = false)
-                if (res != null) {
-                    val dismissed = getDismissedIds()
-                    val remaining = res.questionsStack.filterNot { it.episode.id.toString() in dismissed }
-                    val shuffled = weightedShuffle(remaining)
-                    _uiState.value = LearnUiState.Success(data = res, questionsStack = shuffled)
-                } else {
-                    _uiState.value = LearnUiState.Error("Failed to load curiosity curation")
+                when (val result = loadFirstAvailableDeck(bypassCache = false)) {
+                    is InitialCuriosityDeckResult.Found -> showDeck(result)
+                    is InitialCuriosityDeckResult.Exhausted -> {
+                        currentPage = result.lastPage
+                        isEndOfContent = true
+                        _uiState.value = LearnUiState.CaughtUp()
+                    }
+                    is InitialCuriosityDeckResult.Failed -> {
+                        _uiState.value = LearnUiState.Error("Failed to load curiosity curation")
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.value = LearnUiState.Error(e.message ?: "Unknown error occurred")
@@ -236,31 +269,35 @@ class LearnViewModel(
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
             val current = _uiState.value
-            if (current is LearnUiState.Success) {
-                _uiState.value = current.copy(isRefreshing = true)
+            when (current) {
+                is LearnUiState.Success -> _uiState.value = current.copy(isRefreshing = true)
+                is LearnUiState.CaughtUp -> _uiState.value = current.copy(isRefreshing = true)
+                else -> Unit
             }
             try {
                 currentPage = 1
                 isEndOfContent = false
                 isLoadingMore = false
-                val res = podcastRepository.getCuratedCuriosity(page = 1, bypassCache = true)
-                if (res != null) {
-                    val dismissed = getDismissedIds()
-                    val remaining = res.questionsStack.filterNot { it.episode.id.toString() in dismissed }
-                    val shuffled = weightedShuffle(remaining)
-                    _uiState.value = LearnUiState.Success(data = res, questionsStack = shuffled, isRefreshing = false)
-                } else {
-                    if (current is LearnUiState.Success) {
-                        _uiState.value = current.copy(isRefreshing = false)
-                    } else {
-                        _uiState.value = LearnUiState.Error("Failed to refresh curiosity curation")
+                when (val result = loadFirstAvailableDeck(bypassCache = true)) {
+                    is InitialCuriosityDeckResult.Found -> showDeck(result)
+                    is InitialCuriosityDeckResult.Exhausted -> {
+                        currentPage = result.lastPage
+                        isEndOfContent = true
+                        _uiState.value = LearnUiState.CaughtUp()
+                    }
+                    is InitialCuriosityDeckResult.Failed -> {
+                        _uiState.value = when (current) {
+                            is LearnUiState.Success -> current.copy(isRefreshing = false)
+                            is LearnUiState.CaughtUp -> current.copy(isRefreshing = false)
+                            else -> LearnUiState.Error("Failed to refresh curiosity curation")
+                        }
                     }
                 }
             } catch (e: Exception) {
-                if (current is LearnUiState.Success) {
-                    _uiState.value = current.copy(isRefreshing = false)
-                } else {
-                    _uiState.value = LearnUiState.Error(e.message ?: "Unknown error occurred")
+                _uiState.value = when (current) {
+                    is LearnUiState.Success -> current.copy(isRefreshing = false)
+                    is LearnUiState.CaughtUp -> current.copy(isRefreshing = false)
+                    else -> LearnUiState.Error(e.message ?: "Unknown error occurred")
                 }
             }
         }

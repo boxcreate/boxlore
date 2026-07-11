@@ -70,4 +70,7 @@ dependencies {
 
     // PostHog
     implementation(libs.posthog.android)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

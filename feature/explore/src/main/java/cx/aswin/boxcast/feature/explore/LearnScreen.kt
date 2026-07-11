@@ -239,7 +239,11 @@ fun LearnScreen(
                     drawRect(brush = bottomGlowBrush)
                 }
         ) {
-            val isRefreshing = (uiState as? LearnUiState.Success)?.isRefreshing == true
+            val isRefreshing = when (val state = uiState) {
+                is LearnUiState.Success -> state.isRefreshing
+                is LearnUiState.CaughtUp -> state.isRefreshing
+                else -> false
+            }
             val pullToRefreshState = rememberPullToRefreshState()
 
             PullToRefreshBox(
@@ -258,6 +262,34 @@ fun LearnScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             BoxLoreLoader.Expressive(size = 64.dp)
+                        }
+                    }
+                    is LearnUiState.CaughtUp -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "You’re all caught up",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "New curiosities arrive daily. You can also restore cards from your history.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            FilledTonalButton(onClick = viewModel::refresh) {
+                                Text("Check for new cards")
+                            }
+                            TextButton(onClick = onNavigateToHistory) {
+                                Text("Review history")
+                            }
                         }
                     }
                     is LearnUiState.Success -> {
