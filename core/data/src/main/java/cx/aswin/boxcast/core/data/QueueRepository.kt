@@ -99,8 +99,15 @@ class QueueRepository @Inject constructor(
      * Used to sync in-memory queue state back to DB.
      */
     suspend fun replaceQueue(episodes: List<cx.aswin.boxcast.core.model.Episode>) {
+        val uniqueEpisodes = episodes.distinctBy { it.id }
+        if (uniqueEpisodes.size != episodes.size) {
+            android.util.Log.w(
+                TAG,
+                "replaceQueue: Removed ${episodes.size - uniqueEpisodes.size} duplicate episode IDs"
+            )
+        }
         queueDao.clearQueue()
-        episodes.forEachIndexed { index, ep ->
+        uniqueEpisodes.forEachIndexed { index, ep ->
             val item = QueueItem(
                 episodeId = ep.id,
                 title = ep.title,
@@ -135,7 +142,16 @@ class QueueRepository @Inject constructor(
         android.util.Log.d(TAG, "getQueueSnapshot: Fetching sync")
         val items = queueDao.getAllQueueItemsSync()
         android.util.Log.d(TAG, "getQueueSnapshot: Got ${items.size} items")
-        return items.map { it.toDomainEpisode() }
+        val episodes = items.map { it.toDomainEpisode() }
+        val uniqueEpisodes = episodes.distinctBy { it.id }
+        if (uniqueEpisodes.size != episodes.size) {
+            android.util.Log.w(
+                TAG,
+                "getQueueSnapshot: Repairing ${episodes.size - uniqueEpisodes.size} duplicate queue rows"
+            )
+            replaceQueue(uniqueEpisodes)
+        }
+        return uniqueEpisodes
     }
     
     private fun cx.aswin.boxcast.core.data.database.entities.QueueItem.toDomainEpisode(): cx.aswin.boxcast.core.model.Episode {
@@ -240,7 +256,7 @@ class QueueRepository @Inject constructor(
 
         val byEpisodeId = items.associateBy { it.episodeId }
         val reordered = mutableListOf<QueueItem>()
-        orderedEpisodeIds.forEach { episodeId ->
+        orderedEpisodeIds.distinct().forEach { episodeId ->
             byEpisodeId[episodeId]?.let { reordered.add(it) }
         }
         // Keep any rows that weren't part of the provided order (defensive) at the tail.

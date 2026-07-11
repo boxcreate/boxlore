@@ -136,13 +136,25 @@ fun QueueSheetContent(
             val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
                 actions.onMove(from.index, to.index)
             }
+            val duplicateIds = remember(queue) {
+                queue.groupingBy { it.id }
+                    .eachCount()
+                    .filterValues { count -> count > 1 }
+                    .keys
+            }
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
-                itemsIndexed(queue, key = { _, episode -> episode.id }) { index, episode ->
-                    ReorderableItem(reorderableState, key = episode.id) { isDragging ->
+                itemsIndexed(
+                    items = queue,
+                    key = { index, episode ->
+                        if (episode.id in duplicateIds) "${episode.id}#$index" else episode.id
+                    }
+                ) { index, episode ->
+                    val itemKey = if (episode.id in duplicateIds) "${episode.id}#$index" else episode.id
+                    ReorderableItem(reorderableState, key = itemKey) { isDragging ->
                         QueueItemRow(
                             display = QueueItemDisplay(
                                 episode = episode,

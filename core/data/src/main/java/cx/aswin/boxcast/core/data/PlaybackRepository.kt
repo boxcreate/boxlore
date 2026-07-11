@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.Chapter
@@ -57,6 +58,7 @@ data class PlayerState(
     val sleepAtEndOfEpisode: Boolean = false, // Dynamic mode: sleep when episode ends
     val queue: List<Episode> = emptyList(),
     val isLiked: Boolean = false,
+    val isCompleted: Boolean = false,
     val showLateNightNudge: Boolean = false,
     val currentChapters: List<cx.aswin.boxcast.core.model.Chapter> = emptyList(),
     val isChaptersLoading: Boolean = false,
@@ -559,10 +561,21 @@ class PlaybackRepository(
                     likeStateObserverJob?.cancel()
                     if (episodeId != null) {
                         likeStateObserverJob = launch {
+                            var firstEmission = true
                             listeningHistoryDao.getHistoryItemFlow(episodeId).collect { history ->
+                                if (history == null && firstEmission) {
+                                    // New episode without history: clear stale like/completed flags.
+                                    _playerState.value = _playerState.value.copy(isLiked = false, isCompleted = false)
+                                }
+                                firstEmission = false
                                 if (history != null) {
-                                    if (_playerState.value.isLiked != history.isLiked) {
-                                        _playerState.value = _playerState.value.copy(isLiked = history.isLiked)
+                                    if (_playerState.value.isLiked != history.isLiked ||
+                                        _playerState.value.isCompleted != history.isCompleted
+                                    ) {
+                                        _playerState.value = _playerState.value.copy(
+                                            isLiked = history.isLiked,
+                                            isCompleted = history.isCompleted
+                                        )
                                     }
                                 }
                             }
@@ -577,6 +590,14 @@ class PlaybackRepository(
         mediaControllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
         mediaControllerFuture?.addListener({
             mediaController = mediaControllerFuture?.get()
+            // Restore the persisted playback speed so it survives app restarts.
+            repositoryScope.launch {
+                val savedSpeed = userPreferencesRepository.playbackSpeedStream.first()
+                if (savedSpeed != 1.0f && mediaController?.playbackParameters?.speed != savedSpeed) {
+                    mediaController?.playbackParameters = PlaybackParameters(savedSpeed)
+                    _playerState.value = _playerState.value.copy(playbackSpeed = savedSpeed)
+                }
+            }
             mediaController?.addListener(object : androidx.media3.common.Player.Listener {
                 private var pendingSaveJob: Job? = null
 
@@ -1078,6 +1099,25 @@ class PlaybackRepository(
     private fun reconcileQueueWithController() {
         val controller = mediaController ?: return
         if (controller.mediaItemCount == 0) return
+
+        // A restored/refilled Media3 playlist can occasionally contain the same episode
+        // more than once. Keep the first upcoming occurrence and remove later duplicates
+        // before they can leak into PlayerState or become duplicate Compose list keys.
+        val initialStart = controller.currentMediaItemIndex.coerceAtLeast(0)
+        val seenIds = mutableSetOf<String>()
+        val duplicateIndices = mutableListOf<Int>()
+        for (index in initialStart until controller.mediaItemCount) {
+            val id = QueueMath.stripMediaIdPrefixes(controller.getMediaItemAt(index).mediaId)
+            if (!seenIds.add(id)) duplicateIndices += index
+        }
+        if (duplicateIndices.isNotEmpty()) {
+            android.util.Log.w(
+                "PlaybackRepo",
+                "reconcileQueueWithController: Removing ${duplicateIndices.size} duplicate media items"
+            )
+            duplicateIndices.asReversed().forEach(controller::removeMediaItem)
+        }
+
         val start = controller.currentMediaItemIndex.coerceAtLeast(0)
         val orderedIds = (start until controller.mediaItemCount).map {
             QueueMath.stripMediaIdPrefixes(controller.getMediaItemAt(it).mediaId)
@@ -1113,7 +1153,7 @@ class PlaybackRepository(
             val newQueue = idsNow.mapIndexed { offset, id ->
                 known[id] ?: dbItems[id]
                     ?: buildEpisodeFromMediaItem(controllerNow.getMediaItemAt(startNow + offset), id)
-            }
+            }.distinctBy { it.id }
             android.util.Log.d("PlaybackRepo", "reconcileQueueWithController: ${latestQueue.size} -> ${newQueue.size} items")
             _playerState.value = _playerState.value.copy(queue = newQueue)
         }
@@ -1273,6 +1313,18 @@ class PlaybackRepository(
         sourceContext: android.os.Bundle? = null
     ) {
         Log.d("PlaybackRepo", "playQueue() called: count=${episodes.size}, start=$startIndex, podcastGenre='${podcast.genre}'")
+        val requestedStartId = episodes.getOrNull(startIndex)?.id
+        val uniqueEpisodes = episodes.distinctBy { it.id }
+        val uniqueStartIndex = requestedStartId
+            ?.let { id -> uniqueEpisodes.indexOfFirst { it.id == id } }
+            ?.takeIf { it >= 0 }
+            ?: 0
+        if (uniqueEpisodes.size != episodes.size) {
+            Log.w(
+                "PlaybackRepo",
+                "playQueue: Removed ${episodes.size - uniqueEpisodes.size} duplicate episode IDs"
+            )
+        }
         
         prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, false).apply()
         
@@ -1292,12 +1344,12 @@ class PlaybackRepository(
                 } else {
                     null
                 }
-            val mediaItems = buildMediaItems(episodes, podcast, entryPointContext)
+            val mediaItems = buildMediaItems(uniqueEpisodes, podcast, entryPointContext)
             
-            val startEpisodeId = episodes.getOrNull(startIndex)?.id
+            val startEpisodeId = uniqueEpisodes.getOrNull(uniqueStartIndex)?.id
             val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint)
             
-            val currentEp = episodes.getOrNull(startIndex)
+            val currentEp = uniqueEpisodes.getOrNull(uniqueStartIndex)
             if (currentEp != null) {
                 // playQueue optimistically flips isPlaying=true here, ahead of the real
                 // MediaController callback, so the onIsPlayingChanged edge-trigger below
@@ -1309,7 +1361,7 @@ class PlaybackRepository(
                     isPlaying = true,
                     position = startPosMs,
                     duration = currentEp.duration.toLong() * 1000,
-                    queue = episodes,
+                    queue = uniqueEpisodes,
                     isLiked = initialLikeState
                 )
                 if (!wasPlaying) {
@@ -1318,7 +1370,7 @@ class PlaybackRepository(
             }
             
             cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("resume")
-            controller.setMediaItems(mediaItems, startIndex, startPosMs)
+            controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
             controller.prepare()
             
             storePendingEntryPoint(entryPointContext)
@@ -2026,6 +2078,7 @@ class PlaybackRepository(
     fun setPlaybackSpeed(speed: Float) {
         mediaController?.playbackParameters = PlaybackParameters(speed)
         _playerState.value = _playerState.value.copy(playbackSpeed = speed)
+        repositoryScope.launch { userPreferencesRepository.setPlaybackSpeed(speed) }
     }
 
     fun setSleepTimer(durationMinutes: Int, dismissNudge: Boolean = true) {

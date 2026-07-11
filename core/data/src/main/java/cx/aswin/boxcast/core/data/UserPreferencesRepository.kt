@@ -46,6 +46,7 @@ class UserPreferencesRepository(context: Context) {
         val SUBSCRIPTION_SORT = stringPreferencesKey("subscription_sort")
         val LATEST_EPISODES_SORT_USE_SMART = androidx.datastore.preferences.core.booleanPreferencesKey("latest_episodes_sort_use_smart")
         val SKIP_BEHAVIOR = stringPreferencesKey("skip_behavior")
+        val PLAYBACK_SPEED = androidx.datastore.preferences.core.floatPreferencesKey("playback_speed")
         val HIDE_COMPLETED_IN_FEEDS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_feeds")
         val HIDE_COMPLETED_IN_SHOW_DETAILS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_show_details")
         val HIDE_COMPLETED_IN_HOME = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_home")
@@ -323,6 +324,22 @@ class UserPreferencesRepository(context: Context) {
     suspend fun setLatestEpisodesSortUseSmart(useSmart: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.LATEST_EPISODES_SORT_USE_SMART] = useSmart
+        }
+    }
+
+    /** Persisted playback speed — restored across app restarts. */
+    val playbackSpeedStream: Flow<Float> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[Keys.PLAYBACK_SPEED] ?: 1.0f
+        }
+        .distinctUntilChanged()
+
+    suspend fun setPlaybackSpeed(speed: Float) {
+        dataStore.edit { preferences ->
+            preferences[Keys.PLAYBACK_SPEED] = speed
         }
     }
 

@@ -2319,7 +2319,7 @@ class MainActivity : ComponentActivity() {
                     // Collapsed position: mini player sits above app navbar with a small margin
                     val miniPlayerBottomMargin = 8.dp
                     val collapsedTargetY = with(density) {
-                        (screenHeightDp - cx.aswin.boxcast.feature.player.MiniPlayerHeight - appNavBarHeight - systemNavBarHeight - miniPlayerBottomMargin).toPx()
+                        (screenHeightDp - cx.aswin.boxcast.feature.player.v2.MiniPlayerHeight - appNavBarHeight - systemNavBarHeight - miniPlayerBottomMargin).toPx()
                     }
                     
 
@@ -2460,7 +2460,7 @@ class MainActivity : ComponentActivity() {
                     // Unified Player Sheet - PixelPlayer architecture (Last so it draws ON TOP)
                     // Hidden during mode switch animation
                     if (!isModeSwitching) {
-                    cx.aswin.boxcast.feature.player.UnifiedPlayerSheet(
+                    cx.aswin.boxcast.feature.player.v2.PlayerSheetScaffold(
                         playbackRepository = playbackRepository,
                         downloadRepository = downloadRepository,
                         userPrefs = userPrefs,

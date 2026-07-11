@@ -1,11 +1,11 @@
 package cx.aswin.boxcast.core.designsystem.theme
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -25,6 +26,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.collect
 
 /**
  * Material 3 Expressive Motion Physics.
@@ -35,7 +37,8 @@ import kotlinx.coroutines.coroutineScope
  */
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 
@@ -73,6 +76,37 @@ object ExpressiveMotion {
     )
 }
 
+@Composable
+private fun rememberExpressiveVisualScale(
+    interactionSource: MutableInteractionSource
+): Animatable<Float, AnimationVector1D> {
+    val scale = remember(interactionSource) { Animatable(1f) }
+    LaunchedEffect(interactionSource) {
+        var animationJob: Job? = null
+        interactionSource.interactions.collect { interaction ->
+            val target = when (interaction) {
+                is PressInteraction.Press -> 0.85f
+                is PressInteraction.Release,
+                is PressInteraction.Cancel -> 1f
+                else -> null
+            } ?: return@collect
+
+            animationJob?.cancel()
+            animationJob = launch {
+                scale.animateTo(
+                    targetValue = target,
+                    animationSpec = if (target < 1f) {
+                        ExpressiveMotion.QuickSpring
+                    } else {
+                        ExpressiveMotion.BouncySpring
+                    }
+                )
+            }
+        }
+    }
+    return scale
+}
+
 /**
  * Expressive clickable modifier that always shows visible animation:
  * 1. On tap: Quickly shrink to 0.85
@@ -86,16 +120,11 @@ fun Modifier.expressiveClickable(
     onClick: () -> Unit
 ): Modifier = composed {
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scaleState = animateFloatAsState(
-        targetValue = if (isPressed) 0.85f else 1f,
-        animationSpec = if (isPressed) ExpressiveMotion.QuickSpring else ExpressiveMotion.BouncySpring,
-        label = "expressiveClickScale"
-    )
+    val visualScale = rememberExpressiveVisualScale(interactionSource)
     this
         .graphicsLayer {
-            scaleX = scaleState.value
-            scaleY = scaleState.value
+            scaleX = visualScale.value
+            scaleY = visualScale.value
             if (shape != null) {
                 clip = true
                 this.shape = shape
@@ -118,16 +147,11 @@ fun Modifier.expressiveClickable(
     onClick: () -> Unit
 ): Modifier = composed {
     val localInteractionSource = interactionSource ?: remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val isPressed by localInteractionSource.collectIsPressedAsState()
-    val scaleState = animateFloatAsState(
-        targetValue = if (isPressed) 0.85f else 1f,
-        animationSpec = if (isPressed) ExpressiveMotion.QuickSpring else ExpressiveMotion.BouncySpring,
-        label = "expressiveClickScale"
-    )
+    val visualScale = rememberExpressiveVisualScale(localInteractionSource)
     this
         .graphicsLayer {
-            scaleX = scaleState.value
-            scaleY = scaleState.value
+            scaleX = visualScale.value
+            scaleY = visualScale.value
             if (shape != null) {
                 clip = true
                 this.shape = shape
