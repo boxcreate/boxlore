@@ -54,7 +54,7 @@ We are currently focusing on offline playback enhancements, database indexing op
 <br/>
 
 <details>
-<summary><b>🎉 What's New (v0.0.7)</b></summary>
+<summary><b>🎉 What's New (v0.0.7) - 2026-07-12</b></summary>
 <br/>
 <p align="left">
 <b>Smart Queue v2:</b> Tiered refill engine, drag-reorder queue sheet, conflict alerts, and region-aware recommendations.<br/>
