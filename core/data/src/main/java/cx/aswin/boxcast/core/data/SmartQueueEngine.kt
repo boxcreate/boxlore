@@ -4,6 +4,16 @@ import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.network.model.EpisodeItem
 import cx.aswin.boxcast.core.network.model.HistoryItem
+import kotlinx.coroutines.CancellationException
+
+private suspend inline fun <T> runSuspendCatching(crossinline block: suspend () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        Result.failure(e)
+    }
 
 /**
  * Represents an episode in the queue along with its podcast context.
@@ -170,7 +180,7 @@ class DefaultSmartQueueEngine(
         excludeEpisodeIds: Set<String>
     ): MutableSet<String> {
         val skippedEpisodes = skipMemory?.skippedEpisodeIds() ?: emptySet()
-        val completed = runCatching { sources.getCompletedEpisodeIds() }.getOrDefault(emptySet())
+        val completed = runSuspendCatching { sources.getCompletedEpisodeIds() }.getOrDefault(emptySet())
         val currentId = currentEpisode.id.toString()
         return HashSet<String>(excludeEpisodeIds.size + completed.size + skippedEpisodes.size + 1).apply {
             addAll(excludeEpisodeIds)
@@ -187,7 +197,7 @@ class DefaultSmartQueueEngine(
         downRankedPodcasts: Set<String>,
         existingBatchSize: Int
     ): List<QueueEntry> {
-        val recentPodcasts = runCatching {
+        val recentPodcasts = runSuspendCatching {
             sources.getRecentlyPlayedPodcastIds(nowMs() - RECENT_PODCAST_WINDOW_MS)
         }.getOrDefault(emptySet())
 
@@ -248,7 +258,7 @@ class DefaultSmartQueueEngine(
         preferredSort: String?,
         exclude: Set<String>
     ): List<QueueEntry> {
-        val allEpisodes = runCatching { sources.getEpisodes(podcast.id) }.getOrDefault(emptyList())
+        val allEpisodes = runSuspendCatching { sources.getEpisodes(podcast.id) }.getOrDefault(emptyList())
         if (allEpisodes.isEmpty()) return emptyList()
 
         val currentId = currentEpisode.id.toString()
@@ -352,7 +362,7 @@ class DefaultSmartQueueEngine(
         exclude: MutableSet<String>
     ): List<QueueEntry> {
         val cutoff = nowMs() - RESUME_WINDOW_MS
-        val picks = runCatching { sources.getResumeCandidates() }.getOrDefault(emptyList())
+        val picks = runSuspendCatching { sources.getResumeCandidates() }.getOrDefault(emptyList())
             .asSequence()
             .filter { it.episodeId !in exclude }
             .filter { it.podcastId != currentPodcast.id }
@@ -398,10 +408,10 @@ class DefaultSmartQueueEngine(
         needed: Int
     ): List<QueueEntry> {
         if (needed <= 0) return emptyList()
-        val subs = runCatching { sources.getSubscribedPodcasts() }.getOrDefault(emptyList())
+        val subs = runSuspendCatching { sources.getSubscribedPodcasts() }.getOrDefault(emptyList())
         if (subs.isEmpty()) return emptyList()
 
-        val history = runCatching { sources.getRecentHistory(300) }.getOrDefault(emptyList())
+        val history = runSuspendCatching { sources.getRecentHistory(300) }.getOrDefault(emptyList())
         val scores = PodcastScoring.calculateScores(subs.map { it.toScorable() }, history)
 
         val ranked = subs.asSequence()
@@ -434,7 +444,7 @@ class DefaultSmartQueueEngine(
 
             if (feedFetches >= MAX_SUBSCRIPTION_FEED_FETCHES) continue
             feedFetches++
-            val next = runCatching { sources.getEpisodes(sub.id) }.getOrDefault(emptyList())
+            val next = runSuspendCatching { sources.getEpisodes(sub.id) }.getOrDefault(emptyList())
                 .sortedByDescending { it.publishedDate }
                 .firstOrNull {
                     it.id !in exclude && it.episodeType != "trailer" &&
@@ -465,7 +475,7 @@ class DefaultSmartQueueEngine(
     ): Tier3Result {
         if (needed <= 0) return Tier3Result(emptyList(), usedEpisodeSimilar = false)
 
-        val history = runCatching { sources.getHistoryForRecommendations(15) }.getOrDefault(emptyList())
+        val history = runSuspendCatching { sources.getHistoryForRecommendations(15) }.getOrDefault(emptyList())
         val picks = if (history.isNotEmpty()) {
             personalizedRecommendations(
                 currentPodcast = currentPodcast,
@@ -502,7 +512,7 @@ class DefaultSmartQueueEngine(
         history: List<HistoryItem>,
         needed: Int
     ): List<QueueEntry> {
-        val recs = runCatching {
+        val recs = runSuspendCatching {
             val interests = sources.getInterests()
             val subs = sources.getSubscribedPodcasts()
             sources.getPersonalizedRecommendations(
@@ -534,7 +544,7 @@ class DefaultSmartQueueEngine(
         region: String,
         needed: Int
     ): List<QueueEntry> {
-        val similar = runCatching {
+        val similar = runSuspendCatching {
             sources.getSimilarEpisodes(
                 episodeId = currentEpisode.id.toString(),
                 podcastId = currentPodcast.id,
@@ -586,12 +596,12 @@ class DefaultSmartQueueEngine(
         exclude: MutableSet<String>,
         region: String
     ): List<QueueEntry> {
-        val recentLike = runCatching { sources.getRecentHistory(100) }.getOrDefault(emptyList())
+        val recentLike = runSuspendCatching { sources.getRecentHistory(100) }.getOrDefault(emptyList())
             .filter { it.isLiked }
             .maxByOrNull { it.lastPlayedAt }
             ?: return emptyList()
 
-        val similar = runCatching {
+        val similar = runSuspendCatching {
             sources.getSimilarEpisodes(
                 episodeId = recentLike.episodeId,
                 podcastId = recentLike.podcastId,
@@ -623,7 +633,7 @@ class DefaultSmartQueueEngine(
         if (needed <= 0) return emptyList()
 
         val genre = resolveGenre(currentPodcast)
-        val trending = runCatching { sources.getTrendingPodcasts(region, genre) }.getOrDefault(emptyList())
+        val trending = runSuspendCatching { sources.getTrendingPodcasts(region, genre) }.getOrDefault(emptyList())
         if (trending.isEmpty()) return emptyList()
 
         val recentTrimmed = recentPodcasts.map { it.trim() }.toSet()
@@ -638,7 +648,7 @@ class DefaultSmartQueueEngine(
             if (pod.id.trim() in recentTrimmed) continue
 
             feedFetches++
-            val next = runCatching { sources.getEpisodes(pod.id) }.getOrDefault(emptyList())
+            val next = runSuspendCatching { sources.getEpisodes(pod.id) }.getOrDefault(emptyList())
                 .sortedByDescending { it.publishedDate }
                 .firstOrNull {
                     it.id !in exclude && it.episodeType != "trailer" &&
@@ -657,7 +667,7 @@ class DefaultSmartQueueEngine(
     private suspend fun resolveGenre(currentPodcast: Podcast): String? {
         val genre = currentPodcast.genre
         if (genre.isNotBlank() && genre != "Podcast") return genre
-        return runCatching { sources.getPodcastDetails(currentPodcast.id)?.genre }.getOrNull()
+        return runSuspendCatching { sources.getPodcastDetails(currentPodcast.id)?.genre }.getOrNull()
             ?.takeIf { it.isNotBlank() && it != "Podcast" }
     }
 
