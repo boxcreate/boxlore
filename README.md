@@ -4,7 +4,7 @@
 
 ### A podcast app that actually gets personal
 
-*Open source under GPL v3. No ads. Ever.*
+*Proprietary. All Rights Reserved. No ads. Ever.*
 
 <br/>
 <br/>
@@ -20,7 +20,7 @@
 <br/>
 
 <a href="LICENSE">
-  <img src="https://img.shields.io/badge/License-GPLv3-ff0080?style=flat-square&logo=gnu&logoColor=white" alt="GPL v3"/>
+  <img src="https://img.shields.io/badge/License-Proprietary-1e293b?style=flat-square" alt="Proprietary License"/>
 </a>
 <img src="https://img.shields.io/github/downloads/ashwkun/boxlore/total?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Total downloads"/>
 <img src="https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin"/>
@@ -299,7 +299,7 @@ Contributions welcome.
 
 ## License
 
-boxlore is **free and open source** under the [GNU General Public License v3.0](LICENSE).
+boxlore is proprietary. All Rights Reserved. See [LICENSE](LICENSE) for details.
 
 ## Contributors
 
