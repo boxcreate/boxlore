@@ -123,13 +123,13 @@ class LearnViewModel(
     private fun getDismissedIds(): Set<String> = historyStore.getDismissedIds()
 
     private suspend fun loadFirstAvailableDeck(
-        bypassFirstPageCache: Boolean
+        bypassCache: Boolean
     ): InitialCuriosityDeckResult = findFirstUnseenCuriosityDeck(
         dismissedIds = getDismissedIds(),
         fetchPage = { page ->
             podcastRepository.getCuratedCuriosity(
                 page = page,
-                bypassCache = bypassFirstPageCache && page == 1
+                bypassCache = bypassCache
             )
         }
     )
@@ -149,8 +149,12 @@ class LearnViewModel(
         val currentState = _uiState.value
         if (currentState is LearnUiState.Success) {
             val updatedStack = currentState.questionsStack.filterNot { it.episode.id.toString() == episodeId }
-            _uiState.value = currentState.copy(questionsStack = updatedStack)
+            if (updatedStack.isEmpty() && isEndOfContent) {
+                _uiState.value = LearnUiState.CaughtUp()
+                return
+            }
 
+            _uiState.value = currentState.copy(questionsStack = updatedStack)
             if (updatedStack.size < 3) {
                 fetchNextPage()
             }
@@ -244,7 +248,7 @@ class LearnViewModel(
             isEndOfContent = false
             isLoadingMore = false
             try {
-                when (val result = loadFirstAvailableDeck(bypassFirstPageCache = false)) {
+                when (val result = loadFirstAvailableDeck(bypassCache = false)) {
                     is InitialCuriosityDeckResult.Found -> showDeck(result)
                     is InitialCuriosityDeckResult.Exhausted -> {
                         currentPage = result.lastPage
@@ -274,7 +278,7 @@ class LearnViewModel(
                 currentPage = 1
                 isEndOfContent = false
                 isLoadingMore = false
-                when (val result = loadFirstAvailableDeck(bypassFirstPageCache = true)) {
+                when (val result = loadFirstAvailableDeck(bypassCache = true)) {
                     is InitialCuriosityDeckResult.Found -> showDeck(result)
                     is InitialCuriosityDeckResult.Exhausted -> {
                         currentPage = result.lastPage
