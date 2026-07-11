@@ -7,28 +7,16 @@
 *Open source under GPL v3. No ads. Ever.*
 
 <br/>
-<table align="center" width="450">
-  <thead>
-    <tr>
-      <th align="center">📲 Download the app</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center">
-        <br/>
-        <a href="https://github.com/ashwkun/boxlore/releases/latest">
-          <img src="docs/images/badge_github.svg" height="46" alt="Get it on GitHub"/>
-        </a>
-        &nbsp;&nbsp;
-        <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-          <img src="docs/images/badge_playstore.svg" height="46" alt="Coming soon on Google Play"/>
-        </a>
-        <br/><br/>
-      </td>
-    </tr>
-  </tbody>
-</table>
+<br/>
+<div align="center">
+  <a href="https://github.com/ashwkun/boxlore/releases/latest">
+    <img src="docs/images/card_github.svg" height="70" alt="Download APK on GitHub"/>
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
+    <img src="docs/images/card_playstore.svg" height="70" alt="Coming soon on Google Play"/>
+  </a>
+</div>
 <br/>
 
 <a href="LICENSE">
