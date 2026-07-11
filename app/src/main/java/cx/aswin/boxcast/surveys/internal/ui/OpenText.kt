@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 
+/** Multiline free-text answer field styled to match engagement sheets. */
 @Composable
 internal fun OpenText(
     value: String,

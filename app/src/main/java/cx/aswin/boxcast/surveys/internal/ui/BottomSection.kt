@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 
+/** Primary submit button for survey and confirmation screens. */
 @Composable
 internal fun BottomSection(
     label: String,

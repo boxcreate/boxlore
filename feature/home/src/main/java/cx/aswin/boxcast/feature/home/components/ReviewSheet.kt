@@ -177,8 +177,12 @@ fun ReviewPromptSheet(
     }
 }
 
+/** Copy variant for [ReviewPromptSheet] — milestone-based or post-NPS promoter handoff. */
 enum class ReviewPromptVariant {
+    /** Episode-count milestone (5/15/30 completed). */
     Milestone,
+
+    /** Deferred Play review after the user scored 8+ on NPS. */
     PromoterHandoff,
 }
 

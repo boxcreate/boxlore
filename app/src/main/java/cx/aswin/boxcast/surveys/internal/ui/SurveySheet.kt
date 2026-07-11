@@ -49,6 +49,7 @@ private sealed interface SurveySubmitStep {
     data class NextQuestion(val index: Int) : SurveySubmitStep
 }
 
+/** Determines the next UI step after a survey answer is submitted. */
 private fun surveySubmitStep(
     next: PostHogNextSurveyQuestion?,
     displayThankYouMessage: Boolean,
@@ -64,6 +65,11 @@ private fun surveySubmitStep(
         else -> SurveySubmitStep.NextQuestion(next.questionIndex)
     }
 
+/**
+ * Root NPS survey bottom sheet: question flow, rating capture, and optional thank-you screen.
+ *
+ * @param onFirstRatingSubmitted Fired once when the user submits their first numeric rating.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SurveySheet(

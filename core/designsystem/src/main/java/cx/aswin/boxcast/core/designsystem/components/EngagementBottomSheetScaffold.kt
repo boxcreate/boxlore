@@ -29,6 +29,8 @@ import cx.aswin.boxcast.core.designsystem.R
 /**
  * Shared bottom-sheet chrome for engagement flows (NPS survey, review prompt, feedback).
  * Matches the expressive M3 styling used by review and survey sheets.
+ *
+ * @param showCloseButton When false, omits the top-right close icon (e.g. review prompt).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

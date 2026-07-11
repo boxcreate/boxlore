@@ -23,6 +23,7 @@ class BoxLoreApplication : Application() {
     lateinit var userPreferencesRepository: UserPreferencesRepository
         private set
 
+    /** Shared orchestrator for NPS and Play review proactive prompts. */
     lateinit var engagementPromptCoordinator: EngagementPromptCoordinator
         private set
 

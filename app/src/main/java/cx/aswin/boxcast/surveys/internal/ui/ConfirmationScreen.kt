@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.posthog.surveys.PostHogDisplaySurveyTextContentType
 import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 
+/** Post-submit thank-you screen shown when the survey appearance enables it. */
 @Composable
 internal fun ConfirmationScreen(onClose: () -> Unit) {
     val appearance = localAppearance()

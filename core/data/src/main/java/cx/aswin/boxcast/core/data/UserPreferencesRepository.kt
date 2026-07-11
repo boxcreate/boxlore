@@ -554,19 +554,23 @@ class UserPreferencesRepository(context: Context) {
     suspend fun reviewMilestonePending(): Int? =
         dataStore.data.first()[AnalyticsKeys.REVIEW_MILESTONE_PENDING]
 
+    /** Clears a stored milestone after the review prompt is shown or dismissed. */
     suspend fun clearReviewMilestonePending() {
         dataStore.edit { it.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING) }
     }
 
+    /** Synchronous read of whether the user has completed the Play Store review flow. */
     suspend fun hasReviewedSync(): Boolean =
         dataStore.data.first()[AnalyticsKeys.REVIEW_HAS_REVIEWED] ?: false
 
+    /** Updates the shared engagement cooldown timestamp after any proactive prompt. */
     suspend fun recordEngagementPromptShown() {
         dataStore.edit { pref ->
             pref[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT] = System.currentTimeMillis()
         }
     }
 
+    /** True when at least [EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS] have passed since the last prompt. */
     suspend fun isEngagementCooldownElapsed(): Boolean =
         isEngagementCooldownElapsed(dataStore.data.first())
 
@@ -577,12 +581,14 @@ class UserPreferencesRepository(context: Context) {
         return days >= EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS
     }
 
+    /** Persists the most recent NPS score for milestone gating and promoter handoff. */
     suspend fun setNpsLastScore(score: Int) {
         dataStore.edit { it[AnalyticsKeys.NPS_LAST_SCORE] = score }
     }
 
     suspend fun npsLastScore(): Int? = dataStore.data.first()[AnalyticsKeys.NPS_LAST_SCORE]
 
+    /** Sets whether a promoter Play review should show on the next eligible app open. */
     suspend fun setPromoterReviewPending(pending: Boolean) {
         dataStore.edit { it[AnalyticsKeys.PROMOTER_REVIEW_PENDING] = pending }
     }
@@ -608,6 +614,7 @@ class UserPreferencesRepository(context: Context) {
     suspend fun isNpsSurveyPending(): Boolean =
         dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_PENDING] ?: false
 
+    /** Whether the NPS trigger event has already fired for this install. */
     suspend fun hasNpsSurveyFired(): Boolean =
         dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_FIRED] ?: false
 

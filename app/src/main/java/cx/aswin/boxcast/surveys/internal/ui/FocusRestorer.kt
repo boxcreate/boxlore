@@ -12,6 +12,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 
+/**
+ * Restores text-field focus after configuration changes or dialog re-entry.
+ * Used by [OpenText] so keyboard focus survives activity recreation.
+ */
 @Composable
 internal fun Modifier.restoreFocusOnReentry(): Modifier {
     val focusRequester = remember { FocusRequester() }

@@ -5,13 +5,21 @@ import android.app.Application
 import android.os.Bundle
 import java.lang.ref.WeakReference
 
+/**
+ * Tracks the foreground [Activity] so survey UI can attach to the visible window.
+ * Uses [WeakReference] to avoid leaking destroyed activities.
+ */
 internal class ActivityProvider : Application.ActivityLifecycleCallbacks {
     @Volatile
     private var foreground: WeakReference<Activity>? = null
 
+    /** Invoked when a tracked activity is destroyed (used to dismiss survey dialogs). */
     var onActivityDestroyedListener: ((Activity) -> Unit)? = null
+
+    /** Invoked on resume so surveys can reattach after config changes or backgrounding. */
     var onActivityResumedListener: ((Activity) -> Unit)? = null
 
+    /** The activity currently in the foreground, if any. */
     val foregroundActivity: Activity?
         get() = foreground?.get()
 

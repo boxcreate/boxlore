@@ -29,6 +29,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
+/**
+ * Presents PostHog surveys in a Compose [ComponentDialog] attached to the foreground activity.
+ * Survives configuration changes by preserving saveable state and reattaching on resume.
+ */
 internal class BoxcastSurveyHost(
     private val activityProvider: ActivityProvider,
     private val userPrefs: UserPreferencesRepository,
@@ -74,6 +78,7 @@ internal class BoxcastSurveyHost(
         }
     }
 
+    /** Queues the survey and presents it on the current foreground activity. */
     fun show(
         survey: PostHogDisplaySurvey,
         onSurveyShown: OnPostHogSurveyShown,
@@ -91,6 +96,7 @@ internal class BoxcastSurveyHost(
         }
     }
 
+    /** Dismisses any visible survey without notifying PostHog of a close event. */
     fun cleanup() {
         runOnMain { dismissInternal(notifyClosed = false) }
     }

@@ -33,6 +33,7 @@ import com.posthog.surveys.PostHogDisplayRatingQuestion
 import cx.aswin.boxcast.surveys.internal.theme.ResolvedSurveyAppearance
 import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 
+/** Connected 0–10 (or custom-range) rating bar with scale endpoint labels. */
 @Composable
 internal fun NumberRating(
     question: PostHogDisplayRatingQuestion,

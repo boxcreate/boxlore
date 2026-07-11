@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import com.posthog.surveys.PostHogDisplaySurveyAppearance
 import com.posthog.surveys.PostHogDisplaySurveyTextContentType
 
+/** Resolved survey colors and copy, merged from PostHog appearance and Material theme defaults. */
 internal data class ResolvedSurveyAppearance(
     val backgroundColor: Color,
     val borderColor: Color,
@@ -31,11 +32,13 @@ internal data class ResolvedSurveyAppearance(
     val thankYouMessageCloseButtonText: String,
 )
 
+/** CompositionLocal holding the active survey appearance for child composables. */
 internal val LocalSurveyAppearance =
     compositionLocalOf<ResolvedSurveyAppearance> {
         error("LocalSurveyAppearance not provided")
     }
 
+/** Reads the current survey appearance from [LocalSurveyAppearance]. */
 @Composable
 @ReadOnlyComposable
 internal fun localAppearance(): ResolvedSurveyAppearance = LocalSurveyAppearance.current
@@ -75,6 +78,7 @@ private const val DEFAULT_PLACEHOLDER = "Start typing..."
 private const val DEFAULT_THANK_YOU_HEADER = "Thank you for your feedback!"
 private const val DEFAULT_THANK_YOU_CLOSE = "Close"
 
+/** Maps PostHog survey appearance settings onto Material theme defaults. */
 @Composable
 @ReadOnlyComposable
 internal fun PostHogDisplaySurveyAppearance?.resolveAppearance(): ResolvedSurveyAppearance {

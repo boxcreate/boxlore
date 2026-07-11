@@ -181,6 +181,7 @@ object AnalyticsHelper {
         }
     }
 
+    /** Tracks when a proactive engagement modal (NPS, review, etc.) is shown. */
     fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int? = null) {
         PostHog.capture(
             event = "engagement_prompt_shown",
@@ -192,6 +193,7 @@ object AnalyticsHelper {
         )
     }
 
+    /** Fired when a promoter (NPS 8+) is routed to the Play Store review sheet on a later open. */
     fun trackPromoterReviewHandoff(npsScore: Int?) {
         PostHog.capture(
             event = "promoter_review_handoff",

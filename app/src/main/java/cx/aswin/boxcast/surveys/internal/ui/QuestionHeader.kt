@@ -14,6 +14,7 @@ import com.posthog.surveys.PostHogDisplaySurveyQuestion
 import com.posthog.surveys.PostHogDisplaySurveyTextContentType
 import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 
+/** Centered question title and optional description for a survey step. */
 @Composable
 internal fun QuestionHeader(question: PostHogDisplaySurveyQuestion) {
     val appearance = localAppearance()

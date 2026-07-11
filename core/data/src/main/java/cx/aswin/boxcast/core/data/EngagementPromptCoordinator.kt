@@ -27,9 +27,11 @@ class EngagementPromptCoordinator(
     var sessionProactivePromptShown: Boolean = false
         private set
 
+    /** Returns true when playback is idle and no proactive prompt has shown this session. */
     fun canShowProactivePrompt(isPlaying: Boolean): Boolean =
         !isPlaying && !sessionProactivePromptShown
 
+    /** Marks the current session as having shown a proactive prompt and persists cooldown. */
     fun recordProactivePromptShown() {
         sessionProactivePromptShown = true
         scope.launch {
@@ -38,10 +40,14 @@ class EngagementPromptCoordinator(
         }
     }
 
+    /** Called when the PostHog NPS sheet becomes visible. */
     fun onSurveyDisplayed() {
         recordProactivePromptShown()
     }
 
+    /**
+     * Persists the first NPS rating and queues promoter Play review when [score] is 8+.
+     */
     fun onNpsRatingSubmitted(score: Int?) {
         if (score == null) return
         scope.launch {
@@ -54,6 +60,10 @@ class EngagementPromptCoordinator(
         }
     }
 
+    /**
+     * True when a deferred promoter handoff is pending and the user has not reviewed yet.
+     * Does not apply the 14-day cooldown — that prompt completes the NPS journey.
+     */
     suspend fun shouldShowPromoterReview(isPlaying: Boolean): Boolean {
         if (!canShowProactivePrompt(isPlaying)) return false
         if (userPrefs.hasReviewedSync()) return false
@@ -61,10 +71,12 @@ class EngagementPromptCoordinator(
         return userPrefs.isPromoterReviewPending()
     }
 
+    /** Clears the one-shot promoter handoff flag after the review sheet is shown or dismissed. */
     suspend fun clearPromoterReviewPending() {
         userPrefs.setPromoterReviewPending(false)
     }
 
+    /** Whether enough time has passed since the last proactive engagement prompt. */
     suspend fun isEngagementCooldownElapsed(): Boolean = userPrefs.isEngagementCooldownElapsed()
 
     companion object {
