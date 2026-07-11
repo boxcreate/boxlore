@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.Window
 import android.view.WindowManager
 import androidx.activity.ComponentDialog
@@ -22,6 +23,7 @@ import com.posthog.surveys.PostHogDisplaySurvey
 import cx.aswin.boxcast.core.data.UserPreferencesRepository
 import cx.aswin.boxcast.core.designsystem.theme.BoxCastTheme
 import cx.aswin.boxcast.surveys.internal.ui.SurveySheet
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,7 +36,14 @@ internal class BoxcastSurveyHost(
     private val onFirstRatingSubmitted: (Int?) -> Unit,
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope =
+        CoroutineScope(
+            SupervisorJob() +
+                Dispatchers.IO +
+                CoroutineExceptionHandler { _, throwable ->
+                    Log.e(TAG, "Survey host side-effect failed", throwable)
+                },
+        )
 
     private var dialog: ComponentDialog? = null
     private var composeView: ComposeView? = null
@@ -43,7 +52,6 @@ internal class BoxcastSurveyHost(
     private var onShownCallback: OnPostHogSurveyShown? = null
     private var onResponseCallback: OnPostHogSurveyResponse? = null
     private var onClosedCallback: OnPostHogSurveyClosed? = null
-    private var pendingShow: Runnable? = null
     private var shownReported = false
     private var awaitingForeground = false
     private var saveableRegistry: SaveableStateRegistry? = null
@@ -79,12 +87,7 @@ internal class BoxcastSurveyHost(
             onShownCallback = onSurveyShown
             onResponseCallback = onSurveyResponse
             onClosedCallback = onSurveyClosed
-
-            val presentRunnable = Runnable {
-                pendingShow = null
-                present(activityProvider.foregroundActivity)
-            }
-            presentRunnable.run()
+            present(activityProvider.foregroundActivity)
         }
     }
 
@@ -170,9 +173,11 @@ internal class BoxcastSurveyHost(
         shownReported = true
         onSurveyDisplayed()
         scope.launch {
-            if (!userPrefs.hasNpsSurveyFired()) {
-                userPrefs.markNpsSurveyFired()
-            }
+            runCatching {
+                if (!userPrefs.hasNpsSurveyFired()) {
+                    userPrefs.markNpsSurveyFired()
+                }
+            }.onFailure { Log.e(TAG, "Failed to mark NPS survey fired", it) }
         }
         onShownCallback?.invoke(survey)
     }
@@ -188,8 +193,6 @@ internal class BoxcastSurveyHost(
     }
 
     private fun preserveForConfigChange() {
-        cancelPendingShow()
-
         guard("preserving the survey across a configuration change") {
             savedSurveyState = saveableRegistry?.performSave()
             saveableRegistry = null
@@ -203,8 +206,6 @@ internal class BoxcastSurveyHost(
     }
 
     private fun dismissInternal(notifyClosed: Boolean) {
-        cancelPendingShow()
-
         val activeDialog = dialog
         val activeView = composeView
         val survey = currentSurvey
@@ -237,20 +238,13 @@ internal class BoxcastSurveyHost(
         }
     }
 
-    private fun cancelPendingShow() {
-        pendingShow?.let {
-            mainHandler.removeCallbacks(it)
-            pendingShow = null
-        }
-    }
-
     private inline fun guard(action: String, block: () -> Unit): Boolean {
         return try {
             block()
             true
-        } catch (t: Throwable) {
+        } catch (e: Exception) {
             PostHog.getConfig<com.posthog.PostHogConfig>()?.logger?.log(
-                "Surveys: $action failed, skipping the survey. $t",
+                "Surveys: $action failed, skipping the survey. $e",
             )
             false
         }
@@ -262,5 +256,9 @@ internal class BoxcastSurveyHost(
         } else {
             mainHandler.post(block)
         }
+    }
+
+    companion object {
+        private const val TAG = "BoxcastSurveyHost"
     }
 }

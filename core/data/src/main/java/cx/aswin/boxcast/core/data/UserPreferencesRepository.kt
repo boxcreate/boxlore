@@ -400,6 +400,7 @@ class UserPreferencesRepository(context: Context) {
         val ENGAGEMENT_LAST_PROMPT_AT = androidx.datastore.preferences.core.longPreferencesKey("engagement_last_prompt_at")
         val NPS_LAST_SCORE = androidx.datastore.preferences.core.intPreferencesKey("nps_last_score")
         val PROMOTER_REVIEW_PENDING = androidx.datastore.preferences.core.booleanPreferencesKey("promoter_review_pending")
+        val REVIEW_MILESTONE_PENDING = androidx.datastore.preferences.core.intPreferencesKey("review_milestone_pending")
     }
 
     val hasLoggedFirstPlay: Flow<Boolean> = dataStore.data
@@ -488,26 +489,30 @@ class UserPreferencesRepository(context: Context) {
             pref[AnalyticsKeys.REVIEW_PROMPT_COUNT] = count + 1
             pref[AnalyticsKeys.REVIEW_LAST_PROMPT_AT] = System.currentTimeMillis()
             pref[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT] = System.currentTimeMillis()
+            pref.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING)
         }
     }
 
     /**
      * Rules to show milestone Play review:
+     * - A milestone (5/15/30) was reached and stored as pending (survives playback gaps)
      * - NPS survey already fired; skip detractors (score &lt;= 7)
      * - Shared 14-day engagement cooldown
      * - User has NOT reviewed yet; app installed 2+ days; max 3 lifetime; 30-day review gap
-     * - Exact milestones: 5, 15, or 30 completed episodes; never during playback
+     * - Never during playback
      */
-    suspend fun shouldShowReviewPrompt(completedCount: Int, isPlaying: Boolean): Boolean {
+    suspend fun shouldShowReviewPrompt(isPlaying: Boolean): Boolean {
         if (isPlaying) return false
-        if (completedCount != 5 && completedCount != 15 && completedCount != 30) return false
 
         val prefs = dataStore.data.first()
+        val milestone = prefs[AnalyticsKeys.REVIEW_MILESTONE_PENDING] ?: return false
+        if (milestone != 5 && milestone != 15 && milestone != 30) return false
+
         if (prefs[AnalyticsKeys.REVIEW_HAS_REVIEWED] == true) return false
         if (prefs[AnalyticsKeys.NPS_SURVEY_FIRED] != true) return false
 
         val npsScore = prefs[AnalyticsKeys.NPS_LAST_SCORE]
-        if (npsScore != null && npsScore <= EngagementPromptCoordinator.DETRACTOR_SCORE_MAX) return false
+        if (npsScore != null && npsScore <= EngagementPromptConstants.DETRACTOR_SCORE_MAX) return false
 
         if (!isEngagementCooldownElapsed(prefs)) return false
 
@@ -528,6 +533,31 @@ class UserPreferencesRepository(context: Context) {
         return lastPrompt == 0L || daysSinceLastPrompt >= 30
     }
 
+    /** Remember the highest unreached milestone so prompts survive playback gaps. */
+    suspend fun syncReviewMilestonePending(completedCount: Int) {
+        val milestone =
+            when {
+                completedCount >= 30 -> 30
+                completedCount >= 15 -> 15
+                completedCount >= 5 -> 5
+                else -> return
+            }
+        dataStore.edit { pref ->
+            if (pref[AnalyticsKeys.REVIEW_HAS_REVIEWED] == true) return@edit
+            val current = pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING]
+            if (current == null || milestone > current) {
+                pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING] = milestone
+            }
+        }
+    }
+
+    suspend fun reviewMilestonePending(): Int? =
+        dataStore.data.first()[AnalyticsKeys.REVIEW_MILESTONE_PENDING]
+
+    suspend fun clearReviewMilestonePending() {
+        dataStore.edit { it.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING) }
+    }
+
     suspend fun hasReviewedSync(): Boolean =
         dataStore.data.first()[AnalyticsKeys.REVIEW_HAS_REVIEWED] ?: false
 
@@ -544,7 +574,7 @@ class UserPreferencesRepository(context: Context) {
         val last = pref[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT] ?: 0L
         if (last == 0L) return true
         val days = (System.currentTimeMillis() - last) / (1000 * 60 * 60 * 24)
-        return days >= EngagementPromptCoordinator.ENGAGEMENT_COOLDOWN_DAYS
+        return days >= EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS
     }
 
     suspend fun setNpsLastScore(score: Int) {

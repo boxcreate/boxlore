@@ -22,11 +22,13 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxcast.core.designsystem.R
 
 /**
  * Shared bottom-sheet chrome for engagement flows (NPS survey, review prompt, feedback).
- * Matches the expressive M3 styling used by [cx.aswin.boxcast.feature.home.components.ReviewPromptSheet].
+ * Matches the expressive M3 styling used by review and survey sheets.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +80,7 @@ fun EngagementBottomSheetScaffold(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.engagement_sheet_close),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

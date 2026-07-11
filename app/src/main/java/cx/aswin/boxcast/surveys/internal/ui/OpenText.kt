@@ -9,12 +9,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.posthog.surveys.PostHogDisplayOpenQuestion
 import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 
 @Composable
 internal fun OpenText(
-    @Suppress("UnusedParameter") question: PostHogDisplayOpenQuestion,
     value: String,
     onValueChange: (String) -> Unit,
 ) {

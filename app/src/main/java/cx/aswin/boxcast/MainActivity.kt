@@ -160,7 +160,10 @@ class MainActivity : ComponentActivity() {
     }
 
     @Volatile
-    private var isPlaybackActive = false
+    private var playbackRepositoryRef: cx.aswin.boxcast.core.data.PlaybackRepository? = null
+
+    private fun isCurrentlyPlaying(): Boolean =
+        playbackRepositoryRef?.playerState?.value?.isPlaying == true
 
     // Google Play In-App Updates
     private val appUpdateManager by lazy { com.google.android.play.core.appupdate.AppUpdateManagerFactory.create(this) }
@@ -243,13 +246,14 @@ class MainActivity : ComponentActivity() {
      */
     private fun checkNpsSurveyTriggers() {
         try {
-            if (com.posthog.PostHog.isFeatureEnabled("survey-nps-remote-trigger")) {
-                if (engagementCoordinator.canShowProactivePrompt(isPlaybackActive)) {
-                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSurveyNpsManualTrigger(
-                        source = "remote_flag",
-                    )
-                    com.posthog.PostHog.reloadFeatureFlags()
-                }
+            if (
+                com.posthog.PostHog.isFeatureEnabled("survey-nps-remote-trigger") &&
+                engagementCoordinator.canShowProactivePrompt(isCurrentlyPlaying())
+            ) {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSurveyNpsManualTrigger(
+                    source = "remote_flag",
+                )
+                com.posthog.PostHog.reloadFeatureFlags()
             }
         } catch (e: Exception) {
             android.util.Log.e("NpsSurvey", "Remote trigger check failed", e)
@@ -257,10 +261,12 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             try {
-                if (surveyPrefs.isNpsSurveyPending() && !surveyPrefs.hasNpsSurveyFired()) {
-                    if (!engagementCoordinator.canShowProactivePrompt(isPlaybackActive)) return@launch
-                    if (!surveyPrefs.isEngagementCooldownElapsed()) return@launch
-
+                if (
+                    surveyPrefs.isNpsSurveyPending() &&
+                    !surveyPrefs.hasNpsSurveyFired() &&
+                    engagementCoordinator.canShowProactivePrompt(isCurrentlyPlaying()) &&
+                    surveyPrefs.isEngagementCooldownElapsed()
+                ) {
                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSurveyNpsEligible(
                         completedEpisodes = surveyPrefs.npsSurveyCompletedCount(),
                         triggerContext = "app_open",
@@ -391,6 +397,9 @@ class MainActivity : ComponentActivity() {
 
             // 3. Playback Repository (Depends on QueueRepo)
             val playbackRepository = remember { cx.aswin.boxcast.core.data.PlaybackRepository(application, database.listeningHistoryDao(), queueRepository, podcastRepository) }
+            androidx.compose.runtime.SideEffect {
+                playbackRepositoryRef = playbackRepository
+            }
             val downloadRepository = remember { cx.aswin.boxcast.core.data.DownloadRepository(application, database) }
             
             // 4. Subscription Repository
@@ -513,9 +522,6 @@ class MainActivity : ComponentActivity() {
             val isPlaying by remember(playbackRepository) {
                 playbackRepository.playerState.map { it.isPlaying }.distinctUntilChanged()
             }.collectAsState(initial = false)
-            LaunchedEffect(isPlaying) {
-                isPlaybackActive = isPlaying
-            }
             val showLateNightNudge by remember(playbackRepository) {
                 playbackRepository.playerState.map { it.showLateNightNudge }.distinctUntilChanged()
             }.collectAsState(initial = false)

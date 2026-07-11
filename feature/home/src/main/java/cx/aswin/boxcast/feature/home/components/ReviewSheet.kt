@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxcast.core.designsystem.components.EngagementBottomSheetScaffold
 import kotlinx.coroutines.launch
 
 /**
@@ -86,94 +87,90 @@ fun ReviewPromptSheet(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    ModalBottomSheet(
+    EngagementBottomSheetScaffold(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+        showCloseButton = false,
+        properties = ModalBottomSheetProperties(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 36.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Icon header
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(56.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Star,
                         contentDescription = null,
                         modifier = Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(20.dp))
-            
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
             )
-            
+
             Spacer(modifier = Modifier.height(28.dp))
-            
-            // Primary — rate on Play Store
+
             Button(
                 onClick = onNavigateToReview,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ThumbUp,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = primaryLabel,
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Secondary — go to feedback or dismiss
+
             OutlinedButton(
                 onClick = onSecondaryClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
             ) {
                 Text(
                     text = secondaryLabel,
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }

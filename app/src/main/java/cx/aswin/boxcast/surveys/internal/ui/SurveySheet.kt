@@ -41,6 +41,29 @@ import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 import cx.aswin.boxcast.surveys.internal.theme.resolveAppearance
 import kotlinx.coroutines.launch
 
+private sealed interface SurveySubmitStep {
+    data object Dismiss : SurveySubmitStep
+
+    data object ShowConfirmation : SurveySubmitStep
+
+    data class NextQuestion(val index: Int) : SurveySubmitStep
+}
+
+private fun surveySubmitStep(
+    next: PostHogNextSurveyQuestion?,
+    displayThankYouMessage: Boolean,
+): SurveySubmitStep =
+    when {
+        next == null -> SurveySubmitStep.Dismiss
+        next.isSurveyCompleted ->
+            if (displayThankYouMessage) {
+                SurveySubmitStep.ShowConfirmation
+            } else {
+                SurveySubmitStep.Dismiss
+            }
+        else -> SurveySubmitStep.NextQuestion(next.questionIndex)
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SurveySheet(
@@ -87,15 +110,10 @@ internal fun SurveySheet(
             onFirstRatingSubmitted(response.rating)
         }
         val next = onSubmit(currentQuestionIndex, response)
-        when {
-            next == null -> dismissSheet()
-            next.isSurveyCompleted ->
-                if (appearance.displayThankYouMessage) {
-                    showingConfirmation = true
-                } else {
-                    dismissSheet()
-                }
-            else -> currentQuestionIndex = next.questionIndex
+        when (val step = surveySubmitStep(next, appearance.displayThankYouMessage)) {
+            SurveySubmitStep.Dismiss -> dismissSheet()
+            SurveySubmitStep.ShowConfirmation -> showingConfirmation = true
+            is SurveySubmitStep.NextQuestion -> currentQuestionIndex = step.index
         }
     }
 
@@ -204,7 +222,7 @@ private fun OpenTextQuestionBody(
     var text by rememberSaveable(question.id) { mutableStateOf("") }
     val canSubmit = question.isOptional || text.isNotBlank()
 
-    OpenText(question = question, value = text, onValueChange = { text = it })
+    OpenText(value = text, onValueChange = { text = it })
     Spacer(modifier = Modifier.height(28.dp))
     BottomSection(
         label = question.buttonText ?: localAppearance().submitButtonText,

@@ -968,8 +968,8 @@ class HomeViewModel(
                                 cx.aswin.boxcast.feature.home.components.ReviewPromptVariant.PromoterHandoff
                             _showReviewPrompt.value = true
                         } else if (engagementCoordinator.canShowProactivePrompt(isPlayingNow)) {
-                            val shouldPrompt =
-                                userPrefs.shouldShowReviewPrompt(completedCount, isPlayingNow)
+                            userPrefs.syncReviewMilestonePending(completedCount)
+                            val shouldPrompt = userPrefs.shouldShowReviewPrompt(isPlayingNow)
                             if (shouldPrompt) {
                                 engagementCoordinator.recordProactivePromptShown()
                                 cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackEngagementPromptShown(
@@ -987,7 +987,7 @@ class HomeViewModel(
                     // NPS survey: mark eligible once the user reaches 3+ completed episodes.
                     // The trigger event fires on the next app open (see MainActivity)
                     // so it never interrupts background playback.
-                    if (completedCount >= 3) {
+                    if (completedCount >= 3 && !userPrefs.hasNpsSurveyFired() && !userPrefs.isNpsSurveyPending()) {
                         userPrefs.markNpsSurveyPending(completedCount)
                     }
                     
