@@ -229,6 +229,53 @@ def _groq_chat_json(api_key: str, system_prompt: str, user_prompt: str, error_la
     return parsed
 
 
+def _format_readme_bullet(text: str, pr_number: int | None) -> str:
+    cleaned = text.strip()
+    if not cleaned:
+        return cleaned
+    if pr_number is not None and not _pr_already_present(cleaned, pr_number):
+        cleaned = f"{cleaned} {_pr_suffix(pr_number)}"
+    return cleaned
+
+
+def _parse_readme_bullet(entry: object) -> tuple[str, int | None]:
+    if isinstance(entry, dict):
+        text = str(entry.get("text", "")).strip()
+        pr_raw = entry.get("pr")
+        pr_number = int(pr_raw) if pr_raw is not None else None
+        return text, pr_number
+    return str(entry).strip(), None
+
+
+def _dominant_readme_heading(cluster: ChangelogCluster) -> str:
+    categories = {cat for cat, _ in cluster.items}
+    if "Added" in categories:
+        return "New features"
+    if "Changed" in categories:
+        return "Improvements"
+    if "Fixed" in categories:
+        return "Fixes"
+    if "Security" in categories:
+        return "Security"
+    return "Other"
+
+
+def _fallback_readme_from_clusters(clusters: list[ChangelogCluster]) -> list[dict[str, list[str]]]:
+    """Deterministic grouped README when Groq grouping fails."""
+    grouped: dict[str, list[str]] = defaultdict(list)
+    for cluster in clusters:
+        if cluster.importance < 40 or not cluster.items:
+            continue
+        heading = _dominant_readme_heading(cluster)
+        preview = cluster.items[0][1]
+        if len(preview) > 117:
+            preview = preview[:114].rstrip() + "..."
+        grouped[heading].append(_format_readme_bullet(preview, cluster.pr_number))
+    return _sort_readme_groups(
+        [{"heading": heading, "bullets": bullets} for heading, bullets in grouped.items() if bullets]
+    )
+
+
 def _groq_curate_readme_upcoming(
     api_key: str, sections: dict[str, list[str]]
 ) -> list[dict[str, list[str]]]:
@@ -246,7 +293,9 @@ def _groq_curate_readme_upcoming(
 Input is pre-grouped by PR/theme with an importance score (higher = more user-visible). Each ## block is ONE feature area — merge its bullets into as few README lines as possible.
 
 Return ONLY valid JSON:
-{"groups": [{"heading": "...", "bullets": ["...", ...]}, ...]}
+{"groups": [{"heading": "...", "bullets": [{"text": "...", "pr": 853}, ...]}, ...]}
+
+Each bullet MUST include "pr" copied from the matching ## PR #NNN block in the input. One bullet object per ## block you keep.
 
 Allowed headings (exactly one per group, omit empty):
 - "New features" — new capabilities (from Added clusters)
@@ -269,7 +318,7 @@ Importance guidance (respect the scores in input):
 - 40–55: optional feedback surveys — one merged line, never prioritized over queue
 - below 40: omit from README
 
-Rewrite in plain English; no PR numbers, Compose, modules, or developer jargon. Under 120 chars per bullet."""
+Rewrite in plain English; no PR numbers inside "text", no Compose/modules jargon. Under 120 chars in "text" (PR link is appended separately)."""
 
     user_prompt = f"""Curate these PR/theme clusters into grouped README bullets:
 
@@ -283,7 +332,7 @@ Rewrite in plain English; no PR numbers, Compose, modules, or developer jargon. 
     )
     raw_groups = parsed.get("groups", [])
     if not isinstance(raw_groups, list):
-        return []
+        return _fallback_readme_from_clusters(clusters)
 
     groups: list[dict[str, list[str]]] = []
     for item in raw_groups:
@@ -293,11 +342,17 @@ Rewrite in plain English; no PR numbers, Compose, modules, or developer jargon. 
         bullets_raw = item.get("bullets", [])
         if not heading or not isinstance(bullets_raw, list):
             continue
-        bullets = [str(b).strip() for b in bullets_raw if str(b).strip()]
+        bullets: list[str] = []
+        for entry in bullets_raw:
+            text, pr_number = _parse_readme_bullet(entry)
+            if text:
+                bullets.append(_format_readme_bullet(text, pr_number))
         if bullets:
             groups.append({"heading": heading, "bullets": bullets})
 
-    return _sort_readme_groups(groups)
+    if groups:
+        return _sort_readme_groups(groups)
+    return _fallback_readme_from_clusters(clusters)
 
 
 def _sort_readme_groups(groups: list[dict[str, list[str]]]) -> list[dict[str, list[str]]]:
@@ -523,9 +578,10 @@ def sync_readme_upcoming(api_key: str) -> bool:
         if groups:
             readme_updated = _update_readme(readme_original, groups=groups)
         else:
-            print("Grouped curation empty; falling back to flat bullet summary.")
-            bullets = _groq_readme_summary(api_key, unreleased)
-            readme_updated = _update_readme(readme_original, bullets=bullets)
+            print("Grouped curation empty; falling back to cluster bullets.")
+            clusters = _cluster_sections_by_pr(unreleased)
+            groups = _fallback_readme_from_clusters(clusters)
+            readme_updated = _update_readme(readme_original, groups=groups)
 
     if readme_updated != readme_original:
         README_PATH.write_text(readme_updated, encoding="utf-8")

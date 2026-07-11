@@ -48,17 +48,17 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 
 <b>New features</b>
 
-- Smart queue auto-refills 3–5 episodes, learns what you skip, shows why each item is there, and supports drag reorder with undo remove.
-- Optional in-app feedback surveys (NPS or Play Store review) with a 14-day cooldown after high scores.
+- Smart queue auto-refills 3–5 episodes, learns what you skip, shows why each item is there, and supports drag reorder with undo remove ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Optional in-app feedback surveys (NPS or Play Store review) with a 14-day cooldown after high scores ([#852](https://github.com/ashwkun/boxlore/pull/852))
 
 <b>Improvements</b>
 
-- Home screen scroll is smoother with less lag; hero and Your Shows stay pinned while you browse.
-- Loading placeholders shimmer more calmly while content loads.
+- Home screen scroll is smoother with less lag; hero and Your Shows stay pinned while you browse ([#851](https://github.com/ashwkun/boxlore/pull/851))
+- Loading placeholders shimmer more calmly while content loads ([#851](https://github.com/ashwkun/boxlore/pull/851))
 
 <b>Fixes</b>
 
-- Skipped or removed auto-fill episodes stay out of your queue so suggestions stay relevant.
+- Skipped or removed auto-fill episodes stay out of your queue so suggestions stay relevant ([#853](https://github.com/ashwkun/boxlore/pull/853))
 
 <br/>
 <p align="center"><sub>Technical details in <a href="CHANGELOG.md">CHANGELOG.md</a></sub></p>
