@@ -44,37 +44,24 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <!-- upcoming-changes:start -->
 <div align="center">
 
+<details open>
+<summary><b>🔮 Upcoming in the Next Release</b></summary>
+<p align="left">
+We are currently focusing on offline playback enhancements, database indexing optimizations, and search query auto-completions.
+</p>
+</details>
+
+<br/>
+
 <details>
-<summary><b>✨ Upcoming in the next release</b></summary>
+<summary><b>🎉 What's New (v0.0.7)</b></summary>
 <br/>
-
-<table>
-<tr>
-<td align="left">
-
-<blockquote align="left">
-
-<h4 align="left">🆕 New features</h4>
-<ul align="left">
-<li>Smart Queue now auto‑refills, shows why items appear, lets you drag‑reorder, undo removes, and handles playback conflicts. <a href="https://github.com/ashwkun/boxlore/pull/853"><img src="https://img.shields.io/badge/PR-853-2ebbca?style=flat-square" alt="PR #853" height="18"/></a></li>
-<li>New Material 3 player with full‑screen and mini UI, transcripts, queue preview, show notes, chapters, and saved playback speed. <a href="https://github.com/ashwkun/boxlore/pull/856"><img src="https://img.shields.io/badge/PR-856-2ebbca?style=flat-square" alt="PR #856" height="18"/></a></li>
-<li>Fresh card designs with swipe‑deck, halo background, built‑in share options (copy, send, Instagram Story) and improved share flow. <a href="https://github.com/ashwkun/boxlore/pull/858"><img src="https://img.shields.io/badge/PR-858-2ebbca?style=flat-square" alt="PR #858" height="18"/></a></li>
-</ul>
-<br/>
-<h4 align="left">⚡ Improvements</h4>
-<ul align="left">
-<li>Home feed loads faster with a streamlined grid and smoother shimmer animations. <a href="https://github.com/ashwkun/boxlore/pull/851"><img src="https://img.shields.io/badge/PR-851-2ebbca?style=flat-square" alt="PR #851" height="18"/></a></li>
-<li>Curiosity pages load smaller images, auto‑skip dismissed cards, and show a refreshed brand look. <a href="https://github.com/ashwkun/boxlore/pull/857"><img src="https://img.shields.io/badge/PR-857-2ebbca?style=flat-square" alt="PR #857" height="18"/></a></li>
-</ul>
-
-</blockquote>
-
-</td>
-</tr>
-</table>
-
-<br/>
-<p align="center"><sub>Technical details in <a href="CHANGELOG.md">CHANGELOG.md</a></sub></p>
+<p align="left">
+<b>Smart Queue v2:</b> Tiered refill engine, drag-reorder queue sheet, conflict alerts, and region-aware recommendations.<br/>
+<b>Material 3 Player:</b> Consolidated design system elements, saved playback speed, and interactive inline transcript support.<br/>
+<b>Redesigned Lore & Sharing:</b> Visual overhaul, palette-driven halo art, dynamic card decks, and direct Instagram Story exports.<br/>
+<b>Performance Tuning:</b> Streamlined grid layouts and cached shimmer draw paths on the Home screen to reduce recomposition lag.
+</p>
 </details>
 
 </div>
