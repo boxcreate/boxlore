@@ -13,7 +13,7 @@
 </a>
 &nbsp;
 <a href="https://github.com/ashwkun/boxlore/releases/latest">
-  <img src="docs/images/badge_github.svg" height="50" alt="Download APK on GitHub"/>
+  <img src="docs/images/badge_apk.svg" height="50" alt="Download APK on GitHub"/>
 </a>
 
 <br/><br/>
