@@ -46,13 +46,19 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>✨ Upcoming in the next release</b></summary>
 <br/>
 
-- New in‑app NPS surveys that match the app’s look.
-- One‑time pop‑up can now show either an NPS survey or a Play Store review.
-- After a high NPS score (8+), you’ll see a special review sheet, with a 14‑day cooldown.
-- Play Store review prompts appear only after NPS and only for promoters, with custom wording.
-- Updated survey handling to prevent crashes on the latest Android UI library.
-- Home screen scroll is smoother with less lag and pinned “Your Shows” and hero items.
-- Loading placeholders now shimmer more calmly, making the wait feel shorter.
+<b>New features</b>
+
+- New smart auto‑refill that batches episodes, learns from rejections, and respects your region.
+- Unified feedback prompt shows a short survey or Play Store review in one smooth modal, with a 14‑day cooldown.
+- Drag‑to‑reorder episodes directly in the queue sheet, and see source labels that explain each suggestion.
+- Undo snackbar lets you quickly restore a removed episode, preserving your skip history.
+
+<b>Improvements</b>
+
+- Home screen scroll is smoother with less lag, and hero and Your Shows stay pinned for quick access.
+- Loading placeholders now shimmer more calmly, making wait times feel shorter.
+- Sleep timer now respects auto‑refill, so episodes won’t keep adding after you fall asleep.
+- Queue skip memory no longer suggests episodes you’ve already skipped, keeping recommendations fresh.
 
 <br/>
 <p align="center"><sub>Technical details in <a href="CHANGELOG.md">CHANGELOG.md</a></sub></p>

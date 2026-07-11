@@ -12,11 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified prompt system via EngagementPromptCoordinator, showing either NPS or Play review in a single modal per session ([#852](https://github.com/ashwkun/boxlore/pull/852))
 - 14‑day cooldown and deferred promoter handoff, showing a tailored review sheet after an NPS score of 8 or higher ([#852](https://github.com/ashwkun/boxlore/pull/852))
 - Milestone Play review now runs only after NPS has fired and skips detractors (score ≤ 7), with distinct copy for promoters ([#852](https://github.com/ashwkun/boxlore/pull/852))
+- Tiered auto‑refill engine that batches 3–5 episodes, learns from rejections, respects region, and unifies all refill paths ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Lore queue independence with its own context type and conflict dialog when adding Lore items to an existing queue ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Drag‑to‑reorder support in the queue sheet ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Source labels on each queue item (e.g., “Based on what you’re playing”, “Continuing series”) ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Undo snackbar for removed items, preserving skip‑memory recording ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- New analytics events: queue_reordered, lore_queue_conflict_shown, lore_queue_conflict_result, and extended smart_queue_refilled with region and tier data ([#853](https://github.com/ashwkun/boxlore/pull/853))
 ### Changed
 - Replaced the posthog-android-surveys-compose library with a custom BoxcastPostHogSurveysDelegate to avoid crashes on Material3 1.5 ([#852](https://github.com/ashwkun/boxlore/pull/852))
+- Android Auto queue building now uses the unified smart‑queue engine and respects the refilling guard ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Sleep‑timer now prevents queue refill at the end of an episode ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Queue persistence now records AUTO_FILL provenance before appending items ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Current episode’s contextSourceId is passed to the engine to gate Tier 0 continuation ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- PlaybackRepository.reconcileQueueWithController keeps the UI in sync after service‑side appends ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Queue labels switched from button‑style copy to provenance‑style captions ([#853](https://github.com/ashwkun/boxlore/pull/853))
 ### Fixed
 - Reduced Home tab lag by flattening feed sections into individual lazy staggered‑grid items and pinning hero and Your Shows to avoid expensive recomposition ([#851](https://github.com/ashwkun/boxlore/pull/851))
 - Optimized skeleton shimmer rendering by removing temporary PerfLog instrumentation, caching draw paths, and slowing the shimmer pace from 1.6 s to 2.2 s for a calmer loading state ([#851](https://github.com/ashwkun/boxlore/pull/851))
+- Tier 0 newest‑sort now only adds newer episodic/news episodes, preventing archive rewind on the latest episode ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Discovery landing guard skips deep continuation on certain refills to avoid queue bloat ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Tier 3.5 guard avoids duplicate similar‑episode calls when Tier 3 already provided a similar result ([#853](https://github.com/ashwkun/boxlore/pull/853))
+- Queue skip memory no longer re‑suggests skipped or removed auto‑fill episodes and down‑ranks podcasts with multiple recent skips ([#853](https://github.com/ashwkun/boxlore/pull/853))
+### Removed
+- QueueManager.refillQueue() and PlaybackRepository.queueRefillCallback in favor of a single refill path in BoxLorePlaybackService ([#853](https://github.com/ashwkun/boxlore/pull/853))
 ## [v0.0.6] - 2026-07-09
 ### Added
 - Redesigned sleep timer nudge with dynamic-island style SleepTimerPopup component.
