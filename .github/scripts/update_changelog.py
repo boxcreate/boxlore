@@ -16,7 +16,27 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "openai/gpt-oss-120b"
 GROQ_USER_AGENT = "boxlore-changelog/1.0"
 CATEGORY_ORDER = ("Added", "Changed", "Fixed", "Deprecated", "Removed", "Security")
-PR_MARKER_RE = re.compile(r"\(#(\d+)\)")
+DEFAULT_GITHUB_REPOSITORY = "ashwkun/boxlore"
+
+
+def _github_repository() -> str:
+    return os.environ.get("GITHUB_REPOSITORY", DEFAULT_GITHUB_REPOSITORY).strip() or DEFAULT_GITHUB_REPOSITORY
+
+
+def _pr_suffix(pr_number: int) -> str:
+    repo = _github_repository()
+    return f"([#{pr_number}](https://github.com/{repo}/pull/{pr_number}))"
+
+
+def _pr_already_present(content: str, pr_number: int) -> bool:
+    if f"(#{pr_number})" in content:
+        return True
+    return bool(
+        re.search(
+            rf"\[#{pr_number}\]\(https://github\.com/[^/]+/[^/]+/pull/{pr_number}\)",
+            content,
+        )
+    )
 
 
 def _require_env(name: str) -> str:
@@ -126,13 +146,13 @@ def _merge_entries(
     pr_number: int,
 ) -> dict[str, list[str]]:
     merged = {key: list(values) for key, values in existing.items()}
-    marker = f"(#{pr_number})"
+    suffix = _pr_suffix(pr_number)
 
     for category, bullets in incoming.items():
         merged.setdefault(category, [])
         seen = set(merged[category])
         for bullet in bullets:
-            tagged = bullet if marker in bullet else f"{bullet} {marker}".strip()
+            tagged = bullet if _pr_already_present(bullet, pr_number) else f"{bullet} {suffix}".strip()
             if tagged not in seen:
                 merged[category].append(tagged)
                 seen.add(tagged)
@@ -140,8 +160,7 @@ def _merge_entries(
 
 
 def _update_changelog(content: str, entries: dict[str, list[str]], pr_number: int) -> str:
-    marker = f"(#{pr_number})"
-    if marker in content:
+    if _pr_already_present(content, pr_number):
         print(f"CHANGELOG already contains entry for PR #{pr_number}; skipping.")
         return content
 
