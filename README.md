@@ -19,7 +19,7 @@
 </div>
 <br/>
 
-<a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-1e293b?style=flat-square&logo=lock&logoColor=white" alt="Proprietary License"/></a> <img src="https://img.shields.io/github/downloads/ashwkun/boxlore/total?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Total downloads"/> <img src="https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin"/> <img src="https://img.shields.io/badge/Jetpack%20Compose-UI-4285F4?style=flat-square" alt="Jetpack Compose"/>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-1e293b?style=flat-square&logo=lock&logoColor=white" alt="Proprietary License"/></a> <img src="https://img.shields.io/github/downloads/ashwkun/boxlore/total?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Total downloads"/>
 
 <br/><br/>
 
