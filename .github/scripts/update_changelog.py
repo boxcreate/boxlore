@@ -14,6 +14,7 @@ from pathlib import Path
 CHANGELOG_PATH = Path("CHANGELOG.md")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "openai/gpt-oss-120b"
+GROQ_USER_AGENT = "boxlore-changelog/1.0"
 CATEGORY_ORDER = ("Added", "Changed", "Fixed", "Deprecated", "Removed", "Security")
 PR_MARKER_RE = re.compile(r"\(#(\d+)\)")
 
@@ -64,6 +65,7 @@ Generate changelog bullets for the [Unreleased] section."""
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": GROQ_USER_AGENT,
         },
         method="POST",
     )
