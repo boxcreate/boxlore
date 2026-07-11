@@ -20,9 +20,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -68,7 +72,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
-import cx.aswin.boxcast.core.designsystem.components.LogRecomposition
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
@@ -107,11 +110,11 @@ import androidx.compose.foundation.shape.CircleShape
 
 import cx.aswin.boxcast.feature.home.components.HeroCarousel
 import cx.aswin.boxcast.feature.home.components.PodcastCard
-import cx.aswin.boxcast.feature.home.components.TimeBlockSection
+import cx.aswin.boxcast.feature.home.components.timeBlockItems
 import cx.aswin.boxcast.feature.home.CuratedTimeBlock
 import cx.aswin.boxcast.feature.home.components.TopControlBar
 import cx.aswin.boxcast.feature.home.components.YourShowsSection
-import cx.aswin.boxcast.feature.home.components.ForYouSection
+import cx.aswin.boxcast.feature.home.components.forYouItems
 import cx.aswin.boxcast.feature.home.components.BecauseYouLikeSection
 import cx.aswin.boxcast.feature.home.components.ChangeRecommendationPodcastSheet
 
@@ -314,20 +317,19 @@ fun HomeScreen(
 
     modifier: Modifier = Modifier
 ) {
-    LogRecomposition(name = "HomeScreen")
-    LaunchedEffect(uiState.isLoading) {
-        android.util.Log.d("BoxCastPerf", "PERF: HomeScreen uiState.isLoading changed to = ${uiState.isLoading}")
-    }
     // Track scroll state for collapsing top bar
-    val scrollState = rememberScrollState()
+    val gridState = rememberLazyStaggeredGridState()
     var showChangePodcastSheet by remember { androidx.compose.runtime.mutableStateOf(false) }
     
     // Calculate scroll fraction: 0 = at top (expanded), 1 = scrolled (collapsed)
     val scrollFraction by remember {
         derivedStateOf {
-            val offset = scrollState.value
-            val collapseThreshold = 100f
-            (offset / collapseThreshold).coerceIn(0f, 1f)
+            if (gridState.firstVisibleItemIndex > 0) {
+                1f
+            } else {
+                val collapseThreshold = 100f
+                (gridState.firstVisibleItemScrollOffset / collapseThreshold).coerceIn(0f, 1f)
+            }
         }
     }
     Box(modifier = modifier.fillMaxSize()) {
@@ -416,7 +418,7 @@ fun HomeScreen(
                             onDismissBriefing = onDismissBriefing,
                             onDismissBriefingForever = onDismissBriefingForever,
                             onFeedbackClick = onFeedbackClick,
-                            scrollState = scrollState
+                            gridState = gridState
                         )
                     }
         }
@@ -538,30 +540,53 @@ private fun PodcastFeed(
     becauseYouLikePodcasts: StablePodcastList,
     onChangePodcastClick: () -> Unit = {},
     onFeedbackClick: () -> Unit = {},
-    scrollState: ScrollState,
+    gridState: LazyStaggeredGridState,
     modifier: Modifier = Modifier
 ) {
-    LogRecomposition(name = "PodcastFeed")
-
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    // Track whether initial content has loaded (for staggered entrance animation)
-    val heroLoaded = !isLoading && heroItems.list.isNotEmpty()
+    // Coordinated first-viewport reveal: hero + Your Shows flip from skeleton to
+    // content on the same signal so the top of the feed appears in sync.
+    val viewportReady = !isLoading
+    val heroLoaded = viewportReady && heroItems.list.isNotEmpty()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(bottom = 160.dp)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+    val hasBecauseYouLike = seemsToLikePodcast != null && (becauseYouLikeRecommendations.list.isNotEmpty() || becauseYouLikePodcasts.list.isNotEmpty())
+    val hasRecommendations = isRecommendationsLoading || recommendations.list.isNotEmpty()
+
+    // Discover grid content, memoized so scrolling/recomposition doesn't re-derive it.
+    val discoverItems = remember(gridItems.list, selectedCategory) {
+        gridItems.list.distinctBy { it.id }.take(10)
+    }
+    val showDiscoverContent = !isLoading && !isFilterLoading && discoverItems.isNotEmpty()
+    val discoverGenreChip = selectedCategory == null
+
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(2),
+        state = gridState,
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 160.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalItemSpacing = 12.dp
     ) {
-        // 1. Smart Hero (Personalized Content) and Region Nudge
-        // Crossfade between skeleton and hero carousel
+        // 1. Smart Hero (Personalized Content)
+        // Crossfade between skeleton and hero carousel. FullLine bottom padding of
+        // 12dp + the grid's 12dp spacing yields the original 24dp section gap.
+        item(span = StaggeredGridItemSpan.FullLine, key = "hero", contentType = "hero") {
+        // Pin the hero so the grid keeps it composed even when scrolled off-screen.
+        // The 420dp image carousel can't compose within a frame from scratch, so
+        // rebuilding it on scroll-back-up caused the large freeze. Pinned off-screen
+        // items stay in composition (but aren't measured/drawn), so re-entry is cheap
+        // and the carousel keeps its swipe position.
+        val heroPinnable = androidx.compose.ui.layout.LocalPinnableContainer.current
+        androidx.compose.runtime.DisposableEffect(heroPinnable) {
+            val handle = heroPinnable?.pin()
+            onDispose { handle?.release() }
+        }
         androidx.compose.animation.Crossfade(
             targetState = heroLoaded,
             animationSpec = tween(500),
-            label = "hero_crossfade"
+            label = "hero_crossfade",
+            modifier = Modifier.padding(bottom = 12.dp)
         ) { loaded ->
             if (!loaded) {
                 cx.aswin.boxcast.feature.home.components.HeroSkeleton()
@@ -586,31 +611,41 @@ private fun PodcastFeed(
                 )
             }
         }
+        }
 
-        AnimatedVisibility(
-            visible = showRegionNudge,
-            enter = expandVertically(
-                animationSpec = tween(400),
-                expandFrom = androidx.compose.ui.Alignment.Top
-            ) + fadeIn(animationSpec = tween(400)),
-            exit = shrinkVertically(
-                animationSpec = tween(300),
-                shrinkTowards = androidx.compose.ui.Alignment.Top
-            ) + fadeOut(animationSpec = tween(300))
-        ) {
+        // Region nudge: emitted only when visible so a hidden banner doesn't leave a
+        // phantom gap from the grid's item spacing.
+        if (showRegionNudge) {
+        item(span = StaggeredGridItemSpan.FullLine, key = "region_nudge", contentType = "region_nudge") {
             cx.aswin.boxcast.feature.home.components.RegionMismatchNudgeBanner(
                 systemRegion = systemRegionCode,
                 activeRegion = activeRegionCode,
                 onSwitchRegion = onSwitchRegion,
                 onDismiss = onDismissNudge,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
             )
+        }
         }
 
         // 2. "Your Shows" (Interactive selector grid & filtered stack)
+        // Crossfades with the hero on the same viewportReady signal.
         if (isLoading || subscribedItems.list.isNotEmpty() || showImportBanner) {
+        item(span = StaggeredGridItemSpan.FullLine, key = "your_shows", contentType = "your_shows") {
+          // Pinned like the hero: Your Shows (selector + episode stack) is heavy and
+          // sits near the top, so keeping it composed avoids a rebuild spike on scroll-up.
+          val yourShowsPinnable = androidx.compose.ui.layout.LocalPinnableContainer.current
+          androidx.compose.runtime.DisposableEffect(yourShowsPinnable) {
+              val handle = yourShowsPinnable?.pin()
+              onDispose { handle?.release() }
+          }
+          androidx.compose.animation.Crossfade(
+            targetState = viewportReady,
+            animationSpec = tween(500),
+            label = "your_shows_crossfade",
+            modifier = Modifier.padding(bottom = 12.dp)
+          ) { ready ->
             when {
-                isLoading -> YourShowsSkeleton(subscribedCount = subscribedItems.list.size)
+                !ready -> YourShowsSkeleton(subscribedCount = subscribedItems.list.size)
                 subscribedItems.list.isNotEmpty() -> YourShowsSection(
                     subscribedPodcasts = subscribedItems,
                     latestEpisodes = latestItems,
@@ -655,10 +690,13 @@ private fun PodcastFeed(
                     )
                 }
             }
+          }
+        }
         }
 
         // Daily Briefing Card
         if (briefing != null) {
+        item(span = StaggeredGridItemSpan.FullLine, key = "briefing", contentType = "briefing") {
             val briefingId = "briefing_${briefing.region}_${briefing.date}"
             val playbackState = episodePlaybackState.map[briefingId]
             LaunchedEffect(briefing.region, briefing.date) {
@@ -748,26 +786,19 @@ private fun PodcastFeed(
                 onDismiss = onDismissBriefing,
                 onDismissForever = onDismissBriefingForever,
                 onFeedbackClick = onFeedbackClick,
-                modifier = Modifier
+                modifier = Modifier.padding(bottom = 12.dp)
             )
         }
+        }
 
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-                // Curated For You Main Header + Sections
-                val hasBecauseYouLike = seemsToLikePodcast != null && (becauseYouLikeRecommendations.list.isNotEmpty() || becauseYouLikePodcasts.list.isNotEmpty())
-        val hasRecommendations = isRecommendationsLoading || recommendations.list.isNotEmpty()
+        // Curated For You Main Header + Sections
         if (hasBecauseYouLike || hasRecommendations) {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            item(span = StaggeredGridItemSpan.FullLine, key = "curated_header", contentType = "section_header") {
                 // Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 0.dp, bottom = 0.dp),
+                        .padding(bottom = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -804,11 +835,11 @@ private fun PodcastFeed(
                         )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // "Because You Like" Section
-                if (hasBecauseYouLike) {
+            // "Because You Like" Section
+            if (hasBecauseYouLike) {
+                item(span = StaggeredGridItemSpan.FullLine, key = "because_you_like", contentType = "because_you_like") {
                     BecauseYouLikeSection(
                         podcast = seemsToLikePodcast!!,
                         recommendations = becauseYouLikeRecommendations,
@@ -823,158 +854,103 @@ private fun PodcastFeed(
                             onPodcastClick(podcast, "home_because_you_like", null, null)
                         },
                         onChangePodcastClick = onChangePodcastClick,
-                        modifier = Modifier
-                    )
-                }
-
-                if (hasBecauseYouLike && hasRecommendations) {
-                    Spacer(modifier = Modifier.height(28.dp))
-                }
-
-                // "For You" normal recommendations section
-                if (hasRecommendations) {
-                    ForYouSection(
-                        recommendations = recommendations,
-                        currentPlayingEpisodeId = currentPlayingEpisodeId,
-                        isPlaying = isPlaying,
-                        onEpisodeClick = { episode, podcast ->
-                            onEpisodeClick?.invoke(episode, podcast, "home_for_you")
-                        },
-                        onPlayEpisode = { ep, pod -> onPlayEpisode(ep, pod, cx.aswin.boxcast.core.model.PlaybackEntryPoint.GENERIC) },
-                        timeBlock = timeBlock,
-                        onSeeAllClick = {
-                            onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou")
-                        },
-                        showTasteHeader = hasBecauseYouLike,
-                        isFallback = isRecommendationsFallback,
-                        modifier = Modifier
+                        modifier = Modifier.padding(bottom = if (hasRecommendations) 16.dp else 12.dp)
                     )
                 }
             }
-        }
 
-        // 3. Time-Based Curated Block
-        androidx.compose.animation.Crossfade(
-            targetState = when {
-                isCuratedLoading -> "skeleton"
-                timeBlock != null -> "content"
-                else -> "empty"
-            },
-            animationSpec = tween(600),
-            label = "timeblock_crossfade"
-        ) { state ->
-            when (state) {
-                "skeleton" -> TimeBlockSkeleton()
-                "content" -> TimeBlockSection(
-                    data = timeBlock!!,
-                    onCuratedEpisodeClick = { episode, podcast, vibeId, pos -> onCuratedEpisodeClick?.invoke(episode, podcast, vibeId, pos) },
-                    onImpression = onCuratedImpression,
+            // "For You" normal recommendations section — flattened into individual
+            // staggered items so masonry cards compose lazily as they scroll in
+            // (avoids the atomic ~9-card compose spike that janked the scroll).
+            if (hasRecommendations) {
+                forYouItems(
+                    recommendations = recommendations,
+                    currentPlayingEpisodeId = currentPlayingEpisodeId,
+                    isPlaying = isPlaying,
+                    onEpisodeClick = { episode, podcast ->
+                        onEpisodeClick?.invoke(episode, podcast, "home_for_you")
+                    },
+                    onPlayEpisode = { ep, pod -> onPlayEpisode(ep, pod, cx.aswin.boxcast.core.model.PlaybackEntryPoint.GENERIC) },
+                    timeBlock = timeBlock,
                     onSeeAllClick = {
-                        onNavigateToExplore?.invoke(null, "home_time_block_see_all", "foryou")
-                    }
+                        onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou")
+                    },
+                    showTasteHeader = hasBecauseYouLike,
+                    isFallback = isRecommendationsFallback
                 )
-                "empty" -> {}
             }
         }
 
-        // 4. Discover Section (Header + Chips + Grid / Skeletons)
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        // 3. Time-Based Curated Block — flattened so the header and each vibe rail are
+        // individual items that compose independently as they scroll in (removes the
+        // atomic multi-rail compose spike near the bottom of the feed).
+        if (isCuratedLoading) {
+            item(span = StaggeredGridItemSpan.FullLine, key = "time_block_skeleton", contentType = "time_block_skeleton") {
+                TimeBlockSkeleton()
+            }
+        } else if (timeBlock != null) {
+            timeBlockItems(
+                data = timeBlock,
+                onCuratedEpisodeClick = { episode, podcast, vibeId, pos -> onCuratedEpisodeClick?.invoke(episode, podcast, vibeId, pos) },
+                onImpression = onCuratedImpression,
+                onSeeAllClick = {
+                    onNavigateToExplore?.invoke(null, "home_time_block_see_all", "foryou")
+                }
+            )
+        }
+
+        // 4. Discover Section header (title + category chips)
+        item(span = StaggeredGridItemSpan.FullLine, key = "discover_header", contentType = "section_header") {
             cx.aswin.boxcast.feature.home.components.DiscoverSection(
                 selectedCategory = selectedCategory,
                 onCategorySelected = onSelectCategory,
-                onHeaderClick = { onNavigateToExplore?.invoke(selectedCategory ?: "All", "home_discover_header", null) }
+                onHeaderClick = { onNavigateToExplore?.invoke(selectedCategory ?: "All", "home_discover_header", null) },
+                modifier = Modifier.padding(bottom = 8.dp)
             )
-
-            val gridState = remember(isLoading, isFilterLoading, gridItems.list.isEmpty()) {
-                when {
-                    isLoading || isFilterLoading || gridItems.list.isEmpty() -> "loading"
-                    else -> "content"
-                }
-            }
-
-            AnimatedContent(
-                targetState = gridState,
-                transitionSpec = {
-                    (fadeIn(animationSpec = tween(400)) + slideInVertically(
-                        animationSpec = tween(400),
-                        initialOffsetY = { it / 6 }
-                    )) togetherWith fadeOut(animationSpec = tween(250))
-                },
-                label = "discover_grid_state"
-            ) { targetState ->
-                if (targetState == "content") {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val limitedItems = gridItems.list.distinctBy { it.id }.take(10)
-                        val showGenreChip = selectedCategory == null
-
-                        // Side-by-side Columns to build a perfect bento staggered masonry grid!
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            for (columnIndex in 0..1) {
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    val colItems = limitedItems.filterIndexed { idx, _ -> idx % 2 == columnIndex }
-                                    colItems.forEachIndexed { itemIdx, podcast ->
-                                        PodcastCard(
-                                            podcast = podcast,
-                                            showGenreChip = showGenreChip,
-                                            onClick = { onPodcastClick(podcast, "home_discover_grid", selectedCategory, itemIdx * 2 + columnIndex) }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // "View More" Button (Full Line)
-                        androidx.compose.foundation.layout.Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.material3.FilledTonalButton(
-                                onClick = { onNavigateToExplore?.invoke(selectedCategory ?: "All", "home_discover_view_all_button", null) }
-                            ) {
-                                Text("View more in ${selectedCategory ?: "Explore"}")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    imageVector = Icons.Rounded.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // Skeletons
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        for (columnIndex in 0..1) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                GridSkeletonItem()
-                                GridSkeletonItem()
-                                GridSkeletonItem()
-                            }
-                        }
-                    }
-                }
-            }
         }
+
+        // Discover masonry grid: each card is its own staggered-grid item so nothing
+        // composes a big chunk mid-scroll, while the native staggered layout keeps the
+        // original bento look.
+        if (showDiscoverContent) {
+            itemsIndexed(
+                discoverItems,
+                key = { _, podcast -> "discover_${podcast.id}" },
+                contentType = { _, _ -> "discover_card" }
+            ) { index, podcast ->
+                PodcastCard(
+                    podcast = podcast,
+                    showGenreChip = discoverGenreChip,
+                    onClick = { onPodcastClick(podcast, "home_discover_grid", selectedCategory, index) }
+                )
+            }
+
+            // "View More" Button (Full Line)
+            item(span = StaggeredGridItemSpan.FullLine, key = "discover_view_more", contentType = "discover_view_more") {
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.FilledTonalButton(
+                        onClick = { onNavigateToExplore?.invoke(selectedCategory ?: "All", "home_discover_view_all_button", null) }
+                    ) {
+                        Text("View more in ${selectedCategory ?: "Explore"}")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+            // Skeleton cards — also individual staggered items so they animate cheaply.
+            items(6, key = { "discover_skel_$it" }, contentType = { "discover_skel" }) {
+                GridSkeletonItem()
+            }
         }
     }
 }
