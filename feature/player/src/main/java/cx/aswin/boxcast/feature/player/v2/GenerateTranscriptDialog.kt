@@ -26,7 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
@@ -36,6 +39,7 @@ import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
  * processing time and the remaining daily credit allowance.
  */
 @Composable
+@Suppress("kotlin:S3776")
 fun GenerateTranscriptDialog(
     episodeDurationSec: Long,
     autoTranscriptLimitLeft: Int?,
@@ -52,13 +56,6 @@ fun GenerateTranscriptDialog(
             else -> "~2-3 min"
         }
     }
-
-    fun squircle(radius: androidx.compose.ui.unit.Dp) = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = radius, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = radius, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = radius, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = radius, smoothnessAsPercentBR = 60
-    )
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -113,52 +110,21 @@ fun GenerateTranscriptDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Surface(shape = squircle(12.dp), color = colorScheme.surfaceContainerHighest) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Timer,
-                                contentDescription = null,
-                                tint = colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                "Est. $estimatedTime",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    InfoPill(
+                        icon = Icons.Rounded.Timer,
+                        text = "Est. $estimatedTime",
+                        containerColor = colorScheme.surfaceContainerHighest,
+                        contentColor = colorScheme.onSurfaceVariant
+                    )
 
                     if (autoTranscriptLimitLeft != null) {
                         val limitReached = autoTranscriptLimitLeft == 0
-                        Surface(
-                            shape = squircle(12.dp),
-                            color = if (limitReached) colorScheme.errorContainer else colorScheme.tertiaryContainer
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.AutoAwesome,
-                                    contentDescription = null,
-                                    tint = if (limitReached) colorScheme.onErrorContainer else colorScheme.onTertiaryContainer,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    "$autoTranscriptLimitLeft left for the day",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (limitReached) colorScheme.onErrorContainer else colorScheme.onTertiaryContainer
-                                )
-                            }
-                        }
+                        InfoPill(
+                            icon = Icons.Rounded.AutoAwesome,
+                            text = "$autoTranscriptLimitLeft left for the day",
+                            containerColor = if (limitReached) colorScheme.errorContainer else colorScheme.tertiaryContainer,
+                            contentColor = if (limitReached) colorScheme.onErrorContainer else colorScheme.onTertiaryContainer
+                        )
                     }
                 }
 
@@ -188,6 +154,38 @@ fun GenerateTranscriptDialog(
                     Text("Cancel", color = colorScheme.onSurfaceVariant)
                 }
             }
+        }
+    }
+}
+
+private fun squircle(radius: Dp) = AbsoluteSmoothCornerShape(
+    cornerRadiusTL = radius, smoothnessAsPercentTL = 60,
+    cornerRadiusTR = radius, smoothnessAsPercentTR = 60,
+    cornerRadiusBL = radius, smoothnessAsPercentBL = 60,
+    cornerRadiusBR = radius, smoothnessAsPercentBR = 60
+)
+
+@Composable
+private fun InfoPill(
+    icon: ImageVector,
+    text: String,
+    containerColor: Color,
+    contentColor: Color
+) {
+    Surface(shape = squircle(12.dp), color = containerColor) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(text, style = MaterialTheme.typography.labelMedium, color = contentColor)
         }
     }
 }

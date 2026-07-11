@@ -329,11 +329,11 @@ class UserPreferencesRepository(context: Context) {
 
     /** Persisted playback speed — restored across app restarts. */
     val playbackSpeedStream: Flow<Float> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) emit(emptyPreferences()) else throw exception
-        }
         .map { preferences ->
             preferences[Keys.PLAYBACK_SPEED] ?: 1.0f
+        }
+        .catch { exception ->
+            if (exception is IOException) emit(1.0f) else throw exception
         }
         .distinctUntilChanged()
 

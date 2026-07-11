@@ -561,14 +561,10 @@ class PlaybackRepository(
                     likeStateObserverJob?.cancel()
                     if (episodeId != null) {
                         likeStateObserverJob = launch {
-                            var firstEmission = true
                             listeningHistoryDao.getHistoryItemFlow(episodeId).collect { history ->
-                                if (history == null && firstEmission) {
-                                    // New episode without history: clear stale like/completed flags.
+                                if (history == null) {
                                     _playerState.value = _playerState.value.copy(isLiked = false, isCompleted = false)
-                                }
-                                firstEmission = false
-                                if (history != null) {
+                                } else {
                                     if (_playerState.value.isLiked != history.isLiked ||
                                         _playerState.value.isCompleted != history.isCompleted
                                     ) {
@@ -2078,7 +2074,13 @@ class PlaybackRepository(
     fun setPlaybackSpeed(speed: Float) {
         mediaController?.playbackParameters = PlaybackParameters(speed)
         _playerState.value = _playerState.value.copy(playbackSpeed = speed)
-        repositoryScope.launch { userPreferencesRepository.setPlaybackSpeed(speed) }
+        repositoryScope.launch {
+            try {
+                userPreferencesRepository.setPlaybackSpeed(speed)
+            } catch (exception: java.io.IOException) {
+                Log.w("PlaybackRepo", "Unable to persist playback speed", exception)
+            }
+        }
     }
 
     fun setSleepTimer(durationMinutes: Int, dismissNudge: Boolean = true) {

@@ -1,11 +1,9 @@
 package cx.aswin.boxcast.feature.player.v2
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxcast.core.model.Chapter
 import cx.aswin.boxcast.feature.player.formatTime
+import kotlinx.coroutines.isActive
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin
@@ -64,6 +64,7 @@ import kotlin.math.sin
  * - The remaining-time label toggles between remaining and total duration on tap.
  */
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776")
 fun PlayerSeekbar(
     positionFlow: kotlinx.coroutines.flow.Flow<Long>,
     bufferedPositionFlow: kotlinx.coroutines.flow.Flow<Long>,
@@ -91,13 +92,19 @@ fun PlayerSeekbar(
         animationSpec = tween(durationMillis = 450),
         label = "waveAmplitude"
     )
-    val phaseTransition = rememberInfiniteTransition(label = "wavePhase")
-    val phase by phaseTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * PI).toFloat(),
-        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
-        label = "wavePhaseValue"
-    )
+    val waveVisible = isPlaying && dragFraction == null
+    val phaseAnimation = remember { Animatable(0f) }
+    LaunchedEffect(waveVisible) {
+        if (!waveVisible) return@LaunchedEffect
+        while (isActive) {
+            phaseAnimation.snapTo(0f)
+            phaseAnimation.animateTo(
+                targetValue = (2 * PI).toFloat(),
+                animationSpec = tween(durationMillis = 1200, easing = LinearEasing)
+            )
+        }
+    }
+    val phase = phaseAnimation.value
 
     Column(
         modifier = modifier.fillMaxWidth(),

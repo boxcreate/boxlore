@@ -6,6 +6,7 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Indication
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -116,6 +117,7 @@ private fun rememberExpressiveVisualScale(
 fun Modifier.expressiveClickable(
     enabled: Boolean = true,
     shape: androidx.compose.ui.graphics.Shape? = null,
+    indication: Indication? = null,
     @Suppress("UNUSED_PARAMETER") isolate: Boolean = false,
     onClick: () -> Unit
 ): Modifier = composed {
@@ -132,7 +134,7 @@ fun Modifier.expressiveClickable(
         }
         .clickable(
             interactionSource = interactionSource,
-            indication = null,
+            indication = indication,
             enabled = enabled,
             onClick = onClick
         )
@@ -144,6 +146,7 @@ fun Modifier.expressiveClickable(
     interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource?,
     enabled: Boolean = true,
     shape: androidx.compose.ui.graphics.Shape? = null,
+    indication: Indication? = null,
     onClick: () -> Unit
 ): Modifier = composed {
     val localInteractionSource = interactionSource ?: remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -159,7 +162,7 @@ fun Modifier.expressiveClickable(
         }
         .clickable(
             interactionSource = localInteractionSource,
-            indication = null,
+            indication = indication,
             enabled = enabled,
             onClick = onClick
         )

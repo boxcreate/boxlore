@@ -66,6 +66,7 @@ import kotlin.math.absoluteValue
  * - Peeks the queued episode and commits it when that card settles.
  */
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776")
 fun PlayerHero(
     episodeId: String,
     artworkUrl: String?,

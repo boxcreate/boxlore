@@ -65,7 +65,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,6 +85,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.designsystem.components.AutoTranscriptState
 import cx.aswin.boxcast.core.designsystem.theme.LocalEffectiveDarkTheme
@@ -107,6 +107,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776")
 fun FullPlayerV2(
     playbackRepository: PlaybackRepository,
     downloadRepository: cx.aswin.boxcast.core.data.DownloadRepository,
@@ -127,7 +128,7 @@ fun FullPlayerV2(
         playbackRepository.playerState
             .map { it.copy(position = 0, bufferedPosition = 0) }
             .distinctUntilChanged()
-    }.collectAsState(initial = playbackRepository.playerState.value)
+    }.collectAsStateWithLifecycle(initialValue = playbackRepository.playerState.value)
 
     val positionFlow = remember(playbackRepository) {
         playbackRepository.playerState.map { it.position }.distinctUntilChanged()
@@ -167,9 +168,9 @@ fun FullPlayerV2(
     val isVideo = isVideoPodcast && !isAudioOnly
 
     val isDownloaded by remember(episode.id) { downloadRepository.isDownloaded(episode.id) }
-        .collectAsState(initial = false)
+        .collectAsStateWithLifecycle(initialValue = false)
     val isDownloading by remember(episode.id) { downloadRepository.isDownloading(episode.id) }
-        .collectAsState(initial = false)
+        .collectAsStateWithLifecycle(initialValue = false)
 
     BackHandler(enabled = showFullscreenTranscript) { showFullscreenTranscript = false }
     BackHandler(enabled = showInlineTranscript && !showFullscreenTranscript) {
@@ -808,9 +809,12 @@ private fun PlayerTopBar(
         var tipVisible by remember { mutableStateOf(showSwipeMinimizeTip) }
         LaunchedEffect(showSwipeMinimizeTip, isExpanded) {
             if (showSwipeMinimizeTip && isExpanded) {
+                tipVisible = true
                 delay(3500)
                 tipVisible = false
                 onSwipeMinimizeTipDismissed()
+            } else {
+                tipVisible = false
             }
         }
         AnimatedContent(
@@ -848,6 +852,7 @@ private fun PlayerTopBar(
 
 /** Immersive fullscreen video overlay with auto-hiding HUD and rotation toggle. */
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776")
 private fun VideoFullscreenOverlay(
     visible: Boolean,
     episodeTitle: String,
@@ -1031,11 +1036,17 @@ private fun VideoFullscreenOverlay(
                                 .align(Alignment.BottomCenter)
                                 .padding(horizontal = 24.dp, vertical = 24.dp)
                         ) {
-                            val positionMs by positionFlow.collectAsState(initial = 0L)
+                            val positionMs by positionFlow.collectAsStateWithLifecycle(initialValue = 0L)
+                            var draggedPosition by remember { mutableStateOf<Float?>(null) }
+                            val displayedPosition = draggedPosition?.toLong() ?: positionMs
                             if (durationMs > 0) {
                                 Slider(
-                                    value = positionMs.toFloat(),
-                                    onValueChange = { onSeek(it.toLong()) },
+                                    value = draggedPosition ?: positionMs.toFloat(),
+                                    onValueChange = { draggedPosition = it },
+                                    onValueChangeFinished = {
+                                        draggedPosition?.let { onSeek(it.toLong()) }
+                                        draggedPosition = null
+                                    },
                                     valueRange = 0f..durationMs.toFloat(),
                                     colors = SliderDefaults.colors(
                                         thumbColor = colorScheme.primary,
@@ -1051,12 +1062,12 @@ private fun VideoFullscreenOverlay(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = formatTime(positionMs),
+                                        text = formatTime(displayedPosition),
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                         color = Color.White
                                     )
                                     Text(
-                                        text = "-" + formatTime((durationMs - positionMs).coerceAtLeast(0)),
+                                        text = "-" + formatTime((durationMs - displayedPosition).coerceAtLeast(0)),
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                         color = Color.White
                                     )

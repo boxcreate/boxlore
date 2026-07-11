@@ -27,6 +27,7 @@ import cx.aswin.boxcast.feature.player.TranscriptView
 import kotlinx.coroutines.flow.Flow
 
 @Composable
+@Suppress("kotlin:S107")
 fun InlineTranscriptHero(
     transcript: List<TranscriptSegment>,
     positionFlow: Flow<Long>,

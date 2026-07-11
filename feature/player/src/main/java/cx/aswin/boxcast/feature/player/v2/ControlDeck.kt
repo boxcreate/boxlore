@@ -125,7 +125,8 @@ fun PrimaryControls(
     val activeIndex = pressedIndex ?: latchedIndex
     val baseWeights = remember { listOf(1f, 1.18f, 1f) }
     fun targetWeight(index: Int): Float {
-        val active = activeIndex ?: return baseWeights[index]
+        if (activeIndex == null) return baseWeights[index]
+        val active = activeIndex
         val extra = baseWeights[active] * 0.14f
         return if (index == active) {
             baseWeights[index] + extra
@@ -211,6 +212,7 @@ fun PrimaryControls(
 }
 
 @Composable
+@Suppress("kotlin:S107")
 private fun TransportButton(
     icon: ImageVector,
     contentDescription: String,
@@ -314,6 +316,7 @@ private enum class QuickControlMode { ACTIONS, SPEED, SLEEP }
 
 /** Two visible rows expose every player feature without an overflow or horizontal scroll. */
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776")
 fun SecondaryRail(
     playbackSpeed: Float,
     sleepTimerEnd: Long?,
@@ -437,6 +440,7 @@ fun SecondaryRail(
                         )
                         SleepAction(
                             sleepTimerEnd = sleepTimerEnd,
+                            sleepAtEndOfEpisode = sleepAtEndOfEpisode,
                             colorScheme = colorScheme,
                             shape = groupMiddleShape,
                             onClick = { controlMode = QuickControlMode.SLEEP },
@@ -544,6 +548,7 @@ fun SecondaryRail(
 }
 
 @Composable
+@Suppress("kotlin:S107")
 private fun InlineSpeedSelector(
     currentSpeed: Float,
     colorScheme: ColorScheme,
@@ -633,6 +638,7 @@ private fun InlineSpeedSelector(
 }
 
 @Composable
+@Suppress("kotlin:S107")
 private fun InlineSleepSelector(
     sleepTimerEnd: Long?,
     sleepAtEndOfEpisode: Boolean,
@@ -799,6 +805,7 @@ private fun LabelAction(
 }
 
 @Composable
+@Suppress("kotlin:S107")
 private fun UtilityAction(
     icon: ImageVector,
     label: String,
@@ -912,6 +919,7 @@ private fun Modifier.quickActionClickable(
 @Composable
 private fun SleepAction(
     sleepTimerEnd: Long?,
+    sleepAtEndOfEpisode: Boolean,
     colorScheme: ColorScheme,
     shape: androidx.compose.ui.graphics.Shape,
     onClick: () -> Unit,
@@ -933,12 +941,18 @@ private fun SleepAction(
             remainingTime = ""
         }
     }
-    val active = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
+    val hasCountdown = sleepTimerEnd != null && sleepTimerEnd > System.currentTimeMillis()
+    val active = hasCountdown || sleepAtEndOfEpisode
+    val status = when {
+        sleepAtEndOfEpisode -> "End"
+        hasCountdown && remainingTime.isNotEmpty() -> remainingTime
+        else -> null
+    }
     UtilityAction(
         icon = Icons.Rounded.NightsStay,
-        label = if (active && remainingTime.isNotEmpty()) remainingTime else "Sleep",
+        label = "Sleep",
         active = active,
-        status = remainingTime.takeIf { active && it.isNotEmpty() },
+        status = status,
         colorScheme = colorScheme,
         shape = shape,
         onClick = onClick,

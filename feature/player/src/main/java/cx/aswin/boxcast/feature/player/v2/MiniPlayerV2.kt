@@ -11,7 +11,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,11 +36,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxcast.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
+import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Episode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -75,6 +77,7 @@ val MiniPlayerHeight = 72.dp
  * a dismiss pill.
  */
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776")
 fun MiniPlayerV2(
     episode: Episode,
     podcastTitle: String,
@@ -325,38 +328,62 @@ fun MiniPlayerV2(
 
         // One-time swipe tip overlay
         if (showSwipeTip && !isPlaying) {
-            var tipVisible by remember { mutableStateOf(true) }
-            LaunchedEffect(Unit) {
-                delay(4000)
-                tipVisible = false
-                onSwipeTipDismissed()
-            }
-            AnimatedVisibility(
-                visible = tipVisible,
-                enter = fadeIn(tween(300)),
-                exit = fadeOut(tween(500)),
+            SwipeDismissTip(
+                onDismissed = onSwipeTipDismissed,
                 modifier = Modifier
                     .fillMaxWidth()
                     .zIndex(2f)
                     .align(Alignment.BottomCenter)
-            ) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "← Swipe to dismiss →",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    )
-                }
-            }
+            )
         }
     }
 }
 
 @Composable
+private fun SwipeDismissTip(
+    onDismissed: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var tipVisible by remember { mutableStateOf(true) }
+    var dismissalReported by remember { mutableStateOf(false) }
+    val currentOnDismissed by rememberUpdatedState(onDismissed)
+    fun reportDismissal() {
+        if (!dismissalReported) {
+            dismissalReported = true
+            currentOnDismissed()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        delay(4000)
+        tipVisible = false
+        reportDismissal()
+    }
+    DisposableEffect(Unit) {
+        onDispose { reportDismissal() }
+    }
+    AnimatedVisibility(
+        visible = tipVisible,
+        enter = fadeIn(tween(300)),
+        exit = fadeOut(tween(500)),
+        modifier = modifier
+    ) {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text(
+                text = "← Swipe to dismiss →",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+@Suppress("kotlin:S3776")
 private fun MiniTransportButtons(
     isPlaying: Boolean,
     isLoading: Boolean,
@@ -366,17 +393,18 @@ private fun MiniTransportButtons(
     onForward: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
-    val replayScale = remember { Animatable(1f) }
-    val forwardScale = remember { Animatable(1f) }
-    val playScale = remember { Animatable(1f) }
-    val scope = rememberCoroutineScope()
+    val playShape = AbsoluteSmoothCornerShape(
+        cornerRadiusTL = 14.dp, smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 14.dp, smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 14.dp, smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 14.dp, smoothnessAsPercentBR = 60
+    )
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         MiniSeekButton(
-            scaleAnim = replayScale,
             icon = Icons.Rounded.Replay10,
             contentDescription = "Seek back 10 seconds",
             isLoading = isLoading,
@@ -388,35 +416,14 @@ private fun MiniTransportButtons(
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .graphicsLayer {
-                    scaleX = playScale.value
-                    scaleY = playScale.value
-                }
-                .clip(
-                    AbsoluteSmoothCornerShape(
-                        cornerRadiusTL = 14.dp, smoothnessAsPercentTL = 60,
-                        cornerRadiusTR = 14.dp, smoothnessAsPercentTR = 60,
-                        cornerRadiusBL = 14.dp, smoothnessAsPercentBL = 60,
-                        cornerRadiusBR = 14.dp, smoothnessAsPercentBR = 60
-                    )
-                )
+                .clip(playShape)
                 .background(colorScheme.primary)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                .expressiveClickable(
+                    shape = playShape,
                     indication = ripple(bounded = false),
                     enabled = !isLoading
                 ) {
                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    scope.launch {
-                        playScale.snapTo(0.82f)
-                        playScale.animateTo(
-                            1f,
-                            spring(
-                                dampingRatio = 0.42f,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        )
-                    }
                     onPlayPause()
                 },
             contentAlignment = Alignment.Center
@@ -450,7 +457,6 @@ private fun MiniTransportButtons(
         }
 
         MiniSeekButton(
-            scaleAnim = forwardScale,
             icon = Icons.Rounded.Forward30,
             contentDescription = "Seek forward 30 seconds",
             isLoading = isLoading,
@@ -463,7 +469,6 @@ private fun MiniTransportButtons(
 
 @Composable
 private fun MiniSeekButton(
-    scaleAnim: Animatable<Float, *>,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
     isLoading: Boolean,
@@ -472,29 +477,17 @@ private fun MiniSeekButton(
     onClick: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
     Box(
         modifier = Modifier
             .size(38.dp)
-            .graphicsLayer {
-                scaleX = scaleAnim.value
-                scaleY = scaleAnim.value
-            }
             .clip(shape)
             .background(colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+            .expressiveClickable(
+                shape = shape,
                 indication = ripple(bounded = false),
                 enabled = !isLoading
             ) {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                scope.launch {
-                    scaleAnim.snapTo(0.82f)
-                    scaleAnim.animateTo(
-                        1f,
-                        spring(dampingRatio = 0.46f, stiffness = Spring.StiffnessMedium)
-                    )
-                }
                 onClick()
             },
         contentAlignment = Alignment.Center

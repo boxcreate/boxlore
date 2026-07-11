@@ -42,7 +42,7 @@ fun rememberPlayerColorScheme(imageUrl: String?): ColorScheme {
             .data(imageUrl)
             .size(Size(100, 100))
             .allowHardware(false) // Required for Palette
-            .memoryCachePolicy(CachePolicy.DISABLED)
+            .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.DISABLED)
             .build()
     )

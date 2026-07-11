@@ -1,11 +1,8 @@
 package cx.aswin.boxcast.feature.player.v2
 
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,13 +23,13 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -54,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.data.UserPreferencesRepository
 import cx.aswin.boxcast.core.designsystem.theme.LocalEffectiveDarkTheme
@@ -70,6 +68,7 @@ enum class PlayerSheetValue { Collapsed, Expanded }
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776")
 fun PlayerSheetScaffold(
     playbackRepository: PlaybackRepository,
     downloadRepository: cx.aswin.boxcast.core.data.DownloadRepository,
@@ -82,7 +81,7 @@ fun PlayerSheetScaffold(
     onPodcastInfoClick: (cx.aswin.boxcast.core.model.Podcast) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val state by playbackRepository.playerState.collectAsState()
+    val state by playbackRepository.playerState.collectAsStateWithLifecycle()
     val episode = state.currentEpisode
     val podcast = state.currentPodcast
 
@@ -93,12 +92,13 @@ fun PlayerSheetScaffold(
     val density = LocalDensity.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val playerStateHolder = rememberSaveableStateHolder()
     val haptics = LocalHapticFeedback.current
     val window = (context as? android.app.Activity)?.window
 
     // Tooltips
-    val hasSeenSwipeDismissTip by userPrefs.hasSeenSwipeDismissTip.collectAsState(initial = true)
-    val hasSeenSwipeMinimizeTip by userPrefs.hasSeenSwipeMinimizeTip.collectAsState(initial = true)
+    val hasSeenSwipeDismissTip by userPrefs.hasSeenSwipeDismissTip.collectAsStateWithLifecycle(initialValue = true)
+    val hasSeenSwipeMinimizeTip by userPrefs.hasSeenSwipeMinimizeTip.collectAsStateWithLifecycle(initialValue = true)
 
     val effectiveDarkTheme = LocalEffectiveDarkTheme.current
     SideEffect {
@@ -334,13 +334,10 @@ fun PlayerSheetScaffold(
                     expandSheet()
                 }
         ) {
-            Crossfade(
-                targetState = colorScheme,
-                animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
-                label = "playerColorScheme"
-            ) { scheme ->
-                Box(modifier = Modifier.fillMaxSize()) {
-                    // MINI PLAYER
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (expansionFraction < 0.999f) {
+                    playerStateHolder.SaveableStateProvider("miniPlayer") {
+                        // MINI PLAYER
                     MiniPlayerV2(
                         episode = episode,
                         podcastTitle = podcast?.title ?: "",
@@ -349,7 +346,7 @@ fun PlayerSheetScaffold(
                         isLoading = state.isLoading,
                         position = state.position,
                         duration = state.duration,
-                        colorScheme = scheme,
+                        colorScheme = colorScheme,
                         onPlayPause = {
                             cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackMiniPlayerInteraction(
                                 "play_pause", podcast?.id, episode.id, podcast?.title, episode.title
@@ -380,7 +377,7 @@ fun PlayerSheetScaffold(
                             )
                             playbackRepository.clearSession()
                         },
-                        backgroundColor = miniSheetColor(scheme),
+                        backgroundColor = miniSheetColor(colorScheme),
                         showSwipeTip = !hasSeenSwipeDismissTip && !state.isPlaying,
                         onSwipeTipDismissed = { scope.launch { userPrefs.markSwipeDismissTipSeen() } },
                         modifier = Modifier
@@ -390,8 +387,12 @@ fun PlayerSheetScaffold(
                             .graphicsLayer { alpha = miniAlpha }
                             .zIndex(if (expansionFraction < 0.5f) 1f else 0f)
                     )
+                    }
+                }
 
-                    // FULL PLAYER
+                if (expansionFraction > 0.001f) {
+                    playerStateHolder.SaveableStateProvider("fullPlayer") {
+                        // FULL PLAYER
                     Box(
                         modifier = Modifier
                             .height(containerHeight) // Fixed height prevents layout thrash while morphing
@@ -407,7 +408,7 @@ fun PlayerSheetScaffold(
                         FullPlayerV2(
                             playbackRepository = playbackRepository,
                             downloadRepository = downloadRepository,
-                            colorScheme = scheme,
+                            colorScheme = colorScheme,
                             isFullscreenVideo = isFullscreenVideo,
                             onFullscreenVideoChange = { isFullscreenVideo = it },
                             onCollapse = { collapseSheet() },
@@ -418,6 +419,7 @@ fun PlayerSheetScaffold(
                             showSwipeMinimizeTip = !hasSeenSwipeMinimizeTip,
                             onSwipeMinimizeTipDismissed = { scope.launch { userPrefs.markSwipeMinimizeTipSeen() } }
                         )
+                    }
                     }
                 }
             }

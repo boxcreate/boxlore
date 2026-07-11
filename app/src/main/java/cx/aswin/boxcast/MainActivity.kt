@@ -96,7 +96,6 @@ import cx.aswin.boxcast.core.designsystem.component.bottomNavDestinations
 import cx.aswin.boxcast.core.designsystem.theme.BoxCastTheme
 import cx.aswin.boxcast.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxcast.feature.home.HomeRoute
-import cx.aswin.boxcast.feature.player.PlayerRoute
 import cx.aswin.boxcast.feature.briefing.BriefingRoute
 import cx.aswin.boxcast.feature.home.components.FeedbackSheet
 import cx.aswin.boxcast.core.designsystem.component.ExpressiveAnimatedBackground
