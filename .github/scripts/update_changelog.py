@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -17,8 +18,9 @@ UPCOMING_CHANGES_START = "<!-- upcoming-changes:start -->"
 UPCOMING_CHANGES_END = "<!-- upcoming-changes:end -->"
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "openai/gpt-oss-120b"
-GROQ_USER_AGENT = "boxlore-changelog/1.0"
+GROQ_USER_AGENT = "boxlore-changelog/1.1"
 CATEGORY_ORDER = ("Added", "Changed", "Fixed", "Deprecated", "Removed", "Security")
+README_GROUP_ORDER = ("New features", "Improvements", "Fixes", "Security", "Other")
 DEFAULT_GITHUB_REPOSITORY = "ashwkun/boxlore"
 
 
@@ -72,6 +74,29 @@ Description:
 
 Generate changelog bullets for the [Unreleased] section."""
 
+    parsed = _groq_chat_json(
+        api_key,
+        system_prompt,
+        user_prompt,
+        "Groq API error",
+    )
+
+    normalized: dict[str, list[str]] = {}
+    for category in CATEGORY_ORDER:
+        raw = parsed.get(category, [])
+        if not isinstance(raw, list):
+            continue
+        bullets = [str(item).strip() for item in raw if str(item).strip()]
+        if bullets:
+            normalized[category] = bullets
+    return normalized
+
+
+def _strip_pr_links(text: str) -> str:
+    return re.sub(r"\s*\(\[#\d+\]\([^)]+\)\)\s*$", "", text).strip()
+
+
+def _groq_chat_json(api_key: str, system_prompt: str, user_prompt: str, error_label: str) -> dict:
     payload = {
         "model": GROQ_MODEL,
         "temperature": 0.2,
@@ -94,30 +119,108 @@ Generate changelog bullets for the [Unreleased] section."""
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=90) as response:
             body = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        print(f"Groq API error ({exc.code}): {detail}", file=sys.stderr)
+        print(f"{error_label} ({exc.code}): {detail}", file=sys.stderr)
         sys.exit(1)
 
     content = body["choices"][0]["message"]["content"]
     parsed = json.loads(content)
     if not isinstance(parsed, dict):
-        raise ValueError("Groq response was not a JSON object")
+        raise ValueError(f"{error_label}: Groq response was not a JSON object")
+    return parsed
 
-    normalized: dict[str, list[str]] = {}
-    for category in CATEGORY_ORDER:
-        raw = parsed.get(category, [])
-        if not isinstance(raw, list):
+
+def _groq_curate_readme_upcoming(
+    api_key: str, sections: dict[str, list[str]]
+) -> list[dict[str, list[str]]]:
+    """Curate all [Unreleased] entries into grouped, importance-sorted README bullets."""
+    if not any(sections.values()):
+        return []
+
+    cleaned_sections: dict[str, list[str]] = {}
+    for category, bullets in sections.items():
+        cleaned = [_strip_pr_links(bullet) for bullet in bullets if bullet.strip()]
+        if cleaned:
+            cleaned_sections[category] = cleaned
+
+    if not cleaned_sections:
+        return []
+
+    changelog_text = _render_unreleased(cleaned_sections)
+    system_prompt = """You curate the full [Unreleased] changelog for boxlore, an Android podcast app, into a README "Upcoming Changes" section for listeners — not developers.
+
+Return ONLY valid JSON:
+{"groups": [{"heading": "...", "bullets": ["...", ...]}, ...]}
+
+Allowed headings (use exactly one of these per group, omit empty groups):
+- "New features" — new capabilities users can try (maps from Added)
+- "Improvements" — better behavior, UI polish, smoother performance (maps from Changed)
+- "Fixes" — bugs or crashes resolved (maps from Fixed)
+- "Security" — privacy or security improvements (maps from Security)
+- "Other" — rare; only if nothing else fits
+
+Process ALL input bullets together before writing output:
+1. Read every existing unreleased entry; do not treat the newest PR as more important by default.
+2. Score each distinct user-visible change 1–100 for customer importance (new major features ≈ 90+, small polish ≈ 40–60, internal-only ≈ 0–20).
+3. Drop or merge items below 40 importance; merge overlapping bullets (e.g. two Home scroll perf fixes → one line).
+4. Rewrite survivors in plain English for listeners; never mention Compose, Groq, CI, modules, refactors, or PR numbers.
+5. Sort groups: New features → Improvements → Fixes → Security → Other.
+6. Within each group, sort bullets highest importance first.
+7. Cap at 8 bullets total across all groups; prefer fewer, stronger lines over a long list.
+
+Tone examples:
+- "New in-app NPS surveys that match the app's look."
+- "Home screen scroll is smoother with less lag and pinned Your Shows and hero items."
+- "Loading placeholders now shimmer more calmly, making the wait feel shorter."
+
+Rules for bullets:
+- Under 120 characters each.
+- No leading dashes, markdown links, or PR references in output."""
+
+    user_prompt = f"""Curate this entire [Unreleased] changelog into grouped README bullets:
+
+{changelog_text}"""
+
+    parsed = _groq_chat_json(
+        api_key,
+        system_prompt,
+        user_prompt,
+        "Groq README curation error",
+    )
+    raw_groups = parsed.get("groups", [])
+    if not isinstance(raw_groups, list):
+        return []
+
+    groups: list[dict[str, list[str]]] = []
+    for item in raw_groups:
+        if not isinstance(item, dict):
             continue
-        bullets = [str(item).strip() for item in raw if str(item).strip()]
+        heading = str(item.get("heading", "")).strip()
+        bullets_raw = item.get("bullets", [])
+        if not heading or not isinstance(bullets_raw, list):
+            continue
+        bullets = [str(b).strip() for b in bullets_raw if str(b).strip()]
         if bullets:
-            normalized[category] = bullets
-    return normalized
+            groups.append({"heading": heading, "bullets": bullets})
+
+    return _sort_readme_groups(groups)
+
+
+def _sort_readme_groups(groups: list[dict[str, list[str]]]) -> list[dict[str, list[str]]]:
+    order = {name: index for index, name in enumerate(README_GROUP_ORDER)}
+
+    def rank(group: dict[str, list[str]]) -> tuple[int, str]:
+        heading = group["heading"]
+        return (order.get(heading, len(README_GROUP_ORDER)), heading.lower())
+
+    return sorted(groups, key=rank)
 
 
 def _groq_readme_summary(api_key: str, sections: dict[str, list[str]]) -> list[str]:
+    """Flat bullet fallback when grouped curation returns nothing."""
     if not any(sections.values()):
         return []
 
@@ -137,37 +240,12 @@ Rules:
 
 {changelog_text}"""
 
-    payload = {
-        "model": GROQ_MODEL,
-        "temperature": 0.2,
-        "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    }
-
-    request = urllib.request.Request(
-        GROQ_API_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": GROQ_USER_AGENT,
-        },
-        method="POST",
+    parsed = _groq_chat_json(
+        api_key,
+        system_prompt,
+        user_prompt,
+        "Groq README summary error",
     )
-
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        print(f"Groq README summary error ({exc.code}): {detail}", file=sys.stderr)
-        sys.exit(1)
-
-    content = body["choices"][0]["message"]["content"]
-    parsed = json.loads(content)
     raw = parsed.get("bullets", [])
     if not isinstance(raw, list):
         return []
@@ -230,11 +308,23 @@ def _extract_unreleased_sections(content: str) -> dict[str, list[str]]:
     return _parse_unreleased_sections(content[start:end])
 
 
-def _render_readme_upcoming_block(bullets: list[str]) -> str:
-    if not bullets:
-        body = "<p><em>Nothing queued yet.</em></p>"
-    else:
+def _render_readme_upcoming_block(groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
+    if groups:
+        visible = [g for g in groups if g.get("bullets")]
+        if not visible:
+            body = "<p><em>Nothing queued yet.</em></p>"
+        else:
+            parts: list[str] = []
+            for group in visible:
+                parts.append(f"<b>{group['heading']}</b>")
+                parts.append("")
+                parts.extend(f"- {bullet}" for bullet in group["bullets"])
+                parts.append("")
+            body = "\n".join(parts).rstrip()
+    elif bullets:
         body = "\n".join(f"- {bullet}" for bullet in bullets)
+    else:
+        body = "<p><em>Nothing queued yet.</em></p>"
 
     return (
         f"{UPCOMING_CHANGES_START}\n"
@@ -249,8 +339,8 @@ def _render_readme_upcoming_block(bullets: list[str]) -> str:
     )
 
 
-def _update_readme(content: str, bullets: list[str]) -> str:
-    block = _render_readme_upcoming_block(bullets)
+def _update_readme(content: str, groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
+    block = _render_readme_upcoming_block(groups=groups, bullets=bullets)
     pattern = re.compile(
         re.escape(UPCOMING_CHANGES_START) + r".*?" + re.escape(UPCOMING_CHANGES_END),
         flags=re.DOTALL,
@@ -299,12 +389,29 @@ def _update_changelog(content: str, entries: dict[str, list[str]], pr_number: in
     return updated, True
 
 
-def main() -> None:
-    api_key = _require_env("GROQ_API_KEY")
-    pr_number = int(_require_env("PR_NUMBER"))
-    pr_title = _require_env("PR_TITLE")
-    pr_body = os.environ.get("PR_BODY", "")
+def append_changelog(api_key: str, pr_number: int, pr_title: str, pr_body: str) -> bool:
+    if not CHANGELOG_PATH.exists():
+        print("CHANGELOG.md not found", file=sys.stderr)
+        sys.exit(1)
 
+    changelog_original = CHANGELOG_PATH.read_text(encoding="utf-8")
+    entries = _groq_entries(api_key, pr_number, pr_title, pr_body)
+    if not entries:
+        print("Groq returned no changelog entries.")
+        return False
+
+    changelog_updated, changelog_changed = _update_changelog(
+        changelog_original, entries, pr_number
+    )
+    if changelog_changed:
+        CHANGELOG_PATH.write_text(changelog_updated, encoding="utf-8")
+        print(f"Updated CHANGELOG.md for PR #{pr_number}.")
+    else:
+        print(f"No CHANGELOG changes for PR #{pr_number}.")
+    return changelog_changed
+
+
+def sync_readme_upcoming(api_key: str) -> bool:
     if not CHANGELOG_PATH.exists():
         print("CHANGELOG.md not found", file=sys.stderr)
         sys.exit(1)
@@ -312,29 +419,57 @@ def main() -> None:
         print("README.md not found", file=sys.stderr)
         sys.exit(1)
 
-    changelog_original = CHANGELOG_PATH.read_text(encoding="utf-8")
     readme_original = README_PATH.read_text(encoding="utf-8")
+    changelog_content = CHANGELOG_PATH.read_text(encoding="utf-8")
+    unreleased = _extract_unreleased_sections(changelog_content)
 
-    entries = _groq_entries(api_key, pr_number, pr_title, pr_body)
-    if entries:
-        changelog_updated, changelog_changed = _update_changelog(
-            changelog_original, entries, pr_number
-        )
+    if not unreleased:
+        print("No [Unreleased] entries; clearing README upcoming section.")
+        readme_updated = _update_readme(readme_original)
     else:
-        print("Groq returned no changelog entries; syncing README only.")
-        changelog_updated, changelog_changed = changelog_original, False
+        print("Curating README from all [Unreleased] changelog entries...")
+        groups = _groq_curate_readme_upcoming(api_key, unreleased)
+        if groups:
+            readme_updated = _update_readme(readme_original, groups=groups)
+        else:
+            print("Grouped curation empty; falling back to flat bullet summary.")
+            bullets = _groq_readme_summary(api_key, unreleased)
+            readme_updated = _update_readme(readme_original, bullets=bullets)
 
-    if changelog_changed:
-        CHANGELOG_PATH.write_text(changelog_updated, encoding="utf-8")
-        print(f"Updated CHANGELOG.md for PR #{pr_number}.")
-
-    unreleased = _extract_unreleased_sections(changelog_updated)
-    readme_bullets = _groq_readme_summary(api_key, unreleased) if unreleased else []
-    readme_updated = _update_readme(readme_original, readme_bullets)
     if readme_updated != readme_original:
         README_PATH.write_text(readme_updated, encoding="utf-8")
         print("Synced README.md Upcoming Changes section.")
-    elif not changelog_changed:
+        return True
+
+    print("No README changes written.")
+    return False
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Update CHANGELOG and README on PR merge.")
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="all",
+        choices=("all", "append", "sync-readme"),
+        help="append: write PR to CHANGELOG; sync-readme: curate full Unreleased into README; all: both",
+    )
+    args = parser.parse_args()
+
+    api_key = _require_env("GROQ_API_KEY")
+    changelog_changed = False
+    readme_changed = False
+
+    if args.command in ("all", "append"):
+        pr_number = int(_require_env("PR_NUMBER"))
+        pr_title = _require_env("PR_TITLE")
+        pr_body = os.environ.get("PR_BODY", "")
+        changelog_changed = append_changelog(api_key, pr_number, pr_title, pr_body)
+
+    if args.command in ("all", "sync-readme"):
+        readme_changed = sync_readme_upcoming(api_key)
+
+    if not changelog_changed and not readme_changed:
         print("No CHANGELOG or README changes written.")
 
 

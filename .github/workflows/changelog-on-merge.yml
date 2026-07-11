@@ -41,13 +41,18 @@ jobs:
           ref: master
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update CHANGELOG via Groq
+      - name: Append merged PR to CHANGELOG
         env:
           GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.pull_request.number }}
           PR_TITLE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_title || github.event.pull_request.title }}
           PR_BODY: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_body || github.event.pull_request.body }}
-        run: python3 .github/scripts/update_changelog.py
+        run: python3 .github/scripts/update_changelog.py append
+
+      - name: Curate README from all unreleased changes
+        env:
+          GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
+        run: python3 .github/scripts/update_changelog.py sync-readme
 
       - name: Commit and push
         env:
