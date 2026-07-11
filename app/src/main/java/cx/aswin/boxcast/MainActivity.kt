@@ -461,12 +461,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
             
-            // 5. Smart Queue Engine
-            val smartQueueEngine = remember { cx.aswin.boxcast.core.data.DefaultSmartQueueEngine(podcastRepository, database.listeningHistoryDao(), subscriptionRepository) }
-            
             // QueueManager (Singleton-ish) - Needs to be provided to ViewModels/Screens
+            // NOTE: auto-refill lives service-side (BoxLorePlaybackService owns the single
+            // SmartQueueEngine instance); the UI layer only performs explicit queue actions.
             val queueManager = remember { 
-                cx.aswin.boxcast.core.data.QueueManager(queueRepository, smartQueueEngine, playbackRepository, podcastRepository)
+                cx.aswin.boxcast.core.data.QueueManager(queueRepository, playbackRepository)
             }
 
             val smartDownloadManager = remember {

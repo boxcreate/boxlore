@@ -1156,16 +1156,61 @@ object AnalyticsHelper {
         triggeringPodcastGenre: String,
         refilledCount: Int,
         recommendationSources: List<String>,
-        refilledEpisodeIds: List<String>
+        refilledEpisodeIds: List<String>,
+        region: String? = null,
+        sourceCounts: Map<String, Int> = emptyMap(),
+        usedServerRecommendations: Boolean = false
     ) {
+        val props = mutableMapOf<String, Any>(
+            "triggering_episode_id" to triggeringEpisodeId,
+            "triggering_podcast_genre" to triggeringPodcastGenre,
+            "refilled_count" to refilledCount,
+            "recommendation_sources" to recommendationSources,
+            "refilled_episode_ids" to refilledEpisodeIds,
+            "used_server_recommendations" to usedServerRecommendations
+        )
+        region?.let { props["region"] = it }
+        sourceCounts.forEach { (source, count) -> props["source_count_$source"] = count }
         PostHog.capture(
             event = "smart_queue_refilled",
+            properties = props
+        )
+    }
+
+    fun trackQueueReordered(
+        episodeId: String,
+        fromPosition: Int,
+        toPosition: Int,
+        contextType: String?
+    ) {
+        PostHog.capture(
+            event = "queue_reordered",
             properties = mapOf(
-                "triggering_episode_id" to triggeringEpisodeId,
-                "triggering_podcast_genre" to triggeringPodcastGenre,
-                "refilled_count" to refilledCount,
-                "recommendation_sources" to recommendationSources,
-                "refilled_episode_ids" to refilledEpisodeIds
+                "episode_id" to episodeId,
+                "from_position" to fromPosition,
+                "to_position" to toPosition,
+                "context_type" to (contextType ?: "unknown")
+            )
+        )
+    }
+
+    fun trackLoreQueueConflictShown(episodeId: String, normalQueueSize: Int) {
+        PostHog.capture(
+            event = "lore_queue_conflict_shown",
+            properties = mapOf(
+                "episode_id" to episodeId,
+                "normal_queue_size" to normalQueueSize
+            )
+        )
+    }
+
+    /** @param result "start_lore_queue" or "cancelled" */
+    fun trackLoreQueueConflictResult(episodeId: String, result: String) {
+        PostHog.capture(
+            event = "lore_queue_conflict_result",
+            properties = mapOf(
+                "episode_id" to episodeId,
+                "result" to result
             )
         )
     }
