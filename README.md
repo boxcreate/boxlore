@@ -42,22 +42,42 @@ Spotify and Pocket Casts do personalize, but you're paying with ads or a subscri
 The smart layer runs on a search index that is rebuilt daily and covers popular chart podcasts — not every podcast on earth yet. It evolves every day and gets bigger. Recommendations and semantic search work best within that catalog; everything else still works as a normal podcast client.
 
 <!-- upcoming-changes:start -->
+<div align="center">
+
 <details>
 <summary><b>✨ Upcoming in the next release</b></summary>
 <br/>
 
-<b>New features</b>
+<table>
+<tr>
+<td align="left">
 
-- Smart Queue auto‑refills, shows why items appear, lets you drag‑reorder, undo removes, and improves playback reliability. ([#853](https://github.com/ashwkun/boxlore/pull/853))
+<blockquote align="left">
 
-<b>Improvements</b>
+<h4 align="left">🆕 New features</h4>
+<ul align="left">
+<li>Smart Queue auto‑refills, shows why items appear, lets you drag‑reorder, undo removes, and improves playback reliability. <a href="https://github.com/ashwkun/boxlore/pull/853"><img src="https://img.shields.io/badge/PR-853-2ebbca?style=flat-square" alt="PR #853" height="18"/></a></li>
+</ul>
 
-- Home feed loads faster with smoother scrolling and quicker hero section. ([#851](https://github.com/ashwkun/boxlore/pull/851))
-- In‑app surveys now appear with a unified prompt and a 14‑day cooldown for repeat feedback. ([#852](https://github.com/ashwkun/boxlore/pull/852))
+<br/>
+
+<h4 align="left">⚡ Improvements</h4>
+<ul align="left">
+<li>Home feed loads faster with smoother scrolling and quicker hero section. <a href="https://github.com/ashwkun/boxlore/pull/851"><img src="https://img.shields.io/badge/PR-851-2ebbca?style=flat-square" alt="PR #851" height="18"/></a></li>
+<li>In‑app surveys now appear with a unified prompt and a 14‑day cooldown for repeat feedback. <a href="https://github.com/ashwkun/boxlore/pull/852"><img src="https://img.shields.io/badge/PR-852-2ebbca?style=flat-square" alt="PR #852" height="18"/></a></li>
+</ul>
+
+</blockquote>
+
+</td>
+</tr>
+</table>
 
 <br/>
 <p align="center"><sub>Technical details in <a href="CHANGELOG.md">CHANGELOG.md</a></sub></p>
 </details>
+
+</div>
 <!-- upcoming-changes:end -->
 
 <h2 id="features">What makes it different</h2>

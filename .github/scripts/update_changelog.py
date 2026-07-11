@@ -23,6 +23,13 @@ GROQ_MODEL = "openai/gpt-oss-120b"
 GROQ_USER_AGENT = "boxlore-changelog/1.3"
 CATEGORY_ORDER = ("Added", "Changed", "Fixed", "Deprecated", "Removed", "Security")
 README_GROUP_ORDER = ("New features", "Improvements", "Fixes", "Security", "Other")
+README_GROUP_EMOJI = {
+    "New features": "🆕",
+    "Improvements": "⚡",
+    "Fixes": "🐛",
+    "Security": "🔒",
+    "Other": "📦",
+}
 DEFAULT_GITHUB_REPOSITORY = "ashwkun/boxlore"
 
 
@@ -587,33 +594,66 @@ def _extract_unreleased_sections(content: str) -> dict[str, list[str]]:
     return _parse_unreleased_sections(content[start:end])
 
 
-def _render_readme_upcoming_block(groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
+def _bullet_to_html_list_item(bullet: str) -> str:
+    match = re.search(r"^(.*?)\s*\(\[#(\d+)\]\(([^)]+)\)\)\s*$", bullet.strip())
+    if match:
+        text, pr_number, url = match.groups()
+        return (
+            f'<li>{text.strip()} '
+            f'<a href="{url}"><img src="https://img.shields.io/badge/PR-{pr_number}-2ebbca?style=flat-square" '
+            f'alt="PR #{pr_number}" height="18"/></a></li>'
+        )
+    return f"<li>{bullet.strip()}</li>"
+
+
+def _render_readme_upcoming_body(groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
     if groups:
         visible = [g for g in groups if g.get("bullets")]
         if not visible:
-            body = "<p><em>Nothing queued yet.</em></p>"
-        else:
-            parts: list[str] = []
-            for group in visible:
-                parts.append(f"<b>{group['heading']}</b>")
-                parts.append("")
-                parts.extend(f"- {bullet}" for bullet in group["bullets"])
-                parts.append("")
-            body = "\n".join(parts).rstrip()
+            return '<p align="center"><em>Nothing queued yet.</em></p>'
+
+        sections: list[str] = []
+        for group in visible:
+            heading = group["heading"]
+            emoji = README_GROUP_EMOJI.get(heading, "•")
+            items = "\n".join(_bullet_to_html_list_item(b) for b in group["bullets"])
+            sections.append(
+                f"<h4 align=\"left\">{emoji} {heading}</h4>\n<ul align=\"left\">\n{items}\n</ul>"
+            )
+        inner = "\n<br/>\n".join(sections)
     elif bullets:
-        body = "\n".join(f"- {bullet}" for bullet in bullets)
+        items = "\n".join(_bullet_to_html_list_item(b) for b in bullets)
+        inner = f'<ul align="left">\n{items}\n</ul>'
     else:
-        body = "<p><em>Nothing queued yet.</em></p>"
+        return '<p align="center"><em>Nothing queued yet.</em></p>'
+
+    return (
+        '<table>\n'
+        '<tr>\n'
+        '<td align="left">\n\n'
+        '<blockquote align="left">\n\n'
+        f"{inner}\n\n"
+        "</blockquote>\n\n"
+        "</td>\n"
+        "</tr>\n"
+        "</table>"
+    )
+
+
+def _render_readme_upcoming_block(groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
+    body = _render_readme_upcoming_body(groups=groups, bullets=bullets)
 
     return (
         f"{UPCOMING_CHANGES_START}\n"
+        '<div align="center">\n\n'
         "<details>\n"
-        "<summary><b>✨ Upcoming in the next release</b></summary>\n"
+        '<summary><b>✨ Upcoming in the next release</b></summary>\n'
         "<br/>\n\n"
         f"{body}\n\n"
         "<br/>\n"
         '<p align="center"><sub>Technical details in <a href="CHANGELOG.md">CHANGELOG.md</a></sub></p>\n'
-        "</details>\n"
+        "</details>\n\n"
+        "</div>\n"
         f"{UPCOMING_CHANGES_END}"
     )
 
