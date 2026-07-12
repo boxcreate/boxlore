@@ -22,6 +22,7 @@ class FcmPayloadParserTest {
         assertEquals("View", parsed.actionLabel)
         assertTrue(parsed.showActionInPush)
         assertTrue(parsed.showActionInApp)
+        assertEquals("WHAT'S NEW", parsed.category)
     }
 
     @Test
@@ -35,7 +36,8 @@ class FcmPayloadParserTest {
             "sound" to "chime",
             "action_label" to "Listen Now",
             "show_action_in_push" to "false",
-            "show_action_in_app" to "true"
+            "show_action_in_app" to "true",
+            "category" to "UPDATE"
         )
         val parsed = FcmPayloadParser.parse(payload)
 
@@ -48,6 +50,7 @@ class FcmPayloadParserTest {
         assertEquals("Listen Now", parsed.actionLabel)
         assertFalse(parsed.showActionInPush)
         assertTrue(parsed.showActionInApp)
+        assertEquals("UPDATE", parsed.category)
     }
 
     @Test
@@ -60,5 +63,6 @@ class FcmPayloadParserTest {
 
         assertTrue(parsed.showActionInPush)
         assertFalse(parsed.showActionInApp)
+        assertEquals("WHAT'S NEW", parsed.category)
     }
 }

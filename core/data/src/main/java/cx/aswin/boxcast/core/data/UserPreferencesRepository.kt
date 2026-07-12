@@ -452,6 +452,7 @@ class UserPreferencesRepository(context: Context) {
         val ACTION_LABEL = stringPreferencesKey("announcement_action_label")
         val SHOW_ACTION_IN_APP = androidx.datastore.preferences.core.booleanPreferencesKey("announcement_show_action_in_app")
         val TIMESTAMP = androidx.datastore.preferences.core.longPreferencesKey("announcement_timestamp")
+        val CATEGORY = stringPreferencesKey("announcement_category")
     }
     
     data class Announcement(
@@ -461,7 +462,8 @@ class UserPreferencesRepository(context: Context) {
         val imageUrl: String?, 
         val actionLabel: String?, 
         val showActionInApp: Boolean, 
-        val timestamp: Long
+        val timestamp: Long,
+        val category: String
     )
     
     val activeAnnouncementStream: Flow<Announcement?> = dataStore.data
@@ -477,29 +479,23 @@ class UserPreferencesRepository(context: Context) {
                     imageUrl = pref[AnnouncementKeys.IMAGE_URL],
                     actionLabel = pref[AnnouncementKeys.ACTION_LABEL],
                     showActionInApp = pref[AnnouncementKeys.SHOW_ACTION_IN_APP] ?: true,
-                    timestamp = pref[AnnouncementKeys.TIMESTAMP] ?: 0L
+                    timestamp = pref[AnnouncementKeys.TIMESTAMP] ?: 0L,
+                    category = pref[AnnouncementKeys.CATEGORY] ?: "WHAT'S NEW"
                 )
             } else null
         }
         .distinctUntilChanged()
         
-    suspend fun setAnnouncement(
-        title: String, 
-        body: String, 
-        route: String?, 
-        imageUrl: String?, 
-        actionLabel: String?, 
-        showActionInApp: Boolean, 
-        timestamp: Long
-    ) {
+    suspend fun setAnnouncement(announcement: Announcement) {
         dataStore.edit {
-            it[AnnouncementKeys.TITLE] = title
-            it[AnnouncementKeys.BODY] = body
-            if (route != null) it[AnnouncementKeys.ROUTE] = route else it.remove(AnnouncementKeys.ROUTE)
-            if (imageUrl != null) it[AnnouncementKeys.IMAGE_URL] = imageUrl else it.remove(AnnouncementKeys.IMAGE_URL)
-            if (actionLabel != null) it[AnnouncementKeys.ACTION_LABEL] = actionLabel else it.remove(AnnouncementKeys.ACTION_LABEL)
-            it[AnnouncementKeys.SHOW_ACTION_IN_APP] = showActionInApp
-            it[AnnouncementKeys.TIMESTAMP] = timestamp
+            it[AnnouncementKeys.TITLE] = announcement.title
+            it[AnnouncementKeys.BODY] = announcement.body
+            if (announcement.route != null) it[AnnouncementKeys.ROUTE] = announcement.route else it.remove(AnnouncementKeys.ROUTE)
+            if (announcement.imageUrl != null) it[AnnouncementKeys.IMAGE_URL] = announcement.imageUrl else it.remove(AnnouncementKeys.IMAGE_URL)
+            if (announcement.actionLabel != null) it[AnnouncementKeys.ACTION_LABEL] = announcement.actionLabel else it.remove(AnnouncementKeys.ACTION_LABEL)
+            it[AnnouncementKeys.SHOW_ACTION_IN_APP] = announcement.showActionInApp
+            it[AnnouncementKeys.CATEGORY] = announcement.category
+            it[AnnouncementKeys.TIMESTAMP] = announcement.timestamp
         }
     }
     
@@ -511,6 +507,7 @@ class UserPreferencesRepository(context: Context) {
             pref.remove(AnnouncementKeys.IMAGE_URL)
             pref.remove(AnnouncementKeys.ACTION_LABEL)
             pref.remove(AnnouncementKeys.SHOW_ACTION_IN_APP)
+            pref.remove(AnnouncementKeys.CATEGORY)
             pref.remove(AnnouncementKeys.TIMESTAMP)
         }
     }

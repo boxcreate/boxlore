@@ -920,13 +920,13 @@ class MainActivity : ComponentActivity() {
                                             )
                                             androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(4.dp))
                                             androidx.compose.material3.Text(
-                                                text = "WHAT'S NEW",
-                                                style = androidx.compose.material3.MaterialTheme.typography.labelSmall.copy(
-                                                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                                                    letterSpacing = 1.2.sp
-                                                ),
-                                                color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
+                                                 text = announcement.category.uppercase(),
+                                                 style = androidx.compose.material3.MaterialTheme.typography.labelSmall.copy(
+                                                     fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                                                     letterSpacing = 1.2.sp
+                                                 ),
+                                                 color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer
+                                             )
                                         }
                                     }
                                 }
