@@ -482,10 +482,28 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 val newEpisodeImages = subscriptions.mapNotNull {
                     it.latestEpisode?.imageUrl ?: it.imageUrl
                 }
-                val mixtape = cx.aswin.boxcast.core.data.MixtapeEngine.build(
+                var mixtape = cx.aswin.boxcast.core.data.MixtapeEngine.build(
                     subscriptions = subscriptions.map { it.toAutoPodcast() },
                     history = history,
                 )
+                if (mixtape.episodes.size < 3) {
+                    val recommendations = runCatching {
+                        kotlinx.coroutines.withTimeout(6_000L) {
+                            smartQueueSources.getPersonalizedRecommendations(
+                                history = smartQueueSources.getHistoryForRecommendations(25),
+                                interests = smartQueueSources.getInterests(),
+                                country = smartQueueSources.getRegion(),
+                                subscribedPodcastIds = subscriptions.map { it.podcastId },
+                                subscribedGenres = subscriptions.mapNotNull { it.genre }.distinct(),
+                            )
+                        }
+                    }.getOrDefault(emptyList())
+                    mixtape = cx.aswin.boxcast.core.data.MixtapeEngine.build(
+                        subscriptions = subscriptions.map { it.toAutoPodcast() },
+                        history = history,
+                        recommendations = recommendations,
+                    )
+                }
                 val mixtapeImages = mixtape.podcasts.mapNotNull { podcast ->
                     podcast.latestEpisode?.let { episode ->
                         episode.imageUrl ?: episode.podcastImageUrl ?: podcast.imageUrl
