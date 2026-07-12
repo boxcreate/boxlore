@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.posthog.surveys.PostHogDisplayRatingQuestion
 import cx.aswin.boxcast.surveys.internal.theme.ResolvedSurveyAppearance
+import cx.aswin.boxcast.surveys.internal.theme.contrastingTextColor
 import cx.aswin.boxcast.surveys.internal.theme.localAppearance
 
 /** Connected 0–10 (or custom-range) rating bar with scale endpoint labels. */
@@ -93,7 +94,7 @@ private fun RowScope.RatingSegment(
         if (isSelected) {
             appearance.ratingButtonActiveTextColor
         } else {
-            appearance.textColor.copy(alpha = 0.55f)
+            appearance.ratingButtonColor.contrastingTextColor().copy(alpha = 0.6f)
         }
 
     Box(

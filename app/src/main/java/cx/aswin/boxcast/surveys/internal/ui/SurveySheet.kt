@@ -10,7 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -166,7 +166,7 @@ private fun SurveyQuestionBody(
     ) {
         androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
             Icon(
-                imageVector = Icons.Rounded.Star,
+                imageVector = Icons.Rounded.Campaign,
                 contentDescription = null,
                 modifier = Modifier.size(28.dp),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,

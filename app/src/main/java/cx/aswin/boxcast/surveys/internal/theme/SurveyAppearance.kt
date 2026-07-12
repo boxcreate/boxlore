@@ -112,6 +112,13 @@ internal fun PostHogDisplaySurveyAppearance?.resolve(
     val borderColor = parseSurveyColorOrDefault(this?.borderColor, defaults.outlineVariant)
     val ratingButtonColor =
         parseSurveyColorOrDefault(this?.ratingButtonColor, defaults.surfaceContainerHigh)
+            .let { color ->
+                if (!sheetBackground.isLight() && color.isLight()) {
+                    defaults.surfaceContainerHigh
+                } else {
+                    color
+                }
+            }
     val ratingButtonActiveColor =
         parseSurveyColorOrDefault(this?.ratingButtonActiveColor, defaults.primaryContainer)
     val ratingButtonActiveTextColor = defaults.onPrimaryContainer
