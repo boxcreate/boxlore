@@ -23,7 +23,7 @@ import cx.aswin.boxcast.core.designsystem.components.optimizedImageUrl
 
 class BoxLoreFcmService : FirebaseMessagingService() {
 
-    private val CHANNEL_ID = "boxcast_announcements"
+    private val CHANNEL_ID = "boxlore_announcements_v1"
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
