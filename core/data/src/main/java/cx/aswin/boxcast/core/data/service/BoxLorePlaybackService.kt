@@ -29,6 +29,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.selects.select
 private const val LEARN_PREFIX = "learn:"
 private const val EPISODE_PREFIX = "episode:"
 private const val QUEUE_PREFIX = "queue:"
@@ -1711,6 +1712,8 @@ class BoxLorePlaybackService : MediaLibraryService() {
                         ImmutableList.copyOf(slicePage(items, page, pageSize)),
                         params,
                     )
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     android.util.Log.e("AutoBrowse", "onGetChildren error for $parentId", e)
                     LibraryResult.ofItemList(ImmutableList.of(), params)
@@ -1754,6 +1757,8 @@ class BoxLorePlaybackService : MediaLibraryService() {
                         ImmutableList.copyOf(slicePage(results, page, pageSize)),
                         params,
                     )
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     android.util.Log.e("AutoBrowse", "Search failed for '$query'", e)
                     LibraryResult.ofItemList(ImmutableList.of(), params)
@@ -2087,9 +2092,24 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 kotlinx.coroutines.coroutineScope {
                     val podcastMatch = async { searchPodcastMatch(normalizedQuery) }
                     val episodeMatch = async { searchEpisodeMatch(normalizedQuery) }
-                    podcastMatch.await()?.also {
-                        episodeMatch.cancel()
-                    } ?: episodeMatch.await()
+                    select<MediaItem?> {
+                        podcastMatch.onAwait { result ->
+                            if (result != null) {
+                                episodeMatch.cancel()
+                                result
+                            } else {
+                                episodeMatch.await()
+                            }
+                        }
+                        episodeMatch.onAwait { result ->
+                            if (result != null) {
+                                podcastMatch.cancel()
+                                result
+                            } else {
+                                podcastMatch.await()
+                            }
+                        }
+                    }
                 }
             }
             if (remoteItem != null) {

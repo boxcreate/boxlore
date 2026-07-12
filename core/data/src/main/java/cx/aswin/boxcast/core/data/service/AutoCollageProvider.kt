@@ -166,7 +166,17 @@ class AutoCollageProvider : ContentProvider() {
             }
 
             if (!temp.renameTo(target)) {
-                temp.copyTo(target, overwrite = true)
+                val staging = File.createTempFile("artwork_stage_", ".tmp", target.parentFile)
+                try {
+                    temp.copyTo(staging, overwrite = true)
+                    if (!staging.renameTo(target)) {
+                        return null
+                    }
+                } finally {
+                    if (staging.exists() && !staging.delete()) {
+                        android.util.Log.w("CollageProvider", "Failed to delete staging file")
+                    }
+                }
             }
             evictArtworkCache(cacheDir, target)
             target
