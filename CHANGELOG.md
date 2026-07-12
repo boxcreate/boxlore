@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Dry‑run mode parameter to send‑notification.yml and manual_dispatch.py with Admin UI support; Collapse‑key input; Sound routing options mapping chime, announcement, and silent channels with HTML5 preview in Admin UI; Live input validation for route string prefixes and image asset status in dashboard.js; Local notification template persistence via browser localStorage; Workflow execution list view in Admin UI; Compose dialog card layout updated in MainActivity.kt using Material 3 color tokens; Custom action button labels and visibility controls for push and in‑app notifications; Dispatch readiness lock/unlock state banners in Admin UI ([#861](https://github.com/ashwkun/boxlore/pull/861))
+- Customizable category badge label parameter added to InAppAnnouncementDialog, configurable via FCM payload ([#862](https://github.com/ashwkun/boxlore/pull/862))
 ### Changed
 - Refactored BoxLoreFcmService.showPushNotification into smaller private methods to reduce cognitive complexity and eliminate duplicate branches ([#861](https://github.com/ashwkun/boxlore/pull/861))
 ## [v0.0.7] - 2026-07-12
