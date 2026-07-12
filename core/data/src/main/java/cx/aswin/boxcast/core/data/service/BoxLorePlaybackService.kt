@@ -33,6 +33,7 @@ private const val LEARN_PREFIX = "learn:"
 private const val EPISODE_PREFIX = "episode:"
 private const val QUEUE_PREFIX = "queue:"
 private const val GENRE_TRUE_CRIME = "True Crime"
+private const val GENRE_TV_FILM = "TV & Film"
 
 class BoxLorePlaybackService : MediaLibraryService() {
 
@@ -558,7 +559,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
             )
             in 17..22 -> listOf(
                 "comedy_gold" to "Comedy Gold",
-                "tv_film_buff" to "TV & Film",
+                "tv_film_buff" to GENRE_TV_FILM,
                 "sports_fan" to "Sports Highlights"
             )
             else -> listOf(
@@ -1915,6 +1916,29 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 "AutoBrowse",
                 "Normalized voice query '$searchQuery' → '$normalizedQuery'",
             )
+            
+            handleVoiceQueryQuickFallbacks(rawQuery, normalizedQuery)?.let { return it }
+            handleVoiceQueryHistoryResume(rawQuery)?.let { return it }
+            handleVoiceQuerySubscriptionMatch(normalizedQuery)?.let { return it }
+            handleVoiceQueryRemoteSearch(normalizedQuery)?.let { return it }
+            
+            val fallback = database.listeningHistoryDao().getLastPlayedSession()
+            if (fallback != null) {
+                pendingSeekMs = fallback.progressMs
+                pendingSeekEpisodeId = fallback.episodeId
+                android.util.Log.d("AutoBrowse", "Voice fallback: ${fallback.episodeTitle}")
+                return mutableListOf(voiceHistoryItem(fallback))
+            }
+            
+            return handlePlayAllMixtape().ifEmpty {
+                getDownloadEpisodeItems().take(1).toMutableList()
+            }
+        }
+
+        private suspend fun handleVoiceQueryQuickFallbacks(
+            rawQuery: String,
+            normalizedQuery: String
+        ): MutableList<MediaItem>? {
             if (rawQuery.contains("download") || rawQuery.contains("offline")) {
                 return getDownloadEpisodeItems().toMutableList()
             }
@@ -1935,7 +1959,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
             ) {
                 return handlePlayAllMixtape()
             }
-            
+            return null
+        }
+
+        private suspend fun handleVoiceQueryHistoryResume(rawQuery: String): MutableList<MediaItem>? {
             if (rawQuery.contains("subscription") || rawQuery.contains("resume")) {
                 val lastSession = database.listeningHistoryDao().getLastPlayedSession()
                 if (lastSession != null) {
@@ -1948,7 +1975,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     return mutableListOf(voiceHistoryItem(lastSession))
                 }
             }
-            
+            return null
+        }
+
+        private suspend fun handleVoiceQuerySubscriptionMatch(normalizedQuery: String): MutableList<MediaItem>? {
             val subs = database.podcastDao().getSubscribedPodcastsList()
             val matchedPod = subs
                 .map { podcast ->
@@ -1978,7 +2008,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     )
                 }
             }
-            
+            return null
+        }
+
+        private suspend fun handleVoiceQueryRemoteSearch(normalizedQuery: String): MutableList<MediaItem>? {
             val remoteItem = kotlinx.coroutines.withTimeoutOrNull(5_000L) {
                 kotlinx.coroutines.coroutineScope {
                     val podcastMatch = async {
@@ -2041,19 +2074,9 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 android.util.Log.d("AutoBrowse", "Voice matched remote result")
                 return mutableListOf(remoteItem)
             }
-            
-            val fallback = database.listeningHistoryDao().getLastPlayedSession()
-            if (fallback != null) {
-                pendingSeekMs = fallback.progressMs
-                pendingSeekEpisodeId = fallback.episodeId
-                android.util.Log.d("AutoBrowse", "Voice fallback: ${fallback.episodeTitle}")
-                return mutableListOf(voiceHistoryItem(fallback))
-            }
-            
-            return handlePlayAllMixtape().ifEmpty {
-                getDownloadEpisodeItems().take(1).toMutableList()
-            }
+            return null
         }
+
 
         private fun voiceEpisodeItem(
             episode: cx.aswin.boxcast.core.model.Episode,
@@ -2685,7 +2708,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 "Society & Culture" to "Society",
                 "Education" to "Education",
                 "Science" to "Science",
-                "TV & Film" to "TV & Film",
+                GENRE_TV_FILM to GENRE_TV_FILM,
                 "Fiction" to "Fiction",
                 "Music" to "Music",
                 "Religion & Spirituality" to "Religion",

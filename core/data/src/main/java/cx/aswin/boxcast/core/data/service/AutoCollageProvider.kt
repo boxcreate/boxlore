@@ -161,7 +161,9 @@ class AutoCollageProvider : ContentProvider() {
             null
         } finally {
             connection?.disconnect()
-            temp.delete()
+            if (temp.exists() && !temp.delete()) {
+                android.util.Log.w("CollageProvider", "Failed to delete temp file")
+            }
         }
     }
 
