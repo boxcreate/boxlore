@@ -290,6 +290,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
+      - name: Install Android build-tools
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "build-tools;35.0.0" "cmdline-tools;latest"
+
       - name: Verify merged release metadata
         id: release
         run: python3 .github/scripts/prepare_release.py verify-merged
@@ -433,13 +442,46 @@ jobs:
           EXPECTED_VERSION: ${{ steps.release.outputs.version }}
           EXPECTED_VERSION_CODE: ${{ steps.release.outputs.version_code }}
           EXPECTED_CERT_SHA256: ${{ vars.RELEASE_CERT_SHA256 }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
         run: |
+          set -euo pipefail
           apk="app/build/outputs/apk/release/app-release.apk"
           aab="app/build/outputs/bundle/release/app-release.aab"
           [[ -s "$apk" ]] || { echo "::error::Signed release APK is missing"; exit 1; }
           [[ -s "$aab" ]] || { echo "::error::Signed release AAB is missing"; exit 1; }
 
-          apk_summary="$("$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/apkanalyzer" apk summary "$apk")"
+          normalize_sha256() {
+            printf '%s' "$1" | tr -d '[:space:]:' | tr '[:lower:]' '[:upper:]'
+          }
+
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [[ -z "$sdk_root" ]]; then
+            echo "::error::ANDROID_SDK_ROOT/ANDROID_HOME is not set"
+            exit 1
+          fi
+
+          apkanalyzer="$(
+            find "$sdk_root/cmdline-tools" -type f -name apkanalyzer 2>/dev/null |
+              sort -V |
+              awk 'END { print }'
+          )"
+          [[ -x "$apkanalyzer" ]] || {
+            echo "::error::apkanalyzer not found under ${sdk_root}"
+            exit 1
+          }
+
+          apksigner="$(
+            find "$sdk_root/build-tools" -type f -name apksigner 2>/dev/null |
+              sort -V |
+              awk 'END { print }'
+          )"
+          [[ -x "$apksigner" ]] || {
+            echo "::error::apksigner not found under ${sdk_root}/build-tools"
+            ls -la "$sdk_root/build-tools" || true
+            exit 1
+          }
+
+          apk_summary="$("$apkanalyzer" apk summary "$apk")"
           read -r apk_application_id apk_version_code apk_version <<< "$apk_summary"
           if [[ "$apk_application_id" != "cx.aswin.boxlore" ||
                 "$apk_version_code" != "$EXPECTED_VERSION_CODE" ||
@@ -483,30 +525,55 @@ jobs:
             exit 1
           fi
 
-          expected_cert="$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d ':' | tr '[:lower:]' '[:upper:]')"
-          build_tools="$(
-            printf '%s\n' "$ANDROID_SDK_ROOT"/build-tools/* |
-              sort -V |
-              awk 'END { print }'
-          )"
-          apk_cert="$(
-            "$build_tools/apksigner" verify --print-certs "$apk" |
-              awk -F': ' '/certificate SHA-256 digest/{print $2; exit}' |
-              tr -d ':' |
-              tr '[:lower:]' '[:upper:]'
-          )"
-          jarsigner -verify "$aab" >/dev/null
-          aab_cert="$(
-            keytool -printcert -jarfile "$aab" |
-              awk '/SHA256:/{print $2; exit}' |
-              tr -d ':' |
-              tr '[:lower:]' '[:upper:]'
-          )"
-          if [[ "$apk_cert" != "$expected_cert" || "$aab_cert" != "$expected_cert" ]]; then
-            echo "::error::Built artifact signing certificate mismatch"
+          expected_cert="$(normalize_sha256 "$EXPECTED_CERT_SHA256")"
+          if ! [[ "$expected_cert" =~ ^[0-9A-F]{64}$ ]]; then
+            echo "::error::RELEASE_CERT_SHA256 must be a 64-digit SHA-256 fingerprint"
             exit 1
           fi
 
+          keystore_cert="$(
+            keytool -list -v \
+              -keystore app/release.keystore \
+              -alias upload \
+              -storepass:env KEY_STORE_PASSWORD 2>/dev/null |
+              awk '/SHA256:/{print $2; exit}'
+          )"
+          keystore_cert="$(normalize_sha256 "$keystore_cert")"
+
+          # APK Signature Scheme v2/v3 is readable via apksigner, not keytool.
+          apk_cert="$(
+            "$apksigner" verify --print-certs "$apk" |
+              awk -F': ' '/certificate SHA-256 digest/{print $2; exit}'
+          )"
+          apk_cert="$(normalize_sha256 "$apk_cert")"
+
+          # AABs still carry a JAR signature that keytool can read.
+          jarsigner -verify -strict "$aab" >/dev/null
+          aab_cert="$(
+            keytool -printcert -jarfile "$aab" 2>/dev/null |
+              awk '/SHA256:/{print $2; exit}'
+          )"
+          aab_cert="$(normalize_sha256 "$aab_cert")"
+
+          if ! [[ "$keystore_cert" =~ ^[0-9A-F]{64}$ &&
+                  "$apk_cert" =~ ^[0-9A-F]{64}$ &&
+                  "$aab_cert" =~ ^[0-9A-F]{64}$ ]]; then
+            echo "::error::Could not parse one or more signing certificate digests"
+            echo "keystore_len=${#keystore_cert} apk_len=${#apk_cert} aab_len=${#aab_cert}"
+            exit 1
+          fi
+
+          if [[ "$keystore_cert" != "$expected_cert" ||
+                "$apk_cert" != "$expected_cert" ||
+                "$aab_cert" != "$expected_cert" ]]; then
+            echo "::error::Built artifact signing certificate mismatch"
+            echo "expected=${expected_cert:0:8}…${expected_cert: -8}"
+            echo "keystore=${keystore_cert:0:8}…${keystore_cert: -8}"
+            echo "apk=${apk_cert:0:8}…${apk_cert: -8}"
+            echo "aab=${aab_cert:0:8}…${aab_cert: -8}"
+            exit 1
+          fi
+          echo "Verified APK/AAB signatures match release keystore ${expected_cert:0:8}…${expected_cert: -8}"
       - name: Prepare release assets and notes
         env:
           TAG: ${{ steps.release.outputs.tag }}
