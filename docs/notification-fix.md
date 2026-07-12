@@ -30,6 +30,6 @@ Toggling the setting off and back on forces boxlore to send your new token to Fi
 
 ## Will this happen again?
 
-**No.** We have implemented a permanent fix in version **v1.3.7** and later. The app now automatically checks for new device installs and reconciles your notification preferences on launch, so you will never have to manually re-toggle them again.
+**No.** We have implemented a permanent fix in upcoming version to patch this, so your next update will be seamless. The app now automatically checks for new device installs and reconciles your notification preferences on launch, so you will never have to manually re-toggle them again.
 
 Thank you for your patience, and happy listening!
