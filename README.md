@@ -42,16 +42,14 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Added dry‑run mode for notifications, new sound routing options, live validation, template saving, UI tweaks, and refactored notification code. <a href="https://github.com/ashwkun/boxlore/pull/861"><img src="https://img.shields.io/badge/PR-861-2ebbca?style=flat-square" alt="PR #861" height="18"/></a></li>
-<li>Added customizable badge label for announcement categories, set via push payload. <a href="https://github.com/ashwkun/boxlore/pull/862"><img src="https://img.shields.io/badge/PR-862-2ebbca?style=flat-square" alt="PR #862" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>Improved announcement dialog scrolling, fixed dark‑mode survey contrast, and corrected markdown rendering. <a href="https://github.com/ashwkun/boxlore/pull/863"><img src="https://img.shields.io/badge/PR-863-2ebbca?style=flat-square" alt="PR #863" height="18"/></a></li>
+<li>Notification system now supports dry‑run testing, custom sounds, preview, validation, template storage, and UI controls for dispatch. <a href="https://github.com/ashwkun/boxlore/pull/861"><img src="https://img.shields.io/badge/PR-861-2ebbca?style=flat-square" alt="PR #861" height="18"/></a></li>
+<li>In‑app announcements can show a custom category badge label set via the push payload. <a href="https://github.com/ashwkun/boxlore/pull/862"><img src="https://img.shields.io/badge/PR-862-2ebbca?style=flat-square" alt="PR #862" height="18"/></a></li>
+<li>Android Auto lets you browse and control podcasts, plus survey icons and rating bars have better layout and contrast. <a href="https://github.com/ashwkun/boxlore/pull/865"><img src="https://img.shields.io/badge/PR-865-2ebbca?style=flat-square" alt="PR #865" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
-<li>Stabilized artwork transition while dragging in the player sheet and updated next‑episode chevron colors. <a href="https://github.com/ashwkun/boxlore/pull/864"><img src="https://img.shields.io/badge/PR-864-2ebbca?style=flat-square" alt="PR #864" height="18"/></a></li>
+<li>Artwork transitions in the player sheet are smoother during drags, and the next‑episode arrow now uses the accent color. <a href="https://github.com/ashwkun/boxlore/pull/864"><img src="https://img.shields.io/badge/PR-864-2ebbca?style=flat-square" alt="PR #864" height="18"/></a></li>
+<li>Survey dark‑mode contrast fixed, subscription topics re‑sync on reinstall, and announcement dialogs now scroll long content. <a href="https://github.com/ashwkun/boxlore/pull/863"><img src="https://img.shields.io/badge/PR-863-2ebbca?style=flat-square" alt="PR #863" height="18"/></a></li>
 </ul>
 </details>
 
