@@ -1154,7 +1154,7 @@ class HomeViewModel(
 
 
                         // 1. Group/Index listening history for O(N + M) efficiency
-                        val historyByEpisode = allHistory.associateBy { it.episodeId }
+
                         val subsMap = subs.associateBy { it.id }
 
                         // Calculate score map for all subscribed podcasts using the shared utility (only on first calculation)

@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.first
 private const val LEARN_PREFIX = "learn:"
 private const val EPISODE_PREFIX = "episode:"
 private const val QUEUE_PREFIX = "queue:"
+private const val GENRE_TRUE_CRIME = "True Crime"
 
 class BoxLorePlaybackService : MediaLibraryService() {
 
@@ -2277,35 +2278,43 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     return@future handlePlayFromMixtape(selectedItem.mediaId.stripEpisodePrefix())
                 }
                 
-                android.util.Log.d("BoxCastPlayer", "onAddMediaItems: selectedItem.mediaId=${selectedItem.mediaId}, extrasKeys=${selectedItem.mediaMetadata.extras?.keySet()?.joinToString(", ")}")
-                cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
-                    mapOf("entry_point" to "android_auto_$source"),
-                )
-                val resolvedItem = resolveMediaItem(selectedItem)
-                val episodeId = selectedItem.mediaId.stripEpisodePrefix()
-                android.util.Log.d("AutoBrowse", "Returning episode instantly: $episodeId, startsWithLearn=${selectedItem.mediaId.startsWith(LEARN_PREFIX)}")
-                
-                val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
-                if (historyItem != null && historyItem.progressMs > 2000 && !historyItem.isCompleted) {
-                    pendingSeekMs = historyItem.progressMs
-                    pendingSeekEpisodeId = episodeId
-                    android.util.Log.d("AutoBrowse", "Queued resume-seek: ${historyItem.progressMs}ms (${historyItem.progressMs/1000}s) for episodeId $episodeId")
-                } else {
-                    pendingSeekMs = 0L
-                    pendingSeekEpisodeId = null
-                }
-                
-                val skipSmartRefill = selectedItem.mediaId.startsWith(LEARN_PREFIX) ||
-                    source == AutoBrowseContract.SOURCE_DOWNLOADS ||
-                    source == AutoBrowseContract.SOURCE_QUEUE
-                android.util.Log.d("AutoBrowse", "onAddMediaItems skipSmartRefill=$skipSmartRefill")
-                if (!skipSmartRefill) {
-                    buildAndAppendQueueAsync(episodeId, mediaSession)
-                } else {
-                    android.util.Log.d("AutoBrowse", "Explicit/offline source: skipping async queue append")
-                }
-                mutableListOf(resolvedItem)
+                handleSingleMediaItemSelection(mediaSession, selectedItem, source)
             }
+        }
+
+        private suspend fun handleSingleMediaItemSelection(
+            mediaSession: MediaSession,
+            selectedItem: MediaItem,
+            source: String
+        ): MutableList<MediaItem> {
+            android.util.Log.d("BoxCastPlayer", "onAddMediaItems: selectedItem.mediaId=${selectedItem.mediaId}, extrasKeys=${selectedItem.mediaMetadata.extras?.keySet()?.joinToString(", ")}")
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_$source"),
+            )
+            val resolvedItem = resolveMediaItem(selectedItem)
+            val episodeId = selectedItem.mediaId.stripEpisodePrefix()
+            android.util.Log.d("AutoBrowse", "Returning episode instantly: $episodeId, startsWithLearn=${selectedItem.mediaId.startsWith(LEARN_PREFIX)}")
+            
+            val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
+            if (historyItem != null && historyItem.progressMs > 2000 && !historyItem.isCompleted) {
+                pendingSeekMs = historyItem.progressMs
+                pendingSeekEpisodeId = episodeId
+                android.util.Log.d("AutoBrowse", "Queued resume-seek: ${historyItem.progressMs}ms (${historyItem.progressMs/1000}s) for episodeId $episodeId")
+            } else {
+                pendingSeekMs = 0L
+                pendingSeekEpisodeId = null
+            }
+            
+            val skipSmartRefill = selectedItem.mediaId.startsWith(LEARN_PREFIX) ||
+                source == AutoBrowseContract.SOURCE_DOWNLOADS ||
+                source == AutoBrowseContract.SOURCE_QUEUE
+            android.util.Log.d("AutoBrowse", "onAddMediaItems skipSmartRefill=$skipSmartRefill")
+            if (!skipSmartRefill) {
+                buildAndAppendQueueAsync(episodeId, mediaSession)
+            } else {
+                android.util.Log.d("AutoBrowse", "Explicit/offline source: skipping async queue append")
+            }
+            return mutableListOf(resolvedItem)
         }
         
         // findPodcastIdForEpisode is defined at the service level and accessible from this inner class
@@ -2668,7 +2677,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 "Technology" to "Tech",
                 "Business" to "Business",
                 "Comedy" to "Comedy",
-                "True Crime" to "True Crime",
+                GENRE_TRUE_CRIME to GENRE_TRUE_CRIME,
                 "Sports" to "Sports",
                 "Health" to "Health",
                 "History" to "History",
@@ -2857,17 +2866,12 @@ class BoxLorePlaybackService : MediaLibraryService() {
 
         private suspend fun getDownloadEpisodeItems(): List<MediaItem> =
             database.downloadedEpisodeDao().getCompletedDownloads(50).map { download ->
-                val sourceUri = when {
-                    download.localFilePath.isNotBlank() &&
-                        download.localFilePath != "CACHED" &&
-                        java.io.File(download.localFilePath).exists() ->
-                        android.net.Uri.fromFile(java.io.File(download.localFilePath)).toString()
-                    else -> resolveDownloadRequestUri(download.episodeId)
-                        ?: database.listeningHistoryDao()
-                        .getHistoryItem(download.episodeId)
-                        ?.episodeAudioUrl
-                        ?: queueRepository.getQueueItemByEpisodeId(download.episodeId)?.audioUrl
-                }
+                val sourceUri = download.localFilePath.takeIf {
+                    it.isNotBlank() && it != "CACHED" && java.io.File(it).exists()
+                }?.let { android.net.Uri.fromFile(java.io.File(it)).toString() }
+                    ?: resolveDownloadRequestUri(download.episodeId)
+                    ?: database.listeningHistoryDao().getHistoryItem(download.episodeId)?.episodeAudioUrl
+                    ?: queueRepository.getQueueItemByEpisodeId(download.episodeId)?.audioUrl
                 AutoMediaItemFactory.fromDownload(
                     download = download,
                     artworkUri = AutoArtworkRepository.remoteUri(
@@ -3084,7 +3088,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
         }
 
         private fun legacyAutoGenreCategory(genreId: String): String? = when (genreId) {
-            "true_crime" -> "True Crime"
+            "true_crime" -> GENRE_TRUE_CRIME
             "comedy" -> "Comedy"
             "news" -> "News"
             "technology" -> "Technology"
@@ -3175,30 +3179,6 @@ class BoxLorePlaybackService : MediaLibraryService() {
             return items.subList(start, minOf(start + safePageSize, items.size))
         }
 
-        private fun buildBrowsableItem(
-            id: String,
-            title: String,
-            subtitle: String? = null,
-            mediaType: Int = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
-            extras: Bundle? = null,
-            artworkUri: android.net.Uri? = null
-        ): MediaItem {
-            return MediaItem.Builder()
-                .setMediaId(id)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle(title)
-                        .setSubtitle(subtitle)
-                        .setArtist(subtitle)
-                        .setArtworkUri(artworkUri)
-                        .setIsPlayable(false)
-                        .setIsBrowsable(true)
-                        .setMediaType(mediaType)
-                        .apply { if (extras != null) setExtras(extras) }
-                        .build()
-                )
-                .build()
-        }
 
         /**
          * Build a subtitle showing remaining time, e.g. "Podcast Name · 35 min left"
@@ -3218,22 +3198,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
             }
         }
 
-        /**
-         * Format duration in ms to human-readable string, e.g. "45 min" or "1h 20m"
-         */
-        private fun formatDuration(durationMs: Long): String {
-            if (durationMs <= 0) return ""
-            val totalMin = durationMs / 60000
-            return when {
-                totalMin > 60 -> {
-                    val hours = totalMin / 60
-                    val mins = totalMin % 60
-                    "${hours}h ${mins}m"
-                }
-                totalMin > 0 -> "${totalMin} min"
-                else -> "< 1 min"
-            }
-        }
+
     }
 }
 
