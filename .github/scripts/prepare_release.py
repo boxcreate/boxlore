@@ -873,6 +873,16 @@ def write_notification_outputs() -> None:
     )
 
 
+def verify_merged_commit() -> None:
+    current = read_app_version()
+    verify_release(
+        argparse.Namespace(
+            branch=f"release/{current.tag}",
+            title=f"release: {current.tag} [skip changelog]",
+        )
+    )
+
+
 def cleanup_stale_release(args: argparse.Namespace) -> None:
     repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
     token = os.environ.get("GITHUB_TOKEN", "").strip()
@@ -914,6 +924,11 @@ def main() -> None:
     verify_parser.add_argument("--branch", required=True)
     verify_parser.add_argument("--title", required=True)
 
+    subparsers.add_parser(
+        "verify-merged",
+        help="Verify the checked-out master commit is a merged release",
+    )
+
     notes_parser = subparsers.add_parser(
         "notes",
         help="Extract release notes for the current Gradle version",
@@ -937,6 +952,8 @@ def main() -> None:
             prepare_release(args)
         elif args.command == "verify":
             verify_release(args)
+        elif args.command == "verify-merged":
+            verify_merged_commit()
         elif args.command == "notes":
             write_release_notes(args)
         elif args.command == "notification":

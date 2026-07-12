@@ -4,6 +4,8 @@ on:
   pull_request:
     types: [closed]
     branches: [master]
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
       operation:
@@ -13,6 +15,7 @@ on:
         type: choice
         options:
           - prepare-release
+          - publish-release
           - backfill-changelog
       bump:
         description: Version bump for prepare-release
@@ -249,11 +252,16 @@ jobs:
 
   publish-release:
     if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'release/v') &&
-      startsWith(github.event.pull_request.title, 'release: v') &&
-      contains(github.event.pull_request.title, '[skip changelog]')
+      (
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/master' &&
+        contains(github.event.head_commit.message, '[skip changelog]') &&
+        contains(github.event.head_commit.message, 'release: prepare v')
+      ) ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.operation == 'publish-release'
+      )
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -271,7 +279,7 @@ jobs:
       - name: Checkout exact merged release commit
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
@@ -284,20 +292,14 @@ jobs:
 
       - name: Verify merged release metadata
         id: release
-        env:
-          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
-          RELEASE_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          python3 .github/scripts/prepare_release.py verify \
-            --branch "$RELEASE_BRANCH" \
-            --title "$RELEASE_TITLE"
+        run: python3 .github/scripts/prepare_release.py verify-merged
 
       - name: Validate existing tag and release state
         id: state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          MERGE_SHA: ${{ github.sha }}
         run: |
           git fetch --force --tags origin
           if git show-ref --verify --quiet "refs/tags/${TAG}"; then
@@ -531,7 +533,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          MERGE_SHA: ${{ github.sha }}
           RELEASE_EXISTS: ${{ steps.state.outputs.release_exists }}
           TAG_EXISTS: ${{ steps.state.outputs.tag_exists }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
