@@ -15,13 +15,19 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import androidx.annotation.VisibleForTesting
+import cx.aswin.boxcast.core.data.service.auto.AutoArtworkRepository
+import cx.aswin.boxcast.core.data.service.auto.AutoBrowseContract
+import cx.aswin.boxcast.core.data.service.auto.AutoMediaItemFactory
+import cx.aswin.boxcast.core.data.service.auto.AutoPlayableSpec
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 private const val LEARN_PREFIX = "learn:"
 private const val EPISODE_PREFIX = "episode:"
@@ -33,6 +39,11 @@ class BoxLorePlaybackService : MediaLibraryService() {
     private var exoPlayer: ExoPlayer? = null
     private lateinit var seekBackAction: androidx.media3.session.CommandButton
     private lateinit var seekForwardAction: androidx.media3.session.CommandButton
+    private lateinit var likeAction: androidx.media3.session.CommandButton
+    private lateinit var addToQueueAction: androidx.media3.session.CommandButton
+    private lateinit var markCompleteAction: androidx.media3.session.CommandButton
+    @Volatile
+    private var autoCollageUris: Map<String, android.net.Uri> = emptyMap()
     
     private val userPreferencesRepository by lazy {
         cx.aswin.boxcast.core.data.UserPreferencesRepository(this)
@@ -57,16 +68,19 @@ class BoxLorePlaybackService : MediaLibraryService() {
     private val queueSkipMemory by lazy {
         cx.aswin.boxcast.core.data.QueueSkipMemory.fromContext(this)
     }
+    private val smartQueueSources by lazy {
+        cx.aswin.boxcast.core.data.DefaultSmartQueueSources(
+            context = this,
+            database = database,
+            podcastRepository = podcastRepository,
+            subscriptionRepository = subscriptionRepository,
+            userPreferencesRepository = userPreferencesRepository,
+        )
+    }
     private val smartQueueEngine by lazy {
         cx.aswin.boxcast.core.data.DefaultSmartQueueEngine(
-            sources = cx.aswin.boxcast.core.data.DefaultSmartQueueSources(
-                context = this,
-                database = database,
-                podcastRepository = podcastRepository,
-                subscriptionRepository = subscriptionRepository,
-                userPreferencesRepository = userPreferencesRepository
-            ),
-            skipMemory = queueSkipMemory
+            sources = smartQueueSources,
+            skipMemory = queueSkipMemory,
         )
     }
     private val queueRepository by lazy {
@@ -149,6 +163,11 @@ class BoxLorePlaybackService : MediaLibraryService() {
             .build()
             
         this.exoPlayer = player
+        serviceScope.launch {
+            userPreferencesRepository.playbackSpeedStream.collectLatest { savedSpeed ->
+                player.setPlaybackSpeed(savedSpeed.coerceIn(0.5f, 3.0f))
+            }
+        }
             
         player.addAnalyticsListener(object : androidx.media3.exoplayer.analytics.AnalyticsListener {
             override fun onPlayerError(eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime, error: androidx.media3.common.PlaybackException) {
@@ -381,15 +400,48 @@ class BoxLorePlaybackService : MediaLibraryService() {
 
         // Custom actions: Seek Back 10s and Seek Forward 30s
         seekBackAction = androidx.media3.session.CommandButton.Builder()
-            .setDisplayName("Replay 10s")
+            .setDisplayName(getString(cx.aswin.boxcast.core.data.R.string.auto_replay_10))
             .setIconResId(cx.aswin.boxcast.core.designsystem.R.drawable.rounded_replay_10_24)
             .setSessionCommand(androidx.media3.session.SessionCommand("SEEK_BACK", Bundle.EMPTY))
             .build()
         
         seekForwardAction = androidx.media3.session.CommandButton.Builder()
-            .setDisplayName("Forward 30s")
+            .setDisplayName(getString(cx.aswin.boxcast.core.data.R.string.auto_forward_30))
             .setIconResId(cx.aswin.boxcast.core.designsystem.R.drawable.rounded_forward_30_24)
             .setSessionCommand(androidx.media3.session.SessionCommand("SEEK_FORWARD", Bundle.EMPTY))
+            .build()
+
+        likeAction = androidx.media3.session.CommandButton.Builder()
+            .setDisplayName(getString(cx.aswin.boxcast.core.data.R.string.auto_like))
+            .setIconResId(cx.aswin.boxcast.core.data.R.drawable.ic_auto_like)
+            .setSessionCommand(
+                androidx.media3.session.SessionCommand(
+                    AutoBrowseContract.COMMAND_TOGGLE_LIKE,
+                    Bundle.EMPTY,
+                ),
+            )
+            .build()
+
+        addToQueueAction = androidx.media3.session.CommandButton.Builder()
+            .setDisplayName(getString(cx.aswin.boxcast.core.data.R.string.auto_add_queue))
+            .setIconResId(cx.aswin.boxcast.core.data.R.drawable.ic_auto_queue_add)
+            .setSessionCommand(
+                androidx.media3.session.SessionCommand(
+                    AutoBrowseContract.COMMAND_ADD_TO_QUEUE,
+                    Bundle.EMPTY,
+                ),
+            )
+            .build()
+
+        markCompleteAction = androidx.media3.session.CommandButton.Builder()
+            .setDisplayName(getString(cx.aswin.boxcast.core.data.R.string.auto_mark_complete))
+            .setIconResId(cx.aswin.boxcast.core.data.R.drawable.ic_auto_complete)
+            .setSessionCommand(
+                androidx.media3.session.SessionCommand(
+                    AutoBrowseContract.COMMAND_MARK_COMPLETE,
+                    Bundle.EMPTY,
+                ),
+            )
             .build()
 
         val coilBitmapLoader = CoilBitmapLoader(this, serviceScope)
@@ -397,10 +449,99 @@ class BoxLorePlaybackService : MediaLibraryService() {
 
         mediaSession = MediaLibrarySession.Builder(this, forwardingPlayer, LibrarySessionCallback())
             .setSessionActivity(pendingIntent)
-            .setCustomLayout(listOf(seekBackAction, seekForwardAction))
+            .setCustomLayout(listOf(seekBackAction, seekForwardAction, markCompleteAction))
+            .setCommandButtonsForMediaItems(
+                listOf(likeAction, addToQueueAction, markCompleteAction),
+            )
             .setBitmapLoader(cacheBitmapLoader)
             .build()
+        prewarmAutoCollages()
     }
+
+    private fun prewarmAutoCollages() {
+        serviceScope.launch {
+            try {
+                val history = database.listeningHistoryDao().getRecentHistoryList(300)
+                val resumeItems = database.listeningHistoryDao().getResumeItemsList()
+                val subscriptions = database.podcastDao().getSubscribedPodcastsList()
+                val downloads = database.downloadedEpisodeDao().getCompletedDownloads(8)
+                val queue = queueRepository.getQueueSnapshot()
+                val historyImages = history.mapNotNull {
+                    it.episodeImageUrl ?: it.podcastImageUrl
+                }
+                val resumeImages = resumeItems.mapNotNull {
+                    it.episodeImageUrl ?: it.podcastImageUrl
+                }
+                val subscriptionImages = subscriptions.mapNotNull { it.imageUrl }
+                val downloadImages = downloads.mapNotNull {
+                    it.episodeImageUrl ?: it.podcastImageUrl
+                }
+                val queueImages = queue.mapNotNull { it.imageUrl ?: it.podcastImageUrl }
+                val newEpisodeImages = subscriptions.mapNotNull {
+                    it.latestEpisode?.imageUrl ?: it.imageUrl
+                }
+                val mixtape = cx.aswin.boxcast.core.data.MixtapeEngine.build(
+                    subscriptions = subscriptions.map { it.toAutoPodcast() },
+                    history = history,
+                )
+                val mixtapeImages = mixtape.podcasts.mapNotNull { podcast ->
+                    podcast.latestEpisode?.let { episode ->
+                        episode.imageUrl ?: episode.podcastImageUrl ?: podcast.imageUrl
+                    }
+                }
+                autoCollageUris = AutoCollageGenerator.generateAllCollages(
+                    context = this@BoxLorePlaybackService,
+                    folderImages = mapOf(
+                        AutoBrowseContract.HOME_ID to (historyImages + newEpisodeImages).take(4),
+                        AutoBrowseContract.LIBRARY_ID to subscriptionImages.take(4),
+                        AutoBrowseContract.DOWNLOADS_ID to downloadImages.take(4),
+                        AutoBrowseContract.DISCOVER_ID to subscriptionImages.asReversed().take(4),
+                        AutoBrowseContract.HOME_CONTINUE_ID to resumeImages.take(4),
+                        AutoBrowseContract.HOME_QUEUE_ID to queueImages.take(4),
+                        AutoBrowseContract.HOME_NEW_EPISODES_ID to newEpisodeImages.take(4),
+                        AutoBrowseContract.HOME_DRIVE_MIX_ID to mixtapeImages.take(4),
+                        AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID to
+                            (queueImages + subscriptionImages).take(4),
+                        AutoBrowseContract.DISCOVER_TIME_PICKS_ID to emptyList(),
+                        AutoBrowseContract.DISCOVER_GENRES_ID to emptyList(),
+                    ),
+                    folderContentKeys = mapOf(
+                        AutoBrowseContract.HOME_CONTINUE_ID to
+                            resumeItems.map { it.episodeId },
+                        AutoBrowseContract.HOME_DRIVE_MIX_ID to
+                            mixtape.episodes.map { it.id },
+                    ),
+                )
+                mediaSession?.notifyChildrenChanged(AutoBrowseContract.ROOT_ID, 4, null)
+                mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_ID, 3, null)
+                mediaSession?.notifyChildrenChanged(
+                    AutoBrowseContract.LIBRARY_ID,
+                    subscriptions.size + 2,
+                    null,
+                )
+                mediaSession?.notifyChildrenChanged(AutoBrowseContract.DISCOVER_ID, 3, null)
+            } catch (error: Exception) {
+                android.util.Log.w("AutoBrowse", "Unable to prewarm Android Auto artwork", error)
+            }
+        }
+    }
+
+    private fun cx.aswin.boxcast.core.data.database.PodcastEntity.toAutoPodcast() =
+        cx.aswin.boxcast.core.model.Podcast(
+            id = podcastId,
+            title = title,
+            artist = author,
+            imageUrl = imageUrl,
+            type = type,
+            description = description,
+            genre = genre ?: "Podcast",
+            fallbackImageUrl = imageUrl,
+            latestEpisode = latestEpisode,
+            subscribedAt = subscribedAt,
+            preferredSort = preferredSort,
+            notificationsEnabled = notificationsEnabled,
+            autoDownloadEnabled = autoDownloadEnabled,
+        )
     
     private fun getTimeBasedGenres(hour: Int): List<Pair<String, String>> {
         return when (hour) {
@@ -1211,27 +1352,35 @@ class BoxLorePlaybackService : MediaLibraryService() {
      *   ├── Subscriptions       (user's subscribed podcasts → episodes)
      *   └── Queue               (current playback queue)
      */
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private inner class LibrarySessionCallback : MediaLibrarySession.Callback {
+        private val rootChildLimits =
+            java.util.concurrent.ConcurrentHashMap<MediaSession.ControllerInfo, Int>()
+        private val searchCache = object : LinkedHashMap<String, List<MediaItem>>(8, 0.75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<String, List<MediaItem>>,
+            ): Boolean = size > 8
+        }
+        @Volatile
+        private var lastDrivePicks: List<MediaItem> = emptyList()
+        @Volatile
+        private var lastMixtape: List<MediaItem> = emptyList()
+        @Volatile
+        private var lastMixtapeUpdatedAt: Long = 0L
 
-        // Browse tree node IDs
-        private val ROOT_ID = "root"
-        private val HOME_ID = "home"
-        private val CONTINUE_LISTENING_ID = "continue_listening"
+        private val ROOT_ID = AutoBrowseContract.ROOT_ID
+        private val HOME_ID = AutoBrowseContract.HOME_ID
+        private val LIBRARY_ID = AutoBrowseContract.LIBRARY_ID
+        private val DOWNLOADS_ID = AutoBrowseContract.DOWNLOADS_ID
+        private val DISCOVER_ID = AutoBrowseContract.DISCOVER_ID
+        private val EXPLORE_ID = AutoBrowseContract.LEGACY_EXPLORE_ID
         private val SUBSCRIPTIONS_ID = "subscriptions"
-        
-        // Home Sub-folders
-        private val HOME_CONTINUE_LISTENING_ID = "home_continue_listening"
+        private val HOME_CONTINUE_LISTENING_ID = AutoBrowseContract.HOME_CONTINUE_ID
         private val HOME_SUBSCRIPTIONS_ID = "home_subscriptions"
-        private val HOME_NEW_EPISODES_ID = "home_new_episodes"
-        
-        // Explore tab
-        private val EXPLORE_ID = "explore"
-        
-        // Virtual Playback ID
-        private val PLAY_ALL_NEW_EPISODES_ID = "play_all_new_episodes"
-        
-        // Prefix for dynamic subscription podcast nodes
-        private val SUBSCRIPTION_PREFIX = "subscription:"
+        private val HOME_QUEUE_ID = AutoBrowseContract.HOME_QUEUE_ID
+        private val HOME_NEW_EPISODES_ID = AutoBrowseContract.HOME_NEW_EPISODES_ID
+        private val PLAY_ALL_NEW_EPISODES_ID = AutoBrowseContract.PLAY_ALL_NEW_ID
+        private val SUBSCRIPTION_PREFIX = AutoBrowseContract.SUBSCRIPTION_PREFIX
 
         // Content style constants for Android Auto grid/list display
         private val CONTENT_STYLE_BROWSABLE_KEY = "android.media.browse.CONTENT_STYLE_BROWSABLE_HINT"
@@ -1241,8 +1390,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
         private val CONTENT_STYLE_GRID = 2
         
         // Progress bar constants for Android Auto
-        private val DESCRIPTION_EXTRAS_KEY_COMPLETION_PERCENTAGE = "android.media.extra.COMPLETION_PERCENTAGE"
-        private val DESCRIPTION_EXTRAS_KEY_COMPLETION_STATUS = "android.media.extra.COMPLETION_STATUS"
+        private val DESCRIPTION_EXTRAS_KEY_COMPLETION_PERCENTAGE =
+            androidx.media3.session.MediaConstants.EXTRAS_KEY_COMPLETION_PERCENTAGE
+        private val DESCRIPTION_EXTRAS_KEY_COMPLETION_STATUS =
+            androidx.media3.session.MediaConstants.EXTRAS_KEY_COMPLETION_STATUS
         private val COMPLETION_STATUS_NOT_PLAYED = 0
         private val COMPLETION_STATUS_PARTIALLY_PLAYED = 1
         private val COMPLETION_STATUS_FULLY_PLAYED = 2
@@ -1250,6 +1401,18 @@ class BoxLorePlaybackService : MediaLibraryService() {
         private val SEEK_BACK_CMD = androidx.media3.session.SessionCommand("SEEK_BACK", Bundle.EMPTY)
         private val SEEK_FORWARD_CMD = androidx.media3.session.SessionCommand("SEEK_FORWARD", Bundle.EMPTY)
         private val MARK_COMPLETED_SKIP_CMD = androidx.media3.session.SessionCommand("MARK_COMPLETED_SKIP", Bundle.EMPTY)
+        private val TOGGLE_LIKE_CMD = androidx.media3.session.SessionCommand(
+            AutoBrowseContract.COMMAND_TOGGLE_LIKE,
+            Bundle.EMPTY,
+        )
+        private val ADD_TO_QUEUE_CMD = androidx.media3.session.SessionCommand(
+            AutoBrowseContract.COMMAND_ADD_TO_QUEUE,
+            Bundle.EMPTY,
+        )
+        private val MARK_COMPLETE_CMD = androidx.media3.session.SessionCommand(
+            AutoBrowseContract.COMMAND_MARK_COMPLETE,
+            Bundle.EMPTY,
+        )
 
         override fun onConnect(
             session: MediaSession,
@@ -1259,12 +1422,24 @@ class BoxLorePlaybackService : MediaLibraryService() {
             val sessionCommands = defaultResult.availableSessionCommands.buildUpon()
                 .add(SEEK_BACK_CMD)
                 .add(SEEK_FORWARD_CMD)
+                .add(MARK_COMPLETED_SKIP_CMD)
+                .add(TOGGLE_LIKE_CMD)
+                .add(ADD_TO_QUEUE_CMD)
+                .add(MARK_COMPLETE_CMD)
                 .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(sessionCommands)
                 .setAvailablePlayerCommands(defaultResult.availablePlayerCommands)
-                .setCustomLayout(listOf(seekBackAction, seekForwardAction))
+                .setCustomLayout(listOf(seekBackAction, seekForwardAction, markCompleteAction))
                 .build()
+        }
+
+        override fun onDisconnected(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ) {
+            rootChildLimits.remove(controller)
+            super.onDisconnected(session, controller)
         }
 
         override fun onCustomCommand(
@@ -1273,6 +1448,35 @@ class BoxLorePlaybackService : MediaLibraryService() {
             customCommand: androidx.media3.session.SessionCommand,
             args: Bundle
         ): ListenableFuture<androidx.media3.session.SessionResult> {
+            if (
+                customCommand.customAction == AutoBrowseContract.COMMAND_TOGGLE_LIKE ||
+                customCommand.customAction == AutoBrowseContract.COMMAND_ADD_TO_QUEUE ||
+                customCommand.customAction == AutoBrowseContract.COMMAND_MARK_COMPLETE
+            ) {
+                return serviceScope.future {
+                    val episodeId = args.getString(androidx.media3.session.MediaConstants.EXTRA_KEY_MEDIA_ID)
+                        ?.stripEpisodePrefix()
+                        ?: session.player.currentMediaItem?.mediaId?.stripEpisodePrefix()
+                    val handled = if (episodeId != null) {
+                        when (customCommand.customAction) {
+                            AutoBrowseContract.COMMAND_TOGGLE_LIKE -> toggleEpisodeLike(episodeId)
+                            AutoBrowseContract.COMMAND_ADD_TO_QUEUE ->
+                                addEpisodeToQueue(episodeId, session.player)
+                            AutoBrowseContract.COMMAND_MARK_COMPLETE -> markEpisodeComplete(episodeId)
+                            else -> false
+                        }
+                    } else {
+                        false
+                    }
+                    androidx.media3.session.SessionResult(
+                        if (!handled) {
+                            androidx.media3.session.SessionResult.RESULT_ERROR_BAD_VALUE
+                        } else {
+                            androidx.media3.session.SessionResult.RESULT_SUCCESS
+                        },
+                    )
+                }
+            }
             when (customCommand.customAction) {
                 "SEEK_BACK" -> {
                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("replay_10s")
@@ -1292,6 +1496,81 @@ class BoxLorePlaybackService : MediaLibraryService() {
             return Futures.immediateFuture(
                 androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS)
             )
+        }
+
+        private suspend fun toggleEpisodeLike(episodeId: String): Boolean {
+            val existing = getOrCreateHistoryItem(episodeId) ?: return false
+            database.listeningHistoryDao().upsert(
+                existing.copy(
+                    isLiked = !existing.isLiked,
+                    isDirty = true,
+                ),
+            )
+            mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_LIKED_ID, 50, null)
+            return true
+        }
+
+        private suspend fun markEpisodeComplete(episodeId: String): Boolean {
+            val existing = getOrCreateHistoryItem(episodeId) ?: return false
+            database.listeningHistoryDao().upsert(
+                existing.copy(
+                    progressMs = 0L,
+                    isCompleted = true,
+                    isManualCompletion = true,
+                    isDirty = true,
+                    lastPlayedAt = System.currentTimeMillis(),
+                ),
+            )
+            mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, 20, null)
+            mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_HISTORY_ID, 50, null)
+            return true
+        }
+
+        private suspend fun getOrCreateHistoryItem(
+            episodeId: String,
+        ): cx.aswin.boxcast.core.data.database.ListeningHistoryEntity? {
+            database.listeningHistoryDao().getHistoryItem(episodeId)?.let { return it }
+            val episode = resolveDomainEpisode(episodeId) ?: return null
+            return cx.aswin.boxcast.core.data.database.ListeningHistoryEntity(
+                episodeId = episode.id,
+                podcastId = episode.podcastId.orEmpty(),
+                episodeTitle = episode.title,
+                episodeImageUrl = episode.imageUrl,
+                podcastImageUrl = episode.podcastImageUrl,
+                episodeAudioUrl = episode.audioUrl,
+                podcastName = episode.podcastTitle.orEmpty(),
+                progressMs = 0L,
+                durationMs = episode.duration.toLong() * 1_000L,
+                isCompleted = false,
+                lastPlayedAt = System.currentTimeMillis(),
+                enclosureType = episode.enclosureType,
+                episodeDescription = episode.description,
+            )
+        }
+
+        private suspend fun addEpisodeToQueue(episodeId: String, player: Player): Boolean {
+            val existingQueue = queueRepository.getQueueSnapshot()
+            val queuedEpisode = existingQueue.firstOrNull { it.id == episodeId }
+            val episode = queuedEpisode ?: resolveDomainEpisode(episodeId) ?: return false
+            val playerHasEpisode = (0 until player.mediaItemCount).any { index ->
+                player.getMediaItemAt(index).mediaId.stripEpisodePrefix() == episodeId
+            }
+            if (!playerHasEpisode) {
+                player.addMediaItem(
+                    AutoMediaItemFactory.fromEpisode(
+                        episode = episode,
+                        source = AutoBrowseContract.SOURCE_QUEUE,
+                        artworkUri = AutoArtworkRepository.remoteUri(
+                            this@BoxLorePlaybackService,
+                            episode.imageUrl ?: episode.podcastImageUrl,
+                        ),
+                        mediaIdPrefix = QUEUE_PREFIX,
+                    ),
+                )
+            }
+            if (queuedEpisode == null) queueRepository.replaceQueue(existingQueue + episode)
+            mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_QUEUE_ID, 50, null)
+            return true
         }
 
         @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -1331,18 +1610,18 @@ class BoxLorePlaybackService : MediaLibraryService() {
         ): ListenableFuture<LibraryResult<MediaItem>> {
             android.util.Log.d("AutoBrowse", "onGetLibraryRoot called")
 
-            // Tell Auto we support content style hints
-            val rootExtras = Bundle().apply {
-                putBoolean(CONTENT_STYLE_SUPPORTED, true)
-                putInt(CONTENT_STYLE_BROWSABLE_KEY, CONTENT_STYLE_LIST)   // Default: folders as list
-                putInt(CONTENT_STYLE_PLAYABLE_KEY, CONTENT_STYLE_LIST)    // Episodes show as list rows
-            }
+            rootChildLimits[browser] = params?.extras
+                ?.getInt(androidx.media3.session.MediaConstants.EXTRAS_KEY_ROOT_CHILDREN_LIMIT, 4)
+                ?.takeIf { it > 0 }
+                ?.coerceAtMost(4)
+                ?: 4
+            val rootExtras = AutoBrowseContract.listChildrenExtras()
 
             val rootItem = MediaItem.Builder()
                 .setMediaId(ROOT_ID)
                 .setMediaMetadata(
                     MediaMetadata.Builder()
-                        .setTitle("BoxLore")
+                        .setTitle(getString(cx.aswin.boxcast.core.data.R.string.auto_app_name))
                         .setIsPlayable(false)
                         .setIsBrowsable(true)
                         .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
@@ -1368,16 +1647,38 @@ class BoxLorePlaybackService : MediaLibraryService() {
             return serviceScope.future {
                 try {
                     val items = when {
-                        parentId == ROOT_ID -> getRootChildren()
+                        parentId == ROOT_ID -> getRootChildren().take(rootChildLimits[browser] ?: 4)
                         parentId == HOME_ID -> getHomeChildren()
                         parentId == HOME_CONTINUE_LISTENING_ID -> getContinueListeningChildren()
+                        parentId == HOME_QUEUE_ID -> getQueueChildren()
+                        parentId == AutoBrowseContract.HOME_DRIVE_MIX_ID -> getMixtapeChildren()
                         parentId == HOME_NEW_EPISODES_ID -> getNewEpisodesChildren()
                         parentId == HOME_SUBSCRIPTIONS_ID || parentId == SUBSCRIPTIONS_ID -> getSubscriptionsChildren()
-                        parentId == EXPLORE_ID -> getExploreChildren()
-                        parentId == "explore_picks" -> getExplorePicksChildren()
-                        parentId == "explore_genres" -> getGenresChildren()
-                        parentId.startsWith("home_curated_") || parentId.startsWith("explore_curated_") -> {
-                            val vibeId = parentId.removePrefix("home_curated_").removePrefix("explore_curated_")
+                        parentId == LIBRARY_ID -> getLibraryChildren()
+                        parentId == AutoBrowseContract.LIBRARY_SUBSCRIPTIONS_ID ->
+                            getSubscriptionsChildren()
+                        parentId == AutoBrowseContract.LIBRARY_LIKED_ID -> getLikedChildren()
+                        parentId == AutoBrowseContract.LIBRARY_HISTORY_ID -> getHistoryChildren()
+                        parentId == DOWNLOADS_ID -> getDownloadsChildren()
+                        parentId == DISCOVER_ID || parentId == EXPLORE_ID -> getDiscoverChildren()
+                        parentId == AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID ->
+                            getDrivePicksChildren()
+                        parentId == AutoBrowseContract.DISCOVER_TIME_PICKS_ID ||
+                            parentId == "explore_picks" -> getExplorePicksChildren()
+                        parentId == AutoBrowseContract.DISCOVER_GENRES_ID ||
+                            parentId == "explore_genres" -> getGenresChildren()
+                        parentId.startsWith(AutoBrowseContract.GENRE_PREFIX) -> {
+                            getGenreChildren(
+                                parentId.removePrefix(AutoBrowseContract.GENRE_PREFIX),
+                            )
+                        }
+                        parentId.startsWith("home_curated_") ||
+                            parentId.startsWith("explore_curated_") ||
+                            parentId.startsWith(AutoBrowseContract.CURATED_PREFIX) -> {
+                            val vibeId = parentId
+                                .removePrefix("home_curated_")
+                                .removePrefix("explore_curated_")
+                                .removePrefix(AutoBrowseContract.CURATED_PREFIX)
                             getCuratedChildren(vibeId)
                         }
                         parentId.startsWith(SUBSCRIPTION_PREFIX) -> {
@@ -1386,7 +1687,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                         }
                         else -> emptyList()
                     }
-                    LibraryResult.ofItemList(ImmutableList.copyOf(items), params)
+                    LibraryResult.ofItemList(
+                        ImmutableList.copyOf(slicePage(items, page, pageSize)),
+                        params,
+                    )
                 } catch (e: Exception) {
                     android.util.Log.e("AutoBrowse", "onGetChildren error for $parentId", e)
                     LibraryResult.ofItemList(ImmutableList.of(), params)
@@ -1401,9 +1705,12 @@ class BoxLorePlaybackService : MediaLibraryService() {
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<Void>> {
             android.util.Log.d("AutoBrowse", "onSearch: query='$query'")
-            // Trigger async search, results delivered via onGetSearchResult
-            session.notifySearchResultChanged(browser, query, 0, params)
-            return Futures.immediateFuture(LibraryResult.ofVoid())
+            return serviceScope.future {
+                val results = buildSearchResults(query)
+                synchronized(searchCache) { searchCache[query] = results }
+                session.notifySearchResultChanged(browser, query, results.size, params)
+                LibraryResult.ofVoid()
+            }
         }
 
         override fun onGetSearchResult(
@@ -1418,93 +1725,152 @@ class BoxLorePlaybackService : MediaLibraryService() {
             
             return serviceScope.future {
                 try {
-                    val results = mutableListOf<MediaItem>()
-                    val lowerQuery = query.lowercase()
-                    
-                    // 1. Search local listening history (instant, no network)
-                    val historyItems = database.listeningHistoryDao().getResumeItemsList()
-                    historyItems.filter {
-                        it.episodeTitle.lowercase().contains(lowerQuery) ||
-                        it.podcastName.lowercase().contains(lowerQuery)
-                    }.take(5).forEach { entity ->
-                        val artworkUri = (entity.episodeImageUrl ?: entity.podcastImageUrl)
-                            ?.let { android.net.Uri.parse(it) }
-                        results.add(
-                            MediaItem.Builder()
-                                .setMediaId("episode:${entity.episodeId}")
-                                .setUri(entity.episodeAudioUrl)
-                                .setMediaMetadata(
-                                    MediaMetadata.Builder()
-                                        .setTitle(entity.episodeTitle)
-                                        .setArtist(entity.podcastName)
-                                        .setArtworkUri(artworkUri)
-                                        .setIsPlayable(true)
-                                        .setIsBrowsable(false)
-                                        .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                                        .build()
-                                )
-                                .build()
-                        )
-                    }
-                    
-                    // 2. Search subscribed podcasts (local DB)
-                    val subs = database.podcastDao().getSubscribedPodcastsList()
-                    subs.filter {
-                        it.title.lowercase().contains(lowerQuery) ||
-                        (it.author.lowercase().contains(lowerQuery))
-                    }.take(5).forEach { pod ->
-                        val artworkUri = android.net.Uri.parse(pod.imageUrl)
-                        results.add(
-                            MediaItem.Builder()
-                                .setMediaId("$SUBSCRIPTION_PREFIX${pod.podcastId}")
-                                .setMediaMetadata(
-                                    MediaMetadata.Builder()
-                                        .setTitle(pod.title)
-                                        .setArtist(pod.author)
-                                        .setArtworkUri(artworkUri)
-                                        .setIsPlayable(false)
-                                        .setIsBrowsable(true)
-                                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS)
-                                        .build()
-                                )
-                                .build()
-                        )
-                    }
-                    
-                    // 3. Search Podcast Index API (network)
-                    if (results.size < 10) {
-                        try {
-                            val apiResults = podcastRepository.searchPodcasts(query)
-                            apiResults.take(10).forEach { podcast ->
-                                val artworkUri = android.net.Uri.parse(podcast.imageUrl)
-                                results.add(
-                                    MediaItem.Builder()
-                                        .setMediaId("$SUBSCRIPTION_PREFIX${podcast.id}")
-                                        .setMediaMetadata(
-                                            MediaMetadata.Builder()
-                                                .setTitle(podcast.title)
-                                                .setArtist(podcast.artist)
-                                                .setArtworkUri(artworkUri)
-                                                .setIsPlayable(false)
-                                                .setIsBrowsable(true)
-                                                .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS)
-                                                .build()
-                                        )
-                                        .build()
-                                )
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.e("AutoBrowse", "API search failed", e)
+                    val results = synchronized(searchCache) { searchCache[query] }
+                        ?: buildSearchResults(query).also {
+                            synchronized(searchCache) { searchCache[query] = it }
                         }
-                    }
-                    
                     android.util.Log.d("AutoBrowse", "Search results for '$query': ${results.size} items")
-                    LibraryResult.ofItemList(ImmutableList.copyOf(results), params)
+                    LibraryResult.ofItemList(
+                        ImmutableList.copyOf(slicePage(results, page, pageSize)),
+                        params,
+                    )
                 } catch (e: Exception) {
                     android.util.Log.e("AutoBrowse", "Search failed for '$query'", e)
                     LibraryResult.ofItemList(ImmutableList.of(), params)
                 }
             }
+        }
+
+        private suspend fun buildSearchResults(query: String): List<MediaItem> {
+            val normalized = normalizeVoiceQuery(query)
+            if (normalized.isBlank()) return emptyList()
+            val results = mutableListOf<Pair<Int, MediaItem>>()
+
+            database.listeningHistoryDao().getRecentHistoryList(100)
+                .mapNotNull { history ->
+                    val score = searchScore(history.episodeTitle, history.podcastName, normalized)
+                    if (score == 0) return@mapNotNull null
+                    score to AutoMediaItemFactory.fromHistory(
+                        history = history,
+                        source = AutoBrowseContract.SOURCE_SEARCH,
+                        artworkUri = AutoArtworkRepository.remoteUri(
+                            this@BoxLorePlaybackService,
+                            history.episodeImageUrl ?: history.podcastImageUrl,
+                        ),
+                        subtitle = AutoMediaItemFactory.buildDurationSubtitle(
+                            history.podcastName,
+                            history.durationMs,
+                        ),
+                        groupTitle = getString(
+                            cx.aswin.boxcast.core.data.R.string.auto_group_search,
+                        ),
+                    )
+                }
+                .sortedByDescending { it.first }
+                .take(8)
+                .let(results::addAll)
+
+            database.podcastDao().getSubscribedPodcastsList()
+                .mapNotNull { podcast ->
+                    val score = searchScore(podcast.title, podcast.author, normalized)
+                    if (score == 0) return@mapNotNull null
+                    score to AutoMediaItemFactory.browsable(
+                        id = "$SUBSCRIPTION_PREFIX${podcast.podcastId}",
+                        title = podcast.title,
+                        subtitle = podcast.author,
+                        artworkUri = AutoArtworkRepository.remoteUri(
+                            this@BoxLorePlaybackService,
+                            podcast.imageUrl,
+                        ),
+                        mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                    )
+                }
+                .sortedByDescending { it.first }
+                .take(8)
+                .let(results::addAll)
+
+            if (results.size < 12) {
+                try {
+                    kotlinx.coroutines.withTimeout(5_000L) {
+                        podcastRepository.searchPodcasts(normalized)
+                    }.take(10).forEach { podcast ->
+                        results += searchScore(podcast.title, podcast.artist, normalized) to
+                            AutoMediaItemFactory.browsable(
+                                id = "$SUBSCRIPTION_PREFIX${podcast.id}",
+                                title = podcast.title,
+                                subtitle = podcast.artist,
+                                artworkUri = AutoArtworkRepository.remoteUri(
+                                    this@BoxLorePlaybackService,
+                                    podcast.imageUrl,
+                                ),
+                                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                            )
+                    }
+                } catch (error: Exception) {
+                    android.util.Log.w("AutoBrowse", "Remote Auto search unavailable", error)
+                }
+            }
+
+            return results
+                .sortedByDescending { it.first }
+                .map { it.second }
+                .distinctBy { it.mediaId }
+                .take(30)
+        }
+
+        private fun searchScore(primary: String, secondary: String?, query: String): Int {
+            val title = primary.lowercase()
+            val subtitle = secondary.orEmpty().lowercase()
+            return when {
+                title == query -> 100
+                title.startsWith(query) -> 80
+                subtitle == query -> 70
+                subtitle.startsWith(query) -> 60
+                title.contains(query) -> 50
+                subtitle.contains(query) -> 40
+                else -> 0
+            }
+        }
+
+        private fun normalizeVoiceQuery(query: String): String {
+            var normalized = query
+                .lowercase()
+                .replace(Regex("[^a-z0-9&' ]"), " ")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+            normalized = normalized.replace(
+                Regex(
+                    "\\b(on|using|from|in)\\s+(the\\s+)?box\\s*(lore|floor)(\\s+app)?\\b",
+                ),
+                " ",
+            )
+            normalized = normalized
+                .replace(Regex("^(please\\s+)?(play|start|put on|listen to)\\s+"), "")
+                .replace(
+                    Regex(
+                        "^(the\\s+)?(latest|newest|new)\\s+(podcast\\s+)?episode\\s+(of|from)\\s+",
+                    ),
+                    "",
+                )
+                .replace(Regex("^(a|an|the)\\s+episode\\s+(of|from)\\s+"), "")
+                .replace(Regex("^(the|a|an)\\s+"), "")
+                .replace(Regex("^podcast\\s+"), "")
+                .replace(Regex("\\s+podcast$"), "")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+            return normalized
+        }
+
+        private fun voiceMatchScore(title: String, author: String?, query: String): Int {
+            val basicScore = searchScore(title, author, query)
+            if (basicScore > 0) return basicScore
+            val normalizedTitle = title.lowercase()
+            if (query.contains(normalizedTitle)) return 75
+            val queryTokens = query.split(" ").filter { it.length > 2 }.toSet()
+            val titleTokens = normalizedTitle.split(Regex("\\s+")).filter { it.length > 2 }.toSet()
+            if (queryTokens.isEmpty() || titleTokens.isEmpty()) return 0
+            val overlap = queryTokens.intersect(titleTokens).size
+            return if (overlap >= minOf(2, titleTokens.size)) 20 + overlap * 10 else 0
         }
 
         override fun onGetItem(
@@ -1513,18 +1879,27 @@ class BoxLorePlaybackService : MediaLibraryService() {
             mediaId: String
         ): ListenableFuture<LibraryResult<MediaItem>> {
             android.util.Log.d("AutoBrowse", "onGetItem: mediaId=$mediaId")
-            // Return a simple placeholder — Auto mainly uses onGetChildren
-            val item = MediaItem.Builder()
-                .setMediaId(mediaId)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle(mediaId)
-                        .setIsPlayable(false)
-                        .setIsBrowsable(true)
-                        .build()
-                )
-                .build()
-            return Futures.immediateFuture(LibraryResult.ofItem(item, null))
+            return serviceScope.future {
+                val item = if (
+                    mediaId.startsWith(EPISODE_PREFIX) ||
+                    mediaId.startsWith(QUEUE_PREFIX) ||
+                    mediaId.startsWith(LEARN_PREFIX)
+                ) {
+                    resolveMediaItem(MediaItem.Builder().setMediaId(mediaId).build())
+                } else {
+                    (
+                        getRootChildren() +
+                            getHomeChildren() +
+                            getLibraryChildren() +
+                            getDiscoverChildren()
+                        ).firstOrNull { it.mediaId == mediaId }
+                        ?: AutoMediaItemFactory.browsable(
+                            id = mediaId,
+                            title = getString(cx.aswin.boxcast.core.data.R.string.auto_app_name),
+                        )
+                }
+                LibraryResult.ofItem(item, null)
+            }
         }
 
         /**
@@ -1533,144 +1908,292 @@ class BoxLorePlaybackService : MediaLibraryService() {
          * same podcast, mirroring the phone's QueueManager/PlayerViewModel behavior.
          */
         private suspend fun handleVoiceSearchQuery(searchQuery: String): MutableList<MediaItem> {
-            val lowerQuery = searchQuery.lowercase()
-            val isVague = lowerQuery in listOf("podcast", "something", "music", "play", "anything", "")
+            val rawQuery = searchQuery.lowercase()
+            val normalizedQuery = normalizeVoiceQuery(searchQuery)
+            android.util.Log.d(
+                "AutoBrowse",
+                "Normalized voice query '$searchQuery' → '$normalizedQuery'",
+            )
+            if (rawQuery.contains("download") || rawQuery.contains("offline")) {
+                return getDownloadEpisodeItems().toMutableList()
+            }
+            if (rawQuery.contains("drive mix") || rawQuery.contains("mixtape")) {
+                return handlePlayAllMixtape()
+            }
+            if (
+                normalizedQuery in listOf(
+                    "",
+                    "something",
+                    "anything",
+                    "surprise me",
+                    "podcast",
+                    "podcasts",
+                    "my shows",
+                    "my mix",
+                )
+            ) {
+                return handlePlayAllMixtape()
+            }
             
-            if (isVague || lowerQuery.contains("subscription") || lowerQuery.contains("resume")) {
+            if (rawQuery.contains("subscription") || rawQuery.contains("resume")) {
                 val lastSession = database.listeningHistoryDao().getLastPlayedSession()
                 if (lastSession != null) {
-                    android.util.Log.d("AutoBrowse", "Vague query → resuming last: ${lastSession.episodeTitle}")
+                    android.util.Log.d(
+                        "AutoBrowse",
+                        "Voice resume matched: ${lastSession.episodeTitle}",
+                    )
                     pendingSeekMs = lastSession.progressMs
                     pendingSeekEpisodeId = lastSession.episodeId
-                    val artworkUri = (lastSession.episodeImageUrl ?: lastSession.podcastImageUrl)
-                        ?.let { android.net.Uri.parse(it) }
-                    return mutableListOf(
-                        MediaItem.Builder()
-                            .setMediaId("episode:${lastSession.episodeId}")
-                            .setUri(lastSession.episodeAudioUrl)
-                            .setMediaMetadata(
-                                MediaMetadata.Builder()
-                                    .setTitle(lastSession.episodeTitle)
-                                    .setArtist(lastSession.podcastName)
-                                    .setArtworkUri(artworkUri)
-                                    .setIsPlayable(true)
-                                    .setIsBrowsable(false)
-                                    .build()
-                            )
-                            .build()
-                    )
+                    return mutableListOf(voiceHistoryItem(lastSession))
                 }
             }
             
             val subs = database.podcastDao().getSubscribedPodcastsList()
-            val matchedPod = subs.firstOrNull { 
-                it.title.lowercase().contains(lowerQuery) 
-            }
+            val matchedPod = subs
+                .map { podcast ->
+                    podcast to voiceMatchScore(
+                        podcast.title,
+                        podcast.author,
+                        normalizedQuery,
+                    )
+                }
+                .filter { (_, score) -> score > 0 }
+                .maxByOrNull { (_, score) -> score }
+                ?.first
             
             if (matchedPod != null) {
                 android.util.Log.d("AutoBrowse", "Voice matched subscription: ${matchedPod.title}")
-                val episodes = podcastRepository.getEpisodes(matchedPod.podcastId)
-                val ep = episodes.firstOrNull()
-                if (ep != null) {
-                    val artworkUri = android.net.Uri.parse(ep.imageUrl ?: matchedPod.imageUrl)
+                val episode = matchedPod.latestEpisode
+                    ?: kotlinx.coroutines.withTimeoutOrNull(2_500L) {
+                        podcastRepository.getEpisodes(matchedPod.podcastId).firstOrNull()
+                    }
+                if (episode != null) {
                     return mutableListOf(
-                        MediaItem.Builder()
-                            .setMediaId("episode:${ep.id}")
-                            .setUri(ep.audioUrl)
-                            .setMediaMetadata(
-                                MediaMetadata.Builder()
-                                    .setTitle(ep.title)
-                                    .setArtist(matchedPod.title)
-                                    .setArtworkUri(artworkUri)
-                                    .setIsPlayable(true)
-                                    .setIsBrowsable(false)
-                                    .build()
-                            )
-                            .build()
+                        voiceEpisodeItem(
+                            episode = episode,
+                            podcastTitle = matchedPod.title,
+                            podcastImageUrl = matchedPod.imageUrl,
+                        ),
                     )
                 }
             }
             
-            try {
-                val apiResults = podcastRepository.searchPodcasts(searchQuery)
-                val firstPod = apiResults.firstOrNull()
-                if (firstPod != null) {
-                    android.util.Log.d("AutoBrowse", "Voice matched API: ${firstPod.title}")
-                    val episodes = podcastRepository.getEpisodes(firstPod.id)
-                    val ep = episodes.firstOrNull()
-                    if (ep != null) {
-                        val artworkUri = android.net.Uri.parse(ep.imageUrl ?: firstPod.imageUrl)
-                        return mutableListOf(
-                            MediaItem.Builder()
-                                .setMediaId("episode:${ep.id}")
-                                .setUri(ep.audioUrl)
-                                .setMediaMetadata(
-                                    MediaMetadata.Builder()
-                                        .setTitle(ep.title)
-                                        .setArtist(firstPod.title)
-                                        .setArtworkUri(artworkUri)
-                                        .setIsPlayable(true)
-                                        .setIsBrowsable(false)
-                                        .build()
-                                )
-                                .build()
-                        )
+            val remoteItem = kotlinx.coroutines.withTimeoutOrNull(5_000L) {
+                kotlinx.coroutines.coroutineScope {
+                    val podcastMatch = async {
+                        try {
+                            val podcast = podcastRepository.searchPodcasts(normalizedQuery)
+                                .maxByOrNull {
+                                    voiceMatchScore(it.title, it.artist, normalizedQuery)
+                                }
+                            podcast?.let {
+                                val episode = it.latestEpisode
+                                    ?: podcastRepository.getEpisodes(it.id).firstOrNull()
+                                episode?.let { match ->
+                                    voiceEpisodeItem(
+                                        episode = match,
+                                        podcastTitle = it.title,
+                                        podcastImageUrl = it.imageUrl,
+                                    )
+                                }
+                            }
+                        } catch (error: kotlinx.coroutines.CancellationException) {
+                            throw error
+                        } catch (error: Exception) {
+                            android.util.Log.w(
+                                "AutoBrowse",
+                                "Voice podcast search unavailable",
+                                error,
+                            )
+                            null
+                        }
                     }
+                    val episodeMatch = async {
+                        try {
+                            val region = smartQueueSources.getRegion()
+                            podcastRepository.searchEpisodesSemantic(normalizedQuery, region)
+                                .firstOrNull()
+                                ?.let {
+                                    voiceEpisodeItem(
+                                        episode = it,
+                                        podcastTitle = it.podcastTitle,
+                                        podcastImageUrl = it.podcastImageUrl,
+                                    )
+                                }
+                        } catch (error: kotlinx.coroutines.CancellationException) {
+                            throw error
+                        } catch (error: Exception) {
+                            android.util.Log.w(
+                                "AutoBrowse",
+                                "Voice episode search unavailable",
+                                error,
+                            )
+                            null
+                        }
+                    }
+                    podcastMatch.await()?.also {
+                        episodeMatch.cancel()
+                    } ?: episodeMatch.await()
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("AutoBrowse", "Voice search API failed", e)
+            }
+            if (remoteItem != null) {
+                android.util.Log.d("AutoBrowse", "Voice matched remote result")
+                return mutableListOf(remoteItem)
             }
             
             val fallback = database.listeningHistoryDao().getLastPlayedSession()
             if (fallback != null) {
                 pendingSeekMs = fallback.progressMs
                 pendingSeekEpisodeId = fallback.episodeId
-                return mutableListOf(
-                    MediaItem.Builder()
-                        .setMediaId("episode:${fallback.episodeId}")
-                        .setUri(fallback.episodeAudioUrl)
-                        .setMediaMetadata(
-                            MediaMetadata.Builder()
-                                .setTitle(fallback.episodeTitle)
-                                .setArtist(fallback.podcastName)
-                                .setIsPlayable(true)
-                                .setIsBrowsable(false)
-                                .build()
-                        )
-                        .build()
-                )
+                android.util.Log.d("AutoBrowse", "Voice fallback: ${fallback.episodeTitle}")
+                return mutableListOf(voiceHistoryItem(fallback))
             }
             
-            return mutableListOf()
+            return handlePlayAllMixtape().ifEmpty {
+                getDownloadEpisodeItems().take(1).toMutableList()
+            }
         }
+
+        private fun voiceEpisodeItem(
+            episode: cx.aswin.boxcast.core.model.Episode,
+            podcastTitle: String?,
+            podcastImageUrl: String?,
+        ): MediaItem = AutoMediaItemFactory.fromEpisode(
+            episode = episode,
+            source = AutoBrowseContract.SOURCE_SEARCH,
+            artworkUri = AutoArtworkRepository.remoteUri(
+                this@BoxLorePlaybackService,
+                episode.imageUrl ?: episode.podcastImageUrl ?: podcastImageUrl,
+            ),
+            podcastTitle = podcastTitle,
+            groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_search),
+        )
+
+        private fun voiceHistoryItem(
+            history: cx.aswin.boxcast.core.data.database.ListeningHistoryEntity,
+        ): MediaItem = AutoMediaItemFactory.fromHistory(
+            history = history,
+            source = AutoBrowseContract.SOURCE_CONTINUE,
+            artworkUri = AutoArtworkRepository.remoteUri(
+                this@BoxLorePlaybackService,
+                history.episodeImageUrl ?: history.podcastImageUrl,
+            ),
+            subtitle = buildProgressSubtitle(
+                history.podcastName,
+                history.progressMs,
+                history.durationMs,
+            ),
+            groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_continue),
+        )
 
         private suspend fun handlePlayAllNewEpisodes(): MutableList<MediaItem> {
             android.util.Log.d("AutoBrowse", "Play All New Episodes triggered")
-            val subscriptions = subscriptionRepository.getAllSubscribedPodcasts().first()
+            val subscriptions = database.podcastDao().getSubscribedPodcastsList()
             
             val newEpisodes = subscriptions
                 .mapNotNull { entity -> entity.latestEpisode?.let { ep -> ep to entity } }
                 .sortedByDescending { (ep, _) -> ep.publishedDate }
                 .take(20)
             
-            return newEpisodes.map { (ep, pod) ->
-                val artworkUri = android.net.Uri.parse(ep.imageUrl ?: pod.imageUrl)
-                
-                MediaItem.Builder()
-                    .setMediaId("episode:${ep.id}")
-                    .setUri(ep.audioUrl)
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(ep.title)
-                            .setSubtitle(pod.title)
-                            .setArtist(pod.author)
-                            .setArtworkUri(artworkUri)
-                            .setIsPlayable(true)
-                            .setIsBrowsable(false)
-                            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                            .build()
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_new_episodes"),
+            )
+            return newEpisodes.map { (episode, podcast) ->
+                AutoMediaItemFactory.fromEpisode(
+                    episode = episode,
+                    source = AutoBrowseContract.SOURCE_NEW,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        episode.imageUrl ?: podcast.imageUrl,
+                    ),
+                    podcastTitle = podcast.title,
+                )
+            }.toMutableList()
+        }
+
+        private suspend fun handlePlayAllLiked(): MutableList<MediaItem> {
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_liked"),
+            )
+            return database.listeningHistoryDao()
+                .getLikedEpisodesList(50)
+                .map { history ->
+                    AutoMediaItemFactory.fromHistory(
+                        history = history,
+                        source = AutoBrowseContract.SOURCE_LIKED,
+                        artworkUri = AutoArtworkRepository.remoteUri(
+                            this@BoxLorePlaybackService,
+                            history.episodeImageUrl ?: history.podcastImageUrl,
+                        ),
+                        subtitle = AutoMediaItemFactory.buildDurationSubtitle(
+                            history.podcastName,
+                            history.durationMs,
+                        ),
+                        groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_liked),
                     )
-                    .build()
+                }
+                .toMutableList()
+        }
+
+        private suspend fun handlePlayAllDownloads(): MutableList<MediaItem> {
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_downloads"),
+            )
+            return getDownloadEpisodeItems().toMutableList()
+        }
+
+        private suspend fun handlePlayAllDrivePicks(): MutableList<MediaItem> {
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_drive_picks"),
+            )
+            return getDrivePicksChildren()
+                .filterNot { it.mediaId == AutoBrowseContract.PLAY_ALL_DRIVE_ID }
+                .toMutableList()
+        }
+
+        private suspend fun handlePlayAllMixtape(): MutableList<MediaItem> {
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_mixtape"),
+            )
+            return getMixtapeChildren()
+                .filterNot { it.mediaId == AutoBrowseContract.PLAY_ALL_MIXTAPE_ID }
+                .toMutableList()
+        }
+
+        private suspend fun handlePlayFromMixtape(episodeId: String): MutableList<MediaItem> {
+            val mixtape = getMixtapeChildren()
+                .filterNot { it.mediaId == AutoBrowseContract.PLAY_ALL_MIXTAPE_ID }
+            val selectedIndex = mixtape.indexOfFirst {
+                it.mediaId.stripEpisodePrefix() == episodeId
+            }
+            if (selectedIndex < 0) return mutableListOf()
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_mixtape"),
+            )
+            return mixtape.drop(selectedIndex).toMutableList()
+        }
+
+        private suspend fun handlePlayFromQueue(episodeId: String): MutableList<MediaItem> {
+            val queue = queueRepository.getQueueSnapshot()
+            val selectedIndex = queue.indexOfFirst { it.id == episodeId }
+            if (selectedIndex < 0) {
+                android.util.Log.w("AutoBrowse", "Ignoring stale queue selection: $episodeId")
+                return mutableListOf()
+            }
+            cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                mapOf("entry_point" to "android_auto_queue"),
+            )
+            return queue.drop(selectedIndex).map { episode ->
+                AutoMediaItemFactory.fromEpisode(
+                    episode = episode,
+                    source = AutoBrowseContract.SOURCE_QUEUE,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        episode.imageUrl ?: episode.podcastImageUrl,
+                    ),
+                    mediaIdPrefix = QUEUE_PREFIX,
+                    groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_queue),
+                )
             }.toMutableList()
         }
 
@@ -1719,6 +2242,9 @@ class BoxLorePlaybackService : MediaLibraryService() {
             
             return serviceScope.future {
                 if (mediaItems.size > 1) {
+                    cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                        mapOf("entry_point" to "android_auto_play_all"),
+                    )
                     return@future mediaItems.map { resolveMediaItem(it) }.toMutableList()
                 }
                 
@@ -1727,16 +2253,36 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 
                 if (!searchQuery.isNullOrBlank()) {
                     android.util.Log.d("AutoBrowse", "Voice play request: '$searchQuery'")
+                    cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                        mapOf("entry_point" to "android_auto_voice"),
+                    )
                     return@future handleVoiceSearchQuery(searchQuery)
                 }
                 
-                if (selectedItem.mediaId == PLAY_ALL_NEW_EPISODES_ID) {
-                    return@future handlePlayAllNewEpisodes()
+                when (selectedItem.mediaId) {
+                    PLAY_ALL_NEW_EPISODES_ID -> return@future handlePlayAllNewEpisodes()
+                    AutoBrowseContract.PLAY_ALL_LIKED_ID -> return@future handlePlayAllLiked()
+                    AutoBrowseContract.PLAY_ALL_DOWNLOADS_ID -> return@future handlePlayAllDownloads()
+                    AutoBrowseContract.PLAY_ALL_DRIVE_ID -> return@future handlePlayAllDrivePicks()
+                    AutoBrowseContract.PLAY_ALL_MIXTAPE_ID -> return@future handlePlayAllMixtape()
+                }
+
+                val source = selectedItem.mediaMetadata.extras
+                    ?.getString(AutoBrowseContract.EXTRA_SOURCE)
+                    ?: AutoBrowseContract.SOURCE_DISCOVER
+                if (selectedItem.mediaId.startsWith(QUEUE_PREFIX)) {
+                    return@future handlePlayFromQueue(selectedItem.mediaId.stripEpisodePrefix())
+                }
+                if (source == AutoBrowseContract.SOURCE_MIXTAPE) {
+                    return@future handlePlayFromMixtape(selectedItem.mediaId.stripEpisodePrefix())
                 }
                 
                 android.util.Log.d("BoxCastPlayer", "onAddMediaItems: selectedItem.mediaId=${selectedItem.mediaId}, extrasKeys=${selectedItem.mediaMetadata.extras?.keySet()?.joinToString(", ")}")
+                cx.aswin.boxcast.core.data.analytics.PendingEntryPoint.set(
+                    mapOf("entry_point" to "android_auto_$source"),
+                )
                 val resolvedItem = resolveMediaItem(selectedItem)
-                val episodeId = selectedItem.mediaId.removePrefix(LEARN_PREFIX).removePrefix(EPISODE_PREFIX).removePrefix(QUEUE_PREFIX)
+                val episodeId = selectedItem.mediaId.stripEpisodePrefix()
                 android.util.Log.d("AutoBrowse", "Returning episode instantly: $episodeId, startsWithLearn=${selectedItem.mediaId.startsWith(LEARN_PREFIX)}")
                 
                 val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
@@ -1749,12 +2295,14 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     pendingSeekEpisodeId = null
                 }
                 
-                val isLearn = selectedItem.mediaId.startsWith(LEARN_PREFIX)
-                android.util.Log.d("AutoBrowse", "onAddMediaItems check isLearn=$isLearn")
-                if (!isLearn) {
+                val skipSmartRefill = selectedItem.mediaId.startsWith(LEARN_PREFIX) ||
+                    source == AutoBrowseContract.SOURCE_DOWNLOADS ||
+                    source == AutoBrowseContract.SOURCE_QUEUE
+                android.util.Log.d("AutoBrowse", "onAddMediaItems skipSmartRefill=$skipSmartRefill")
+                if (!skipSmartRefill) {
                     buildAndAppendQueueAsync(episodeId, mediaSession)
                 } else {
-                    android.util.Log.d("AutoBrowse", "Learn screen entry point detected: skipping async queue append")
+                    android.util.Log.d("AutoBrowse", "Explicit/offline source: skipping async queue append")
                 }
                 mutableListOf(resolvedItem)
             }
@@ -1768,29 +2316,62 @@ class BoxLorePlaybackService : MediaLibraryService() {
          */
         private suspend fun resolveMediaItem(item: MediaItem): MediaItem {
             android.util.Log.d("BoxCastPlayer", "resolveMediaItem: mediaId=${item.mediaId}, initialArtworkUri=${item.mediaMetadata.artworkUri}")
-            // Try to get the URI from various sources
+            val episodeId = item.mediaId.stripEpisodePrefix()
             val uri = item.localConfiguration?.uri ?: item.requestMetadata.mediaUri
             
             if (uri != null) {
-                return item.buildUpon().setUri(uri).build()
+                return item.buildUpon()
+                    .setUri(uri)
+                    .setCustomCacheKey(episodeId)
+                    .build()
             }
-            
-            val episodeId = item.mediaId.removePrefix(EPISODE_PREFIX).removePrefix(QUEUE_PREFIX)
-            
-            // Try history DB first
+
+            val download = database.downloadedEpisodeDao().getDownload(episodeId)
             val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
-            if (historyItem?.episodeAudioUrl != null) {
-                val histArtworkUriStr = historyItem.episodeImageUrl ?: historyItem.podcastImageUrl
+            val queueItem = queueRepository.getQueueItemByEpisodeId(episodeId)
+            val resolvedAudioUrl = download
+                ?.takeIf {
+                    it.status ==
+                        cx.aswin.boxcast.core.data.database.DownloadedEpisodeEntity.STATUS_COMPLETED
+                }
+                ?.let { resolveDownloadRequestUri(episodeId) }
+                ?: historyItem?.episodeAudioUrl
+                ?.takeIf { it.isNotBlank() }
+                ?: queueItem?.audioUrl?.takeIf { it.isNotBlank() }
+            if (resolvedAudioUrl != null) {
+                val histArtworkUriStr = historyItem?.episodeImageUrl ?: historyItem?.podcastImageUrl
                 android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved from history: '$histArtworkUriStr'")
                 return MediaItem.Builder()
                     .setMediaId(item.mediaId)
-                    .setUri(historyItem.episodeAudioUrl)
+                    .setUri(resolvedAudioUrl)
+                    .setCustomCacheKey(episodeId)
                     .setMediaMetadata(
                         item.mediaMetadata.buildUpon()
-                            .setTitle(historyItem.episodeTitle)
-                            .setArtist(historyItem.podcastName)
+                            .setTitle(historyItem?.episodeTitle ?: queueItem?.title)
+                            .setArtist(historyItem?.podcastName ?: queueItem?.podcastTitle)
                             .setArtworkUri(
-                                histArtworkUriStr?.let { android.net.Uri.parse(it) }
+                                AutoArtworkRepository.remoteUri(
+                                    this@BoxLorePlaybackService,
+                                    histArtworkUriStr ?: queueItem?.imageUrl ?: queueItem?.podcastImageUrl,
+                                ),
+                            )
+                            .setExtras(
+                                AutoBrowseContract.mergeExtras(
+                                    item.mediaMetadata.extras,
+                                    AutoBrowseContract.itemExtras(
+                                        source = item.mediaMetadata.extras
+                                            ?.getString(AutoBrowseContract.EXTRA_SOURCE)
+                                            ?: AutoBrowseContract.SOURCE_DISCOVER,
+                                        downloadStatus = if (
+                                            download?.status ==
+                                            cx.aswin.boxcast.core.data.database.DownloadedEpisodeEntity.STATUS_COMPLETED
+                                        ) {
+                                            androidx.media3.session.MediaConstants.EXTRAS_VALUE_STATUS_DOWNLOADED
+                                        } else {
+                                            null
+                                        },
+                                    ),
+                                ),
                             )
                             .build()
                     )
@@ -1804,11 +2385,17 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 return MediaItem.Builder()
                     .setMediaId(item.mediaId)
                     .setUri(episode.audioUrl)
+                    .setCustomCacheKey(episodeId)
                     .setMediaMetadata(
                         item.mediaMetadata.buildUpon()
                             .setTitle(episode.title)
                             .setArtist(episode.podcastArtist ?: "")
-                            .setArtworkUri(episode.imageUrl?.let { android.net.Uri.parse(it) })
+                            .setArtworkUri(
+                                AutoArtworkRepository.remoteUri(
+                                    this@BoxLorePlaybackService,
+                                    episode.imageUrl ?: episode.podcastImageUrl,
+                                ),
+                            )
                             .build()
                     )
                     .build()
@@ -1818,30 +2405,93 @@ class BoxLorePlaybackService : MediaLibraryService() {
             return item
         }
 
+        private suspend fun resolveDomainEpisode(episodeId: String): cx.aswin.boxcast.core.model.Episode? {
+            queueRepository.getQueueSnapshot().firstOrNull { it.id == episodeId }?.let { return it }
+            val history = database.listeningHistoryDao().getHistoryItem(episodeId)
+            if (history?.episodeAudioUrl != null) {
+                return cx.aswin.boxcast.core.model.Episode(
+                    id = history.episodeId,
+                    title = history.episodeTitle,
+                    description = history.episodeDescription.orEmpty(),
+                    audioUrl = history.episodeAudioUrl,
+                    imageUrl = history.episodeImageUrl,
+                    podcastImageUrl = history.podcastImageUrl,
+                    podcastTitle = history.podcastName,
+                    podcastId = history.podcastId,
+                    duration = (history.durationMs / 1_000L).toInt(),
+                    enclosureType = history.enclosureType,
+                )
+            }
+            val download = database.downloadedEpisodeDao().getDownload(episodeId)
+            if (
+                download?.status ==
+                cx.aswin.boxcast.core.data.database.DownloadedEpisodeEntity.STATUS_COMPLETED
+            ) {
+                val audioUrl = resolveDownloadRequestUri(episodeId)
+                    ?: download.localFilePath.takeIf {
+                        it.isNotBlank() && it != "CACHED" && java.io.File(it).isFile
+                    }?.let { android.net.Uri.fromFile(java.io.File(it)).toString() }
+                if (audioUrl != null) {
+                    return cx.aswin.boxcast.core.model.Episode(
+                        id = download.episodeId,
+                        title = download.episodeTitle,
+                        description = download.episodeDescription.orEmpty(),
+                        audioUrl = audioUrl,
+                        imageUrl = download.episodeImageUrl,
+                        podcastImageUrl = download.podcastImageUrl,
+                        podcastTitle = download.podcastName,
+                        podcastId = download.podcastId,
+                        duration = (download.durationMs / 1_000L).toInt(),
+                        publishedDate = download.publishedDate,
+                    )
+                }
+            }
+            return podcastRepository.getEpisode(episodeId)
+        }
+
+        private fun String.stripEpisodePrefix(): String =
+            removePrefix(LEARN_PREFIX).removePrefix(EPISODE_PREFIX).removePrefix(QUEUE_PREFIX)
+
         // ============= Browse Tree Builders =============
 
         private fun getRootChildren(): List<MediaItem> {
-            // Hint: List style for folders
-            val listExtras = Bundle().apply {
-                putInt(CONTENT_STYLE_BROWSABLE_KEY, CONTENT_STYLE_LIST)
-                putInt(CONTENT_STYLE_PLAYABLE_KEY, CONTENT_STYLE_LIST)
-            }
-
             return listOf(
-                buildBrowsableItem(
+                AutoMediaItemFactory.browsable(
                     id = HOME_ID,
-                    title = "Home",
-                    subtitle = "Your library",
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_home),
+                    subtitle = getString(cx.aswin.boxcast.core.data.R.string.auto_home_subtitle),
+                    artworkUri = folderArtwork(HOME_ID),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
                 ),
-                buildBrowsableItem(
-                    id = EXPLORE_ID,
-                    title = "Explore",
-                    subtitle = "Discover new podcasts",
+                AutoMediaItemFactory.browsable(
+                    id = LIBRARY_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_library),
+                    subtitle = getString(cx.aswin.boxcast.core.data.R.string.auto_library_subtitle),
+                    artworkUri = folderArtwork(LIBRARY_ID),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
-                )
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                ),
+                AutoMediaItemFactory.browsable(
+                    id = DISCOVER_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_discover),
+                    subtitle = getString(cx.aswin.boxcast.core.data.R.string.auto_discover_subtitle),
+                    artworkUri = folderArtwork(DISCOVER_ID),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                ),
+                AutoMediaItemFactory.browsable(
+                    id = DOWNLOADS_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_downloads),
+                    subtitle = getString(cx.aswin.boxcast.core.data.R.string.auto_downloads_subtitle),
+                    artworkUri = folderArtwork(DOWNLOADS_ID),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                ),
             )
         }
 
@@ -1850,46 +2500,19 @@ class BoxLorePlaybackService : MediaLibraryService() {
             android.util.Log.d("AutoBrowse", "Continue Listening: ${resumeItems.size} items")
             
             return resumeItems.map { entity ->
-                val artworkUri = (entity.episodeImageUrl ?: entity.podcastImageUrl)
-                    ?.let { android.net.Uri.parse(it) }
-                
-                // Rich subtitle with remaining time
                 val subtitle = buildProgressSubtitle(entity.podcastName, entity.progressMs, entity.durationMs)
-                
-                // Progress bar extras for Android Auto
-                val completionPercentage = if (entity.durationMs > 0) {
-                    (entity.progressMs.toDouble() / entity.durationMs.toDouble()).coerceIn(0.0, 1.0)
-                } else 0.0
-                
-                val completionStatus = when {
-                    entity.isCompleted -> COMPLETION_STATUS_FULLY_PLAYED
-                    entity.progressMs > 0 -> COMPLETION_STATUS_PARTIALLY_PLAYED
-                    else -> COMPLETION_STATUS_NOT_PLAYED
-                }
-                
-                val progressExtras = Bundle().apply {
-                    putDouble(DESCRIPTION_EXTRAS_KEY_COMPLETION_PERCENTAGE, completionPercentage)
-                    putInt(DESCRIPTION_EXTRAS_KEY_COMPLETION_STATUS, completionStatus)
-                }
-                
-                android.util.Log.d("AutoBrowse", "Episode ${entity.episodeId}: progress=${(completionPercentage * 100).toInt()}%, status=$completionStatus")
-                
-                MediaItem.Builder()
-                    .setMediaId("episode:${entity.episodeId}")
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(entity.episodeTitle)
-                            .setSubtitle(subtitle)
-                            .setArtist(subtitle)
-                            .setArtworkUri(artworkUri)
-                            .setIsPlayable(true)
-                            .setIsBrowsable(false)
-                            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                            .setExtras(progressExtras)
-                            .build()
-                    )
-                    .setUri(entity.episodeAudioUrl)
-                    .build()
+                AutoMediaItemFactory.fromHistory(
+                    history = entity,
+                    source = AutoBrowseContract.SOURCE_CONTINUE,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        entity.episodeImageUrl ?: entity.podcastImageUrl,
+                    ),
+                    subtitle = subtitle,
+                    groupTitle = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_group_continue,
+                    ),
+                )
             }
         }
 
@@ -1898,76 +2521,84 @@ class BoxLorePlaybackService : MediaLibraryService() {
             android.util.Log.d("AutoBrowse", "Subscriptions: ${subscriptions.size} podcasts")
             
             return subscriptions.map { entity ->
-                val artworkUri = android.net.Uri.parse(entity.imageUrl)
-                
-                MediaItem.Builder()
-                    .setMediaId("$SUBSCRIPTION_PREFIX${entity.podcastId}")
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(entity.title)
-                            .setSubtitle(entity.author)
-                            .setArtist(entity.author)
-                            .setArtworkUri(artworkUri)
-                            .setIsPlayable(false)
-                            .setIsBrowsable(true)
-                            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST)
-                            .build()
-                    )
-                    .build()
+                AutoMediaItemFactory.browsable(
+                    id = "$SUBSCRIPTION_PREFIX${entity.podcastId}",
+                    title = entity.title,
+                    subtitle = entity.author,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        entity.imageUrl,
+                    ),
+                    mediaType = MediaMetadata.MEDIA_TYPE_PODCAST,
+                    childStyleExtras = AutoBrowseContract.mergeExtras(
+                        AutoBrowseContract.listChildrenExtras(),
+                        android.os.Bundle().apply {
+                            putString(
+                                androidx.media3.session.MediaConstants
+                                    .EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
+                                getString(
+                                    cx.aswin.boxcast.core.data.R.string.auto_group_subscriptions,
+                                ),
+                            )
+                        },
+                    ),
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                )
             }
         }
 
         private suspend fun getHomeChildren(): List<MediaItem> {
-            val listExtras = Bundle().apply {
-                putInt(CONTENT_STYLE_BROWSABLE_KEY, CONTENT_STYLE_LIST)
-                putInt(CONTENT_STYLE_PLAYABLE_KEY, CONTENT_STYLE_LIST)
-            }
-            val gridExtras = Bundle().apply {
-                putInt(CONTENT_STYLE_BROWSABLE_KEY, CONTENT_STYLE_GRID)
-                putInt(CONTENT_STYLE_PLAYABLE_KEY, CONTENT_STYLE_LIST)
-            }
-
             val newEpCount = try {
                 database.podcastDao().getSubscribedPodcastsList().count { it.latestEpisode != null }
             } catch (e: Exception) { 0 }
             val newEpSubtitle = when {
-                newEpCount == 0 -> "Subscribe to podcasts to see new drops"
-                newEpCount == 1 -> "1 new from your subscriptions"
-                else -> "$newEpCount new from your subscriptions"
+                newEpCount == 0 -> getString(cx.aswin.boxcast.core.data.R.string.auto_new_none)
+                newEpCount == 1 -> getString(cx.aswin.boxcast.core.data.R.string.auto_new_one)
+                else -> getString(
+                    cx.aswin.boxcast.core.data.R.string.auto_new_many,
+                    newEpCount,
+                )
             }
 
             return listOf(
-                buildBrowsableItem(
+                AutoMediaItemFactory.browsable(
                     id = HOME_CONTINUE_LISTENING_ID,
-                    title = "Continue Listening",
+                    title = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_continue_listening,
+                    ),
+                    artworkUri = folderArtwork(HOME_CONTINUE_LISTENING_ID),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
+                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
                 ),
-                buildBrowsableItem(
-                    id = HOME_SUBSCRIPTIONS_ID,
-                    title = "Subscriptions",
+                AutoMediaItemFactory.browsable(
+                    id = AutoBrowseContract.HOME_DRIVE_MIX_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_drive_mix),
+                    subtitle = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_drive_mix_subtitle,
+                    ),
+                    artworkUri = folderArtwork(AutoBrowseContract.HOME_DRIVE_MIX_ID),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = gridExtras
+                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
                 ),
-                buildBrowsableItem(
+                AutoMediaItemFactory.browsable(
                     id = HOME_NEW_EPISODES_ID,
-                    title = "What's New",
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_whats_new),
                     subtitle = newEpSubtitle,
+                    artworkUri = folderArtwork(HOME_NEW_EPISODES_ID),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
-                )
+                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                ),
             )
         }
         
-        /**
-         * Explore tab: time-of-day picks + full genre directory.
-         */
-        private fun getExploreChildren(): List<MediaItem> {
-            val listExtras = Bundle().apply {
-                putInt(CONTENT_STYLE_BROWSABLE_KEY, CONTENT_STYLE_LIST)
-                putInt(CONTENT_STYLE_PLAYABLE_KEY, CONTENT_STYLE_LIST)
-            }
-            
+        private fun getDiscoverChildren(): List<MediaItem> {
             val cal = java.util.Calendar.getInstance()
             val hour = cal.get(java.util.Calendar.HOUR_OF_DAY)
             val timeLabel = when (hour) {
@@ -1978,70 +2609,371 @@ class BoxLorePlaybackService : MediaLibraryService() {
             }
             
             return listOf(
-                buildBrowsableItem(
-                    id = "explore_picks",
-                    title = "$timeLabel Picks",
-                    subtitle = "Curated for right now",
+                AutoMediaItemFactory.browsable(
+                    id = AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_drive_picks),
+                    subtitle = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_drive_picks_subtitle,
+                    ),
+                    artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
                 ),
-                buildBrowsableItem(
-                    id = "explore_genres",
-                    title = "Browse by Genre",
-                    subtitle = "16 categories",
+                AutoMediaItemFactory.browsable(
+                    id = AutoBrowseContract.DISCOVER_TIME_PICKS_ID,
+                    title = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_time_picks,
+                        timeLabel,
+                    ),
+                    subtitle = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_time_picks_subtitle,
+                    ),
+                    artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_TIME_PICKS_ID),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
-                )
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                ),
+                AutoMediaItemFactory.browsable(
+                    id = AutoBrowseContract.DISCOVER_GENRES_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_browse_genre),
+                    subtitle = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_browse_genre_subtitle,
+                    ),
+                    artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_GENRES_ID),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                ),
             )
         }
         
         private fun getExplorePicksChildren(): List<MediaItem> {
-            val listExtras = Bundle().apply {
-                putInt(CONTENT_STYLE_BROWSABLE_KEY, CONTENT_STYLE_LIST)
-                putInt(CONTENT_STYLE_PLAYABLE_KEY, CONTENT_STYLE_LIST)
-            }
             val cal = java.util.Calendar.getInstance()
             val hour = cal.get(java.util.Calendar.HOUR_OF_DAY)
             return getTimeBasedGenres(hour).map { (vibeId, title) ->
-                buildBrowsableItem(
-                    id = "explore_curated_$vibeId",
+                AutoMediaItemFactory.browsable(
+                    id = "${AutoBrowseContract.CURATED_PREFIX}$vibeId",
                     title = title,
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
+                    childStyleExtras = AutoBrowseContract.gridChildrenExtras(),
                 )
             }
         }
         
         private fun getGenresChildren(): List<MediaItem> {
-            val listExtras = Bundle().apply {
-                putInt(CONTENT_STYLE_BROWSABLE_KEY, CONTENT_STYLE_LIST)
-                putInt(CONTENT_STYLE_PLAYABLE_KEY, CONTENT_STYLE_LIST)
-            }
             return listOf(
-                "true_crime" to "True Crime",
-                "comedy" to "Comedy",
-                "news" to "News & Politics",
-                "technology" to "Technology",
-                "science" to "Science",
-                "health" to "Health & Wellness",
-                "business" to "Business",
-                "sports" to "Sports",
-                "history" to "History",
-                "society" to "Society & Culture",
-                "education" to "Education",
-                "arts" to "Arts & Entertainment",
-                "music" to "Music",
-                "fiction" to "Fiction & Drama",
-                "kids" to "Kids & Family",
-                "self_improvement" to "Self-Improvement"
-            ).map { (genreId, title) ->
-                buildBrowsableItem(
-                    id = "explore_curated_$genreId",
+                "News" to "News",
+                "Technology" to "Tech",
+                "Business" to "Business",
+                "Comedy" to "Comedy",
+                "True Crime" to "True Crime",
+                "Sports" to "Sports",
+                "Health" to "Health",
+                "History" to "History",
+                "Arts" to "Arts",
+                "Society & Culture" to "Society",
+                "Education" to "Education",
+                "Science" to "Science",
+                "TV & Film" to "TV & Film",
+                "Fiction" to "Fiction",
+                "Music" to "Music",
+                "Religion & Spirituality" to "Religion",
+                "Kids & Family" to "Family",
+                "Leisure" to "Leisure",
+                "Government" to "Government",
+            ).map { (category, title) ->
+                AutoMediaItemFactory.browsable(
+                    id = "${AutoBrowseContract.GENRE_PREFIX}$category",
                     title = title,
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    extras = listExtras
+                    childStyleExtras = AutoBrowseContract.gridChildrenExtras(),
                 )
             }
+        }
+
+        private suspend fun getLibraryChildren(): List<MediaItem> =
+            getSubscriptionsChildren() + listOf(
+                AutoMediaItemFactory.browsable(
+                    id = AutoBrowseContract.LIBRARY_LIKED_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_liked_episodes),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+                ),
+                AutoMediaItemFactory.browsable(
+                    id = AutoBrowseContract.LIBRARY_HISTORY_ID,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_listening_history),
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                    singleItemStyle =
+                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+                ),
+            )
+
+        private suspend fun getLikedChildren(): List<MediaItem> {
+            val history = database.listeningHistoryDao().getLikedEpisodesList(50)
+            if (history.isEmpty()) return emptyList()
+            val items = history.map {
+                AutoMediaItemFactory.fromHistory(
+                    history = it,
+                    source = AutoBrowseContract.SOURCE_LIKED,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        it.episodeImageUrl ?: it.podcastImageUrl,
+                    ),
+                    subtitle = AutoMediaItemFactory.buildDurationSubtitle(
+                        it.podcastName,
+                        it.durationMs,
+                    ),
+                    groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_liked),
+                )
+            }
+            return if (items.size > 1) {
+                listOf(
+                    buildPlayAllItem(
+                        AutoBrowseContract.PLAY_ALL_LIKED_ID,
+                        items.size,
+                        AutoBrowseContract.SOURCE_LIKED,
+                    ),
+                ) + items
+            } else {
+                items
+            }
+        }
+
+        private suspend fun getHistoryChildren(): List<MediaItem> =
+            database.listeningHistoryDao().getRecentHistoryList(50).map {
+                AutoMediaItemFactory.fromHistory(
+                    history = it,
+                    source = AutoBrowseContract.SOURCE_HISTORY,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        it.episodeImageUrl ?: it.podcastImageUrl,
+                    ),
+                    subtitle = AutoMediaItemFactory.buildDurationSubtitle(
+                        it.podcastName,
+                        it.durationMs,
+                    ),
+                    groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_history),
+                )
+            }
+
+        private suspend fun getMixtapeChildren(): List<MediaItem> {
+            val now = System.currentTimeMillis()
+            if (lastMixtape.isNotEmpty() && now - lastMixtapeUpdatedAt < 15 * 60_000L) {
+                return lastMixtape
+            }
+            val subscriptionEntities = database.podcastDao().getSubscribedPodcastsList()
+            val subscriptions = subscriptionEntities.map { it.toAutoPodcast() }
+            val history = database.listeningHistoryDao().getRecentHistoryList(300)
+            var result = cx.aswin.boxcast.core.data.MixtapeEngine.build(
+                subscriptions = subscriptions,
+                history = history,
+            )
+            if (result.episodes.size < 3) {
+                val recommendations = runCatching {
+                    kotlinx.coroutines.withTimeout(6_000L) {
+                        smartQueueSources.getPersonalizedRecommendations(
+                            history = smartQueueSources.getHistoryForRecommendations(25),
+                            interests = smartQueueSources.getInterests(),
+                            country = smartQueueSources.getRegion(),
+                            subscribedPodcastIds = subscriptions.map { it.id },
+                            subscribedGenres = subscriptionEntities.mapNotNull { it.genre }.distinct(),
+                        )
+                    }
+                }.onFailure {
+                    android.util.Log.w("AutoBrowse", "Mixtape fallback unavailable", it)
+                }.getOrDefault(emptyList())
+                result = cx.aswin.boxcast.core.data.MixtapeEngine.build(
+                    subscriptions = subscriptions,
+                    history = history,
+                    recommendations = recommendations,
+                )
+            }
+            val episodes = result.podcasts.mapNotNull { podcast ->
+                podcast.latestEpisode?.let { episode ->
+                    AutoMediaItemFactory.fromEpisode(
+                        episode = episode,
+                        source = AutoBrowseContract.SOURCE_MIXTAPE,
+                        artworkUri = AutoArtworkRepository.remoteUri(
+                            this@BoxLorePlaybackService,
+                            episode.imageUrl ?: episode.podcastImageUrl ?: podcast.imageUrl,
+                        ),
+                        podcastTitle = podcast.title,
+                        groupTitle = getString(
+                            cx.aswin.boxcast.core.data.R.string.auto_group_mixtape,
+                        ),
+                    )
+                }
+            }
+            val items = if (episodes.size > 1) {
+                listOf(
+                    buildPlayAllItem(
+                        AutoBrowseContract.PLAY_ALL_MIXTAPE_ID,
+                        episodes.size,
+                        AutoBrowseContract.SOURCE_MIXTAPE,
+                    ),
+                ) + episodes
+            } else {
+                episodes
+            }
+            lastMixtape = items
+            lastMixtapeUpdatedAt = now
+            return items
+        }
+
+        private suspend fun getQueueChildren(): List<MediaItem> =
+            queueRepository.getQueueSnapshot().take(50).map { episode ->
+                AutoMediaItemFactory.fromEpisode(
+                    episode = episode,
+                    source = AutoBrowseContract.SOURCE_QUEUE,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        episode.imageUrl ?: episode.podcastImageUrl,
+                    ),
+                    podcastTitle = episode.podcastTitle,
+                    mediaIdPrefix = QUEUE_PREFIX,
+                    groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_queue),
+                )
+            }
+
+        private suspend fun getDownloadsChildren(): List<MediaItem> {
+            val items = getDownloadEpisodeItems()
+            return if (items.size > 1) {
+                listOf(
+                    buildPlayAllItem(
+                        AutoBrowseContract.PLAY_ALL_DOWNLOADS_ID,
+                        items.size,
+                        AutoBrowseContract.SOURCE_DOWNLOADS,
+                    ),
+                ) + items
+            } else {
+                items
+            }
+        }
+
+        private suspend fun getDownloadEpisodeItems(): List<MediaItem> =
+            database.downloadedEpisodeDao().getCompletedDownloads(50).map { download ->
+                val sourceUri = when {
+                    download.localFilePath.isNotBlank() &&
+                        download.localFilePath != "CACHED" &&
+                        java.io.File(download.localFilePath).exists() ->
+                        android.net.Uri.fromFile(java.io.File(download.localFilePath)).toString()
+                    else -> resolveDownloadRequestUri(download.episodeId)
+                        ?: database.listeningHistoryDao()
+                        .getHistoryItem(download.episodeId)
+                        ?.episodeAudioUrl
+                        ?: queueRepository.getQueueItemByEpisodeId(download.episodeId)?.audioUrl
+                }
+                AutoMediaItemFactory.fromDownload(
+                    download = download,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        download.episodeImageUrl ?: download.podcastImageUrl,
+                    ),
+                    uri = sourceUri,
+                    groupTitle = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_group_downloads,
+                    ),
+                )
+            }
+
+        private fun resolveDownloadRequestUri(episodeId: String): String? =
+            runCatching {
+                cx.aswin.boxcast.core.data.DownloadRepository
+                    .getDownloadManager(this@BoxLorePlaybackService)
+                    .downloadIndex
+                    .getDownload(episodeId)
+                    ?.request
+                    ?.uri
+                    ?.toString()
+            }.onFailure {
+                android.util.Log.w(
+                    "AutoBrowse",
+                    "Unable to resolve cached download URI for $episodeId",
+                    it,
+                )
+            }.getOrNull()
+
+        private suspend fun getDrivePicksChildren(): List<MediaItem> {
+            val calendar = java.util.Calendar.getInstance()
+            val driveVibes = AutoBrowseContract.driveVibes(calendar)
+            val region = kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+                userPreferencesRepository.regionStream.first()
+            } ?: "us"
+            val driveFeeds = kotlinx.coroutines.withTimeoutOrNull(6_000L) {
+                podcastRepository.getCuratedVibes(driveVibes, region)
+            }.orEmpty()
+            val fallbackFeeds = if (driveFeeds.values.all { it.isEmpty() }) {
+                val fallbackIds = getTimeBasedGenres(
+                    calendar.get(java.util.Calendar.HOUR_OF_DAY),
+                ).map { it.first }
+                kotlinx.coroutines.withTimeoutOrNull(6_000L) {
+                    podcastRepository.getCuratedVibes(fallbackIds, region)
+                }.orEmpty()
+            } else {
+                emptyMap()
+            }
+            val completedIds = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()
+            val recentIds = database.listeningHistoryDao()
+                .getRecentHistoryList(30)
+                .mapTo(mutableSetOf()) { it.episodeId }
+            val feedMap = if (driveFeeds.values.any { it.isNotEmpty() }) {
+                driveFeeds
+            } else {
+                fallbackFeeds
+            }
+            val episodes = (driveVibes + feedMap.keys.sorted())
+                .distinct()
+                .flatMap { feedMap[it].orEmpty() }
+                .distinctBy { it.id }
+                .mapNotNull { podcast ->
+                    podcast.latestEpisode?.let { episode -> episode to podcast }
+                }
+                .filter { (episode, _) ->
+                    episode.id !in completedIds && episode.id !in recentIds
+                }
+                .take(20)
+            if (episodes.isEmpty()) {
+                return lastDrivePicks.ifEmpty {
+                    val downloads = getDownloadEpisodeItems()
+                    if (downloads.isNotEmpty()) downloads.take(20) else getQueueChildren().take(20)
+                }
+            }
+
+            val items = episodes.map { (episode, podcast) ->
+                AutoMediaItemFactory.fromEpisode(
+                    episode = episode.copy(
+                        podcastId = podcast.id,
+                        podcastTitle = podcast.title,
+                        podcastArtist = podcast.artist,
+                        podcastImageUrl = podcast.imageUrl,
+                    ),
+                    source = AutoBrowseContract.SOURCE_DRIVE,
+                    artworkUri = AutoArtworkRepository.remoteUri(
+                        this@BoxLorePlaybackService,
+                        episode.imageUrl ?: podcast.imageUrl,
+                    ),
+                    podcastTitle = podcast.title,
+                    groupTitle = getString(cx.aswin.boxcast.core.data.R.string.auto_group_drive),
+                )
+            }
+            val result = if (items.size > 1) {
+                listOf(
+                    buildPlayAllItem(
+                        AutoBrowseContract.PLAY_ALL_DRIVE_ID,
+                        items.size,
+                        AutoBrowseContract.SOURCE_DRIVE,
+                    ),
+                ) + items
+            } else {
+                items
+            }
+            lastDrivePicks = result
+            return result
         }
         
         private suspend fun getNewEpisodesChildren(): List<MediaItem> {
@@ -2071,41 +3003,28 @@ class BoxLorePlaybackService : MediaLibraryService() {
             
             val items = mutableListOf<MediaItem>()
             
-            // Inject Virtual Play All Item
             items.add(
-                MediaItem.Builder()
-                    .setMediaId(PLAY_ALL_NEW_EPISODES_ID)
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle("Play All (${newEpisodes.size} episodes)")
-                            .setArtist("Plays latest from each subscription")
-                            .setIsPlayable(true)
-                            .setIsBrowsable(false)
-                            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                            .build()
-                    )
-                    .build()
+                buildPlayAllItem(
+                    PLAY_ALL_NEW_EPISODES_ID,
+                    newEpisodes.size,
+                    AutoBrowseContract.SOURCE_NEW,
+                ),
             )
             
             items.addAll(
                 newEpisodes.map { (ep, pod) ->
-                    val artworkUri = android.net.Uri.parse(ep.imageUrl ?: pod.imageUrl)
-                    
-                    MediaItem.Builder()
-                        .setMediaId("episode:${ep.id}")
-                        .setUri(ep.audioUrl)
-                        .setMediaMetadata(
-                            MediaMetadata.Builder()
-                                .setTitle(ep.title)
-                                .setSubtitle(pod.title)
-                                .setArtist(pod.author)
-                                .setArtworkUri(artworkUri)
-                                .setIsPlayable(true)
-                                .setIsBrowsable(false)
-                                .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                                .build()
-                        )
-                        .build()
+                    AutoMediaItemFactory.fromEpisode(
+                        episode = ep,
+                        source = AutoBrowseContract.SOURCE_NEW,
+                        artworkUri = AutoArtworkRepository.remoteUri(
+                            this@BoxLorePlaybackService,
+                            ep.imageUrl ?: pod.imageUrl,
+                        ),
+                        podcastTitle = pod.title,
+                        groupTitle = getString(
+                            cx.aswin.boxcast.core.data.R.string.auto_group_new,
+                        ),
+                    )
                 }
             )
             
@@ -2113,27 +3032,75 @@ class BoxLorePlaybackService : MediaLibraryService() {
         }
         
         private suspend fun getCuratedChildren(vibeId: String): List<MediaItem> {
-            val curatedPodcasts = podcastRepository.getCuratedPodcasts(vibeId)
-            android.util.Log.d("AutoBrowse", "Curated $vibeId: ${curatedPodcasts.size} podcasts")
-            
-            return curatedPodcasts.map { podcast ->
-                val artworkUri = android.net.Uri.parse(podcast.imageUrl)
-                
-                MediaItem.Builder()
-                    .setMediaId("$SUBSCRIPTION_PREFIX${podcast.id}")
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(podcast.title)
-                            .setSubtitle(podcast.artist)
-                            .setArtist(podcast.artist)
-                            .setArtworkUri(artworkUri)
-                            .setIsPlayable(false)
-                            .setIsBrowsable(true)
-                            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST)
-                            .build()
-                    )
-                    .build()
-            }
+            legacyAutoGenreCategory(vibeId)?.let { return getGenreChildren(it) }
+            val region = kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+                userPreferencesRepository.regionStream.first()
+            } ?: "us"
+            val curatedPodcasts = podcastRepository.getCuratedPodcasts(
+                vibeId,
+                region,
+            )
+            android.util.Log.d(
+                "AutoBrowse",
+                "Curated $vibeId: ${curatedPodcasts.size} podcasts",
+            )
+            return buildPodcastFolderItems(curatedPodcasts)
+        }
+
+        private suspend fun getGenreChildren(category: String): List<MediaItem> {
+            val region = kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+                userPreferencesRepository.regionStream.first()
+            } ?: "us"
+            val podcasts = kotlinx.coroutines.withTimeoutOrNull(6_000L) {
+                podcastRepository.getTrendingPodcasts(
+                    country = region,
+                    limit = 50,
+                    category = category.lowercase(),
+                )
+            }.orEmpty()
+            android.util.Log.d(
+                "AutoBrowse",
+                "Genre chart category=$category country=$region: ${podcasts.size} podcasts",
+            )
+            return buildPodcastFolderItems(podcasts)
+        }
+
+        private fun buildPodcastFolderItems(
+            podcasts: List<cx.aswin.boxcast.core.model.Podcast>,
+        ): List<MediaItem> = podcasts.map { podcast ->
+            AutoMediaItemFactory.browsable(
+                id = "$SUBSCRIPTION_PREFIX${podcast.id}",
+                title = podcast.title,
+                subtitle = podcast.artist,
+                artworkUri = AutoArtworkRepository.remoteUri(
+                    this@BoxLorePlaybackService,
+                    podcast.imageUrl,
+                ),
+                mediaType = MediaMetadata.MEDIA_TYPE_PODCAST,
+                childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                singleItemStyle =
+                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+            )
+        }
+
+        private fun legacyAutoGenreCategory(genreId: String): String? = when (genreId) {
+            "true_crime" -> "True Crime"
+            "comedy" -> "Comedy"
+            "news" -> "News"
+            "technology" -> "Technology"
+            "science" -> "Science"
+            "health" -> "Health"
+            "business" -> "Business"
+            "sports" -> "Sports"
+            "history" -> "History"
+            "society" -> "Society & Culture"
+            "education" -> "Education"
+            "arts" -> "Arts"
+            "music" -> "Music"
+            "fiction" -> "Fiction"
+            "kids" -> "Kids & Family"
+            "self_improvement" -> "Health"
+            else -> null
         }
 
         private suspend fun getPodcastEpisodes(podcastId: String): List<MediaItem> {
@@ -2146,34 +3113,67 @@ class BoxLorePlaybackService : MediaLibraryService() {
             // Fetch latest episodes (limit to 50 for Auto performance)
             val episodes = podcastRepository.getEpisodesPaginated(podcastId, limit = 50, sort = "newest")
             android.util.Log.d("AutoBrowse", "Got ${episodes.episodes.size} episodes for $podcastId")
+            val historyById = database.listeningHistoryDao()
+                .getRecentHistoryList(300)
+                .associateBy { it.episodeId }
             
             return episodes.episodes.map { episode ->
-                val artworkUri = (episode.imageUrl ?: podcastArtwork)
-                    ?.let { android.net.Uri.parse(it) }
-                
-                // Show duration in subtitle
-                val durationText = formatDuration(episode.duration.toLong() * 1000)
-                val subtitle = "${podcastEntity?.title ?: "Podcast"} · $durationText"
-                
-                MediaItem.Builder()
-                    .setMediaId("episode:${episode.id}")
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(episode.title)
-                            .setSubtitle(subtitle)
-                            .setArtist(podcastEntity?.author ?: "")
-                            .setArtworkUri(artworkUri)
-                            .setIsPlayable(true)
-                            .setIsBrowsable(false)
-                            .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                            .build()
-                    )
-                    .setUri(episode.audioUrl)
-                    .build()
+                val history = historyById[episode.id]
+                AutoMediaItemFactory.playable(
+                    AutoPlayableSpec(
+                        mediaId = "episode:${episode.id}",
+                        title = episode.title,
+                        podcastTitle = podcastEntity?.title ?: episode.podcastTitle,
+                        subtitle = AutoMediaItemFactory.buildDurationSubtitle(
+                            podcastEntity?.title ?: episode.podcastTitle,
+                            episode.duration.toLong() * 1_000L,
+                        ),
+                        artworkUri = AutoArtworkRepository.remoteUri(
+                            this@BoxLorePlaybackService,
+                            episode.imageUrl ?: podcastArtwork,
+                        ),
+                        uri = episode.audioUrl,
+                        durationMs = episode.duration.toLong() * 1_000L,
+                        source = AutoBrowseContract.SOURCE_DISCOVER,
+                        progress = history?.let {
+                            if (it.durationMs > 0) {
+                                it.progressMs.toDouble() / it.durationMs.toDouble()
+                            } else {
+                                0.0
+                            }
+                        },
+                        isCompleted = history?.isCompleted == true,
+                        customCacheKey = episode.id,
+                    ),
+                )
             }
         }
 
         // ============= Helpers =============
+
+        private fun buildPlayAllItem(id: String, count: Int, source: String): MediaItem =
+            AutoMediaItemFactory.playable(
+                AutoPlayableSpec(
+                    mediaId = id,
+                    title = getString(cx.aswin.boxcast.core.data.R.string.auto_play_all, count),
+                    podcastTitle = getString(
+                        cx.aswin.boxcast.core.data.R.string.auto_play_all_subtitle,
+                    ),
+                    source = source,
+                    supportedCommands = emptyList(),
+                ),
+            )
+
+        private fun folderArtwork(folderId: String): android.net.Uri? =
+            autoCollageUris[folderId]
+                ?: AutoArtworkRepository.collageUri(this@BoxLorePlaybackService, folderId)
+
+        private fun slicePage(items: List<MediaItem>, page: Int, pageSize: Int): List<MediaItem> {
+            val safePageSize = pageSize.takeIf { it > 0 }?.coerceAtMost(50) ?: 50
+            val start = page.coerceAtLeast(0) * safePageSize
+            if (start >= items.size) return emptyList()
+            return items.subList(start, minOf(start + safePageSize, items.size))
+        }
 
         private fun buildBrowsableItem(
             id: String,

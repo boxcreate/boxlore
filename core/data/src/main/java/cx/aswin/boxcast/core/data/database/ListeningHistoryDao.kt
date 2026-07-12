@@ -81,6 +81,9 @@ interface ListeningHistoryDao {
     """)
     fun getLikedEpisodes(): Flow<List<ListeningHistoryEntity>>
 
+    @Query("SELECT * FROM listening_history WHERE isLiked = 1 ORDER BY lastPlayedAt DESC LIMIT :limit")
+    suspend fun getLikedEpisodesList(limit: Int = 50): List<ListeningHistoryEntity>
+
     @Query("UPDATE listening_history SET isLiked = :isLiked WHERE episodeId = :episodeId")
     suspend fun setLikeStatus(episodeId: String, isLiked: Boolean)
 

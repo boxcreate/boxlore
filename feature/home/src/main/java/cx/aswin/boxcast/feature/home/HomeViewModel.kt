@@ -9,6 +9,7 @@ import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxcast.core.data.MixtapeEngine
 import cx.aswin.boxcast.core.data.PodcastRepository
 import cx.aswin.boxcast.core.data.HomeBootstrapData
 import cx.aswin.boxcast.core.data.PodcastScoring
@@ -46,19 +47,6 @@ import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material.icons.rounded.Bedtime
-
-private const val MAX_MIXTAPE_ITEMS = 15
-private const val MIXTAPE_AFFINITY_WEIGHT = 0.8
-
-private data class MixtapeCandidate(
-    val episodeId: String,
-    val score: Double,
-    val isProgress: Boolean,
-    val podcast: Podcast,
-    val episode: Episode,
-    val progressMs: Long = 0L,
-    val durationMs: Long = 0L
-)
 
 @Immutable
 data class SmartHeroItem(
@@ -1221,202 +1209,20 @@ class HomeViewModel(
                         val mixtapeCount: Int
 
                         if (cachedMix != null && cachedCount != null && cachedUnplayed != null) {
-mixtapePodcasts = cachedMix
+                            mixtapePodcasts = cachedMix
                             mixtapeCount = cachedCount
                             currentUnplayedEpisodes = cachedUnplayed
                         } else {
-                            // 2. Mixtape Episodes Calculation & Scoring
-                            val nowMs = System.currentTimeMillis()
-
-                            // A. In-Progress Episodes (Deduplicated per podcast: take the most recently played)
-                            val inProgressCandidates = allHistory.filter { history ->
-                                if (history.isCompleted || history.progressMs <= 0L) return@filter false
-                                
-                                // 2. 30-day stale session decay rule
-                                if (nowMs - history.lastPlayedAt > 30L * 24L * 3600L * 1000L) return@filter false
-                                
-                                // 3. Intro/Outro rules for mixtape candidates
-                                val ratio = if (history.durationMs > 0L) history.progressMs.toDouble() / history.durationMs.toDouble() else 0.0
-                                val remainingMs = history.durationMs - history.progressMs
-                                if (ratio < 0.10) return@filter false
-                                if (ratio > 0.90 || (history.durationMs > 0L && remainingMs < 120_000L)) return@filter false
-                                
-                                true
-                            }.groupBy { it.podcastId }
-                             .mapValues { (_, eps) -> eps.maxByOrNull { it.lastPlayedAt } }
-                             .values.filterNotNull()
-
-                            val inProgressMixtapeCandidates = inProgressCandidates.mapNotNull { history ->
-                                val pod = subsMap[history.podcastId] ?: Podcast(
-                                    id = history.podcastId,
-                                    title = history.podcastName,
-                                    artist = "",
-                                    imageUrl = history.podcastImageUrl ?: "",
-                                    fallbackImageUrl = history.podcastImageUrl ?: "",
-                                    subscribedAt = 0L
-                                )
-                                val ep = Episode(
-                                    id = history.episodeId,
-                                    title = history.episodeTitle,
-                                    description = history.episodeDescription ?: "",
-                                    audioUrl = history.episodeAudioUrl ?: "",
-                                    imageUrl = history.episodeImageUrl,
-                                    duration = (history.durationMs / 1000L).toInt(),
-                                    podcastId = history.podcastId,
-                                    podcastTitle = history.podcastName
-                                )
-                                val isCompleted = historyByEpisode[ep.id]?.isCompleted == true
-                                if (isCompleted) null else pod to ep to history
-                            }.map { (podAndEp, history) ->
-                                val (pod, ep) = podAndEp
-                                val parentPodScore = podScoresMap[history.podcastId] ?: 0.0
-                                val progressRatio = if (history.durationMs > 0L) {
-                                    history.progressMs.toDouble() / history.durationMs.toDouble()
-                                } else 0.0
-                                val score = 1000.0 + progressRatio * 500.0 + MIXTAPE_AFFINITY_WEIGHT * parentPodScore
-                                MixtapeCandidate(
-                                    podcast = pod,
-                                    episode = ep,
-                                    score = score,
-                                    isProgress = true,
-                                    progressMs = history.progressMs,
-                                    durationMs = history.durationMs,
-                                    episodeId = ep.id
-                                )
-                            }
-
-                            // B. Unplayed New Drops (Episodes published after subscription date)
-                            val unplayedDropsCandidates = subs.mapNotNull { pod ->
-                                val latestEp = pod.latestEpisode
-                                if (latestEp != null) {
-                                    val history = historyByEpisode[latestEp.id]
-                                    val isUnplayed = history == null || (history.progressMs == 0L && !history.isCompleted)
-                                    if (isUnplayed) {
-                                        pod to latestEp.copy(podcastTitle = pod.title, podcastId = pod.id)
-                                    } else null
-                                } else null
-                            }
-
-                            val unplayedDropsMixtapeCandidates = unplayedDropsCandidates.map { (pod, ep) ->
-                                val isNewRelease = ep.publishedDate > (pod.subscribedAt / 1000L)
-                                val freshnessBoost = if (isNewRelease) {
-                                    val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
-                                    500.0 / (1.0 + hoursSinceRelease.coerceAtLeast(0.0) / 24.0)
-                                } else 0.0
-                                val newTagBoost = if (isNewRelease) 200.0 else 0.0
-                                val serialBoost = if (pod.preferredSort == "oldest") 150.0 else 0.0
-                                val parentPodScore = podScoresMap[pod.id] ?: 0.0
-                                val score = 500.0 + freshnessBoost + newTagBoost + serialBoost + MIXTAPE_AFFINITY_WEIGHT * parentPodScore
-                                MixtapeCandidate(
-                                    podcast = pod,
-                                    episode = ep,
-                                    score = score,
-                                    isProgress = false,
-                                    progressMs = 0L,
-                                    durationMs = 0L,
-                                    episodeId = ep.id
-                                )
-                            }
-
-                            // C. Merge and sort candidates
-                            val allMixtapeCandidates = (inProgressMixtapeCandidates + unplayedDropsMixtapeCandidates)
-                            val deduplicatedCandidates = mutableListOf<MixtapeCandidate>()
-                            val seenEpisodeIds = mutableSetOf<String>()
-                            for (cand in allMixtapeCandidates) {
-                                if (seenEpisodeIds.add(cand.episodeId)) {
-                                    deduplicatedCandidates.add(cand)
-                                }
-                            }
-
-                            val inProgressList = deduplicatedCandidates.filter { it.isProgress }
-                                .sortedByDescending { it.score }
-                                .toMutableList()
-
-                            val unplayedList = deduplicatedCandidates.filter { !it.isProgress }
-                                .sortedByDescending { it.score }
-                                .toMutableList()
-
-                            val orderedCandidates = mutableListOf<MixtapeCandidate>()
-
-                            for (ipCand in inProgressList) {
-                                orderedCandidates.add(ipCand)
-                                // Find the corresponding unplayed next episode for this podcast
-                                val nextEpCand = unplayedList.find { it.podcast.id == ipCand.podcast.id }
-                                if (nextEpCand != null) {
-                                    orderedCandidates.add(nextEpCand)
-                                    unplayedList.remove(nextEpCand)
-                                }
-                            }
-                            // Add the remaining unplayed candidates
-                            orderedCandidates.addAll(unplayedList)
-
-                            val top10Candidates = orderedCandidates.take(MAX_MIXTAPE_ITEMS).toMutableList()
-
-                            // D. Trending/Popular Episode Fallback for Empty States
-                            if (top10Candidates.size < 3) {
-                                val remaining = 3 - top10Candidates.size
-                                val fallbackEpisodes = wrapper.recommendations.filter { ep ->
-                                    val hist = historyByEpisode[ep.id]
-                                    val isUnplayed = hist == null || (hist.progressMs == 0L && !hist.isCompleted)
-                                    isUnplayed && top10Candidates.none { it.episodeId == ep.id }
-                                }.take(remaining)
-                                
-                                fallbackEpisodes.forEach { ep ->
-                                    val matchingPod = subsMap[ep.podcastId] ?: Podcast(
-                                        id = ep.podcastId ?: "",
-                                        title = ep.podcastTitle ?: "",
-                                        artist = "",
-                                        imageUrl = ep.imageUrl ?: "",
-                                        fallbackImageUrl = ep.imageUrl ?: ""
-                                    )
-                                    top10Candidates.add(
-                                        MixtapeCandidate(
-                                            podcast = matchingPod,
-                                            episode = ep,
-                                            score = 100.0,
-                                            isProgress = false,
-                                            progressMs = 0L,
-                                            durationMs = 0L,
-                                            episodeId = ep.id
-                                        )
-                                    )
-                                }
-                            }
-
-                            val finalCandidates = top10Candidates
-
-                            // E. Map to Podcast objects
-                            android.util.Log.d("HomeViewModelResolve", "Mixtape Final Candidates List: size=${finalCandidates.size}")
-                            mixtapePodcasts = finalCandidates.mapIndexed { idx, cand ->
-                                val ratio = if (cand.durationMs > 0) {
-                                    (cand.progressMs.toFloat() / cand.durationMs.toFloat()).coerceIn(0f, 1f)
-                                } else if (cand.isProgress) {
-                                    0.5f
-                                } else {
-                                    0.0f
-                                }
-
-                                val status = when {
-                                    cand.isProgress -> EpisodeStatus.IN_PROGRESS
-                                    historyByEpisode[cand.episodeId]?.isCompleted == true -> EpisodeStatus.COMPLETED
-                                    else -> EpisodeStatus.UNPLAYED
-                                }
-
-                                android.util.Log.d("HomeViewModelResolve", "Mixtape Candidate[$idx]: pod=${cand.podcast.title} ep=${cand.episode.title} status=$status isProgress=${cand.isProgress} ratio=$ratio")
-
-                                cand.podcast.copy(
-                                    latestEpisode = cand.episode,
-                                    resumeProgress = if (status == EpisodeStatus.IN_PROGRESS) ratio else if (status == EpisodeStatus.COMPLETED) 1f else null,
-                                    episodeStatus = status
-                                )
-                            }
-
-                            mixtapeCount = finalCandidates.count { cand ->
-                                val isCompleted = historyByEpisode[cand.episodeId]?.isCompleted == true
-                                !isCompleted
-                            }
-
-                            currentUnplayedEpisodes = finalCandidates.map { it.episode }
+                            val result = MixtapeEngine.build(
+                                subscriptions = subs,
+                                history = allHistory,
+                                resolvedSerialEpisodes = _resolvedSerialEpisodes.value,
+                                recommendations = wrapper.recommendations,
+                                podcastScores = podScoresMap,
+                            )
+                            mixtapePodcasts = result.podcasts
+                            mixtapeCount = result.unplayedCount
+                            currentUnplayedEpisodes = result.episodes
 
                             // Save to session cache
                             stableMixtapePodcasts = mixtapePodcasts

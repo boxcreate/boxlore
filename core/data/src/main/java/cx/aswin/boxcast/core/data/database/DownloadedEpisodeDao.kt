@@ -14,6 +14,9 @@ interface DownloadedEpisodeDao {
     @Query("SELECT * FROM downloaded_episodes")
     suspend fun getAllDownloadsSync(): List<DownloadedEpisodeEntity>
 
+    @Query("SELECT * FROM downloaded_episodes WHERE status = 2 ORDER BY downloadedAt DESC LIMIT :limit")
+    suspend fun getCompletedDownloads(limit: Int = 50): List<DownloadedEpisodeEntity>
+
     @Query("SELECT * FROM downloaded_episodes WHERE episodeId = :episodeId")
     suspend fun getDownload(episodeId: String): DownloadedEpisodeEntity?
 
