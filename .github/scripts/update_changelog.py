@@ -644,6 +644,8 @@ def _render_readme_upcoming_block(content: str, groups: list[dict[str, list[str]
     if not body.startswith("<ul") and not body.startswith("<b>"):
         body = f'<p align="left">\n{body}\n</p>'
 
+    body = body + '\n<p align="left">For more details, refer to <a href="CHANGELOG.md">CHANGELOG.md</a>.</p>'
+
     return (
         f"{UPCOMING_CHANGES_START}\n"
         '<div align="center">\n\n'
