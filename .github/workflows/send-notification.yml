@@ -77,6 +77,10 @@ on:
         options:
         - 'true'
         - 'false'
+      category:
+        description: 'In-App category badge label'
+        required: true
+        default: "WHAT'S NEW"
 
 jobs:
   send-notification:
@@ -111,4 +115,5 @@ jobs:
             --sound "${{ inputs.sound }}" \
             --action-label "${{ inputs.action_label }}" \
             --show-action-in-push "${{ inputs.show_action_in_push }}" \
-            --show-action-in-app "${{ inputs.show_action_in_app }}"
+            --show-action-in-app "${{ inputs.show_action_in_app }}" \
+            --category "${{ inputs.category }}"

@@ -452,6 +452,7 @@ class UserPreferencesRepository(context: Context) {
         val ACTION_LABEL = stringPreferencesKey("announcement_action_label")
         val SHOW_ACTION_IN_APP = androidx.datastore.preferences.core.booleanPreferencesKey("announcement_show_action_in_app")
         val TIMESTAMP = androidx.datastore.preferences.core.longPreferencesKey("announcement_timestamp")
+        val CATEGORY = stringPreferencesKey("announcement_category")
     }
     
     data class Announcement(
@@ -461,7 +462,8 @@ class UserPreferencesRepository(context: Context) {
         val imageUrl: String?, 
         val actionLabel: String?, 
         val showActionInApp: Boolean, 
-        val timestamp: Long
+        val timestamp: Long,
+        val category: String
     )
     
     val activeAnnouncementStream: Flow<Announcement?> = dataStore.data
@@ -477,7 +479,8 @@ class UserPreferencesRepository(context: Context) {
                     imageUrl = pref[AnnouncementKeys.IMAGE_URL],
                     actionLabel = pref[AnnouncementKeys.ACTION_LABEL],
                     showActionInApp = pref[AnnouncementKeys.SHOW_ACTION_IN_APP] ?: true,
-                    timestamp = pref[AnnouncementKeys.TIMESTAMP] ?: 0L
+                    timestamp = pref[AnnouncementKeys.TIMESTAMP] ?: 0L,
+                    category = pref[AnnouncementKeys.CATEGORY] ?: "WHAT'S NEW"
                 )
             } else null
         }
@@ -490,6 +493,7 @@ class UserPreferencesRepository(context: Context) {
         imageUrl: String?, 
         actionLabel: String?, 
         showActionInApp: Boolean, 
+        category: String,
         timestamp: Long
     ) {
         dataStore.edit {
@@ -499,6 +503,7 @@ class UserPreferencesRepository(context: Context) {
             if (imageUrl != null) it[AnnouncementKeys.IMAGE_URL] = imageUrl else it.remove(AnnouncementKeys.IMAGE_URL)
             if (actionLabel != null) it[AnnouncementKeys.ACTION_LABEL] = actionLabel else it.remove(AnnouncementKeys.ACTION_LABEL)
             it[AnnouncementKeys.SHOW_ACTION_IN_APP] = showActionInApp
+            it[AnnouncementKeys.CATEGORY] = category
             it[AnnouncementKeys.TIMESTAMP] = timestamp
         }
     }
@@ -511,6 +516,7 @@ class UserPreferencesRepository(context: Context) {
             pref.remove(AnnouncementKeys.IMAGE_URL)
             pref.remove(AnnouncementKeys.ACTION_LABEL)
             pref.remove(AnnouncementKeys.SHOW_ACTION_IN_APP)
+            pref.remove(AnnouncementKeys.CATEGORY)
             pref.remove(AnnouncementKeys.TIMESTAMP)
         }
     }

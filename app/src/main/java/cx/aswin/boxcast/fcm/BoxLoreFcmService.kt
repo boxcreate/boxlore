@@ -60,7 +60,8 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                     parsed.route,
                     parsed.imageUrl,
                     parsed.actionLabel,
-                    parsed.showActionInApp
+                    parsed.showActionInApp,
+                    parsed.category
                 )
             }
 
@@ -216,11 +217,12 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         route: String?, 
         imageUrl: String?, 
         actionLabel: String?, 
-        showActionInApp: Boolean
+        showActionInApp: Boolean,
+        category: String
     ) {
         val prefs = UserPreferencesRepository(applicationContext)
         CoroutineScope(Dispatchers.IO).launch {
-            prefs.setAnnouncement(title, body, route, imageUrl, actionLabel, showActionInApp, System.currentTimeMillis())
+            prefs.setAnnouncement(title, body, route, imageUrl, actionLabel, showActionInApp, category, System.currentTimeMillis())
         }
     }
 

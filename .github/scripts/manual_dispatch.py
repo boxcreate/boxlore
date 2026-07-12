@@ -23,7 +23,8 @@ def send_notification(args):
         'sound': getattr(args, 'sound', 'default'),
         'action_label': getattr(args, 'action_label', 'View'),
         'show_action_in_push': getattr(args, 'show_action_in_push', 'true'),
-        'show_action_in_app': getattr(args, 'show_action_in_app', 'true')
+        'show_action_in_app': getattr(args, 'show_action_in_app', 'true'),
+        'category': getattr(args, 'category', "WHAT'S NEW")
     }
     
     if args.route:
@@ -70,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('--action-label', required=False, default="View", help='Action Button Text')
     parser.add_argument('--show-action-in-push', required=False, default="true", help='Show action in push')
     parser.add_argument('--show-action-in-app', required=False, default="true", help='Show action in app')
+    parser.add_argument('--category', required=False, default="WHAT'S NEW", help='In-App category badge label')
     
     args = parser.parse_args()
     send_notification(args)

@@ -12,7 +12,8 @@ data class ParsedFcmNotification(
     val sound: String,
     val actionLabel: String,
     val showActionInPush: Boolean,
-    val showActionInApp: Boolean
+    val showActionInApp: Boolean,
+    val category: String
 )
 
 /**
@@ -31,6 +32,7 @@ object FcmPayloadParser {
         val actionLabel = data["action_label"] ?: "View"
         val showActionInPush = data["show_action_in_push"] != "false"
         val showActionInApp = data["show_action_in_app"] != "false"
+        val category = data["category"] ?: "WHAT'S NEW"
 
         return ParsedFcmNotification(
             title = title,
@@ -41,7 +43,8 @@ object FcmPayloadParser {
             sound = sound,
             actionLabel = actionLabel,
             showActionInPush = showActionInPush,
-            showActionInApp = showActionInApp
+            showActionInApp = showActionInApp,
+            category = category
         )
     }
 }
