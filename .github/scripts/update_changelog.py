@@ -610,7 +610,7 @@ def _render_readme_upcoming_body(groups: list[dict[str, list[str]]] | None = Non
     if groups:
         visible = [g for g in groups if g.get("bullets")]
         if not visible:
-            return 'We are currently focusing on offline playback enhancements, database indexing optimizations, and search query auto-completions.'
+            return 'New features and improvements for the next release are currently in development.'
 
         sections: list[str] = []
         for group in visible:
@@ -625,7 +625,7 @@ def _render_readme_upcoming_body(groups: list[dict[str, list[str]]] | None = Non
         items = "\n".join(_bullet_to_html_list_item(b) for b in bullets)
         return f'<ul align="left">\n{items}\n</ul>'
     else:
-        return 'We are currently focusing on offline playback enhancements, database indexing optimizations, and search query auto-completions.'
+        return 'New features and improvements for the next release are currently in development.'
 
 
 def _render_readme_upcoming_block(content: str, groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:

@@ -40,11 +40,10 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 
 <details>
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
-<b>🆕 New features:</b>
-<ul align="left">
-<li>Playback boundary configurations including skip beginning and end playback settings.</li>
-<li>Native RSS feed podcast source support.</li>
-</ul>
+<p align="left">
+New features and improvements for the next release are currently in development.
+</p>
+<p align="left">For more details, refer to <a href="CHANGELOG.md">CHANGELOG.md</a>.</p>
 </details>
 
 <br/>
