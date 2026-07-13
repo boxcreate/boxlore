@@ -454,6 +454,27 @@ jobs:
             printf '%s' "$1" | tr -d '[:space:]:' | tr '[:lower:]' '[:upper:]'
           }
 
+          # apksigner may wrap colon-separated digests across lines; a single-line
+          # awk field previously produced apk_len=24 in CI.
+          extract_sha256_digest() {
+            DIGEST_BLOB="$1" python3 - <<'PY'
+import os, re
+blob = os.environ.get("DIGEST_BLOB", "")
+flat = " ".join(blob.splitlines())
+patterns = (
+    r"SHA-?256 digest:\s*((?:[0-9A-Fa-f]{2}:\s*){31}[0-9A-Fa-f]{2})",
+    r"SHA-?256 digest:\s*([0-9A-Fa-f]{64})",
+    r"SHA256:\s*((?:[0-9A-Fa-f]{2}:\s*){31}[0-9A-Fa-f]{2})",
+    r"SHA256:\s*([0-9A-Fa-f]{64})",
+)
+for pat in patterns:
+    match = re.search(pat, flat, flags=re.I)
+    if match:
+        print(re.sub(r"[^0-9A-Fa-f]", "", match.group(1)).upper())
+        break
+PY
+          }
+
           sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
           if [[ -z "$sdk_root" ]]; then
             echo "::error::ANDROID_SDK_ROOT/ANDROID_HOME is not set"
@@ -480,6 +501,7 @@ jobs:
             ls -la "$sdk_root/build-tools" || true
             exit 1
           }
+          echo "Using apksigner at ${apksigner}"
 
           apk_summary="$("$apkanalyzer" apk summary "$apk")"
           read -r apk_application_id apk_version_code apk_version <<< "$apk_summary"
@@ -531,37 +553,32 @@ jobs:
             exit 1
           fi
 
-          keystore_cert="$(
+          keystore_blob="$(
             keytool -list -v \
               -keystore app/release.keystore \
               -alias upload \
-              -storepass:env KEY_STORE_PASSWORD 2>/dev/null |
-              awk '/SHA256:/{print $2; exit}'
+              -storepass:env KEY_STORE_PASSWORD 2>/dev/null
           )"
-          keystore_cert="$(normalize_sha256 "$keystore_cert")"
+          keystore_cert="$(extract_sha256_digest "$keystore_blob")"
 
           # APK Signature Scheme v2/v3 is readable via apksigner, not keytool.
-          apk_cert="$(
-            "$apksigner" verify --print-certs "$apk" |
-              awk -F': ' '/certificate SHA-256 digest/{print $2; exit}'
-          )"
-          apk_cert="$(normalize_sha256 "$apk_cert")"
+          apk_certs_blob="$("$apksigner" verify --print-certs "$apk" 2>&1)"
+          apk_cert="$(extract_sha256_digest "$apk_certs_blob")"
 
           # AABs still carry a JAR signature that keytool can read.
           # Do not use jarsigner -strict here: modern JDKs often exit 4 on
           # non-fatal algorithm/chain warnings even when the signature is valid.
           jarsigner -verify "$aab" >/dev/null
-          aab_cert="$(
-            keytool -printcert -jarfile "$aab" 2>/dev/null |
-              awk '/SHA256:/{print $2; exit}'
-          )"
-          aab_cert="$(normalize_sha256 "$aab_cert")"
+          aab_blob="$(keytool -printcert -jarfile "$aab" 2>/dev/null)"
+          aab_cert="$(extract_sha256_digest "$aab_blob")"
 
           if ! [[ "$keystore_cert" =~ ^[0-9A-F]{64}$ &&
                   "$apk_cert" =~ ^[0-9A-F]{64}$ &&
                   "$aab_cert" =~ ^[0-9A-F]{64}$ ]]; then
             echo "::error::Could not parse one or more signing certificate digests"
             echo "keystore_len=${#keystore_cert} apk_len=${#apk_cert} aab_len=${#aab_cert}"
+            echo "---- apksigner --print-certs (sanitized) ----"
+            printf '%s\n' "$apk_certs_blob" | sed -E 's/([0-9A-Fa-f]{2}:){8,}/<digest>/g' | sed -n '1,40p'
             exit 1
           fi
 
