@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- In-app announcement dialog extracted to `InAppAnnouncementDialog` with category layout presets; Play Store installs suppress What’s New / `NEW RELEASE` GitHub-download prompts; release announce payloads support up to five changelog bullets; PostHog viewed/dismissed/action events for announcements ([#870](https://github.com/ashwkun/boxlore/pull/870)) <!-- impact:user-impact-medium -->
+- In-app announcement dialog extracted to InAppAnnouncementDialog with category layout presets; Play Store installs suppress What’s New / NEW RELEASE GitHub-download prompts; release announce payloads support up to five changelog bullets; PostHog viewed/dismissed/action events for announcements ([#870](https://github.com/ashwkun/boxlore/pull/870)) <!-- impact:user-impact-medium -->
 ### Changed
-- Announcement dialog no longer dismisses on outside tap or system back; only the top-right X or Dismiss clears it (primary CTA still clears after opening the route) ([#870](https://github.com/ashwkun/boxlore/pull/870)) <!-- impact:user-impact-medium -->
+- Announcement dialog no longer dismisses on outside tap or system back; only the top‑right X or Dismiss clears it (primary CTA still clears after opening the route) ([#870](https://github.com/ashwkun/boxlore/pull/870)) <!-- impact:user-impact-medium -->
+### Fixed
+- Orphan release/v* branches are now automatically deleted after a successful publish by enabling delete_branch_on_merge and invoking prepare_release.py delete-release-branch in the CI pipeline ([#871](https://github.com/ashwkun/boxlore/pull/871)) <!-- impact:no-user-impact -->
 ## [v0.0.8] - 2026-07-12
 
 ### Added

@@ -57,7 +57,7 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Announcements stay until you close them, can list up to five points, and won’t trigger extra install prompts. <a href="https://github.com/ashwkun/boxlore/pull/870"><img src="https://img.shields.io/badge/PR-870-6750A4?style=flat-square" alt="PR #870" height="18"/></a></li>
+<li>Announcements stay on screen until you tap the X or Dismiss, and Play Store installs no longer show extra “What’s New” prompts. <a href="https://github.com/ashwkun/boxlore/pull/870"><img src="https://img.shields.io/badge/PR-870-6750A4?style=flat-square" alt="PR #870" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
