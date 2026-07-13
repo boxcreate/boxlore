@@ -404,5 +404,34 @@
     "runs": 1
    }
   }
+ },
+ "2026-07-13": {
+  "global": {
+   "refresh-charts": {
+    "reads": 81230,
+    "writes": 56504,
+    "runs": 1
+   },
+   "import-podcasts": {
+    "reads": 36674,
+    "writes": 4100,
+    "runs": 1
+   },
+   "sync-episodes": {
+    "reads": 49559,
+    "writes": 2452,
+    "runs": 1
+   },
+   "vectorize-episodes": {
+    "reads": 36435,
+    "writes": 242,
+    "runs": 1
+   },
+   "vectorize-shows": {
+    "reads": 23986,
+    "writes": 1027,
+    "runs": 1
+   }
+  }
  }
 }
