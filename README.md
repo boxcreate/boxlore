@@ -9,11 +9,11 @@
 <br/>
 
 <a href="https://github.com/ashwkun/boxlore/releases/latest/download/boxlore-v0.0.8.apk">
-  <img src="docs/images/card_github_v5.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
+  <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
 &nbsp;&nbsp;
 <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-  <img src="docs/images/card_playstore_v5.svg" height="72" alt="Coming soon on Google Play"/>
+  <img src="docs/images/card_playstore_v6.svg" height="72" alt="Coming soon on Google Play"/>
 </a>
 
 <br/><br/>
@@ -254,18 +254,18 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
 </div>
 
 <p align="center">
-  <img src="docs/images/m3/header-install.svg" width="820" alt="Install and build"/>
+  <img src="docs/images/m3/header-install-v2.svg" width="820" alt="Install and build"/>
 </p>
 
 <a id="install--build"></a>
 
 <div align="center">
   <a href="https://github.com/ashwkun/boxlore/releases/latest/download/boxlore-v0.0.8.apk">
-    <img src="docs/images/card_github_v5.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
+    <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
   </a>
   &nbsp;&nbsp;
   <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-    <img src="docs/images/card_playstore_v5.svg" height="72" alt="Coming soon on Google Play"/>
+    <img src="docs/images/card_playstore_v6.svg" height="72" alt="Coming soon on Google Play"/>
   </a>
 </div>
 
