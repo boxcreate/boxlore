@@ -457,22 +457,7 @@ jobs:
           # apksigner may wrap colon-separated digests across lines; a single-line
           # awk field previously produced apk_len=24 in CI.
           extract_sha256_digest() {
-            DIGEST_BLOB="$1" python3 - <<'PY'
-import os, re
-blob = os.environ.get("DIGEST_BLOB", "")
-flat = " ".join(blob.splitlines())
-patterns = (
-    r"SHA-?256 digest:\s*((?:[0-9A-Fa-f]{2}:\s*){31}[0-9A-Fa-f]{2})",
-    r"SHA-?256 digest:\s*([0-9A-Fa-f]{64})",
-    r"SHA256:\s*((?:[0-9A-Fa-f]{2}:\s*){31}[0-9A-Fa-f]{2})",
-    r"SHA256:\s*([0-9A-Fa-f]{64})",
-)
-for pat in patterns:
-    match = re.search(pat, flat, flags=re.I)
-    if match:
-        print(re.sub(r"[^0-9A-Fa-f]", "", match.group(1)).upper())
-        break
-PY
+            printf '%s' "$1" | python3 .github/scripts/extract_cert_digest.py
           }
 
           sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
