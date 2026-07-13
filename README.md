@@ -1,33 +1,46 @@
 <div align="center" id="top">
 
-<img src="docs/images/featured_image.png" width="800" alt="boxlore Android podcast app and podcast player feature banner"/>
+<img src="docs/images/featured_image.png" width="820" alt="boxlore Android podcast app and podcast player feature banner"/>
 
 # boxlore
 
-### Free Android podcast app & player — semantic search, offline downloads, no ads
+**Free Android podcast app & player** — semantic search, offline downloads, no ads
 
 <br/>
-<br/>
-<div align="center">
-  <a href="https://github.com/ashwkun/boxlore/releases/latest/download/boxlore-v0.0.8.apk">
-    <img src="docs/images/card_github_v5.svg" height="70" alt="Download boxlore podcast app APK on GitHub"/>
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-    <img src="docs/images/card_playstore_v5.svg" height="70" alt="Get boxlore podcast player on Google Play"/>
-  </a>
-</div>
-<br/>
 
-<a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-1e293b?style=flat-square&logo=lock&logoColor=white" alt="Proprietary License"/></a> <img src="https://img.shields.io/github/downloads/ashwkun/boxlore/total?style=flat-square&logo=github&logoColor=white&color=2ebbca" alt="Total downloads"/>
+<a href="https://github.com/ashwkun/boxlore/releases/latest/download/boxlore-v0.0.8.apk">
+  <img src="docs/images/card_github_v5.svg" height="70" alt="Download boxlore podcast app APK on GitHub"/>
+</a>
+&nbsp;&nbsp;
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
+  <img src="docs/images/card_playstore_v5.svg" height="70" alt="Get boxlore podcast player on Google Play"/>
+</a>
 
 <br/><br/>
 
-**[About](#about)** · **[Features](#features)** · **[First launch](#first-launch)** · **[Screenshots](#screenshots)** · **[Install](#install--build)** · **[Developers](#for-developers)**
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="Proprietary License"/></a>
+<img src="https://img.shields.io/github/downloads/ashwkun/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total downloads"/>
+<img src="https://img.shields.io/badge/Material%203-You-D0BCFF?style=flat-square&labelColor=4F378B&color=D0BCFF" alt="Material 3"/>
+<img src="https://img.shields.io/badge/Android-Podcast%20Player-1C1B1F?style=flat-square&logo=android&logoColor=D0BCFF" alt="Android podcast player"/>
+
+<br/><br/>
+
+**[About](#about)** ·
+**[Features](#features)** ·
+**[First launch](#first-launch)** ·
+**[Screenshots](#screenshots)** ·
+**[Install](#install--build)** ·
+**[Developers](#for-developers)**
+
+<img src="docs/images/m3/divider.svg" width="820" alt=""/>
 
 </div>
 
-## About
+<p align="center">
+  <img src="docs/images/m3/header-about.svg" width="820" alt="About"/>
+</p>
+
+<a id="about"></a>
 
 Every podcast app I've used feels the same. They call an open API, do word-for-word search, let you subscribe, and show Apple charts. None of them really recommend things or get personal.
 
@@ -72,30 +85,34 @@ New features and improvements for the next release are currently in development.
 </div>
 <!-- upcoming-changes:end -->
 
-<h2 id="features">What makes it different</h2>
+<p align="center">
+  <img src="docs/images/m3/header-features.svg" width="820" alt="What makes it different"/>
+</p>
+
+<a id="features"></a>
 
 <table>
 <tr>
 <td align="center" width="50%" valign="top">
-<h3>🔍 Semantic search</h3>
-<p>Search episodes by <em>meaning</em>, not exact keywords.<br/>
-<em>"stories about startup failure"</em> → relevant episodes, not title matches.</p>
+<img src="docs/images/m3/chip-search.svg" width="280" alt="Semantic search"/><br/><br/>
+Search episodes by <em>meaning</em>, not exact keywords.<br/>
+<em>"stories about startup failure"</em> → relevant episodes, not title matches.
 </td>
 <td align="center" width="50%" valign="top">
-<h3>✨ For You</h3>
-<p>Personalized picks on Home and Explore from your listening, genres, and subs.<br/>
-<strong>Because You Like</strong> rows tied to a favorite show.</p>
+<img src="docs/images/m3/chip-foryou.svg" width="280" alt="For You"/><br/><br/>
+Personalized picks on Home and Explore from your listening, genres, and subs.<br/>
+<strong>Because You Like</strong> rows tied to a favorite show.
 </td>
 </tr>
 <tr>
 <td align="center" width="50%" valign="top">
-<h3>🃏 Curiosity cards</h3>
-<p>Swipe question cards on Learn that point you at episodes you'd never search for.<br/>
-Right to queue · left to dismiss · tap to play.</p>
+<img src="docs/images/m3/chip-cards.svg" width="280" alt="Curiosity cards"/><br/><br/>
+Swipe question cards on Learn that point you at episodes you'd never search for.<br/>
+Right to queue · left to dismiss · tap to play.
 </td>
 <td align="center" width="50%" valign="top">
-<h3>🚫 No ads, forever</h3>
-<p>No banners, no sponsored inserts, no premium tier to unlock search or recommendations.</p>
+<img src="docs/images/m3/chip-noads.svg" width="280" alt="No ads, forever"/><br/><br/>
+No banners, no sponsored inserts, no premium tier to unlock search or recommendations.
 </td>
 </tr>
 </table>
@@ -121,32 +138,38 @@ Right to queue · left to dismiss · tap to play.</p>
 </table>
 </div>
 
-<h2 id="first-launch">First launch</h2>
+<p align="center">
+  <img src="docs/images/m3/header-first-launch.svg" width="820" alt="First launch"/>
+</p>
+
+<a id="first-launch"></a>
 
 First launch gives you a few ways in — pick what fits how you already listen.
 
 <table>
 <tr>
-<td width="33%" valign="top">
-<h3>🤖 New to podcasts?</h3>
-<p><strong>AI onboarding</strong> is the default path. A short chat about your preferences — natural language or suggested options — turns into semantic search queries, matching shows from the index, and a personalized feed to subscribe to before you enter the app.</p>
+<td width="33%" valign="top" align="center">
+<img src="docs/images/m3/chip-onboard.svg" width="260" alt="New to podcasts?"/><br/><br/>
+<p align="left"><strong>AI onboarding</strong> is the default path. A short chat about your preferences — natural language or suggested options — turns into semantic search queries, matching shows from the index, and a personalized feed to subscribe to before you enter the app.</p>
 </td>
-<td width="33%" valign="top">
-<h3>📥 Switching apps?</h3>
-<p>Import from Pocket Casts, Apple Podcasts, AntennaPod, or any app that exports <strong>OPML</strong>. Tap <strong>Import library</strong>, pick your file, and get similar-show recommendations based on what you brought over.</p>
-<p><sub>Export anytime via <strong>Profile → Backup & Restore</strong> (OPML or full JSON).</sub></p>
+<td width="33%" valign="top" align="center">
+<img src="docs/images/m3/chip-import.svg" width="260" alt="Switching apps?"/><br/><br/>
+<p align="left">Import from Pocket Casts, Apple Podcasts, AntennaPod, or any app that exports <strong>OPML</strong>. Tap <strong>Import library</strong>, pick your file, and get similar-show recommendations based on what you brought over.</p>
+<p align="left"><sub>Export anytime via <strong>Profile → Backup & Restore</strong> (OPML or full JSON).</sub></p>
 </td>
-<td width="33%" valign="top">
-<h3>🔎 Know your shows?</h3>
-<p><strong>I know my shows</strong> opens search during setup — subscribe manually, grab similar-show suggestions if you want, or <strong>Skip Setup</strong> and explore on your own.</p>
+<td width="33%" valign="top" align="center">
+<img src="docs/images/m3/chip-know.svg" width="260" alt="Know your shows?"/><br/><br/>
+<p align="left"><strong>I know my shows</strong> opens search during setup — subscribe manually, grab similar-show suggestions if you want, or <strong>Skip Setup</strong> and explore on your own.</p>
 </td>
 </tr>
 </table>
 
-## More features
+<p align="center">
+  <img src="docs/images/m3/header-more.svg" width="820" alt="More features"/>
+</p>
 
 <details>
-<summary><b>🎧 Listening &amp; playback</b></summary>
+<summary><b>Listening &amp; playback</b></summary>
 <br/>
 
 **Mixtapes** — Your home queue: up to 15 episodes from subscriptions (in-progress + unplayed new drops), scored so you can press play and keep going.
@@ -158,7 +181,7 @@ First launch gives you a few ways in — pick what fits how you already listen.
 </details>
 
 <details>
-<summary><b>📚 Library &amp; offline</b></summary>
+<summary><b>Library &amp; offline</b></summary>
 <br/>
 
 Subscriptions, downloads, history, and liked episodes in one place. Launch offline → land on your downloads.
@@ -168,7 +191,7 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
 </details>
 
 <details>
-<summary><b>⚡ Smart automation</b></summary>
+<summary><b>Smart automation</b></summary>
 <br/>
 
 **Daily briefing** — Optional region-specific AI news audio with script, sources, and chapter stories.
@@ -183,7 +206,11 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
 
 </details>
 
-<h2 id="screenshots">Screenshots</h2>
+<p align="center">
+  <img src="docs/images/m3/header-screenshots.svg" width="820" alt="Screenshots"/>
+</p>
+
+<a id="screenshots"></a>
 
 <div align="center">
 <table>
@@ -226,17 +253,23 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
 </table>
 </div>
 
-<h2 id="install--build">Install &amp; build</h2>
+<p align="center">
+  <img src="docs/images/m3/header-install.svg" width="820" alt="Install and build"/>
+</p>
+
+<a id="install--build"></a>
 
 <div align="center">
   <a href="https://github.com/ashwkun/boxlore/releases/latest/download/boxlore-v0.0.8.apk">
-    <img src="docs/images/card_github_v5.svg" height="70" alt="Download APK on GitHub"/>
+    <img src="docs/images/card_github_v5.svg" height="70" alt="Download boxlore podcast app APK on GitHub"/>
   </a>
   &nbsp;&nbsp;
   <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-    <img src="docs/images/card_playstore_v5.svg" height="70" alt="Coming soon on Google Play"/>
+    <img src="docs/images/card_playstore_v5.svg" height="70" alt="Get boxlore podcast player on Google Play"/>
   </a>
 </div>
+
+<br/>
 
 Enable *Install from unknown sources* in Android settings for sideloading.
 
@@ -251,8 +284,12 @@ cd boxlore
 
 **Requirements:** Android Studio Ladybug+ · Android SDK 35+ · JDK 17 · Kotlin 1.9+
 
+<p align="center">
+  <img src="docs/images/m3/header-developers.svg" width="820" alt="For developers"/>
+</p>
+
 <details id="for-developers">
-<summary><b>🛠 For developers</b></summary>
+<summary><b>Codebase &amp; stack</b></summary>
 <br/>
 
 **Codebase structure**
@@ -293,7 +330,9 @@ cd boxlore
 
 </details>
 
-## Contributing
+<p align="center">
+  <img src="docs/images/m3/header-contributing.svg" width="820" alt="Contributing"/>
+</p>
 
 Contributions welcome.
 
@@ -301,7 +340,9 @@ Contributions welcome.
 2. **Suggest features** — [Discussions](https://github.com/ashwkun/boxlore/discussions)
 3. **Submit PRs** — Fork, code, open a pull request
 
-## License
+<p align="center">
+  <img src="docs/images/m3/header-license.svg" width="820" alt="License"/>
+</p>
 
 boxlore is proprietary. All Rights Reserved. See [LICENSE](LICENSE) for details.
 
@@ -316,6 +357,8 @@ boxlore is proprietary. All Rights Reserved. See [LICENSE](LICENSE) for details.
 <br/>
 
 <div align="center">
+
+<img src="docs/images/m3/divider.svg" width="820" alt=""/>
 
 Built by someone who listens to too many podcasts.
 
