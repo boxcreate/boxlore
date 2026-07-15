@@ -50,4 +50,6 @@ dependencies {
     implementation(libs.androidx.palette.ktx)
     implementation(libs.smooth.corner.rect)
     implementation(libs.posthog.android)
+
+    testImplementation(libs.junit)
 }
