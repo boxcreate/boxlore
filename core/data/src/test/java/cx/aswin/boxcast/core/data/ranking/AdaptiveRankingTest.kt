@@ -33,6 +33,34 @@ class AdaptiveRankingTest {
     }
 
     @Test
+    fun `feature schema preserves exact persisted slot order`() {
+        assertEquals(
+            listOf(
+                "INTERCEPT",
+                "SHOW_AFFINITY",
+                "GENRE_AFFINITY",
+                "SOURCE_AFFINITY",
+                "FRESHNESS",
+                "NOVELTY",
+                "DURATION_FIT",
+                "SUBSCRIBED",
+                "RESUME_PROGRESS",
+                "UNPLAYED",
+                "SERIAL_MATCH",
+                "SERVER_RELEVANCE",
+                "EXPOSURE_FATIGUE",
+                "TIME_CONTEXT",
+                "OFFLINE_SUITABILITY",
+                "EXPLICIT_PREFERENCE",
+                "RECENT_SUBSCRIPTION",
+                "CURRENT_SHOW",
+            ),
+            FeatureSlot.entries.map(FeatureSlot::name),
+        )
+        assertEquals(18, RankingFeatureSchema.dimension)
+    }
+
+    @Test
     fun `cold start uses legacy prior and grows learned influence gradually`() {
         val model = AdaptiveLinearModel()
         val features = CandidateFeatureBuilder.build(
@@ -47,6 +75,9 @@ class AdaptiveRankingTest {
 
         assertEquals(0.7, cold.finalScore, 0.0001)
         assertEquals(0.0, cold.learnedBlend, 0.0)
+        assertFalse(cold.contributions.isInitialized())
+        cold.contributions.value
+        assertTrue(cold.contributions.isInitialized())
 
         var state = AdaptiveModelState()
         repeat(50) {
@@ -175,6 +206,24 @@ class AdaptiveRankingTest {
         assertEquals(ranked.size, ranked.map { it.podcastId }.distinct().size)
         assertTrue(ranked.any { it.isNovel })
         assertFalse(ranked.any { it.value == "duplicate" })
+    }
+
+    @Test
+    fun `novel candidate can replace capped item from the same show`() {
+        val ranked = DiversityReranker.rerank(
+            candidates = listOf(
+                RankedCandidate("top", "1", "show-a", "news", 1.0),
+                RankedCandidate("evicted", "2", "show-b", "science", 0.9),
+                RankedCandidate("novel", "3", "show-b", "science", 0.1, isNovel = true),
+            ),
+            policy = DiversityPolicy(
+                limit = 2,
+                maxPerShow = 1,
+                reserveNovelSlot = true,
+            ),
+        )
+
+        assertEquals(listOf("top", "novel"), ranked.map(RankedCandidate<String>::value))
     }
 
     @Test

@@ -60,9 +60,6 @@ class AdaptiveLinearModel(
         val boundedPrior = priorScore.coerceIn(-1.0, 1.0)
         val final = ((1.0 - blend) * boundedPrior + blend * learned + uncertainty)
             .coerceIn(-1.0, 1.0)
-        val contributions = FeatureSlot.entries.associateWith { slot ->
-            theta[slot.ordinal] * features.values[slot.ordinal]
-        }
         return RankingScore(
             finalScore = final,
             priorScore = boundedPrior,
@@ -70,7 +67,11 @@ class AdaptiveLinearModel(
             explorationBonus = uncertainty,
             learnedBlend = blend,
             updateCount = state.updateCount,
-            contributions = contributions,
+            contributions = lazy(LazyThreadSafetyMode.NONE) {
+                FeatureSlot.entries.associateWith { slot ->
+                    theta[slot.ordinal] * features.values[slot.ordinal]
+                }
+            },
         )
     }
 

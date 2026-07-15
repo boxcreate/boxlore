@@ -29,8 +29,7 @@ abstract class AdaptiveRankingDatabase : RoomDatabase() {
                     context.applicationContext,
                     AdaptiveRankingDatabase::class.java,
                     DATABASE_NAME,
-                ).fallbackToDestructiveMigration(dropAllTables = true)
-                    .build()
+                ).build()
                     .also { instance = it }
             }
         }

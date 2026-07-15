@@ -130,7 +130,7 @@ data class RankingScore(
     val explorationBonus: Double,
     val learnedBlend: Double,
     val updateCount: Long,
-    val contributions: Map<FeatureSlot, Double>,
+    val contributions: Lazy<Map<FeatureSlot, Double>>,
 )
 
 data class RankedCandidate<T>(
@@ -200,15 +200,29 @@ private class DiversitySelectionState<T>(
             .asSequence()
             .filter { it.isNovel }
             .filter { novel -> selected.none { it.episodeId == novel.episodeId } }
-            .filter(::isWithinShowCap)
+            .filter(::isWithinShowCapAfterEviction)
             .maxByOrNull { it.score }
             ?: return
-        if (selected.size >= policy.limit) selected.removeAt(selected.lastIndex)
-        selected += novel
+        if (selected.size >= policy.limit) removeLastSelected()
+        select(novel)
     }
 
     private fun isWithinShowCap(candidate: RankedCandidate<T>): Boolean {
         return (showCounts[candidate.podcastId] ?: 0) < policy.maxPerShow
+    }
+
+    private fun isWithinShowCapAfterEviction(candidate: RankedCandidate<T>): Boolean {
+        val evicted = selected.lastOrNull().takeIf { selected.size >= policy.limit }
+        val countAfterEviction = (showCounts[candidate.podcastId] ?: 0) -
+            if (evicted?.podcastId == candidate.podcastId) 1 else 0
+        return countAfterEviction < policy.maxPerShow
+    }
+
+    private fun removeLastSelected() {
+        val evicted = selected.removeAt(selected.lastIndex)
+        showCounts.decrement(evicted.podcastId)
+        evicted.normalizedGenre().takeIf(String::isNotEmpty)?.let(genreCounts::decrement)
+        if (remaining.none { it.episodeId == evicted.episodeId }) remaining += evicted
     }
 
     private fun adjustedScore(candidate: RankedCandidate<T>): Double {
@@ -219,6 +233,11 @@ private class DiversitySelectionState<T>(
         } ?: 0.0
         return candidate.score - genrePenalty - recentPenalty
     }
+}
+
+private fun MutableMap<String, Int>.decrement(key: String) {
+    val next = (this[key] ?: 1) - 1
+    if (next <= 0) remove(key) else this[key] = next
 }
 
 private fun <T> RankedCandidate<T>.normalizedGenre(): String {

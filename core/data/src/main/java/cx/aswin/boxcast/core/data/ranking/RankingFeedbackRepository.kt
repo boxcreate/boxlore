@@ -1,7 +1,9 @@
 package cx.aswin.boxcast.core.data.ranking
 
 import android.content.Context
+import android.util.Log
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
 
 data class FeedbackTarget(
     val episodeId: String,
@@ -11,12 +13,14 @@ data class FeedbackTarget(
 )
 
 class RankingFeedbackRepository private constructor(
-    private val adaptiveRankingRepository: AdaptiveRankingRepository,
+    private val adaptiveRankingRepository: AdaptiveRankingRepository?,
 ) {
     private val recentActions = ConcurrentHashMap<String, Long>()
 
     suspend fun recordExposure(exposure: RankingExposure): String {
-        return adaptiveRankingRepository.recordExposure(exposure)
+        return safely("record exposure", "") {
+            adaptiveRankingRepository?.recordExposure(exposure).orEmpty()
+        }
     }
 
     suspend fun recordAction(
@@ -25,21 +29,23 @@ class RankingFeedbackRepository private constructor(
         listenSeconds: Long = 0,
         durationSeconds: Long = 0,
     ) {
-        if (isRecentDuplicate(target.episodeId, action)) return
-        val reward = RankingReward.calculate(
-            RankingOutcome(
-                actions = setOf(action),
-                listenSeconds = listenSeconds,
-                durationSeconds = durationSeconds,
-            ),
-        )
-        updateTasteFacets(target, reward)
-        if (action in terminalExposureActions) {
-            adaptiveRankingRepository.resolveLatestExposure(
-                episodeId = target.episodeId,
-                reward = reward,
-                listenSeconds = listenSeconds,
+        safely("record action", Unit) {
+            if (isRecentDuplicate(target.episodeId, action)) return@safely
+            val reward = RankingReward.calculate(
+                RankingOutcome(
+                    actions = setOf(action),
+                    listenSeconds = listenSeconds,
+                    durationSeconds = durationSeconds,
+                ),
             )
+            updateTasteFacets(target, reward)
+            if (action in terminalExposureActions) {
+                adaptiveRankingRepository?.resolveLatestExposure(
+                    episodeId = target.episodeId,
+                    reward = reward,
+                    listenSeconds = listenSeconds,
+                )
+            }
         }
     }
 
@@ -50,47 +56,52 @@ class RankingFeedbackRepository private constructor(
         completed: Boolean,
         earlySkip: Boolean,
     ) {
-        val actions = buildSet {
-            if (listenSeconds >= MEANINGFUL_PLAY_SECONDS ||
-                progressRatio(listenSeconds, durationSeconds) >= MEANINGFUL_PROGRESS_RATIO
-            ) {
-                add(RankingAction.MEANINGFUL_PLAY)
+        safely("record playback", Unit) {
+            val actions = buildSet {
+                if (listenSeconds >= MEANINGFUL_PLAY_SECONDS ||
+                    progressRatio(listenSeconds, durationSeconds) >= MEANINGFUL_PROGRESS_RATIO
+                ) {
+                    add(RankingAction.MEANINGFUL_PLAY)
+                }
+                if (completed) add(RankingAction.COMPLETE)
+                if (earlySkip) add(RankingAction.EARLY_SKIP)
             }
-            if (completed) add(RankingAction.COMPLETE)
-            if (earlySkip) add(RankingAction.EARLY_SKIP)
-        }
-        if (actions.isEmpty()) return
-        val reward = RankingReward.calculate(
-            RankingOutcome(
-                actions = actions,
+            if (actions.isEmpty()) return@safely
+            val reward = RankingReward.calculate(
+                RankingOutcome(
+                    actions = actions,
+                    listenSeconds = listenSeconds,
+                    durationSeconds = durationSeconds,
+                ),
+            )
+            updateTasteFacets(target, reward)
+            adaptiveRankingRepository?.resolveLatestExposure(
+                episodeId = target.episodeId,
+                reward = reward,
                 listenSeconds = listenSeconds,
-                durationSeconds = durationSeconds,
-            ),
-        )
-        updateTasteFacets(target, reward)
-        adaptiveRankingRepository.resolveLatestExposure(
-            episodeId = target.episodeId,
-            reward = reward,
-            listenSeconds = listenSeconds,
-        )
+            )
+        }
     }
 
     suspend fun reset() {
-        adaptiveRankingRepository.reset()
-        recentActions.clear()
-        RankingShadowDiagnostics.clear()
+        safely("reset recommendations", Unit) {
+            adaptiveRankingRepository?.reset()
+            recentActions.clear()
+            RankingShadowDiagnostics.clear()
+        }
     }
 
     private suspend fun updateTasteFacets(
         target: FeedbackTarget,
         reward: Double,
     ) {
-        adaptiveRankingRepository.updateFacet(PreferenceFacetType.SHOW, target.podcastId, reward)
+        val repository = adaptiveRankingRepository ?: return
+        repository.updateFacet(PreferenceFacetType.SHOW, target.podcastId, reward)
         target.genre?.takeIf(String::isNotBlank)?.let { genre ->
-            adaptiveRankingRepository.updateFacet(PreferenceFacetType.GENRE, genre, reward)
+            repository.updateFacet(PreferenceFacetType.GENRE, genre, reward)
         }
         target.source?.let { source ->
-            adaptiveRankingRepository.updateFacet(
+            repository.updateFacet(
                 PreferenceFacetType.SOURCE,
                 source.name,
                 reward,
@@ -111,11 +122,27 @@ class RankingFeedbackRepository private constructor(
         return previous != null && now - previous < ACTION_DEDUP_WINDOW_MILLIS
     }
 
+    private suspend fun <T> safely(
+        operation: String,
+        fallback: T,
+        block: suspend () -> T,
+    ): T {
+        return try {
+            block()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to $operation", error)
+            fallback
+        }
+    }
+
     companion object {
         private const val MEANINGFUL_PLAY_SECONDS = 60L
         private const val MEANINGFUL_PROGRESS_RATIO = 0.2
         private const val ACTION_DEDUP_WINDOW_MILLIS = 5_000L
         private const val MAX_RECENT_ACTIONS = 500
+        private const val TAG = "RankingFeedback"
 
         private val terminalExposureActions = setOf(
             RankingAction.MEANINGFUL_PLAY,
@@ -139,7 +166,11 @@ class RankingFeedbackRepository private constructor(
         fun getInstance(context: Context): RankingFeedbackRepository {
             return instance ?: synchronized(this) {
                 instance ?: RankingFeedbackRepository(
-                    AdaptiveRankingRepository.getInstance(context.applicationContext),
+                    runCatching {
+                        AdaptiveRankingRepository.getInstance(context.applicationContext)
+                    }.onFailure { error ->
+                        Log.e(TAG, "Failed to initialize adaptive ranking", error)
+                    }.getOrNull(),
                 ).also { instance = it }
             }
         }

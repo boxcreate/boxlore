@@ -142,13 +142,13 @@ class DownloadRepository(
         android.util.Log.d("DownloadRepo", "Optimistically adding download: ${episode.id}")
         // Optimistically insert into DB as "Downloading"
         CoroutineScope(Dispatchers.IO).launch {
-            try {
+            val entity = try {
                 android.util.Log.d("DownloadRepo", "Inserting optimistic download entity for ${episode.id}")
                 
                 val localEpisodeImg = downloadArtworkLocally(context, episode.imageUrl, "downloaded_artworks", "episode_${episode.id}.png") ?: episode.imageUrl
                 val localPodcastImg = downloadArtworkLocally(context, podcast.imageUrl, "downloaded_artworks", "podcast_${podcast.id}.png") ?: podcast.imageUrl
                 
-                val entity = DownloadedEpisodeEntity(
+                DownloadedEpisodeEntity(
                     episodeId = episode.id,
                     podcastId = podcast.id,
                     episodeTitle = episode.title,
@@ -165,21 +165,27 @@ class DownloadRepository(
                     status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
                     isSmartDownloaded = isSmartDownloaded
                 )
+            } catch (error: Exception) {
+                android.util.Log.e("DownloadRepo", "Failed to prepare download ${episode.id}", error)
+                return@launch
+            }
+            try {
                 database.downloadedEpisodeDao().insert(entity)
-                if (!isSmartDownloaded) {
-                    RankingFeedbackRepository.getInstance(context).recordAction(
-                        target = FeedbackTarget(
-                            episodeId = episode.id,
-                            podcastId = podcast.id,
-                            genre = episode.podcastGenre ?: podcast.genre,
-                        ),
-                        action = RankingAction.MANUAL_DOWNLOAD,
-                    )
-                }
-                android.util.Log.d("DownloadRepo", "Optimistic insert successful for ${episode.id}")
             } catch (e: Exception) {
                 android.util.Log.e("DownloadRepo", "Optimistic insert failed for ${episode.id}", e)
+                return@launch
             }
+            if (!isSmartDownloaded) {
+                RankingFeedbackRepository.getInstance(context).recordAction(
+                    target = FeedbackTarget(
+                        episodeId = episode.id,
+                        podcastId = podcast.id,
+                        genre = episode.podcastGenre ?: podcast.genre,
+                    ),
+                    action = RankingAction.MANUAL_DOWNLOAD,
+                )
+            }
+            android.util.Log.d("DownloadRepo", "Optimistic insert successful for ${episode.id}")
         }
     }
     

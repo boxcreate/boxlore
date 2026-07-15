@@ -39,7 +39,15 @@ class BoxLoreApplication : Application() {
 
         userPreferencesRepository = UserPreferencesRepository(this)
         engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
-        RankingFeedbackRepository.getInstance(this)
+        try {
+            RankingFeedbackRepository.getInstance(this)
+        } catch (error: Exception) {
+            android.util.Log.e(
+                "BoxLoreApplication",
+                "Failed to initialize adaptive ranking",
+                error,
+            )
+        }
 
         val config = PostHogAndroidConfig(
             apiKey = BuildConfig.POSTHOG_API_KEY,

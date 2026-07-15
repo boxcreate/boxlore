@@ -7,6 +7,7 @@ import cx.aswin.boxcast.core.data.ranking.database.PreferenceFacetEntity
 import cx.aswin.boxcast.core.data.ranking.database.RankingExposureEntity
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -51,6 +52,7 @@ class AdaptiveRankingRepository private constructor(
 ) {
     private val dao = database.adaptiveRankingDao()
     private val objectiveLocks = ConcurrentHashMap<RankingObjective, Mutex>()
+    private val exposureInsertCount = AtomicLong()
 
     suspend fun score(
         objective: RankingObjective,
@@ -87,7 +89,10 @@ class AdaptiveRankingRepository private constructor(
                 online = exposure.online,
             ),
         )
-        pruneExposures(exposure.shownAt)
+        val insertCount = exposureInsertCount.incrementAndGet()
+        if (insertCount == 1L || insertCount % EXPOSURE_PRUNE_INTERVAL == 0L) {
+            pruneExposures(exposure.shownAt)
+        }
         return exposureId
     }
 
@@ -273,6 +278,7 @@ class AdaptiveRankingRepository private constructor(
     companion object {
         private const val ADAPTIVE_BACKUP_VERSION = 1
         private const val MAX_EXPOSURES = 1_000
+        private const val EXPOSURE_PRUNE_INTERVAL = 25L
         private const val EXPOSURE_RETENTION_MILLIS = 30L * 24L * 60L * 60L * 1_000L
 
         @Volatile
