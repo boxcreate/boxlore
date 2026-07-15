@@ -436,8 +436,12 @@ class HomeViewModel(
         // caller) so a just-subscribed RSS podcast can trigger its refresh immediately, rather than
         // waiting for uiState to catch up. Manual selections keep resolving from uiState as before.
         val podcast = autoResolvedPodcast
-            ?: uiState.value.subscribedPodcasts.find { it.id == podcastId }
-        if (podcast == null) return
+            ?: uiState.value.subscribedPodcasts.firstOrNull { it.id == podcastId }
+            ?: return@applySelection
+        applySelectedPodcast(podcastId, podcast, isAuto)
+    }
+
+    private fun applySelectedPodcast(podcastId: String, podcast: Podcast, isAuto: Boolean) {
         // Auto-selection (single show) shouldn't be reported as a user-driven filter.
         if (!isAuto) {
             cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackHomePodcastFiltered(podcastId, podcast.title)

@@ -402,7 +402,11 @@ class PodcastRepository(
 
     /** Resolves url:/guid:/itunes: identifiers to a Podcast Index feed id when needed. */
     private suspend fun resolvePodcastIndexFeedId(feedId: String): String {
-        return if (feedId.startsWith("url:") || feedId.startsWith("guid:") || feedId.startsWith("itunes:")) {
+        return if (
+            feedId.startsWith(FEED_PREFIX_URL) ||
+            feedId.startsWith(FEED_PREFIX_GUID) ||
+            feedId.startsWith(FEED_PREFIX_ITUNES)
+        ) {
             getPodcastDetails(feedId)?.id ?: feedId
         } else {
             feedId
@@ -510,15 +514,15 @@ class PodcastRepository(
     /** Picks the right lookup parameter (feed URL/guid/iTunes id/id) and executes the request. */
     private fun executeGetPodcastRequest(feedId: String): retrofit2.Response<cx.aswin.boxcast.core.network.model.PodcastResponse> {
         return when {
-            feedId.startsWith("url:") -> {
-                val decodedUrl = java.net.URLDecoder.decode(feedId.substringAfter("url:"), "UTF-8")
+            feedId.startsWith(FEED_PREFIX_URL) -> {
+                val decodedUrl = java.net.URLDecoder.decode(feedId.substringAfter(FEED_PREFIX_URL), "UTF-8")
                 api.getPodcast(publicKey = publicKey, feedUrl = decodedUrl).execute()
             }
-            feedId.startsWith("guid:") -> {
-                api.getPodcast(publicKey = publicKey, feedGuid = feedId.substringAfter("guid:")).execute()
+            feedId.startsWith(FEED_PREFIX_GUID) -> {
+                api.getPodcast(publicKey = publicKey, feedGuid = feedId.substringAfter(FEED_PREFIX_GUID)).execute()
             }
-            feedId.startsWith("itunes:") -> {
-                api.getPodcast(publicKey = publicKey, itunesId = feedId.substringAfter("itunes:")).execute()
+            feedId.startsWith(FEED_PREFIX_ITUNES) -> {
+                api.getPodcast(publicKey = publicKey, itunesId = feedId.substringAfter(FEED_PREFIX_ITUNES)).execute()
             }
             else -> api.getPodcast(publicKey = publicKey, feedId = feedId).execute()
         }
@@ -790,15 +794,15 @@ class PodcastRepository(
 
     suspend fun getPodcastMeta(feedId: String): cx.aswin.boxcast.core.network.model.PodcastMetaResponse? = withContext(Dispatchers.IO) {
         try {
-            val response = if (feedId.startsWith("url:")) {
-                val encodedUrl = feedId.substringAfter("url:")
+            val response = if (feedId.startsWith(FEED_PREFIX_URL)) {
+                val encodedUrl = feedId.substringAfter(FEED_PREFIX_URL)
                 val decodedUrl = java.net.URLDecoder.decode(encodedUrl, "UTF-8")
                 api.getPodcastMeta(publicKey = publicKey, feedUrl = decodedUrl).execute()
-            } else if (feedId.startsWith("guid:")) {
-                val guid = feedId.substringAfter("guid:")
+            } else if (feedId.startsWith(FEED_PREFIX_GUID)) {
+                val guid = feedId.substringAfter(FEED_PREFIX_GUID)
                 api.getPodcastMeta(publicKey = publicKey, feedGuid = guid).execute()
-            } else if (feedId.startsWith("itunes:")) {
-                val itunesId = feedId.substringAfter("itunes:")
+            } else if (feedId.startsWith(FEED_PREFIX_ITUNES)) {
+                val itunesId = feedId.substringAfter(FEED_PREFIX_ITUNES)
                 api.getPodcastMeta(publicKey = publicKey, itunesId = itunesId).execute()
             } else {
                 api.getPodcastMeta(publicKey = publicKey, feedId = feedId).execute()
@@ -982,6 +986,10 @@ class PodcastRepository(
     }
 
     companion object {
+        private const val FEED_PREFIX_URL = "url:"
+        private const val FEED_PREFIX_GUID = "guid:"
+        private const val FEED_PREFIX_ITUNES = "itunes:"
+
         private val episodesCache = java.util.concurrent.ConcurrentHashMap<String, Pair<EpisodePage, Long>>()
         private val recommendationsCache = java.util.concurrent.ConcurrentHashMap<String, Pair<List<Episode>, Long>>()
         private val becauseYouLikeCache = java.util.concurrent.ConcurrentHashMap<String, Pair<BecauseYouLikeData, Long>>()
