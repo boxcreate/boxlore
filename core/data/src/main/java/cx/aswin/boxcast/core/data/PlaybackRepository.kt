@@ -2351,6 +2351,7 @@ class PlaybackRepository(
 
     suspend fun clearHistory() {
         listeningHistoryDao.deleteAll()
+        rankingFeedbackRepository.reset()
     }
 
     suspend fun toggleLike(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?) {

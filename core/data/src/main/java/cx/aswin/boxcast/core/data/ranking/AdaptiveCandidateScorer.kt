@@ -27,6 +27,7 @@ data class PodcastRankingInput(
 
 class AdaptiveCandidateScorer private constructor(
     private val rankingRepository: AdaptiveRankingRepository,
+    private val runtimeControls: RankingRuntimeControls,
 ) {
     suspend fun scorePodcasts(
         podcasts: List<ScorablePodcast>,
@@ -41,9 +42,10 @@ class AdaptiveCandidateScorer private constructor(
             allHistory = history,
             includeAutoDownloadBoost = includeAutoDownloadBoost,
         )
+        if (!runtimeControls.isAdaptiveEnabled(objective)) return legacy
         val normalizedPriors = normalizePriors(legacy)
         val historyByPodcast = history.groupBy(ListeningHistoryEntity::podcastId)
-        return podcasts.associate { podcast ->
+        val adaptive = podcasts.associate { podcast ->
             val podcastHistory = historyByPodcast[podcast.id].orEmpty()
             val latestHistory = podcast.latestEpisode?.let { latest ->
                 podcastHistory.firstOrNull { it.episodeId == latest.id }
@@ -81,6 +83,8 @@ class AdaptiveCandidateScorer private constructor(
             )
             podcast.id to score.finalScore
         }
+        recordShadowComparison(objective, legacy, adaptive)
+        return adaptive
     }
 
     suspend fun scoreEpisodes(
@@ -91,8 +95,9 @@ class AdaptiveCandidateScorer private constructor(
     ): Map<String, Double> {
         if (inputs.isEmpty()) return emptyMap()
         val normalizedPriors = normalizePriors(inputs.associate { it.episode.id to it.priorScore })
+        if (!runtimeControls.isAdaptiveEnabled(objective)) return normalizedPriors
         val historyByEpisode = history.associateBy(ListeningHistoryEntity::episodeId)
-        return inputs.associate { input ->
+        val adaptive = inputs.associate { input ->
             val episodeHistory = historyByEpisode[input.episode.id]
             val showAffinity = rankingRepository.facetAffinity(
                 PreferenceFacetType.SHOW,
@@ -147,6 +152,8 @@ class AdaptiveCandidateScorer private constructor(
             )
             input.episode.id to score.finalScore
         }
+        recordShadowComparison(objective, normalizedPriors, adaptive)
+        return adaptive
     }
 
     suspend fun rankEpisodes(
@@ -167,8 +174,17 @@ class AdaptiveCandidateScorer private constructor(
                 isNovel = input.isNovel,
             )
         }
-        return DiversityReranker.rerank(candidates, diversityPolicy)
+        val ranked = DiversityReranker.rerank(candidates, diversityPolicy)
             .map(RankedCandidate<Episode>::value)
+        if (runtimeControls.isShadowDiagnosticsEnabled()) {
+            RankingShadowDiagnostics.record(
+                objective = objective,
+                priorOrder = inputs.sortedByDescending(EpisodeRankingInput::priorScore)
+                    .map { it.episode.id },
+                adaptiveOrder = ranked.map(Episode::id),
+            )
+        }
+        return ranked
     }
 
     suspend fun rankPodcasts(
@@ -226,17 +242,22 @@ class AdaptiveCandidateScorer private constructor(
                         ?.let { (nowMs - it).coerceAtLeast(0L) / 3_600_000.0 },
                 ),
             )
-            val score = rankingRepository.score(
-                objective = objective,
-                features = features,
-                priorScore = normalizedPriors[podcast.id] ?: 0.0,
-            )
+            val priorScore = normalizedPriors[podcast.id] ?: 0.0
+            val finalScore = if (runtimeControls.isAdaptiveEnabled(objective)) {
+                rankingRepository.score(
+                    objective = objective,
+                    features = features,
+                    priorScore = priorScore,
+                ).finalScore
+            } else {
+                priorScore
+            }
             RankedCandidate(
                 value = podcast,
                 episodeId = podcast.id,
                 podcastId = podcast.id,
                 genre = podcast.genre.substringBefore(",").trim(),
-                score = score.finalScore,
+                score = finalScore,
                 isNovel = input.isNovel,
             )
         }
@@ -246,7 +267,16 @@ class AdaptiveCandidateScorer private constructor(
         } else {
             DiversityReranker.rerank(scored, diversityPolicy)
         }
-        return ordered.map(RankedCandidate<Podcast>::value)
+        val ranked = ordered.map(RankedCandidate<Podcast>::value)
+        if (runtimeControls.isShadowDiagnosticsEnabled()) {
+            RankingShadowDiagnostics.record(
+                objective = objective,
+                priorOrder = inputs.sortedByDescending(PodcastRankingInput::priorScore)
+                    .map { it.podcast.id },
+                adaptiveOrder = ranked.map(Podcast::id),
+            )
+        }
+        return ranked
     }
 
     private fun normalizePriors(scores: Map<String, Double>): Map<String, Double> {
@@ -260,6 +290,21 @@ class AdaptiveCandidateScorer private constructor(
         }
     }
 
+    private fun recordShadowComparison(
+        objective: RankingObjective,
+        priors: Map<String, Double>,
+        adaptive: Map<String, Double>,
+    ) {
+        if (!runtimeControls.isShadowDiagnosticsEnabled()) return
+        RankingShadowDiagnostics.record(
+            objective = objective,
+            priorOrder = priors.entries.sortedByDescending(Map.Entry<String, Double>::value)
+                .map(Map.Entry<String, Double>::key),
+            adaptiveOrder = adaptive.entries.sortedByDescending(Map.Entry<String, Double>::value)
+                .map(Map.Entry<String, Double>::key),
+        )
+    }
+
     companion object {
         @Volatile
         private var instance: AdaptiveCandidateScorer? = null
@@ -268,6 +313,7 @@ class AdaptiveCandidateScorer private constructor(
             return instance ?: synchronized(this) {
                 instance ?: AdaptiveCandidateScorer(
                     AdaptiveRankingRepository.getInstance(context.applicationContext),
+                    RankingRuntimeControls.getInstance(context.applicationContext),
                 ).also { instance = it }
             }
         }

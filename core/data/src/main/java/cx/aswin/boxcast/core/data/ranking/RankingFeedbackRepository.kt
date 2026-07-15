@@ -77,6 +77,8 @@ class RankingFeedbackRepository private constructor(
 
     suspend fun reset() {
         adaptiveRankingRepository.reset()
+        recentActions.clear()
+        RankingShadowDiagnostics.clear()
     }
 
     private suspend fun updateTasteFacets(

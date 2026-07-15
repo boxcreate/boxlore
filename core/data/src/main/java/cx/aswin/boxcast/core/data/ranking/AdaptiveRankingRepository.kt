@@ -30,6 +30,14 @@ data class RankingDebugSnapshot(
     val featureSchemaVersion: Int,
 )
 
+data class RankingAggregateTelemetry(
+    val objective: String,
+    val rankerVersion: Int,
+    val learningStage: String,
+    val outcomeCountBucket: String,
+    val explorationEligible: Boolean,
+)
+
 class AdaptiveRankingRepository private constructor(
     private val database: AdaptiveRankingDatabase,
     private val model: AdaptiveLinearModel = AdaptiveLinearModel(),
@@ -173,6 +181,23 @@ class AdaptiveRankingRepository private constructor(
         )
     }
 
+    suspend fun aggregateTelemetry(): List<RankingAggregateTelemetry> {
+        return RankingObjective.entries.map { objective ->
+            val state = loadState(objective)
+            RankingAggregateTelemetry(
+                objective = objective.name,
+                rankerVersion = RankingFeatureSchema.VERSION,
+                learningStage = when {
+                    state.updateCount == 0L -> "cold_start"
+                    state.updateCount < 50L -> "learning"
+                    else -> "adaptive"
+                },
+                outcomeCountBucket = state.updateCount.toOutcomeCountBucket(),
+                explorationEligible = objective.allowsExploration && state.updateCount >= 50L,
+            )
+        }
+    }
+
     suspend fun reset() {
         dao.clearAll()
     }
@@ -257,4 +282,12 @@ private fun PreferenceFacetEntity.toFacet(): BayesianPreferenceFacet {
 
 private fun String.normalizedFacetKey(): String {
     return trim().lowercase().replace(Regex("\\s+"), " ").take(200)
+}
+
+private fun Long.toOutcomeCountBucket(): String = when {
+    this == 0L -> "0"
+    this < 10L -> "1_9"
+    this < 50L -> "10_49"
+    this < 200L -> "50_199"
+    else -> "200_plus"
 }

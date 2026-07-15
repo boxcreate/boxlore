@@ -237,6 +237,7 @@ fun SettingsScreen(
                 isDeletionExpanded = isDeletionExpanded,
                 onDeletionExpandedChange = { isDeletionExpanded = it },
                 onResetIdentityClick = { showResetDialog = true },
+                onResetRecommendationsClick = settingsViewModel::resetRecommendations,
                 onCopyDeletionId = { copyDeletionId(context, deletionId) },
                 onEmailDeletionRequest = { requestAnalyticsDeletionByEmail(context, deletionId) },
                 onBack = returnToHub,

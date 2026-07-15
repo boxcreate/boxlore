@@ -15,11 +15,17 @@ import com.posthog.android.PostHogAndroidConfig
 import cx.aswin.boxcast.core.data.EngagementPromptCoordinator
 import cx.aswin.boxcast.core.data.UserPreferencesRepository
 import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
+import cx.aswin.boxcast.core.data.ranking.AdaptiveRankingRepository
 import cx.aswin.boxcast.core.network.NetworkModule
 import cx.aswin.boxcast.surveys.BoxcastPostHogSurveysDelegate
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class BoxLoreApplication : Application() {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     lateinit var userPreferencesRepository: UserPreferencesRepository
         private set
@@ -62,6 +68,12 @@ class BoxLoreApplication : Application() {
         } else {
             PostHog.register("is_internal", false)
             PostHog.register("app_environment", "production")
+        }
+        applicationScope.launch {
+            val statuses = AdaptiveRankingRepository.getInstance(this@BoxLoreApplication)
+                .aggregateTelemetry()
+            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper
+                .trackAdaptiveRankingStatus(statuses)
         }
 
         setupAppCheck()

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxcast.core.data.RssPodcastRepository
 import cx.aswin.boxcast.core.data.RssSubscriptionResult
+import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,6 +38,9 @@ sealed interface SettingsEvent {
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val rssRepository by lazy { RssPodcastRepository.getInstance(getApplication()) }
+    private val rankingFeedbackRepository by lazy {
+        RankingFeedbackRepository.getInstance(getApplication())
+    }
 
     private val _uiState = MutableStateFlow(SettingsRssUiState())
     val uiState: StateFlow<SettingsRssUiState> = _uiState.asStateFlow()
@@ -46,6 +50,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun openAddRssDialog() {
         _uiState.value = _uiState.value.copy(showAddRssDialog = true)
+    }
+
+    fun resetRecommendations() {
+        viewModelScope.launch {
+            rankingFeedbackRepository.reset()
+            _events.emit(SettingsEvent.ShowToast("Recommendations reset"))
+        }
     }
 
     fun dismissAddRssDialog() {

@@ -171,4 +171,23 @@ class AdaptiveRankingTest {
         assertTrue(ranked.any { it.isNovel })
         assertFalse(ranked.any { it.value == "duplicate" })
     }
+
+    @Test
+    fun `shadow diagnostics retain only aggregate rank movement`() {
+        RankingShadowDiagnostics.clear()
+
+        RankingShadowDiagnostics.record(
+            objective = RankingObjective.DISCOVERY,
+            priorOrder = listOf("episode-a", "episode-b", "episode-c"),
+            adaptiveOrder = listOf("episode-b", "episode-a", "episode-c"),
+            now = 123L,
+        )
+
+        val snapshot = RankingShadowDiagnostics.snapshots().single()
+        assertEquals(RankingObjective.DISCOVERY, snapshot.objective)
+        assertEquals(3, snapshot.candidateCount)
+        assertEquals(3, snapshot.topFiveOverlap)
+        assertEquals(2.0 / 3.0, snapshot.meanAbsoluteRankShift, 0.0001)
+        assertEquals(123L, snapshot.recordedAt)
+    }
 }

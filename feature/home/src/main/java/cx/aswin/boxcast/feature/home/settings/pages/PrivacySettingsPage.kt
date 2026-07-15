@@ -56,6 +56,7 @@ internal fun PrivacySettingsPage(
     isDeletionExpanded: Boolean,
     onDeletionExpandedChange: (Boolean) -> Unit,
     onResetIdentityClick: () -> Unit,
+    onResetRecommendationsClick: () -> Unit,
     onCopyDeletionId: () -> Unit,
     onEmailDeletionRequest: () -> Unit,
     onBack: () -> Unit,
@@ -153,6 +154,25 @@ internal fun PrivacySettingsPage(
                 reason = "Pretty obvious — if the app breaks, we need to know so we can fix it.",
                 example = null,
             )
+        }
+
+        SettingsGroup(
+            title = "On-device recommendations",
+            footer = "Your learned taste profile and ranking model stay on this device. " +
+                "They are not uploaded or included in backups.",
+        ) {
+            SettingsContent {
+                AnalyticsControlCard(
+                    title = "Reset recommendations",
+                    body = "Forget inferred tastes and start learning again. " +
+                        "This does not remove subscriptions, downloads, likes, or listening history.",
+                    icon = Icons.Rounded.Refresh,
+                    destructive = false,
+                    actionLabel = "Reset",
+                    onAction = onResetRecommendationsClick,
+                    expansion = null,
+                )
+            }
         }
 
         SettingsGroup(
