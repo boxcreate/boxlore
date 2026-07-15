@@ -478,27 +478,27 @@
    "refresh-charts": {
     "reads": 81565,
     "writes": 57474,
-    "runs": 1
+    "runs": 2
    },
    "import-podcasts": {
-    "reads": 114753,
+    "reads": 153004,
     "writes": 3920,
-    "runs": 3
+    "runs": 4
    },
    "sync-episodes": {
-    "reads": 50280,
-    "writes": 3788,
-    "runs": 3
+    "reads": 50497,
+    "writes": 4222,
+    "runs": 4
    },
    "vectorize-episodes": {
-    "reads": 98567,
-    "writes": 1833,
-    "runs": 3
+    "reads": 129659,
+    "writes": 2552,
+    "runs": 4
    },
    "vectorize-shows": {
-    "reads": 60337,
+    "reads": 78931,
     "writes": 911,
-    "runs": 3
+    "runs": 4
    }
   }
  }
