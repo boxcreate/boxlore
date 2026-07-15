@@ -502,7 +502,11 @@ private fun MiniTransportButtons(
         MiniSeekButton(
             seconds = seekDurations.backwardSeconds,
             forward = false,
-            contentDescription = "Seek back ${seekDurations.backwardSeconds} seconds",
+            contentDescription =
+                cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                    seekDurations.backwardSeconds,
+                    forward = false,
+                ),
             isLoading = isLoading,
             colorScheme = colorScheme,
             shape = RoundedCornerShape(13.dp),
@@ -514,7 +518,11 @@ private fun MiniTransportButtons(
         MiniSeekButton(
             seconds = seekDurations.forwardSeconds,
             forward = true,
-            contentDescription = "Seek forward ${seekDurations.forwardSeconds} seconds",
+            contentDescription =
+                cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                    seekDurations.forwardSeconds,
+                    forward = true,
+                ),
             isLoading = isLoading,
             colorScheme = colorScheme,
             shape = RoundedCornerShape(13.dp),

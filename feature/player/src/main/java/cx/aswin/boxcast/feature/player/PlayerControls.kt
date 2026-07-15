@@ -92,7 +92,10 @@ fun PlayerControls(
         ControlIconButton(
             weight = weightPrev,
             seek = SeekDurationSpec(seekBackwardSeconds, forward = false),
-            contentDescription = "Seek back $seekBackwardSeconds seconds",
+            contentDescription = seekDurationContentDescription(
+                seekBackwardSeconds,
+                forward = false,
+            ),
             colorScheme = colorScheme,
             controlTint = controlTint,
             onClick = {
@@ -116,7 +119,10 @@ fun PlayerControls(
         ControlIconButton(
             weight = weightNext,
             seek = SeekDurationSpec(seekForwardSeconds, forward = true),
-            contentDescription = "Seek forward $seekForwardSeconds seconds",
+            contentDescription = seekDurationContentDescription(
+                seekForwardSeconds,
+                forward = true,
+            ),
             colorScheme = colorScheme,
             controlTint = controlTint,
             onClick = {

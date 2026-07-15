@@ -176,7 +176,11 @@ fun PrimaryControls(
             icon = TransportIcon(
                 seconds = seekDurations.backwardSeconds,
                 forward = false,
-                contentDescription = "Seek back ${seekDurations.backwardSeconds} seconds",
+                contentDescription =
+                    cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                        seekDurations.backwardSeconds,
+                        forward = false,
+                    ),
                 size = 40.dp
             ),
             colorScheme = colorScheme,
@@ -209,7 +213,11 @@ fun PrimaryControls(
             icon = TransportIcon(
                 seconds = seekDurations.forwardSeconds,
                 forward = true,
-                contentDescription = "Seek forward ${seekDurations.forwardSeconds} seconds",
+                contentDescription =
+                    cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                        seekDurations.forwardSeconds,
+                        forward = true,
+                    ),
                 size = 40.dp
             ),
             colorScheme = colorScheme,

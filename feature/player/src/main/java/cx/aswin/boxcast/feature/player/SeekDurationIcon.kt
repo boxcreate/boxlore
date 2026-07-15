@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +28,14 @@ data class SeekControlDurations(
     val backwardSeconds: Int = 10,
     val forwardSeconds: Int = 30,
 )
+
+@Composable
+internal fun seekDurationContentDescription(seconds: Int, forward: Boolean): String =
+    pluralStringResource(
+        id = if (forward) R.plurals.seek_forward_seconds else R.plurals.seek_back_seconds,
+        count = seconds,
+        seconds,
+    )
 
 @Composable
 internal fun SeekDurationIcon(

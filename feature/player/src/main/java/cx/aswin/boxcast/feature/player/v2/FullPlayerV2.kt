@@ -1529,7 +1529,11 @@ private fun VideoTransportControls(
         VideoSeekButton(
             seconds = seekBackwardSeconds,
             forward = false,
-            contentDescription = "Seek back $seekBackwardSeconds seconds",
+            contentDescription =
+                cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                    seekBackwardSeconds,
+                    forward = false,
+                ),
             onClick = actions.onReplay,
         )
         Box(
@@ -1550,7 +1554,11 @@ private fun VideoTransportControls(
         VideoSeekButton(
             seconds = seekForwardSeconds,
             forward = true,
-            contentDescription = "Seek forward $seekForwardSeconds seconds",
+            contentDescription =
+                cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                    seekForwardSeconds,
+                    forward = true,
+                ),
             onClick = actions.onForward,
         )
     }
