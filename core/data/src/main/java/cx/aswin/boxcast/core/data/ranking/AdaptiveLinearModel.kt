@@ -144,7 +144,24 @@ internal fun multiply(matrix: DoubleArray, vector: DoubleArray, dimension: Int):
 
 internal fun invertPositiveDefinite(matrix: DoubleArray, dimension: Int): DoubleArray {
     require(matrix.size == dimension * dimension)
-    val augmented = Array(dimension) { row ->
+    val augmented = augmentedWithIdentity(matrix, dimension)
+    for (pivotIndex in 0 until dimension) {
+        swapBestPivotIntoPlace(augmented, pivotIndex)
+        normalizePivotRow(augmented, pivotIndex)
+        eliminatePivotColumn(augmented, pivotIndex)
+    }
+    return DoubleArray(dimension * dimension) { index ->
+        val row = index / dimension
+        val column = index % dimension
+        augmented[row][column + dimension]
+    }
+}
+
+private fun augmentedWithIdentity(
+    matrix: DoubleArray,
+    dimension: Int,
+): Array<DoubleArray> {
+    return Array(dimension) { row ->
         DoubleArray(dimension * 2) { column ->
             when {
                 column < dimension -> matrix[row * dimension + column]
@@ -153,37 +170,49 @@ internal fun invertPositiveDefinite(matrix: DoubleArray, dimension: Int): Double
             }
         }
     }
-    for (pivotIndex in 0 until dimension) {
-        var bestRow = pivotIndex
-        for (row in pivotIndex + 1 until dimension) {
-            if (kotlin.math.abs(augmented[row][pivotIndex]) >
-                kotlin.math.abs(augmented[bestRow][pivotIndex])
-            ) {
-                bestRow = row
-            }
-        }
-        if (bestRow != pivotIndex) {
-            val temp = augmented[pivotIndex]
-            augmented[pivotIndex] = augmented[bestRow]
-            augmented[bestRow] = temp
-        }
-        val pivot = augmented[pivotIndex][pivotIndex]
-        require(kotlin.math.abs(pivot) > 1e-12) { "Ranking covariance matrix is singular" }
-        for (column in 0 until dimension * 2) {
-            augmented[pivotIndex][column] /= pivot
-        }
-        for (row in 0 until dimension) {
-            if (row == pivotIndex) continue
-            val factor = augmented[row][pivotIndex]
-            if (factor == 0.0) continue
-            for (column in 0 until dimension * 2) {
-                augmented[row][column] -= factor * augmented[pivotIndex][column]
-            }
-        }
+}
+
+private fun swapBestPivotIntoPlace(
+    augmented: Array<DoubleArray>,
+    pivotIndex: Int,
+) {
+    val bestRow = (pivotIndex until augmented.size).maxBy { row ->
+        kotlin.math.abs(augmented[row][pivotIndex])
     }
-    return DoubleArray(dimension * dimension) { index ->
-        val row = index / dimension
-        val column = index % dimension
-        augmented[row][column + dimension]
+    if (bestRow == pivotIndex) return
+    val temporary = augmented[pivotIndex]
+    augmented[pivotIndex] = augmented[bestRow]
+    augmented[bestRow] = temporary
+}
+
+private fun normalizePivotRow(
+    augmented: Array<DoubleArray>,
+    pivotIndex: Int,
+) {
+    val pivot = augmented[pivotIndex][pivotIndex]
+    require(kotlin.math.abs(pivot) > 1e-12) { "Ranking covariance matrix is singular" }
+    for (column in augmented[pivotIndex].indices) {
+        augmented[pivotIndex][column] /= pivot
+    }
+}
+
+private fun eliminatePivotColumn(
+    augmented: Array<DoubleArray>,
+    pivotIndex: Int,
+) {
+    for (row in augmented.indices) {
+        if (row != pivotIndex) eliminateFromRow(augmented, row, pivotIndex)
+    }
+}
+
+private fun eliminateFromRow(
+    augmented: Array<DoubleArray>,
+    row: Int,
+    pivotIndex: Int,
+) {
+    val factor = augmented[row][pivotIndex]
+    if (factor == 0.0) return
+    for (column in augmented[row].indices) {
+        augmented[row][column] -= factor * augmented[pivotIndex][column]
     }
 }

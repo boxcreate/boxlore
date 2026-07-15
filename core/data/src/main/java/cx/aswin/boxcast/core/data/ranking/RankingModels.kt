@@ -157,46 +157,72 @@ object DiversityReranker {
         policy: DiversityPolicy,
     ): List<RankedCandidate<T>> {
         if (policy.limit <= 0) return emptyList()
-        val remaining = candidates.distinctBy { it.episodeId }.toMutableList()
-        val selected = mutableListOf<RankedCandidate<T>>()
-        val showCounts = mutableMapOf<String, Int>()
-        val genreCounts = mutableMapOf<String, Int>()
-
-        while (selected.size < policy.limit && remaining.isNotEmpty()) {
-            val best = remaining
-                .asSequence()
-                .filter { (showCounts[it.podcastId] ?: 0) < policy.maxPerShow }
-                .maxByOrNull { candidate ->
-                    val normalizedGenre = candidate.genre?.trim()?.lowercase().orEmpty()
-                    val genrePenalty = (genreCounts[normalizedGenre] ?: 0) * policy.genreRepeatPenalty
-                    val recentPenalty = if (candidate.podcastId in policy.recentPodcastIds) {
-                        policy.recentShowPenalty
-                    } else {
-                        0.0
-                    }
-                    candidate.score - genrePenalty - recentPenalty
-                }
-                ?: break
-            selected += best
-            remaining.remove(best)
-            showCounts[best.podcastId] = (showCounts[best.podcastId] ?: 0) + 1
-            val genre = best.genre?.trim()?.lowercase().orEmpty()
-            if (genre.isNotEmpty()) genreCounts[genre] = (genreCounts[genre] ?: 0) + 1
+        val state = DiversitySelectionState(candidates, policy)
+        while (state.canSelectMore()) {
+            val next = state.nextCandidate() ?: break
+            state.select(next)
         }
-
-        if (policy.reserveNovelSlot && selected.none { it.isNovel }) {
-            val novel = candidates
-                .asSequence()
-                .filter { it.isNovel && selected.none { selectedItem -> selectedItem.episodeId == it.episodeId } }
-                .filter { (showCounts[it.podcastId] ?: 0) < policy.maxPerShow }
-                .maxByOrNull { it.score }
-            if (novel != null) {
-                if (selected.size >= policy.limit) selected.removeAt(selected.lastIndex)
-                selected += novel
-            }
-        }
-        return selected
+        state.reserveNovelCandidate()
+        return state.selected
     }
+}
+
+private class DiversitySelectionState<T>(
+    private val candidates: List<RankedCandidate<T>>,
+    private val policy: DiversityPolicy,
+) {
+    val selected = mutableListOf<RankedCandidate<T>>()
+    private val remaining = candidates.distinctBy { it.episodeId }.toMutableList()
+    private val showCounts = mutableMapOf<String, Int>()
+    private val genreCounts = mutableMapOf<String, Int>()
+
+    fun canSelectMore(): Boolean = selected.size < policy.limit && remaining.isNotEmpty()
+
+    fun nextCandidate(): RankedCandidate<T>? {
+        return remaining
+            .asSequence()
+            .filter(::isWithinShowCap)
+            .maxByOrNull(::adjustedScore)
+    }
+
+    fun select(candidate: RankedCandidate<T>) {
+        selected += candidate
+        remaining.remove(candidate)
+        showCounts[candidate.podcastId] = (showCounts[candidate.podcastId] ?: 0) + 1
+        candidate.normalizedGenre().takeIf(String::isNotEmpty)?.let { genre ->
+            genreCounts[genre] = (genreCounts[genre] ?: 0) + 1
+        }
+    }
+
+    fun reserveNovelCandidate() {
+        if (!policy.reserveNovelSlot || selected.any { it.isNovel }) return
+        val novel = candidates
+            .asSequence()
+            .filter { it.isNovel }
+            .filter { novel -> selected.none { it.episodeId == novel.episodeId } }
+            .filter(::isWithinShowCap)
+            .maxByOrNull { it.score }
+            ?: return
+        if (selected.size >= policy.limit) selected.removeAt(selected.lastIndex)
+        selected += novel
+    }
+
+    private fun isWithinShowCap(candidate: RankedCandidate<T>): Boolean {
+        return (showCounts[candidate.podcastId] ?: 0) < policy.maxPerShow
+    }
+
+    private fun adjustedScore(candidate: RankedCandidate<T>): Double {
+        val genrePenalty =
+            (genreCounts[candidate.normalizedGenre()] ?: 0) * policy.genreRepeatPenalty
+        val recentPenalty = policy.recentShowPenalty.takeIf {
+            candidate.podcastId in policy.recentPodcastIds
+        } ?: 0.0
+        return candidate.score - genrePenalty - recentPenalty
+    }
+}
+
+private fun <T> RankedCandidate<T>.normalizedGenre(): String {
+    return genre?.trim()?.lowercase().orEmpty()
 }
 
 private fun Double.unit(): Double = min(1.0, max(0.0, this))
