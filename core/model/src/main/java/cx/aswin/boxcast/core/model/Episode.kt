@@ -26,5 +26,12 @@ data class Episode(
     val episodeType: String? = null,  // "full", "trailer", "bonus"
     val contextType: String? = null,
     val contextSourceId: String? = null,
-    val enclosureType: String? = null
+    val enclosureType: String? = null,
+    val retrievalScore: Double? = null,
+    val semanticScore: Double? = null,
+    val recommendationSource: String? = null,
+    val recommendationReason: String? = null,
+    val serverRank: Int? = null,
+    val recommendationAlgorithmVersion: String? = null,
+    val language: String? = null,
 )

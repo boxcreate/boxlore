@@ -13,11 +13,22 @@ import cx.aswin.boxcast.core.data.MixtapeEngine
 import cx.aswin.boxcast.core.data.PodcastRepository
 import cx.aswin.boxcast.core.data.HomeBootstrapData
 import cx.aswin.boxcast.core.data.toScorable
+import cx.aswin.boxcast.core.data.content.AdaptiveContentCandidateRanker
+import cx.aswin.boxcast.core.data.content.ContentContextEngine
+import cx.aswin.boxcast.core.data.content.ContentOrchestrator
+import cx.aswin.boxcast.core.data.content.ContentSection
+import cx.aswin.boxcast.core.data.content.PodcastCandidateProvider
+import cx.aswin.boxcast.core.data.content.ServerIntentCandidateProvider
 import cx.aswin.boxcast.core.data.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxcast.core.data.ranking.CandidateSource
 import cx.aswin.boxcast.core.data.ranking.EpisodeRankingInput
 import cx.aswin.boxcast.core.data.ranking.PodcastRankingInput
 import cx.aswin.boxcast.core.data.ranking.RankingObjective
+import cx.aswin.boxcast.core.data.ranking.RankingSurface
+import cx.aswin.boxcast.core.data.ranking.CandidateFeatureBuilder
+import cx.aswin.boxcast.core.data.ranking.CandidateSignals
+import cx.aswin.boxcast.core.data.ranking.RankingExposure
+import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
 import cx.aswin.boxcast.core.data.ranking.DiversityPolicy
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.EpisodeStatus
@@ -109,7 +120,8 @@ data class HomeUiState(
     val becauseYouLikeRecommendations: List<Episode> = emptyList(),
     val becauseYouLikePodcasts: List<Podcast> = emptyList(),
     val isBecauseYouLikeLoading: Boolean = false,
-    val isRecommendationsFallback: Boolean = true
+    val isRecommendationsFallback: Boolean = true,
+    val adaptiveSections: List<ContentSection> = emptyList(),
 )
 
 private data class SelectedPodcastSignal(
@@ -139,7 +151,8 @@ data class HomeDataWrapper(
     val becauseYouLikeRecommendations: List<Episode> = emptyList(),
     val becauseYouLikePodcasts: List<Podcast> = emptyList(),
     val isBecauseYouLikeLoading: Boolean = false,
-    val isRecommendationsFallback: Boolean = true
+    val isRecommendationsFallback: Boolean = true,
+    val adaptiveSections: List<ContentSection> = emptyList(),
 )
 
 /**
@@ -167,6 +180,7 @@ class HomeViewModel(
     val podcastRepository = PodcastRepository(baseUrl = apiBaseUrl, publicKey = publicKey, context = application)
     private val database = cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(application)
     private val adaptiveScorer = AdaptiveCandidateScorer.getInstance(application)
+    private val rankingFeedback = RankingFeedbackRepository.getInstance(application)
     private val subscriptionRepository = cx.aswin.boxcast.core.data.SubscriptionRepository(database.podcastDao())
     private val rssRepository =
         cx.aswin.boxcast.core.data.RssPodcastRepository.getInstance(application)
@@ -214,6 +228,21 @@ class HomeViewModel(
     private val _becauseYouLikePodcasts = MutableStateFlow<List<Podcast>>(emptyList())
     private val _isBecauseYouLikeLoading = MutableStateFlow(false)
     private val _isRecommendationsFallback = MutableStateFlow(true)
+    private val _adaptiveSections = MutableStateFlow<List<ContentSection>>(emptyList())
+    private val adaptiveContentSessionId = java.util.UUID.randomUUID().toString()
+    private val exposedAdaptiveSections = mutableSetOf<String>()
+    private val contentContextEngine = ContentContextEngine()
+    private val contentOrchestrator = ContentOrchestrator(
+        providers = listOf(
+            ServerIntentCandidateProvider(podcastRepository),
+            PodcastCandidateProvider(CandidateSource.SUBSCRIPTION) { _, _ ->
+                subscriptionRepository.subscribedPodcasts.first()
+            },
+        ),
+        ranker = AdaptiveContentCandidateRanker(adaptiveScorer) {
+            playbackRepository.getAllHistory().first()
+        },
+    )
 
     // Cached base data (For You)
     private var cachedRegion: String? = null
@@ -817,8 +846,68 @@ class HomeViewModel(
         observeSelectedPodcast()
         manageFilterSelectionOnSubscriptionChange()
         loadData()
+        loadAdaptiveContent()
         startBackgroundSync()
         eagerlyLoadNewSubscriptions()
+    }
+
+    private fun loadAdaptiveContent() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val region = userPrefs.regionStream.first()
+                val subscriptions = subscriptionRepository.subscribedPodcasts.first()
+                val history = playbackRepository.getAllHistory().first()
+                val latestHistory = history.maxByOrNull(ListeningHistoryEntity::lastPlayedAt)
+                val context = contentContextEngine.create(
+                    surface = RankingSurface.HOME,
+                    region = region,
+                    isDriving = false,
+                    isOnline = true,
+                    availableMinutes = null,
+                    currentEpisodeId = latestHistory?.episodeId,
+                    currentPodcastId = latestHistory?.podcastId,
+                    historyMaturity = history.size,
+                    subscriptionCount = subscriptions.size,
+                    sessionId = adaptiveContentSessionId,
+                )
+                contentOrchestrator.compose(
+                    context = context,
+                    catalog = podcastRepository.getContentCatalog(),
+                )
+            }.onSuccess { slate ->
+                _adaptiveSections.value = slate.sections
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                android.util.Log.w("HomeViewModel", "Adaptive content composition failed", error)
+            }
+        }
+    }
+
+    fun trackAdaptiveSectionVisible(section: ContentSection) {
+        if (!exposedAdaptiveSections.add(section.stableId)) return
+        viewModelScope.launch {
+            section.items.forEach { candidate ->
+                rankingFeedback.recordExposure(
+                    RankingExposure(
+                        episodeId = candidate.id,
+                        podcastId = candidate.podcast.id,
+                        objective = section.intent.objective,
+                        surface = RankingSurface.HOME,
+                        source = candidate.source,
+                        features = CandidateFeatureBuilder.build(
+                            CandidateSignals(
+                                isUnseenShow = candidate.isNovel,
+                                serverRelevance = candidate.retrievalScore.coerceIn(0.0, 1.0),
+                                isUnplayed = true,
+                                timeContextMatch = 1.0,
+                            ),
+                        ),
+                        entryPoint = "home_adaptive_${section.intent.id}",
+                        online = true,
+                    ),
+                )
+            }
+        }
     }
 
     private fun fetchPersonalizedRecommendations(region: String) {
@@ -1004,7 +1093,8 @@ class HomeViewModel(
                     _becauseYouLikeRecommendations,
                     _becauseYouLikePodcasts,
                     _isBecauseYouLikeLoading,
-                    _isRecommendationsFallback
+                    _isRecommendationsFallback,
+                    _adaptiveSections,
                 ) { array ->
                     val dismissedDate = array[13] as String
                     val dismissedForever = array[15] as Boolean
@@ -1028,7 +1118,8 @@ class HomeViewModel(
                         becauseYouLikeRecommendations = array[17] as List<Episode>,
                         becauseYouLikePodcasts = array[18] as List<Podcast>,
                         isBecauseYouLikeLoading = array[19] as Boolean,
-                        isRecommendationsFallback = array[20] as Boolean
+                        isRecommendationsFallback = array[20] as Boolean,
+                        adaptiveSections = array[21] as List<ContentSection>,
                     )
                 }.debounce(100L).collect { wrapper ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -1567,7 +1658,8 @@ class HomeViewModel(
                             becauseYouLikeRecommendations = wrapper.becauseYouLikeRecommendations,
                             becauseYouLikePodcasts = wrapper.becauseYouLikePodcasts,
                             isBecauseYouLikeLoading = wrapper.isBecauseYouLikeLoading,
-                            isRecommendationsFallback = wrapper.isRecommendationsFallback
+                            isRecommendationsFallback = wrapper.isRecommendationsFallback,
+                            adaptiveSections = wrapper.adaptiveSections,
                         )
                     }
                 }

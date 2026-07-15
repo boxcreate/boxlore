@@ -44,6 +44,46 @@ data class RecommendationsRequest(
 )
 
 @Serializable
+data class RecommendationSemanticFallback(
+    val episodeTitle: String? = null,
+    val podcastTitle: String? = null,
+    val genre: String? = null,
+    val description: String? = null,
+)
+
+@Serializable
+data class RecommendationSeedV2(
+    val kind: String,
+    val id: Long,
+    val weight: Double,
+    val fallback: RecommendationSemanticFallback? = null,
+)
+
+@Serializable
+data class RecommendationsV2Request(
+    val contractVersion: Int = 2,
+    val country: String,
+    val languages: List<String> = emptyList(),
+    val mode: String = "home",
+    val limit: Int = 60,
+    val seeds: List<RecommendationSeedV2> = emptyList(),
+    val interests: List<String> = emptyList(),
+    val subscribedPodcastIds: List<Long> = emptyList(),
+    val excludedEpisodeIds: List<Long> = emptyList(),
+    val excludedPodcastIds: List<Long> = emptyList(),
+)
+
+@Serializable
+data class RecommendationsV2Response(
+    val status: String = "false",
+    val contractVersion: Int? = null,
+    val algorithmVersion: String? = null,
+    val items: List<EpisodeItem> = emptyList(),
+    val isFallback: Boolean = false,
+    val candidateCount: Int = 0,
+)
+
+@Serializable
 data class HistoryItem(
     val podcastTitle: String,
     val episodeTitle: String,
@@ -62,7 +102,9 @@ data class BootstrapRequest(
     val country: String,
     val vibeIds: List<String>,
     val deviceUuid: String? = null,
-    val recommendationsRequest: RecommendationsRequest? = null
+    val recommendationsRequest: RecommendationsRequest? = null,
+    val contractVersion: Int? = null,
+    val intentIds: List<String> = emptyList(),
 )
 
 @Serializable
@@ -72,7 +114,71 @@ data class BootstrapResponse(
     val trending: List<TrendingFeed> = emptyList(),
     val curatedVibes: Map<String, List<TrendingFeed>> = emptyMap(),
     val recommendations: List<EpisodeItem> = emptyList(),
-    val isRecommendationsFallback: Boolean? = null
+    val isRecommendationsFallback: Boolean? = null,
+    val contractVersion: Int? = null,
+    val catalogVersion: Int? = null,
+    val intentCandidates: Map<String, List<TrendingFeed>> = emptyMap(),
+    val recommendationAlgorithmVersion: String? = null,
+)
+
+@Serializable
+data class ContentCatalogResponse(
+    val schemaVersion: Int,
+    val catalogVersion: Int,
+    val validForSeconds: Long,
+    val dayparts: List<ContentDaypartDto> = emptyList(),
+    val safeLayouts: List<String> = emptyList(),
+    val intents: List<ContentIntentDto> = emptyList(),
+    val fallbackIntent: ContentFallbackIntentDto? = null,
+)
+
+@Serializable
+data class ContentDaypartDto(
+    val id: String,
+    val startMinute: Int,
+    val endMinute: Int,
+)
+
+@Serializable
+data class ContentIntentDto(
+    val id: String,
+    val titleKey: String,
+    val titleFallback: String,
+    val subtitleKey: String,
+    val subtitleFallback: String,
+    val icon: String,
+    val surfaces: List<String>,
+    val dayparts: List<String>,
+    val providerQueryRef: String,
+    val layout: String,
+    val minCandidates: Int,
+    val maxCandidates: Int,
+    val freshnessDays: Int,
+    val durationMinutes: ContentDurationRangeDto? = null,
+    val diversity: ContentDiversityDto,
+)
+
+@Serializable
+data class ContentDurationRangeDto(
+    val min: Int,
+    val max: Int,
+)
+
+@Serializable
+data class ContentDiversityDto(
+    val maxPerShow: Int,
+    val minDistinctShows: Int,
+)
+
+@Serializable
+data class ContentFallbackIntentDto(
+    val id: String,
+    val titleKey: String,
+    val titleFallback: String,
+    val subtitleKey: String,
+    val subtitleFallback: String,
+    val icon: String,
+    val layout: String,
 )
 
 @Serializable
