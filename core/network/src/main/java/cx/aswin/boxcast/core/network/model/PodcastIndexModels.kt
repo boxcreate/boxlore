@@ -200,7 +200,31 @@ data class EpisodeItem(
     val episodeNumber: Int? = null,
 
     @SerialName("episodeType")
-    val episodeType: String? = null  // "full", "trailer", "bonus"
+    val episodeType: String? = null,  // "full", "trailer", "bonus"
+
+    @SerialName("genre")
+    val genre: String? = null,
+
+    @SerialName("language")
+    val language: String? = null,
+
+    @SerialName("retrievalScore")
+    val retrievalScore: Double? = null,
+
+    @SerialName("semanticScore")
+    val semanticScore: Double? = null,
+
+    @SerialName("source")
+    val recommendationSource: String? = null,
+
+    @SerialName("reason")
+    val recommendationReason: String? = null,
+
+    @SerialName("serverRank")
+    val serverRank: Int? = null,
+
+    @SerialName("algorithmVersion")
+    val algorithmVersion: String? = null,
 )
 
 // ============== SINGLE PODCAST ==============

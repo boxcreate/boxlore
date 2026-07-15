@@ -1,9 +1,15 @@
 package cx.aswin.boxcast.core.data
 
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
+import cx.aswin.boxcast.core.data.ranking.AdaptiveCandidateScorer
+import cx.aswin.boxcast.core.data.ranking.CandidateSource
+import cx.aswin.boxcast.core.data.ranking.EpisodeRankingInput
+import cx.aswin.boxcast.core.data.ranking.RankingObjective
+import cx.aswin.boxcast.core.data.ranking.RankingSurface
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
+import kotlinx.coroutines.CancellationException
 
 object MixtapeEngine {
     private const val MAX_ITEMS = 15
@@ -16,16 +22,23 @@ object MixtapeEngine {
         val unplayedCount: Int,
     )
 
+    data class AdaptiveRanking(
+        val scorer: AdaptiveCandidateScorer,
+        val objective: RankingObjective = RankingObjective.CONTINUATION,
+        val surface: RankingSurface,
+    )
+
     private data class Candidate(
         val podcast: Podcast,
         val episode: Episode,
         val score: Double,
         val isProgress: Boolean,
+        val source: CandidateSource,
         val progressMs: Long = 0L,
         val durationMs: Long = 0L,
     )
 
-    fun build(
+    suspend fun build(
         subscriptions: List<Podcast>,
         history: List<ListeningHistoryEntity>,
         resolvedSerialEpisodes: Map<String, Episode> = emptyMap(),
@@ -34,6 +47,7 @@ object MixtapeEngine {
             podcasts = subscriptions.map(Podcast::toScorable),
             allHistory = history,
         ),
+        adaptiveRanking: AdaptiveRanking? = null,
         nowMs: Long = System.currentTimeMillis(),
     ): Result {
         val historyByEpisode = history.associateBy(ListeningHistoryEntity::episodeId)
@@ -50,13 +64,43 @@ object MixtapeEngine {
             podcastScores = podcastScores,
             nowMs = nowMs,
         )
-        val ordered = orderCandidates(candidates).take(MAX_ITEMS).toMutableList()
+        var ordered = orderCandidates(candidates).toMutableList()
         addRecommendationFallbacks(
             candidates = ordered,
             recommendations = recommendations,
             subscriptionsById = subscriptionsById,
             historyByEpisode = historyByEpisode,
         )
+        if (adaptiveRanking != null) {
+            ordered = try {
+                val adaptiveScores = adaptiveRanking.scorer.scoreEpisodes(
+                    inputs = ordered.map { candidate ->
+                        EpisodeRankingInput(
+                            episode = candidate.episode,
+                            podcast = candidate.podcast,
+                            priorScore = candidate.score,
+                            source = candidate.source,
+                            isNovel = candidate.source == CandidateSource.SERVER_RECOMMENDATION,
+                        )
+                    },
+                    history = history,
+                    objective = adaptiveRanking.objective,
+                    surface = adaptiveRanking.surface,
+                    nowMs = nowMs,
+                )
+                orderCandidates(
+                    ordered.map { candidate ->
+                        candidate.copy(score = adaptiveScores[candidate.episode.id] ?: candidate.score)
+                    },
+                ).take(MAX_ITEMS).toMutableList()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                orderCandidates(ordered).take(MAX_ITEMS).toMutableList()
+            }
+        } else {
+            ordered = ordered.take(MAX_ITEMS).toMutableList()
+        }
         val podcasts = ordered.map { candidate ->
             val status = when {
                 candidate.isProgress -> EpisodeStatus.IN_PROGRESS
@@ -128,6 +172,7 @@ object MixtapeEngine {
                     progressRatio * 500.0 +
                     AFFINITY_WEIGHT * podcastScores.getOrDefault(item.podcastId, 0.0),
                 isProgress = true,
+                source = CandidateSource.LOCAL_HISTORY,
                 progressMs = item.progressMs,
                 durationMs = item.durationMs,
             )
@@ -172,6 +217,7 @@ object MixtapeEngine {
                 (if (podcast.preferredSort == "oldest") 150.0 else 0.0) +
                 AFFINITY_WEIGHT * podcastScores.getOrDefault(podcast.id, 0.0),
             isProgress = false,
+            source = CandidateSource.SUBSCRIPTION,
         )
     }
 
@@ -220,6 +266,7 @@ object MixtapeEngine {
                     episode = episode,
                     score = 100.0,
                     isProgress = false,
+                    source = CandidateSource.SERVER_RECOMMENDATION,
                 )
             }
     }

@@ -5,6 +5,8 @@ import cx.aswin.boxcast.core.data.SubscriptionRepository
 import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.data.database.PodcastEntity
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
+import cx.aswin.boxcast.core.data.ranking.AdaptiveRankingBackup
+import cx.aswin.boxcast.core.data.ranking.AdaptiveRankingRepository
 import kotlinx.coroutines.flow.first
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -42,10 +44,11 @@ data class GlobalPreferencesBackup(
 )
 
 data class BoxCastBackup(
-    val version: Int = 4,
+    val version: Int = 5,
     val subscriptions: List<PodcastEntity>,
     val history: List<ListeningHistoryEntity>,
-    val globalPreferences: GlobalPreferencesBackup? = null
+    val globalPreferences: GlobalPreferencesBackup? = null,
+    val adaptiveRanking: AdaptiveRankingBackup? = null,
 )
 
 data class OpmlFeed(
@@ -58,8 +61,9 @@ class LibraryBackupManager(
     private val playbackRepository: PlaybackRepository,
     private val podcastRepository: PodcastRepository,
     private val userPrefs: cx.aswin.boxcast.core.data.UserPreferencesRepository? = null,
-    private val context: android.content.Context? = null
+    context: android.content.Context,
 ) {
+    private val context = context.applicationContext
     private val gson: Gson = GsonBuilder()
         .setPrettyPrinting()
         .create()
@@ -98,11 +102,13 @@ class LibraryBackupManager(
             )
         } else null
 
+        val rankingBackup = AdaptiveRankingRepository.getInstance(context).exportBackup()
         val backup = BoxCastBackup(
-            version = 4,
+            version = 5,
             subscriptions = subscriptions,
             history = allHistory,
-            globalPreferences = globalPrefs
+            globalPreferences = globalPrefs,
+            adaptiveRanking = rankingBackup,
         )
         return gson.toJson(backup)
     }
@@ -164,14 +170,12 @@ class LibraryBackupManager(
                     prefs.hideCompletedInSubs?.let { up.setHideCompletedInSubs(it) }
                     prefs.smartDownloadsEnabled?.let { enabled ->
                         up.setSmartDownloadsEnabled(enabled)
-                        if (context != null) {
-                            if (enabled) {
-                                val wifiOnly = prefs.smartDownloadsWifiOnly ?: true
-                                val chargingOnly = prefs.smartDownloadsChargingOnly ?: false
-                                cx.aswin.boxcast.core.data.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly, chargingOnly)
-                            } else {
-                                cx.aswin.boxcast.core.data.SmartDownloadManager.cancelPeriodicSync(context)
-                            }
+                        if (enabled) {
+                            val wifiOnly = prefs.smartDownloadsWifiOnly ?: true
+                            val chargingOnly = prefs.smartDownloadsChargingOnly ?: false
+                            cx.aswin.boxcast.core.data.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly, chargingOnly)
+                        } else {
+                            cx.aswin.boxcast.core.data.SmartDownloadManager.cancelPeriodicSync(context)
                         }
                     }
                     prefs.smartDownloadsMaxEpisodes?.let { up.setSmartDownloadsMaxEpisodes(it) }
@@ -315,8 +319,14 @@ class LibraryBackupManager(
                 )
                 playbackRepository.upsertHistoryEntity(safeEntity)
             }
+
+            // 3. Restore the complete on-device learning state when present. Older backups
+            // remain compatible because this versioned field is optional.
+            backup.adaptiveRanking?.let { rankingBackup ->
+                AdaptiveRankingRepository.getInstance(context).restoreBackup(rankingBackup)
+            }
             
-            // 3. Trigger check for new episodes
+            // 4. Trigger check for new episodes
             if (importedIds.isNotEmpty()) {
                 try {
                     val syncedMap = podcastRepository.syncSubscriptions(importedIds)

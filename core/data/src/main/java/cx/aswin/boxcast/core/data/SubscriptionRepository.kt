@@ -3,6 +3,9 @@ package cx.aswin.boxcast.core.data
 import cx.aswin.boxcast.core.data.database.PodcastDao
 import cx.aswin.boxcast.core.data.database.PodcastEntity
 import cx.aswin.boxcast.core.model.Podcast
+import cx.aswin.boxcast.core.data.ranking.FeedbackTarget
+import cx.aswin.boxcast.core.data.ranking.RankingAction
+import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -79,6 +82,14 @@ class SubscriptionRepository(
             if (!podcast.isRss) {
                 updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
             }
+            RankingFeedbackRepository.getIfInitialized()?.recordAction(
+                target = FeedbackTarget(
+                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                    podcastId = podcast.id,
+                    genre = podcast.genre,
+                ),
+                action = RankingAction.UNSUBSCRIBE,
+            )
         } else {
             // Subscribe (Upsert to ensure we have data for offline/Jump Back In)
             val entity = PodcastEntity(
@@ -122,6 +133,14 @@ class SubscriptionRepository(
                 linkedPodcastIndexId = podcast.linkedPodcastIndexId,
             )
             podcastDao.upsert(entity)
+            RankingFeedbackRepository.getIfInitialized()?.recordAction(
+                target = FeedbackTarget(
+                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                    podcastId = podcast.id,
+                    genre = podcast.genre,
+                ),
+                action = RankingAction.SUBSCRIBE,
+            )
         }
     }
 
@@ -135,6 +154,7 @@ class SubscriptionRepository(
             return
         }
         val existing = podcastDao.getPodcast(podcast.id)
+        val isNewSubscription = existing?.isSubscribed != true
         val preferredSortVal = existing?.preferredSort ?: if (podcast.type == "serial") "oldest" else "newest"
         val typeVal = if (preferredSortVal == "oldest" || podcast.type == "serial") "serial" else "episodic"
         val entity = PodcastEntity(
@@ -184,6 +204,16 @@ class SubscriptionRepository(
                 ?: podcast.linkedPodcastIndexId,
         )
         podcastDao.upsert(entity)
+        if (isNewSubscription) {
+            RankingFeedbackRepository.getIfInitialized()?.recordAction(
+                target = FeedbackTarget(
+                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                    podcastId = podcast.id,
+                    genre = podcast.genre,
+                ),
+                action = RankingAction.SUBSCRIBE,
+            )
+        }
     }
 
     suspend fun setNotificationsEnabled(podcast: Podcast, enabled: Boolean) {

@@ -20,6 +20,8 @@ import cx.aswin.boxcast.core.data.service.auto.AutoBrowseContract
 import cx.aswin.boxcast.core.data.service.auto.AutoMediaItemFactory
 import cx.aswin.boxcast.core.data.service.auto.AutoPlayableSpec
 import cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy
+import cx.aswin.boxcast.core.data.ranking.RankingObjective
+import cx.aswin.boxcast.core.data.toScorable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +77,12 @@ class BoxLorePlaybackService : MediaLibraryService() {
     private val queueSkipMemory by lazy {
         cx.aswin.boxcast.core.data.QueueSkipMemory.fromContext(this)
     }
+    private val rankingFeedbackRepository by lazy {
+        cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository.getInstance(this)
+    }
+    private val adaptiveCandidateScorer by lazy {
+        cx.aswin.boxcast.core.data.ranking.AdaptiveCandidateScorer.getInstance(this)
+    }
     private val smartQueueSources by lazy {
         cx.aswin.boxcast.core.data.DefaultSmartQueueSources(
             context = this,
@@ -88,6 +96,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
         cx.aswin.boxcast.core.data.DefaultSmartQueueEngine(
             sources = smartQueueSources,
             skipMemory = queueSkipMemory,
+            adaptiveScorer = adaptiveCandidateScorer,
         )
     }
     private val queueRepository by lazy {
@@ -144,6 +153,9 @@ class BoxLorePlaybackService : MediaLibraryService() {
     
     private var playbackSessionBufferingStartTimeMs: Long = 0L
     private var playbackSessionTotalBufferedTimeMs: Long = 0L
+    private var playbackSessionConsumedAudioMs: Long = 0L
+    private var playbackSessionLastPositionMs: Long? = null
+    private var playbackSessionLastPositionSampleMs: Long = 0L
     // Remembers the episode that was paused so a subsequent play() with no explicit source
     // (e.g. from the notification / lock screen / Bluetooth) can be attributed as a resume.
     private var lastPausedEpisodeId: String? = null
@@ -268,6 +280,8 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 reason: Int
             ) {
                 android.util.Log.d("BoxCastPlayer", "onPositionDiscontinuity: reason=$reason, from ${oldPosition.positionMs} to ${newPosition.positionMs}")
+                playbackSessionLastPositionMs = newPosition.positionMs
+                playbackSessionLastPositionSampleMs = android.os.SystemClock.elapsedRealtime()
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) {
                     updateHeartbeatsForPosition(newPosition.positionMs, playbackSessionTotalDurationMs)
                     val source = cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.consumeSeekSource()
@@ -1147,6 +1161,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 var mixtape = cx.aswin.boxcast.core.data.MixtapeEngine.build(
                     subscriptions = subscriptions.map { it.toAutoPodcast() },
                     history = history,
+                    adaptiveRanking = cx.aswin.boxcast.core.data.MixtapeEngine.AdaptiveRanking(
+                        scorer = adaptiveCandidateScorer,
+                        surface = cx.aswin.boxcast.core.data.ranking.RankingSurface.ANDROID_AUTO,
+                    ),
                 )
                 if (mixtape.episodes.size < 3) {
                     val recommendations = runCatching {
@@ -1164,6 +1182,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                         subscriptions = subscriptions.map { it.toAutoPodcast() },
                         history = history,
                         recommendations = recommendations,
+                        adaptiveRanking = cx.aswin.boxcast.core.data.MixtapeEngine.AdaptiveRanking(
+                            scorer = adaptiveCandidateScorer,
+                            surface = cx.aswin.boxcast.core.data.ranking.RankingSurface.ANDROID_AUTO,
+                        ),
                     )
                 }
                 val mixtapeImages = mixtape.podcasts.mapNotNull { podcast ->
@@ -1267,6 +1289,9 @@ class BoxLorePlaybackService : MediaLibraryService() {
         playbackSessionStartTimeMs = System.currentTimeMillis()
         playbackSessionBufferingStartTimeMs = 0L
         playbackSessionTotalBufferedTimeMs = 0L
+        playbackSessionConsumedAudioMs = 0L
+        playbackSessionLastPositionMs = mediaSession?.player?.currentPosition
+        playbackSessionLastPositionSampleMs = android.os.SystemClock.elapsedRealtime()
         playbackSessionEpisodeId = episodeId
         
         val title = currentItem?.mediaMetadata?.title?.toString()
@@ -1448,8 +1473,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
     private fun endPlaybackSession(forceCompleted: Boolean = false, isTransition: Boolean = false) {
         val currentEpisodeId = playbackSessionEpisodeId
         if (playbackSessionStartTimeMs > 0 && currentEpisodeId != null) {
+            mediaSession?.player?.let(::updateConsumedAudio)
             val durationPlayedMs = System.currentTimeMillis() - playbackSessionStartTimeMs
             val durationPlayedSeconds = durationPlayedMs / 1000f
+            val consumedAudioSeconds = playbackSessionConsumedAudioMs / 1000f
             val currentPodcastId = playbackSessionPodcastId
             val currentPodcastName = playbackSessionPodcastName
             val currentPodcastGenre = playbackSessionPodcastGenre
@@ -1549,7 +1576,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 // Track skip if it's a transition skip within 30 seconds for an AUTO_FILL episode.
                 // Also feed local skip memory so the SmartQueueEngine never re-suggests it
                 // and can down-rank the podcast after repeated rejections.
-                if (isTransition && durationPlayedSeconds <= 30f && playbackSessionContextType == "AUTO_FILL") {
+                if (isTransition && consumedAudioSeconds <= 30f && playbackSessionContextType == "AUTO_FILL") {
                     cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSmartQueueEpisodeSkipped(
                         episodeId = currentEpisodeId,
                         recommendationSource = playbackSessionContextSourceId ?: "unknown",
@@ -1566,6 +1593,30 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     }
                 }
             }
+
+            val adaptiveSource = when (playbackSessionContextType) {
+                "AUTO_FILL" -> cx.aswin.boxcast.core.data.ranking.CandidateSource.SERVER_RECOMMENDATION
+                cx.aswin.boxcast.core.data.QueueMath.CONTEXT_TYPE_LORE ->
+                    cx.aswin.boxcast.core.data.ranking.CandidateSource.CURATED_INTENT
+                else -> null
+            }
+            val isAdaptiveEarlySkip = isTransition &&
+                consumedAudioSeconds <= 30f &&
+                adaptiveSource != null
+            serviceScope.launch {
+                rankingFeedbackRepository.recordPlayback(
+                    target = cx.aswin.boxcast.core.data.ranking.FeedbackTarget(
+                        episodeId = currentEpisodeId,
+                        podcastId = currentPodcastId.orEmpty(),
+                        genre = currentPodcastGenre,
+                        source = adaptiveSource,
+                    ),
+                    listenSeconds = consumedAudioSeconds.toLong().coerceAtLeast(0L),
+                    durationSeconds = (totalDurationMs / 1_000L).coerceAtLeast(0L),
+                    completed = isCompleted,
+                    earlySkip = isAdaptiveEarlySkip,
+                )
+            }
             
             // Flush events immediately to prevent losses during backgrounding/shutdown
             cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.flush()
@@ -1574,6 +1625,9 @@ class BoxLorePlaybackService : MediaLibraryService() {
             playbackSessionStartTimeMs = 0L
             playbackSessionBufferingStartTimeMs = 0L
             playbackSessionTotalBufferedTimeMs = 0L
+            playbackSessionConsumedAudioMs = 0L
+            playbackSessionLastPositionMs = null
+            playbackSessionLastPositionSampleMs = 0L
             playbackSessionEpisodeId = null
             playbackSessionEpisodeTitle = null
             playbackSessionPodcastId = null
@@ -1806,6 +1860,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
         var tickCount = 0
         while (true) {
             kotlinx.coroutines.delay(1_000)
+            updateConsumedAudio(player)
             
             // Continuous Service-Level Sleep Timer Enforcement (fires even when locked in Doze mode)
             val sleepEnd = cx.aswin.boxcast.core.data.SleepTimerHolder.activeSleepTimerEndMs
@@ -1823,6 +1878,24 @@ class BoxLorePlaybackService : MediaLibraryService() {
                 dispatchHeartbeatTelemetry(player)
             }
         }
+    }
+
+    private fun updateConsumedAudio(player: Player) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        val currentPosition = player.currentPosition.coerceAtLeast(0L)
+        val previousPosition = playbackSessionLastPositionMs
+        val previousSample = playbackSessionLastPositionSampleMs
+        if (player.isPlaying && previousPosition != null && previousSample > 0L) {
+            val positionAdvance = currentPosition - previousPosition
+            val elapsed = (now - previousSample).coerceAtLeast(0L)
+            val maximumNaturalAdvance =
+                (elapsed * player.playbackParameters.speed * 1.5f).toLong() + 1_000L
+            if (positionAdvance in 0..maximumNaturalAdvance) {
+                playbackSessionConsumedAudioMs += positionAdvance
+            }
+        }
+        playbackSessionLastPositionMs = currentPosition
+        playbackSessionLastPositionSampleMs = now
     }
 
     private fun dispatchHeartbeatTelemetry(player: ExoPlayer) {
@@ -3273,8 +3346,18 @@ class BoxLorePlaybackService : MediaLibraryService() {
         private suspend fun getSubscriptionsChildren(): List<MediaItem> {
             val subscriptions = database.podcastDao().getSubscribedPodcastsList()
             android.util.Log.d("AutoBrowse", "Subscriptions: ${subscriptions.size} podcasts")
-            
-            return subscriptions.map { entity ->
+            val history = database.listeningHistoryDao().getRecentHistoryList(300)
+            val scores = adaptiveCandidateScorer.scorePodcasts(
+                podcasts = subscriptions.map { it.toScorable() },
+                history = history,
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = cx.aswin.boxcast.core.data.ranking.RankingSurface.ANDROID_AUTO,
+            )
+            val rankedSubscriptions = subscriptions.sortedByDescending {
+                scores[it.podcastId] ?: 0.0
+            }
+
+            return rankedSubscriptions.map { entity ->
                 AutoMediaItemFactory.browsable(
                     id = "$SUBSCRIPTION_PREFIX${entity.podcastId}",
                     title = entity.title,
@@ -3526,6 +3609,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
             var result = cx.aswin.boxcast.core.data.MixtapeEngine.build(
                 subscriptions = subscriptions,
                 history = history,
+                adaptiveRanking = cx.aswin.boxcast.core.data.MixtapeEngine.AdaptiveRanking(
+                    scorer = adaptiveCandidateScorer,
+                    surface = cx.aswin.boxcast.core.data.ranking.RankingSurface.ANDROID_AUTO,
+                ),
             )
             if (result.episodes.size < 3) {
                 val recommendations = runCatching {
@@ -3545,6 +3632,10 @@ class BoxLorePlaybackService : MediaLibraryService() {
                     subscriptions = subscriptions,
                     history = history,
                     recommendations = recommendations,
+                    adaptiveRanking = cx.aswin.boxcast.core.data.MixtapeEngine.AdaptiveRanking(
+                        scorer = adaptiveCandidateScorer,
+                        surface = cx.aswin.boxcast.core.data.ranking.RankingSurface.ANDROID_AUTO,
+                    ),
                 )
             }
             val episodes = result.podcasts.mapNotNull { podcast ->

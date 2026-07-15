@@ -32,8 +32,8 @@ data class SeekControlDurations(
 @Composable
 internal fun seekDurationContentDescription(seconds: Int, forward: Boolean): String =
     pluralStringResource(
-        id = if (forward) R.plurals.seek_forward_seconds else R.plurals.seek_back_seconds,
-        count = seconds,
+        if (forward) R.plurals.seek_forward_seconds else R.plurals.seek_back_seconds,
+        seconds,
         seconds,
     )
 

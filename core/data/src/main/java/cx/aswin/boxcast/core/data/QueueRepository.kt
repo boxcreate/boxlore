@@ -6,6 +6,10 @@ import cx.aswin.boxcast.core.data.database.entities.QueueItem
 import cx.aswin.boxcast.core.network.model.EpisodeItem
 import cx.aswin.boxcast.core.model.Person
 import cx.aswin.boxcast.core.model.Transcript
+import cx.aswin.boxcast.core.data.ranking.CandidateSource
+import cx.aswin.boxcast.core.data.ranking.FeedbackTarget
+import cx.aswin.boxcast.core.data.ranking.RankingAction
+import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
@@ -88,6 +92,21 @@ class QueueRepository @Inject constructor(
         )
         android.util.Log.d(TAG, "addToQueue: Inserting newItem at position ${maxPos + 1}")
         queueDao.insertQueueItem(newItem)
+        if (newItem.contextType == "MANUAL" || newItem.contextType == QueueMath.CONTEXT_TYPE_LORE) {
+            RankingFeedbackRepository.getIfInitialized()?.recordAction(
+                target = FeedbackTarget(
+                    episodeId = newItem.episodeId,
+                    podcastId = newItem.podcastId,
+                    genre = newItem.podcastGenre,
+                    source = if (newItem.contextType == QueueMath.CONTEXT_TYPE_LORE) {
+                        CandidateSource.CURATED_INTENT
+                    } else {
+                        null
+                    },
+                ),
+                action = RankingAction.EXPLICIT_QUEUE,
+            )
+        }
     }
 
     suspend fun clearQueue() {

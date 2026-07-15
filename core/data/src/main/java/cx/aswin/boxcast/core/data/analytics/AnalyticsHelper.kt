@@ -2,6 +2,7 @@ package cx.aswin.boxcast.core.data.analytics
 
 import android.content.Context
 import com.posthog.PostHog
+import cx.aswin.boxcast.core.data.ranking.RankingAggregateTelemetry
 import java.time.Instant
 
 object AnalyticsHelper {
@@ -1525,6 +1526,28 @@ object AnalyticsHelper {
                 "podcasts_clicked_count" to podcastsClickedCount,
                 "infos_clicked_count" to infosClickedCount
             )
+        )
+    }
+
+    fun trackAdaptiveRankingStatus(statuses: List<RankingAggregateTelemetry>) {
+        if (statuses.isEmpty()) return
+        PostHog.capture(
+            event = "adaptive_ranking_status",
+            properties = mapOf(
+                "ranker_version" to statuses.maxOf(RankingAggregateTelemetry::rankerVersion),
+                "objectives" to statuses.map(RankingAggregateTelemetry::objective),
+                "ranker_versions" to statuses.map(RankingAggregateTelemetry::rankerVersion),
+                "ranker_versions_by_objective" to statuses.associate {
+                    it.objective to it.rankerVersion
+                },
+                "learning_stages" to statuses.map(RankingAggregateTelemetry::learningStage),
+                "outcome_count_buckets" to statuses.map(
+                    RankingAggregateTelemetry::outcomeCountBucket,
+                ),
+                "exploration_eligible" to statuses.map(
+                    RankingAggregateTelemetry::explorationEligible,
+                ),
+            ),
         )
     }
 

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as lazyRowItems
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -41,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -78,6 +81,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Briefing
+import cx.aswin.boxcast.core.data.content.ContentSection
 import cx.aswin.boxcast.feature.home.components.DailyBriefingCard
 
 import androidx.compose.material.icons.Icons
@@ -111,6 +115,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 
 import cx.aswin.boxcast.feature.home.components.HeroCarousel
+import cx.aswin.boxcast.feature.home.components.CuratedEpisodeCard
 import cx.aswin.boxcast.feature.home.components.PodcastCard
 import cx.aswin.boxcast.feature.home.components.timeBlockItems
 import cx.aswin.boxcast.feature.home.CuratedTimeBlock
@@ -128,6 +133,9 @@ data class StablePodcastList(val list: List<Podcast>)
 
 @androidx.compose.runtime.Stable
 data class StableEpisodeList(val list: List<Episode>)
+
+@androidx.compose.runtime.Stable
+data class StableContentSectionList(val list: List<ContentSection>)
 
 @androidx.compose.runtime.Stable
 data class StablePlaybackStateMap(val map: Map<String, Pair<EpisodeStatus, Float>>)
@@ -158,6 +166,7 @@ data class HomeFeedCallbacks(
     val onEpisodeClick: ((Episode, Podcast, String?) -> Unit)?,
     val onCuratedEpisodeClick: ((Episode, Podcast, String, Int) -> Unit)?,
     val onCuratedImpression: (String, List<String>) -> Unit,
+    val onAdaptiveSectionVisible: (ContentSection, Set<String>) -> Unit,
     val onPlayClick: ((Podcast, android.os.Bundle?) -> Unit)?,
     val onNavigateToLibrary: (() -> Unit)?,
     val onNavigateToExplore: ((String?, String, String?) -> Unit)?,
@@ -302,6 +311,7 @@ fun HomeRoute(
                 onEpisodeClick = onEpisodeClick,
                 onCuratedEpisodeClick = onCuratedEpisodeClick,
                 onCuratedImpression = viewModel::trackCuratedImpressionOnce,
+                onAdaptiveSectionVisible = viewModel::trackAdaptiveSectionVisible,
                 onPlayClick = onPlayClick,
                 onNavigateToLibrary = onNavigateToLibrary,
                 onNavigateToExplore = onNavigateToExplore,
@@ -392,6 +402,8 @@ private fun HomeScreenFeedContent(
         latestItems = StablePodcastList(uiState.latestEpisodes),
         subscribedItems = StablePodcastList(uiState.subscribedPodcasts),
         timeBlock = uiState.timeBlock,
+        adaptiveSections = StableContentSectionList(uiState.adaptiveSections),
+        onAdaptiveSectionVisible = callbacks.onAdaptiveSectionVisible,
         briefing = uiState.briefing,
         briefingChapters = uiState.briefingChapters,
         gridItems = StablePodcastList(uiState.discoverPodcasts),
@@ -579,6 +591,8 @@ private fun PodcastFeed(
     latestItems: StablePodcastList,
     subscribedItems: StablePodcastList,
     timeBlock: CuratedTimeBlock?,
+    adaptiveSections: StableContentSectionList,
+    onAdaptiveSectionVisible: (ContentSection, Set<String>) -> Unit,
     gridItems: StablePodcastList,
     selectedCategory: String?,
     currentPlayingPodcastId: String?,
@@ -944,6 +958,99 @@ private fun PodcastFeed(
                     showTasteHeader = hasBecauseYouLike,
                     isFallback = isRecommendationsFallback
                 )
+            }
+        }
+
+        adaptiveSections.list.forEach { section ->
+            item(
+                span = StaggeredGridItemSpan.FullLine,
+                key = "adaptive_${section.stableId}",
+                contentType = "adaptive_section",
+            ) {
+                val rowState = rememberLazyListState()
+                val sectionKey = "adaptive_${section.stableId}"
+                LaunchedEffect(section, gridState, rowState) {
+                    snapshotFlow {
+                        val sectionVisible = gridState.layoutInfo.visibleItemsInfo.any {
+                            it.key == sectionKey
+                        }
+                        if (sectionVisible) {
+                            rowState.layoutInfo.visibleItemsInfo
+                                .mapNotNull { it.key as? String }
+                                .toSet()
+                        } else {
+                            emptySet()
+                        }
+                    }.distinctUntilChanged().collect { visibleCandidateIds ->
+                        if (visibleCandidateIds.isNotEmpty()) {
+                            onAdaptiveSectionVisible(section, visibleCandidateIds)
+                        }
+                    }
+                }
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
+                ) {
+                    Column {
+                        Text(
+                            text = section.intent.title,
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontFamily = SectionHeaderFontFamily,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        )
+                        section.intent.subtitle?.let { subtitle ->
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    LazyRow(
+                        state = rowState,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        lazyRowItems(
+                            items = section.items,
+                            key = { candidate -> candidate.id },
+                        ) { candidate ->
+                            val episode = candidate.episode
+                            val onCandidateClick: () -> Unit = {
+                                if (episode == null) {
+                                        onPodcastClick(
+                                            candidate.podcast,
+                                            "home_adaptive_${section.intent.id}",
+                                            null,
+                                            null,
+                                        )
+                                } else {
+                                    onEpisodeClick?.invoke(
+                                        episode,
+                                        candidate.podcast,
+                                        "home_adaptive_${section.intent.id}",
+                                    )
+                                }
+                                Unit
+                            }
+                            if (episode == null) {
+                                PodcastCard(
+                                    podcast = candidate.podcast,
+                                    onClick = onCandidateClick,
+                                    modifier = Modifier.width(156.dp),
+                                    showGenreChip = false,
+                                )
+                            } else {
+                                CuratedEpisodeCard(
+                                    podcast = candidate.podcast,
+                                    episode = episode,
+                                    onClick = onCandidateClick,
+                                    modifier = Modifier.width(156.dp),
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 

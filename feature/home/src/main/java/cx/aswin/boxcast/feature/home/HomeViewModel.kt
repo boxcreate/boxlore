@@ -12,8 +12,25 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxcast.core.data.MixtapeEngine
 import cx.aswin.boxcast.core.data.PodcastRepository
 import cx.aswin.boxcast.core.data.HomeBootstrapData
-import cx.aswin.boxcast.core.data.PodcastScoring
 import cx.aswin.boxcast.core.data.toScorable
+import cx.aswin.boxcast.core.data.content.AdaptiveContentCandidateRanker
+import cx.aswin.boxcast.core.data.content.ContentContextEngine
+import cx.aswin.boxcast.core.data.content.ContentContextInput
+import cx.aswin.boxcast.core.data.content.ContentOrchestrator
+import cx.aswin.boxcast.core.data.content.ContentSection
+import cx.aswin.boxcast.core.data.content.PodcastCandidateProvider
+import cx.aswin.boxcast.core.data.content.ServerIntentCandidateProvider
+import cx.aswin.boxcast.core.data.ranking.AdaptiveCandidateScorer
+import cx.aswin.boxcast.core.data.ranking.CandidateSource
+import cx.aswin.boxcast.core.data.ranking.EpisodeRankingInput
+import cx.aswin.boxcast.core.data.ranking.PodcastRankingInput
+import cx.aswin.boxcast.core.data.ranking.RankingObjective
+import cx.aswin.boxcast.core.data.ranking.RankingSurface
+import cx.aswin.boxcast.core.data.ranking.CandidateFeatureBuilder
+import cx.aswin.boxcast.core.data.ranking.CandidateSignals
+import cx.aswin.boxcast.core.data.ranking.RankingExposure
+import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
+import cx.aswin.boxcast.core.data.ranking.DiversityPolicy
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import kotlinx.coroutines.CancellationException
@@ -104,7 +121,8 @@ data class HomeUiState(
     val becauseYouLikeRecommendations: List<Episode> = emptyList(),
     val becauseYouLikePodcasts: List<Podcast> = emptyList(),
     val isBecauseYouLikeLoading: Boolean = false,
-    val isRecommendationsFallback: Boolean = true
+    val isRecommendationsFallback: Boolean = true,
+    val adaptiveSections: List<ContentSection> = emptyList(),
 )
 
 private data class SelectedPodcastSignal(
@@ -134,7 +152,8 @@ data class HomeDataWrapper(
     val becauseYouLikeRecommendations: List<Episode> = emptyList(),
     val becauseYouLikePodcasts: List<Podcast> = emptyList(),
     val isBecauseYouLikeLoading: Boolean = false,
-    val isRecommendationsFallback: Boolean = true
+    val isRecommendationsFallback: Boolean = true,
+    val adaptiveSections: List<ContentSection> = emptyList(),
 )
 
 /**
@@ -149,6 +168,13 @@ object ModeSwitchState {
     fun finish() { _isSwitching.value = false }
 }
 
+private data class AdaptiveContentTrigger(
+    val region: String,
+    val subscriptionIds: Set<String>,
+    val latestEpisodeId: String?,
+    val latestPodcastId: String?,
+    val historyMaturity: Int,
+)
 
 @Suppress("kotlin:S6310")
 class HomeViewModel(
@@ -161,6 +187,8 @@ class HomeViewModel(
     
     val podcastRepository = PodcastRepository(baseUrl = apiBaseUrl, publicKey = publicKey, context = application)
     private val database = cx.aswin.boxcast.core.data.database.BoxLoreDatabase.getDatabase(application)
+    private val adaptiveScorer = AdaptiveCandidateScorer.getInstance(application)
+    private val rankingFeedback = RankingFeedbackRepository.getInstance(application)
     private val subscriptionRepository = cx.aswin.boxcast.core.data.SubscriptionRepository(database.podcastDao())
     private val rssRepository =
         cx.aswin.boxcast.core.data.RssPodcastRepository.getInstance(application)
@@ -208,6 +236,21 @@ class HomeViewModel(
     private val _becauseYouLikePodcasts = MutableStateFlow<List<Podcast>>(emptyList())
     private val _isBecauseYouLikeLoading = MutableStateFlow(false)
     private val _isRecommendationsFallback = MutableStateFlow(true)
+    private val _adaptiveSections = MutableStateFlow<List<ContentSection>>(emptyList())
+    private val adaptiveContentSessionId = java.util.UUID.randomUUID().toString()
+    private val exposedAdaptiveCandidates = mutableSetOf<String>()
+    private val contentContextEngine = ContentContextEngine()
+    private val contentOrchestrator = ContentOrchestrator(
+        providers = listOf(
+            ServerIntentCandidateProvider(podcastRepository),
+            PodcastCandidateProvider(CandidateSource.SUBSCRIPTION) { _, _ ->
+                subscriptionRepository.subscribedPodcasts.first()
+            },
+        ),
+        ranker = AdaptiveContentCandidateRanker(adaptiveScorer) {
+            playbackRepository.getAllHistory().first()
+        },
+    )
 
     // Cached base data (For You)
     private var cachedRegion: String? = null
@@ -332,20 +375,7 @@ class HomeViewModel(
                     val json = Json { ignoreUnknownKeys = true }
                     val cachedVibesMap = json.decodeFromString<Map<String, List<Podcast>>>(cachedVibesJson)
                     val blockConfig = getTimeBlockConfig()
-                    val daySeed = java.time.LocalDate.now().toEpochDay()
-                    val resolvedSections = blockConfig.genres.map { genre ->
-                        val list = cachedVibesMap[genre.id] ?: emptyList()
-                        val filtered = list
-                            .filter { it.latestEpisode != null }
-                            .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
-                            .take(10)
-                        if (filtered.isNotEmpty()) {
-                            CuratedSectionData(genre.title, genre.id, filtered)
-                        } else null
-                    }.filterNotNull()
-
-                    if (resolvedSections.isNotEmpty()) {
-                        val block = CuratedTimeBlock(blockConfig.title, blockConfig.subtitle, blockConfig.icon, resolvedSections)
+                    buildRankedTimeBlock(blockConfig, cachedVibesMap)?.let { block ->
                         _timeBlockState.value = block
                         cachedTimeBlock = block
                         _isCuratedLoaded.value = true
@@ -824,8 +854,93 @@ class HomeViewModel(
         observeSelectedPodcast()
         manageFilterSelectionOnSubscriptionChange()
         loadData()
+        loadAdaptiveContent()
         startBackgroundSync()
         eagerlyLoadNewSubscriptions()
+    }
+
+    private fun loadAdaptiveContent() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            combine(
+                userPrefs.regionStream,
+                subscriptionRepository.subscribedPodcasts,
+                playbackRepository.getAllHistory(),
+            ) { region, subscriptions, history ->
+                val latestHistory = history.maxByOrNull(ListeningHistoryEntity::lastPlayedAt)
+                AdaptiveContentTrigger(
+                    region = region,
+                    subscriptionIds = subscriptions.map(Podcast::id).toSet(),
+                    latestEpisodeId = latestHistory?.episodeId,
+                    latestPodcastId = latestHistory?.podcastId,
+                    historyMaturity = history.size,
+                )
+            }.distinctUntilChanged().collectLatest { trigger ->
+                try {
+                    val context = contentContextEngine.create(
+                        ContentContextInput(
+                            surface = RankingSurface.HOME,
+                            region = trigger.region,
+                            isDriving = false,
+                            isOnline = true,
+                            availableMinutes = null,
+                            currentEpisodeId = trigger.latestEpisodeId,
+                            currentPodcastId = trigger.latestPodcastId,
+                            historyMaturity = trigger.historyMaturity,
+                            subscriptionCount = trigger.subscriptionIds.size,
+                            sessionId = adaptiveContentSessionId,
+                        ),
+                    )
+                    val slate = contentOrchestrator.compose(
+                        context = context,
+                        catalog = podcastRepository.getContentCatalog(),
+                        forceRefresh = true,
+                    )
+                    _adaptiveSections.value = slate.sections
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    android.util.Log.w(
+                        "HomeViewModel",
+                        "Adaptive content composition failed",
+                        error,
+                    )
+                }
+            }
+        }
+    }
+
+    fun trackAdaptiveSectionVisible(
+        section: ContentSection,
+        visibleCandidateIds: Set<String>,
+    ) {
+        val newlyVisible = section.items.filter { candidate ->
+            candidate.id in visibleCandidateIds &&
+                exposedAdaptiveCandidates.add("${section.stableId}:${candidate.id}")
+        }
+        if (newlyVisible.isEmpty()) return
+        viewModelScope.launch {
+            newlyVisible.forEach { candidate ->
+                rankingFeedback.recordExposure(
+                    RankingExposure(
+                        episodeId = candidate.id,
+                        podcastId = candidate.podcast.id,
+                        objective = section.intent.objective,
+                        surface = RankingSurface.HOME,
+                        source = candidate.source,
+                        features = CandidateFeatureBuilder.build(
+                            CandidateSignals(
+                                isUnseenShow = candidate.isNovel,
+                                serverRelevance = candidate.retrievalScore.coerceIn(0.0, 1.0),
+                                isUnplayed = true,
+                                timeContextMatch = 1.0,
+                            ),
+                        ),
+                        entryPoint = "home_adaptive_${section.intent.id}",
+                        online = true,
+                    ),
+                )
+            }
+        }
     }
 
     private fun fetchPersonalizedRecommendations(region: String) {
@@ -920,22 +1035,7 @@ class HomeViewModel(
                         val blockConfig = getTimeBlockConfig()
                         val vibeIds = blockConfig.genres.map { it.id }
                         val curatedVibesMap = podcastRepository.getCuratedVibes(vibeIds, region)
-                        
-                        val daySeed = java.time.LocalDate.now().toEpochDay()
-                        val resolvedSections = blockConfig.genres.map { genre ->
-                            val list = curatedVibesMap[genre.id] ?: emptyList()
-                            val filtered = list
-                                .filter { it.latestEpisode != null }
-                                .shuffled(kotlin.random.Random(daySeed.toInt() + genre.title.hashCode()))
-                                .take(10)
-                            if (filtered.isNotEmpty()) {
-                                CuratedSectionData(genre.title, genre.id, filtered)
-                            } else null
-                        }.filterNotNull()
-                        
-                        val block = if (resolvedSections.isNotEmpty()) {
-                            CuratedTimeBlock(blockConfig.title, blockConfig.subtitle, blockConfig.icon, resolvedSections)
-                        } else null
+                        val block = buildRankedTimeBlock(blockConfig, curatedVibesMap)
                         
                         _timeBlockState.value = block
                         cachedTimeBlock = block
@@ -1026,7 +1126,8 @@ class HomeViewModel(
                     _becauseYouLikeRecommendations,
                     _becauseYouLikePodcasts,
                     _isBecauseYouLikeLoading,
-                    _isRecommendationsFallback
+                    _isRecommendationsFallback,
+                    _adaptiveSections,
                 ) { array ->
                     val dismissedDate = array[13] as String
                     val dismissedForever = array[15] as Boolean
@@ -1050,14 +1151,53 @@ class HomeViewModel(
                         becauseYouLikeRecommendations = array[17] as List<Episode>,
                         becauseYouLikePodcasts = array[18] as List<Podcast>,
                         isBecauseYouLikeLoading = array[19] as Boolean,
-                        isRecommendationsFallback = array[20] as Boolean
+                        isRecommendationsFallback = array[20] as Boolean,
+                        adaptiveSections = array[21] as List<ContentSection>,
                     )
                 }.debounce(100L).collect { wrapper ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                        val trendingList = wrapper.trending
+                        val allHistory = wrapper.history
+                        val subscribedIds = wrapper.subs.map(Podcast::id).toSet()
+                        val trendingList = adaptiveScorer.rankPodcasts(
+                            inputs = wrapper.trending.mapIndexed { index, podcast ->
+                                PodcastRankingInput(
+                                    podcast = podcast,
+                                    priorScore = (wrapper.trending.size - index).toDouble(),
+                                    source = CandidateSource.TRENDING,
+                                    isNovel = podcast.id !in subscribedIds,
+                                )
+                            },
+                            history = allHistory,
+                            objective = RankingObjective.DISCOVERY,
+                            surface = RankingSurface.HOME,
+                            diversityPolicy = DiversityPolicy(
+                                limit = wrapper.trending.size,
+                                maxPerShow = 1,
+                                reserveNovelSlot = true,
+                            ),
+                        )
+                        val rankedRecommendations = adaptiveScorer.rankEpisodes(
+                            inputs = wrapper.recommendations.mapIndexed { index, episode ->
+                                val podcast = episode.toRecommendationPodcast()
+                                EpisodeRankingInput(
+                                    episode = episode,
+                                    podcast = podcast,
+                                    priorScore = (wrapper.recommendations.size - index).toDouble(),
+                                    source = CandidateSource.SERVER_RECOMMENDATION,
+                                    isNovel = podcast.id !in subscribedIds,
+                                )
+                            },
+                            history = allHistory,
+                            objective = RankingObjective.DISCOVERY,
+                            surface = RankingSurface.HOME,
+                            diversityPolicy = DiversityPolicy(
+                                limit = wrapper.recommendations.size,
+                                maxPerShow = 2,
+                                reserveNovelSlot = true,
+                            ),
+                        )
                         val resumeList = wrapper.resume
                         val subs = wrapper.subs
-                        val allHistory = wrapper.history
                         val resolvedSerial = wrapper.resolvedSerial
                         val completedEpisodeIds = wrapper.completedEpisodeIds
                     
@@ -1285,9 +1425,11 @@ class HomeViewModel(
 
                         // Calculate score map for all subscribed podcasts using the shared utility (only on first calculation)
                         val podScoresMap = if (stablePodcastOrder == null || stableMixtapePodcasts == null) {
-                            PodcastScoring.calculateScores(
+                            adaptiveScorer.scorePodcasts(
                                 podcasts = subs.map { it.toScorable() },
-                                allHistory = allHistory
+                                history = allHistory,
+                                objective = RankingObjective.YOUR_SHOWS,
+                                surface = RankingSurface.HOME,
                             )
                         } else {
                             emptyMap()
@@ -1355,8 +1497,12 @@ class HomeViewModel(
                                 subscriptions = subs,
                                 history = allHistory,
                                 resolvedSerialEpisodes = _resolvedSerialEpisodes.value,
-                                recommendations = wrapper.recommendations,
+                                recommendations = rankedRecommendations,
                                 podcastScores = podScoresMap,
+                                adaptiveRanking = MixtapeEngine.AdaptiveRanking(
+                                    scorer = adaptiveScorer,
+                                    surface = RankingSurface.HOME,
+                                ),
                             )
                             mixtapePodcasts = result.podcasts
                             mixtapeCount = result.unplayedCount
@@ -1533,7 +1679,7 @@ class HomeViewModel(
                             selectedCategory = _selectedCategory.value,
                             timeBlock = timeBlock,
                             discoverPodcasts = discover,
-                            recommendations = wrapper.recommendations,
+                            recommendations = rankedRecommendations,
                             isLoading = initialLoading,
                             isFilterLoading = trendingList.isEmpty(),
                             isError = false,
@@ -1551,7 +1697,8 @@ class HomeViewModel(
                             becauseYouLikeRecommendations = wrapper.becauseYouLikeRecommendations,
                             becauseYouLikePodcasts = wrapper.becauseYouLikePodcasts,
                             isBecauseYouLikeLoading = wrapper.isBecauseYouLikeLoading,
-                            isRecommendationsFallback = wrapper.isRecommendationsFallback
+                            isRecommendationsFallback = wrapper.isRecommendationsFallback,
+                            adaptiveSections = wrapper.adaptiveSections,
                         )
                     }
                 }
@@ -1724,6 +1871,45 @@ class HomeViewModel(
     // --- Helper Logic ---
     data class TimeBlockConfig(val title: String, val subtitle: String, val icon: ImageVector, val genres: List<GenreConfig>)
     data class GenreConfig(val id: String, val title: String)
+
+    private suspend fun buildRankedTimeBlock(
+        config: TimeBlockConfig,
+        candidatesByIntent: Map<String, List<Podcast>>,
+    ): CuratedTimeBlock? {
+        val history = database.listeningHistoryDao().getRecentHistoryList(300)
+        val daySeed = java.time.LocalDate.now().toEpochDay().toInt()
+        val sections = config.genres.mapNotNull { genre ->
+            val candidates = candidatesByIntent[genre.id]
+                .orEmpty()
+                .filter { it.latestEpisode != null }
+                .shuffled(kotlin.random.Random(daySeed + genre.title.hashCode()))
+            val ranked = adaptiveScorer.rankPodcasts(
+                inputs = candidates.mapIndexed { index, podcast ->
+                    PodcastRankingInput(
+                        podcast = podcast,
+                        priorScore = (candidates.size - index).toDouble(),
+                        source = CandidateSource.CURATED_INTENT,
+                        isNovel = podcast.subscribedAt <= 0L,
+                        timeContextMatch = 1.0,
+                    )
+                },
+                history = history,
+                objective = RankingObjective.SLATE,
+                surface = RankingSurface.HOME,
+                diversityPolicy = DiversityPolicy(
+                    limit = 10,
+                    maxPerShow = 1,
+                    reserveNovelSlot = true,
+                ),
+            )
+            ranked.takeIf { it.isNotEmpty() }?.let {
+                CuratedSectionData(genre.title, genre.id, it)
+            }
+        }
+        return sections.takeIf { it.isNotEmpty() }?.let {
+            CuratedTimeBlock(config.title, config.subtitle, config.icon, it)
+        }
+    }
 
     /**
      * Warms episode data for shows subscribed *during* this session so a freshly added show has
@@ -2045,17 +2231,18 @@ class HomeViewModel(
                 val distinctEpisodes = data.episodes
                     .distinctBy { it.id }
                     .distinctBy { it.title.lowercase().trim() }
+                val ranked = rankBecauseYouLike(distinctPodcasts, distinctEpisodes)
                 
                 android.util.Log.d("HomeViewModel", "Fetched because-you-like: podcasts count = ${distinctPodcasts.size}, episodes count = ${distinctEpisodes.size}")
                 
-                _becauseYouLikePodcasts.value = distinctPodcasts
-                _becauseYouLikeRecommendations.value = distinctEpisodes
+                _becauseYouLikePodcasts.value = ranked.first
+                _becauseYouLikeRecommendations.value = ranked.second
                 
                 try {
                     val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
                     val json = Json { ignoreUnknownKeys = true }
-                    val serializedEpisodes = json.encodeToString(distinctEpisodes)
-                    val serializedPodcasts = json.encodeToString(distinctPodcasts)
+                    val serializedEpisodes = json.encodeToString(ranked.second)
+                    val serializedPodcasts = json.encodeToString(ranked.first)
                     prefs.edit()
                         .putString("cached_byl_recommendations", serializedEpisodes)
                         .putString("cached_byl_podcasts", serializedPodcasts)
@@ -2071,6 +2258,57 @@ class HomeViewModel(
             }
         }
     }
+
+    private suspend fun rankBecauseYouLike(
+        podcasts: List<Podcast>,
+        episodes: List<Episode>,
+    ): Pair<List<Podcast>, List<Episode>> {
+        val history = database.listeningHistoryDao().getRecentHistoryList(300)
+        val subscribedIds = subscriptionRepository.subscribedPodcastIds.first()
+        val podcastById = podcasts.associateBy(Podcast::id)
+        val podcastInputs = podcasts.mapIndexedNotNull { index, candidate ->
+            candidate.latestEpisode?.let { episode ->
+                EpisodeRankingInput(
+                    episode = episode,
+                    podcast = candidate,
+                    priorScore = (podcasts.size - index).toDouble(),
+                    source = CandidateSource.SERVER_RECOMMENDATION,
+                    isNovel = candidate.id !in subscribedIds,
+                )
+            }
+        }
+        val episodeInputs = episodes.mapIndexed { index, episode ->
+            EpisodeRankingInput(
+                episode = episode,
+                podcast = podcastById[episode.podcastId] ?: episode.toRecommendationPodcast(),
+                priorScore = (episodes.size - index).toDouble(),
+                source = CandidateSource.SERVER_RECOMMENDATION,
+                isNovel = episode.podcastId !in subscribedIds,
+            )
+        }
+        val podcastScores = adaptiveScorer.scoreEpisodes(
+            podcastInputs,
+            history,
+            RankingObjective.DISCOVERY,
+            RankingSurface.HOME,
+        )
+        val episodeScores = adaptiveScorer.scoreEpisodes(
+            episodeInputs,
+            history,
+            RankingObjective.DISCOVERY,
+            RankingSurface.HOME,
+        )
+        return podcasts.sortedByDescending { podcastScores[it.latestEpisode?.id] ?: 0.0 } to
+            episodes.sortedByDescending { episodeScores[it.id] ?: 0.0 }
+    }
+
+    private fun Episode.toRecommendationPodcast(): Podcast = Podcast(
+        id = podcastId.orEmpty(),
+        title = podcastTitle.orEmpty(),
+        artist = podcastArtist.orEmpty(),
+        imageUrl = podcastImageUrl ?: imageUrl.orEmpty(),
+        latestEpisode = this,
+    )
 
     override fun onCleared() {
         super.onCleared()

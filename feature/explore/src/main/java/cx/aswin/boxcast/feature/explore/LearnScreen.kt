@@ -194,27 +194,31 @@ fun LearnScreen(
                         }
                     }
                     is LearnUiState.Success -> {
+                        val visibleCard = state.questionsStack.firstOrNull()
+                        LaunchedEffect(visibleCard?.episode?.id) {
+                            visibleCard?.let(viewModel::trackCardVisible)
+                        }
                         val handleLearnCardAction: (String, DailyCuriosityDto) -> Unit = { action, daily ->
                             val mappedEpisode = daily.episode.toEpisode()
                             when (action) {
                                 "dismiss" -> {
-                                    viewModel.trackCardDismissed()
+                                    viewModel.trackCardDismissed(daily)
                                     trackLearnCardAction("dismiss", mappedEpisode)
                                     viewModel.dismissCuriosity(daily, LearnHistoryAction.DISMISS)
                                 }
                                 "queue" -> {
-                                    viewModel.trackCardQueued()
+                                    viewModel.trackCardQueued(daily)
                                     trackLearnCardAction("queue", mappedEpisode)
                                     onQueueEpisode(mappedEpisode)
                                     viewModel.dismissCuriosity(daily, LearnHistoryAction.QUEUE)
                                 }
                                 "info" -> {
-                                    viewModel.trackInfoClicked()
+                                    viewModel.trackInfoClicked(daily)
                                     trackLearnCardAction("info", mappedEpisode)
                                     onEpisodeClick(mappedEpisode)
                                 }
                                 "play" -> {
-                                    viewModel.trackPlayClicked()
+                                    viewModel.trackPlayClicked(daily)
                                     trackLearnCardAction("play", mappedEpisode)
                                     val isCurrent = playerState.currentEpisode?.id == mappedEpisode.id
                                     if (isCurrent) {
@@ -237,7 +241,7 @@ fun LearnScreen(
                                     }
                                 }
                                 "podcast" -> {
-                                    viewModel.trackPodcastClicked()
+                                    viewModel.trackPodcastClicked(daily)
                                     trackLearnCardAction("podcast", mappedEpisode)
                                     onPodcastClick(
                                         mappedEpisode.podcastId?.toLongOrNull(),

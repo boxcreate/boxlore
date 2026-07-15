@@ -4,6 +4,15 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxcast.core.data.PodcastRepository
+import cx.aswin.boxcast.core.data.ranking.CandidateFeatureBuilder
+import cx.aswin.boxcast.core.data.ranking.CandidateSignals
+import cx.aswin.boxcast.core.data.ranking.CandidateSource
+import cx.aswin.boxcast.core.data.ranking.FeedbackTarget
+import cx.aswin.boxcast.core.data.ranking.RankingAction
+import cx.aswin.boxcast.core.data.ranking.RankingExposure
+import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
+import cx.aswin.boxcast.core.data.ranking.RankingObjective
+import cx.aswin.boxcast.core.data.ranking.RankingSurface
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +52,8 @@ class LearnViewModel(
     private var playsCount = 0
     private var podcastsClickedCount = 0
     private var infosClickedCount = 0
+    private val rankingFeedback = RankingFeedbackRepository.getInstance(application)
+    private val visibleSince = mutableMapOf<Long, Long>()
 
     fun onScreenResume() {
         applyPendingRestores()
@@ -91,24 +102,72 @@ class LearnViewModel(
         )
     }
 
-    fun trackCardDismissed() {
+    fun trackCardVisible(daily: DailyCuriosityDto) {
+        if (visibleSince.putIfAbsent(daily.episode.id, System.currentTimeMillis()) != null) return
+        viewModelScope.launch {
+            rankingFeedback.recordExposure(
+                RankingExposure(
+                    episodeId = daily.episode.id.toString(),
+                    podcastId = daily.episode.feedId?.toString().orEmpty(),
+                    objective = RankingObjective.DISCOVERY,
+                    surface = RankingSurface.EXPLORE,
+                    source = CandidateSource.CURATED_INTENT,
+                    features = CandidateFeatureBuilder.build(
+                        CandidateSignals(
+                            isUnseenShow = true,
+                            serverRelevance = (daily.curiosityScore ?: 0) / 10.0,
+                            isUnplayed = true,
+                        ),
+                    ),
+                    entryPoint = "lore",
+                    online = true,
+                ),
+            )
+        }
+    }
+
+    fun trackCardDismissed(daily: DailyCuriosityDto) {
         cardsDismissedCount++
+        val dwellMillis = System.currentTimeMillis() - (visibleSince.remove(daily.episode.id) ?: return)
+        if (dwellMillis < MEANINGFUL_LORE_DWELL_MILLIS) return
+        recordLoreAction(daily, RankingAction.DISMISS)
     }
 
-    fun trackCardQueued() {
+    fun trackCardQueued(daily: DailyCuriosityDto) {
         cardsQueuedCount++
+        visibleSince.remove(daily.episode.id)
+        recordLoreAction(daily, RankingAction.EXPLICIT_QUEUE)
     }
 
-    fun trackPlayClicked() {
+    fun trackPlayClicked(daily: DailyCuriosityDto) {
         playsCount++
+        recordLoreAction(daily, RankingAction.OPEN_DETAILS)
     }
 
-    fun trackPodcastClicked() {
+    fun trackPodcastClicked(daily: DailyCuriosityDto) {
         podcastsClickedCount++
+        recordLoreAction(daily, RankingAction.OPEN_DETAILS)
     }
 
-    fun trackInfoClicked() {
+    fun trackInfoClicked(daily: DailyCuriosityDto) {
         infosClickedCount++
+        recordLoreAction(daily, RankingAction.OPEN_DETAILS)
+    }
+
+    private fun recordLoreAction(
+        daily: DailyCuriosityDto,
+        action: RankingAction,
+    ) {
+        viewModelScope.launch {
+            rankingFeedback.recordAction(
+                target = FeedbackTarget(
+                    episodeId = daily.episode.id.toString(),
+                    podcastId = daily.episode.feedId?.toString().orEmpty(),
+                    source = CandidateSource.CURATED_INTENT,
+                ),
+                action = action,
+            )
+        }
     }
 
     private var currentPage = 1
@@ -301,5 +360,9 @@ class LearnViewModel(
                 }
             }
         }
+    }
+
+    companion object {
+        private const val MEANINGFUL_LORE_DWELL_MILLIS = 3_000L
     }
 }

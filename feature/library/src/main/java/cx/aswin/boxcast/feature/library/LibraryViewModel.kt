@@ -8,8 +8,12 @@ import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
 import cx.aswin.boxcast.core.model.EpisodeStatus
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.Episode
-import cx.aswin.boxcast.core.data.PodcastScoring
 import cx.aswin.boxcast.core.data.toScorable
+import cx.aswin.boxcast.core.data.ranking.AdaptiveCandidateScorer
+import cx.aswin.boxcast.core.data.ranking.CandidateSource
+import cx.aswin.boxcast.core.data.ranking.EpisodeRankingInput
+import cx.aswin.boxcast.core.data.ranking.RankingObjective
+import cx.aswin.boxcast.core.data.ranking.RankingSurface
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 enum class SubscriptionSort { SmartRank, RecentlyUpdated, Alphabetical, MostListened }
@@ -41,7 +46,8 @@ class LibraryViewModel(
     private val subscriptionRepository: SubscriptionRepository,
     private val playbackRepository: PlaybackRepository,
     private val downloadRepository: cx.aswin.boxcast.core.data.DownloadRepository,
-    private val userPreferencesRepository: cx.aswin.boxcast.core.data.UserPreferencesRepository
+    private val userPreferencesRepository: cx.aswin.boxcast.core.data.UserPreferencesRepository,
+    private val adaptiveScorer: AdaptiveCandidateScorer,
 ) : ViewModel() {
 
     val lastSeenEpisodes: StateFlow<Map<String, String>> = userPreferencesRepository.lastSeenEpisodesStream
@@ -90,6 +96,34 @@ class LibraryViewModel(
     fun setUseSmartRank(useSmart: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setLatestEpisodesSortUseSmart(useSmart)
+        }
+    }
+
+    suspend fun scoreLatestEpisodes(
+        podcasts: List<Podcast>,
+        history: List<ListeningHistoryEntity>,
+    ): Map<String, Double> {
+        val inputs = podcasts.mapNotNull { podcast ->
+            podcast.latestEpisode?.let { episode ->
+                EpisodeRankingInput(
+                    episode = episode,
+                    podcast = podcast,
+                    priorScore = episode.publishedDate.toDouble().coerceAtLeast(0.0),
+                    source = CandidateSource.SUBSCRIPTION,
+                )
+            }
+        }
+        return try {
+            adaptiveScorer.scoreEpisodes(
+                inputs = inputs,
+                history = history,
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.LIBRARY,
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            inputs.associate { it.episode.id to it.priorScore }
         }
     }
 
@@ -143,13 +177,22 @@ class LibraryViewModel(
         // Apply sorting
         val sortedPodcasts = when (sort) {
             SubscriptionSort.SmartRank -> {
-                val podScoresMap = PodcastScoring.calculateScores(
-                    podcasts = enrichedPodcasts.map { it.toScorable() },
-                    allHistory = allHistory
-                )
+                val podScoresMap = try {
+                    adaptiveScorer.scorePodcasts(
+                        podcasts = enrichedPodcasts.map { it.toScorable() },
+                        history = allHistory,
+                        objective = RankingObjective.YOUR_SHOWS,
+                        surface = RankingSurface.LIBRARY,
+                    )
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    emptyMap()
+                }
 
                 enrichedPodcasts.map { pod ->
-                    pod to (podScoresMap[pod.id] ?: 0.0)
+                    val fallbackScore = pod.latestEpisode?.let { it.publishedDate.toDouble() } ?: 0.0
+                    pod to (podScoresMap[pod.id] ?: fallbackScore)
                 }.sortedWith(
                     compareByDescending<Pair<Podcast, Double>> { it.second }
                         .thenBy { it.first.title }

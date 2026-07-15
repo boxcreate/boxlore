@@ -26,6 +26,10 @@ import cx.aswin.boxcast.core.model.Chapter
 import cx.aswin.boxcast.core.model.PlaybackEntryPoint
 import cx.aswin.boxcast.core.data.service.BoxLorePlaybackService
 import cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy
+import cx.aswin.boxcast.core.data.ranking.CandidateSource
+import cx.aswin.boxcast.core.data.ranking.FeedbackTarget
+import cx.aswin.boxcast.core.data.ranking.RankingAction
+import cx.aswin.boxcast.core.data.ranking.RankingFeedbackRepository
 import cx.aswin.boxcast.core.designsystem.components.AutoTranscriptState
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -109,6 +113,7 @@ class PlaybackRepository(
     private val KEY_DEBUG_SKIP_SLEEP_WINDOW = "debug_skip_sleep_window"
     
     private val userPreferencesRepository = UserPreferencesRepository(context)
+    private val rankingFeedbackRepository = RankingFeedbackRepository.getInstance(context)
     private var currentSkipBehavior: String = "just_skip"
     @Volatile private var currentSkipEndingMs: Long = 0L
 
@@ -1495,6 +1500,19 @@ class PlaybackRepository(
              _playerState.value = _playerState.value.copy(queue = currentQueue + episode)
              Log.d("PlaybackRepo", "addToQueue: Updated local state, queue size=${_playerState.value.queue.size}")
              syncQueueToDb()
+             rankingFeedbackRepository.recordAction(
+                 target = FeedbackTarget(
+                     episodeId = episode.id,
+                     podcastId = podcast.id,
+                     genre = episode.podcastGenre ?: podcast.genre,
+                     source = if (entryPoint == PlaybackEntryPoint.LEARN) {
+                         CandidateSource.CURATED_INTENT
+                     } else {
+                         null
+                     },
+                 ),
+                 action = RankingAction.EXPLICIT_QUEUE,
+             )
         } ?: Log.e("PlaybackRepo", "addToQueue: mediaController still NULL after await!")
      }
 
@@ -1650,6 +1668,17 @@ class PlaybackRepository(
                 podcastId = removed.episode.podcastId,
                 source = removed.contextSourceId
             )
+            repositoryScope.launch {
+                rankingFeedbackRepository.recordAction(
+                    target = FeedbackTarget(
+                        episodeId = removed.episode.id,
+                        podcastId = removed.episode.podcastId.orEmpty(),
+                        genre = removed.episode.podcastGenre,
+                        source = CandidateSource.SERVER_RECOMMENDATION,
+                    ),
+                    action = RankingAction.REMOVE_AUTOFILLED,
+                )
+            }
         } catch (e: Exception) {
             android.util.Log.e("PlaybackRepo", "Failed to record queue removal signal for ${removed.episode.id}", e)
         }
@@ -1739,13 +1768,28 @@ class PlaybackRepository(
             android.util.Log.e("PlaybackRepo", "persistQueueOrder: Failed", e)
         }
         if (movedEpisodeId != null && fromQueueIndex != toQueueIndex && fromQueueIndex >= 0 && toQueueIndex >= 0) {
-            val contextType = queue.firstOrNull { it.id == movedEpisodeId }?.contextType
+            val movedEpisode = queue.firstOrNull { it.id == movedEpisodeId }
+            val contextType = movedEpisode?.contextType
             cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackQueueReordered(
                 episodeId = movedEpisodeId,
                 fromPosition = fromQueueIndex,
                 toPosition = toQueueIndex,
                 contextType = contextType
             )
+            movedEpisode?.let { episode ->
+                rankingFeedbackRepository.recordAction(
+                    target = FeedbackTarget(
+                        episodeId = episode.id,
+                        podcastId = episode.podcastId.orEmpty(),
+                        genre = episode.podcastGenre,
+                    ),
+                    action = if (toQueueIndex < fromQueueIndex) {
+                        RankingAction.MOVE_UP
+                    } else {
+                        RankingAction.MOVE_DOWN
+                    },
+                )
+            }
         }
     }
 
@@ -2307,6 +2351,7 @@ class PlaybackRepository(
 
     suspend fun clearHistory() {
         listeningHistoryDao.deleteAll()
+        rankingFeedbackRepository.reset()
     }
 
     suspend fun toggleLike(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?) {
@@ -2341,6 +2386,14 @@ class PlaybackRepository(
             )
             listeningHistoryDao.upsert(entity)
         }
+        rankingFeedbackRepository.recordAction(
+            target = FeedbackTarget(
+                episodeId = episode.id,
+                podcastId = podcastId,
+                genre = episode.podcastGenre,
+            ),
+            action = if (newStatus) RankingAction.LIKE else RankingAction.UNLIKE,
+        )
     }
 
     suspend fun toggleCompletion(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?) {
@@ -2404,7 +2457,9 @@ class PlaybackRepository(
                 episodeImageUrl = episode.imageUrl,
                 podcastImageUrl = episode.podcastImageUrl ?: podcast?.imageUrl,
                 episodeAudioUrl = episode.audioUrl,
-                podcastName = episode.podcastTitle ?: podcast?.title ?: "Unknown Podcast",
+                podcastName = episode.podcastTitle.orEmpty().ifBlank {
+                    podcast?.title ?: "Unknown Podcast"
+                },
                 progressMs = 0L, // Reset progress on completion
                 durationMs = episode.duration * 1000L,
                 isCompleted = true,

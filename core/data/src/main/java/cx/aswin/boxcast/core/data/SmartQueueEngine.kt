@@ -4,6 +4,12 @@ import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.network.model.EpisodeItem
 import cx.aswin.boxcast.core.network.model.HistoryItem
+import cx.aswin.boxcast.core.data.ranking.AdaptiveCandidateScorer
+import cx.aswin.boxcast.core.data.ranking.CandidateSource
+import cx.aswin.boxcast.core.data.ranking.DiversityPolicy
+import cx.aswin.boxcast.core.data.ranking.EpisodeRankingInput
+import cx.aswin.boxcast.core.data.ranking.RankingObjective
+import cx.aswin.boxcast.core.data.ranking.RankingSurface
 import kotlinx.coroutines.CancellationException
 
 private suspend inline fun <T> runSuspendCatching(crossinline block: suspend () -> T): Result<T> =
@@ -101,7 +107,8 @@ interface SmartQueueEngine {
 class DefaultSmartQueueEngine(
     private val sources: SmartQueueSources,
     private val skipMemory: QueueSkipMemory? = null,
-    private val nowMs: () -> Long = { System.currentTimeMillis() }
+    private val nowMs: () -> Long = { System.currentTimeMillis() },
+    private val adaptiveScorer: AdaptiveCandidateScorer? = null,
 ) : SmartQueueEngine {
 
     companion object {
@@ -215,7 +222,9 @@ class DefaultSmartQueueEngine(
             )
         }
 
-        if (existingBatchSize + fallback.size >= MIN_ITEMS_BEFORE_NETWORK) return fallback
+        if (existingBatchSize + fallback.size >= MIN_ITEMS_BEFORE_NETWORK) {
+            return rankFallbackEntries(fallback, recentPodcasts)
+        }
 
         val region = sources.getRegion()
         val tier3 = networkTier3(
@@ -242,7 +251,42 @@ class DefaultSmartQueueEngine(
                 needed = FALLBACK_BATCH_TARGET - existingBatchSize - fallback.size
             )
         }
-        return fallback
+        return rankFallbackEntries(fallback, recentPodcasts)
+    }
+
+    private suspend fun rankFallbackEntries(
+        fallback: List<QueueEntry>,
+        recentPodcastIds: Set<String>,
+    ): List<QueueEntry> {
+        val scorer = adaptiveScorer ?: return fallback
+        val history = runSuspendCatching { sources.getRecentHistory(300) }.getOrDefault(emptyList())
+        val rankedEpisodes = runSuspendCatching {
+            scorer.rankEpisodes(
+                inputs = fallback.mapIndexed { index, entry ->
+                    EpisodeRankingInput(
+                        episode = entry.toRankingEpisode(),
+                        podcast = entry.podcast,
+                        priorScore = (fallback.size - index).toDouble(),
+                        source = entry.source.toCandidateSource(),
+                        isNovel = entry.podcast.id !in recentPodcastIds,
+                    )
+                },
+                history = history,
+                objective = RankingObjective.CONTINUATION,
+                surface = RankingSurface.QUEUE,
+                diversityPolicy = DiversityPolicy(
+                    limit = fallback.size,
+                    maxPerShow = 2,
+                    recentPodcastIds = recentPodcastIds,
+                    reserveNovelSlot = true,
+                ),
+            )
+        }.getOrElse {
+            android.util.Log.w(LOG_TAG, "Adaptive fallback ranking failed", it)
+            return fallback
+        }
+        val entryByEpisode = fallback.associateBy { it.episode.id.toString() }
+        return rankedEpisodes.mapNotNull { entryByEpisode[it.id] }
     }
 
     private fun sortBriefingFallback(fallback: List<QueueEntry>): List<QueueEntry> =
@@ -452,8 +496,13 @@ class DefaultSmartQueueEngine(
                 sub.id.isNotBlank() && sub.title.isNotBlank()
             }.getOrDefault(false)
         }
-        val scores = runCatching {
-            PodcastScoring.calculateScores(validSubs.map { it.toScorable() }, history)
+        val scores = runSuspendCatching {
+            adaptiveScorer?.scorePodcasts(
+                podcasts = validSubs.map { it.toScorable() },
+                history = history,
+                objective = RankingObjective.CONTINUATION,
+                surface = RankingSurface.QUEUE,
+            ) ?: PodcastScoring.calculateScores(validSubs.map { it.toScorable() }, history)
         }.getOrElse {
             android.util.Log.e(LOG_TAG, "Tier 2 subscription scoring failed", it)
             emptyMap()
@@ -734,5 +783,31 @@ class DefaultSmartQueueEngine(
             transcriptUrl = this.transcriptUrl
         )
         return QueueEntry(episode = episodeItem, podcast = podcast, source = source)
+    }
+
+    private fun QueueEntry.toRankingEpisode(): Episode = Episode(
+        id = episode.id.toString(),
+        title = episode.title,
+        description = episode.description.orEmpty(),
+        audioUrl = episode.enclosureUrl.orEmpty(),
+        imageUrl = episode.image,
+        podcastImageUrl = episode.feedImage ?: podcast.imageUrl,
+        podcastTitle = podcast.title,
+        podcastId = podcast.id,
+        podcastGenre = podcast.genre,
+        podcastArtist = podcast.artist,
+        duration = episode.duration ?: 0,
+        publishedDate = episode.datePublished ?: 0L,
+        episodeType = episode.episodeType,
+        enclosureType = episode.enclosureType,
+    )
+
+    private fun String.toCandidateSource(): CandidateSource = when (this) {
+        SmartQueueEngine.SOURCE_RESUME -> CandidateSource.LOCAL_HISTORY
+        SmartQueueEngine.SOURCE_SUBSCRIPTION,
+        SmartQueueEngine.SOURCE_SAME_PODCAST,
+        -> CandidateSource.SUBSCRIPTION
+        SmartQueueEngine.SOURCE_TRENDING -> CandidateSource.TRENDING
+        else -> CandidateSource.SERVER_RECOMMENDATION
     }
 }

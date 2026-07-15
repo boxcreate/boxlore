@@ -99,11 +99,15 @@ private data class PodcastIndexScopedInputs(
 class PodcastRepository(
     private val baseUrl: String,
     val publicKey: String,
-    context: android.content.Context,
+    private val context: android.content.Context,
     private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
 ) {
     val api: BoxLoreApi = NetworkModule.createBoxLoreApi(baseUrl, context)
     private val rssRepository = RssPodcastRepository.getInstance(context)
+    private val contentCatalogPreferences = context.applicationContext.getSharedPreferences(
+        "content_catalog_cache",
+        android.content.Context.MODE_PRIVATE,
+    )
 
     suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0): List<Podcast> = withContext(Dispatchers.IO) {
         // Fallback or non-streaming implementation
@@ -602,6 +606,50 @@ class PodcastRepository(
         return PodcastIndexScopedInputs(podcastIndexHistory, podcastIndexSubscriptionIds)
     }
 
+    suspend fun getContentCatalog(
+        forceRefresh: Boolean = false,
+    ): cx.aswin.boxcast.core.data.content.ContentCatalogSnapshot? = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val cached = readCachedContentCatalog(now)
+        if (!forceRefresh && cached?.isSupported(now) == true) return@withContext cached
+        try {
+            val etag = contentCatalogPreferences.getString(CONTENT_CATALOG_ETAG, null)
+            val response = api.getContentCatalog(publicKey, etag).execute()
+            if (response.code() == 304) {
+                contentCatalogPreferences.edit()
+                    .putLong(CONTENT_CATALOG_FETCHED_AT, now)
+                    .apply()
+                return@withContext readCachedContentCatalog(now)
+            }
+            val body = response.body()
+            if (!response.isSuccessful || body == null) return@withContext cached
+            val snapshot = body.toContentCatalogSnapshot(now)
+            if (!snapshot.isSupported(now)) return@withContext cached
+            contentCatalogPreferences.edit()
+                .putString(CONTENT_CATALOG_JSON, Gson().toJson(body))
+                .putString(CONTENT_CATALOG_ETAG, response.headers()["ETag"])
+                .putLong(CONTENT_CATALOG_FETCHED_AT, now)
+                .apply()
+            snapshot
+        } catch (error: Exception) {
+            android.util.Log.w("PodcastRepository", "Content catalog refresh failed", error)
+            cached
+        }
+    }
+
+    private fun readCachedContentCatalog(
+        now: Long,
+    ): cx.aswin.boxcast.core.data.content.ContentCatalogSnapshot? {
+        val json = contentCatalogPreferences.getString(CONTENT_CATALOG_JSON, null) ?: return null
+        val fetchedAt = contentCatalogPreferences.getLong(CONTENT_CATALOG_FETCHED_AT, 0L)
+        return runCatching {
+            Gson().fromJson(
+                json,
+                cx.aswin.boxcast.core.network.model.ContentCatalogResponse::class.java,
+            ).toContentCatalogSnapshot(fetchedAt.takeIf { it > 0L } ?: now)
+        }.getOrNull()
+    }
+
     suspend fun getPersonalizedRecommendations(
         history: List<cx.aswin.boxcast.core.network.model.HistoryItem>,
         interests: List<String> = emptyList(),
@@ -633,26 +681,148 @@ class PodcastRepository(
             android.util.Log.d("PodcastRepository", "Cache HIT for getPersonalizedRecommendations: key=$cacheKey")
             return@withContext cached.first
         }
-        android.util.Log.d("PodcastRepository", "Cache MISS for getPersonalizedRecommendations. Fetching from network. Key: $cacheKey")
+        android.util.Log.d("PodcastRepository", "Recommendation cache miss; fetching candidates")
 
         try {
-            val request = cx.aswin.boxcast.core.network.model.RecommendationsRequest(
+            val v2Results = try {
+                fetchRecommendationV2(
+                    history = podcastIndexHistory,
+                    interests = interests,
+                    country = country,
+                    subscribedPodcastIds = podcastIndexSubscriptionIds,
+                )
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                android.util.Log.w("BoxCastRepo", "Recommendation v2 failed; using legacy", error)
+                null
+            }
+            val results = v2Results ?: fetchLegacyRecommendations(
                 history = podcastIndexHistory,
                 interests = interests,
                 country = country,
                 subscribedPodcastIds = podcastIndexSubscriptionIds,
-                subscribedGenres = subscribedGenres
+                subscribedGenres = subscribedGenres,
             )
-            val response = api.getPersonalizedRecommendations(publicKey, getOrCreateDeviceUuid(), request).execute()
-            if (response.isSuccessful && response.body() != null) {
-                val results = response.body()!!.items.mapNotNull { mapToEpisode(it) }
-                recommendationsCache[cacheKey] = Pair(results, now)
-                results
-            } else {
-                emptyList()
-            }
+            recommendationsCache[cacheKey] = Pair(results, now)
+            results
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("BoxCastRepo", "Personalized Recommendations Error", e)
+            emptyList()
+        }
+    }
+
+    private fun fetchRecommendationV2(
+        history: List<cx.aswin.boxcast.core.network.model.HistoryItem>,
+        interests: List<String>,
+        country: String?,
+        subscribedPodcastIds: List<String>,
+    ): List<Episode>? {
+        val seeds = buildRecommendationSeeds(history, subscribedPodcastIds)
+        val boundedInterests = interests.map(String::trim).filter(String::isNotEmpty).distinct().take(12)
+        if (seeds.isEmpty() && boundedInterests.isEmpty()) return null
+        val request = cx.aswin.boxcast.core.network.model.RecommendationsV2Request(
+            country = country?.lowercase()?.takeIf { it.length in 2..3 } ?: "us",
+            languages = listOf("en"),
+            seeds = seeds,
+            interests = boundedInterests,
+            subscribedPodcastIds = subscribedPodcastIds.mapNotNull(String::toLongOrNull)
+                .filter { it > 0L }
+                .distinct()
+                .take(250),
+            excludedEpisodeIds = history.mapNotNull { it.episodeId?.toLongOrNull() }
+                .filter { it > 0L }
+                .distinct()
+                .take(250),
+        )
+        val response = api.getPersonalizedRecommendationsV2(
+            publicKey,
+            getOrCreateDeviceUuid(),
+            request,
+        ).execute()
+        val body = response.body()
+        if (!response.isSuccessful ||
+            body?.status != "true" ||
+            body.contractVersion != 2 ||
+            body.algorithmVersion.isNullOrBlank()
+        ) {
+            return null
+        }
+        return body.items.mapNotNull { mapToEpisode(it) }.takeIf { it.isNotEmpty() }
+    }
+
+    private fun buildRecommendationSeeds(
+        history: List<cx.aswin.boxcast.core.network.model.HistoryItem>,
+        subscribedPodcastIds: List<String>,
+    ): List<cx.aswin.boxcast.core.network.model.RecommendationSeedV2> {
+        val episodeSeeds = history.mapNotNull { item ->
+            val id = item.episodeId?.toLongOrNull()?.takeIf { it > 0L } ?: return@mapNotNull null
+            val durationMs = item.durationMs ?: 0L
+            val progressRatio = if (durationMs > 0L) {
+                (item.progressMs ?: 0L).toDouble() / durationMs
+            } else {
+                0.0
+            }
+            val weight = when {
+                item.isLiked == true -> 1.0
+                item.isCompleted == true -> 0.9
+                progressRatio >= 0.5 -> 0.75
+                progressRatio >= 0.2 -> 0.55
+                else -> 0.35
+            }
+            cx.aswin.boxcast.core.network.model.RecommendationSeedV2(
+                kind = "episode",
+                id = id,
+                weight = weight,
+                fallback = cx.aswin.boxcast.core.network.model.RecommendationSemanticFallback(
+                    episodeTitle = item.episodeTitle.take(180),
+                    podcastTitle = item.podcastTitle.take(180),
+                    genre = item.genre?.take(120),
+                    description = item.episodeDescription.toSemanticFallback(),
+                ),
+            )
+        }.distinctBy { it.id }.sortedByDescending { it.weight }
+        if (episodeSeeds.size >= 12) return episodeSeeds.take(12)
+        val podcastSeeds = subscribedPodcastIds.asSequence()
+            .mapNotNull(String::toLongOrNull)
+            .filter { it > 0L }
+            .distinct()
+            .map { id ->
+                cx.aswin.boxcast.core.network.model.RecommendationSeedV2(
+                    kind = "podcast",
+                    id = id,
+                    weight = 0.35,
+                )
+            }
+            .take(12 - episodeSeeds.size)
+            .toList()
+        return episodeSeeds.take(12) + podcastSeeds
+    }
+
+    private fun fetchLegacyRecommendations(
+        history: List<cx.aswin.boxcast.core.network.model.HistoryItem>,
+        interests: List<String>,
+        country: String?,
+        subscribedPodcastIds: List<String>,
+        subscribedGenres: List<String>,
+    ): List<Episode> {
+        val request = cx.aswin.boxcast.core.network.model.RecommendationsRequest(
+            history = history,
+            interests = interests,
+            country = country,
+            subscribedPodcastIds = subscribedPodcastIds,
+            subscribedGenres = subscribedGenres,
+        )
+        val response = api.getPersonalizedRecommendations(
+            publicKey,
+            getOrCreateDeviceUuid(),
+            request,
+        ).execute()
+        return if (response.isSuccessful) {
+            response.body()?.items.orEmpty().mapNotNull { mapToEpisode(it) }
+        } else {
             emptyList()
         }
     }
@@ -782,7 +952,15 @@ class PodcastRepository(
             seasonNumber = item.season,
             episodeNumber = item.episodeNumber,
             episodeType = item.episodeType,
-            enclosureType = item.enclosureType
+            enclosureType = item.enclosureType,
+            retrievalScore = item.retrievalScore,
+            semanticScore = item.semanticScore,
+            recommendationSource = item.recommendationSource,
+            recommendationReason = item.recommendationReason,
+            serverRank = item.serverRank,
+            recommendationAlgorithmVersion = item.algorithmVersion,
+            language = item.language,
+            podcastGenre = item.genre,
         )
     }
     suspend fun getPodcastType(feedId: String): String = withContext(Dispatchers.IO) {
@@ -1000,10 +1178,105 @@ class PodcastRepository(
         private const val FEED_PREFIX_URL = "url:"
         private const val FEED_PREFIX_GUID = "guid:"
         private const val FEED_PREFIX_ITUNES = "itunes:"
+        private const val CONTENT_CATALOG_JSON = "catalog_json"
+        private const val CONTENT_CATALOG_ETAG = "catalog_etag"
+        private const val CONTENT_CATALOG_FETCHED_AT = "catalog_fetched_at"
 
         private val episodesCache = java.util.concurrent.ConcurrentHashMap<String, Pair<EpisodePage, Long>>()
         private val recommendationsCache = java.util.concurrent.ConcurrentHashMap<String, Pair<List<Episode>, Long>>()
         private val becauseYouLikeCache = java.util.concurrent.ConcurrentHashMap<String, Pair<BecauseYouLikeData, Long>>()
+    }
+}
+
+private val semanticMarkupPattern = Regex("<[^>]+>")
+private val semanticUrlPattern = Regex("""https?://\S+""", RegexOption.IGNORE_CASE)
+private val semanticWhitespacePattern = Regex("\\s+")
+
+private fun String?.toSemanticFallback(): String? {
+    return this
+        ?.replace(semanticMarkupPattern, " ")
+        ?.replace(semanticUrlPattern, " ")
+        ?.replace(semanticWhitespacePattern, " ")
+        ?.trim()
+        ?.take(800)
+        ?.takeIf(String::isNotEmpty)
+}
+
+private fun cx.aswin.boxcast.core.network.model.ContentCatalogResponse.toContentCatalogSnapshot(
+    fetchedAt: Long,
+): cx.aswin.boxcast.core.data.content.ContentCatalogSnapshot {
+    val validDurationMillis = validForSeconds
+        .coerceIn(60L, 7L * 24L * 60L * 60L)
+        .times(1_000L)
+    val mappedIntents = intents.mapNotNull { intent ->
+        val surfaces = intent.surfaces.mapNotNull(String::toRankingSurface).toSet()
+        val dayparts = intent.dayparts.mapNotNull(String::toContentDaypart).toSet()
+        val layout = intent.layout.toContentLayout() ?: return@mapNotNull null
+        if (surfaces.isEmpty() || dayparts.isEmpty()) return@mapNotNull null
+        runCatching {
+            cx.aswin.boxcast.core.data.content.ContentIntent(
+                id = intent.id,
+                objective = cx.aswin.boxcast.core.data.ranking.RankingObjective.DISCOVERY,
+                eligibleSurfaces = surfaces,
+                eligibleDayparts = dayparts,
+                title = intent.titleFallback,
+                subtitle = intent.subtitleFallback,
+                providerQueryRef = intent.providerQueryRef,
+                layout = layout,
+                refreshPolicy = intent.refreshPolicy.toContentRefreshPolicy()
+                    ?: cx.aswin.boxcast.core.data.content.ContentRefreshPolicy.SESSION,
+                minimumItems = intent.minCandidates,
+                maximumItems = intent.maxCandidates,
+                protected = intent.layout == "protected_card",
+            )
+        }.getOrNull()
+    }
+    return cx.aswin.boxcast.core.data.content.ContentCatalogSnapshot(
+        schemaVersion = schemaVersion,
+        catalogVersion = catalogVersion.toString(),
+        validUntil = fetchedAt + validDurationMillis,
+        intents = mappedIntents,
+    )
+}
+
+private fun String.toRankingSurface(): cx.aswin.boxcast.core.data.ranking.RankingSurface? {
+    return when (lowercase()) {
+        "home" -> cx.aswin.boxcast.core.data.ranking.RankingSurface.HOME
+        "explore" -> cx.aswin.boxcast.core.data.ranking.RankingSurface.EXPLORE
+        "auto" -> cx.aswin.boxcast.core.data.ranking.RankingSurface.ANDROID_AUTO
+        else -> null
+    }
+}
+
+private fun String.toContentDaypart(): cx.aswin.boxcast.core.data.content.ContentDaypart? {
+    return when (lowercase()) {
+        "early_morning", "morning", "commute" ->
+            cx.aswin.boxcast.core.data.content.ContentDaypart.MORNING
+        "afternoon" -> cx.aswin.boxcast.core.data.content.ContentDaypart.AFTERNOON
+        "evening" -> cx.aswin.boxcast.core.data.content.ContentDaypart.EVENING
+        "late_night" -> cx.aswin.boxcast.core.data.content.ContentDaypart.LATE_NIGHT
+        else -> null
+    }
+}
+
+private fun String.toContentLayout(): cx.aswin.boxcast.core.data.content.ContentLayout? {
+    return when (lowercase()) {
+        "episode_rail" -> cx.aswin.boxcast.core.data.content.ContentLayout.EPISODE_RAIL
+        "podcast_rail" -> cx.aswin.boxcast.core.data.content.ContentLayout.PODCAST_RAIL
+        "compact_list" -> cx.aswin.boxcast.core.data.content.ContentLayout.COMPACT_LIST
+        "protected_card" -> cx.aswin.boxcast.core.data.content.ContentLayout.PROTECTED_CARD
+        else -> null
+    }
+}
+
+private fun String?.toContentRefreshPolicy():
+    cx.aswin.boxcast.core.data.content.ContentRefreshPolicy? {
+    return when (this?.lowercase()) {
+        "session" -> cx.aswin.boxcast.core.data.content.ContentRefreshPolicy.SESSION
+        "manual" -> cx.aswin.boxcast.core.data.content.ContentRefreshPolicy.MANUAL
+        "daypart" -> cx.aswin.boxcast.core.data.content.ContentRefreshPolicy.DAYPART
+        "daily" -> cx.aswin.boxcast.core.data.content.ContentRefreshPolicy.DAILY
+        else -> null
     }
 }
 

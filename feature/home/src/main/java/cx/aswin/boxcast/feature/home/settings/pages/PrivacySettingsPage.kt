@@ -50,14 +50,19 @@ import cx.aswin.boxcast.feature.home.settings.components.SettingsScaffold
 
 private const val GroqOnboardingModel = "openai/gpt-oss-120b"
 
+internal data class PrivacySettingsActions(
+    val onDeletionExpandedChange: (Boolean) -> Unit,
+    val onResetIdentityClick: () -> Unit,
+    val onResetRecommendationsClick: () -> Unit,
+    val onCopyDeletionId: () -> Unit,
+    val onEmailDeletionRequest: () -> Unit,
+)
+
 @Composable
 internal fun PrivacySettingsPage(
     deletionId: String,
     isDeletionExpanded: Boolean,
-    onDeletionExpandedChange: (Boolean) -> Unit,
-    onResetIdentityClick: () -> Unit,
-    onCopyDeletionId: () -> Unit,
-    onEmailDeletionRequest: () -> Unit,
+    actions: PrivacySettingsActions,
     onBack: () -> Unit,
 ) {
     SettingsScaffold(
@@ -156,6 +161,26 @@ internal fun PrivacySettingsPage(
         }
 
         SettingsGroup(
+            title = "On-device recommendations",
+            footer = "Your learned taste profile and ranking model stay on this device. " +
+                "They are not uploaded. JSON backups you create include this state so an " +
+                "imported install can continue with the same learning.",
+        ) {
+            SettingsContent {
+                AnalyticsControlCard(
+                    title = "Reset recommendations",
+                    body = "Forget inferred tastes and start learning again. " +
+                        "This does not remove subscriptions, downloads, likes, or listening history.",
+                    icon = Icons.Rounded.Refresh,
+                    destructive = false,
+                    actionLabel = "Reset",
+                    onAction = actions.onResetRecommendationsClick,
+                    expansion = null,
+                )
+            }
+        }
+
+        SettingsGroup(
             title = "Your analytics ID",
             footer = "Analytics starts with the app and there’s no in-app opt-out. " +
                 "These actions only touch PostHog — not your library, downloads, or data " +
@@ -169,7 +194,7 @@ internal fun PrivacySettingsPage(
                         icon = Icons.Rounded.Refresh,
                         destructive = false,
                         actionLabel = "Reset ID",
-                        onAction = onResetIdentityClick,
+                        onAction = actions.onResetIdentityClick,
                         expansion = null,
                     )
 
@@ -179,15 +204,19 @@ internal fun PrivacySettingsPage(
                         icon = Icons.Rounded.DeleteForever,
                         destructive = true,
                         actionLabel = if (isDeletionExpanded) "Hide" else "Show ID",
-                        onAction = { onDeletionExpandedChange(!isDeletionExpanded) },
+                        onAction = {
+                            actions.onDeletionExpandedChange(!isDeletionExpanded)
+                        },
                         expansion = AnalyticsCardExpansion(
                             expanded = isDeletionExpanded,
-                            onToggleExpand = { onDeletionExpandedChange(!isDeletionExpanded) },
+                            onToggleExpand = {
+                                actions.onDeletionExpandedChange(!isDeletionExpanded)
+                            },
                             content = {
                                 DeletionRequestPanel(
                                     deletionId = deletionId,
-                                    onCopyDeletionId = onCopyDeletionId,
-                                    onEmailDeletionRequest = onEmailDeletionRequest,
+                                    onCopyDeletionId = actions.onCopyDeletionId,
+                                    onEmailDeletionRequest = actions.onEmailDeletionRequest,
                                 )
                             },
                         ),
