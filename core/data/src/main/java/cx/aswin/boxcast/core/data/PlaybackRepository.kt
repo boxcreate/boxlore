@@ -25,11 +25,17 @@ import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.model.Chapter
 import cx.aswin.boxcast.core.model.PlaybackEntryPoint
 import cx.aswin.boxcast.core.data.service.BoxLorePlaybackService
+import cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy
 import cx.aswin.boxcast.core.designsystem.components.AutoTranscriptState
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 private const val LEARN_PREFIX = "learn:"
+private const val EPISODE_PREFIX = "episode:"
+private const val QUEUE_PREFIX = "queue:"
+
+private fun String.stripPlaybackPrefix(): String =
+    removePrefix(LEARN_PREFIX).removePrefix(EPISODE_PREFIX).removePrefix(QUEUE_PREFIX)
 
 data class PlaybackSession(
     val podcastId: String,
@@ -55,6 +61,8 @@ data class PlayerState(
     val currentPodcast: Podcast? = null,
     val isLoading: Boolean = false,
     val playbackSpeed: Float = 1.0f,
+    val seekBackwardMs: Long = PlaybackSkipPolicy.DEFAULT_SEEK_BACKWARD_MS,
+    val seekForwardMs: Long = PlaybackSkipPolicy.DEFAULT_SEEK_FORWARD_MS,
     val sleepTimerEnd: Long? = null,
     val sleepAtEndOfEpisode: Boolean = false, // Dynamic mode: sleep when episode ends
     val queue: List<Episode> = emptyList(),
@@ -73,6 +81,11 @@ data class PlayerState(
 object SleepTimerHolder {
     @Volatile var activeSleepTimerEndMs: Long? = null
     @Volatile var sleepAtEndOfEpisode: Boolean = false
+}
+
+object PlaybackLifecycleSignals {
+    @Volatile var serviceOwnedNaturalAdvanceEpisodeId: String? = null
+    @Volatile var effectiveSkipEndingMs: Long? = null
 }
 
 class PlaybackRepository(
@@ -97,6 +110,7 @@ class PlaybackRepository(
     
     private val userPreferencesRepository = UserPreferencesRepository(context)
     private var currentSkipBehavior: String = "just_skip"
+    @Volatile private var currentSkipEndingMs: Long = 0L
 
     fun getOrCreateDeviceUuid(): String {
         val key = "device_uuid"
@@ -128,6 +142,25 @@ class PlaybackRepository(
         repositoryScope.launch {
             userPreferencesRepository.skipBehaviorStream.collect {
                 currentSkipBehavior = it
+            }
+        }
+        repositoryScope.launch {
+            userPreferencesRepository.skipEndingMsStream.collect {
+                currentSkipEndingMs = it.coerceAtLeast(0L)
+            }
+        }
+        repositoryScope.launch {
+            userPreferencesRepository.seekBackwardMsStream.collect { value ->
+                _playerState.value = _playerState.value.copy(
+                    seekBackwardMs = value.coerceAtLeast(1_000L),
+                )
+            }
+        }
+        repositoryScope.launch {
+            userPreferencesRepository.seekForwardMsStream.collect { value ->
+                _playerState.value = _playerState.value.copy(
+                    seekForwardMs = value.coerceAtLeast(1_000L),
+                )
             }
         }
     }
@@ -646,16 +679,13 @@ class PlaybackRepository(
                                     isPlaying = false, position = 0,
                                     sleepTimerEnd = null, sleepAtEndOfEpisode = false
                                 )
-                                repositoryScope.launch { markCurrentEpisodeAsCompleted() }
                                 return
                             }
                             
                             _playerState.value = _playerState.value.copy(isPlaying = false, position = 0)
                             stopProgressTicker()
-                            // Mark as completed
-                            repositoryScope.launch {
-                                markCurrentEpisodeAsCompleted()
-                            }
+                            // Natural completion persistence is service-owned. The history
+                            // observer mirrors the resulting DB state back into PlayerState.
                         } else {
                             Log.d("PlaybackRepo", "Playback ended but not naturally completed (hasMedia=$hasMedia, reachedEnd=$reachedEnd). Skipping completion marking.")
                             _playerState.value = _playerState.value.copy(isPlaying = false)
@@ -712,7 +742,7 @@ class PlaybackRepository(
                         activePlaybackStartTimeMs = 0L
                     }
                     // Use mediaId to find episode — more reliable than index
-                    val episodeId = mediaItem?.mediaId?.removePrefix(LEARN_PREFIX) ?: return
+                    val episodeId = mediaItem?.mediaId?.stripPlaybackPrefix() ?: return
                     val queue = _playerState.value.queue
                     val oldState = _playerState.value
                     
@@ -729,12 +759,8 @@ class PlaybackRepository(
                             isPlaying = false,
                             sleepTimerEnd = null, sleepAtEndOfEpisode = false
                         )
-                        // Mark previous episode as completed
-                        val prevEpisode = oldState.currentEpisode
-                        val prevPodcast = oldState.currentPodcast
-                        if (prevEpisode != null) {
-                            repositoryScope.launch { markEpisodeAsCompleted(prevEpisode, prevPodcast) }
-                        }
+                        // Completion persistence and timer-holder clearing are service-owned.
+                        // The history observer mirrors completion into this repository.
                         return
                     }
                     
@@ -815,9 +841,17 @@ class PlaybackRepository(
                         // 1. Mark PREVIOUS episode as completed (if distinct and transition reason permits)
                         val previousEpisode = oldState.currentEpisode
                         val previousPodcast = oldState.currentPodcast 
+                        val isServiceOwnedNaturalAdvance =
+                            previousEpisode?.id ==
+                                PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId
+                        if (isServiceOwnedNaturalAdvance) {
+                            PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId = null
+                        }
                         
-                        val shouldMarkCompleted = reason == androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || 
-                            (reason == androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_SEEK && currentSkipBehavior == "mark_completed_skip")
+                        val shouldMarkCompleted =
+                            reason == androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_SEEK &&
+                                currentSkipBehavior == "mark_completed_skip" &&
+                                !isServiceOwnedNaturalAdvance
 
                         if (previousEpisode != null && previousEpisode.id != newEpisode.id && shouldMarkCompleted) {
                             android.util.Log.d("PlaybackRepo", "Transition (ShouldMarkCompleted): Marking previous episode as COMPLETED: ${previousEpisode.title} (ID: ${previousEpisode.id}), reason: $reason, skipBehavior: $currentSkipBehavior")
@@ -886,17 +920,8 @@ class PlaybackRepository(
                         // 4. Sync queue to DB for restart recovery
                         syncQueueToDb()
 
-                        // 5. Restore saved position for previously-played episodes in queue
-                        // (e.g. episodes added via SmartQueue or manually that the user already partially played)
-                        if (reason != androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_SEEK) {
-                            val historyItem = listeningHistoryDao.getHistoryItem(newEpisode.id)
-                            if (historyItem != null && !historyItem.isCompleted && historyItem.progressMs > 2000) {
-                                android.util.Log.d("PlaybackRepo", "onMediaItemTransition: Restoring saved position ${historyItem.progressMs}ms for ${newEpisode.title}")
-                                repositoryScope.launch {
-                                    mediaController?.seekTo(historyItem.progressMs)
-                                }
-                            }
-                        }
+                        // Resume/intro seeking is owned exclusively by BoxLorePlaybackService.
+                        // A controller transition must never apply a second seek.
 
                         // NOTE: auto-refill is owned exclusively by BoxLorePlaybackService's
                         // transition listener (single guarded path, works with UI closed).
@@ -1042,10 +1067,14 @@ class PlaybackRepository(
         val wasCompleted = existing?.isCompleted ?: false
         val lastPlayed = if (updateLastPlayedAt) System.currentTimeMillis() else (existing?.lastPlayedAt ?: System.currentTimeMillis())
         
-        val isCompletedNow = state.duration > 0 && (
-            state.position >= state.duration - 5000 ||
-            state.position >= state.duration * 0.95 ||
-            (state.duration >= 900_000L && state.duration - state.position <= 300_000L)
+        // While an effective ending trim is active the service is the sole completion owner.
+        // In particular, do not let the legacy 95%/long-episode heuristics complete an item
+        // before the service observes the configured boundary.
+        val isCompletedNow = PlaybackSkipPolicy.shouldCompleteFromProgress(
+            positionMs = state.position,
+            durationMs = state.duration,
+            effectiveSkipEndingMs =
+                PlaybackLifecycleSignals.effectiveSkipEndingMs ?: currentSkipEndingMs,
         )
         val finalCompleted = wasCompleted || isCompletedNow
         val finalPosition = if (isCompletedNow && !wasCompleted) 0L else state.position
@@ -1239,22 +1268,31 @@ class PlaybackRepository(
         initialPositionMs: Long?,
         entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC
     ): Pair<Long, Boolean> {
-        var startPosMs = initialPositionMs ?: 0L
         var initialLikeState = false
+        var savedProgressMs = 0L
+        var isCompleted = false
+        var resetRequested = false
         if (startEpisodeId != null) {
             val saved = listeningHistoryDao.getHistoryItem(startEpisodeId)
             if (saved != null) {
-                if (initialPositionMs == null && !saved.isCompleted) {
-                    if (shouldResetPlaybackForMixtape(saved.progressMs, saved.durationMs, entryPoint)) {
-                        startPosMs = 0L
-                    } else {
-                        startPosMs = saved.progressMs
-                    }
-                }
+                savedProgressMs = saved.progressMs
+                isCompleted = saved.isCompleted
+                resetRequested = shouldResetPlaybackForMixtape(
+                    saved.progressMs,
+                    saved.durationMs,
+                    entryPoint,
+                )
                 initialLikeState = saved.isLiked
             }
         }
-        return Pair(startPosMs, initialLikeState)
+        val initialPosition = PlaybackSkipPolicy.resolveInitialPosition(
+            explicitPositionMs = initialPositionMs,
+            savedProgressMs = savedProgressMs,
+            isCompleted = isCompleted,
+            skipBeginningMs = PlaybackSkipPolicy.DEFAULT_SKIP_BEGINNING_MS,
+            resetRequested = resetRequested,
+        )
+        return Pair(initialPosition.positionMs, initialLikeState)
     }
 
     /**
@@ -1386,7 +1424,9 @@ class PlaybackRepository(
                 }
             }
             
-            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("resume")
+            if (startPosMs > 0L) {
+                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("resume")
+            }
             controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
             controller.prepare()
             
@@ -1981,13 +2021,17 @@ class PlaybackRepository(
     }
     
     fun skipForward() {
-        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("skip_30s")
-        seekTo((_playerState.value.position + 30000).coerceAtMost(_playerState.value.duration))
+        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("seek_forward")
+        val state = _playerState.value
+        val incrementMs = PlaybackSkipPolicy.sanitizeSeekForward(state.seekForwardMs)
+        seekTo((state.position + incrementMs).coerceAtMost(state.duration))
     }
     
     fun skipBackward() {
-        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("replay_10s")
-        seekTo((_playerState.value.position - 10000).coerceAtLeast(0))
+        cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.setSeekSource("seek_backward")
+        val state = _playerState.value
+        val incrementMs = PlaybackSkipPolicy.sanitizeSeekBackward(state.seekBackwardMs)
+        seekTo((state.position - incrementMs).coerceAtLeast(0))
     }
 
     private fun reinitializePlaybackIfEmpty(
@@ -2060,7 +2104,7 @@ class PlaybackRepository(
         val targetEpisode = _playerState.value.queue.getOrNull(index)
         if (targetEpisode != null) {
             for (i in 0 until controller.mediaItemCount) {
-                if (controller.getMediaItemAt(i).mediaId.removePrefix(LEARN_PREFIX) == targetEpisode.id) {
+                if (controller.getMediaItemAt(i).mediaId.stripPlaybackPrefix() == targetEpisode.id) {
                     android.util.Log.d("PlaybackRepo", "skipToEpisode: Found mediaId=${targetEpisode.id} at Media3 index $i")
                     
                     storePendingEntryPoint(entryPointContext)
@@ -2338,13 +2382,6 @@ class PlaybackRepository(
         }
     }
     
-    private suspend fun markCurrentEpisodeAsCompleted() {
-        val state = _playerState.value
-        val episode = state.currentEpisode ?: return
-        val podcast = state.currentPodcast ?: return
-        markEpisodeAsCompleted(episode, podcast)
-    }
-
     private suspend fun markEpisodeAsCompleted(episode: Episode, podcast: Podcast?) {
         android.util.Log.d("PlaybackRepo", "markEpisodeAsCompleted: START for ${episode.title}")
 

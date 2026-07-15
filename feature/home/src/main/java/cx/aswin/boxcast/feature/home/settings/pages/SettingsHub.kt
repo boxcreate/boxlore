@@ -40,7 +40,7 @@ internal fun SettingsHub(
         )
         SettingsCategoryCard(
             title = "Playback",
-            description = "Skip behavior and completed episodes",
+            description = "Intro skip, seek controls, and completed episodes",
             icon = Icons.Rounded.Tune,
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,

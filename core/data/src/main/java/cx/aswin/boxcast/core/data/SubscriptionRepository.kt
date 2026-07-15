@@ -43,6 +43,8 @@ class SubscriptionRepository(
                     preferredSort = entity.preferredSort,
                     notificationsEnabled = entity.notificationsEnabled,
                     autoDownloadEnabled = entity.autoDownloadEnabled,
+                    skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
+                    skipEndingOverrideMs = entity.skipEndingOverrideMs,
                     sourceType = entity.sourceType,
                     feedUrl = entity.feedUrl,
                     rssRefreshCapability = entity.rssRefreshCapability,
@@ -108,6 +110,10 @@ class SubscriptionRepository(
                 preferredSort = existing?.preferredSort, // Preserve existing sort preference
                 notificationsEnabled = false, // Off by default
                 autoDownloadEnabled = false,
+                skipBeginningOverrideMs = existing?.skipBeginningOverrideMs
+                    ?: podcast.skipBeginningOverrideMs,
+                skipEndingOverrideMs = existing?.skipEndingOverrideMs
+                    ?: podcast.skipEndingOverrideMs,
                 sourceType = podcast.sourceType,
                 feedUrl = podcast.feedUrl,
                 rssRefreshCapability = podcast.rssRefreshCapability,
@@ -160,6 +166,10 @@ class SubscriptionRepository(
             preferredSort = preferredSortVal,
             notificationsEnabled = false, // Off by default
             autoDownloadEnabled = false,
+            skipBeginningOverrideMs = existing?.skipBeginningOverrideMs
+                ?: podcast.skipBeginningOverrideMs,
+            skipEndingOverrideMs = existing?.skipEndingOverrideMs
+                ?: podcast.skipEndingOverrideMs,
             sourceType = existing?.sourceType ?: podcast.sourceType,
             feedUrl = existing?.feedUrl ?: podcast.feedUrl,
             feedEtag = existing?.feedEtag,
@@ -259,6 +269,18 @@ class SubscriptionRepository(
             return
         }
         podcastDao.setAutoDownloadEnabled(podcastId, enabled)
+    }
+
+    suspend fun setPlaybackSkipOverrides(
+        podcastId: String,
+        skipBeginningMs: Long?,
+        skipEndingMs: Long?,
+    ) {
+        podcastDao.setPlaybackSkipOverrides(
+            podcastId,
+            skipBeginningMs,
+            skipEndingMs,
+        )
     }
 
     /**

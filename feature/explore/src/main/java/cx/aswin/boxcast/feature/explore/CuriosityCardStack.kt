@@ -585,12 +585,6 @@ private fun EpisodePlayButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val eyebrow = when {
-        isLoading -> "GETTING READY"
-        isPlaying -> "LISTENING"
-        isCurrentEpisode -> "CONTINUE"
-        else -> "LISTEN NOW"
-    }
     val label = when {
         isLoading -> "Loading episode"
         isPlaying -> "Pause episode"
@@ -651,20 +645,12 @@ private fun EpisodePlayButton(
                 modifier = Modifier.size(29.dp)
             )
             Spacer(modifier = Modifier.width(15.dp))
-            Column {
-                Text(
-                    text = eyebrow,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = waveColor.copy(alpha = 0.76f)
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
-                )
-            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
             Spacer(modifier = Modifier.width(12.dp))
             PlaybackWave(
                 active = enabled && (isPlaying || isLoading),

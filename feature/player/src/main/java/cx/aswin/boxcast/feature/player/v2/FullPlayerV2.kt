@@ -41,10 +41,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.rounded.Forward30
+import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.FullscreenExit
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ColorScheme
@@ -351,6 +351,8 @@ private fun FullPlayerFullscreenOverlays(
             episodeTitle = model.episode.title,
             isPlaying = model.state.isPlaying,
             durationMs = model.state.duration,
+            seekBackwardSeconds = (model.state.seekBackwardMs / 1_000L).toInt(),
+            seekForwardSeconds = (model.state.seekForwardMs / 1_000L).toInt(),
             positionFlow = model.positionFlow,
             controller = dependencies.playbackRepository.controller
         ),
@@ -382,6 +384,8 @@ private fun FullPlayerTranscriptOverlay(
             isPlaying = model.state.isPlaying,
             isLoading = model.state.isLoading,
             durationMs = model.state.duration,
+            seekBackwardMs = model.state.seekBackwardMs,
+            seekForwardMs = model.state.seekForwardMs,
             colorScheme = model.colorScheme,
             isSyncEnabled = ui.isSyncEnabled,
             onSyncEnabledChange = { ui.isSyncEnabled = it },
@@ -931,18 +935,24 @@ private fun FullPlayerPrimaryControls(
         isPlaying = model.state.isPlaying,
         isLoading = model.state.isLoading,
         colorScheme = model.colorScheme,
-        onPlayPause = {
-            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("play_pause")
-            if (model.state.isPlaying) playbackRepository.pause() else playbackRepository.resume()
-        },
-        onReplay = {
-            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("previous")
-            playbackRepository.skipBackward()
-        },
-        onForward = {
-            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("next")
-            playbackRepository.skipForward()
-        }
+        actions = PrimaryControlActions(
+            onPlayPause = {
+                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("play_pause")
+                if (model.state.isPlaying) playbackRepository.pause() else playbackRepository.resume()
+            },
+            onReplay = {
+                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("previous")
+                playbackRepository.skipBackward()
+            },
+            onForward = {
+                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("next")
+                playbackRepository.skipForward()
+            },
+        ),
+        seekDurations = cx.aswin.boxcast.feature.player.SeekControlDurations(
+            backwardSeconds = (model.state.seekBackwardMs / 1_000L).toInt(),
+            forwardSeconds = (model.state.seekForwardMs / 1_000L).toInt(),
+        ),
     )
 }
 
@@ -1310,6 +1320,8 @@ private data class VideoFullscreenContent(
     val episodeTitle: String,
     val isPlaying: Boolean,
     val durationMs: Long,
+    val seekBackwardSeconds: Int,
+    val seekForwardSeconds: Int,
     val positionFlow: kotlinx.coroutines.flow.Flow<Long>,
     val controller: androidx.media3.common.Player?
 )
@@ -1381,6 +1393,8 @@ private fun VideoFullscreenOverlay(
                         )
                         VideoTransportControls(
                             isPlaying = content.isPlaying,
+                            seekBackwardSeconds = content.seekBackwardSeconds,
+                            seekForwardSeconds = content.seekForwardSeconds,
                             colorScheme = colorScheme,
                             actions = actions,
                             modifier = Modifier.align(Alignment.Center)
@@ -1501,6 +1515,8 @@ private fun VideoHudTopBar(
 @Composable
 private fun VideoTransportControls(
     isPlaying: Boolean,
+    seekBackwardSeconds: Int,
+    seekForwardSeconds: Int,
     colorScheme: ColorScheme,
     actions: VideoFullscreenActions,
     modifier: Modifier = Modifier
@@ -1510,7 +1526,16 @@ private fun VideoTransportControls(
         horizontalArrangement = Arrangement.spacedBy(40.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        VideoSeekButton(Icons.Rounded.Replay10, "Replay 10s", actions.onReplay)
+        VideoSeekButton(
+            seconds = seekBackwardSeconds,
+            forward = false,
+            contentDescription =
+                cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                    seekBackwardSeconds,
+                    forward = false,
+                ),
+            onClick = actions.onReplay,
+        )
         Box(
             modifier = Modifier
                 .size(72.dp)
@@ -1526,13 +1551,23 @@ private fun VideoTransportControls(
                 tint = colorScheme.onPrimaryContainer
             )
         }
-        VideoSeekButton(Icons.Rounded.Forward30, "Forward 30s", actions.onForward)
+        VideoSeekButton(
+            seconds = seekForwardSeconds,
+            forward = true,
+            contentDescription =
+                cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                    seekForwardSeconds,
+                    forward = true,
+                ),
+            onClick = actions.onForward,
+        )
     }
 }
 
 @Composable
 private fun VideoSeekButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    seconds: Int,
+    forward: Boolean,
     contentDescription: String,
     onClick: () -> Unit
 ) {
@@ -1542,8 +1577,9 @@ private fun VideoSeekButton(
             .size(56.dp)
             .background(Color.White.copy(alpha = 0.15f), CircleShape)
     ) {
-        Icon(
-            icon,
+        cx.aswin.boxcast.feature.player.SeekDurationIcon(
+            seconds = seconds,
+            forward = forward,
             contentDescription = contentDescription,
             tint = Color.White,
             modifier = Modifier.size(32.dp)

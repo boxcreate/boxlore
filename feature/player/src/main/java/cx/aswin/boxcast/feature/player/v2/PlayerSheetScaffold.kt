@@ -389,7 +389,9 @@ private fun MiniPlayerLayer(
                 isPlaying = content.playerState.isPlaying,
                 isLoading = content.playerState.isLoading,
                 position = position,
-                duration = content.playerState.duration
+                duration = content.playerState.duration,
+                seekBackwardSeconds = (content.playerState.seekBackwardMs / 1_000L).toInt(),
+                seekForwardSeconds = (content.playerState.seekForwardMs / 1_000L).toInt(),
             ),
             colors = MiniPlayerColors(
                 colorScheme = content.colorScheme,

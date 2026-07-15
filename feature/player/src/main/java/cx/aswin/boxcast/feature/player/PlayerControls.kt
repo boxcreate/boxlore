@@ -24,8 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.rounded.Forward30
-import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.FastForward
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ripple
@@ -53,6 +53,8 @@ fun PlayerControls(
     onPlayPause: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    seekBackwardSeconds: Int = 10,
+    seekForwardSeconds: Int = 30,
     height: androidx.compose.ui.unit.Dp = 80.dp
 ) {
     var lastClickedId by remember { mutableStateOf<Int?>(null) }
@@ -89,8 +91,11 @@ fun PlayerControls(
     ) {
         ControlIconButton(
             weight = weightPrev,
-            icon = Icons.Rounded.Replay10,
-            contentDescription = "Replay 10s",
+            seek = SeekDurationSpec(seekBackwardSeconds, forward = false),
+            contentDescription = seekDurationContentDescription(
+                seekBackwardSeconds,
+                forward = false,
+            ),
             colorScheme = colorScheme,
             controlTint = controlTint,
             onClick = {
@@ -113,8 +118,11 @@ fun PlayerControls(
 
         ControlIconButton(
             weight = weightNext,
-            icon = Icons.Rounded.Forward30,
-            contentDescription = "Forward 30s",
+            seek = SeekDurationSpec(seekForwardSeconds, forward = true),
+            contentDescription = seekDurationContentDescription(
+                seekForwardSeconds,
+                forward = true,
+            ),
             colorScheme = colorScheme,
             controlTint = controlTint,
             onClick = {
@@ -128,7 +136,7 @@ fun PlayerControls(
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.ControlIconButton(
     weight: Float,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    seek: SeekDurationSpec,
     contentDescription: String,
     colorScheme: ColorScheme,
     controlTint: Color,
@@ -145,8 +153,9 @@ private fun androidx.compose.foundation.layout.RowScope.ControlIconButton(
             .clickable(interactionSource = interactionSource, indication = ripple(), onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
+        SeekDurationIcon(
+            seconds = seek.seconds,
+            forward = seek.forward,
             contentDescription = contentDescription,
             modifier = Modifier.size(32.dp),
             tint = controlTint

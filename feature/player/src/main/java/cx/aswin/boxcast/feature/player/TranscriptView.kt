@@ -289,6 +289,8 @@ fun FullscreenTranscriptScreen(
     isPlaying: Boolean,
     isLoading: Boolean,
     durationMs: Long,
+    seekBackwardMs: Long = 10_000L,
+    seekForwardMs: Long = 30_000L,
     colorScheme: ColorScheme,
     isSyncEnabled: Boolean,
     onSyncEnabledChange: (Boolean) -> Unit,
@@ -401,8 +403,10 @@ fun FullscreenTranscriptScreen(
                 colorScheme = colorScheme,
                 controlTint = colorScheme.primary,
                 onPlayPause = onPlayPause,
-                onPrevious = { onSeek((positionMs - 10000L).coerceAtLeast(0L)) },
-                onNext = { onSeek((positionMs + 30000L).coerceAtMost(durationMs)) },
+                onPrevious = { onSeek((positionMs - seekBackwardMs).coerceAtLeast(0L)) },
+                onNext = { onSeek((positionMs + seekForwardMs).coerceAtMost(durationMs)) },
+                seekBackwardSeconds = (seekBackwardMs / 1_000L).toInt(),
+                seekForwardSeconds = (seekForwardMs / 1_000L).toInt(),
                 height = 72.dp
             )
         }

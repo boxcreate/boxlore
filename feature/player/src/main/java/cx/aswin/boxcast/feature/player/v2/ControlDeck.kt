@@ -47,12 +47,12 @@ import androidx.compose.material.icons.outlined.DownloadDone
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.Forward30
+import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -97,14 +97,20 @@ import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
  * Full-width Material 3 Expressive button group. Coordinated segment shapes and
  * deliberate weights create one visual object with a dominant play/pause action.
  */
+data class PrimaryControlActions(
+    val onPlayPause: () -> Unit,
+    val onReplay: () -> Unit,
+    val onForward: () -> Unit,
+)
+
 @Composable
 fun PrimaryControls(
     isPlaying: Boolean,
     isLoading: Boolean,
     colorScheme: ColorScheme,
-    onPlayPause: () -> Unit,
-    onReplay: () -> Unit,
-    onForward: () -> Unit,
+    actions: PrimaryControlActions,
+    seekDurations: cx.aswin.boxcast.feature.player.SeekControlDurations =
+        cx.aswin.boxcast.feature.player.SeekControlDurations(),
     modifier: Modifier = Modifier
 ) {
     val interactionSources = remember { List(3) { MutableInteractionSource() } }
@@ -168,8 +174,13 @@ fun PrimaryControls(
     ) {
         TransportButton(
             icon = TransportIcon(
-                image = Icons.Rounded.Replay10,
-                contentDescription = "Replay 10 seconds",
+                seconds = seekDurations.backwardSeconds,
+                forward = false,
+                contentDescription =
+                    cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                        seekDurations.backwardSeconds,
+                        forward = false,
+                    ),
                 size = 40.dp
             ),
             colorScheme = colorScheme,
@@ -178,7 +189,7 @@ fun PrimaryControls(
             onClick = {
                 latchedIndex = 0
                 interactionToken++
-                onReplay()
+                actions.onReplay()
             },
             modifier = Modifier
                 .weight(replayWeight)
@@ -192,7 +203,7 @@ fun PrimaryControls(
             onClick = {
                 latchedIndex = 1
                 interactionToken++
-                onPlayPause()
+                actions.onPlayPause()
             },
             modifier = Modifier
                 .weight(playWeight)
@@ -200,8 +211,13 @@ fun PrimaryControls(
         )
         TransportButton(
             icon = TransportIcon(
-                image = Icons.Rounded.Forward30,
-                contentDescription = "Forward 30 seconds",
+                seconds = seekDurations.forwardSeconds,
+                forward = true,
+                contentDescription =
+                    cx.aswin.boxcast.feature.player.seekDurationContentDescription(
+                        seekDurations.forwardSeconds,
+                        forward = true,
+                    ),
                 size = 40.dp
             ),
             colorScheme = colorScheme,
@@ -210,7 +226,7 @@ fun PrimaryControls(
             onClick = {
                 latchedIndex = 2
                 interactionToken++
-                onForward()
+                actions.onForward()
             },
             modifier = Modifier
                 .weight(forwardWeight)
@@ -220,7 +236,8 @@ fun PrimaryControls(
 }
 
 private data class TransportIcon(
-    val image: ImageVector,
+    val seconds: Int,
+    val forward: Boolean,
     val contentDescription: String,
     val size: androidx.compose.ui.unit.Dp
 )
@@ -249,8 +266,9 @@ private fun TransportButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon.image,
+        cx.aswin.boxcast.feature.player.SeekDurationIcon(
+            seconds = icon.seconds,
+            forward = icon.forward,
             contentDescription = icon.contentDescription,
             modifier = Modifier.size(icon.size),
             tint = if (quiet) colorScheme.onSurfaceVariant else colorScheme.primary

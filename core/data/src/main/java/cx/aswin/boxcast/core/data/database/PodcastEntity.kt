@@ -44,6 +44,9 @@ data class PodcastEntity(
     val preferredSort: String? = null,
     val notificationsEnabled: Boolean = false,
     val autoDownloadEnabled: Boolean = false,
+    // Null inherits the global playback setting; zero explicitly disables trimming.
+    val skipBeginningOverrideMs: Long? = null,
+    val skipEndingOverrideMs: Long? = null,
 
     // Catalog source. Podcast Index remains the default for existing rows.
     val sourceType: String = SOURCE_PODCAST_INDEX,

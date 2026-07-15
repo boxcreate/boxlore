@@ -81,6 +81,20 @@ interface PodcastDao {
     @Query("UPDATE podcasts SET autoDownloadEnabled = :enabled WHERE podcastId = :id")
     suspend fun setAutoDownloadEnabled(id: String, enabled: Boolean)
 
+    @Query(
+        """
+        UPDATE podcasts
+        SET skipBeginningOverrideMs = :skipBeginningMs,
+            skipEndingOverrideMs = :skipEndingMs
+        WHERE podcastId = :id
+        """,
+    )
+    suspend fun setPlaybackSkipOverrides(
+        id: String,
+        skipBeginningMs: Long?,
+        skipEndingMs: Long?,
+    )
+
     /** Partial-entity update — see [RssFeedStateUpdate] for why this isn't a plain `@Query`. */
     @Update(entity = PodcastEntity::class)
     suspend fun updateRssState(state: RssFeedStateUpdate)

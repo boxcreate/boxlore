@@ -35,6 +35,8 @@ data class Podcast(
     val preferredSort: String? = null,
     val notificationsEnabled: Boolean = false,
     val autoDownloadEnabled: Boolean = false,
+    val skipBeginningOverrideMs: Long? = null,
+    val skipEndingOverrideMs: Long? = null,
     val sourceType: String = SOURCE_PODCAST_INDEX,
     val feedUrl: String? = null,
     val rssRefreshCapability: String = RSS_REFRESH_MANUAL,

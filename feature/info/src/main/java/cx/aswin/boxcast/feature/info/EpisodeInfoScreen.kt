@@ -237,7 +237,7 @@ fun EpisodeInfoScreen(
     
     // Horizontal padding in header
     val titleHorizontalPadding by animateDpAsState(
-        targetValue = 56.dp,
+        targetValue = 64.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "titlePadding"
     )

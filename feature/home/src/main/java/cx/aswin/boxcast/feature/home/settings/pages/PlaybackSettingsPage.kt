@@ -1,19 +1,30 @@
 package cx.aswin.boxcast.feature.home.settings.pages
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.LastPage
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.runtime.Composable
 import cx.aswin.boxcast.feature.home.settings.components.SettingsChoiceRow
+import cx.aswin.boxcast.feature.home.settings.components.SettingsDurationSliderRow
+import cx.aswin.boxcast.feature.home.settings.components.SettingsDurationSliderIcon
+import cx.aswin.boxcast.feature.home.settings.components.SettingsDurationSliderValue
 import cx.aswin.boxcast.feature.home.settings.components.SettingsDivider
 import cx.aswin.boxcast.feature.home.settings.components.SettingsGroup
+import cx.aswin.boxcast.feature.home.settings.components.SettingsInfoTip
 import cx.aswin.boxcast.feature.home.settings.components.SettingsScaffold
 import cx.aswin.boxcast.feature.home.settings.components.SettingsSwitchRow
 
 /** Current values shown on [PlaybackSettingsPage]. Also used by [cx.aswin.boxcast.feature.home.settings.SettingsScreen]. */
 data class PlaybackUiState(
     val skipBehavior: String,
+    val skipBeginningMs: Long,
+    val skipEndingMs: Long,
+    val seekBackwardMs: Long,
+    val seekForwardMs: Long,
     val hideCompletedInHome: Boolean,
     val hideCompletedInSubs: Boolean,
     val hideCompletedInShowDetails: Boolean,
@@ -22,6 +33,10 @@ data class PlaybackUiState(
 /** Callbacks for [PlaybackSettingsPage], grouped to keep the page's parameter count small. */
 data class PlaybackActions(
     val onSetSkipBehavior: (String) -> Unit,
+    val onSetSkipBeginningMs: (Long) -> Unit,
+    val onSetSkipEndingMs: (Long) -> Unit,
+    val onSetSeekBackwardMs: (Long) -> Unit,
+    val onSetSeekForwardMs: (Long) -> Unit,
     val onSetHideCompletedInHome: (Boolean) -> Unit,
     val onSetHideCompletedInSubs: (Boolean) -> Unit,
     val onSetHideCompletedInShowDetails: (Boolean) -> Unit,
@@ -37,6 +52,67 @@ internal fun PlaybackSettingsPage(
         title = "Playback",
         onBack = onBack,
     ) {
+        SettingsGroup(
+            title = "Automatic episode trimming",
+        ) {
+            SettingsDurationSliderRow(
+                title = "Skip beginning",
+                supportingText = "Jump past intros or opening ads on a fresh start",
+                value = SettingsDurationSliderValue(
+                    seconds = (state.skipBeginningMs / 1_000L).toInt(),
+                    range = 0..300,
+                    stepSeconds = 5,
+                ),
+                onValueCommitted = { actions.onSetSkipBeginningMs(it * 1_000L) },
+                icon = SettingsDurationSliderIcon(Icons.Rounded.FastForward),
+            )
+            SettingsDivider()
+            SettingsDurationSliderRow(
+                title = "Skip ending",
+                supportingText = "Finish naturally before credits or closing ads",
+                value = SettingsDurationSliderValue(
+                    seconds = (state.skipEndingMs / 1_000L).toInt(),
+                    range = 0..300,
+                    stepSeconds = 5,
+                ),
+                onValueCommitted = { actions.onSetSkipEndingMs(it * 1_000L) },
+                icon = SettingsDurationSliderIcon(Icons.Rounded.LastPage),
+            )
+        }
+        SettingsInfoTip(
+            text = "Set different beginning and ending skip times for an individual podcast from the ⋮ menu on its podcast info page. Resume positions always take priority.",
+        )
+
+        SettingsGroup(
+            title = "Seek controls",
+            footer = "Used by the player, transcript, notification, headset, and Android Auto controls.",
+        ) {
+            SettingsDurationSliderRow(
+                title = "Seek backward",
+                value = SettingsDurationSliderValue(
+                    seconds = (state.seekBackwardMs / 1_000L).toInt(),
+                    range = 5..120,
+                    stepSeconds = 5,
+                ),
+                onValueCommitted = { actions.onSetSeekBackwardMs(it * 1_000L) },
+                icon = SettingsDurationSliderIcon(Icons.Rounded.Replay),
+            )
+            SettingsDivider()
+            SettingsDurationSliderRow(
+                title = "Seek forward",
+                value = SettingsDurationSliderValue(
+                    seconds = (state.seekForwardMs / 1_000L).toInt(),
+                    range = 5..120,
+                    stepSeconds = 5,
+                ),
+                onValueCommitted = { actions.onSetSeekForwardMs(it * 1_000L) },
+                icon = SettingsDurationSliderIcon(
+                    image = Icons.Rounded.Replay,
+                    mirrored = true,
+                ),
+            )
+        }
+
         SettingsGroup(
             title = "When skipping an episode",
             footer = "Applies when you skip to the next episode.",

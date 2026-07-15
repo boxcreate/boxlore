@@ -271,6 +271,8 @@ fun PodcastInfoScreen(
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState()
     val downloadingEpisodeIds by viewModel.downloadingEpisodeIds.collectAsState()
     val hideCompleted by viewModel.hideCompletedInShowDetails.collectAsState()
+    val globalSkipBeginningMs by viewModel.globalSkipBeginningMs.collectAsState()
+    val globalSkipEndingMs by viewModel.globalSkipEndingMs.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -280,6 +282,7 @@ fun PodcastInfoScreen(
     var toolbarWarning by remember { mutableStateOf(ToolbarWarning.NONE) }
     var showMarkAllPlayedDialog by remember { mutableStateOf(false) }
     var showMarkAllUnplayedDialog by remember { mutableStateOf(false) }
+    var showPodcastPlaybackSettings by remember { mutableStateOf(false) }
 
     // Permission Launcher for Android 13+ Notification Permission
     val notifPermissionLauncher = rememberLauncherForActivityResult(
@@ -374,10 +377,15 @@ fun PodcastInfoScreen(
     val titleAlpha = if (scrollFraction > 0.8f) (scrollFraction - 0.8f) / 0.2f else 0f
     
     // Horizontal padding
-    val titleHorizontalPadding by animateDpAsState(
+    val titleStartPadding by animateDpAsState(
         targetValue = androidx.compose.ui.unit.lerp(20.dp, 56.dp, scrollFraction),
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "titlePadding"
+        label = "titleStartPadding"
+    )
+    val titleEndPadding by animateDpAsState(
+        targetValue = androidx.compose.ui.unit.lerp(20.dp, 112.dp, scrollFraction),
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "titleEndPadding"
     )
 
     // State for options sheet
@@ -681,8 +689,28 @@ fun PodcastInfoScreen(
                         onMarkAllPlayed = { showMarkAllPlayedDialog = true },
                         onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
                         onToggleHideCompleted = { viewModel.toggleHideCompleted() },
+                        onPlaybackSettings = { showPodcastPlaybackSettings = true },
                     ),
                 )
+
+                if (showPodcastPlaybackSettings) {
+                    cx.aswin.boxcast.feature.info.components.PodcastPlaybackSettingsSheet(
+                        state = cx.aswin.boxcast.feature.info.components.PodcastPlaybackSettingsState(
+                            podcastTitle = state.podcast.title,
+                            isSubscribed = state.isSubscribed,
+                            globalSkipBeginningMs = globalSkipBeginningMs,
+                            globalSkipEndingMs = globalSkipEndingMs,
+                            skipBeginningOverrideMs = state.podcast.skipBeginningOverrideMs,
+                            skipEndingOverrideMs = state.podcast.skipEndingOverrideMs,
+                        ),
+                        actions = cx.aswin.boxcast.feature.info.components.PodcastPlaybackSettingsActions(
+                            onUseAppDefaultsChange = viewModel::setUseAppPlaybackDefaults,
+                            onSkipBeginningOverrideChange = viewModel::setSkipBeginningOverride,
+                            onSkipEndingOverrideChange = viewModel::setSkipEndingOverride,
+                            onDismissRequest = { showPodcastPlaybackSettings = false },
+                        ),
+                    )
+                }
                 
                 // SNACKBAR HOST (Overlay)
 
@@ -698,7 +726,7 @@ fun PodcastInfoScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Start,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = titleHorizontalPadding)
+                        .padding(start = titleStartPadding, end = titleEndPadding)
                         .graphicsLayer { 
                             translationY = titleTranslationY
                             alpha = titleAlpha 
@@ -1991,6 +2019,7 @@ private data class PodcastInfoTopOverlayActions(
     val onMarkAllPlayed: () -> Unit,
     val onMarkAllUnplayed: () -> Unit,
     val onToggleHideCompleted: () -> Unit,
+    val onPlaybackSettings: () -> Unit,
 )
 
 @Composable
@@ -2105,6 +2134,16 @@ private fun PodcastInfoTopOverlay(
                             contentDescription = null
                         )
                     }
+                )
+                DropdownMenuItem(
+                    text = { Text("Playback for this show") },
+                    onClick = {
+                        showMenu = false
+                        actions.onPlaybackSettings()
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Rounded.Tune, contentDescription = null)
+                    },
                 )
             }
         }

@@ -47,6 +47,10 @@ class UserPreferencesRepository(context: Context) {
         val LATEST_EPISODES_SORT_USE_SMART = androidx.datastore.preferences.core.booleanPreferencesKey("latest_episodes_sort_use_smart")
         val SKIP_BEHAVIOR = stringPreferencesKey("skip_behavior")
         val PLAYBACK_SPEED = androidx.datastore.preferences.core.floatPreferencesKey("playback_speed")
+        val SKIP_BEGINNING_MS = androidx.datastore.preferences.core.longPreferencesKey("skip_beginning_ms")
+        val SKIP_ENDING_MS = androidx.datastore.preferences.core.longPreferencesKey("skip_ending_ms")
+        val SEEK_BACKWARD_MS = androidx.datastore.preferences.core.longPreferencesKey("seek_backward_ms")
+        val SEEK_FORWARD_MS = androidx.datastore.preferences.core.longPreferencesKey("seek_forward_ms")
         val HIDE_COMPLETED_IN_FEEDS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_feeds")
         val HIDE_COMPLETED_IN_SHOW_DETAILS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_show_details")
         val HIDE_COMPLETED_IN_HOME = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_home")
@@ -342,6 +346,71 @@ class UserPreferencesRepository(context: Context) {
     suspend fun setPlaybackSpeed(speed: Float) {
         dataStore.edit { preferences ->
             preferences[Keys.PLAYBACK_SPEED] = speed
+        }
+    }
+
+    val skipBeginningMsStream: Flow<Long> = playbackDurationStream(
+        Keys.SKIP_BEGINNING_MS,
+        cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.DEFAULT_SKIP_BEGINNING_MS,
+    ) { cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeTrim(it) }
+
+    val skipEndingMsStream: Flow<Long> = playbackDurationStream(
+        Keys.SKIP_ENDING_MS,
+        cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.DEFAULT_SKIP_ENDING_MS,
+    ) { cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeTrim(it) }
+
+    val seekBackwardMsStream: Flow<Long> = playbackDurationStream(
+        Keys.SEEK_BACKWARD_MS,
+        cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.DEFAULT_SEEK_BACKWARD_MS,
+    ) { cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeSeekBackward(it) }
+
+    val seekForwardMsStream: Flow<Long> = playbackDurationStream(
+        Keys.SEEK_FORWARD_MS,
+        cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.DEFAULT_SEEK_FORWARD_MS,
+    ) { cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeSeekForward(it) }
+
+    suspend fun setSkipBeginningMs(valueMs: Long) {
+        setPlaybackDuration(Keys.SKIP_BEGINNING_MS, valueMs) {
+            cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeTrim(it)
+        }
+    }
+
+    suspend fun setSkipEndingMs(valueMs: Long) {
+        setPlaybackDuration(Keys.SKIP_ENDING_MS, valueMs) {
+            cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeTrim(it)
+        }
+    }
+
+    suspend fun setSeekBackwardMs(valueMs: Long) {
+        setPlaybackDuration(Keys.SEEK_BACKWARD_MS, valueMs) {
+            cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeSeekBackward(it)
+        }
+    }
+
+    suspend fun setSeekForwardMs(valueMs: Long) {
+        setPlaybackDuration(Keys.SEEK_FORWARD_MS, valueMs) {
+            cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeSeekForward(it)
+        }
+    }
+
+    private fun playbackDurationStream(
+        key: Preferences.Key<Long>,
+        defaultValue: Long,
+        sanitize: (Long) -> Long,
+    ): Flow<Long> = dataStore.data
+        .map { preferences -> sanitize(preferences[key] ?: defaultValue) }
+        .catch { exception ->
+            if (exception is IOException) emit(defaultValue) else throw exception
+        }
+        .distinctUntilChanged()
+
+    private suspend fun setPlaybackDuration(
+        key: Preferences.Key<Long>,
+        valueMs: Long,
+        sanitize: (Long) -> Long,
+    ) {
+        dataStore.edit { preferences ->
+            preferences[key] = sanitize(valueMs)
         }
     }
 

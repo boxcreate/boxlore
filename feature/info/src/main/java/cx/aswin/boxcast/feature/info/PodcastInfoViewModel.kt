@@ -129,6 +129,19 @@ class PodcastInfoViewModel(
     val completedEpisodesState: StateFlow<Set<String>> = completedEpisodeIds
 
     private val userPrefs = cx.aswin.boxcast.core.data.UserPreferencesRepository(application)
+
+    val globalSkipBeginningMs: StateFlow<Long> = userPrefs.skipBeginningMsStream
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.DEFAULT_SKIP_BEGINNING_MS,
+        )
+    val globalSkipEndingMs: StateFlow<Long> = userPrefs.skipEndingMsStream
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.DEFAULT_SKIP_ENDING_MS,
+        )
     
     val hideCompletedInShowDetails: StateFlow<Boolean> = userPrefs.hideCompletedInShowDetailsStream
         .stateIn(
@@ -136,6 +149,56 @@ class PodcastInfoViewModel(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = false
         )
+
+    fun setUseAppPlaybackDefaults(useDefaults: Boolean) {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (!state.isSubscribed) return
+        val beginning = if (useDefaults) null else globalSkipBeginningMs.value
+        val ending = if (useDefaults) null else globalSkipEndingMs.value
+        updatePodcastPlaybackOverrides(beginning, ending)
+    }
+
+    fun setSkipBeginningOverride(valueMs: Long) {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (!state.isSubscribed) return
+        updatePodcastPlaybackOverrides(
+            beginningMs = cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeTrim(valueMs),
+            endingMs = state.podcast.skipEndingOverrideMs ?: globalSkipEndingMs.value,
+        )
+    }
+
+    fun setSkipEndingOverride(valueMs: Long) {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (!state.isSubscribed) return
+        updatePodcastPlaybackOverrides(
+            beginningMs = state.podcast.skipBeginningOverrideMs ?: globalSkipBeginningMs.value,
+            endingMs = cx.aswin.boxcast.core.data.playback.PlaybackSkipPolicy.sanitizeTrim(valueMs),
+        )
+    }
+
+    private fun updatePodcastPlaybackOverrides(beginningMs: Long?, endingMs: Long?) {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        viewModelScope.launch {
+            database.podcastDao().setPlaybackSkipOverrides(
+                state.podcast.id,
+                beginningMs,
+                endingMs,
+            )
+            val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+            if (latest.podcast.id == state.podcast.id) {
+                _uiState.value = latest.copy(
+                    podcast = latest.podcast.copy(
+                        skipBeginningOverrideMs = beginningMs,
+                        skipEndingOverrideMs = endingMs,
+                    ),
+                )
+            }
+            cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction(
+                "podcast_playback_override_changed",
+                "${state.podcast.id}:${beginningMs ?: "default"}:${endingMs ?: "default"}",
+            )
+        }
+    }
 
     fun toggleHideCompleted() {
         viewModelScope.launch {
@@ -453,6 +516,8 @@ class PodcastInfoViewModel(
             subscribedAt = currentPodcast?.subscribedAt ?: 0L,
             notificationsEnabled = localPodcastEntity?.notificationsEnabled ?: false,
             autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false,
+            skipBeginningOverrideMs = localPodcastEntity?.skipBeginningOverrideMs,
+            skipEndingOverrideMs = localPodcastEntity?.skipEndingOverrideMs,
             latestEpisode = apiPodcast.latestEpisode 
                 ?: currentPodcast?.latestEpisode 
                 ?: (if (sortParam == "newest") page.episodes.firstOrNull() else page.episodes.maxByOrNull { it.publishedDate })
@@ -516,7 +581,9 @@ class PodcastInfoViewModel(
                             isLocked = enrichedPodcast.isLocked,
                             preferredSort = preferredSortVal,
                             notificationsEnabled = localPodcastEntity?.notificationsEnabled ?: false,
-                            autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false
+                            autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false,
+                            skipBeginningOverrideMs = enrichedPodcast.skipBeginningOverrideMs,
+                            skipEndingOverrideMs = enrichedPodcast.skipEndingOverrideMs,
                         )
                         database.podcastDao().upsert(updatedEntity)
                     }

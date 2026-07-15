@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="seek_back_seconds">
+        <item quantity="one">Seek back %1$d second</item>
+        <item quantity="other">Seek back %1$d seconds</item>
+    </plurals>
+    <plurals name="seek_forward_seconds">
+        <item quantity="one">Seek forward %1$d second</item>
+        <item quantity="other">Seek forward %1$d seconds</item>
+    </plurals>
+</resources>

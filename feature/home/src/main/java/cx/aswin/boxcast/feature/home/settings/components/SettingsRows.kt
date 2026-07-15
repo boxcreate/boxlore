@@ -16,22 +16,31 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -39,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily
 import cx.aswin.boxcast.core.designsystem.theme.contrastColor
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
+import kotlin.math.roundToInt
 
 private val CategoryCardHeight = 104.dp
 private val SettingsRowHeight = 72.dp
@@ -163,6 +173,37 @@ internal fun SettingsGroup(
     }
 }
 
+@Composable
+internal fun SettingsInfoTip(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Info,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
 /** Free-form content slot inside a filled group (chips, grids, custom UI). */
 @Composable
 internal fun SettingsContent(
@@ -175,6 +216,94 @@ internal fun SettingsContent(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         content = content,
     )
+}
+
+/** Discrete duration control used by playback settings. Values are committed after dragging. */
+internal data class SettingsDurationSliderValue(
+    val seconds: Int,
+    val range: IntRange,
+    val stepSeconds: Int,
+)
+
+internal data class SettingsDurationSliderIcon(
+    val image: ImageVector,
+    val mirrored: Boolean = false,
+)
+
+@Composable
+internal fun SettingsDurationSliderRow(
+    title: String,
+    value: SettingsDurationSliderValue,
+    onValueCommitted: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    supportingText: String? = null,
+    icon: SettingsDurationSliderIcon? = null,
+    zeroLabel: String = "Off",
+) {
+    var pendingValue by remember(value.seconds) {
+        mutableFloatStateOf(value.seconds.toFloat())
+    }
+    val snappedSeconds =
+        ((pendingValue / value.stepSeconds).roundToInt() * value.stepSeconds)
+            .coerceIn(value.range.first, value.range.last)
+    val valueLabel = if (snappedSeconds == 0) zeroLabel else "$snappedSeconds seconds"
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        if (icon != null) {
+            SettingsIconContainer(
+                icon = icon.image,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                size = 40.dp,
+                shape = MaterialTheme.shapes.medium,
+                mirrorIcon = icon.mirrored,
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = valueLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            if (supportingText != null) {
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Slider(
+                value = pendingValue,
+                onValueChange = { pendingValue = it },
+                onValueChangeFinished = { onValueCommitted(snappedSeconds) },
+                valueRange = value.range.first.toFloat()..value.range.last.toFloat(),
+                steps = 0,
+                modifier = Modifier.semantics {
+                    contentDescription = "$title, $valueLabel"
+                },
+            )
+        }
+    }
 }
 
 /** Icon tint pair reused by settings row composables, kept as one parameter to limit arity. */
@@ -508,6 +637,7 @@ internal fun SettingsIconContainer(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
     shape: Shape = MaterialTheme.shapes.medium,
+    mirrorIcon: Boolean = false,
 ) {
     Surface(
         modifier = modifier.size(size),
@@ -519,7 +649,9 @@ internal fun SettingsIconContainer(
                 imageVector = icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(size * 0.5f),
+                modifier = Modifier
+                    .size(size * 0.5f)
+                    .graphicsLayer(scaleX = if (mirrorIcon) -1f else 1f),
             )
         }
     }

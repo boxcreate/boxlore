@@ -41,6 +41,8 @@
     <string name="auto_group_search">Search Results</string>
     <string name="auto_replay_10">Replay 10 seconds</string>
     <string name="auto_forward_30">Forward 30 seconds</string>
+    <string name="auto_seek_back">Seek back %1$d seconds</string>
+    <string name="auto_seek_forward">Seek forward %1$d seconds</string>
     <string name="auto_like">Like episode</string>
     <string name="auto_add_queue">Add to queue</string>
     <string name="auto_mark_complete">Mark complete</string>

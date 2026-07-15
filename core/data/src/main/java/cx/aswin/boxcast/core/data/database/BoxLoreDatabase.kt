@@ -16,7 +16,7 @@ import cx.aswin.boxcast.core.data.database.dao.QueueDao
         QueueItem::class,
         RssEpisodeEntity::class,
     ],
-    version = 28,
+    version = 29,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -175,6 +175,13 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE podcasts ADD COLUMN skipBeginningOverrideMs INTEGER")
+                database.execSQL("ALTER TABLE podcasts ADD COLUMN skipEndingOverrideMs INTEGER")
+            }
+        }
+
         @Volatile
         private var INSTANCE: BoxLoreDatabase? = null
 
@@ -233,6 +240,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
                     MIGRATION_25_26,
                     MIGRATION_26_27,
                     MIGRATION_27_28,
+                    MIGRATION_28_29,
                 )
                 .fallbackToDestructiveMigration() // For development simplicity on older versions
                 .build()

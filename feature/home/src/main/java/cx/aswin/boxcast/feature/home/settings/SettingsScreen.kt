@@ -101,11 +101,15 @@ data class AppearanceSettings(
 data class PlaybackSettings(
     val state: PlaybackUiState = PlaybackUiState(
         skipBehavior = "just_skip",
+        skipBeginningMs = 0L,
+        skipEndingMs = 0L,
+        seekBackwardMs = 10_000L,
+        seekForwardMs = 30_000L,
         hideCompletedInHome = true,
         hideCompletedInSubs = true,
         hideCompletedInShowDetails = false,
     ),
-    val actions: PlaybackActions = PlaybackActions({}, {}, {}, {}),
+    val actions: PlaybackActions = PlaybackActions({}, {}, {}, {}, {}, {}, {}, {}),
 )
 
 @Composable

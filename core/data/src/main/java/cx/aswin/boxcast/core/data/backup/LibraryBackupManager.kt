@@ -22,6 +22,10 @@ data class GlobalPreferencesBackup(
     val subscriptionSort: String? = null,
     val latestEpisodesSortUseSmart: Boolean? = null,
     val skipBehavior: String? = null,
+    val skipBeginningMs: Long? = null,
+    val skipEndingMs: Long? = null,
+    val seekBackwardMs: Long? = null,
+    val seekForwardMs: Long? = null,
     val hideCompletedInFeeds: Boolean? = null,
     val hideCompletedInShowDetails: Boolean? = null,
     val hideCompletedInHome: Boolean? = null,
@@ -38,7 +42,7 @@ data class GlobalPreferencesBackup(
 )
 
 data class BoxCastBackup(
-    val version: Int = 3,
+    val version: Int = 4,
     val subscriptions: List<PodcastEntity>,
     val history: List<ListeningHistoryEntity>,
     val globalPreferences: GlobalPreferencesBackup? = null
@@ -74,6 +78,10 @@ class LibraryBackupManager(
                 subscriptionSort = userPrefs.subscriptionSortStream.first(),
                 latestEpisodesSortUseSmart = userPrefs.latestEpisodesSortUseSmartStream.first(),
                 skipBehavior = userPrefs.skipBehaviorStream.first(),
+                skipBeginningMs = userPrefs.skipBeginningMsStream.first(),
+                skipEndingMs = userPrefs.skipEndingMsStream.first(),
+                seekBackwardMs = userPrefs.seekBackwardMsStream.first(),
+                seekForwardMs = userPrefs.seekForwardMsStream.first(),
                 hideCompletedInFeeds = userPrefs.hideCompletedInFeedsStream.first(),
                 hideCompletedInShowDetails = userPrefs.hideCompletedInShowDetailsStream.first(),
                 hideCompletedInHome = userPrefs.hideCompletedInHomeStream.first(),
@@ -91,7 +99,7 @@ class LibraryBackupManager(
         } else null
 
         val backup = BoxCastBackup(
-            version = 3,
+            version = 4,
             subscriptions = subscriptions,
             history = allHistory,
             globalPreferences = globalPrefs
@@ -146,6 +154,10 @@ class LibraryBackupManager(
                     prefs.subscriptionSort?.let { up.setSubscriptionSort(it) }
                     prefs.latestEpisodesSortUseSmart?.let { up.setLatestEpisodesSortUseSmart(it) }
                     prefs.skipBehavior?.let { up.setSkipBehavior(it) }
+                    prefs.skipBeginningMs?.let { up.setSkipBeginningMs(it) }
+                    prefs.skipEndingMs?.let { up.setSkipEndingMs(it) }
+                    prefs.seekBackwardMs?.let { up.setSeekBackwardMs(it) }
+                    prefs.seekForwardMs?.let { up.setSeekForwardMs(it) }
                     prefs.hideCompletedInFeeds?.let { up.setHideCompletedInFeeds(it) }
                     prefs.hideCompletedInShowDetails?.let { up.setHideCompletedInShowDetails(it) }
                     prefs.hideCompletedInHome?.let { up.setHideCompletedInHome(it) }
@@ -200,6 +212,8 @@ class LibraryBackupManager(
                     val subscribedRssPodcast = rssPodcast.copy(
                         preferredSort = entity.preferredSort,
                         linkedPodcastIndexId = entity.linkedPodcastIndexId,
+                        skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
+                        skipEndingOverrideMs = entity.skipEndingOverrideMs,
                     )
                     subscriptionRepository.subscribe(subscribedRssPodcast)
 
@@ -210,6 +224,13 @@ class LibraryBackupManager(
                     }
                     if (entity.autoDownloadEnabled) {
                         subscriptionRepository.setAutoDownloadEnabled(subscribedRssPodcast.id, true)
+                    }
+                    if (backup.version >= 4) {
+                        subscriptionRepository.setPlaybackSkipOverrides(
+                            subscribedRssPodcast.id,
+                            entity.skipBeginningOverrideMs,
+                            entity.skipEndingOverrideMs,
+                        )
                     }
                     importedIds.add(subscribedRssPodcast.id)
                     continue
@@ -237,6 +258,8 @@ class LibraryBackupManager(
                     license = entity.license,
                     isLocked = entity.isLocked,
                     preferredSort = entity.preferredSort,
+                    skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
+                    skipEndingOverrideMs = entity.skipEndingOverrideMs,
                     sourceType = (entity.sourceType as String?)
                         ?: PodcastEntity.SOURCE_PODCAST_INDEX,
                     feedUrl = entity.feedUrl,
@@ -254,6 +277,13 @@ class LibraryBackupManager(
                 }
                 if (entity.autoDownloadEnabled) {
                     subscriptionRepository.setAutoDownloadEnabled(podcast.id, true)
+                }
+                if (backup.version >= 4) {
+                    subscriptionRepository.setPlaybackSkipOverrides(
+                        podcast.id,
+                        entity.skipBeginningOverrideMs,
+                        entity.skipEndingOverrideMs,
+                    )
                 }
                 importedIds.add(podcast.id)
             }

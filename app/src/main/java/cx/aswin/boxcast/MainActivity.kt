@@ -592,6 +592,10 @@ class MainActivity : ComponentActivity() {
             // Theme Preferences
             val themeConfig by userPrefs.themeConfigStream.collectAsState(initial = remember { userPrefs.cachedThemeConfig })
             val skipBehavior by userPrefs.skipBehaviorStream.collectAsState(initial = "just_skip")
+            val skipBeginningMs by userPrefs.skipBeginningMsStream.collectAsState(initial = 0L)
+            val skipEndingMs by userPrefs.skipEndingMsStream.collectAsState(initial = 0L)
+            val seekBackwardMs by userPrefs.seekBackwardMsStream.collectAsState(initial = 10_000L)
+            val seekForwardMs by userPrefs.seekForwardMsStream.collectAsState(initial = 30_000L)
             val hideCompletedInHome by userPrefs.hideCompletedInHomeStream.collectAsState(initial = true)
             val hideCompletedInSubs by userPrefs.hideCompletedInSubsStream.collectAsState(initial = true)
             val hideCompletedInShowDetails by userPrefs.hideCompletedInShowDetailsStream.collectAsState(initial = false)
@@ -1567,6 +1571,15 @@ class MainActivity : ComponentActivity() {
                                 )
                             ) { backStackEntry ->
                                 val settingsPage = backStackEntry.arguments?.getString("page")
+                                fun trackAndPersistPlaybackDuration(
+                                    eventName: String,
+                                    value: Long,
+                                    persist: suspend (Long) -> Unit,
+                                ) {
+                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper
+                                        .trackSettingsInteraction(eventName, value.toString())
+                                    scope.launch { persist(value) }
+                                }
                                 cx.aswin.boxcast.feature.home.settings.SettingsScreen(
                                     config = cx.aswin.boxcast.feature.home.settings.SettingsScreenConfig(
                                         onBack = { navController.popBackStack() },
@@ -1603,12 +1616,44 @@ class MainActivity : ComponentActivity() {
                                     playbackSettings = cx.aswin.boxcast.feature.home.settings.PlaybackSettings(
                                         state = cx.aswin.boxcast.feature.home.settings.pages.PlaybackUiState(
                                             skipBehavior = skipBehavior,
+                                            skipBeginningMs = skipBeginningMs,
+                                            skipEndingMs = skipEndingMs,
+                                            seekBackwardMs = seekBackwardMs,
+                                            seekForwardMs = seekForwardMs,
                                             hideCompletedInHome = hideCompletedInHome,
                                             hideCompletedInSubs = hideCompletedInSubs,
                                             hideCompletedInShowDetails = hideCompletedInShowDetails,
                                         ),
                                         actions = cx.aswin.boxcast.feature.home.settings.pages.PlaybackActions(
                                             onSetSkipBehavior = { behavior -> scope.launch { userPrefs.setSkipBehavior(behavior) } },
+                                            onSetSkipBeginningMs = { value ->
+                                                trackAndPersistPlaybackDuration(
+                                                    "skip_beginning_changed",
+                                                    value,
+                                                    userPrefs::setSkipBeginningMs,
+                                                )
+                                            },
+                                            onSetSkipEndingMs = { value ->
+                                                trackAndPersistPlaybackDuration(
+                                                    "skip_ending_changed",
+                                                    value,
+                                                    userPrefs::setSkipEndingMs,
+                                                )
+                                            },
+                                            onSetSeekBackwardMs = { value ->
+                                                trackAndPersistPlaybackDuration(
+                                                    "seek_backward_changed",
+                                                    value,
+                                                    userPrefs::setSeekBackwardMs,
+                                                )
+                                            },
+                                            onSetSeekForwardMs = { value ->
+                                                trackAndPersistPlaybackDuration(
+                                                    "seek_forward_changed",
+                                                    value,
+                                                    userPrefs::setSeekForwardMs,
+                                                )
+                                            },
                                             onSetHideCompletedInHome = { hide -> scope.launch { userPrefs.setHideCompletedInHome(hide) } },
                                             onSetHideCompletedInSubs = { hide -> scope.launch { userPrefs.setHideCompletedInSubs(hide) } },
                                             onSetHideCompletedInShowDetails = { hide -> scope.launch { userPrefs.setHideCompletedInShowDetails(hide) } },
