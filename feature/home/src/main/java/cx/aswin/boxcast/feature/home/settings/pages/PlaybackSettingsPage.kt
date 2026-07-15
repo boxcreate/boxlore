@@ -10,6 +10,8 @@ import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.runtime.Composable
 import cx.aswin.boxcast.feature.home.settings.components.SettingsChoiceRow
 import cx.aswin.boxcast.feature.home.settings.components.SettingsDurationSliderRow
+import cx.aswin.boxcast.feature.home.settings.components.SettingsDurationSliderIcon
+import cx.aswin.boxcast.feature.home.settings.components.SettingsDurationSliderValue
 import cx.aswin.boxcast.feature.home.settings.components.SettingsDivider
 import cx.aswin.boxcast.feature.home.settings.components.SettingsGroup
 import cx.aswin.boxcast.feature.home.settings.components.SettingsInfoTip
@@ -56,21 +58,25 @@ internal fun PlaybackSettingsPage(
             SettingsDurationSliderRow(
                 title = "Skip beginning",
                 supportingText = "Jump past intros or opening ads on a fresh start",
-                valueSeconds = (state.skipBeginningMs / 1_000L).toInt(),
-                valueRange = 0..300,
-                stepSeconds = 5,
+                value = SettingsDurationSliderValue(
+                    seconds = (state.skipBeginningMs / 1_000L).toInt(),
+                    range = 0..300,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSkipBeginningMs(it * 1_000L) },
-                icon = Icons.Rounded.FastForward,
+                icon = SettingsDurationSliderIcon(Icons.Rounded.FastForward),
             )
             SettingsDivider()
             SettingsDurationSliderRow(
                 title = "Skip ending",
                 supportingText = "Finish naturally before credits or closing ads",
-                valueSeconds = (state.skipEndingMs / 1_000L).toInt(),
-                valueRange = 0..300,
-                stepSeconds = 5,
+                value = SettingsDurationSliderValue(
+                    seconds = (state.skipEndingMs / 1_000L).toInt(),
+                    range = 0..300,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSkipEndingMs(it * 1_000L) },
-                icon = Icons.Rounded.LastPage,
+                icon = SettingsDurationSliderIcon(Icons.Rounded.LastPage),
             )
         }
         SettingsInfoTip(
@@ -83,21 +89,27 @@ internal fun PlaybackSettingsPage(
         ) {
             SettingsDurationSliderRow(
                 title = "Seek backward",
-                valueSeconds = (state.seekBackwardMs / 1_000L).toInt(),
-                valueRange = 5..120,
-                stepSeconds = 5,
+                value = SettingsDurationSliderValue(
+                    seconds = (state.seekBackwardMs / 1_000L).toInt(),
+                    range = 5..120,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSeekBackwardMs(it * 1_000L) },
-                icon = Icons.Rounded.Replay,
+                icon = SettingsDurationSliderIcon(Icons.Rounded.Replay),
             )
             SettingsDivider()
             SettingsDurationSliderRow(
                 title = "Seek forward",
-                valueSeconds = (state.seekForwardMs / 1_000L).toInt(),
-                valueRange = 5..120,
-                stepSeconds = 5,
+                value = SettingsDurationSliderValue(
+                    seconds = (state.seekForwardMs / 1_000L).toInt(),
+                    range = 5..120,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSeekForwardMs(it * 1_000L) },
-                icon = Icons.Rounded.Replay,
-                mirrorIcon = true,
+                icon = SettingsDurationSliderIcon(
+                    image = Icons.Rounded.Replay,
+                    mirrored = true,
+                ),
             )
         }
 

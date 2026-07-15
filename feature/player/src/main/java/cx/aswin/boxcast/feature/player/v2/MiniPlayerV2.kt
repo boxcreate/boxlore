@@ -341,11 +341,11 @@ private fun MiniPlayerRow(
             isPlaying = content.isPlaying,
             isLoading = content.isLoading,
             colorScheme = colorScheme,
-            onPlayPause = actions.onPlayPause,
-            onReplay = actions.onReplay,
-            onForward = actions.onForward,
-            seekBackwardSeconds = content.seekBackwardSeconds,
-            seekForwardSeconds = content.seekForwardSeconds,
+            actions = actions,
+            seekDurations = cx.aswin.boxcast.feature.player.SeekControlDurations(
+                backwardSeconds = content.seekBackwardSeconds,
+                forwardSeconds = content.seekForwardSeconds,
+            ),
         )
     }
 }
@@ -485,11 +485,8 @@ private fun MiniTransportButtons(
     isPlaying: Boolean,
     isLoading: Boolean,
     colorScheme: ColorScheme,
-    onPlayPause: () -> Unit,
-    onReplay: () -> Unit,
-    onForward: () -> Unit,
-    seekBackwardSeconds: Int,
-    seekForwardSeconds: Int,
+    actions: MiniPlayerActions,
+    seekDurations: cx.aswin.boxcast.feature.player.SeekControlDurations,
 ) {
     val playShape = AbsoluteSmoothCornerShape(
         cornerRadiusTL = 14.dp, smoothnessAsPercentTL = 60,
@@ -503,25 +500,25 @@ private fun MiniTransportButtons(
         verticalAlignment = Alignment.CenterVertically
     ) {
         MiniSeekButton(
-            seconds = seekBackwardSeconds,
+            seconds = seekDurations.backwardSeconds,
             forward = false,
-            contentDescription = "Seek back $seekBackwardSeconds seconds",
+            contentDescription = "Seek back ${seekDurations.backwardSeconds} seconds",
             isLoading = isLoading,
             colorScheme = colorScheme,
             shape = RoundedCornerShape(13.dp),
-            onClick = onReplay
+            onClick = actions.onReplay
         )
 
-        MiniPlayButton(isPlaying, isLoading, colorScheme, playShape, onPlayPause)
+        MiniPlayButton(isPlaying, isLoading, colorScheme, playShape, actions.onPlayPause)
 
         MiniSeekButton(
-            seconds = seekForwardSeconds,
+            seconds = seekDurations.forwardSeconds,
             forward = true,
-            contentDescription = "Seek forward $seekForwardSeconds seconds",
+            contentDescription = "Seek forward ${seekDurations.forwardSeconds} seconds",
             isLoading = isLoading,
             colorScheme = colorScheme,
             shape = RoundedCornerShape(13.dp),
-            onClick = onForward
+            onClick = actions.onForward
         )
     }
 }

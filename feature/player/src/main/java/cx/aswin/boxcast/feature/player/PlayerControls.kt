@@ -91,8 +91,7 @@ fun PlayerControls(
     ) {
         ControlIconButton(
             weight = weightPrev,
-            seconds = seekBackwardSeconds,
-            forward = false,
+            seek = SeekDurationSpec(seekBackwardSeconds, forward = false),
             contentDescription = "Seek back $seekBackwardSeconds seconds",
             colorScheme = colorScheme,
             controlTint = controlTint,
@@ -116,8 +115,7 @@ fun PlayerControls(
 
         ControlIconButton(
             weight = weightNext,
-            seconds = seekForwardSeconds,
-            forward = true,
+            seek = SeekDurationSpec(seekForwardSeconds, forward = true),
             contentDescription = "Seek forward $seekForwardSeconds seconds",
             colorScheme = colorScheme,
             controlTint = controlTint,
@@ -132,8 +130,7 @@ fun PlayerControls(
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.ControlIconButton(
     weight: Float,
-    seconds: Int,
-    forward: Boolean,
+    seek: SeekDurationSpec,
     contentDescription: String,
     colorScheme: ColorScheme,
     controlTint: Color,
@@ -151,8 +148,8 @@ private fun androidx.compose.foundation.layout.RowScope.ControlIconButton(
         contentAlignment = Alignment.Center
     ) {
         SeekDurationIcon(
-            seconds = seconds,
-            forward = forward,
+            seconds = seek.seconds,
+            forward = seek.forward,
             contentDescription = contentDescription,
             modifier = Modifier.size(32.dp),
             tint = controlTint

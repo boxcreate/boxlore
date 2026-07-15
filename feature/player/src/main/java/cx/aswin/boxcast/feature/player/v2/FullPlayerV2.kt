@@ -935,20 +935,24 @@ private fun FullPlayerPrimaryControls(
         isPlaying = model.state.isPlaying,
         isLoading = model.state.isLoading,
         colorScheme = model.colorScheme,
-        onPlayPause = {
-            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("play_pause")
-            if (model.state.isPlaying) playbackRepository.pause() else playbackRepository.resume()
-        },
-        onReplay = {
-            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("previous")
-            playbackRepository.skipBackward()
-        },
-        onForward = {
-            cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("next")
-            playbackRepository.skipForward()
-        },
-        seekBackwardSeconds = (model.state.seekBackwardMs / 1_000L).toInt(),
-        seekForwardSeconds = (model.state.seekForwardMs / 1_000L).toInt(),
+        actions = PrimaryControlActions(
+            onPlayPause = {
+                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("play_pause")
+                if (model.state.isPlaying) playbackRepository.pause() else playbackRepository.resume()
+            },
+            onReplay = {
+                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("previous")
+                playbackRepository.skipBackward()
+            },
+            onForward = {
+                cx.aswin.boxcast.core.data.analytics.PlayerSessionAggregator.logAction("next")
+                playbackRepository.skipForward()
+            },
+        ),
+        seekDurations = cx.aswin.boxcast.feature.player.SeekControlDurations(
+            backwardSeconds = (model.state.seekBackwardMs / 1_000L).toInt(),
+            forwardSeconds = (model.state.seekForwardMs / 1_000L).toInt(),
+        ),
     )
 }
 

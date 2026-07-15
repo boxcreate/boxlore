@@ -18,6 +18,16 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.cos
 import kotlin.math.sin
 
+internal data class SeekDurationSpec(
+    val seconds: Int,
+    val forward: Boolean,
+)
+
+data class SeekControlDurations(
+    val backwardSeconds: Int = 10,
+    val forwardSeconds: Int = 30,
+)
+
 @Composable
 internal fun SeekDurationIcon(
     seconds: Int,

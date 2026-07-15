@@ -1571,6 +1571,15 @@ class MainActivity : ComponentActivity() {
                                 )
                             ) { backStackEntry ->
                                 val settingsPage = backStackEntry.arguments?.getString("page")
+                                fun trackAndPersistPlaybackDuration(
+                                    eventName: String,
+                                    value: Long,
+                                    persist: suspend (Long) -> Unit,
+                                ) {
+                                    cx.aswin.boxcast.core.data.analytics.AnalyticsHelper
+                                        .trackSettingsInteraction(eventName, value.toString())
+                                    scope.launch { persist(value) }
+                                }
                                 cx.aswin.boxcast.feature.home.settings.SettingsScreen(
                                     config = cx.aswin.boxcast.feature.home.settings.SettingsScreenConfig(
                                         onBack = { navController.popBackStack() },
@@ -1618,32 +1627,32 @@ class MainActivity : ComponentActivity() {
                                         actions = cx.aswin.boxcast.feature.home.settings.pages.PlaybackActions(
                                             onSetSkipBehavior = { behavior -> scope.launch { userPrefs.setSkipBehavior(behavior) } },
                                             onSetSkipBeginningMs = { value ->
-                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction(
+                                                trackAndPersistPlaybackDuration(
                                                     "skip_beginning_changed",
-                                                    value.toString(),
+                                                    value,
+                                                    userPrefs::setSkipBeginningMs,
                                                 )
-                                                scope.launch { userPrefs.setSkipBeginningMs(value) }
                                             },
                                             onSetSkipEndingMs = { value ->
-                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction(
+                                                trackAndPersistPlaybackDuration(
                                                     "skip_ending_changed",
-                                                    value.toString(),
+                                                    value,
+                                                    userPrefs::setSkipEndingMs,
                                                 )
-                                                scope.launch { userPrefs.setSkipEndingMs(value) }
                                             },
                                             onSetSeekBackwardMs = { value ->
-                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction(
+                                                trackAndPersistPlaybackDuration(
                                                     "seek_backward_changed",
-                                                    value.toString(),
+                                                    value,
+                                                    userPrefs::setSeekBackwardMs,
                                                 )
-                                                scope.launch { userPrefs.setSeekBackwardMs(value) }
                                             },
                                             onSetSeekForwardMs = { value ->
-                                                cx.aswin.boxcast.core.data.analytics.AnalyticsHelper.trackSettingsInteraction(
+                                                trackAndPersistPlaybackDuration(
                                                     "seek_forward_changed",
-                                                    value.toString(),
+                                                    value,
+                                                    userPrefs::setSeekForwardMs,
                                                 )
-                                                scope.launch { userPrefs.setSeekForwardMs(value) }
                                             },
                                             onSetHideCompletedInHome = { hide -> scope.launch { userPrefs.setHideCompletedInHome(hide) } },
                                             onSetHideCompletedInSubs = { hide -> scope.launch { userPrefs.setHideCompletedInSubs(hide) } },

@@ -97,16 +97,20 @@ import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
  * Full-width Material 3 Expressive button group. Coordinated segment shapes and
  * deliberate weights create one visual object with a dominant play/pause action.
  */
+data class PrimaryControlActions(
+    val onPlayPause: () -> Unit,
+    val onReplay: () -> Unit,
+    val onForward: () -> Unit,
+)
+
 @Composable
 fun PrimaryControls(
     isPlaying: Boolean,
     isLoading: Boolean,
     colorScheme: ColorScheme,
-    onPlayPause: () -> Unit,
-    onReplay: () -> Unit,
-    onForward: () -> Unit,
-    seekBackwardSeconds: Int = 10,
-    seekForwardSeconds: Int = 30,
+    actions: PrimaryControlActions,
+    seekDurations: cx.aswin.boxcast.feature.player.SeekControlDurations =
+        cx.aswin.boxcast.feature.player.SeekControlDurations(),
     modifier: Modifier = Modifier
 ) {
     val interactionSources = remember { List(3) { MutableInteractionSource() } }
@@ -170,9 +174,9 @@ fun PrimaryControls(
     ) {
         TransportButton(
             icon = TransportIcon(
-                seconds = seekBackwardSeconds,
+                seconds = seekDurations.backwardSeconds,
                 forward = false,
-                contentDescription = "Seek back $seekBackwardSeconds seconds",
+                contentDescription = "Seek back ${seekDurations.backwardSeconds} seconds",
                 size = 40.dp
             ),
             colorScheme = colorScheme,
@@ -181,7 +185,7 @@ fun PrimaryControls(
             onClick = {
                 latchedIndex = 0
                 interactionToken++
-                onReplay()
+                actions.onReplay()
             },
             modifier = Modifier
                 .weight(replayWeight)
@@ -195,7 +199,7 @@ fun PrimaryControls(
             onClick = {
                 latchedIndex = 1
                 interactionToken++
-                onPlayPause()
+                actions.onPlayPause()
             },
             modifier = Modifier
                 .weight(playWeight)
@@ -203,9 +207,9 @@ fun PrimaryControls(
         )
         TransportButton(
             icon = TransportIcon(
-                seconds = seekForwardSeconds,
+                seconds = seekDurations.forwardSeconds,
                 forward = true,
-                contentDescription = "Seek forward $seekForwardSeconds seconds",
+                contentDescription = "Seek forward ${seekDurations.forwardSeconds} seconds",
                 size = 40.dp
             ),
             colorScheme = colorScheme,
@@ -214,7 +218,7 @@ fun PrimaryControls(
             onClick = {
                 latchedIndex = 2
                 interactionToken++
-                onForward()
+                actions.onForward()
             },
             modifier = Modifier
                 .weight(forwardWeight)

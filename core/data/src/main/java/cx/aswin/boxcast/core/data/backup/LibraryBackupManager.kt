@@ -225,11 +225,13 @@ class LibraryBackupManager(
                     if (entity.autoDownloadEnabled) {
                         subscriptionRepository.setAutoDownloadEnabled(subscribedRssPodcast.id, true)
                     }
-                    subscriptionRepository.setPlaybackSkipOverrides(
-                        subscribedRssPodcast.id,
-                        entity.skipBeginningOverrideMs,
-                        entity.skipEndingOverrideMs,
-                    )
+                    if (backup.version >= 4) {
+                        subscriptionRepository.setPlaybackSkipOverrides(
+                            subscribedRssPodcast.id,
+                            entity.skipBeginningOverrideMs,
+                            entity.skipEndingOverrideMs,
+                        )
+                    }
                     importedIds.add(subscribedRssPodcast.id)
                     continue
                 }
@@ -276,11 +278,13 @@ class LibraryBackupManager(
                 if (entity.autoDownloadEnabled) {
                     subscriptionRepository.setAutoDownloadEnabled(podcast.id, true)
                 }
-                subscriptionRepository.setPlaybackSkipOverrides(
-                    podcast.id,
-                    entity.skipBeginningOverrideMs,
-                    entity.skipEndingOverrideMs,
-                )
+                if (backup.version >= 4) {
+                    subscriptionRepository.setPlaybackSkipOverrides(
+                        podcast.id,
+                        entity.skipBeginningOverrideMs,
+                        entity.skipEndingOverrideMs,
+                    )
+                }
                 importedIds.add(podcast.id)
             }
             

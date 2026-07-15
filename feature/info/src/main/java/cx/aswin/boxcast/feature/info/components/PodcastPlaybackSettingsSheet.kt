@@ -28,22 +28,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
+data class PodcastPlaybackSettingsState(
+    val podcastTitle: String,
+    val isSubscribed: Boolean,
+    val globalSkipBeginningMs: Long,
+    val globalSkipEndingMs: Long,
+    val skipBeginningOverrideMs: Long?,
+    val skipEndingOverrideMs: Long?,
+)
+
+data class PodcastPlaybackSettingsActions(
+    val onUseAppDefaultsChange: (Boolean) -> Unit,
+    val onSkipBeginningOverrideChange: (Long) -> Unit,
+    val onSkipEndingOverrideChange: (Long) -> Unit,
+    val onDismissRequest: () -> Unit,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PodcastPlaybackSettingsSheet(
-    podcastTitle: String,
-    isSubscribed: Boolean,
-    globalSkipBeginningMs: Long,
-    globalSkipEndingMs: Long,
-    skipBeginningOverrideMs: Long?,
-    skipEndingOverrideMs: Long?,
-    onUseAppDefaultsChange: (Boolean) -> Unit,
-    onSkipBeginningOverrideChange: (Long) -> Unit,
-    onSkipEndingOverrideChange: (Long) -> Unit,
-    onDismissRequest: () -> Unit,
+    state: PodcastPlaybackSettingsState,
+    actions: PodcastPlaybackSettingsActions,
 ) {
-    val usesDefaults = skipBeginningOverrideMs == null && skipEndingOverrideMs == null
-    ModalBottomSheet(onDismissRequest = onDismissRequest) {
+    val usesDefaults =
+        state.skipBeginningOverrideMs == null && state.skipEndingOverrideMs == null
+    ModalBottomSheet(onDismissRequest = actions.onDismissRequest) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -58,20 +67,22 @@ fun PodcastPlaybackSettingsSheet(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = podcastTitle,
+                text = state.podcastTitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Use app defaults", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = if (isSubscribed) {
-                            "Beginning ${durationLabel(globalSkipBeginningMs)} · Ending ${durationLabel(globalSkipEndingMs)}"
+                        text = if (state.isSubscribed) {
+                            "Beginning ${durationLabel(state.globalSkipBeginningMs)} · Ending ${durationLabel(state.globalSkipEndingMs)}"
                         } else {
                             "Subscribe to customize playback for this show"
                         },
@@ -81,22 +92,22 @@ fun PodcastPlaybackSettingsSheet(
                 }
                 Switch(
                     checked = usesDefaults,
-                    enabled = isSubscribed,
-                    onCheckedChange = onUseAppDefaultsChange,
+                    enabled = state.isSubscribed,
+                    onCheckedChange = actions.onUseAppDefaultsChange,
                 )
             }
             HorizontalDivider()
             PodcastDurationSlider(
                 title = "Skip beginning",
-                valueMs = skipBeginningOverrideMs ?: globalSkipBeginningMs,
-                enabled = isSubscribed && !usesDefaults,
-                onValueCommitted = onSkipBeginningOverrideChange,
+                valueMs = state.skipBeginningOverrideMs ?: state.globalSkipBeginningMs,
+                enabled = state.isSubscribed && !usesDefaults,
+                onValueCommitted = actions.onSkipBeginningOverrideChange,
             )
             PodcastDurationSlider(
                 title = "Skip ending",
-                valueMs = skipEndingOverrideMs ?: globalSkipEndingMs,
-                enabled = isSubscribed && !usesDefaults,
-                onValueCommitted = onSkipEndingOverrideChange,
+                valueMs = state.skipEndingOverrideMs ?: state.globalSkipEndingMs,
+                enabled = state.isSubscribed && !usesDefaults,
+                onValueCommitted = actions.onSkipEndingOverrideChange,
             )
             Spacer(Modifier.height(4.dp))
             Text(

@@ -219,22 +219,33 @@ internal fun SettingsContent(
 }
 
 /** Discrete duration control used by playback settings. Values are committed after dragging. */
+internal data class SettingsDurationSliderValue(
+    val seconds: Int,
+    val range: IntRange,
+    val stepSeconds: Int,
+)
+
+internal data class SettingsDurationSliderIcon(
+    val image: ImageVector,
+    val mirrored: Boolean = false,
+)
+
 @Composable
 internal fun SettingsDurationSliderRow(
     title: String,
-    valueSeconds: Int,
-    valueRange: IntRange,
-    stepSeconds: Int,
+    value: SettingsDurationSliderValue,
     onValueCommitted: (Int) -> Unit,
     modifier: Modifier = Modifier,
     supportingText: String? = null,
-    icon: ImageVector? = null,
-    mirrorIcon: Boolean = false,
+    icon: SettingsDurationSliderIcon? = null,
     zeroLabel: String = "Off",
 ) {
-    var pendingValue by remember(valueSeconds) { mutableFloatStateOf(valueSeconds.toFloat()) }
-    val snappedSeconds = ((pendingValue / stepSeconds).roundToInt() * stepSeconds)
-        .coerceIn(valueRange.first, valueRange.last)
+    var pendingValue by remember(value.seconds) {
+        mutableFloatStateOf(value.seconds.toFloat())
+    }
+    val snappedSeconds =
+        ((pendingValue / value.stepSeconds).roundToInt() * value.stepSeconds)
+            .coerceIn(value.range.first, value.range.last)
     val valueLabel = if (snappedSeconds == 0) zeroLabel else "$snappedSeconds seconds"
 
     Row(
@@ -246,12 +257,12 @@ internal fun SettingsDurationSliderRow(
     ) {
         if (icon != null) {
             SettingsIconContainer(
-                icon = icon,
+                icon = icon.image,
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 size = 40.dp,
                 shape = MaterialTheme.shapes.medium,
-                mirrorIcon = mirrorIcon,
+                mirrorIcon = icon.mirrored,
             )
         }
         Column(
@@ -285,7 +296,7 @@ internal fun SettingsDurationSliderRow(
                 value = pendingValue,
                 onValueChange = { pendingValue = it },
                 onValueChangeFinished = { onValueCommitted(snappedSeconds) },
-                valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+                valueRange = value.range.first.toFloat()..value.range.last.toFloat(),
                 steps = 0,
                 modifier = Modifier.semantics {
                     contentDescription = "$title, $valueLabel"

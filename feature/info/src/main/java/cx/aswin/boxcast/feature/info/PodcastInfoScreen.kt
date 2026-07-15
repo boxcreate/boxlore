@@ -695,16 +695,20 @@ fun PodcastInfoScreen(
 
                 if (showPodcastPlaybackSettings) {
                     cx.aswin.boxcast.feature.info.components.PodcastPlaybackSettingsSheet(
-                        podcastTitle = state.podcast.title,
-                        isSubscribed = state.isSubscribed,
-                        globalSkipBeginningMs = globalSkipBeginningMs,
-                        globalSkipEndingMs = globalSkipEndingMs,
-                        skipBeginningOverrideMs = state.podcast.skipBeginningOverrideMs,
-                        skipEndingOverrideMs = state.podcast.skipEndingOverrideMs,
-                        onUseAppDefaultsChange = viewModel::setUseAppPlaybackDefaults,
-                        onSkipBeginningOverrideChange = viewModel::setSkipBeginningOverride,
-                        onSkipEndingOverrideChange = viewModel::setSkipEndingOverride,
-                        onDismissRequest = { showPodcastPlaybackSettings = false },
+                        state = cx.aswin.boxcast.feature.info.components.PodcastPlaybackSettingsState(
+                            podcastTitle = state.podcast.title,
+                            isSubscribed = state.isSubscribed,
+                            globalSkipBeginningMs = globalSkipBeginningMs,
+                            globalSkipEndingMs = globalSkipEndingMs,
+                            skipBeginningOverrideMs = state.podcast.skipBeginningOverrideMs,
+                            skipEndingOverrideMs = state.podcast.skipEndingOverrideMs,
+                        ),
+                        actions = cx.aswin.boxcast.feature.info.components.PodcastPlaybackSettingsActions(
+                            onUseAppDefaultsChange = viewModel::setUseAppPlaybackDefaults,
+                            onSkipBeginningOverrideChange = viewModel::setSkipBeginningOverride,
+                            onSkipEndingOverrideChange = viewModel::setSkipEndingOverride,
+                            onDismissRequest = { showPodcastPlaybackSettings = false },
+                        ),
                     )
                 }
                 

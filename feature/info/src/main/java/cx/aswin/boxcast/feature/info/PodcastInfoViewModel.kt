@@ -582,8 +582,8 @@ class PodcastInfoViewModel(
                             preferredSort = preferredSortVal,
                             notificationsEnabled = localPodcastEntity?.notificationsEnabled ?: false,
                             autoDownloadEnabled = localPodcastEntity?.autoDownloadEnabled ?: false,
-                            skipBeginningOverrideMs = localPodcastEntity?.skipBeginningOverrideMs,
-                            skipEndingOverrideMs = localPodcastEntity?.skipEndingOverrideMs,
+                            skipBeginningOverrideMs = enrichedPodcast.skipBeginningOverrideMs,
+                            skipEndingOverrideMs = enrichedPodcast.skipEndingOverrideMs,
                         )
                         database.podcastDao().upsert(updatedEntity)
                     }

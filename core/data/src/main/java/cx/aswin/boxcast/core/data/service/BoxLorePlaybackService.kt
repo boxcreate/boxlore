@@ -311,75 +311,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
         // SmartQueue auto-refill: when queue runs low, fetch more episodes
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
-                android.util.Log.d("BoxCastPlayer", "onMediaItemTransition: mediaId=${mediaItem?.mediaId}, title=${mediaItem?.mediaMetadata?.title}, artworkUri=${mediaItem?.mediaMetadata?.artworkUri}, reason=$reason")
-                val previousEpisodeId = activeLifecycleEpisodeId
-                val previousDurationMs = activeLifecycleDurationMs
-                val wasAutoCompleted = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO
-                val wasServiceOwnedNaturalAdvance =
-                    previousEpisodeId ==
-                        cx.aswin.boxcast.core.data.PlaybackLifecycleSignals
-                            .serviceOwnedNaturalAdvanceEpisodeId
-                if (wasAutoCompleted && previousEpisodeId != null) {
-                    claimNaturalCompletion(previousEpisodeId, previousDurationMs)
-                } else {
-                    endPlaybackSession(forceCompleted = false, isTransition = true)
-                }
-
-                if (sleepRestoreInProgress) {
-                    sleepRestoreInProgress = false
-                    resetLifecycleGuards(mediaItem, player.currentPosition)
-                    return
-                }
-
-                if (wasAutoCompleted && cx.aswin.boxcast.core.data.SleepTimerHolder.sleepAtEndOfEpisode) {
-                    enforceEndOfEpisodeSleepAfterTransition(player, previousDurationMs)
-                    return
-                }
-
-                activateMediaItem(player, mediaItem)
-                
-                if (player.isPlaying) {
-                    val episodeId = mediaItem?.mediaId?.removePrefix(LEARN_PREFIX)?.removePrefix(EPISODE_PREFIX)?.removePrefix(QUEUE_PREFIX)
-                    // A transition into a playing state with no explicit source is either the
-                    // queue auto-advancing to the next episode, or a user skip (next/prev).
-                    val transitionSource = when (reason) {
-                        Player.MEDIA_ITEM_TRANSITION_REASON_AUTO -> "queue_auto_advance"
-                        Player.MEDIA_ITEM_TRANSITION_REASON_SEEK ->
-                            if (wasServiceOwnedNaturalAdvance) {
-                                "queue_auto_advance"
-                            } else {
-                                "queue_skip"
-                            }
-                        else -> null
-                    }
-                    if (episodeId != null) startPlaybackSession(episodeId, mediaItem, transitionSource)
-                    activePlaybackStartTimeMs = System.currentTimeMillis()
-                } else {
-                    activePlaybackStartTimeMs = 0L
-                }
-
-                val remaining = player.mediaItemCount - player.currentMediaItemIndex - 1
-                android.util.Log.d("AutoQueue", "onMediaItemTransition: remaining=$remaining, reason=$reason")
-
-                val currentItem = player.currentMediaItem
-                val isLearn = currentItem?.mediaId?.startsWith(LEARN_PREFIX) == true
-
-                // Sleep-timer guard: when playback will stop at the end of this episode,
-                // refilling would fetch episodes the player is about to abandon.
-                val sleepingAtEndOfEpisode = cx.aswin.boxcast.core.data.SleepTimerHolder.sleepAtEndOfEpisode
-
-                if (remaining <= 2 && !isRefilling && player.mediaItemCount > 0 && !isLearn && !sleepingAtEndOfEpisode) {
-                    isRefilling = true
-                    serviceScope.launch {
-                        try {
-                            refillQueue(player)
-                        } catch (e: Exception) {
-                            android.util.Log.e("AutoQueue", "Refill failed", e)
-                        } finally {
-                            isRefilling = false
-                        }
-                    }
-                }
+                handleMediaItemTransition(player, mediaItem, reason)
             }
 
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -403,13 +335,15 @@ class BoxLorePlaybackService : MediaLibraryService() {
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) {
-                    maybeApplyPendingIntro(player)
-                    refreshOutroBoundary(player, preferenceChanged = false)
-                } else if (playbackState == Player.STATE_ENDED) {
-                    handleNaturalStateEnded(player)
-                } else if (playbackState == Player.STATE_IDLE && !player.playWhenReady) {
-                    resetLifecycleGuards(null, 0L)
+                when (playbackState) {
+                    Player.STATE_READY -> {
+                        maybeApplyPendingIntro(player)
+                        refreshOutroBoundary(player, preferenceChanged = false)
+                    }
+                    Player.STATE_ENDED -> handleNaturalStateEnded(player)
+                    Player.STATE_IDLE -> if (!player.playWhenReady) {
+                        resetLifecycleGuards(null, 0L)
+                    }
                 }
             }
 
@@ -616,6 +550,126 @@ class BoxLorePlaybackService : MediaLibraryService() {
             ?.removePrefix(EPISODE_PREFIX)
             ?.removePrefix(QUEUE_PREFIX)
 
+    private fun handleMediaItemTransition(
+        player: ExoPlayer,
+        mediaItem: MediaItem?,
+        reason: Int,
+    ) {
+        android.util.Log.d(
+            "BoxCastPlayer",
+            "onMediaItemTransition: mediaId=${mediaItem?.mediaId}, title=${mediaItem?.mediaMetadata?.title}, artworkUri=${mediaItem?.mediaMetadata?.artworkUri}, reason=$reason",
+        )
+        val previousEpisodeId = activeLifecycleEpisodeId
+        val previousDurationMs = activeLifecycleDurationMs
+        val wasAutoCompleted = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO
+        val wasServiceOwnedNaturalAdvance =
+            previousEpisodeId ==
+                cx.aswin.boxcast.core.data.PlaybackLifecycleSignals
+                    .serviceOwnedNaturalAdvanceEpisodeId
+
+        completePreviousItemTransition(
+            previousEpisodeId = previousEpisodeId,
+            previousDurationMs = previousDurationMs,
+            wasAutoCompleted = wasAutoCompleted,
+        )
+        if (restoreLifecycleAfterSleepTransition(player, mediaItem)) return
+        if (
+            wasAutoCompleted &&
+            cx.aswin.boxcast.core.data.SleepTimerHolder.sleepAtEndOfEpisode
+        ) {
+            enforceEndOfEpisodeSleepAfterTransition(player, previousDurationMs)
+            return
+        }
+
+        activateMediaItem(player, mediaItem)
+        updateTransitionPlaybackSession(
+            player = player,
+            mediaItem = mediaItem,
+            reason = reason,
+            wasServiceOwnedNaturalAdvance = wasServiceOwnedNaturalAdvance,
+        )
+        maybeRefillQueueAfterTransition(player, reason)
+    }
+
+    private fun completePreviousItemTransition(
+        previousEpisodeId: String?,
+        previousDurationMs: Long,
+        wasAutoCompleted: Boolean,
+    ) {
+        if (wasAutoCompleted && previousEpisodeId != null) {
+            claimNaturalCompletion(previousEpisodeId, previousDurationMs)
+        } else {
+            endPlaybackSession(forceCompleted = false, isTransition = true)
+        }
+    }
+
+    private fun restoreLifecycleAfterSleepTransition(
+        player: ExoPlayer,
+        mediaItem: MediaItem?,
+    ): Boolean {
+        if (!sleepRestoreInProgress) return false
+        sleepRestoreInProgress = false
+        resetLifecycleGuards(mediaItem, player.currentPosition)
+        return true
+    }
+
+    private fun updateTransitionPlaybackSession(
+        player: ExoPlayer,
+        mediaItem: MediaItem?,
+        reason: Int,
+        wasServiceOwnedNaturalAdvance: Boolean,
+    ) {
+        if (!player.isPlaying) {
+            activePlaybackStartTimeMs = 0L
+            return
+        }
+        val episodeId = lifecycleEpisodeId(mediaItem)
+        // A transition into a playing state with no explicit source is either the
+        // queue auto-advancing to the next episode, or a user skip (next/prev).
+        val transitionSource = when (reason) {
+            Player.MEDIA_ITEM_TRANSITION_REASON_AUTO -> "queue_auto_advance"
+            Player.MEDIA_ITEM_TRANSITION_REASON_SEEK ->
+                if (wasServiceOwnedNaturalAdvance) {
+                    "queue_auto_advance"
+                } else {
+                    "queue_skip"
+                }
+            else -> null
+        }
+        if (episodeId != null) startPlaybackSession(episodeId, mediaItem, transitionSource)
+        activePlaybackStartTimeMs = System.currentTimeMillis()
+    }
+
+    private fun maybeRefillQueueAfterTransition(player: ExoPlayer, reason: Int) {
+        val remaining = player.mediaItemCount - player.currentMediaItemIndex - 1
+        android.util.Log.d("AutoQueue", "onMediaItemTransition: remaining=$remaining, reason=$reason")
+        val currentItem = player.currentMediaItem
+        val isLearn = currentItem?.mediaId?.startsWith(LEARN_PREFIX) == true
+        // Sleep-timer guard: when playback will stop at the end of this episode,
+        // refilling would fetch episodes the player is about to abandon.
+        val sleepingAtEndOfEpisode =
+            cx.aswin.boxcast.core.data.SleepTimerHolder.sleepAtEndOfEpisode
+
+        if (
+            remaining <= 2 &&
+            !isRefilling &&
+            player.mediaItemCount > 0 &&
+            !isLearn &&
+            !sleepingAtEndOfEpisode
+        ) {
+            isRefilling = true
+            serviceScope.launch {
+                try {
+                    refillQueue(player)
+                } catch (e: Exception) {
+                    android.util.Log.e("AutoQueue", "Refill failed", e)
+                } finally {
+                    isRefilling = false
+                }
+            }
+        }
+    }
+
     private fun resetLifecycleGuards(mediaItem: MediaItem?, initialPositionMs: Long) {
         playbackActivationGeneration++
         activeLifecycleEpisodeId = lifecycleEpisodeId(mediaItem)
@@ -652,28 +706,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
         val episodeId = activeLifecycleEpisodeId ?: return
         val generation = playbackActivationGeneration
         serviceScope.launch {
-            val history = runCatching {
-                database.listeningHistoryDao().getHistoryItem(episodeId)
-            }.getOrNull()
-            val isBriefing = episodeId.startsWith("briefing_")
-            val podcastId = history?.podcastId?.takeIf { it.isNotBlank() }
-                ?: if (isBriefing) null else runCatching { findPodcastIdForEpisode(episodeId) }.getOrNull()
-            val podcast = podcastId?.let { id ->
-                runCatching { database.podcastDao().getPodcast(id) }.getOrNull()
-            }
-            val effectiveTrim = if (isBriefing) {
-                PlaybackSkipPolicy.EffectiveTrim(
-                    skipBeginningMs = PlaybackSkipPolicy.DEFAULT_SKIP_BEGINNING_MS,
-                    skipEndingMs = PlaybackSkipPolicy.DEFAULT_SKIP_ENDING_MS,
-                )
-            } else {
-                PlaybackSkipPolicy.resolveEffectiveTrim(
-                    globalSkipBeginningMs = cachedSkipBeginningMs,
-                    globalSkipEndingMs = cachedSkipEndingMs,
-                    podcastSkipBeginningOverrideMs = podcast?.skipBeginningOverrideMs,
-                    podcastSkipEndingOverrideMs = podcast?.skipEndingOverrideMs,
-                )
-            }
+            val (history, effectiveTrim) = resolveActiveSkipConfiguration(episodeId)
 
             if (
                 generation != playbackActivationGeneration ||
@@ -689,34 +722,74 @@ class BoxLorePlaybackService : MediaLibraryService() {
             cx.aswin.boxcast.core.data.PlaybackLifecycleSignals.effectiveSkipEndingMs = 0L
 
             if (!introTargetResolved) {
-                val explicitStartMs = activationInitialPositionMs.takeIf { it > 0L }
-                val initialPosition = PlaybackSkipPolicy.resolveInitialPosition(
-                    explicitPositionMs = explicitStartMs,
-                    savedProgressMs = history?.progressMs ?: 0L,
-                    isCompleted = history?.isCompleted == true,
-                    skipBeginningMs = effectiveSkipBeginningMs,
-                )
-                pendingIntroTargetMs = when (initialPosition.reason) {
-                    PlaybackSkipPolicy.InitialPositionReason.RESUME,
-                    PlaybackSkipPolicy.InitialPositionReason.SKIP_BEGINNING -> initialPosition.positionMs
-                    PlaybackSkipPolicy.InitialPositionReason.EXPLICIT,
-                    PlaybackSkipPolicy.InitialPositionReason.START -> null
-                }
-                pendingIntroSeekSource = when (initialPosition.reason) {
-                    PlaybackSkipPolicy.InitialPositionReason.RESUME -> "resume"
-                    PlaybackSkipPolicy.InitialPositionReason.SKIP_BEGINNING ->
-                        "skip_beginning_auto"
-                    PlaybackSkipPolicy.InitialPositionReason.EXPLICIT,
-                    PlaybackSkipPolicy.InitialPositionReason.START -> null
-                }
-                introApplied =
-                    initialPosition.reason == PlaybackSkipPolicy.InitialPositionReason.EXPLICIT
-                introTargetResolved = true
+                resolveActiveIntroTarget(history)
             }
 
             refreshOutroBoundary(player, preferenceChanged)
             maybeApplyPendingIntro(player)
         }
+    }
+
+    private suspend fun resolveActiveSkipConfiguration(
+        episodeId: String,
+    ): Pair<
+        cx.aswin.boxcast.core.data.database.ListeningHistoryEntity?,
+        PlaybackSkipPolicy.EffectiveTrim,
+    > {
+        val history = runCatching {
+            database.listeningHistoryDao().getHistoryItem(episodeId)
+        }.getOrNull()
+        val isBriefing = episodeId.startsWith("briefing_")
+        val podcastId = history?.podcastId?.takeIf { it.isNotBlank() }
+            ?: if (isBriefing) {
+                null
+            } else {
+                runCatching { findPodcastIdForEpisode(episodeId) }.getOrNull()
+            }
+        val podcast = podcastId?.let { id ->
+            runCatching { database.podcastDao().getPodcast(id) }.getOrNull()
+        }
+        val effectiveTrim = if (isBriefing) {
+            PlaybackSkipPolicy.EffectiveTrim(
+                skipBeginningMs = PlaybackSkipPolicy.DEFAULT_SKIP_BEGINNING_MS,
+                skipEndingMs = PlaybackSkipPolicy.DEFAULT_SKIP_ENDING_MS,
+            )
+        } else {
+            PlaybackSkipPolicy.resolveEffectiveTrim(
+                globalSkipBeginningMs = cachedSkipBeginningMs,
+                globalSkipEndingMs = cachedSkipEndingMs,
+                podcastSkipBeginningOverrideMs = podcast?.skipBeginningOverrideMs,
+                podcastSkipEndingOverrideMs = podcast?.skipEndingOverrideMs,
+            )
+        }
+        return history to effectiveTrim
+    }
+
+    private fun resolveActiveIntroTarget(
+        history: cx.aswin.boxcast.core.data.database.ListeningHistoryEntity?,
+    ) {
+        val explicitStartMs = activationInitialPositionMs.takeIf { it > 0L }
+        val initialPosition = PlaybackSkipPolicy.resolveInitialPosition(
+            explicitPositionMs = explicitStartMs,
+            savedProgressMs = history?.progressMs ?: 0L,
+            isCompleted = history?.isCompleted == true,
+            skipBeginningMs = effectiveSkipBeginningMs,
+        )
+        pendingIntroTargetMs = when (initialPosition.reason) {
+            PlaybackSkipPolicy.InitialPositionReason.RESUME,
+            PlaybackSkipPolicy.InitialPositionReason.SKIP_BEGINNING -> initialPosition.positionMs
+            PlaybackSkipPolicy.InitialPositionReason.EXPLICIT,
+            PlaybackSkipPolicy.InitialPositionReason.START -> null
+        }
+        pendingIntroSeekSource = when (initialPosition.reason) {
+            PlaybackSkipPolicy.InitialPositionReason.RESUME -> "resume"
+            PlaybackSkipPolicy.InitialPositionReason.SKIP_BEGINNING -> "skip_beginning_auto"
+            PlaybackSkipPolicy.InitialPositionReason.EXPLICIT,
+            PlaybackSkipPolicy.InitialPositionReason.START -> null
+        }
+        introApplied =
+            initialPosition.reason == PlaybackSkipPolicy.InitialPositionReason.EXPLICIT
+        introTargetResolved = true
     }
 
     private fun maybeApplyPendingIntro(player: ExoPlayer) {
@@ -1395,7 +1468,13 @@ class BoxLorePlaybackService : MediaLibraryService() {
                         effectiveSkipEndingMs =
                             effectiveEndingTrimForCompletion(totalDurationMs),
                     )
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                    android.util.Log.w(
+                        "BoxLorePlaybackService",
+                        "Failed to evaluate playback completion; using fallback",
+                        e,
+                    )
+                }
             }
             
             // Capture queue size for analytics
