@@ -11,8 +11,14 @@ interface AdaptiveRankingDao {
     @Query("SELECT * FROM adaptive_models WHERE objective = :objective LIMIT 1")
     suspend fun getModel(objective: String): AdaptiveModelEntity?
 
+    @Query("SELECT * FROM adaptive_models")
+    suspend fun getAllModels(): List<AdaptiveModelEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertModel(model: AdaptiveModelEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertModels(models: List<AdaptiveModelEntity>)
 
     @Query(
         """
@@ -23,11 +29,20 @@ interface AdaptiveRankingDao {
     )
     suspend fun getFacet(facetType: String, facetKey: String): PreferenceFacetEntity?
 
+    @Query("SELECT * FROM preference_facets")
+    suspend fun getAllFacets(): List<PreferenceFacetEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertFacet(facet: PreferenceFacetEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertFacets(facets: List<PreferenceFacetEntity>)
+
     @Query("SELECT * FROM ranking_exposures WHERE exposureId = :exposureId LIMIT 1")
     suspend fun getExposure(exposureId: String): RankingExposureEntity?
+
+    @Query("SELECT * FROM ranking_exposures ORDER BY shownAt DESC")
+    suspend fun getAllExposures(): List<RankingExposureEntity>
 
     @Query(
         """
@@ -41,6 +56,9 @@ interface AdaptiveRankingDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertExposure(exposure: RankingExposureEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertExposures(exposures: List<RankingExposureEntity>)
 
     @Query(
         """
@@ -85,5 +103,17 @@ interface AdaptiveRankingDao {
         clearModels()
         clearFacets()
         clearExposures()
+    }
+
+    @Transaction
+    suspend fun replaceAll(
+        models: List<AdaptiveModelEntity>,
+        facets: List<PreferenceFacetEntity>,
+        exposures: List<RankingExposureEntity>,
+    ) {
+        clearAll()
+        upsertModels(models)
+        upsertFacets(facets)
+        upsertExposures(exposures)
     }
 }

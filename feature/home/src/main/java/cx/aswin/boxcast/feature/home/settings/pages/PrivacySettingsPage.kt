@@ -159,7 +159,8 @@ internal fun PrivacySettingsPage(
         SettingsGroup(
             title = "On-device recommendations",
             footer = "Your learned taste profile and ranking model stay on this device. " +
-                "They are not uploaded or included in backups.",
+                "They are not uploaded. JSON backups you create include this state so an " +
+                "imported install can continue with the same learning.",
         ) {
             SettingsContent {
                 AnalyticsControlCard(

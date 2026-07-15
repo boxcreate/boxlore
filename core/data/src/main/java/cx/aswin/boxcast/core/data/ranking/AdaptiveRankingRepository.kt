@@ -38,6 +38,13 @@ data class RankingAggregateTelemetry(
     val explorationEligible: Boolean,
 )
 
+data class AdaptiveRankingBackup(
+    val version: Int = 1,
+    val models: List<AdaptiveModelEntity>? = emptyList(),
+    val facets: List<PreferenceFacetEntity>? = emptyList(),
+    val exposures: List<RankingExposureEntity>? = emptyList(),
+)
+
 class AdaptiveRankingRepository private constructor(
     private val database: AdaptiveRankingDatabase,
     private val model: AdaptiveLinearModel = AdaptiveLinearModel(),
@@ -198,6 +205,30 @@ class AdaptiveRankingRepository private constructor(
         }
     }
 
+    suspend fun exportBackup(): AdaptiveRankingBackup {
+        return AdaptiveRankingBackup(
+            models = dao.getAllModels(),
+            facets = dao.getAllFacets(),
+            exposures = dao.getAllExposures(),
+        )
+    }
+
+    suspend fun restoreBackup(backup: AdaptiveRankingBackup) {
+        require(backup.version == ADAPTIVE_BACKUP_VERSION) {
+            "Unsupported adaptive ranking backup version ${backup.version}"
+        }
+        val models = backup.models.orEmpty()
+        val facets = backup.facets.orEmpty()
+        val exposures = backup.exposures.orEmpty()
+        require(models.all(::isValidBackupModel)) { "Invalid adaptive model backup" }
+        require(facets.all(::isValidBackupFacet)) { "Invalid preference facet backup" }
+        require(exposures.size <= MAX_EXPOSURES && exposures.all(::isValidBackupExposure)) {
+            "Invalid ranking exposure backup"
+        }
+        dao.replaceAll(models, facets, exposures)
+        RankingShadowDiagnostics.clear()
+    }
+
     suspend fun reset() {
         dao.clearAll()
     }
@@ -240,6 +271,7 @@ class AdaptiveRankingRepository private constructor(
     }
 
     companion object {
+        private const val ADAPTIVE_BACKUP_VERSION = 1
         private const val MAX_EXPOSURES = 1_000
         private const val EXPOSURE_RETENTION_MILLIS = 30L * 24L * 60L * 60L * 1_000L
 
@@ -254,6 +286,53 @@ class AdaptiveRankingRepository private constructor(
             }
         }
     }
+}
+
+private fun isValidBackupModel(model: AdaptiveModelEntity): Boolean {
+    return runCatching {
+        RankingObjective.valueOf(model.objective)
+        model.featureSchemaVersion == RankingFeatureSchema.VERSION &&
+            model.dimension == RankingFeatureSchema.dimension &&
+            model.updateCount >= 0L &&
+            RankingSerialization.decode(
+                model.covariance,
+                model.dimension * model.dimension,
+            ).all(Double::isFinite) &&
+            RankingSerialization.decode(
+                model.inverseCovariance,
+                model.dimension * model.dimension,
+            ).all(Double::isFinite) &&
+            RankingSerialization.decode(model.rewardVector, model.dimension).all(Double::isFinite)
+    }.getOrDefault(false)
+}
+
+private fun isValidBackupFacet(facet: PreferenceFacetEntity): Boolean {
+    return runCatching {
+        PreferenceFacetType.valueOf(facet.facetType)
+        facet.facetKey.isNotBlank() &&
+            facet.facetKey.length <= 200 &&
+            facet.positiveEvidence.isFinite() &&
+            facet.positiveEvidence >= 0.0 &&
+            facet.negativeEvidence.isFinite() &&
+            facet.negativeEvidence >= 0.0
+    }.getOrDefault(false)
+}
+
+private fun isValidBackupExposure(exposure: RankingExposureEntity): Boolean {
+    return runCatching {
+        RankingObjective.valueOf(exposure.objective)
+        RankingSurface.valueOf(exposure.surface)
+        CandidateSource.valueOf(exposure.source)
+        exposure.exposureId.isNotBlank() &&
+            exposure.episodeId.isNotBlank() &&
+            exposure.featureSchemaVersion == RankingFeatureSchema.VERSION &&
+            exposure.listenSeconds >= 0L &&
+            (exposure.reward == null || exposure.reward.isFinite()) &&
+            RankingSerialization.decode(
+                exposure.featureVector,
+                RankingFeatureSchema.dimension,
+            ).all(Double::isFinite)
+    }.getOrDefault(false)
 }
 
 private fun AdaptiveModelState.toEntity(

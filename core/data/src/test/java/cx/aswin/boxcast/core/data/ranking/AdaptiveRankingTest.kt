@@ -1,5 +1,10 @@
 package cx.aswin.boxcast.core.data.ranking
 
+import com.google.gson.Gson
+import cx.aswin.boxcast.core.data.ranking.database.AdaptiveModelEntity
+import cx.aswin.boxcast.core.data.ranking.database.PreferenceFacetEntity
+import cx.aswin.boxcast.core.data.ranking.database.RankingExposureEntity
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -189,5 +194,47 @@ class AdaptiveRankingTest {
         assertEquals(3, snapshot.topFiveOverlap)
         assertEquals(2.0 / 3.0, snapshot.meanAbsoluteRankShift, 0.0001)
         assertEquals(123L, snapshot.recordedAt)
+    }
+
+    @Test
+    fun `adaptive learning backup survives json round trip`() {
+        val model = AdaptiveModelEntity(
+            objective = RankingObjective.DISCOVERY.name,
+            featureSchemaVersion = RankingFeatureSchema.VERSION,
+            dimension = RankingFeatureSchema.dimension,
+            covariance = byteArrayOf(1, 2, 3),
+            inverseCovariance = byteArrayOf(4, 5, 6),
+            rewardVector = byteArrayOf(7, 8),
+            updateCount = 42,
+            updatedAt = 100,
+        )
+        val facet = PreferenceFacetEntity("GENRE", "science", 3.0, 1.0, 101)
+        val exposure = RankingExposureEntity(
+            exposureId = "exposure",
+            episodeId = "episode",
+            podcastId = "podcast",
+            objective = RankingObjective.DISCOVERY.name,
+            surface = RankingSurface.HOME.name,
+            source = CandidateSource.SERVER_RECOMMENDATION.name,
+            featureSchemaVersion = RankingFeatureSchema.VERSION,
+            featureVector = byteArrayOf(9, 10),
+            shownAt = 102,
+            resolvedAt = null,
+            reward = null,
+            listenSeconds = 0,
+            entryPoint = "home",
+            online = true,
+        )
+        val gson = Gson()
+
+        val restored = gson.fromJson(
+            gson.toJson(AdaptiveRankingBackup(models = listOf(model), facets = listOf(facet), exposures = listOf(exposure))),
+            AdaptiveRankingBackup::class.java,
+        )
+
+        assertEquals(1, restored.version)
+        assertArrayEquals(model.covariance, restored.models!!.single().covariance)
+        assertEquals(facet, restored.facets!!.single())
+        assertArrayEquals(exposure.featureVector, restored.exposures!!.single().featureVector)
     }
 }

@@ -5,6 +5,8 @@ import cx.aswin.boxcast.core.data.SubscriptionRepository
 import cx.aswin.boxcast.core.data.PlaybackRepository
 import cx.aswin.boxcast.core.data.database.PodcastEntity
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
+import cx.aswin.boxcast.core.data.ranking.AdaptiveRankingBackup
+import cx.aswin.boxcast.core.data.ranking.AdaptiveRankingRepository
 import kotlinx.coroutines.flow.first
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -42,10 +44,11 @@ data class GlobalPreferencesBackup(
 )
 
 data class BoxCastBackup(
-    val version: Int = 4,
+    val version: Int = 5,
     val subscriptions: List<PodcastEntity>,
     val history: List<ListeningHistoryEntity>,
-    val globalPreferences: GlobalPreferencesBackup? = null
+    val globalPreferences: GlobalPreferencesBackup? = null,
+    val adaptiveRanking: AdaptiveRankingBackup? = null,
 )
 
 data class OpmlFeed(
@@ -98,11 +101,16 @@ class LibraryBackupManager(
             )
         } else null
 
+        val appContext = requireNotNull(context) {
+            "A context is required to export a complete JSON backup"
+        }
+        val rankingBackup = AdaptiveRankingRepository.getInstance(appContext).exportBackup()
         val backup = BoxCastBackup(
-            version = 4,
+            version = 5,
             subscriptions = subscriptions,
             history = allHistory,
-            globalPreferences = globalPrefs
+            globalPreferences = globalPrefs,
+            adaptiveRanking = rankingBackup,
         )
         return gson.toJson(backup)
     }
@@ -315,8 +323,17 @@ class LibraryBackupManager(
                 )
                 playbackRepository.upsertHistoryEntity(safeEntity)
             }
+
+            // 3. Restore the complete on-device learning state when present. Older backups
+            // remain compatible because this versioned field is optional.
+            backup.adaptiveRanking?.let { rankingBackup ->
+                val appContext = requireNotNull(context) {
+                    "A context is required to restore adaptive ranking"
+                }
+                AdaptiveRankingRepository.getInstance(appContext).restoreBackup(rankingBackup)
+            }
             
-            // 3. Trigger check for new episodes
+            // 4. Trigger check for new episodes
             if (importedIds.isNotEmpty()) {
                 try {
                     val syncedMap = podcastRepository.syncSubscriptions(importedIds)
