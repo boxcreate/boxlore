@@ -55,7 +55,7 @@ jobs:
           cache-dependency-path: scripts/package-lock.json
 
       - name: Cache embedding model
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ./.cache
           key: transformers-cache-bge-large-en-v1.5
