@@ -10,11 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Recommendation-driven discovery sections on Home replace time‑of‑day rails; Adaptive Learner debug inspector with genre‑affinity graphs (excluding placeholder Podcast); Bounded aggregate summaries (genre affinity, duration, maturity, novelty, recent‑section) sent for personalization; Stale‑while‑revalidate caching for discovery rails with skeleton placeholders ([#882](https://github.com/ashwkun/boxlore/pull/882)) <!-- impact:user-impact-high+backend-change -->
+- Added recommendation‑driven discovery sections on Home replacing time‑of‑day rails; added Adaptive Learner debug inspector with genre‑affinity graphs (excluding placeholder Podcast); added bounded aggregate summaries (genre affinity, duration, maturity, novelty, recent‑section) for personalization; added stale‑while‑revalidate caching for discovery rails with skeleton placeholders. ([#882](https://github.com/ashwkun/boxlore/pull/882)) <!-- impact:user-impact-high+backend-change -->
 ### Changed
-- Visual hierarchy and spacing adjustments for top‑level, child, and nested section headers; daypart rotation enabled via ordering and short‑lived retention of recently visible sections; network loading logic now preserves in‑flight section loads and prevents data clearing on empty refresh; Gradle wrapper upgraded and R8 compatibility enabled for release builds ([#882](https://github.com/ashwkun/boxlore/pull/882)) <!-- impact:user-impact-high+backend-change -->
+- Changed visual hierarchy and spacing for top‑level, child, and nested section headers; enabled daypart rotation via ordering and short‑lived retention of recently visible sections; updated network loading logic to preserve in‑flight section loads and prevent data clearing on empty refresh; upgraded Gradle wrapper and enabled R8 compatibility for release builds. ([#882](https://github.com/ashwkun/boxlore/pull/882)) <!-- impact:user-impact-high+backend-change -->
+- Changed documentation: rewrote recommendation‑system guide covering UI rails, on‑device bandit logic, API contracts, and diagnostics; removed obsolete recommendation_logic documentation. ([#880](https://github.com/ashwkun/boxlore/pull/880)) <!-- impact:no-user-impact -->
 ### Fixed
-- Placeholder `Podcast` genre excluded from on‑device learner calculations; blank gaps under greeting eliminated by painting cached rails immediately ([#882](https://github.com/ashwkun/boxlore/pull/882)) <!-- impact:user-impact-high+backend-change -->
+- Fixed exclusion of placeholder Podcast genre from on‑device learner calculations; fixed blank gaps under greeting by painting cached rails immediately. ([#882](https://github.com/ashwkun/boxlore/pull/882)) <!-- impact:user-impact-high+backend-change -->
 ## [v0.0.9] - 2026-07-16
 
 ### Added

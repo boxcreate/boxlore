@@ -57,7 +57,7 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Home now shows personalized recommendation sections instead of time‑of‑day lists, with smoother loading and no blank gaps. <a href="https://github.com/ashwkun/boxlore/pull/882"><img src="https://img.shields.io/badge/PR-882-6750A4?style=flat-square" alt="PR #882" height="18"/></a></li>
+<li>Home now shows personalized discovery rows that change with the time of day, load faster with placeholders, and have a cleaner layout. <a href="https://github.com/ashwkun/boxlore/pull/882"><img src="https://img.shields.io/badge/PR-882-6750A4?style=flat-square" alt="PR #882" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
