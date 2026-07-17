@@ -157,6 +157,7 @@ data class ContentIntentDto(
     val freshnessDays: Int,
     val durationMinutes: ContentDurationRangeDto? = null,
     val diversity: ContentDiversityDto,
+    val quality: ContentQualityDto = ContentQualityDto(),
 )
 
 @Serializable
@@ -172,6 +173,12 @@ data class ContentDiversityDto(
 )
 
 @Serializable
+data class ContentQualityDto(
+    val minSemanticScore: Double = 0.0,
+    val unseenShowReserve: Double = 0.0,
+)
+
+@Serializable
 data class ContentFallbackIntentDto(
     val id: String,
     val titleKey: String,
@@ -180,6 +187,113 @@ data class ContentFallbackIntentDto(
     val subtitleFallback: String,
     val icon: String,
     val layout: String,
+)
+
+@Serializable
+data class ContentSectionsV1Request(
+    val contractVersion: Int,
+    val surface: String,
+    val localMinuteOfDay: Int,
+    val daypart: String? = null,
+    val country: String,
+    val languages: List<String> = emptyList(),
+    val recentSeeds: List<ContentSectionRecentSeedDto> = emptyList(),
+    val interests: List<String> = emptyList(),
+    val subscribedPodcastIds: List<Long> = emptyList(),
+    val excludedPodcastIds: List<Long> = emptyList(),
+    val excludedEpisodeIds: List<Long> = emptyList(),
+    val candidateBudget: Int = 120,
+    val tasteSignals: List<ContentTasteSignalDto> = emptyList(),
+    val recentSectionIds: List<String> = emptyList(),
+    val durationPreference: ContentDurationPreferenceDto? = null,
+    val historyMaturity: Int? = null,
+    val noveltyPreference: Double? = null,
+    val localDate: String? = null,
+    val timezoneOffsetMinutes: Int? = null,
+)
+
+@Serializable
+data class ContentTasteSignalDto(
+    val genre: String,
+    val weight: Double,
+)
+
+@Serializable
+data class ContentDurationPreferenceDto(
+    val minimumMinutes: Int,
+    val maximumMinutes: Int,
+)
+
+@Serializable
+data class ContentSectionRecentSeedDto(
+    val kind: String,
+    val id: Long,
+    val weight: Double,
+    val fallback: ContentSectionSeedFallbackDto? = null,
+)
+
+@Serializable
+data class ContentSectionSeedFallbackDto(
+    val episodeTitle: String? = null,
+    val podcastTitle: String? = null,
+    val podcastId: Long? = null,
+    val genre: String? = null,
+    val description: String? = null,
+)
+
+@Serializable
+data class ContentSectionsV1Response(
+    val status: String = "false",
+    val contractVersion: Int? = null,
+    val catalogVersion: Int? = null,
+    val resolvedDaypart: String? = null,
+    val algorithmVersion: String? = null,
+    val isFallback: Boolean = false,
+    val generatedAt: String? = null,
+    val sections: List<ContentDiscoverySectionDto> = emptyList(),
+)
+
+@Serializable
+data class ContentDiscoverySectionDto(
+    val intent: ContentSectionIntentMetadataDto,
+    val layout: String,
+    val items: List<ContentSectionEpisodeDto> = emptyList(),
+)
+
+@Serializable
+data class ContentSectionIntentMetadataDto(
+    val id: String,
+    val titleKey: String,
+    val titleFallback: String,
+    val subtitleKey: String,
+    val subtitleFallback: String,
+    val icon: String,
+    val dayparts: List<String> = emptyList(),
+    val refreshPolicy: String,
+)
+
+@Serializable
+data class ContentSectionEpisodeDto(
+    val id: Long,
+    val title: String,
+    val description: String = "",
+    val enclosureUrl: String,
+    /** Duration in seconds. */
+    val duration: Int,
+    /** Unix timestamp in seconds. */
+    val datePublished: Long,
+    val image: String = "",
+    val feedImage: String = "",
+    val feedId: Long,
+    val feedTitle: String,
+    val genre: String = "",
+    val language: String = "en",
+    val retrievalScore: Double,
+    val semanticScore: Double,
+    val source: String,
+    val reason: String,
+    val serverRank: Int,
+    val algorithmVersion: String,
 )
 
 @Serializable

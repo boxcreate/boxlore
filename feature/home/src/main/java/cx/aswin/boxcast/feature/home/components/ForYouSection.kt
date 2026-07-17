@@ -28,10 +28,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
-import cx.aswin.boxcast.core.designsystem.theme.SectionHeaderFontFamily
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.designsystem.theme.m3Shimmer
-import cx.aswin.boxcast.feature.home.CuratedTimeBlock
 import androidx.compose.runtime.LaunchedEffect
 import cx.aswin.boxcast.core.data.analytics.AnalyticsHelper
 import cx.aswin.boxcast.feature.home.StableEpisodeList
@@ -45,7 +43,7 @@ import cx.aswin.boxcast.feature.home.StableEpisodeList
 fun LazyStaggeredGridScope.forYouItems(
     recommendations: StableEpisodeList,
     onEpisodeClick: (Episode, Podcast) -> Unit,
-    timeBlock: CuratedTimeBlock?,
+    discoveryContextTitle: String,
     showTasteHeader: Boolean = true,
     isFallback: Boolean = true
 ) {
@@ -53,9 +51,14 @@ fun LazyStaggeredGridScope.forYouItems(
 
     if (showTasteHeader) {
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_header", contentType = "for_you_header") {
-            ForYouHeader(
-                isFallback = isFallback,
-                modifier = Modifier.padding(bottom = 12.dp)
+            HomeChildSectionHeader(
+                title = if (isFallback) "Popular in your Region" else "Based on Your Taste",
+                subtitle = if (isFallback) {
+                    "Popular picks from listeners near you"
+                } else {
+                    "Picked from your listening patterns"
+                },
+                icon = Icons.Rounded.AutoAwesome,
             )
         }
     }
@@ -75,11 +78,11 @@ fun LazyStaggeredGridScope.forYouItems(
 
     // Hero card (index 0) — full width. Also hosts the impression analytics effect.
     item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
-        LaunchedEffect(recommendations.list) {
+        LaunchedEffect(recommendations.list, discoveryContextTitle) {
             AnalyticsHelper.trackHomeRecommendationsImpression(
                 recommendationsCount = recommendations.list.size,
                 episodeIds = recommendations.list.map { it.id },
-                timeBlockTitle = timeBlock?.title
+                timeBlockTitle = discoveryContextTitle,
             )
         }
         val ep = items[0]
@@ -102,7 +105,7 @@ fun LazyStaggeredGridScope.forYouItems(
                     podcastId = parentPodcast.id,
                     podcastName = parentPodcast.title,
                     positionIndex = 0,
-                    timeBlockTitle = timeBlock?.title
+                    timeBlockTitle = discoveryContextTitle,
                 )
                 onEpisodeClick(ep, parentPodcast)
             }
@@ -135,7 +138,7 @@ fun LazyStaggeredGridScope.forYouItems(
                     podcastId = parentPodcast.id,
                     podcastName = parentPodcast.title,
                     positionIndex = originalIndex,
-                    timeBlockTitle = timeBlock?.title
+                    timeBlockTitle = discoveryContextTitle,
                 )
                 onEpisodeClick(ep, parentPodcast)
             },
@@ -288,28 +291,6 @@ private fun ForYouHeroCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ForYouHeader(
-    isFallback: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = if (isFallback) "Popular in your Region" else "Based on Your Taste",
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.1).sp
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

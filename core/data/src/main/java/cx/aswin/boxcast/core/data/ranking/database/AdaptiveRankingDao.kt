@@ -32,11 +32,22 @@ interface AdaptiveRankingDao {
     @Query("SELECT * FROM preference_facets")
     suspend fun getAllFacets(): List<PreferenceFacetEntity>
 
+    @Query("SELECT * FROM preference_facets WHERE facetType = :facetType")
+    suspend fun getFacetsByType(facetType: String): List<PreferenceFacetEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertFacet(facet: PreferenceFacetEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertFacets(facets: List<PreferenceFacetEntity>)
+
+    @Query(
+        """
+        DELETE FROM preference_facets
+        WHERE facetType = :facetType AND facetKey = :facetKey
+        """,
+    )
+    suspend fun deleteFacet(facetType: String, facetKey: String)
 
     @Query("SELECT * FROM ranking_exposures WHERE exposureId = :exposureId LIMIT 1")
     suspend fun getExposure(exposureId: String): RankingExposureEntity?

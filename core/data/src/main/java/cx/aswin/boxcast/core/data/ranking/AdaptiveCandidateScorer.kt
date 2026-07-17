@@ -6,6 +6,7 @@ import cx.aswin.boxcast.core.data.ScorablePodcast
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
 import cx.aswin.boxcast.core.model.Episode
 import cx.aswin.boxcast.core.model.Podcast
+import cx.aswin.boxcast.core.model.PodcastGenres
 import kotlin.math.ln
 
 data class EpisodeRankingInput(
@@ -377,8 +378,8 @@ private fun List<Double>.averageOrNeutral(): Double = if (isEmpty()) 0.0 else av
 
 private fun Podcast.rankingGenres(): List<String> = genre
     .split(",")
-    .map(String::trim)
-    .filter(String::isNotEmpty)
+    .mapNotNull(PodcastGenres::canonicalize)
+    .distinct()
 
 private fun durationFit(durationSeconds: Int): Double {
     if (durationSeconds <= 0) return 0.5

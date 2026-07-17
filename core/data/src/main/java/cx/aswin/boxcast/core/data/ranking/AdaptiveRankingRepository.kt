@@ -1,15 +1,20 @@
 package cx.aswin.boxcast.core.data.ranking
 
 import android.content.Context
+import androidx.room.withTransaction
 import cx.aswin.boxcast.core.data.ranking.database.AdaptiveModelEntity
 import cx.aswin.boxcast.core.data.ranking.database.AdaptiveRankingDatabase
 import cx.aswin.boxcast.core.data.ranking.database.PreferenceFacetEntity
 import cx.aswin.boxcast.core.data.ranking.database.RankingExposureEntity
+import cx.aswin.boxcast.core.model.PodcastGenres
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.max
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 data class RankingExposure(
     val episodeId: String,
@@ -29,6 +34,41 @@ data class RankingDebugSnapshot(
     val learnedBlend: Double,
     val explorationEnabled: Boolean,
     val featureSchemaVersion: Int,
+)
+
+data class LearnerFacetDebug(
+    val type: PreferenceFacetType,
+    val key: String,
+    val affinity: Double,
+    val positiveEvidence: Double,
+    val negativeEvidence: Double,
+)
+
+data class LearnerExposureDebug(
+    val episodeId: String,
+    val podcastId: String,
+    val objective: String,
+    val source: String,
+    val reward: Double?,
+    val listenSeconds: Long,
+    val shownAt: Long,
+    val resolved: Boolean,
+)
+
+data class LearnerFeatureWeightDebug(
+    val slot: FeatureSlot,
+    val weight: Double,
+)
+
+data class LearnerInspectorSnapshot(
+    val objectives: List<RankingDebugSnapshot>,
+    val telemetry: List<RankingAggregateTelemetry>,
+    val facets: List<LearnerFacetDebug>,
+    val recentExposures: List<LearnerExposureDebug>,
+    val featureWeights: List<LearnerFeatureWeightDebug>,
+    val pendingExposureCount: Int,
+    val resolvedExposureCount: Int,
+    val capturedAt: Long,
 )
 
 data class RankingAggregateTelemetry(
@@ -197,13 +237,39 @@ class AdaptiveRankingRepository private constructor(
         }
     }
 
+    /**
+     * Returns only a bounded, decayed genre summary suitable for personalization requests.
+     * Stored facet evidence and the underlying behavioral timeline never leave this repository.
+     */
+    suspend fun genreAffinities(
+        now: Long = System.currentTimeMillis(),
+    ): Map<String, Double> {
+        val aggregate = mutableMapOf<String, Double>()
+        dao.getFacetsByType(PreferenceFacetType.GENRE.name).forEach { entity ->
+            val genre = PodcastGenres.canonicalize(entity.facetKey) ?: return@forEach
+            val affinity = entity.toFacet().affinity(now)
+            if (!affinity.isFinite()) return@forEach
+            aggregate[genre] = aggregate.getOrDefault(genre, 0.0) + affinity
+        }
+        return PodcastGenres.all.mapNotNull { genre ->
+            aggregate[genre]
+                ?.coerceIn(-1.0, 1.0)
+                ?.takeIf { kotlin.math.abs(it) >= MIN_EXPORTED_GENRE_AFFINITY }
+                ?.let { genre to it }
+        }.toMap()
+    }
+
     suspend fun updateFacet(
         type: PreferenceFacetType,
         key: String,
         reward: Double,
         now: Long = System.currentTimeMillis(),
     ) {
-        val normalizedKey = key.normalizedFacetKey()
+        // Placeholder genres like "Podcast" are missing-category defaults, not taste.
+        val normalizedKey = when (type) {
+            PreferenceFacetType.GENRE -> PodcastGenres.canonicalize(key) ?: return
+            else -> key.normalizedFacetKey()
+        }
         if (normalizedKey.isEmpty()) return
         val existing = dao.getFacet(type.name, normalizedKey)?.toFacet()
             ?: BayesianPreferenceFacet(updatedAt = now)
@@ -217,6 +283,54 @@ class AdaptiveRankingRepository private constructor(
                 updatedAt = updated.updatedAt,
             ),
         )
+    }
+
+    /**
+     * Merges alias genre facets into their canonical keys and drops placeholders (e.g.
+     * "Podcast") so older builds cannot orphan evidence or keep weighting invalid keys.
+     */
+    suspend fun pruneNonCanonicalGenreFacets() {
+        database.withTransaction {
+            val genres = dao.getFacetsByType(PreferenceFacetType.GENRE.name)
+            if (genres.isEmpty()) return@withTransaction
+            val byKey = genres.associateBy { it.facetKey }
+            val mergedCanonical = linkedMapOf<String, BayesianPreferenceFacet>()
+            val deleteKeys = mutableListOf<String>()
+
+            for (entity in genres) {
+                val canonical = PodcastGenres.canonicalize(entity.facetKey)
+                if (canonical == null) {
+                    deleteKeys += entity.facetKey
+                    continue
+                }
+                if (canonical == entity.facetKey) continue
+
+                deleteKeys += entity.facetKey
+                val base = mergedCanonical[canonical]
+                    ?: byKey[canonical]?.toFacet()
+                    ?: BayesianPreferenceFacet(updatedAt = entity.updatedAt)
+                mergedCanonical[canonical] = BayesianPreferenceFacet(
+                    positiveEvidence = base.positiveEvidence + entity.positiveEvidence,
+                    negativeEvidence = base.negativeEvidence + entity.negativeEvidence,
+                    updatedAt = max(base.updatedAt, entity.updatedAt),
+                )
+            }
+
+            for ((canonical, facet) in mergedCanonical) {
+                dao.upsertFacet(
+                    PreferenceFacetEntity(
+                        facetType = PreferenceFacetType.GENRE.name,
+                        facetKey = canonical,
+                        positiveEvidence = facet.positiveEvidence,
+                        negativeEvidence = facet.negativeEvidence,
+                        updatedAt = facet.updatedAt,
+                    ),
+                )
+            }
+            for (key in deleteKeys) {
+                dao.deleteFacet(PreferenceFacetType.GENRE.name, key)
+            }
+        }
     }
 
     suspend fun debugSnapshot(objective: RankingObjective): RankingDebugSnapshot {
@@ -234,6 +348,68 @@ class AdaptiveRankingRepository private constructor(
             explorationEnabled = score.explorationBonus > 0.0 ||
                 (objective.allowsExploration && state.updateCount >= 50),
             featureSchemaVersion = state.featureSchemaVersion,
+        )
+    }
+
+    /**
+     * Rich local-only snapshot for the debug inspector. Never leave the device.
+     */
+    suspend fun learnerInspectorSnapshot(
+        now: Long = System.currentTimeMillis(),
+    ): LearnerInspectorSnapshot = withContext(Dispatchers.Default) {
+        pruneNonCanonicalGenreFacets()
+        val objectives = RankingObjective.entries.map { debugSnapshot(it) }
+        val telemetry = aggregateTelemetry()
+        val facets = dao.getAllFacets().mapNotNull { entity ->
+            val type = runCatching { PreferenceFacetType.valueOf(entity.facetType) }.getOrNull()
+                ?: return@mapNotNull null
+            val facet = entity.toFacet()
+            LearnerFacetDebug(
+                type = type,
+                key = entity.facetKey,
+                affinity = facet.affinity(now),
+                positiveEvidence = facet.positiveEvidence,
+                negativeEvidence = facet.negativeEvidence,
+            )
+        }.sortedWith(
+            compareByDescending<LearnerFacetDebug> { kotlin.math.abs(it.affinity) }
+                .thenBy { it.type.name }
+                .thenBy { it.key },
+        )
+        val exposures = dao.getAllExposures()
+        val recentExposures = exposures
+            .sortedByDescending(RankingExposureEntity::shownAt)
+            .take(24)
+            .map { exposure ->
+                LearnerExposureDebug(
+                    episodeId = exposure.episodeId,
+                    podcastId = exposure.podcastId,
+                    objective = exposure.objective,
+                    source = exposure.source,
+                    reward = exposure.reward,
+                    listenSeconds = exposure.listenSeconds,
+                    shownAt = exposure.shownAt,
+                    resolved = exposure.resolvedAt != null,
+                )
+            }
+        val discoveryState = loadState(RankingObjective.DISCOVERY)
+        val theta = multiply(
+            discoveryState.inverseCovariance,
+            discoveryState.rewardVector,
+            discoveryState.dimension,
+        )
+        val featureWeights = FeatureSlot.entries.map { slot ->
+            LearnerFeatureWeightDebug(slot = slot, weight = theta[slot.ordinal])
+        }
+        LearnerInspectorSnapshot(
+            objectives = objectives,
+            telemetry = telemetry,
+            facets = facets,
+            recentExposures = recentExposures,
+            featureWeights = featureWeights,
+            pendingExposureCount = exposures.count { it.resolvedAt == null },
+            resolvedExposureCount = exposures.count { it.resolvedAt != null },
+            capturedAt = now,
         )
     }
 
@@ -324,6 +500,7 @@ class AdaptiveRankingRepository private constructor(
         private const val MAX_EXPOSURES = 1_000
         private const val EXPOSURE_PRUNE_INTERVAL = 25L
         private const val EXPOSURE_RETENTION_MILLIS = 30L * 24L * 60L * 60L * 1_000L
+        private const val MIN_EXPORTED_GENRE_AFFINITY = 0.01
 
         @Volatile
         private var instance: AdaptiveRankingRepository? = null

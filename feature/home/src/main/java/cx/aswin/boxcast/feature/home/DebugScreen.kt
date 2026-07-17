@@ -21,8 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bedtime
-import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
@@ -89,6 +89,8 @@ fun DebugScreen(
 
     val playerState by playbackRepository.playerState.collectAsState()
     val skipSleepWindow by viewModel.skipSleepWindow.collectAsState()
+    val learnerSnapshot by viewModel.learnerSnapshot.collectAsState()
+    val learnerLoading by viewModel.learnerLoading.collectAsState()
     val history by viewModel.history.collectAsState(initial = emptyList())
     val podcasts by viewModel.podcasts.collectAsState(initial = emptyList())
 
@@ -127,6 +129,20 @@ fun DebugScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 220.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            item {
+                DebugSectionCard(
+                    title = "Adaptive Learner",
+                    icon = Icons.Rounded.AutoAwesome,
+                    isCollapsible = false,
+                ) {
+                    AdaptiveLearnerDebugSection(
+                        snapshot = learnerSnapshot,
+                        loading = learnerLoading,
+                        onRefresh = viewModel::refreshLearnerSnapshot,
+                    )
+                }
+            }
+
             item {
                 DebugSectionCard("Sleep Prompt Testing", Icons.Rounded.Bedtime, isCollapsible = false) {
                     SleepTestingSection(

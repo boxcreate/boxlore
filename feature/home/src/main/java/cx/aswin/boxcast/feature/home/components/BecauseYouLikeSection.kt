@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -112,8 +113,11 @@ fun BecauseYouLikeSection(
         // --- Subsection 1: Suggested Shows (OutlinedCard Grid Matching CuratedEpisodeCard) ---
         if (suggestedPodcasts.list.isNotEmpty()) {
             Spacer(modifier = Modifier.height(28.dp))
-            Column {
-                BecauseYouLikeSectionHeader(title = "Similar Shows")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                BecauseYouLikeSectionHeader(
+                    title = "Similar Shows",
+                    icon = Icons.Rounded.Subscriptions,
+                )
                 
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -134,8 +138,11 @@ fun BecauseYouLikeSection(
         // --- Subsection 2: Recommended Episodes ---
         if (recommendations.list.isNotEmpty()) {
             Spacer(modifier = Modifier.height(28.dp))
-            Column {
-                BecauseYouLikeSectionHeader(title = "Recommended Episodes")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                BecauseYouLikeSectionHeader(
+                    title = "Recommended Episodes",
+                    icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
+                )
 
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -167,20 +174,25 @@ fun BecauseYouLikeSection(
 @Composable
 private fun BecauseYouLikeSectionHeader(
     title: String,
-    modifier: Modifier = Modifier
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
 ) {
     Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(bottom = 12.dp)
     ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.1).sp
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

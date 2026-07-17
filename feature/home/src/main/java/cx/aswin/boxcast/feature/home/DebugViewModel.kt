@@ -9,6 +9,8 @@ import cx.aswin.boxcast.core.data.UserPreferencesRepository
 import cx.aswin.boxcast.core.data.database.BoxLoreDatabase
 import cx.aswin.boxcast.core.data.database.ListeningHistoryEntity
 import cx.aswin.boxcast.core.data.database.PodcastEntity
+import cx.aswin.boxcast.core.data.ranking.AdaptiveRankingRepository
+import cx.aswin.boxcast.core.data.ranking.LearnerInspectorSnapshot
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,18 +23,29 @@ import kotlinx.coroutines.launch
  */
 class DebugViewModel(
     application: Application,
-    private val playbackRepository: PlaybackRepository
+    private val playbackRepository: PlaybackRepository,
 ) : AndroidViewModel(application) {
 
     private val database = BoxLoreDatabase.getDatabase(application)
     private val subscriptionRepository = SubscriptionRepository(database.podcastDao())
     private val userPrefs = UserPreferencesRepository(application)
+    private val adaptiveRankingRepository = AdaptiveRankingRepository.getInstance(application)
 
     val history: Flow<List<ListeningHistoryEntity>> = playbackRepository.getAllHistory()
     val podcasts: Flow<List<PodcastEntity>> = subscriptionRepository.getAllSubscribedPodcasts()
 
     private val _skipSleepWindow = MutableStateFlow(playbackRepository.isDebugSkipSleepWindowEnabled())
     val skipSleepWindow: StateFlow<Boolean> = _skipSleepWindow.asStateFlow()
+
+    private val _learnerSnapshot = MutableStateFlow<LearnerInspectorSnapshot?>(null)
+    val learnerSnapshot: StateFlow<LearnerInspectorSnapshot?> = _learnerSnapshot.asStateFlow()
+
+    private val _learnerLoading = MutableStateFlow(false)
+    val learnerLoading: StateFlow<Boolean> = _learnerLoading.asStateFlow()
+
+    init {
+        refreshLearnerSnapshot()
+    }
 
     fun setSkipSleepWindow(enabled: Boolean) {
         playbackRepository.setDebugSkipSleepWindow(enabled)
@@ -64,10 +77,23 @@ class DebugViewModel(
     }
 
     fun clearDismissedCuriosities() {
-        val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", android.content.Context.MODE_PRIVATE)
+        val prefs = getApplication<Application>().getSharedPreferences(
+            "boxcast_prefs",
+            android.content.Context.MODE_PRIVATE,
+        )
         prefs.edit()
             .remove("dismissed_curiosities")
             .remove("learn_curiosity_history")
             .apply()
+    }
+
+    fun refreshLearnerSnapshot() {
+        viewModelScope.launch {
+            _learnerLoading.value = true
+            _learnerSnapshot.value = runCatching {
+                adaptiveRankingRepository.learnerInspectorSnapshot()
+            }.getOrNull()
+            _learnerLoading.value = false
+        }
     }
 }

@@ -98,7 +98,8 @@ class RankingFeedbackRepository private constructor(
     ) {
         val repository = adaptiveRankingRepository ?: return
         repository.updateFacet(PreferenceFacetType.SHOW, target.podcastId, reward)
-        target.genre?.takeIf(String::isNotBlank)?.let { genre ->
+        // Skip placeholder "Podcast" / unknown labels — only canonical genres learn.
+        target.genre?.let { genre ->
             repository.updateFacet(PreferenceFacetType.GENRE, genre, reward)
         }
         target.source?.let { source ->

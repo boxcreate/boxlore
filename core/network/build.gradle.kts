@@ -36,4 +36,5 @@ dependencies {
     implementation("androidx.annotation:annotation:1.7.1")
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(libs.junit)
 }

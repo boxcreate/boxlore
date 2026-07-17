@@ -327,34 +327,49 @@ fun TimeBlockSkeleton() {
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+        AdaptiveRailsSkeleton(railCount = 2)
+    }
+}
 
-        // 2 rails for curation block matching data.sections list
-        repeat(2) { railIndex ->
+/** Placeholder rails under the discovery greeting while personalized sections load. */
+@Composable
+fun AdaptiveRailsSkeleton(
+    railCount: Int = 2,
+    modifier: Modifier = Modifier,
+) {
+    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+
+    Column(modifier = modifier.padding(bottom = 8.dp)) {
+        repeat(railCount) { railIndex ->
             Column {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(vertical = 8.dp),
                 ) {
-                    SkeletonBlock(width = 100.dp, height = 18.dp, baseColor = baseColor, highlightColor = highlightColor)
+                    SkeletonBlock(
+                        width = 140.dp,
+                        height = 18.dp,
+                        baseColor = baseColor,
+                        highlightColor = highlightColor,
+                    )
                 }
-
-                // Horizontal row of cards
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 0.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(4) { 
+                    items(4) {
                         Box(
                             modifier = Modifier
                                 .width(140.dp)
                                 .height(204.dp)
                                 .clip(MaterialTheme.shapes.large)
-                                .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.large)
+                                .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.large),
                         )
                     }
                 }
             }
-            if (railIndex == 0) {
+            if (railIndex < railCount - 1) {
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
