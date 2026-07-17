@@ -6,12 +6,13 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -21,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxcast.core.designsystem.component.HtmlText
 import cx.aswin.boxcast.core.designsystem.components.OptimizedImage
 import cx.aswin.boxcast.core.designsystem.theme.ExpressiveShapes
-import cx.aswin.boxcast.core.designsystem.theme.contrastColor
 import cx.aswin.boxcast.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxcast.core.model.Person
 
@@ -215,13 +214,13 @@ internal fun EpisodeDescriptionCard(
             .padding(horizontal = 16.dp)
             .expressiveClickable(enabled = isLong) { expanded = !expanded },
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
-        tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.large,
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(16.dp)
                 .animateContentSize(
                     animationSpec = spring(
                         dampingRatio = Spring.DampingRatioNoBouncy,
@@ -229,26 +228,13 @@ internal fun EpisodeDescriptionCard(
                     )
                 )
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = "Episode notes",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            Spacer(modifier = Modifier.height(22.dp))
-
             // --- Cast & Crew (Person chips) ---
             if (!persons.isNullOrEmpty()) {
-                DescriptionSectionTitle(
+                Text(
                     text = "Cast & Crew",
-                    icon = Icons.Rounded.Groups,
-                    accentColor = accentColor,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
@@ -281,10 +267,11 @@ internal fun EpisodeDescriptionCard(
 
             // --- Social Links ---
             if (socialLinks.isNotEmpty()) {
-                DescriptionSectionTitle(
+                Text(
                     text = "Episode Resources",
-                    icon = Icons.Rounded.Link,
-                    accentColor = accentColor,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
@@ -315,10 +302,11 @@ internal fun EpisodeDescriptionCard(
             }
 
             // --- Description ---
-            DescriptionSectionTitle(
+            Text(
                 text = "About this episode",
-                icon = Icons.AutoMirrored.Rounded.Notes,
-                accentColor = accentColor,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -365,36 +353,27 @@ internal fun EpisodeDescriptionCard(
 
             if (isLong) {
                 Spacer(modifier = Modifier.height(8.dp))
-                val readMoreContainerColor = accentColor.copy(alpha = 0.14f)
-                    .compositeOver(MaterialTheme.colorScheme.surfaceContainerLow)
-                Surface(
+                Row(
                     modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .expressiveClickable(
-                            shape = ExpressiveShapes.Pill,
-                            onClick = { expanded = !expanded },
-                        ),
-                    shape = ExpressiveShapes.Pill,
-                    color = readMoreContainerColor,
-                    contentColor = readMoreContainerColor.contrastColor(),
+                        .fillMaxWidth()
+                        .expressiveClickable(shape = RoundedCornerShape(8.dp)) { expanded = !expanded }
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = if (expanded) "Show less" else "Read more",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
+                    Text(
+                        text = if (expanded) "Show less" else "Read more",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = accentColor.copy(alpha = 0.9f)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = accentColor.copy(alpha = 0.9f),
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
 
@@ -460,33 +439,6 @@ internal fun EpisodeDescriptionCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DescriptionSectionTitle(
-    text: String,
-    icon: ImageVector,
-    accentColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = accentColor,
-            modifier = Modifier.size(19.dp),
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
     }
 }
 

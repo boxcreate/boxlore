@@ -1,6 +1,7 @@
 package cx.aswin.boxcast.feature.info
 
 import android.text.Html
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
@@ -31,17 +32,22 @@ fun CrossPromotionCard(
 ) {
     val podcast = crossPromotion.targetPodcast ?: return
 
-    val primaryColor = MaterialTheme.colorScheme.tertiary
-    val surfaceColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.42f)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val surfaceColor = MaterialTheme.colorScheme.surfaceContainerLow
 
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = surfaceColor,
-        tonalElevation = 2.dp,
+    OutlinedCard(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = surfaceColor
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant
+        ),
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .expressiveClickable { onPodcastClick(podcast.id) },
+            .expressiveClickable { onPodcastClick(podcast.id) }
     ) {
         Column(
             modifier = Modifier
@@ -53,24 +59,17 @@ fun CrossPromotionCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Surface(
-                    modifier = Modifier.size(34.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = primaryColor,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.Podcasts,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Rounded.Podcasts,
+                    contentDescription = null,
+                    tint = primaryColor,
+                    modifier = Modifier.size(16.dp)
+                )
                 Text(
-                    text = "Featured show",
-                    style = MaterialTheme.typography.titleSmall.copy(
+                    text = "FEATURED SHOW",
+                    style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
                     ),
                     color = primaryColor
                 )
@@ -146,14 +145,15 @@ fun CrossPromotionCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Box(
+                // View Arrow Button
+                IconButton(
+                    onClick = { onPodcastClick(podcast.id) },
                     modifier = Modifier
                         .size(36.dp)
                         .background(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center,
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
