@@ -57,7 +57,11 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Home now shows personalized discovery rows that change with the time of day, load faster with placeholders, and have a cleaner layout. <a href="https://github.com/ashwkun/boxlore/pull/882"><img src="https://img.shields.io/badge/PR-882-6750A4?style=flat-square" alt="PR #882" height="18"/></a></li>
+<li>Home now shows personalized discovery sections with genre‑based picks, duration, and novelty, loading faster with placeholder previews. <a href="https://github.com/ashwkun/boxlore/pull/882"><img src="https://img.shields.io/badge/PR-882-6750A4?style=flat-square" alt="PR #882" height="18"/></a></li>
+</ul>
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>Library import flow gets clearer screens and a success checkmark animation, making adding podcasts easier. <a href="https://github.com/ashwkun/boxlore/pull/883"><img src="https://img.shields.io/badge/PR-883-6750A4?style=flat-square" alt="PR #883" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
