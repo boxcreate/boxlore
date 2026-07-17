@@ -569,42 +569,12 @@ private fun ExposurePulseStrip(
                 .background(surface, RoundedCornerShape(18.dp))
                 .padding(horizontal = 12.dp, vertical = 16.dp),
         ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val baseline = size.height * 0.65f
-                drawLine(
-                    brush = Brush.horizontalGradient(
-                        listOf(
-                            Color.Transparent,
-                            pending.copy(alpha = 0.5f),
-                            Color.Transparent,
-                        ),
-                    ),
-                    start = Offset(0f, baseline),
-                    end = Offset(size.width, baseline),
-                    strokeWidth = 2f,
-                )
-                if (exposures.isEmpty()) return@Canvas
-                val step = size.width / max(exposures.size - 1, 1).toFloat()
-                exposures.asReversed().forEachIndexed { index, exposure ->
-                    val x = index * step
-                    val reward = exposure.reward
-                    val color = when {
-                        reward == null -> pending
-                        reward >= 0 -> positive
-                        else -> negative
-                    }
-                    val magnitude = abs(reward ?: 0.15).toFloat().coerceIn(0.12f, 1f)
-                    val y = baseline - magnitude * size.height * 0.55f *
-                        if ((reward ?: 0.0) >= 0) 1f else -0.35f
-                    drawLine(
-                        color = color.copy(alpha = 0.45f),
-                        start = Offset(x, baseline),
-                        end = Offset(x, y),
-                        strokeWidth = 2f,
-                    )
-                    drawCircle(color = color, radius = 4f + magnitude * 5f, center = Offset(x, y))
-                }
-            }
+            ExposurePulseCanvas(
+                exposures = exposures,
+                positive = positive,
+                negative = negative,
+                pending = pending,
+            )
         }
         if (exposures.isNotEmpty()) {
             Row(
@@ -622,10 +592,72 @@ private fun ExposurePulseStrip(
 }
 
 @Composable
-private fun ExposureChip(exposure: LearnerExposureDebug) {
+private fun ExposurePulseCanvas(
+    exposures: List<LearnerExposureDebug>,
+    positive: Color,
+    negative: Color,
+    pending: Color,
+) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val baseline = size.height * 0.65f
+        drawLine(
+            brush = Brush.horizontalGradient(
+                listOf(
+                    Color.Transparent,
+                    pending.copy(alpha = 0.5f),
+                    Color.Transparent,
+                ),
+            ),
+            start = Offset(0f, baseline),
+            end = Offset(size.width, baseline),
+            strokeWidth = 2f,
+        )
+        if (exposures.isEmpty()) return@Canvas
+        val step = size.width / max(exposures.size - 1, 1).toFloat()
+        exposures.asReversed().forEachIndexed { index, exposure ->
+            drawExposurePulse(
+                x = index * step,
+                baseline = baseline,
+                reward = exposure.reward,
+                positive = positive,
+                negative = negative,
+                pending = pending,
+            )
+        }
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawExposurePulse(
+    x: Float,
+    baseline: Float,
+    reward: Double?,
+    positive: Color,
+    negative: Color,
+    pending: Color,
+) {
     val color = when {
-        exposure.reward == null -> MaterialTheme.colorScheme.outlineVariant
-        (exposure.reward ?: 0.0) >= 0 -> MaterialTheme.colorScheme.primaryContainer
+        reward == null -> pending
+        reward >= 0 -> positive
+        else -> negative
+    }
+    val magnitude = abs(reward ?: 0.15).toFloat().coerceIn(0.12f, 1f)
+    val direction = if ((reward ?: 0.0) >= 0) 1f else -0.35f
+    val y = baseline - magnitude * size.height * 0.55f * direction
+    drawLine(
+        color = color.copy(alpha = 0.45f),
+        start = Offset(x, baseline),
+        end = Offset(x, y),
+        strokeWidth = 2f,
+    )
+    drawCircle(color = color, radius = 4f + magnitude * 5f, center = Offset(x, y))
+}
+
+@Composable
+private fun ExposureChip(exposure: LearnerExposureDebug) {
+    val reward = exposure.reward
+    val color = when {
+        reward == null -> MaterialTheme.colorScheme.outlineVariant
+        reward >= 0 -> MaterialTheme.colorScheme.primaryContainer
         else -> MaterialTheme.colorScheme.errorContainer
     }
     Surface(

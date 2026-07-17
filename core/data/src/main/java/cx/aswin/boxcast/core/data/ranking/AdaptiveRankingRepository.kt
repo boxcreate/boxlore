@@ -245,12 +245,11 @@ class AdaptiveRankingRepository private constructor(
             val genre = PodcastGenres.canonicalize(entity.facetKey) ?: return@forEach
             val affinity = entity.toFacet().affinity(now)
             if (!affinity.isFinite()) return@forEach
-            aggregate[genre] = (
-                aggregate.getOrDefault(genre, 0.0) + affinity
-                ).coerceIn(-1.0, 1.0)
+            aggregate[genre] = aggregate.getOrDefault(genre, 0.0) + affinity
         }
         return PodcastGenres.all.mapNotNull { genre ->
             aggregate[genre]
+                ?.coerceIn(-1.0, 1.0)
                 ?.takeIf { kotlin.math.abs(it) >= MIN_EXPORTED_GENRE_AFFINITY }
                 ?.let { genre to it }
         }.toMap()

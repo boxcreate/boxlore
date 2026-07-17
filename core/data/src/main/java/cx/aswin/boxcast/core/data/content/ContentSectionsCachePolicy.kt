@@ -100,6 +100,8 @@ internal fun contentSectionsProfileFingerprint(
         appendValues(request.languages.sorted())
         appendValues(request.interests.map(String::trim).sortedBy(String::lowercase))
         appendValues(request.subscribedPodcastIds.sorted().map(Long::toString))
+        appendValues(request.excludedPodcastIds.sorted().map(Long::toString))
+        appendValues(request.excludedEpisodeIds.sorted().map(Long::toString))
         appendValues(
             request.recentSeeds.map { seed ->
                 listOf(

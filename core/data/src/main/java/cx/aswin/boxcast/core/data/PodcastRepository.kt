@@ -792,11 +792,13 @@ class PodcastRepository(
             seenPodcastIds = seenPodcastIdStrings,
             subscribedPodcastIds = subscribedPodcastIdStrings,
         ) ?: readStaleCachedContentSections(
-            catalogVersion = expectedCatalogVersion,
-            country = country,
-            surface = surface,
-            localMinuteOfDay = contentContext.localMinuteOfDay,
-            localDate = localDate,
+            slot = ContentSectionsSlotKey(
+                catalogVersion = expectedCatalogVersion,
+                country = country,
+                surface = surface,
+                localMinuteOfDay = contentContext.localMinuteOfDay,
+                localDate = localDate,
+            ),
             catalog = catalog,
             seenPodcastIds = seenPodcastIdStrings,
             subscribedPodcastIds = subscribedPodcastIdStrings,
@@ -861,21 +863,17 @@ class PodcastRepository(
     }
 
     private fun readStaleCachedContentSections(
-        catalogVersion: Int,
-        country: String,
-        surface: String,
-        localMinuteOfDay: Int,
-        localDate: String,
+        slot: ContentSectionsSlotKey,
         catalog: ContentCatalogSnapshot,
         seenPodcastIds: Set<String>,
         subscribedPodcastIds: Set<String>,
     ): GroupedContentSections? {
         val prefix = contentSectionsStaleCachePrefix(
-            catalogVersion = catalogVersion,
-            country = country,
-            surface = surface,
-            resolvedDaypart = ContentSectionsDaypartResolver.resolve(localMinuteOfDay),
-            localDate = localDate,
+            catalogVersion = slot.catalogVersion,
+            country = slot.country,
+            surface = slot.surface,
+            resolvedDaypart = ContentSectionsDaypartResolver.resolve(slot.localMinuteOfDay),
+            localDate = slot.localDate,
         )
         val staleKey = contentSectionsPreferences.all.keys
             .asSequence()
@@ -889,6 +887,14 @@ class PodcastRepository(
             subscribedPodcastIds = subscribedPodcastIds,
         )
     }
+
+    private data class ContentSectionsSlotKey(
+        val catalogVersion: Int,
+        val country: String,
+        val surface: String,
+        val localMinuteOfDay: Int,
+        val localDate: String,
+    )
 
     suspend fun getPersonalizedRecommendations(
         history: List<cx.aswin.boxcast.core.network.model.HistoryItem>,

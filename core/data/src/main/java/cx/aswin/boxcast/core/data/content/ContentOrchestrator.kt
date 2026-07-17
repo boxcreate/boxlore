@@ -200,14 +200,13 @@ private fun ContentCandidate.meetsConstraints(
     intent: ContentIntent,
     nowMillis: Long,
 ): Boolean {
-    val effectiveSemanticScore = semanticScore ?: episode?.semanticScore
+    // semanticScore already defaults from episode?.semanticScore at construction time.
+    val qualityScore = semanticScore ?: retrievalScore
     val missingRequiredServerScore =
         intent.quality.minimumSemanticScore > 0.0 &&
-            effectiveSemanticScore == null &&
+            semanticScore == null &&
             source == cx.aswin.boxcast.core.data.ranking.CandidateSource.SERVER_RECOMMENDATION
-    val belowMinimumScore =
-        (effectiveSemanticScore ?: retrievalScore) < intent.quality.minimumSemanticScore
-    if (missingRequiredServerScore || belowMinimumScore) {
+    if (missingRequiredServerScore || qualityScore < intent.quality.minimumSemanticScore) {
         return false
     }
     val constrainedEpisode = episode
