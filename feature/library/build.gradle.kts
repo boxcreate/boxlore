@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "cx.aswin.boxcast.feature.library"
+    namespace = "cx.aswin.boxlore.feature.library"
     compileSdk = 35
 
     defaultConfig {

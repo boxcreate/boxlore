@@ -12,7 +12,7 @@
 -keepattributes SourceFile,LineNumberTable
 
 # Keep all interfaces (Retrofit APIs, Listeners)
--keep interface cx.aswin.boxcast.** { *; }
+-keep interface cx.aswin.boxlore.** { *; }
 -keep interface retrofit2.** { *; }
 
 # Retrofit - Force keep everything to prevent internal reflection failures
@@ -50,17 +50,17 @@
 # Keep all data models used in Network/DB
 # Force keep all data models used in Network/DB
 # CRITICAL: Gson needs full access to these, and R8 is too aggressive with renaming fields even with keepclassmembers
--keep class cx.aswin.boxcast.core.model.** { *; }
--keep class cx.aswin.boxcast.core.network.** { *; }
--keep class cx.aswin.boxcast.core.network.model.** { *; }
--keep class cx.aswin.boxcast.core.data.** { *; }
+-keep class cx.aswin.boxlore.core.model.** { *; }
+-keep class cx.aswin.boxlore.core.network.** { *; }
+-keep class cx.aswin.boxlore.core.network.model.** { *; }
+-keep class cx.aswin.boxlore.core.data.** { *; }
 
 # Also keep Kotlin Metadata to ensure reflection works (sometimes needed by Kotlinx Serialization/Gson adapters)
 -keep class kotlin.Metadata { *; }
 
 # Keep BuildConfig
--keep class cx.aswin.boxcast.BuildConfig { *; }
--keep class cx.aswin.boxcast.core.network.BuildConfig { *; }
+-keep class cx.aswin.boxlore.BuildConfig { *; }
+-keep class cx.aswin.boxlore.core.network.BuildConfig { *; }
 
 # Fix R8 compilation errors due to missing Kotlin 2.0 classes in transitive dependencies
 -dontwarn kotlin.uuid.**

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "cx.aswin.boxcast.core.designsystem"
+    namespace = "cx.aswin.boxlore.core.designsystem"
     compileSdk = 35
 
     defaultConfig {

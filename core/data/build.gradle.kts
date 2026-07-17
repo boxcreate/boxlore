@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "cx.aswin.boxcast.core.data"
+    namespace = "cx.aswin.boxlore.core.data"
     compileSdk = 35
 
     buildFeatures {
@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         minSdk = 31
-        buildConfigField("String", "BOXCAST_API_BASE_URL", "\"${localProps.getProperty("BOXCAST_API_BASE_URL", "https://api.aswin.cx")}\"")
+        buildConfigField("String", "BOXCAST_API_BASE_URL", "\"${localProps.getProperty("BOXCAST_API_BASE_URL", "")}\"")
         buildConfigField("String", "BOXCAST_PUBLIC_KEY", "\"${localProps.getProperty("BOXCAST_PUBLIC_KEY", "")}\"")
     }
     compileOptions {

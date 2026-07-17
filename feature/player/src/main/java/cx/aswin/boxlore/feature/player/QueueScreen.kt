@@ -1,0 +1,245 @@
+package cx.aswin.boxlore.feature.player
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
+import androidx.compose.foundation.background
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.feature.player.v2.logic.queueSourceLabel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
+
+data class QueueSheetActions(
+    val onPlayEpisode: (Episode) -> Unit,
+    val onRemoveEpisode: (Episode) -> Unit,
+    val onClose: () -> Unit,
+    val onMove: (fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _ -> },
+    val onDragEnd: (episodeId: String, fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _, _ -> }
+)
+
+data class QueueItemDisplay(
+    val episode: Episode,
+    val podcast: Podcast?,
+    val sourceLabel: String? = null,
+    val isDragging: Boolean = false,
+    val dragHandleModifier: Modifier? = null
+)
+
+/**
+ * Queue bottom sheet content: header with close button + drag-to-reorder queue list.
+ *
+ * Indices in [actions.onMove]/[actions.onDragEnd] are UI list indices — the currently playing episode
+ * is hidden from this sheet, so callers must map them with QueueMath.uiIndexToQueueIndex.
+ */
+@Composable
+fun QueueSheetContent(
+    queue: List<Episode>,
+    currentPodcast: Podcast?,
+    colorScheme: ColorScheme,
+    actions: QueueSheetActions,
+    modifier: Modifier = Modifier
+) {
+    val lazyListState = rememberLazyListState()
+    val dragStartIndex = remember { mutableIntStateOf(-1) }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        // Header: "Up Next" + Close button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Up Next",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            Text(
+                text = "${queue.size} episodes",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+
+            IconButton(onClick = actions.onClose) {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Close queue",
+                    tint = colorScheme.onSurface
+                )
+            }
+        }
+        
+        HorizontalDivider(
+            color = colorScheme.outlineVariant.copy(alpha = 0.3f),
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+
+        if (queue.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 64.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Queue is empty",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
+                actions.onMove(from.index, to.index)
+            }
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
+                itemsIndexed(
+                    items = queue,
+                    key = { _, episode -> episode.id }
+                ) { index, episode ->
+                    ReorderableItem(reorderableState, key = episode.id) { isDragging ->
+                        QueueItemRow(
+                            display = QueueItemDisplay(
+                                episode = episode,
+                                podcast = currentPodcast,
+                                sourceLabel = queueSourceLabel(episode),
+                                isDragging = isDragging,
+                                dragHandleModifier = Modifier.draggableHandle(
+                                    onDragStarted = { dragStartIndex.intValue = index },
+                                    onDragStopped = {
+                                        val from = dragStartIndex.intValue
+                                        dragStartIndex.intValue = -1
+                                        val to = queue.indexOfFirst { it.id == episode.id }
+                                        if (from != -1 && to != -1) actions.onDragEnd(episode.id, from, to)
+                                    }
+                                )
+                            ),
+                            colorScheme = colorScheme,
+                            onClick = { actions.onPlayEpisode(episode) },
+                            onRemove = { actions.onRemoveEpisode(episode) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QueueItemRow(
+    display: QueueItemDisplay,
+    colorScheme: ColorScheme,
+    onClick: () -> Unit,
+    onRemove: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val episode = display.episode
+    val podcast = display.podcast
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                if (display.isDragging) colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                else colorScheme.surface.copy(alpha = 0f)
+            )
+            .expressiveClickable { onClick() }
+            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = episode.imageUrl?.takeIf { it.isNotBlank() }
+                ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
+                ?: podcast?.imageUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .size(52.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(colorScheme.surfaceVariant),
+            contentScale = ContentScale.Crop
+        )
+        
+        Spacer(modifier = Modifier.width(14.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = episode.title.replace("+", " "),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = (episode.podcastTitle ?: podcast?.title ?: "Unknown Podcast").replace("+", " "),
+                style = MaterialTheme.typography.bodySmall,
+                color = colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            display.sourceLabel?.let { sourceLabel ->
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = sourceLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colorScheme.primary.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        
+        if (onRemove != null) {
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Remove from queue",
+                    tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        display.dragHandleModifier?.let { dragHandleModifier ->
+            Icon(
+                Icons.Rounded.DragHandle,
+                contentDescription = "Reorder",
+                tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = dragHandleModifier
+                    .size(40.dp)
+                    .padding(8.dp)
+            )
+        }
+    }
+}

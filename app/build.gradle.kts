@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "cx.aswin.boxcast"
+    namespace = "cx.aswin.boxlore"
     compileSdk = 36
 
     // Load local.properties globally for the android block

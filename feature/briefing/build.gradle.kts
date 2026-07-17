@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "cx.aswin.boxcast.feature.briefing"
+    namespace = "cx.aswin.boxlore.feature.briefing"
     compileSdk = 34
 
     defaultConfig {

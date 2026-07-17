@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "cx.aswin.boxcast.feature.onboarding"
+    namespace = "cx.aswin.boxlore.feature.onboarding"
     compileSdk = 35
 
     defaultConfig {

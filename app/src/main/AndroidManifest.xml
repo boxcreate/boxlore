@@ -74,7 +74,7 @@
         </activity>
 
         <service
-            android:name="cx.aswin.boxcast.core.data.service.BoxLorePlaybackService"
+            android:name="cx.aswin.boxlore.core.data.service.BoxLorePlaybackService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
@@ -88,7 +88,7 @@
         </service>
 
         <provider
-            android:name="cx.aswin.boxcast.core.data.service.AutoCollageProvider"
+            android:name="cx.aswin.boxlore.core.data.service.AutoCollageProvider"
             android:authorities="${applicationId}.collage"
             android:exported="true"
             android:grantUriPermissions="true" />
