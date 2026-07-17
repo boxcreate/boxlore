@@ -2,10 +2,34 @@ package cx.aswin.boxlore.core.data
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class RssIdGeneratorTest {
+
+    @Test
+    fun validateAndNormalizeFeedUrl_requiresHttpsAndStripsFragment() {
+        val normalized = RssIdGenerator.validateAndNormalizeFeedUrl(
+            " https://Example.COM/feed.xml#fragment ",
+        )
+        assertEquals("https://example.com/feed.xml", normalized)
+    }
+
+    @Test
+    fun validateAndNormalizeFeedUrl_rejectsHttp() {
+        assertThrows(IllegalArgumentException::class.java) {
+            RssIdGenerator.validateAndNormalizeFeedUrl("http://example.com/feed.xml")
+        }
+    }
+
+    @Test
+    fun podcastId_usesRssNamespace() {
+        val id = RssIdGenerator.podcastId("https://example.com/feed.xml")
+        assertTrue(id.startsWith("rss:"))
+        assertEquals(id, RssIdGenerator.podcastId("https://example.com/feed.xml"))
+    }
+
     @Test
     fun episodeId_isDeterministicNegativeAndNonZero() {
         val first = RssIdGenerator.episodeId(

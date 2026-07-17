@@ -97,4 +97,5 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)
+    testImplementation("androidx.test:core:1.6.1")
 }
