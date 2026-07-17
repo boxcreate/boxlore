@@ -28,6 +28,9 @@ import kotlinx.coroutines.launch
 class BoxLoreApplication : Application(), Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    lateinit var container: AppContainer
+        private set
+
     lateinit var userPreferencesRepository: UserPreferencesRepository
         private set
 
@@ -43,11 +46,19 @@ class BoxLoreApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
+        // Single prefs instance shared with AppContainer (theme fast-cache + engagement).
         userPreferencesRepository = UserPreferencesRepository(this)
+        container = AppContainer(
+            context = this,
+            apiBaseUrl = BuildConfig.BOXCAST_API_BASE_URL,
+            publicKey = BuildConfig.BOXCAST_PUBLIC_KEY,
+            sharedUserPreferences = userPreferencesRepository,
+        )
         engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
-        // getInstance installs a no-op fallback if Room initialization fails, keeping
-        // ranking optional without hiding unrelated startup programming errors here.
-        RankingFeedbackRepository.getInstance(this)
+        // Eagerly touch the container ranking façade so getInstance installs its no-op
+        // fallback if Room initialization fails — same startup behavior as before, without
+        // a second RankingFeedbackRepository client diverging from the container.
+        container.rankingFeedbackRepository
 
         val config = PostHogAndroidConfig(
             apiKey = BuildConfig.POSTHOG_API_KEY,

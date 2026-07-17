@@ -405,23 +405,30 @@ class MainActivity : ComponentActivity() {
 
             // Deferred deep link and onboarding states are defined below to satisfy variable ordering
             
-            // API config from BuildConfig
+            // API config from BuildConfig (also written for the background service)
             val apiBaseUrl = BuildConfig.BOXCAST_API_BASE_URL
             val publicKey = BuildConfig.BOXCAST_PUBLIC_KEY
+
+            val application = applicationContext as BoxLoreApplication
+            val container = application.container
+            val database = container.database
+            val podcastRepository = container.podcastRepository
+            val queueRepository = container.queueRepository
+            val playbackRepository = container.playbackRepository
+            val downloadRepository = container.downloadRepository
+            val subscriptionRepository = container.subscriptionRepository
+            val consentManager = container.consentManager
+            val userPrefs = container.userPreferencesRepository
+            val queueManager = container.queueManager
+            val smartDownloadManager = container.smartDownloadManager
+            val installReferrerManager = container.installReferrerManager
 
             var showFeedbackSheet by remember { mutableStateOf(false) }
             // Route feedback through the shared repository (OkHttp) so it carries
             // the App Check token and can be enforced like every other write.
-            val feedbackRepository = remember(apiBaseUrl, publicKey) {
-                cx.aswin.boxlore.core.data.PodcastRepository(
-                    apiBaseUrl,
-                    publicKey,
-                    applicationContext as android.app.Application
-                )
-            }
-            val onSubmitFeedback: suspend (String, String, String, String) -> Boolean = remember(feedbackRepository) {
+            val onSubmitFeedback: suspend (String, String, String, String) -> Boolean = remember(podcastRepository) {
                 { category, message, version, email ->
-                    feedbackRepository.submitFeedback(category, message, version, email.ifBlank { null })
+                    podcastRepository.submitFeedback(category, message, version, email.ifBlank { null })
                 }
             }
             
@@ -439,27 +446,10 @@ class MainActivity : ComponentActivity() {
             
             // Check if we can go back (for predictive back)
             val canGoBack = navController.previousBackStackEntry != null
-            
-            // App-level Repositories
-            val application = (applicationContext as android.app.Application)
-            val database = remember { cx.aswin.boxlore.core.data.database.BoxLoreDatabase.getDatabase(application) }
-            
-            // 1. Core Data Sources
-            // Create a shared PodcastRepository instance
-            val podcastRepository = remember { cx.aswin.boxlore.core.data.PodcastRepository(apiBaseUrl, publicKey, application) }
-            
-            // 2. Queue Repository (Must come before PlaybackRepo)
-            val queueRepository = remember { cx.aswin.boxlore.core.data.QueueRepository(database, podcastRepository) }
 
-            // 3. Playback Repository (Depends on QueueRepo)
-            val playbackRepository = remember { cx.aswin.boxlore.core.data.PlaybackRepository(application, database.listeningHistoryDao(), queueRepository, podcastRepository) }
             androidx.compose.runtime.SideEffect {
                 playbackRepositoryRef = playbackRepository
             }
-            val downloadRepository = remember { cx.aswin.boxlore.core.data.DownloadRepository(application, database) }
-            
-            // 4. Subscription Repository
-            val subscriptionRepository = remember { cx.aswin.boxlore.core.data.SubscriptionRepository(database.podcastDao()) }
 
             // Reconcile FCM topic subscriptions after a backup restore.
             // The sentinel file lives in noBackupFilesDir so it is NOT restored —
@@ -476,14 +466,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
             
-            // Privacy & Preferences
-            val consentManager = remember { cx.aswin.boxlore.core.data.privacy.ConsentManager(application) }
-            
-            val userPrefs = remember { cx.aswin.boxlore.core.data.UserPreferencesRepository(application) }
-            
             // 6. Onboarding ViewModel
             val onboardingViewModel = remember {
-                cx.aswin.boxlore.feature.onboarding.OnboardingViewModel(application, podcastRepository, subscriptionRepository, userPrefs)
+                cx.aswin.boxlore.feature.onboarding.OnboardingViewModel(
+                    application,
+                    podcastRepository,
+                    subscriptionRepository,
+                    userPrefs,
+                )
             }
             
             // Reactive onboardingCompleted state that automatically checks for direct deep links on cold/warm starts
@@ -502,8 +492,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // 1. Deferred Deep Linking via Install Referrer API
-            val installReferrerManager = remember { cx.aswin.boxlore.core.data.InstallReferrerManager(this@MainActivity) }
+            // Deferred Deep Linking via Install Referrer API
             LaunchedEffect(Unit) {
                 installReferrerManager.checkInstallReferrer()
             }
@@ -531,13 +520,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            
-            // QueueManager (Singleton-ish) - Needs to be provided to ViewModels/Screens
-            // NOTE: auto-refill lives service-side (BoxLorePlaybackService owns the single
-            // SmartQueueEngine instance); the UI layer only performs explicit queue actions.
-            val queueManager = remember { 
-                cx.aswin.boxlore.core.data.QueueManager(queueRepository, playbackRepository)
-            }
 
             // Lore queue independence: queueing from the Lore card stack over an existing
             // normal queue requires explicit confirmation (it clears the normal queue).
@@ -552,18 +534,6 @@ class MainActivity : ComponentActivity() {
                     imageUrl = episode.podcastImageUrl ?: episode.imageUrl ?: ""
                 )
                 queueManager.addToQueue(episode, podcast, cx.aswin.boxlore.core.model.PlaybackEntryPoint.LEARN)
-            }
-
-            val smartDownloadManager = remember {
-                cx.aswin.boxlore.core.data.SmartDownloadManager(
-                    context = application,
-                    database = database,
-                    podcastRepository = podcastRepository,
-                    playbackRepository = playbackRepository,
-                    downloadRepository = downloadRepository,
-                    subscriptionRepository = subscriptionRepository,
-                    userPrefs = userPrefs
-                )
             }
 
             // Catch-up foreground check (respects Wi-Fi constraints, bypasses charging)
@@ -1724,10 +1694,6 @@ class MainActivity : ComponentActivity() {
                                  )
                              ) { backStackEntry -> 
 
-                                val podcastDao = remember { database.podcastDao() }
-                                val subscriptionRepository = remember { cx.aswin.boxlore.core.data.SubscriptionRepository(podcastDao) }
-                                val podcastRepository = remember { cx.aswin.boxlore.core.data.PodcastRepository(apiBaseUrl, publicKey, application) }
-                                
                                 // Handle Argument
                                 val category = backStackEntry.arguments?.getString("category")
                                 val entryPoint = backStackEntry.arguments?.getString("entryPoint") ?: "bottom_nav"
@@ -1780,10 +1746,6 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable("library") { 
-                                val podcastDao = remember { database.podcastDao() }
-                                val subscriptionRepository = remember { cx.aswin.boxlore.core.data.SubscriptionRepository(podcastDao) }
-                                val downloadRepository = remember { cx.aswin.boxlore.core.data.DownloadRepository(application, database) }
-                                
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                                     factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                                         @Suppress("UNCHECKED_CAST")
@@ -1793,8 +1755,7 @@ class MainActivity : ComponentActivity() {
                                                 playbackRepository,
                                                 downloadRepository,
                                                 userPrefs,
-                                                cx.aswin.boxlore.core.data.ranking
-                                                    .AdaptiveCandidateScorer.getInstance(application),
+                                                container.adaptiveCandidateScorer,
                                             ) as T
                                         }
                                     }
@@ -1845,10 +1806,6 @@ class MainActivity : ComponentActivity() {
                             }
                             
                             composable("library/liked") {
-                                val podcastDao = remember { database.podcastDao() }
-                                val subscriptionRepository = remember { cx.aswin.boxlore.core.data.SubscriptionRepository(podcastDao) }
-                                val downloadRepository = remember { cx.aswin.boxlore.core.data.DownloadRepository(application, database) }
-                                
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                                     factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                                         @Suppress("UNCHECKED_CAST")
@@ -1858,8 +1815,7 @@ class MainActivity : ComponentActivity() {
                                                 playbackRepository,
                                                 downloadRepository,
                                                 userPrefs,
-                                                cx.aswin.boxlore.core.data.ranking
-                                                    .AdaptiveCandidateScorer.getInstance(application),
+                                                container.adaptiveCandidateScorer,
                                             ) as T
                                         }
                                     }
@@ -1898,10 +1854,6 @@ class MainActivity : ComponentActivity() {
                                 )
                             ) { backStackEntry ->
                                 val initialTab = backStackEntry.arguments?.getInt("tab") ?: 0
-                                val podcastDao = remember { database.podcastDao() }
-                                val subscriptionRepository = remember { cx.aswin.boxlore.core.data.SubscriptionRepository(podcastDao) }
-                                val downloadRepository = remember { cx.aswin.boxlore.core.data.DownloadRepository(application, database) }
-                                
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                                     factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                                         @Suppress("UNCHECKED_CAST")
@@ -1911,8 +1863,7 @@ class MainActivity : ComponentActivity() {
                                                 playbackRepository,
                                                 downloadRepository,
                                                 userPrefs,
-                                                cx.aswin.boxlore.core.data.ranking
-                                                    .AdaptiveCandidateScorer.getInstance(application),
+                                                container.adaptiveCandidateScorer,
                                             ) as T
                                         }
                                     }
@@ -1956,10 +1907,6 @@ class MainActivity : ComponentActivity() {
                             }
 
                             composable("library/downloads") {
-                                val podcastDao = remember { database.podcastDao() }
-                                val subscriptionRepository = remember { cx.aswin.boxlore.core.data.SubscriptionRepository(podcastDao) }
-                                val downloadRepository = remember { cx.aswin.boxlore.core.data.DownloadRepository(application, database) }
-                                
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                                     factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                                         @Suppress("UNCHECKED_CAST")
@@ -1969,8 +1916,7 @@ class MainActivity : ComponentActivity() {
                                                 playbackRepository,
                                                 downloadRepository,
                                                 userPrefs,
-                                                cx.aswin.boxlore.core.data.ranking
-                                                    .AdaptiveCandidateScorer.getInstance(application),
+                                                container.adaptiveCandidateScorer,
                                             ) as T
                                         }
                                     }
@@ -2035,10 +1981,6 @@ class MainActivity : ComponentActivity() {
                                 val podcastId = backStackEntry.arguments?.getString("podcastId") ?: ""
                                 val podcastTitle = backStackEntry.arguments?.getString("podcastTitle") ?: ""
 
-                                val podcastDao = remember { database.podcastDao() }
-                                val subscriptionRepository = remember { cx.aswin.boxlore.core.data.SubscriptionRepository(podcastDao) }
-                                val downloadRepository = remember { cx.aswin.boxlore.core.data.DownloadRepository(application, database) }
-                                
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                                     factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                                         @Suppress("UNCHECKED_CAST")
@@ -2048,8 +1990,7 @@ class MainActivity : ComponentActivity() {
                                                 playbackRepository,
                                                 downloadRepository,
                                                 userPrefs,
-                                                cx.aswin.boxlore.core.data.ranking
-                                                    .AdaptiveCandidateScorer.getInstance(application),
+                                                container.adaptiveCandidateScorer,
                                             ) as T
                                         }
                                     }

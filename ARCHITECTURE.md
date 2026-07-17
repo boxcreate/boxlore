@@ -64,7 +64,7 @@ Rules:
 
 There is no Hilt/Koin. Shared instances are built in `MainActivity` (`remember { … }` graph) and passed into feature ViewModels / screens. Several Library-style ViewModels already take repositories in constructors; Home / Settings / Info / Debug still self-build or call `getInstance` in places.
 
-**Target:** a single `AppContainer` owned by `Application`, wired into `MainActivity` and routes (see refactor playbook P06–P12).
+**Target / in progress:** `AppContainer` (app module) owns the shared graph; wire into `Application` / `MainActivity` / routes in P07–P12.
 
 ## Notable surfaces
 
