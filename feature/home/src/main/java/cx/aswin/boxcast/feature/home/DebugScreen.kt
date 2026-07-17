@@ -2,6 +2,7 @@ package cx.aswin.boxcast.feature.home
 
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -172,18 +173,21 @@ fun DebugScreen(
             ) { page ->
                 when (tabs[page]) {
                     DebugTab.Learner -> {
-                        AdaptiveLearnerDebugSection(
-                            snapshot = learnerSnapshot,
-                            events = learningEvents,
-                            logEnabled = logEnabled,
-                            onSetLogEnabled = viewModel::setLogEnabled,
-                            shadowDiagnostics = shadowDiagnostics,
-                            loading = learnerLoading,
-                            onRefresh = viewModel::refreshLearnerSnapshot,
+                        Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 220.dp),
-                        )
+                        ) {
+                            AdaptiveLearnerDebugSection(
+                                snapshot = learnerSnapshot,
+                                events = learningEvents,
+                                logEnabled = logEnabled,
+                                onSetLogEnabled = viewModel::setLogEnabled,
+                                shadowDiagnostics = shadowDiagnostics,
+                                loading = learnerLoading,
+                                onRefresh = viewModel::refreshLearnerSnapshot,
+                            )
+                        }
                     }
 
                     DebugTab.Sleep -> DebugTabScrollPane {

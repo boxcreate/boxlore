@@ -37,9 +37,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +67,7 @@ import cx.aswin.boxcast.core.data.ranking.RankingObjective
 import cx.aswin.boxcast.core.data.ranking.RankingShadowSnapshot
 import java.util.Locale
 import kotlin.math.abs
+import kotlinx.coroutines.delay
 
 private enum class LearnerPane(val label: String) {
     Signals("Signals"),
@@ -87,13 +90,12 @@ internal fun AdaptiveLearnerDebugSection(
     shadowDiagnostics: List<RankingShadowSnapshot>,
     loading: Boolean,
     onRefresh: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     var paneIndex by remember { mutableIntStateOf(0) }
     val panes = remember { LearnerPane.entries }
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         LearnerHeader(snapshot = snapshot, loading = loading, onRefresh = onRefresh)
@@ -261,8 +263,14 @@ private fun SignalsPane(events: List<LearningEvent>, logEnabled: Boolean) {
         return
     }
 
-    val now = System.currentTimeMillis()
     val feed = remember(events) { events.take(MAX_FEED_ROWS) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000L)
+            now = System.currentTimeMillis()
+        }
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
