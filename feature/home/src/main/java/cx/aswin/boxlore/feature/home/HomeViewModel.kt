@@ -43,6 +43,10 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.logic.PodcastAffinityLogic
+import cx.aswin.boxlore.feature.home.logic.adaptiveHistoryMaturityBucket
+import cx.aswin.boxlore.feature.home.logic.discoverPodcastsExcluding
+import cx.aswin.boxlore.feature.home.logic.resolveNextSerialEpisode
+import cx.aswin.boxlore.feature.home.logic.toRecommendationPodcast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
@@ -787,40 +791,6 @@ class HomeViewModel(
         }
     }
 
-    private fun resolveNextSerialEpisode(
-        allEpisodes: List<Episode>,
-        ongoingId: String?,
-        lastCompletedId: String?,
-        completedEpIdsForResolve: Set<String>,
-        inProgressEpIdsForResolve: Set<String>,
-    ): Episode? {
-        val nextEp =
-            when {
-                ongoingId != null -> {
-                    val ongoingIndex = allEpisodes.indexOfFirst { it.id == ongoingId }
-                    if (ongoingIndex != -1 && ongoingIndex < allEpisodes.lastIndex) {
-                        allEpisodes[ongoingIndex + 1]
-                    } else {
-                        null
-                    }
-                }
-                lastCompletedId != null -> {
-                    val completedIndex = allEpisodes.indexOfFirst { it.id == lastCompletedId }
-                    if (completedIndex != -1 && completedIndex < allEpisodes.lastIndex) {
-                        allEpisodes[completedIndex + 1]
-                    } else {
-                        null
-                    }
-                }
-                else -> {
-                    allEpisodes.firstOrNull()
-                }
-            }
-        return nextEp ?: allEpisodes.firstOrNull { ep ->
-            ep.id !in completedEpIdsForResolve && ep.id !in inProgressEpIdsForResolve
-        }
-    }
-
     private fun observeSelectedPodcast() {
         viewModelScope.launch {
             // Derive a distinct signal from history & subscriptions: (podcastId, lastPlayedEpisodeId, preferredSort) for the selected podcast.
@@ -1174,33 +1144,10 @@ class HomeViewModel(
         }
     }
 
-    private fun discoverPodcastsExcluding(
-        trending: List<Podcast>,
-        heroItems: List<SmartHeroItem>,
-        adaptiveSections: List<ContentSection>,
-    ): List<Podcast>? {
-        if (trending.isEmpty()) return null
-        return trending.filter { podcast ->
-            heroItems.none { it.podcast.id == podcast.id } &&
-                adaptiveSections.none { section ->
-                    section.items.any { candidate -> candidate.podcast.id == podcast.id }
-                }
-        }
-    }
-
     private fun markAdaptiveSectionsIdle() {
         _isAdaptiveSectionsLoading.value = false
         _uiState.update { it.copy(isAdaptiveSectionsLoading = false) }
     }
-
-    private fun adaptiveHistoryMaturityBucket(historyCount: Int): Int =
-        when {
-            historyCount <= 0 -> 0
-            historyCount < 5 -> 1
-            historyCount < 15 -> 2
-            historyCount < 30 -> 3
-            else -> 4
-        }
 
     fun trackAdaptiveSectionVisible(
         section: ContentSection,
@@ -2531,15 +2478,6 @@ class HomeViewModel(
         return podcasts.sortedByDescending { podcastScores[it.latestEpisode?.id] ?: 0.0 } to
             episodes.sortedByDescending { episodeScores[it.id] ?: 0.0 }
     }
-
-    private fun Episode.toRecommendationPodcast(): Podcast =
-        Podcast(
-            id = podcastId.orEmpty(),
-            title = podcastTitle.orEmpty(),
-            artist = podcastArtist.orEmpty(),
-            imageUrl = podcastImageUrl ?: imageUrl.orEmpty(),
-            latestEpisode = this,
-        )
 
     override fun onCleared() {
         super.onCleared()

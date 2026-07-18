@@ -22,7 +22,13 @@ src/main/java/cx/aswin/boxlore/feature/info/
   PodcastInfoScreen.kt / EpisodeInfoScreen.kt
   *ViewModel.kt / InfoViewModelAssembler.kt
   InfoListeningProgressItem.kt
-  components/ logic/
+  sections/
+    PodcastInfoHeroSection.kt
+    PodcastInfoDescriptionSection.kt
+  components/
+    PodcastInfoMetadataChips.kt
+    …
+  logic/
 ```
 
 ## Dependencies

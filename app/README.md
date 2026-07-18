@@ -33,7 +33,7 @@ MainActivity.setContent
     ├── Feature-announcement overlay (full screen) ← PostHog flag "active_feature_announcement"
     ├── BoxWithConstraints
     │   ├── Scaffold → PredictiveBackWrapper
-    │   │   └── BoxLoreNavHost                     ← navigation/BoxLoreNavHost.kt
+    │   │   └── BoxLoreNavHost                     ← navigation/BoxLoreNavHost.kt (+ split helpers below)
     │   │       Routes owned:
     │   │         onboarding                       ← :feature:onboarding
     │   │         home                             ← :feature:home (HomeRoute)
@@ -60,7 +60,7 @@ MainActivity.setContent
 
 **Deep-link schemes** (preserved): `boxlore://`, `boxcast://`, `https://aswin.cx/boxlore/share`, `https://aswin.cx/boxcast/share`.
 
-**NavHost helpers** (`navigation/BoxLoreNavHost.kt`, `internal`): `ExploreTabRoutePattern`, `resolveBottomNavTab` / `resolveBottomNavTabFromBackStack`, `bottomNavTabRoutePattern`, `NavSettingsState`, `NavOpmlCallbacks`.
+**NavHost helpers** (`navigation/`, `internal`): `NavGraphWiring.kt` (route constants, `NavRoutes`, transitions, encode/decode, navigate helpers, `NavSettingsState` / `NavOpmlCallbacks` / `NavHostSession` / `NavHostActions`, `NavGraphWiring`); `NavGraphTabDestinations.kt` (onboarding, home, learn, briefing, explore); `NavGraphLibrarySettingsDestinations.kt` (library, settings, debug); `NavGraphPodcastEpisodeDestinations.kt` (podcast/episode routes). `BoxLoreNavHost.kt` keeps the composable + `rememberIsOnline`. Also: `ExploreTabRoutePattern`, `resolveBottomNavTab` / `resolveBottomNavTabFromBackStack`, `bottomNavTabRoutePattern`.
 
 ## Internal structure
 
@@ -71,7 +71,11 @@ src/main/java/cx/aswin/boxlore/
   MainActivity.kt          # Activity shell
   LegacyWorkerFactory.kt
   navigation/
-    BoxLoreNavHost.kt      # full nav graph + route helpers
+    BoxLoreNavHost.kt           # composable + rememberIsOnline
+    NavGraphWiring.kt           # routes, transitions, nav helpers, wiring bag
+    NavGraphTabDestinations.kt
+    NavGraphLibrarySettingsDestinations.kt
+    NavGraphPodcastEpisodeDestinations.kt
   fcm/ surveys/ ui/
 ```
 
