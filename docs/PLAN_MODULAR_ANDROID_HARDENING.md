@@ -1,6 +1,6 @@
 # Boxlore — Modular Android Hardening & Automation Plan
 
-**Status:** Complete for program DoD — A0–A8 (A8 via Gradle≠package policy) + B0–B10 landed; optional polish (Roborazzi goldens, lint fail-on-error, Dependency Guard, `:core:catalog` rename) tracked as follow-ups  
+**Status:** Scaffold A0–A8 / B0–B10 landed. **Phase 2** (package=module + prefs migration + analytics glossary replace) is the last architecture mega-wave — see §11. After Phase 2 Final: **Phase 3 = testing only**.  
 **Branch context:** Builds on `cursor/full-refactor-tests-3b38` / PR #898  
 **Audience:** Implementers continuing architecture, DI, tests, and module docs
 
@@ -488,7 +488,7 @@ Rename slim leftover `:core:data` → `:core:catalog` (or document `:core:data` 
 
 **Invasiveness:** High · **Do only after A1–A7 stable**  
 
-**Status:** policy choice done — permanently document **Gradle module id ≠ Java/Kotlin package** in `ARCHITECTURE.md` (retain `cx.aswin.boxlore.core.data.*` for FQCN / prefs / ranking / rss / downloads / playback / database / analytics stability). Mass package renames deferred.
+**Status:** Superseded by Phase 2 — package=module migration with failsafes (not “permanent Gradle≠package”). See `ARCHITECTURE.md` and Phase 2 plan.
 
 - ~~Align packages with module ids **or** permanently document “Gradle id ≠ package” as policy.~~ documented.
 - Non-persistence renames: `BoxCastTheme` → `BoxLoreTheme`, log tags, briefing copy cleanup, BuildConfig `BOXLORE_*` with `.env` fallback from old keys (still optional).
@@ -678,13 +678,15 @@ Each PR updates **touched module READMEs in the same change**.
 
 ---
 
-## 11. Immediate next action
+## 11. Immediate next action / Final
 
-**Program DoD for A0–A8 / B0–B10 scaffold is met.** Do **not** reopen module extracts casually.
+**End-state wave landed.** Phase 2 (**Android Phase 2 — Final adherence**) is the last architecture/modular mega-wave: package=module, prefs migration, analytics glossary replace, LOC/Kover floors, docs truth.
 
-**Next wave (end-state):** execute the Cursor plan **Android End State** (`android_end_state_fd328e09`) — five sequential merge-gated PRs covering quality/docs truth, BoxLore naming, fat-file extracts, `:core:catalog` rename, and automation maturity. Constraints and cloud-agent playbook detail also live in [`docs/PLAN_CLOUD_AGENT_NEXT.md`](PLAN_CLOUD_AGENT_NEXT.md); the end-state plan **supersedes** its tests-only scope.
+After Phase 2 PR10 Final signoff: **Phase 3 = testing only** (coverage depth, E2E/Maestro, CI hardening, bugs found by tests). No Phase 3 architecture / modular redesign.
 
-Do not recreate `master-required-checks` rulesets; use the **`merge-ci`** label gate. Every end-state PR title must include `[skip changelog]`.
+Do not recreate `master-required-checks` rulesets; use the **`merge-ci`** label gate. Phase 2 PR titles include `[skip changelog]` unless listener-facing.
+
+Analytics contracts: [`ANALYTICS_PRODUCT_INSIGHT.md`](ANALYTICS_PRODUCT_INSIGHT.md), [`ANALYTICS_EVENT_MAP.md`](ANALYTICS_EVENT_MAP.md), [`ANALYTICS_EVENT_GLOSSARY.md`](ANALYTICS_EVENT_GLOSSARY.md).
 
 ---
 

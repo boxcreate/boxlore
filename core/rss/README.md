@@ -31,7 +31,7 @@ src/main/java/cx/aswin/boxlore/core/catalog/
 
 ## Dependencies
 
-- → `:core:catalogbase` (`api` — re-exports `BoxLoreDatabase`, `PodcastEntity`, `RssEpisodeEntity`, …)
+- → `:core:database` (`api` — re-exports `BoxLoreDatabase`, `PodcastEntity`, `RssEpisodeEntity`, …)
 - → `:core:domain` (`api` — re-exports `RssSubscriptionPort`, `RssSubscriptionResult`)
 - → `:core:model` (internal — `Episode`, `Podcast`, `Person`, `Transcript`)
 - → `com.prof18.rssparser` — Atom/RSS library parser path

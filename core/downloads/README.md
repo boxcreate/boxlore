@@ -43,7 +43,7 @@ src/main/java/cx/aswin/boxlore/core/
 ## Dependencies
 
 - → `:core:catalog` (api — catalog/DB/prefs/ranking/domain re-exports)
-- → `:core:catalogbase`, `:core:domain`, `:core:model` (implementation)
+- → `:core:database`, `:core:domain`, `:core:model` (implementation)
 - Media3 exoplayer (DownloadManager, Cache, DataSource), WorkManager
 
 Forbidden reverse edges:

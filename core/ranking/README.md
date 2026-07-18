@@ -4,7 +4,7 @@
 
 Owns adaptive recommendation and candidate scoring for Boxlore: Bayesian facet preferences, LinUCB linear models, diversity re-ranking, and the action/exposure feedback loop. Includes its **own** Room database (`AdaptiveRankingDatabase`).
 
-Does **not** own main catalog Room (`:core:catalogbase`), Podcast Index HTTP (`:core:network`), content orchestration (`:core:catalog`), or feature UI (debug inspector hooks are consumed by `:feature:home`).
+Does **not** own main catalog Room (`:core:database`), Podcast Index HTTP (`:core:network`), content orchestration (`:core:catalog`), or feature UI (debug inspector hooks are consumed by `:feature:home`).
 
 ## Public API
 
@@ -38,12 +38,12 @@ src/main/java/cx/aswin/boxlore/core/catalog/ranking/
     AdaptiveRankingDao.kt / AdaptiveRankingEntities.kt
 ```
 
-Package stays `cx.aswin.boxlore.core.data.ranking` (Gradle id ≠ package — see `ARCHITECTURE.md`).
+**Phase 2 target package root:** `cx.aswin.boxlore.core.ranking` (PR8). Transitional sources may still use `cx.aswin.boxlore.core.data.ranking` until that PR.
 
 ## Dependencies
 
 - → `:core:model` (Episode, Podcast, genres, telemetry)
-- → `:core:catalogbase` (scoring helpers / history entities used by scorers)
+- → `:core:database` (scoring helpers / history entities used by scorers)
 - → `:core:domain` (`RankingResetPort`)
 - → `:core:prefs` (`BoxcastPrefs` learner-log gate)
 - Room + KSP (`AdaptiveRankingDatabase`)

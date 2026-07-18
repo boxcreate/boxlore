@@ -46,7 +46,7 @@ The first hardening wave left the app healthy but left several items **looking d
 - **`:core:data` ↛ designsystem** (Konsist).
 - Features must not touch `BoxLoreDatabase` directly (`scripts/ci/check-feature-no-boxlore-database.sh`).
 - **One UI `PlaybackRepository`**; Smart Queue refill remains service-owned.
-- Gradle module id ≠ Java package is **intentional** (A8). Do not mass-rename packages to match Gradle ids.
+- **Package = module (Phase 2):** each Gradle module owns a matching Kotlin package root (see `ARCHITECTURE.md` A8). Mass renames ship only via Phase 2 PRs 8–10 with migration failsafes — do not ad-hoc rename outside that plan.
 
 ### 1.3 Process
 

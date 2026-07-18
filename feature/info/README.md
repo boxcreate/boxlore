@@ -44,7 +44,7 @@ Forbidden: feature → feature; no `BoxLoreDatabase` in VMs/assemblers.
 
 ## Persistence & identity
 
-None owned. Respects `rss:` IDs and catalog identity from `:core:rss` / `:core:catalogbase`.
+None owned. Respects `rss:` IDs and catalog identity from `:core:rss` / `:core:database`.
 
 ## Testing notes
 

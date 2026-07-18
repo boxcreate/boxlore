@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns playback session control, queue orchestration, and Media3 services (player + offline download foreground service + Android Auto collage provider). Deliberately does **not** own Room schemas, prefs DataStore, ranking, RSS, or smart-download workers (those live in `:core:catalogbase` / `:core:prefs` / `:core:ranking` / `:core:rss` / `:core:downloads`).
+Owns playback session control, queue orchestration, and Media3 services (player + offline download foreground service + Android Auto collage provider). Deliberately does **not** own Room schemas, prefs DataStore, ranking, RSS, or smart-download workers (those live in `:core:database` / `:core:prefs` / `:core:ranking` / `:core:rss` / `:core:downloads`).
 
 ## Public API
 
@@ -46,7 +46,7 @@ Android Auto browse session callbacks live in `service/auto/`; `BoxLorePlaybackS
 
 Gradle edges (project + notable libs):
 
-- → `:core:catalog` (api), `:core:catalogbase`, `:core:network`, `:core:model`
+- → `:core:catalog` (api), `:core:database`, `:core:network`, `:core:model`
 - Media3 exoplayer / session / ui
 - Coil (session artwork), coroutines (+ guava await)
 
