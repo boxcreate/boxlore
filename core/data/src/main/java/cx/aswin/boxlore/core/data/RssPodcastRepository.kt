@@ -7,6 +7,8 @@ import cx.aswin.boxlore.core.data.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.data.database.PodcastEntity
 import cx.aswin.boxlore.core.data.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.data.database.RssFeedStateUpdate
+import cx.aswin.boxlore.core.domain.RssSubscriptionResult
+import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.Dispatchers
@@ -31,19 +33,11 @@ fun String.escapeForSqlLike(): String =
         .replace("%", "\\%")
         .replace("_", "\\_")
 
-data class RssSubscriptionResult(
-    val podcast: Podcast,
-    val episodeCount: Int,
-    val automaticUpdateChecksSupported: Boolean,
-    val potentialPodcastIndexMatch: Podcast? = null,
-    val linkedPodcastIndexId: String? = null,
-)
-
 class RssPodcastRepository private constructor(
     private val appContext: Context,
     private val database: BoxLoreDatabase,
     private val feedClient: RssFeedClient,
-) : cx.aswin.boxlore.core.data.ports.RssSubscriptionPort {
+) : RssSubscriptionPort {
     private val podcastDao = database.podcastDao()
     private val episodeDao = database.rssEpisodeDao()
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()

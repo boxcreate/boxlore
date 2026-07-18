@@ -1,6 +1,6 @@
-package cx.aswin.boxlore.core.data.ports
+package cx.aswin.boxlore.core.domain.ports
 
-import cx.aswin.boxlore.core.data.RssSubscriptionResult
+import cx.aswin.boxlore.core.domain.RssSubscriptionResult
 import cx.aswin.boxlore.core.model.Podcast
 
 /**

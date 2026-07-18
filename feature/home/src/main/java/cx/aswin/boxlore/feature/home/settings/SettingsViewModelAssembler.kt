@@ -2,8 +2,8 @@ package cx.aswin.boxlore.feature.home.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import cx.aswin.boxlore.core.data.ports.RankingResetPort
-import cx.aswin.boxlore.core.data.ports.RssSubscriptionPort
+import cx.aswin.boxlore.core.domain.ports.RankingResetPort
+import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
 
 /** Builds [SettingsViewModel] from narrow ports (production or fakes). */
 object SettingsViewModelAssembler {

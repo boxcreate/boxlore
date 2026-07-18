@@ -52,6 +52,7 @@ android {
 dependencies {
     implementation(projects.core.model)
     implementation(projects.core.network)
+    api(projects.core.domain)
     api(projects.core.database)
     implementation(libs.androidx.core.ktx)
     implementation(libs.retrofit)

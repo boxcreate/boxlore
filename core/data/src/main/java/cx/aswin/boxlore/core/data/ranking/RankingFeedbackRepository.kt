@@ -14,7 +14,7 @@ data class FeedbackTarget(
 
 class RankingFeedbackRepository private constructor(
     private val adaptiveRankingRepository: AdaptiveRankingRepository?,
-) : cx.aswin.boxlore.core.data.ports.RankingResetPort {
+) : cx.aswin.boxlore.core.domain.ports.RankingResetPort {
     private val recentActions = ConcurrentHashMap<String, Long>()
 
     suspend fun recordExposure(exposure: RankingExposure): String {

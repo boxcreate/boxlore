@@ -72,6 +72,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "boxlore"
 include(":app")
 include(":core:network")
+include(":core:domain")
 include(":core:data")
 include(":core:playback")
 include(":core:database")

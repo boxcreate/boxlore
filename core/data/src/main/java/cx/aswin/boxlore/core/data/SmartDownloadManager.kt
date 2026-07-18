@@ -11,7 +11,7 @@ import cx.aswin.boxlore.core.data.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.data.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.data.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.data.database.PodcastEntity
-import cx.aswin.boxlore.core.data.ports.HistoryRecommendationSource
+import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.data.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.data.ranking.CandidateSource
 import cx.aswin.boxlore.core.data.ranking.EpisodeRankingInput

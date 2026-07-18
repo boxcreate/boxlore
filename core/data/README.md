@@ -2,12 +2,13 @@
 
 ## Purpose
 
-Data layer for repositories, downloads/workers, ranking, RSS, analytics helpers, and prefs. Main Room DB lives in `:core:database` (re-exported via `api`). Playback/queue/Media3 services live in `:core:playback` (same Java packages under `cx.aswin.boxlore.core.data.*`). Further splits: `downloads` / `library` / `prefs` / `analytics`.
+Data layer for repositories, downloads/workers, ranking, RSS, analytics helpers, and prefs. Implements ports from `:core:domain` (re-exported via `api`). Main Room DB lives in `:core:database` (re-exported via `api`). Playback/queue/Media3 services live in `:core:playback` (same Java packages under `cx.aswin.boxlore.core.data.*`). Further splits: `downloads` / `library` / `prefs` / `analytics`.
 
 ## Public API
 
 - Repositories: `PodcastRepository`, `SubscriptionRepository`, `DownloadRepository`, `RssPodcastRepository`, `UserPreferencesRepository`
-- Ports: `ports.RssSubscriptionPort`, `ports.RankingResetPort`, `ports.PodcastCatalogPort`, `ports.HistoryRecommendationSource`, `ports.ListeningHistoryBackupPort`
+- Domain ports (from `:core:domain`, via `api`): `RssSubscriptionPort`, `RankingResetPort`, `PodcastCatalogPort`, `HistoryRecommendationSource`, `RssSubscriptionResult`
+- Data-only port: `ports.ListeningHistoryBackupPort` (Room entity types; keeps domain free of `:core:database`)
 - Shared helpers still here: `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine` / `SmartQueueSources`, `PlaybackSkipBounds` (prefs sanitize without `:core:playback`)
 - Managers: `SmartDownloadManager` (uses `HistoryRecommendationSource`, not full `PlaybackRepository`)
 - `BoxLoreDatabase` (from `:core:database`, same package)
@@ -27,10 +28,11 @@ src/main/java/cx/aswin/boxlore/core/data/
 ```
 
 Main Room sources: `:core:database` → `cx.aswin.boxlore.core.data.database`.
+Feature-facing ports: `:core:domain` → `cx.aswin.boxlore.core.domain.ports`.
 
 ## Dependencies
 
-- → `:core:model`, `:core:network`, `:core:database` (api)
+- → `:core:domain` (api), `:core:model`, `:core:network`, `:core:database` (api)
 - Media3 exoplayer (offline/cache for `DownloadRepository`), WorkManager, DataStore, Firebase Messaging pieces as needed; Room runtime via `:core:database` (ksp kept for ranking DB)
 - Forbidden: → `:core:playback`, → `:core:designsystem`
 
@@ -43,4 +45,5 @@ Main Room sources: `:core:database` → `cx.aswin.boxlore.core.data.database`.
 ## See also
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
+- [`:core:domain` README](../domain/README.md)
 - [`:core:playback` README](../playback/README.md)

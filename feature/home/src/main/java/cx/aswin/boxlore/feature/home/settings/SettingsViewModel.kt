@@ -2,9 +2,9 @@ package cx.aswin.boxlore.feature.home.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.data.RssSubscriptionResult
-import cx.aswin.boxlore.core.data.ports.RankingResetPort
-import cx.aswin.boxlore.core.data.ports.RssSubscriptionPort
+import cx.aswin.boxlore.core.domain.RssSubscriptionResult
+import cx.aswin.boxlore.core.domain.ports.RankingResetPort
+import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow

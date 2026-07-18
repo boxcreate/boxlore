@@ -81,7 +81,7 @@ class AppContainer(
         QueueManager(queueRepository, playbackRepository)
     }
 
-    val historyRecommendationSource: cx.aswin.boxlore.core.data.ports.HistoryRecommendationSource by lazy {
+    val historyRecommendationSource: cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource by lazy {
         cx.aswin.boxlore.core.data.DefaultSmartQueueSources(
             context = appContext,
             database = database,

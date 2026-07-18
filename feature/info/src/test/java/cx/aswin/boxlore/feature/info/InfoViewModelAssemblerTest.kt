@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.feature.info
 
-import cx.aswin.boxlore.core.data.ports.PodcastCatalogPort
+import cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.testing.TestFixtures

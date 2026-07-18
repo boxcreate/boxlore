@@ -3,7 +3,7 @@ package cx.aswin.boxlore.core.data
 import android.content.Context
 import cx.aswin.boxlore.core.data.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.data.database.ListeningHistoryEntity
-import cx.aswin.boxlore.core.data.ports.HistoryRecommendationSource
+import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.HistoryItem

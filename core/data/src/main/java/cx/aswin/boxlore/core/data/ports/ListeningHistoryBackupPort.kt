@@ -7,8 +7,9 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Narrow history seam for [cx.aswin.boxlore.core.data.backup.LibraryBackupManager].
  *
- * Production: [cx.aswin.boxlore.core.data.PlaybackRepository] in `:core:playback`.
- * Keeps `:core:data` free of a dependency on `:core:playback`.
+ * Stays in `:core:data` (not `:core:domain`) because it exposes Room
+ * [ListeningHistoryEntity]. Production: [cx.aswin.boxlore.core.data.PlaybackRepository]
+ * in `:core:playback`. Keeps `:core:data` free of a dependency on `:core:playback`.
  */
 interface ListeningHistoryBackupPort {
     fun getAllHistory(): Flow<List<ListeningHistoryEntity>>
