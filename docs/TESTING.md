@@ -122,15 +122,16 @@ No Roborazzi/Papyrus plugin is required for the current scaffolding.
 
 Architecture boundary: `scripts/ci/check-feature-no-boxlore-database.sh` fails if Home/Info ViewModels or assemblers re-introduce `BoxLoreDatabase`. Konsist/filesystem guards in `:core:testing` additionally enforce feature isolation, `getInstance` allowlist, `:core:data` ↛ designsystem, and module README presence.
 
-**Repo rules (owner only):** apply required merge-gate checks with:
+**Merge CI (label gate, not a GitHub ruleset):** Unit + Instrumented run when the PR has the **`merge-ci`** label. Honor that process before merging.
 
 ```bash
+# Ensures the merge-ci label exists and removes any master rulesets that
+# accidentally block github-actions[bot] data pushes (user-owned repos cannot
+# grant Actions a ruleset bypass).
 ./scripts/ci/configure-master-merge-queue.sh
 ```
 
-That script (needs `gh` admin on the repo) creates/updates the `master-required-checks` ruleset (Unit + Instrumented required to merge a PR) and ensures the `merge-ci` label exists. **How to use:** open/iterate the PR without CI → add `merge-ci` when ready → wait for green checks → merge. Direct bot/chore pushes to `master` are not gated (no “require pull request” rule). Owner bypass remains for emergencies.
-
-> Note: GitHub **merge queue** is not available on this user-owned repo (API rejects `merge_queue`). The `merge-ci` label is the substitute for “run expensive scans only when merging.”
+> **Do not** put `required_status_checks` on `master` on this user-owned repo. GitHub Actions cannot bypass that ruleset, so scheduled bots (`new-episode-check`, sync jobs) fail with `GH013` when committing tracker state. Merge-queue is also unavailable here. After a move to an **organization**, enforced checks + Actions bypass become possible.
 
 Maestro device-farm stays **optional** (needs `MAESTRO_CLOUD_API_KEY` + `MAESTRO_PROJECT_ID`). Screenshots stay local (manual capture).
 

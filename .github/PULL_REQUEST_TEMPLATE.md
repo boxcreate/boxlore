@@ -15,7 +15,7 @@ Unit tests, instrumented tests, detekt, ktlint, and the Kover coverage gate do *
 
 1. Open the PR and iterate as usual (no expensive CI yet).
 2. When the PR is ready to merge, add the **`merge-ci`** label.
-3. Wait until these required checks are green:
+3. Wait until these checks are green (process gate — not a GitHub ruleset on this repo):
    - `testDebugUnitTest`
    - `feature:home connectedDebugAndroidTest`
 4. Then merge.

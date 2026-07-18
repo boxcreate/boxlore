@@ -680,7 +680,11 @@ Each PR updates **touched module READMEs in the same change**.
 
 ## 11. Immediate next action
 
-Automation floors (B0/B6/B8–B10) and A8 package policy are in place. Prefer finishing **B2** (full Home/Info VM construction), expanding **B5** hermetic androidTest, then **B7** Roborazzi when AGP allows; ratchet Kover **12 → 15**. Optional A8 polish (theme/log/BuildConfig renames, `LegacyWorkerFactory` removal) only with evidence.
+**Program DoD for A0–A8 / B0–B10 scaffold is met.** Do **not** reopen module extracts casually.
+
+**Next wave (cloud / autonomous agents):** follow **[`docs/PLAN_CLOUD_AGENT_NEXT.md`](PLAN_CLOUD_AGENT_NEXT.md)** — deepen shallow automation (stabilize instrumented, Kover 15, Home/Info tests, hermetic androidTest, one real local Maestro flow, honest screenshots) with hard stops and strict phase DoD so work is not half-baked.
+
+Legacy one-liner (still valid as themes): finishing **B2** (Home/Info depth), expanding **B5**, then Maestro/screenshots honesty; ratchet Kover **12 → 15**. Optional A8 polish only with evidence.
 
 ---
 
