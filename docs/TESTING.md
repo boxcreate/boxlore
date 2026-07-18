@@ -116,8 +116,8 @@ No Roborazzi/Papyrus plugin is required for the current scaffolding.
 
 | Workflow | What it runs | When |
 | :--- | :--- | :--- |
-| `unit-tests.yml` | Architecture boundary script + detekt + ktlint + `testDebugUnitTest` (includes Konsist) + `:koverVerifyMerged` + non-blocking `lintDebug` | **Every PR** (`pull_request`), merge queue (`merge_group`), or **Actions → Run workflow** |
-| `android-instrumented-tests.yml` | `:feature:home:connectedDebugAndroidTest` on an API 34 emulator | Merge queue / manual |
+| `unit-tests.yml` | Architecture boundary script + detekt + ktlint + `testDebugUnitTest` (includes Konsist) + `:koverVerifyMerged` + non-blocking `lintDebug` | **Merge queue only** (`merge_group`), or **Actions → Run workflow** |
+| `android-instrumented-tests.yml` | `:feature:home:connectedDebugAndroidTest` on an API 34 emulator | **Merge queue only** / manual |
 | `maestro-nightly.yml` | Validate `maestro/*.yaml`; optional Maestro Cloud when secrets present | Nightly cron (UTC) / manual |
 
 Architecture boundary: `scripts/ci/check-feature-no-boxlore-database.sh` fails if Home/Info ViewModels or assemblers re-introduce `BoxLoreDatabase`. Konsist/filesystem guards in `:core:testing` additionally enforce feature isolation, `getInstance` allowlist, `:core:data` ↛ designsystem, and module README presence.

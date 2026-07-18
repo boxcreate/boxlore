@@ -1,9 +1,9 @@
 name: Unit Tests
 
-# Runs on every PR (and merge queue / manual dispatch) so architecture/regression
-# suites gate before merge — not only when a PR enters the merge queue.
+# Runs when a PR enters the merge queue (merge click), or via manual dispatch.
+# Not on every PR push — intermediate commits should not burn CI minutes.
+# Direct bot/owner pushes to master do not use the merge queue and are unaffected.
 on:
-  pull_request:
   merge_group:
   workflow_dispatch:
 
