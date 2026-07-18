@@ -273,7 +273,7 @@ flowchart TB
 
 Key packages:
 
-- `core/data/.../ranking/` — bandit, facets, reward, features, persistence.
+- `core/ranking/.../ranking/` — bandit, facets, reward, features, persistence (extracted to `:core:ranking` in Phase A5; same Kotlin package `cx.aswin.boxlore.core.data.ranking`).
 - `core/data/.../content/` — Home retrieval → ranking → layout (including grouped sections).
 - `core/data/MixtapeEngine.kt`, `core/data/SmartQueueEngine.kt` — surface engines.
 - `core/network/.../BoxLoreApi.kt` — Retrofit boundary.
@@ -282,7 +282,7 @@ Key packages:
 
 ## B2. The learned model — `AdaptiveLinearModel`
 
-File: `core/data/.../ranking/AdaptiveLinearModel.kt`
+File: `core/ranking/.../ranking/AdaptiveLinearModel.kt`
 
 Per-objective **regularized online linear model** with optional UCB exploration (LinUCB-style).
 
@@ -328,7 +328,7 @@ Tests: `AdaptiveRankingTest` (cold start blend, offline never explores, opposite
 
 ## B3. Taste model — `BayesianPreferenceFacet`
 
-File: `core/data/.../ranking/BayesianPreferenceFacet.kt`
+File: `core/ranking/.../ranking/BayesianPreferenceFacet.kt`
 
 Facet types: `SHOW`, `GENRE`, `SOURCE`, `DURATION_BUCKET`, `TIME_CONTEXT`, `INTENT`.
 

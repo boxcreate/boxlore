@@ -3,7 +3,6 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.jetbrainsKotlinAndroid)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.kover)
 }
 
@@ -70,9 +69,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.guava)
     implementation(libs.androidx.datastore.preferences)
 
-    // Room (ksp retained for ranking AdaptiveRankingDatabase; runtime via :core:database)
-    ksp(libs.androidx.room.compiler)
-
     // JSON Streaming
     implementation(libs.gson)
     implementation(libs.okhttp)
@@ -84,6 +80,10 @@ dependencies {
 
     // Analytics (PostHog lives in :core:analytics; data re-exports it so existing imports keep working)
     api(projects.core.analytics)
+
+    // Ranking (AdaptiveCandidateScorer, RankingFeedbackRepository, AdaptiveRankingRepository, etc.)
+    // api-exported so features/downloads/playback that depend on data see ranking types transitively.
+    api(projects.core.ranking)
 
     // Install Referrer
     implementation("com.android.installreferrer:installreferrer:2.2")

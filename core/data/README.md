@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Data layer for repositories, ranking, and RSS. Implements ports from `:core:domain` (re-exported via `api`). Main Room DB lives in `:core:database` (re-exported via `api`). Prefs live in `:core:prefs` (re-exported via `api`). Analytics helpers (`AnalyticsHelper`, `PendingEntryPoint`, `PlayerSessionAggregator`) live in `:core:analytics` (re-exported via `api`). Playback/queue/Media3 services live in `:core:playback` (same Java packages under `cx.aswin.boxlore.core.data.*`). Download/worker stack lives in `:core:downloads`.
+Data layer for repositories and RSS. Implements ports from `:core:domain` (re-exported via `api`). Main Room DB lives in `:core:database` (re-exported via `api`). Prefs live in `:core:prefs` (re-exported via `api`). Analytics helpers (`AnalyticsHelper`, `PendingEntryPoint`, `PlayerSessionAggregator`) live in `:core:analytics` (re-exported via `api`). Adaptive ranking engine lives in `:core:ranking` (re-exported via `api`). Playback/queue/Media3 services live in `:core:playback` (same Java packages under `cx.aswin.boxlore.core.data.*`). Download/worker stack lives in `:core:downloads`.
 
 Owns the **shared-deps entry API** for workers (`SharedAppDependencies` / `SharedAppDependenciesHolder`) so background work does not rebuild parallel repository graphs. Download-owned types (`DownloadRepository`, `SmartDownloadManager`) live in `:core:downloads` to avoid a data↔downloads cycle.
 
@@ -13,7 +13,7 @@ Owns the **shared-deps entry API** for workers (`SharedAppDependencies` / `Share
 - Domain ports (from `:core:domain`, via `api`): `RssSubscriptionPort`, `RankingResetPort`, `PodcastCatalogPort`, `HistoryRecommendationSource`, `RssSubscriptionResult`
 - Data-only port: `ports.ListeningHistoryBackupPort`
 - Shared helpers: `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine` / `SmartQueueSources`, `PlaybackSkipBounds`
-- Ranking: `AdaptiveCandidateScorer`, `RankingFeedbackRepository`, `AdaptiveRankingRepository` — **production code must not call `getInstance`**; only `AppContainer` installs via `getInstance`
+- Ranking (from `:core:ranking`, re-exported via `api`): `AdaptiveCandidateScorer`, `RankingFeedbackRepository`, `AdaptiveRankingRepository` — **production code must not call `getInstance`**; only `AppContainer` installs via `getInstance`
 - Composition bridge:
   - `SharedAppDependencies` — interface of Application-scoped instances workers/services need (DB, podcast/subscription/prefs, RSS, ranking, history source). Download-owned types live in `:core:downloads`.
   - `SharedAppDependenciesHolder` — `@Volatile` install + `require()` (throws if unset)
@@ -28,10 +28,11 @@ Playback types (`PlaybackRepository`, `QueueManager`, `QueueRepository`, `BoxLor
 
 ```text
 src/main/java/cx/aswin/boxlore/core/data/
-  SharedAppDependencies.kt   # interface + holder (download types removed — see :core:downloads)
-  ranking/ content/ privacy/ backup/ crosspromo/
+  SharedAppDependencies.kt   # interface + holder (download types in :core:downloads; ranking types in :core:ranking)
+  content/ privacy/ backup/ crosspromo/
   ports/                     # DownloadCacheRelinker fun interface
   # analytics/ moved to :core:analytics (same package, re-exported via api)
+  # ranking/ moved to :core:ranking (same package, re-exported via api)
 ```
 
 Main Room sources: `:core:database` → `cx.aswin.boxlore.core.data.database`.
@@ -40,8 +41,9 @@ Feature-facing ports: `:core:domain` → `cx.aswin.boxlore.core.domain.ports`.
 ## Dependencies
 
 - → `:core:analytics` (api — re-exports all analytics types transitively)
+- → `:core:ranking` (api — re-exports AdaptiveCandidateScorer / RankingFeedbackRepository / AdaptiveRankingRepository transitively)
 - → `:core:domain` (api), `:core:prefs` (api), `:core:model`, `:core:network`, `:core:database` (api)
-- DataStore (privacy consent still here), Firebase Messaging pieces as needed; Room runtime via `:core:database` (ksp kept for ranking DB)
+- DataStore (privacy consent still here), Firebase Messaging pieces as needed; Room runtime via `:core:database` (ksp removed — ranking DB lives in `:core:ranking`)
 - Forbidden: → `:core:playback`, → `:core:designsystem`, → `:core:downloads`
 
 ## Threading / lifecycle
@@ -61,7 +63,7 @@ Feature-facing ports: `:core:domain` → `cx.aswin.boxlore.core.domain.ports`.
 
 ## Testing notes
 
-- JVM tests under `src/test` (queue math, RSS, ranking, content, smart queue, **`SharedAppDependenciesHolderTest`**)
+- JVM tests under `src/test` (queue math, RSS, content, smart queue, **`SharedAppDependenciesHolderTest`**; ranking tests live in `:core:ranking`)
 - `SharedAppDependenciesHolder.require()` throws when unset (pure unit test; resets holder in `@AfterEach`)
 - Playback skip policy tests live in `:core:playback`
 - Download holder tests live in `:core:downloads`
@@ -78,7 +80,8 @@ Exercised by the unit-test CI job (`testDebugUnitTest` / project suite). Instrum
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
-- [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A1, A3)
+- [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A1, A3, A5)
+- [`:core:ranking` README](../ranking/README.md)
 - [`:core:downloads` README](../downloads/README.md)
 - [`:core:domain` README](../domain/README.md)
 - [`:core:playback` README](../playback/README.md)
