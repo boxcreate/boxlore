@@ -41,7 +41,7 @@ src/main/java/cx/aswin/boxlore/core/domain/
 - → `:core:network` (api; `HistoryItem` only)
 - kotlinx-coroutines
 
-Forbidden: domain ↛ `:core:catalog`, `:core:catalogbase`, `:core:playback`, features, or designsystem.
+Forbidden: domain ↛ `:core:catalog`, `:core:database`, `:core:playback`, features, or designsystem.
 
 ## Threading / lifecycle
 
@@ -50,7 +50,7 @@ Forbidden: domain ↛ `:core:catalog`, `:core:catalogbase`, `:core:playback`, fe
 
 ## Persistence & identity
 
-None owned here. Ports may mention `rss:` IDs or episode IDs in docs/contracts; persistence ownership stays in `:core:rss` / `:core:catalogbase`.
+None owned here. Ports may mention `rss:` IDs or episode IDs in docs/contracts; persistence ownership stays in `:core:rss` / `:core:database`.
 
 ## Testing notes
 

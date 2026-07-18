@@ -4,7 +4,7 @@
 
 **Catalog and orchestration layer.** Owns the Podcast Index catalog (`PodcastRepository`), subscriptions, smart queue logic, content sections, cross-promo, engagement, backup/restore, and the shared-deps composition bridge for workers and Media3 services. It is **not** a junk drawer — every type here is a catalog, subscription, or orchestration concern.
 
-Gradle id is `:core:catalog`; Java/Kotlin packages remain `cx.aswin.boxlore.core.data.*` (A8 policy — stable imports and FQCNs across the end-state wave).
+Gradle id is `:core:catalog`. **Phase 2 target package root:** `cx.aswin.boxlore.core.catalog` (PR10). Until then, sources may still live under transitional `cx.aswin.boxlore.core.data.*` with upgrade failsafes.
 
 Extracted subsystems now live in dedicated modules (re-exported via `api` so existing import paths continue to compile):
 

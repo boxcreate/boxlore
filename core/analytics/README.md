@@ -40,7 +40,7 @@ src/main/java/cx/aswin/boxlore/core/catalog/analytics/
 - → `libs.posthog.android` (PostHog SDK)
 - → `libs.androidx.core.ktx`
 
-**Forbidden reverse edges:** analytics must not depend on `:core:catalog`, `:core:catalogbase`,
+**Forbidden reverse edges:** analytics must not depend on `:core:catalog`, `:core:database`,
 `:core:network`, `:core:playback`, `:core:downloads`, or any `feature:*` module.
 
 `:core:catalog` re-exports `:core:analytics` via `api(projects.core.analytics)` so existing

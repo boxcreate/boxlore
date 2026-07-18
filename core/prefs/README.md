@@ -15,7 +15,7 @@ Stable types other modules may depend on:
 - `BoxcastPrefs` — typed API for `boxcast_prefs` keys (onboarding, genres, recommendation caches, learn curiosity, learner-log gate)
 - `PlaybackSkipBounds` / `EngagementPromptConstants` — shared sanitize/threshold constants used by prefs + playback/engagement
 
-Kotlin packages remain `cx.aswin.boxlore.core.data` (no import renames). Do **not** recreate a parallel SharedPreferences client for `boxcast_prefs` in features — call `BoxcastPrefs`.
+**Phase 2 target package root:** `cx.aswin.boxlore.core.prefs` (PR8). Transitional sources may still use `cx.aswin.boxlore.core.data` until that PR. Pref **files** migrate `boxcast_*` → `boxlore_*` via `PrefsFileMigrator` (dual-read failsafe) in PR8 — do not blind-rename strings. Do **not** recreate a parallel SharedPreferences client in features — call the prefs façade.
 
 ## Internal structure
 
