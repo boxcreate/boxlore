@@ -85,53 +85,6 @@ data class SmartHeroItem(
 enum class HeroType { RESUME, RESUME_GRID, JUMP_BACK_IN, NEW_EPISODES_GRID, SPOTLIGHT }
 
 @Immutable
-data class DiscoveryGreeting(
-    val title: String,
-    val subtitle: String,
-    val daypart: ContentDaypart,
-)
-
-private fun discoveryGreetingFor(
-    daypart: ContentDaypart,
-    date: java.time.LocalDate = java.time.LocalDate.now(),
-): DiscoveryGreeting {
-    return when (daypart) {
-        ContentDaypart.MORNING -> DiscoveryGreeting(
-            title = "Good Morning",
-            subtitle = if (date.dayOfWeek in setOf(
-                    java.time.DayOfWeek.SATURDAY,
-                    java.time.DayOfWeek.SUNDAY,
-                )
-            ) {
-                "Catch up on the week."
-            } else {
-                "Start your day with these updates."
-            },
-            daypart = daypart,
-        )
-        ContentDaypart.AFTERNOON -> DiscoveryGreeting(
-            title = "Afternoon Break",
-            subtitle = "Smart conversations to keep you going.",
-            daypart = daypart,
-        )
-        ContentDaypart.EVENING -> DiscoveryGreeting(
-            title = "Evening Unwind",
-            subtitle = if (date.dayOfWeek == java.time.DayOfWeek.FRIDAY) {
-                "Kick off the weekend."
-            } else {
-                "Relax, laugh, and catch up."
-            },
-            daypart = daypart,
-        )
-        ContentDaypart.LATE_NIGHT -> DiscoveryGreeting(
-            title = "Late Night Listen",
-            subtitle = "Stories for the dark hours.",
-            daypart = daypart,
-        )
-    }
-}
-
-@Immutable
 data class HomeUiState(
     val heroItems: List<SmartHeroItem>,
     val latestEpisodes: List<Podcast> = emptyList(), // "Latest" Section (Smart: Unplayed → In Progress → Completed)

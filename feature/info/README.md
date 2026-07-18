@@ -25,8 +25,9 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 ## Testing notes
 
-- JVM: episode duration formatter; `InfoViewModelAssemblerTest` (catalog port fakes)
-- Assembler: `InfoViewModelAssembler` (podcast + episode factories)
+- JVM: episode duration formatter; `InfoViewModelAssemblerTest` + `InfoCatalogPortBehaviorTest` (catalog port fakes for Info seam)
+- Assembler: `InfoViewModelAssembler` (podcast + episode factories) — full Info VMs still need Application
+- Commands: `./gradlew :feature:info:testDebugUnitTest`
 - Smoke: podcast/episode subscribe, RSS pull-to-refresh
 
 ## See also

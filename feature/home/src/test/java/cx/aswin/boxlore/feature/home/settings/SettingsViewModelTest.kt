@@ -139,6 +139,33 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `resetRecommendations emits failure toast when port returns false`() = runTest {
+        val ranking = FakeRankingResetPort(result = false)
+        val vm = SettingsViewModelAssembler.create(FakeRssSubscriptionPort(), ranking)
+
+        vm.events.test {
+            vm.resetRecommendations()
+            assertEquals(
+                SettingsEvent.ShowToast("Couldn't reset recommendations"),
+                awaitItem(),
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertEquals(1, ranking.resetCalls)
+    }
+
+    @Test
+    fun `assembler factory creates SettingsViewModel with default state`() {
+        val factory = SettingsViewModelAssembler.factory(
+            FakeRssSubscriptionPort(),
+            FakeRankingResetPort(),
+        )
+        val vm = factory.create(SettingsViewModel::class.java)
+        assertEquals("", vm.uiState.value.rssUrl)
+        assertFalse(vm.uiState.value.showAddRssDialog)
+    }
+
+    @Test
     fun `keepRssMatchSeparate clears pending match`() = runTest {
         val rssPodcast = TestFixtures.podcast(id = "rss:4", title = "Separate")
         val indexMatch = TestFixtures.podcast(id = "7", title = "Other")

@@ -26,7 +26,9 @@ src/main/java/cx/aswin/boxlore/feature/home/
 
 - Manual smoke: home feed, Settings → Add RSS entry, debug tools
 - Assemblers: `HomeViewModelAssembler`, `settings.SettingsViewModelAssembler`
-- Hard VM: `SettingsViewModelTest` (Turbine + fake RSS/ranking ports)
+- Hard VM: `SettingsViewModelTest` (Turbine + fake RSS/ranking ports via assembler)
+- Home slice (B2): `DiscoveryGreetingTest` — pure daypart greeting helper extracted from `HomeViewModel` (full Home VM still needs Application + heavy fakes / Robolectric; deferred)
+- Commands: `./gradlew :feature:home:testDebugUnitTest`
 - Participates in Kover merged coverage (`:koverVerifyMerged` in unit-tests CI)
 
 ## See also

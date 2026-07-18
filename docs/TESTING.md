@@ -20,6 +20,7 @@ Module-local test notes live in each folder `README.md` (see [`MODULE_README_TEM
 - **Kover** (merged reports for `:core:data`, `:core:domain`, `:feature:home`)
 - Shared fixtures: `:core:testing` (`TestFixtures`, `MainDispatcherExtension`)
 - **B1 network contracts:** MockWebServer tests in `:core:network` (`BoxLoreApiContractTest`) — run `./gradlew :core:network:testDebugUnitTest`
+- **B2 hard VM slice (started):** Settings via assembler + fakes (`SettingsViewModelTest`); Home greeting helper (`DiscoveryGreetingTest`); Info catalog port fakes (`InfoCatalogPortBehaviorTest`). Full `HomeViewModel` / Info VMs still deferred (Application + heavy deps).
 - **No MockK / Hilt**
 - Compose **androidTest** uses **JUnit4** + `AndroidJUnitRunner` (androidx.test)
 

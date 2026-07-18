@@ -1,6 +1,6 @@
 # Boxlore — Modular Android Hardening & Automation Plan
 
-**Status:** In progress (A0–A5 + B0 landed; A6+ next)  
+**Status:** In progress (A0–A5 + B0–B1 landed; B2 started; A6+ next)  
 **Branch context:** Builds on `cursor/full-refactor-tests-3b38` / PR #898  
 **Audience:** Implementers continuing architecture, DI, tests, and module docs
 
@@ -526,6 +526,8 @@ Rename slim leftover `:core:data` → `:core:catalog` (or document `:core:data` 
 **Status:** done — `BoxLoreApiContractTest` + fixtures under `core/network/src/test`.
 
 #### B2 — Hard VM & catalog tests
+
+**Status:** started — Settings assembler/Turbine suite expanded; Home `DiscoveryGreetingTest` (pure helper extracted from VM; full Home VM bootstrap/category deferred); Info `InfoCatalogPortBehaviorTest` (catalog port fakes). Catalog MockWebServer + full Home/Info VM construction still open.
 
 - `HomeViewModel` behavioral tests via assembler + fakes (bootstrap, error, category switch — slice, don’t boil ocean).
 - Expand Settings/Info port tests.
