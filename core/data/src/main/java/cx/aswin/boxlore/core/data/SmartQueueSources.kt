@@ -111,8 +111,7 @@ class DefaultSmartQueueSources(
     }
 
     override suspend fun getInterests(): List<String> = try {
-        context.getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
-            .getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
+        BoxcastPrefs(context).getUserGenres().toList()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {

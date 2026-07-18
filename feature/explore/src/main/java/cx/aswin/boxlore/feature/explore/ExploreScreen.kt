@@ -211,8 +211,7 @@ fun ExploreContent(
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val isRecommendationsFallback = remember {
-        context.getSharedPreferences("boxcast_prefs", android.content.Context.MODE_PRIVATE)
-            .getBoolean("is_recommendations_fallback", true)
+        cx.aswin.boxlore.core.data.BoxcastPrefs(context).isRecommendationsFallback()
     }
 
     if (state.selectedTab == 1 && state.recommendations.isNotEmpty()) {

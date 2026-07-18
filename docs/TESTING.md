@@ -8,7 +8,7 @@ Module-local test notes live in each folder `README.md` (see [`MODULE_README_TEM
 | Layer | Command / location | Catches |
 | :--- | :--- | :--- |
 | JVM unit | `./gradlew testDebugUnitTest` | Logic / state bugs |
-| Coverage | `./gradlew :koverVerifyMerged` | Soft line-coverage gate |
+| Coverage | `./gradlew :koverVerifyMerged` (also in unit-tests CI) | Soft line-coverage gate |
 | Compose UI | `androidTest` (P24) | Dead controls, nav wiring |
 | Maestro | device flows (P25) | Real-device glitches |
 | Screenshots | optional (P26) | Visual regressions |

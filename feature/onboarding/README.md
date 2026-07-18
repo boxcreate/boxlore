@@ -2,7 +2,7 @@
 
 ## Purpose
 
-First-run onboarding flows (genre, search, import, AI suggestions). Completes via prefs / SharedPreferences keys that must remain stable.
+First-run onboarding flows (genre, search, import, AI suggestions). Completes via `:core:prefs` (`BoxcastPrefs` / `UserPreferencesRepository`); do not read `boxcast_prefs` raw.
 
 ## Public API
 

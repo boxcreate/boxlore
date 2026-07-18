@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.data.ranking
 
+import cx.aswin.boxlore.core.data.BoxcastPrefs
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +17,13 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 object LearningEventLog {
 
-    /** SharedPreferences file (shared with other debug toggles) and key gating capture. */
-    const val PREFS_NAME = "boxcast_prefs"
-    const val ENABLED_PREF_KEY = "learner_log_enabled"
+    /**
+     * SharedPreferences file / key gating capture.
+     * Prefer [cx.aswin.boxlore.core.data.BoxcastPrefs] for reads/writes; these aliases
+     * stay for callers that still reference the constants.
+     */
+    const val PREFS_NAME = BoxcastPrefs.PREFS_NAME
+    const val ENABLED_PREF_KEY = BoxcastPrefs.KEY_LEARNER_LOG_ENABLED
 
     private const val MAX_EVENTS = 300
 

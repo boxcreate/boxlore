@@ -63,6 +63,7 @@ dependencies {
     implementation(projects.core.network)
     api(projects.core.domain)
     api(projects.core.database)
+    api(projects.core.prefs)
     implementation(libs.androidx.core.ktx)
     implementation(libs.retrofit)
     implementation(libs.kotlinx.coroutines.android)

@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +8,7 @@ import cx.aswin.boxlore.core.data.PodcastRepository
 import cx.aswin.boxlore.core.data.SubscriptionRepository
 import cx.aswin.boxlore.core.data.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.data.BoxcastPrefs
 import cx.aswin.boxlore.core.data.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -89,7 +89,7 @@ class OnboardingViewModel(
     private val userPrefs: UserPreferencesRepository
 ) : AndroidViewModel(application) {
 
-    private val prefs = application.getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
+    private val boxcastPrefs = BoxcastPrefs(application)
     
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
@@ -200,7 +200,7 @@ class OnboardingViewModel(
     }
 
     fun isOnboardingCompleted(): Boolean {
-        return prefs.getBoolean("onboarding_completed", false)
+        return boxcastPrefs.isOnboardingCompleted()
     }
     
     fun startOnboarding(entryPoint: String = "welcome_screen") {
@@ -837,7 +837,7 @@ class OnboardingViewModel(
             userPrefs.setRegion(state.currentRegion)
             
             // Mark onboarding as completed
-            prefs.edit().putBoolean("onboarding_completed", true).apply()
+            boxcastPrefs.setOnboardingCompleted(true)
 
             // Analytics: If completing from search screen, fire search_done variant
             if (state.currentStep == OnboardingStep.SEARCH) {
@@ -853,7 +853,7 @@ class OnboardingViewModel(
             }
 
             // Save selected genres for future personalization
-            prefs.edit().putStringSet("user_genres", state.selectedGenres).apply()
+            boxcastPrefs.setUserGenres(state.selectedGenres)
 
             onDone()
         }
@@ -1059,7 +1059,7 @@ class OnboardingViewModel(
         }
         AnalyticsHelper.trackOnboardingSkipped(currentScreen, getTotalOnboardingTime())
 
-        prefs.edit().putBoolean("onboarding_completed", true).apply()
+        boxcastPrefs.setOnboardingCompleted(true)
 
         onDone()
     }
@@ -1559,14 +1559,14 @@ class OnboardingViewModel(
                 }
 
                 userPrefs.setRegion(state.currentRegion)
-                prefs.edit().putBoolean("onboarding_completed", true).apply()
+                boxcastPrefs.setOnboardingCompleted(true)
 
                 val userGenres = state.aiHistory
                     .filter { it.role == "user" }
                     .flatMap { it.parts }
                     .map { it.text }
                     .toSet()
-                prefs.edit().putStringSet("user_genres", userGenres).apply()
+                boxcastPrefs.setUserGenres(userGenres)
 
                 val subscribedTitles = selectedIds.map { seenPodcasts[it]?.title ?: it }
                 // Analytics: Track onboarding completion depending on the flow that reached suggestions
@@ -1614,14 +1614,14 @@ class OnboardingViewModel(
                 onDone()
             } catch (e: Exception) {
                 Log.e("OnboardingViewModel", "Error in finishAiOnboarding", e)
-                prefs.edit().putBoolean("onboarding_completed", true).apply()
+                boxcastPrefs.setOnboardingCompleted(true)
                 onDone()
             }
         }
     }
 
     fun markOnboardingCompletedSilent(onDone: () -> Unit) {
-        prefs.edit().putBoolean("onboarding_completed", true).apply()
+        boxcastPrefs.setOnboardingCompleted(true)
         onDone()
     }
 }

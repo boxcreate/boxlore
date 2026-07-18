@@ -13,6 +13,7 @@ import androidx.compose.runtime.Immutable
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.data.BoxcastPrefs
 import cx.aswin.boxlore.core.data.MixtapeEngine
 import cx.aswin.boxlore.core.data.PersonalizedContentSectionInputs
 import cx.aswin.boxlore.core.data.PodcastRepository
@@ -337,6 +338,7 @@ class HomeViewModel(
             },
         )
     private val userPrefs = cx.aswin.boxlore.core.data.UserPreferencesRepository(application)
+    private val boxcastPrefs = BoxcastPrefs(application)
     private val contentOrchestrator = ContentOrchestrator(
         providers = listOf(
             ServerIntentCandidateProvider(podcastRepository),
@@ -427,25 +429,23 @@ class HomeViewModel(
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             // Load cached recommendations
             try {
-                val prefs = application.getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
-                val cached = prefs.getString("cached_recommendations", null)
+                val cached = boxcastPrefs.getCachedRecommendationsJson()
                 if (cached != null) {
                     val json = Json { ignoreUnknownKeys = true }
                     val list = json.decodeFromString<List<Episode>>(cached)
                     _recommendations.value = list
                 }
                 // Load cached fallback flag
-                _isRecommendationsFallback.value = prefs.getBoolean("is_recommendations_fallback", true)
+                _isRecommendationsFallback.value = boxcastPrefs.isRecommendationsFallback()
             } catch (e: Exception) {
                 android.util.Log.e("HomeViewModel", "Failed to load cached recommendations", e)
             }
 
             // Load cached "Because You Like" recommendations
             try {
-                val prefs = application.getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
-                val cached = prefs.getString("cached_byl_recommendations", null)
-                val cachedPods = prefs.getString("cached_byl_podcasts", null)
-                val cachedPodId = prefs.getString("cached_byl_podcast_id", null)
+                val cached = boxcastPrefs.getCachedBylRecommendationsJson()
+                val cachedPods = boxcastPrefs.getCachedBylPodcastsJson()
+                val cachedPodId = boxcastPrefs.getCachedBylPodcastId()
                 if (cachedPodId != null) {
                     val json = Json { ignoreUnknownKeys = true }
                     if (cached != null) {
@@ -945,11 +945,7 @@ class HomeViewModel(
         context: cx.aswin.boxlore.core.data.content.ContentContext,
     ): cx.aswin.boxlore.core.data.content.GroupedContentSections? {
         val catalog = podcastRepository.getContentCatalog() ?: return null
-        val preferences = getApplication<Application>().getSharedPreferences(
-            "boxcast_prefs",
-            Context.MODE_PRIVATE,
-        )
-        val interests = preferences.getStringSet("user_genres", emptySet()).orEmpty().toList()
+        val interests = boxcastPrefs.getUserGenres().toList()
         val history = playbackRepository.getHistoryForRecommendations(30)
         val subscriptions = subscriptionRepository.subscribedPodcasts.first()
         val learnedGenreAffinities = adaptiveRankingRepository.genreAffinities()
@@ -1169,8 +1165,7 @@ class HomeViewModel(
         viewModelScope.launch {
             _isRecommendationsLoaded.value = false
             try {
-                val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
-                val interests = prefs.getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
+                val interests = boxcastPrefs.getUserGenres().toList()
                 val history = playbackRepository.getHistoryForRecommendations(15)
                 
                 val subscribedIds = subscriptionRepository.subscribedPodcastIds.first().toList()
@@ -1194,7 +1189,7 @@ class HomeViewModel(
                 try {
                     val json = Json { ignoreUnknownKeys = true }
                     val serialized = json.encodeToString(distinctRecs)
-                    prefs.edit().putString("cached_recommendations", serialized).apply()
+                    boxcastPrefs.setCachedRecommendationsJson(serialized)
                 } catch (ce: Exception) {
                     android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
                 }
@@ -1262,8 +1257,7 @@ class HomeViewModel(
                     try {
                         android.util.Log.d("BoxCastTiming", "VM: Background personalized Home screen load for region=$region")
                         
-                        val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
-                        val interests = prefs.getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
+                        val interests = boxcastPrefs.getUserGenres().toList()
                         
                         val historyDeferred = async { playbackRepository.getHistoryForRecommendations(15) }
                         val subscribedIdsDeferred = async { subscriptionRepository.subscribedPodcastIds.first().toList() }
@@ -1291,10 +1285,10 @@ class HomeViewModel(
                         try {
                             val json = Json { ignoreUnknownKeys = true }
                             val serialized = json.encodeToString(distinctRecs)
-                            prefs.edit()
-                                .putString("cached_recommendations", serialized)
-                                .putBoolean("is_recommendations_fallback", bootstrapData.isRecommendationsFallback)
-                                .apply()
+                            boxcastPrefs.saveRecommendationsCache(
+                                serialized,
+                                bootstrapData.isRecommendationsFallback,
+                            )
                         } catch (ce: Exception) {
                             android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
                         }
@@ -2342,15 +2336,14 @@ class HomeViewModel(
                 _becauseYouLikeRecommendations.value = ranked.second
                 
                 try {
-                    val prefs = getApplication<Application>().getSharedPreferences("boxcast_prefs", Context.MODE_PRIVATE)
                     val json = Json { ignoreUnknownKeys = true }
                     val serializedEpisodes = json.encodeToString(ranked.second)
                     val serializedPodcasts = json.encodeToString(ranked.first)
-                    prefs.edit()
-                        .putString("cached_byl_recommendations", serializedEpisodes)
-                        .putString("cached_byl_podcasts", serializedPodcasts)
-                        .putString("cached_byl_podcast_id", id)
-                        .apply()
+                    boxcastPrefs.saveBylCache(
+                        episodesJson = serializedEpisodes,
+                        podcastsJson = serializedPodcasts,
+                        podcastId = id,
+                    )
                 } catch (ce: Exception) {
                     android.util.Log.e("HomeViewModel", "Failed to cache because-you-like recommendations", ce)
                 }

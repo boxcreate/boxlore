@@ -2,13 +2,14 @@
 
 ## Purpose
 
-Data layer for repositories, downloads/workers, ranking, RSS, analytics helpers, and prefs. Implements ports from `:core:domain` (re-exported via `api`). Main Room DB lives in `:core:database` (re-exported via `api`). Playback/queue/Media3 services live in `:core:playback` (same Java packages under `cx.aswin.boxlore.core.data.*`).
+Data layer for repositories, downloads/workers, ranking, RSS, and analytics helpers. Implements ports from `:core:domain` (re-exported via `api`). Main Room DB lives in `:core:database` (re-exported via `api`). Prefs live in `:core:prefs` (re-exported via `api`). Playback/queue/Media3 services live in `:core:playback` (same Java packages under `cx.aswin.boxlore.core.data.*`).
 
-Owns the **shared-deps entry API** for workers (`SharedAppDependencies` / `SharedAppDependenciesHolder`) so background work does not rebuild parallel repository graphs. Further splits: `downloads` / `library` / `prefs` / `analytics` / `ranking` / `rss`.
+Owns the **shared-deps entry API** for workers (`SharedAppDependencies` / `SharedAppDependenciesHolder`) so background work does not rebuild parallel repository graphs. Further splits: `downloads` / `analytics` / `ranking` / `rss` / catalog.
 
 ## Public API
 
-- Repositories: `PodcastRepository` (ctor-injected `RssPodcastRepository`), `SubscriptionRepository`, `DownloadRepository` (ctor-injected `RankingFeedbackRepository`), `RssPodcastRepository`, `UserPreferencesRepository`
+- Repositories: `PodcastRepository` (ctor-injected `RssPodcastRepository`), `SubscriptionRepository`, `DownloadRepository` (ctor-injected `RankingFeedbackRepository`), `RssPodcastRepository`
+- Prefs (from `:core:prefs`, via `api`): `UserPreferencesRepository`, `BoxcastPrefs`
 - Domain ports (from `:core:domain`, via `api`): `RssSubscriptionPort`, `RankingResetPort`, `PodcastCatalogPort`, `HistoryRecommendationSource`, `RssSubscriptionResult`
 - Data-only port: `ports.ListeningHistoryBackupPort`
 - Shared helpers: `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine` / `SmartQueueSources`, `PlaybackSkipBounds`
@@ -38,8 +39,8 @@ Feature-facing ports: `:core:domain` → `cx.aswin.boxlore.core.domain.ports`.
 
 ## Dependencies
 
-- → `:core:domain` (api), `:core:model`, `:core:network`, `:core:database` (api)
-- Media3 exoplayer (offline/cache for `DownloadRepository`), WorkManager, DataStore, Firebase Messaging pieces as needed; Room runtime via `:core:database` (ksp kept for ranking DB)
+- → `:core:domain` (api), `:core:prefs` (api), `:core:model`, `:core:network`, `:core:database` (api)
+- Media3 exoplayer (offline/cache for `DownloadRepository`), WorkManager, DataStore (privacy consent still here), Firebase Messaging pieces as needed; Room runtime via `:core:database` (ksp kept for ranking DB)
 - Forbidden: → `:core:playback`, → `:core:designsystem`
 
 ## Threading / lifecycle
@@ -53,7 +54,7 @@ Feature-facing ports: `:core:domain` → `cx.aswin.boxlore.core.domain.ports`.
 | Stable | Why |
 | :--- | :--- |
 | Worker FQCNs (`SmartDownloadWorker`, `AutoDownloadWorker`, `PurgeSmartDownloadsWorker`) | Persisted WorkManager requests |
-| DataStore `user_preferences` / SharedPrefs `boxcast_*` | Existing installs |
+| DataStore `user_preferences` / SharedPrefs `boxcast_prefs` (owned by `:core:prefs`) | Existing installs |
 | Main Room DB filename + ranking Room under `ranking/database/` | User data |
 | `rss:` podcast IDs | Catalog identity |
 

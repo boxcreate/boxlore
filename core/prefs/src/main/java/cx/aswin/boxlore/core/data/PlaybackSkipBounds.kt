@@ -3,7 +3,7 @@ package cx.aswin.boxlore.core.data
 /**
  * Shared skip/seek duration bounds for preferences and playback policy.
  *
- * Lives in `:core:data` so prefs can sanitize without depending on `:core:playback`.
+ * Lives in `:core:prefs` so DataStore sanitization and playback policy share one source of truth.
  * [cx.aswin.boxlore.core.data.playback.PlaybackSkipPolicy] delegates defaults/sanitize here.
  */
 object PlaybackSkipBounds {

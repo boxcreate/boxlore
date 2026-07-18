@@ -64,8 +64,8 @@ class BoxLoreApplication : Application(), Configuration.Provider {
         // Live learner signal log: on by default in debug builds, off for release users
         // unless they explicitly opt in via the debug screen toggle. A persisted choice wins.
         LearningEventLog.configure(
-            getSharedPreferences(LearningEventLog.PREFS_NAME, MODE_PRIVATE)
-                .getBoolean(LearningEventLog.ENABLED_PREF_KEY, BuildConfig.DEBUG),
+            cx.aswin.boxlore.core.data.BoxcastPrefs(this)
+                .isLearnerLogEnabled(default = BuildConfig.DEBUG),
         )
 
         val config = PostHogAndroidConfig(

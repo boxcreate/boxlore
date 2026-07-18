@@ -19,13 +19,15 @@ src/main/java/cx/aswin/boxlore/feature/home/
 
 ## Dependencies
 
-- → `:core:model`, `:core:data`, `:core:designsystem`
+- → `:core:model`, `:core:data` (re-exports `:core:prefs`), `:core:designsystem`
+- Recommendation / genre caches and learner-log toggle go through `BoxcastPrefs` (no raw `boxcast_prefs`)
 
 ## Testing notes
 
 - Manual smoke: home feed, Settings → Add RSS entry, debug tools
 - Assemblers: `HomeViewModelAssembler`, `settings.SettingsViewModelAssembler`
 - Hard VM: `SettingsViewModelTest` (Turbine + fake RSS/ranking ports)
+- Participates in Kover merged coverage (`:koverVerifyMerged` in unit-tests CI)
 
 ## See also
 

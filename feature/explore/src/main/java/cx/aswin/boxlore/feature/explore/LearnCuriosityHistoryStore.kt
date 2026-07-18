@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.feature.explore
 
 import android.app.Application
-import android.content.Context
+import cx.aswin.boxlore.core.data.BoxcastPrefs
 import cx.aswin.boxlore.core.network.model.DailyCuriosityDto
 import cx.aswin.boxlore.core.network.model.EpisodeItem
 import org.json.JSONArray
@@ -60,10 +60,10 @@ data class LearnHistoryEntry(
 
 class LearnCuriosityHistoryStore(application: Application) {
 
-    private val prefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val boxcastPrefs = BoxcastPrefs(application)
 
     fun getEntries(): List<LearnHistoryEntry> {
-        val raw = prefs.getString(HISTORY_KEY, null) ?: return emptyList()
+        val raw = boxcastPrefs.getLearnCuriosityHistoryJson() ?: return emptyList()
         return runCatching {
             val array = JSONArray(raw)
             buildList {
@@ -75,7 +75,7 @@ class LearnCuriosityHistoryStore(application: Application) {
     }
 
     fun getDismissedIds(): Set<String> {
-        return prefs.getStringSet(DISMISSED_IDS_KEY, emptySet()) ?: emptySet()
+        return boxcastPrefs.getDismissedCuriosityIds()
     }
 
     fun recordDismissal(daily: DailyCuriosityDto, action: LearnHistoryAction) {
@@ -84,7 +84,7 @@ class LearnCuriosityHistoryStore(application: Application) {
 
         val dismissed = getDismissedIds().toMutableSet()
         dismissed.add(episodeId)
-        prefs.edit().putStringSet(DISMISSED_IDS_KEY, dismissed).apply()
+        boxcastPrefs.setDismissedCuriosityIds(dismissed)
 
         val updated = listOf(entry) + getEntries().filterNot { it.episodeId == episodeId }
         saveEntries(updated.take(MAX_ENTRIES))
@@ -95,7 +95,7 @@ class LearnCuriosityHistoryStore(application: Application) {
 
         val dismissed = getDismissedIds().toMutableSet()
         dismissed.remove(episodeId)
-        prefs.edit().putStringSet(DISMISSED_IDS_KEY, dismissed).apply()
+        boxcastPrefs.setDismissedCuriosityIds(dismissed)
 
         saveEntries(getEntries().filterNot { it.episodeId == episodeId })
 
@@ -108,10 +108,7 @@ class LearnCuriosityHistoryStore(application: Application) {
     }
 
     fun clearAll() {
-        prefs.edit()
-            .remove(HISTORY_KEY)
-            .remove(DISMISSED_IDS_KEY)
-            .apply()
+        boxcastPrefs.clearLearnCuriosity()
         synchronized(pendingRestoreLock) {
             pendingRestores = emptyList()
         }
@@ -128,7 +125,7 @@ class LearnCuriosityHistoryStore(application: Application) {
     private fun saveEntries(entries: List<LearnHistoryEntry>) {
         val array = JSONArray()
         entries.forEach { array.put(it.toJson()) }
-        prefs.edit().putString(HISTORY_KEY, array.toString()).apply()
+        boxcastPrefs.setLearnCuriosityHistoryJson(array.toString())
     }
 
     private fun DailyCuriosityDto.toHistoryEntry(action: LearnHistoryAction): LearnHistoryEntry {
@@ -192,9 +189,6 @@ class LearnCuriosityHistoryStore(application: Application) {
     }
 
     companion object {
-        private const val PREFS_NAME = "boxcast_prefs"
-        private const val DISMISSED_IDS_KEY = "dismissed_curiosities"
-        private const val HISTORY_KEY = "learn_curiosity_history"
         private const val MAX_ENTRIES = 100
 
         private val pendingRestoreLock = Any()

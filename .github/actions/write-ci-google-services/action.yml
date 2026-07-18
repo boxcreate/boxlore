@@ -1,0 +1,47 @@
+name: Write CI stub google-services.json
+description: >
+  Writes a non-secret google-services.json stub so the Google Services Gradle
+  plugin can configure the app module in PR/push CI. Real credentials live in
+  the GitHub Environment "release" and are not used here.
+
+runs:
+  using: composite
+  steps:
+    - name: Write CI stub google-services.json
+      shell: bash
+      run: |
+        python3 - <<'PY'
+        from pathlib import Path
+        path = Path("app/google-services.json")
+        path.write_text(
+            """{
+          "project_info": {
+            "project_number": "0",
+            "project_id": "boxlore-ci-unit-stub",
+            "storage_bucket": "boxlore-ci-unit-stub.appspot.com"
+          },
+          "client": [
+            {
+              "client_info": {
+                "mobilesdk_app_id": "1:0:android:0",
+                "android_client_info": {
+                  "package_name": "cx.aswin.boxlore"
+                }
+              },
+              "oauth_client": [],
+              "api_key": [{ "current_key": "ci-unit-stub-not-a-real-key" }],
+              "services": {
+                "appinvite_service": {
+                  "other_platform_oauth_client": []
+                }
+              }
+            }
+          ],
+          "configuration_version": "1"
+        }
+        """,
+            encoding="utf-8",
+        )
+        path.chmod(0o600)
+        print(f"Wrote CI stub {path}")
+        PY

@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.explore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
+import cx.aswin.boxlore.core.data.BoxcastPrefs
 import cx.aswin.boxlore.core.data.PodcastRepository
 import cx.aswin.boxlore.core.data.SearchResult
 import cx.aswin.boxlore.core.data.SubscriptionRepository
@@ -679,8 +680,7 @@ class ExploreViewModel(
         viewModelScope.launch {
             _isRecommendationsLoading.value = true
             try {
-                val prefs = getApplication<android.app.Application>().getSharedPreferences("boxcast_prefs", android.content.Context.MODE_PRIVATE)
-                val interests = prefs.getStringSet("user_genres", emptySet())?.toList() ?: emptyList()
+                val interests = BoxcastPrefs(getApplication()).getUserGenres().toList()
                 val history = playbackRepository.getHistoryForRecommendations(15)
                 
                 val subscribedIds = subscriptionRepository.subscribedPodcastIds.first().toList()

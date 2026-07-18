@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.data.BoxcastPrefs
 import cx.aswin.boxlore.core.data.PlaybackRepository
 import cx.aswin.boxlore.core.data.SubscriptionRepository
 import cx.aswin.boxlore.core.data.UserPreferencesRepository
@@ -47,10 +48,7 @@ class DebugViewModel(
     /** Live, session-only feed of signals that mutated the ranking model. */
     val learningEvents: StateFlow<List<LearningEvent>> = LearningEventLog.events
 
-    private val debugPrefs = application.getSharedPreferences(
-        LearningEventLog.PREFS_NAME,
-        android.content.Context.MODE_PRIVATE,
-    )
+    private val boxcastPrefs = BoxcastPrefs(application)
 
     private val _logEnabled = MutableStateFlow(LearningEventLog.enabled)
     val logEnabled: StateFlow<Boolean> = _logEnabled.asStateFlow()
@@ -63,7 +61,7 @@ class DebugViewModel(
     }
 
     fun setLogEnabled(enabled: Boolean) {
-        debugPrefs.edit().putBoolean(LearningEventLog.ENABLED_PREF_KEY, enabled).apply()
+        boxcastPrefs.setLearnerLogEnabled(enabled)
         LearningEventLog.configure(enabled)
         _logEnabled.value = enabled
     }
@@ -98,14 +96,7 @@ class DebugViewModel(
     }
 
     fun clearDismissedCuriosities() {
-        val prefs = getApplication<Application>().getSharedPreferences(
-            "boxcast_prefs",
-            android.content.Context.MODE_PRIVATE,
-        )
-        prefs.edit()
-            .remove("dismissed_curiosities")
-            .remove("learn_curiosity_history")
-            .apply()
+        boxcastPrefs.clearLearnCuriosity()
     }
 
     fun refreshLearnerSnapshot() {

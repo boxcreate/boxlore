@@ -28,45 +28,13 @@ jobs:
       # (GOOGLE_SERVICES_JSON_BASE64) and is not available to PR/push CI.
       # This stub only satisfies the Google Services Gradle plugin for unit tests.
       - name: Write CI stub google-services.json
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path("app/google-services.json")
-          path.write_text(
-              """{
-            "project_info": {
-              "project_number": "0",
-              "project_id": "boxlore-ci-unit-stub",
-              "storage_bucket": "boxlore-ci-unit-stub.appspot.com"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:0:android:0",
-                  "android_client_info": {
-                    "package_name": "cx.aswin.boxlore"
-                  }
-                },
-                "oauth_client": [],
-                "api_key": [{ "current_key": "ci-unit-stub-not-a-real-key" }],
-                "services": {
-                  "appinvite_service": {
-                    "other_platform_oauth_client": []
-                  }
-                }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          """,
-              encoding="utf-8",
-          )
-          path.chmod(0o600)
-          print(f"Wrote CI stub {path}")
-          PY
+        uses: ./.github/actions/write-ci-google-services
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --continue
+
+      - name: Verify merged Kover coverage floor
+        run: ./gradlew :koverVerifyMerged
 
       - name: Scrub google-services.json
         if: always()
