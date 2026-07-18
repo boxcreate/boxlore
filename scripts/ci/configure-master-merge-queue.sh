@@ -34,13 +34,12 @@ if ! gh api "repos/${OWNER}/${REPO}" --jq '.permissions.admin' | grep -qx true; 
 fi
 
 # Ensure the merge-gate label exists (workflows key off this name).
-if ! gh label list --repo "${OWNER}/${REPO}" --search merge-ci --json name --jq '.[].name' | grep -qx merge-ci; then
-  echo "Creating label merge-ci..."
-  gh label create merge-ci \
-    --repo "${OWNER}/${REPO}" \
-    --description "Run merge-gate CI (unit + instrumented). Add when ready to merge." \
-    --color "0E8A16"
-fi
+echo "Ensuring label merge-ci..."
+gh label create merge-ci \
+  --repo "${OWNER}/${REPO}" \
+  --description "Run merge-gate CI (unit + instrumented). Add when ready to merge." \
+  --color "0E8A16" \
+  --force
 
 # Drop classic branch protection if present — it blocks non-admin direct pushes
 # (breaks data bots). Rulesets below do not require a PR for direct pushes.
