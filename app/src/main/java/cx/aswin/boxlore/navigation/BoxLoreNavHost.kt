@@ -289,6 +289,287 @@ private fun navPopExitTransition(
     }
 }
 
+// ---------------------------------------------------------------------------
+// Navigation argument / route helpers (keeps destination methods under Sonar S3776)
+// ---------------------------------------------------------------------------
+
+private fun encodeNavArg(s: String?): String =
+    android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+
+private fun decodeNavArg(s: String?): String = try {
+    android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it }
+} catch (_: Exception) {
+    s ?: ""
+}
+
+private fun episodeFullPathRoute(
+    episodeId: String,
+    title: String?,
+    description: String?,
+    imageUrl: String?,
+    audioUrl: String?,
+    duration: Int,
+    podcastId: String?,
+    podcastTitle: String?,
+    querySuffix: String = "",
+): String =
+    "episode/$episodeId/${encodeNavArg(title)}/" +
+        "${encodeNavArg(description?.take(500))}/" +
+        "${encodeNavArg(imageUrl)}/" +
+        "${encodeNavArg(audioUrl)}/" +
+        "$duration/${encodeNavArg(podcastId)}/" +
+        "${encodeNavArg(podcastTitle)}" +
+        querySuffix
+
+private fun podcastDetailRoute(
+    podcastId: String,
+    entryPoint: String,
+    genre: String? = null,
+    depth: Int? = null,
+): String {
+    val params = buildList {
+        add("entryPoint=$entryPoint")
+        if (genre != null) add("genre=$genre")
+        if (depth != null) add("depth=$depth")
+    }
+    return "podcast/$podcastId?" + params.joinToString("&")
+}
+
+private fun exploreRoute(category: String?, entryPoint: String, tab: String?): String {
+    val catQuery = if (category != null) "category=$category&" else ""
+    val tabQuery = if (tab != null) "tab=$tab&" else ""
+    return "explore?${catQuery}${tabQuery}entryPoint=$entryPoint"
+}
+
+private fun entryPointBundle(
+    entryPoint: String?,
+    vibeId: String = "",
+    carouselPosition: Int = -1,
+): android.os.Bundle? {
+    if (entryPoint == null) return null
+    return android.os.Bundle().apply {
+        putString("entry_point", entryPoint)
+        if (vibeId.isNotEmpty()) putString("curated_vibe_id", vibeId)
+        if (carouselPosition >= 0) putInt("curated_carousel_position", carouselPosition)
+    }
+}
+
+private fun miniPlayerBottomPadding(isPlayerVisible: Boolean): androidx.compose.ui.unit.Dp =
+    if (isPlayerVisible) {
+        AppNavigationBarHeight + 64.dp + 2.dp
+    } else {
+        AppNavigationBarHeight
+    }
+
+private fun shouldRequestNotificationPermission(
+    showFeatureDialog: Boolean,
+    context: android.content.Context,
+): Boolean =
+    !showFeatureDialog &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) != PackageManager.PERMISSION_GRANTED
+
+private fun launchInAppReview(context: android.content.Context) {
+    val activity = context as? androidx.activity.ComponentActivity ?: return
+    val reviewManager = com.google.android.play.core.review.ReviewManagerFactory.create(activity)
+    reviewManager.requestReviewFlow().addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            reviewManager.launchReviewFlow(activity, task.result)
+        }
+    }
+}
+
+private fun navigateHomePodcast(
+    navController: NavHostController,
+    podcast: cx.aswin.boxlore.core.model.Podcast,
+    entryPointStr: String,
+    genreStr: String?,
+    depthVal: Int?,
+) {
+    navController.navigate(podcastDetailRoute(podcast.id, entryPointStr, genreStr, depthVal))
+}
+
+private fun navigateHomeHeroArrow(
+    navController: NavHostController,
+    heroItem: cx.aswin.boxlore.feature.home.SmartHeroItem,
+    carouselPos: Int,
+) {
+    val ep = heroItem.podcast.latestEpisode
+    if (ep == null) {
+        navController.navigate("podcast/${android.net.Uri.encode(heroItem.podcast.id)}")
+        return
+    }
+    val entryPointStr = "home_hero_${heroItem.type.name.lowercase()}"
+    navController.navigate(
+        episodeFullPathRoute(
+            episodeId = ep.id,
+            title = ep.title,
+            description = ep.description,
+            imageUrl = ep.imageUrl,
+            audioUrl = ep.audioUrl,
+            duration = ep.duration,
+            podcastId = heroItem.podcast.id,
+            podcastTitle = heroItem.podcast.title,
+            querySuffix = "?entryPoint=$entryPointStr&carouselPosition=$carouselPos",
+        ),
+    )
+}
+
+private fun navigateHomeEpisode(
+    navController: NavHostController,
+    episode: Episode,
+    podcast: cx.aswin.boxlore.core.model.Podcast,
+    entryPointStr: String?,
+) {
+    val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
+    navController.navigate(
+        episodeFullPathRoute(
+            episodeId = encodeNavArg(episode.id),
+            title = episode.title,
+            description = episode.description,
+            imageUrl = episode.imageUrl,
+            audioUrl = episode.audioUrl,
+            duration = episode.duration,
+            podcastId = podcast.id,
+            podcastTitle = podcast.title,
+            querySuffix = entryPointQuery,
+        ),
+    )
+}
+
+private fun navigateHomeExplore(
+    navController: NavHostController,
+    category: String?,
+    entryPoint: String,
+    tab: String?,
+) {
+    navController.navigate(exploreRoute(category, entryPoint, tab)) {
+        popUpTo("home") { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
+private fun podcastIdFromInfoUiState(
+    state: cx.aswin.boxlore.feature.info.PodcastInfoUiState,
+    fallback: String,
+): String =
+    (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.id ?: fallback
+
+private fun podcastTitleFromInfoUiState(
+    state: cx.aswin.boxlore.feature.info.PodcastInfoUiState,
+    fallback: String,
+): String =
+    (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.title ?: fallback
+
+private fun navigatePodcastInfoEpisode(
+    navController: NavHostController,
+    episode: Episode,
+    entryPointStr: String,
+    index: Int?,
+    podcastId: String,
+    podcastTitle: String,
+) {
+    var route = episodeFullPathRoute(
+        episodeId = episode.id,
+        title = episode.title,
+        description = episode.description,
+        imageUrl = episode.imageUrl,
+        audioUrl = episode.audioUrl,
+        duration = episode.duration,
+        podcastId = podcastId,
+        podcastTitle = podcastTitle,
+        querySuffix = "?entryPoint=$entryPointStr",
+    )
+    if (index != null) route += "&carouselPosition=$index"
+    navController.navigate(route)
+}
+
+private fun navigateRelatedEpisode(
+    navController: NavHostController,
+    ep: Episode,
+    fallbackPodcastId: String,
+    fallbackPodcastTitle: String,
+) {
+    val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: fallbackPodcastId
+    val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: fallbackPodcastTitle
+    navController.navigate(
+        episodeFullPathRoute(
+            episodeId = ep.id,
+            title = ep.title,
+            description = ep.description,
+            imageUrl = ep.imageUrl,
+            audioUrl = ep.audioUrl,
+            duration = ep.duration,
+            podcastId = targetPodcastId,
+            podcastTitle = targetPodcastTitle,
+            querySuffix = "?entryPoint=episode_related_episodes",
+        ),
+    )
+}
+
+private fun briefingRegionFromPodcastId(podcastId: String): String? {
+    if (!podcastId.startsWith("briefing_")) return null
+    return podcastId.removePrefix("briefing_")
+}
+
+private fun briefingRegionFromEpisodeId(episodeId: String): String? {
+    if (!episodeId.startsWith("briefing_")) return null
+    return episodeId.removePrefix("briefing_").substringBefore("_")
+}
+
+private suspend fun resolveLocalOrFallbackPodcast(
+    database: cx.aswin.boxlore.core.data.database.BoxLoreDatabase,
+    podcastId: String,
+    podcastTitle: String,
+    fallbackImageUrl: String,
+): cx.aswin.boxlore.core.model.Podcast {
+    val local = database.podcastDao().getPodcast(podcastId)
+    return local?.let {
+        cx.aswin.boxlore.core.model.Podcast(
+            id = it.podcastId,
+            title = it.title,
+            artist = it.author,
+            imageUrl = it.imageUrl,
+        )
+    } ?: cx.aswin.boxlore.core.model.Podcast(
+        id = podcastId,
+        title = podcastTitle,
+        artist = "",
+        imageUrl = fallbackImageUrl,
+    )
+}
+
+private suspend fun autoplayDeepLinkEpisodeIfNeeded(
+    playbackRepository: cx.aswin.boxlore.core.data.PlaybackRepository,
+    queueManager: cx.aswin.boxlore.core.data.QueueManager,
+    database: cx.aswin.boxlore.core.data.database.BoxLoreDatabase,
+    episodeId: String,
+    autoplay: String,
+    t: Long?,
+    start: Long?,
+    success: cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success,
+) {
+    if (success.episode.id != episodeId) return
+    val playerState = playbackRepository.playerState.value
+    if (autoplay == "true" && playerState.currentEpisode?.id != episodeId) {
+        val podcast = resolveLocalOrFallbackPodcast(
+            database = database,
+            podcastId = success.podcastId,
+            podcastTitle = success.podcastTitle,
+            fallbackImageUrl = success.episode.podcastImageUrl ?: "",
+        )
+        queueManager.playEpisode(success.episode, podcast)
+    }
+    when {
+        t != null && t > 0L -> playbackRepository.seekTo(t * 1000L, play = autoplay == "true")
+        start != null && start > 0L -> playbackRepository.seekTo(start * 1000L, play = autoplay == "true")
+    }
+}
+
 @Composable
 private fun rememberIsOnline(): Boolean {
     val context = LocalContext.current
@@ -473,14 +754,7 @@ private fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphWi
     // -----------------------------------------------------------------------
     composable("home") {
         LaunchedEffect(showFeatureDialog) {
-            if (
-                !showFeatureDialog &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS,
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
+            if (shouldRequestNotificationPermission(showFeatureDialog, context)) {
                 cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackNotificationPermissionRequested()
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
@@ -498,50 +772,17 @@ private fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphWi
             database = database,
             navController = navController,
             onPodcastClick = { podcast, entryPointStr, genreStr, depthVal ->
-                var route = "podcast/${podcast.id}"
-                val params = mutableListOf<String>()
-                params.add("entryPoint=$entryPointStr")
-                if (genreStr != null) params.add("genre=$genreStr")
-                if (depthVal != null) params.add("depth=$depthVal")
-                if (params.isNotEmpty()) route += "?" + params.joinToString("&")
-                navController.navigate(route)
+                navigateHomePodcast(navController, podcast, entryPointStr, genreStr, depthVal)
             },
             onPlayClick = { podcast, bundle ->
-                val episode = podcast.latestEpisode
-                if (episode != null) {
-                    queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
-                }
+                val episode = podcast.latestEpisode ?: return@HomeRoute
+                queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
             },
             onHeroArrowClick = { heroItem, carouselPos ->
-                val ep = heroItem.podcast.latestEpisode
-                if (ep != null) {
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val entryPointStr = "home_hero_${heroItem.type.name.lowercase()}"
-                    navController.navigate(
-                        "episode/${ep.id}/${encode(ep.title)}/" +
-                            "${encode(ep.description.take(500))}/" +
-                            "${encode(ep.imageUrl)}/" +
-                            "${encode(ep.audioUrl)}/" +
-                            "${ep.duration}/${heroItem.podcast.id}/" +
-                            "${encode(heroItem.podcast.title)}" +
-                            "?entryPoint=$entryPointStr&carouselPosition=$carouselPos",
-                    )
-                } else {
-                    navController.navigate("podcast/${android.net.Uri.encode(heroItem.podcast.id)}")
-                }
+                navigateHomeHeroArrow(navController, heroItem, carouselPos)
             },
             onEpisodeClick = { episode, podcast, entryPointStr ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
-                navController.navigate(
-                    "episode/${encode(episode.id)}/${encode(episode.title)}/" +
-                        "${encode(episode.description.take(500))}/" +
-                        "${encode(episode.imageUrl)}/" +
-                        "${encode(episode.audioUrl)}/" +
-                        "${episode.duration}/${encode(podcast.id)}/" +
-                        "${encode(podcast.title)}" +
-                        entryPointQuery,
-                )
+                navigateHomeEpisode(navController, episode, podcast, entryPointStr)
             },
             onNavigateToLibrary = {
                 navController.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) {
@@ -554,25 +795,10 @@ private fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphWi
                 navController.navigate("library/subscriptions?tab=1")
             },
             onNavigateToExplore = { category, entryPoint, tab ->
-                val catQuery = if (category != null) "category=$category&" else ""
-                val tabQuery = if (tab != null) "tab=$tab&" else ""
-                val route = "explore?${catQuery}${tabQuery}entryPoint=$entryPoint"
-                navController.navigate(route) {
-                    popUpTo("home") { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
+                navigateHomeExplore(navController, category, entryPoint, tab)
             },
             onNavigateToSettings = { navController.navigate("settings?page=hub") },
-            onNavigateToPlayStoreReview = {
-                val activity = context as? androidx.activity.ComponentActivity ?: return@HomeRoute
-                val reviewManager = com.google.android.play.core.review.ReviewManagerFactory.create(activity)
-                reviewManager.requestReviewFlow().addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        reviewManager.launchReviewFlow(activity, task.result)
-                    }
-                }
-            },
+            onNavigateToPlayStoreReview = { launchInAppReview(context) },
             onSubmitFeedback = onSubmitFeedback,
             onNavigateToDebug = { navController.navigate("debug") },
             onImportClick = {
@@ -1282,10 +1508,10 @@ private fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGrap
         ),
     ) { backStackEntry ->
         val podcastId = backStackEntry.arguments?.getString("podcastId") ?: return@composable
-        if (podcastId.startsWith("briefing_")) {
-            val region = podcastId.removePrefix("briefing_")
+        val briefingRegion = briefingRegionFromPodcastId(podcastId)
+        if (briefingRegion != null) {
             LaunchedEffect(podcastId) {
-                navController.navigate("briefing?region=$region") {
+                navController.navigate("briefing?region=$briefingRegion") {
                     popUpTo("podcast/{podcastId}?entryPoint={entryPoint}&genre={genre}&depth={depth}&query={query}") {
                         inclusive = true
                     }
@@ -1296,8 +1522,7 @@ private fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGrap
 
         val entryPoint = backStackEntry.arguments?.getString("entryPoint")
         val genre = backStackEntry.arguments?.getString("genre")
-        val depthStr = backStackEntry.arguments?.getString("depth")
-        val depth = depthStr?.toIntOrNull()
+        val depth = backStackEntry.arguments?.getString("depth")?.toIntOrNull()
         val query = backStackEntry.arguments?.getString("query")
 
         val infoSharedDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
@@ -1326,37 +1551,29 @@ private fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGrap
             playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
         }.collectAsState(initial = false)
 
-        val localMiniPlayerPadding = if (isPlayerVisible) {
-            AppNavigationBarHeight + 64.dp + 2.dp
-        } else {
-            AppNavigationBarHeight
-        }
-
         cx.aswin.boxlore.feature.info.PodcastInfoScreen(
             podcastId = podcastId,
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
-            bottomContentPadding = localMiniPlayerPadding,
+            bottomContentPadding = miniPlayerBottomPadding(isPlayerVisible),
             onPodcastClick = { pId ->
                 navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=podroll")
             },
             onEpisodeClick = { episode, entryPointStr, index ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                var route = "episode/${episode.id}/${encode(episode.title)}/" +
-                    "${encode(episode.description.take(500))}/" +
-                    "${encode(episode.imageUrl)}/" +
-                    "${encode(episode.audioUrl)}/" +
-                    "${episode.duration}/${encode(viewModel.uiState.value.let { if (it is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) it.podcast.id else podcastId })}/" +
-                    "${encode(viewModel.uiState.value.let { if (it is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) it.podcast.title else "Podcast" })}" +
-                    "?entryPoint=$entryPointStr"
-                if (index != null) route += "&carouselPosition=$index"
-                navController.navigate(route)
+                val state = viewModel.uiState.value
+                navigatePodcastInfoEpisode(
+                    navController = navController,
+                    episode = episode,
+                    entryPointStr = entryPointStr,
+                    index = index,
+                    podcastId = podcastIdFromInfoUiState(state, podcastId),
+                    podcastTitle = podcastTitleFromInfoUiState(state, "Podcast"),
+                )
             },
             onPlayEpisode = { episode ->
-                val state = viewModel.uiState.value
-                if (state is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) {
-                    queueManager.playEpisode(episode, state.podcast)
-                }
+                val state = viewModel.uiState.value as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success
+                    ?: return@PodcastInfoScreen
+                queueManager.playEpisode(episode, state.podcast)
             },
         )
     }
@@ -1395,10 +1612,10 @@ private fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w:
     ) { backStackEntry ->
         val args = backStackEntry.arguments ?: return@composable
         val episodeId = args.getString("episodeId") ?: ""
-        if (episodeId.startsWith("briefing_")) {
-            val region = episodeId.removePrefix("briefing_").substringBefore("_")
+        val briefingRegion = briefingRegionFromEpisodeId(episodeId)
+        if (briefingRegion != null) {
             LaunchedEffect(episodeId) {
-                navController.navigate("briefing?region=$region") {
+                navController.navigate("briefing?region=$briefingRegion") {
                     popUpTo(
                         "episode/{episodeId}/{episodeTitle}/{episodeDescription}/{episodeImageUrl}/{episodeAudioUrl}/{episodeDuration}/{podcastId}/{podcastTitle}?entryPoint={entryPoint}&vibeId={vibeId}&carouselPosition={carouselPosition}",
                     ) { inclusive = true }
@@ -1422,24 +1639,24 @@ private fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w:
             ),
         )
 
-        fun decode(s: String?) = try {
-            android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it }
-        } catch (_: Exception) { s ?: "" }
-
-        val podcastId = decode(args.getString("podcastId"))
-        val podcastTitle = decode(args.getString("podcastTitle"))
-        val episodeTitle = decode(args.getString("episodeTitle"))
+        val podcastId = decodeNavArg(args.getString("podcastId"))
+        val podcastTitle = decodeNavArg(args.getString("podcastTitle"))
+        val episodeTitle = decodeNavArg(args.getString("episodeTitle"))
+        val episodeImageUrl = decodeNavArg(args.getString("episodeImageUrl"))
+        val episodeAudioUrl = decodeNavArg(args.getString("episodeAudioUrl"))
+        val episodeDuration = args.getInt("episodeDuration")
         val entryPoint = args.getString("entryPoint")
-        val vibeId = decode(args.getString("vibeId"))
+        val vibeId = decodeNavArg(args.getString("vibeId"))
         val carouselPosition = args.getInt("carouselPosition", -1)
+        val playContext = entryPointBundle(entryPoint, vibeId, carouselPosition)
 
         cx.aswin.boxlore.feature.info.EpisodeInfoScreen(
             episodeId = episodeId,
             episodeTitle = episodeTitle,
-            episodeDescription = decode(args.getString("episodeDescription")),
-            episodeImageUrl = decode(args.getString("episodeImageUrl")),
-            episodeAudioUrl = decode(args.getString("episodeAudioUrl")),
-            episodeDuration = args.getInt("episodeDuration"),
+            episodeDescription = decodeNavArg(args.getString("episodeDescription")),
+            episodeImageUrl = episodeImageUrl,
+            episodeAudioUrl = episodeAudioUrl,
+            episodeDuration = episodeDuration,
             podcastId = podcastId,
             podcastTitle = podcastTitle,
             viewModel = viewModel,
@@ -1448,22 +1665,16 @@ private fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w:
                 navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
             },
             onEpisodeClick = { ep ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: podcastId
-                val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: podcastTitle
-                navController.navigate(
-                    "episode/${ep.id}/${encode(ep.title)}/${encode(ep.description.take(500))}/${encode(ep.imageUrl)}/${encode(ep.audioUrl)}/${ep.duration}/${encode(targetPodcastId)}/${encode(targetPodcastTitle)}" +
-                        "?entryPoint=episode_related_episodes",
-                )
+                navigateRelatedEpisode(navController, ep, podcastId, podcastTitle)
             },
             onPlay = {
                 val episode = cx.aswin.boxlore.core.model.Episode(
                     id = episodeId,
                     title = episodeTitle,
                     description = "",
-                    imageUrl = decode(args.getString("episodeImageUrl")),
-                    audioUrl = decode(args.getString("episodeAudioUrl")),
-                    duration = args.getInt("episodeDuration"),
+                    imageUrl = episodeImageUrl,
+                    audioUrl = episodeAudioUrl,
+                    duration = episodeDuration,
                     publishedDate = 0L,
                 )
                 val podcast = cx.aswin.boxlore.core.model.Podcast(
@@ -1474,22 +1685,9 @@ private fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w:
                     description = "",
                     genre = "",
                 )
-                val bundle = if (entryPoint != null) {
-                    android.os.Bundle().apply {
-                        putString("entry_point", entryPoint)
-                        if (vibeId.isNotEmpty()) putString("curated_vibe_id", vibeId)
-                        if (carouselPosition >= 0) putInt("curated_carousel_position", carouselPosition)
-                    }
-                } else null
-                queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
+                queueManager.playEpisode(episode, podcast, entryPointContext = playContext)
             },
-            entryPointContext = if (entryPoint != null) {
-                android.os.Bundle().apply {
-                    putString("entry_point", entryPoint)
-                    if (vibeId.isNotEmpty()) putString("curated_vibe_id", vibeId)
-                    if (carouselPosition >= 0) putInt("curated_carousel_position", carouselPosition)
-                }
-            } else null,
+            entryPointContext = playContext,
             showMarkPlayedTip = !hasSeenMarkPlayedTip,
             onMarkPlayedTipDismissed = { scope.launch { userPrefs.markMarkPlayedTipSeen() } },
         )
@@ -1574,42 +1772,22 @@ private fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w:
         val state by viewModel.uiState.collectAsState()
 
         LaunchedEffect(state, t, start, autoplay) {
-            val success = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
-            if (success != null && success.episode.id == episodeId) {
-                val playerState = playbackRepository.playerState.value
-                if (autoplay == "true" && playerState.currentEpisode?.id != episodeId) {
-                    val localPodcastEntity = database.podcastDao().getPodcast(success.podcastId)
-                    val podcast = localPodcastEntity?.let {
-                        cx.aswin.boxlore.core.model.Podcast(
-                            id = it.podcastId,
-                            title = it.title,
-                            artist = it.author,
-                            imageUrl = it.imageUrl,
-                        )
-                    } ?: cx.aswin.boxlore.core.model.Podcast(
-                        id = success.podcastId,
-                        title = success.podcastTitle,
-                        artist = "",
-                        imageUrl = success.episode.podcastImageUrl ?: "",
-                    )
-                    queueManager.playEpisode(success.episode, podcast)
-                }
-                if (t != null && t > 0L) {
-                    playbackRepository.seekTo(t * 1000L, play = autoplay == "true")
-                } else if (start != null && start > 0L) {
-                    playbackRepository.seekTo(start * 1000L, play = autoplay == "true")
-                }
-            }
+            val success = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success ?: return@LaunchedEffect
+            autoplayDeepLinkEpisodeIfNeeded(
+                playbackRepository = playbackRepository,
+                queueManager = queueManager,
+                database = database,
+                episodeId = episodeId,
+                autoplay = autoplay,
+                t = t,
+                start = start,
+                success = success,
+            )
         }
 
         val isPlayerVisible by remember(playbackRepository) {
             playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
         }.collectAsState(initial = false)
-        val localMiniPlayerPadding = if (isPlayerVisible) {
-            AppNavigationBarHeight + 64.dp + 2.dp
-        } else {
-            AppNavigationBarHeight
-        }
 
         val successState = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
 
@@ -1628,36 +1806,26 @@ private fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w:
                 navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
             },
             onEpisodeClick = { ep ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: (successState?.podcastId ?: "")
-                val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: (successState?.podcastTitle ?: "Podcast")
-                navController.navigate(
-                    "episode/${ep.id}/${encode(ep.title)}/${encode(ep.description.take(500))}/${encode(ep.imageUrl)}/${encode(ep.audioUrl)}/${ep.duration}/${encode(targetPodcastId)}/${encode(targetPodcastTitle)}" +
-                        "?entryPoint=episode_related_episodes",
+                navigateRelatedEpisode(
+                    navController,
+                    ep,
+                    successState?.podcastId ?: "",
+                    successState?.podcastTitle ?: "Podcast",
                 )
             },
             onPlay = {
-                if (successState != null) {
-                    coroutineScope.launch {
-                        val localPodcastEntity = database.podcastDao().getPodcast(successState.podcastId)
-                        val podcast = localPodcastEntity?.let {
-                            cx.aswin.boxlore.core.model.Podcast(
-                                id = it.podcastId,
-                                title = it.title,
-                                artist = it.author,
-                                imageUrl = it.imageUrl,
-                            )
-                        } ?: cx.aswin.boxlore.core.model.Podcast(
-                            id = successState.podcastId,
-                            title = successState.podcastTitle,
-                            artist = "",
-                            imageUrl = successState.episode.podcastImageUrl ?: "",
-                        )
-                        queueManager.playEpisode(successState.episode, podcast)
-                    }
+                val current = successState ?: return@EpisodeInfoScreen
+                coroutineScope.launch {
+                    val podcast = resolveLocalOrFallbackPodcast(
+                        database = database,
+                        podcastId = current.podcastId,
+                        podcastTitle = current.podcastTitle,
+                        fallbackImageUrl = current.episode.podcastImageUrl ?: "",
+                    )
+                    queueManager.playEpisode(current.episode, podcast)
                 }
             },
-            bottomContentPadding = localMiniPlayerPadding,
+            bottomContentPadding = miniPlayerBottomPadding(isPlayerVisible),
         )
     }
 }
