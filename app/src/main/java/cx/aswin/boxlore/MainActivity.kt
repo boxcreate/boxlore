@@ -2067,25 +2067,20 @@ class MainActivity : ComponentActivity() {
                                 val query = backStackEntry.arguments?.getString("query")
 
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.PodcastInfoViewModel>(
-                                    factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                        @Suppress("UNCHECKED_CAST")
-                                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                            return cx.aswin.boxlore.feature.info.PodcastInfoViewModel(
-                                                application = application,
-                                                repository = podcastRepository,
-                                                playbackRepository = playbackRepository,
-                                                downloadRepository = downloadRepository,
-                                                queueManager = queueManager,
-                                                subscriptionRepository = subscriptionRepository,
-                                                rssRepository = container.rssPodcastRepository,
-                                                database = database,
-                                                entryPoint = entryPoint,
-                                                genreFilter = genre,
-                                                scrollDepth = depth,
-                                                searchQuery = query,
-                                            ) as T
-                                        }
-                                    }
+                                    factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.podcastInfoFactory(
+                                        application = application,
+                                        repository = podcastRepository,
+                                        playbackRepository = playbackRepository,
+                                        downloadRepository = downloadRepository,
+                                        queueManager = queueManager,
+                                        subscriptionRepository = subscriptionRepository,
+                                        rssRepository = container.rssPodcastRepository,
+                                        database = database,
+                                        entryPoint = entryPoint,
+                                        genreFilter = genre,
+                                        scrollDepth = depth,
+                                        searchQuery = query,
+                                    ),
                                 )
                                      // Calculate bottom padding for Mini Player
                                      // PlayerState is a data class. If currentEpisode is not null, player is active.
@@ -2165,20 +2160,15 @@ class MainActivity : ComponentActivity() {
                                     return@composable
                                 }
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
-                                    factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                        @Suppress("UNCHECKED_CAST")
-                                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                            return cx.aswin.boxlore.feature.info.EpisodeInfoViewModel(
-                                                application = application,
-                                                podcastRepository = podcastRepository,
-                                                playbackRepository = playbackRepository,
-                                                downloadRepository = downloadRepository,
-                                                queueManager = queueManager,
-                                                userPrefs = userPrefs,
-                                                database = database,
-                                            ) as T
-                                        }
-                                    }
+                                    factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
+                                        application = application,
+                                        podcastRepository = podcastRepository,
+                                        playbackRepository = playbackRepository,
+                                        downloadRepository = downloadRepository,
+                                        queueManager = queueManager,
+                                        userPrefs = userPrefs,
+                                        database = database,
+                                    ),
                                 )
                                 fun decode(s: String?) = try { android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it } } catch (_: Exception) { s ?: "" }
                                 
@@ -2304,20 +2294,15 @@ class MainActivity : ComponentActivity() {
                                 val podcastTitleArg = args.getString("podcastTitle") ?: ""
  
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
-                                    factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                        @Suppress("UNCHECKED_CAST")
-                                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                            return cx.aswin.boxlore.feature.info.EpisodeInfoViewModel(
-                                                application = application,
-                                                podcastRepository = podcastRepository,
-                                                playbackRepository = playbackRepository,
-                                                downloadRepository = downloadRepository,
-                                                queueManager = queueManager,
-                                                userPrefs = userPrefs,
-                                                database = database,
-                                            ) as T
-                                        }
-                                    }
+                                    factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
+                                        application = application,
+                                        podcastRepository = podcastRepository,
+                                        playbackRepository = playbackRepository,
+                                        downloadRepository = downloadRepository,
+                                        queueManager = queueManager,
+                                        userPrefs = userPrefs,
+                                        database = database,
+                                    ),
                                 )
  
                                 LaunchedEffect(episodeId, podcastIdArg, podcastTitleArg) {

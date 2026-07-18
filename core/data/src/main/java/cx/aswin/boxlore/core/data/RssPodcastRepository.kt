@@ -43,7 +43,7 @@ class RssPodcastRepository private constructor(
     private val appContext: Context,
     private val database: BoxLoreDatabase,
     private val feedClient: RssFeedClient,
-) {
+) : cx.aswin.boxlore.core.data.ports.RssSubscriptionPort {
     private val podcastDao = database.podcastDao()
     private val episodeDao = database.rssEpisodeDao()
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
@@ -51,7 +51,7 @@ class RssPodcastRepository private constructor(
 
     val refreshingPodcastIds: StateFlow<Set<String>> = _refreshingPodcastIds.asStateFlow()
 
-    suspend fun addSubscription(rawUrl: String): RssSubscriptionResult = withContext(Dispatchers.IO) {
+    override suspend fun addSubscription(rawUrl: String): RssSubscriptionResult = withContext(Dispatchers.IO) {
         val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(rawUrl)
         val fetched = feedClient.fetch(normalizedUrl)
         val podcastId = RssIdGenerator.podcastId(fetched.finalUrl)
@@ -148,7 +148,7 @@ class RssPodcastRepository private constructor(
         )
     }
 
-    suspend fun confirmPodcastIndexLink(
+    override suspend fun confirmPodcastIndexLink(
         rssPodcastId: String,
         podcastIndexId: String,
     ): Podcast = withContext(Dispatchers.IO) {

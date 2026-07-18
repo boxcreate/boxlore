@@ -24,7 +24,8 @@ src/main/java/cx/aswin/boxlore/feature/home/
 ## Testing notes
 
 - Manual smoke: home feed, Settings → Add RSS entry, debug tools
-- Hard VM tests planned after assemblers/interfaces (P17)
+- Assemblers: `HomeViewModelAssembler`, `settings.SettingsViewModelAssembler`
+- Hard VM: `SettingsViewModelTest` (Turbine + fake RSS/ranking ports)
 
 ## See also
 

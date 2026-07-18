@@ -81,12 +81,22 @@ class AppContainer(
         QueueManager(queueRepository, playbackRepository)
     }
 
+    val historyRecommendationSource: cx.aswin.boxlore.core.data.ports.HistoryRecommendationSource by lazy {
+        cx.aswin.boxlore.core.data.DefaultSmartQueueSources(
+            context = appContext,
+            database = database,
+            podcastRepository = podcastRepository,
+            subscriptionRepository = subscriptionRepository,
+            userPreferencesRepository = userPreferencesRepository,
+        )
+    }
+
     val smartDownloadManager: SmartDownloadManager by lazy {
         SmartDownloadManager(
             context = appContext,
             database = database,
             podcastRepository = podcastRepository,
-            playbackRepository = playbackRepository,
+            historyRecommendationSource = historyRecommendationSource,
             downloadRepository = downloadRepository,
             subscriptionRepository = subscriptionRepository,
             userPrefs = userPreferencesRepository,

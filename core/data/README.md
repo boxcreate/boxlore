@@ -7,10 +7,11 @@ Monolithic data layer: Room, repositories, playback service, downloads/workers, 
 ## Public API
 
 - Repositories: `PodcastRepository`, `PlaybackRepository`, `QueueRepository`, `SubscriptionRepository`, `DownloadRepository`, `RssPodcastRepository`, `UserPreferencesRepository`
-- Managers: `QueueManager`, `SmartDownloadManager`
+- Ports: `ports.RssSubscriptionPort`, `ports.RankingResetPort`, `ports.PodcastCatalogPort`, `ports.HistoryRecommendationSource`
+- Managers: `QueueManager`, `SmartDownloadManager` (uses `HistoryRecommendationSource`, not full `PlaybackRepository`)
 - `BoxLoreDatabase`, playback `BoxLorePlaybackService`
 - Ranking: `AdaptiveCandidateScorer`, `RankingFeedbackRepository`, `AdaptiveRankingRepository` (prefer container façades over ad-hoc `getInstance` in UI)
-- Workers: `SmartDownloadWorker`, `AutoDownloadWorker`, `PurgeSmartDownloadsWorker` (FQCN stability / aliases matter)
+- Workers: `SmartDownloadWorker`, `AutoDownloadWorker`, `PurgeSmartDownloadsWorker` (FQCN stability / aliases matter; smart downloads avoid constructing `PlaybackRepository`)
 
 **Must not** depend on `:core:designsystem`. Share UI lives in designsystem; notification seek icons live in this module’s `res/`.
 

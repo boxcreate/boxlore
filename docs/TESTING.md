@@ -30,6 +30,8 @@ Protected inputs:
 ## Conventions
 
 - Prefer constructor injection + fakes over `getInstance` in new tests
+- Hard ViewModels (Home/Settings/Info) use assemblers + thin ports (`RssSubscriptionPort`, `RankingResetPort`, `PodcastCatalogPort`) and Turbine
 - Do not rewrite `feature/player` `v2/logic` behavior when migrating runners
 - Keep DataStore name `user_preferences`, DB filename, and `rss:` / negative IDs stable in fixtures
 - Room/Robolectric DAO tests need `unitTests.isIncludeAndroidResources = true` and compileSdk ≥ 36 (blocked by current AAR metadata pins); RSS ID fixtures cover the RSS identity rules until then
+- Workers that need listen history for recommendations use `HistoryRecommendationSource` / `DefaultSmartQueueSources`, not a second `PlaybackRepository`

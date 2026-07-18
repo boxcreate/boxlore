@@ -15,7 +15,7 @@ class SmartDownloadWorker(
     override suspend fun doWork(): Result {
         Log.d("SmartDownloadWorker", "WorkManager daily check triggered.")
         val context = applicationContext
-        
+
         val database = BoxLoreDatabase.getDatabase(context)
         val userPrefs = UserPreferencesRepository(context)
 
@@ -27,22 +27,27 @@ class SmartDownloadWorker(
         }
 
         try {
-            // Instantiate dependencies dynamically in worker context
+            // Instantiate dependencies dynamically in worker context — no PlaybackRepository.
             val apiBaseUrl = BuildConfig.BOXCAST_API_BASE_URL
             val publicKey = BuildConfig.BOXCAST_PUBLIC_KEY
             val app = context.applicationContext as android.app.Application
-            
+
             val podcastRepository = PodcastRepository(apiBaseUrl, publicKey, app)
-            val queueRepository = QueueRepository(database, podcastRepository)
-            val playbackRepository = PlaybackRepository(app, database.listeningHistoryDao(), queueRepository, podcastRepository)
             val downloadRepository = DownloadRepository(app, database)
             val subscriptionRepository = SubscriptionRepository(database.podcastDao())
+            val historyRecommendationSource = DefaultSmartQueueSources(
+                context = context,
+                database = database,
+                podcastRepository = podcastRepository,
+                subscriptionRepository = subscriptionRepository,
+                userPreferencesRepository = userPrefs,
+            )
 
             val manager = SmartDownloadManager(
                 context = context,
                 database = database,
                 podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
+                historyRecommendationSource = historyRecommendationSource,
                 downloadRepository = downloadRepository,
                 subscriptionRepository = subscriptionRepository,
                 userPrefs = userPrefs

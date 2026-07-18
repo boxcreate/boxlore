@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings
 
-import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -31,8 +30,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.data.analytics.AnalyticsHelper
@@ -135,18 +132,11 @@ fun SettingsScreen(
     val playbackState = playbackSettings.state
     val playbackActions = playbackSettings.actions
     val context = LocalContext.current
-    val application = context.applicationContext as Application
     val settingsViewModel: SettingsViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SettingsViewModel(
-                    application = application,
-                    rssRepository = rssPodcastRepository,
-                    rankingFeedbackRepository = rankingFeedbackRepository,
-                ) as T
-            }
-        },
+        factory = SettingsViewModelAssembler.factory(
+            rssSubscriptionPort = rssPodcastRepository,
+            rankingResetPort = rankingFeedbackRepository,
+        ),
     )
     val rssState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 

@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.data
 import android.content.Context
 import cx.aswin.boxlore.core.data.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.data.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.data.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.HistoryItem
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.first
  * JVM component that can be unit-tested with hand-rolled fakes. Production code
  * uses [DefaultSmartQueueSources], which wraps the real repositories and DAOs.
  */
-interface SmartQueueSources {
+interface SmartQueueSources : HistoryRecommendationSource {
     suspend fun getEpisodes(podcastId: String): List<Episode>
 
     /**
@@ -42,7 +43,7 @@ interface SmartQueueSources {
     /** Genres the user picked during onboarding. */
     suspend fun getInterests(): List<String>
 
-    suspend fun getHistoryForRecommendations(limit: Int): List<HistoryItem>
+    // getHistoryForRecommendations inherited from HistoryRecommendationSource
 
     suspend fun getPersonalizedRecommendations(
         history: List<HistoryItem>,

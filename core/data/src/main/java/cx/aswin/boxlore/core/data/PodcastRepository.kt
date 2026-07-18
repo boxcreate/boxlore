@@ -129,7 +129,7 @@ class PodcastRepository(
     val publicKey: String,
     private val context: android.content.Context,
     private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
-) {
+) : cx.aswin.boxlore.core.data.ports.PodcastCatalogPort {
     val api: BoxLoreApi = NetworkModule.createBoxLoreApi(baseUrl, context)
     private val rssRepository = RssPodcastRepository.getInstance(context)
     private val contentCatalogPreferences = context.applicationContext.getSharedPreferences(
@@ -377,7 +377,7 @@ class PodcastRepository(
         emptyList()
     }
 
-    suspend fun getEpisodes(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
+    override suspend fun getEpisodes(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {
             return@withContext getAllRssEpisodes(feedId)
         }
@@ -409,7 +409,7 @@ class PodcastRepository(
         emptyList()
     }
 
-    suspend fun getEpisode(episodeId: String): Episode? = withContext(Dispatchers.IO) {
+    override suspend fun getEpisode(episodeId: String): Episode? = withContext(Dispatchers.IO) {
         if (episodeId.toLongOrNull()?.let { it < 0L } == true) {
             return@withContext getRssEpisode(episodeId)
         }
@@ -533,7 +533,7 @@ class PodcastRepository(
         }
     }
 
-    suspend fun getPodcastDetails(feedId: String): Podcast? = withContext(Dispatchers.IO) {
+    override suspend fun getPodcastDetails(feedId: String): Podcast? = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {
             return@withContext getRssPodcastDetails(feedId)
         }

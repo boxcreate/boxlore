@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.data.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.data.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.data.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.data.database.PodcastEntity
+import cx.aswin.boxlore.core.data.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.data.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.data.ranking.CandidateSource
 import cx.aswin.boxlore.core.data.ranking.EpisodeRankingInput
@@ -59,7 +60,7 @@ class SmartDownloadManager(
     private val context: Context,
     private val database: BoxLoreDatabase,
     private val podcastRepository: PodcastRepository,
-    private val playbackRepository: PlaybackRepository,
+    private val historyRecommendationSource: HistoryRecommendationSource,
     private val downloadRepository: DownloadRepository,
     private val subscriptionRepository: SubscriptionRepository,
     private val userPrefs: UserPreferencesRepository
@@ -367,7 +368,7 @@ class SmartDownloadManager(
         val chosenRecs = mutableListOf<Episode>()
         if (targetSize > 0) {
             try {
-                val historyItems = playbackRepository.getHistoryForRecommendations(15)
+                val historyItems = historyRecommendationSource.getHistoryForRecommendations(15)
                 val subscribedIds = subs.map { it.podcastId }
                 val subscribedGenres = subs.mapNotNull { it.genre }.distinct()
                 val region = userPrefs.regionStream.first().takeIf { it.isNotBlank() } ?: "us"

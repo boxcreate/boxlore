@@ -25,6 +25,12 @@ android {
             jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
         }
     }
+
+    testOptions {
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
+    }
 }
 
 dependencies {
@@ -53,4 +59,11 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.exoplayer.hls)
     implementation(libs.androidx.media3.session)
+
+    testImplementation(projects.core.testing)
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.vintage.engine)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.lifecycle.runtime.ktx)
 }

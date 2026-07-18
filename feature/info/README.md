@@ -25,7 +25,8 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 ## Testing notes
 
-- JVM: episode duration formatter
+- JVM: episode duration formatter; `InfoViewModelAssemblerTest` (catalog port fakes)
+- Assembler: `InfoViewModelAssembler` (podcast + episode factories)
 - Smoke: podcast/episode subscribe, RSS pull-to-refresh
 
 ## See also

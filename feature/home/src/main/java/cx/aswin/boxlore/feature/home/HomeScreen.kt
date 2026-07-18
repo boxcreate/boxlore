@@ -72,8 +72,6 @@ import androidx.compose.ui.platform.LocalDensity
 import android.content.pm.PackageManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -250,24 +248,19 @@ fun HomeRoute(
 ) {
     val application = LocalContext.current.applicationContext as android.app.Application
     val viewModel: HomeViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(
-                    application = application,
-                    podcastRepository = podcastRepository,
-                    playbackRepository = playbackRepository,
-                    engagementCoordinator = engagementPromptCoordinator,
-                    subscriptionRepository = subscriptionRepository,
-                    downloadRepository = downloadRepository,
-                    rssRepository = rssPodcastRepository,
-                    adaptiveRankingRepository = adaptiveRankingRepository,
-                    adaptiveScorer = adaptiveCandidateScorer,
-                    rankingFeedback = rankingFeedbackRepository,
-                    database = database,
-                ) as T
-            }
-        }
+        factory = HomeViewModelAssembler.factory(
+            application = application,
+            podcastRepository = podcastRepository,
+            playbackRepository = playbackRepository,
+            engagementCoordinator = engagementPromptCoordinator,
+            subscriptionRepository = subscriptionRepository,
+            downloadRepository = downloadRepository,
+            rssRepository = rssPodcastRepository,
+            adaptiveRankingRepository = adaptiveRankingRepository,
+            adaptiveScorer = adaptiveCandidateScorer,
+            rankingFeedback = rankingFeedbackRepository,
+            database = database,
+        ),
     )
 
     if (navController != null) {
