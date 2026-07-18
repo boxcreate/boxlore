@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import cx.aswin.boxlore.core.data.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.data.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.data.database.PodcastEntity
+import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.flow.first
 
@@ -65,7 +66,7 @@ class AutoDownloadWorker(
 
         try {
             val podcastRepository = deps.podcastRepository
-            val downloadRepository = deps.downloadRepository
+            val downloadRepository = DownloadsDependenciesHolder.require().downloadRepository
 
             // Fetch full episode metadata with fallbacks (delegated to private helper)
             Log.i("BoxLore_BackgroundTrace", "[Worker] Fetching episode metadata from repository for episodeId: $episodeId...")

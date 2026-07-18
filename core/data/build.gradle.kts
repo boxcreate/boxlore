@@ -77,9 +77,6 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.okhttp)
     implementation(libs.rss.parser)
-    // Media3 offline / cache (download manager); player session lives in :core:playback
-    implementation(libs.androidx.media3.exoplayer)
-    
     // Firebase (database and messaging)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
@@ -90,9 +87,6 @@ dependencies {
 
     // Install Referrer
     implementation("com.android.installreferrer:installreferrer:2.2")
-
-    // WorkManager
-    implementation(libs.androidx.work.runtime)
 
     // Testing (JUnit 5 + vintage for migration; no MockK)
     testImplementation(projects.core.testing)

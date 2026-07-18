@@ -12,11 +12,14 @@ import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
  *
  * Installed once from [AppContainer] via [SharedAppDependenciesHolder] in Application.onCreate.
  * Do not construct ranking/RSS repositories ad hoc — use these instances.
+ *
+ * Download-owned types (DownloadRepository, SmartDownloadManager) live in
+ * [cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder] to avoid a
+ * `:core:data` ↔ `:core:downloads` cycle.
  */
 interface SharedAppDependencies {
     val database: BoxLoreDatabase
     val podcastRepository: PodcastRepository
-    val downloadRepository: DownloadRepository
     val subscriptionRepository: SubscriptionRepository
     val userPreferencesRepository: UserPreferencesRepository
     val rssPodcastRepository: RssPodcastRepository
@@ -24,7 +27,6 @@ interface SharedAppDependencies {
     val rankingFeedbackRepository: RankingFeedbackRepository
     val adaptiveRankingRepository: AdaptiveRankingRepository
     val historyRecommendationSource: HistoryRecommendationSource
-    val smartDownloadManager: SmartDownloadManager
 }
 
 /**

@@ -38,6 +38,10 @@ class RssPodcastRepository private constructor(
     private val database: BoxLoreDatabase,
     private val feedClient: RssFeedClient,
 ) : RssSubscriptionPort {
+    /** No-op until [setDownloadCacheRelinker] is called from the composition root. */
+    @Volatile
+    private var downloadCacheRelinker: cx.aswin.boxlore.core.data.ports.DownloadCacheRelinker =
+        cx.aswin.boxlore.core.data.ports.DownloadCacheRelinker { _, _ -> }
     private val podcastDao = database.podcastDao()
     private val episodeDao = database.rssEpisodeDao()
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
@@ -479,7 +483,7 @@ class RssPodcastRepository private constructor(
                 // reference to that cached asset) is deleted below, so the migrated download
                 // keeps playing from cache instead of silently falling back to the network.
                 if (isRekey && old.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
-                    DownloadRepository.relinkDownloadCache(appContext, old.episodeId, rssEpisode.episodeId)
+                    downloadCacheRelinker.relink(old.episodeId, rssEpisode.episodeId)
                 }
                 downloadDao.insert(
                     old.copy(
@@ -553,6 +557,11 @@ class RssPodcastRepository private constructor(
         } else {
             _refreshingPodcastIds.value - podcastId
         }
+    }
+
+    /** Wire the relinker from the composition root after AppContainer creates DownloadRepository. */
+    fun setDownloadCacheRelinker(relinker: cx.aswin.boxlore.core.data.ports.DownloadCacheRelinker) {
+        downloadCacheRelinker = relinker
     }
 
     companion object {

@@ -16,6 +16,7 @@ import com.posthog.android.PostHogAndroidConfig
 import cx.aswin.boxlore.core.data.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.data.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.data.UserPreferencesRepository
+import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.data.ranking.LearningEventLog
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
@@ -55,6 +56,7 @@ class BoxLoreApplication : Application(), Configuration.Provider {
             sharedUserPreferences = userPreferencesRepository,
         )
         SharedAppDependenciesHolder.instance = container
+        DownloadsDependenciesHolder.instance = container
         engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
         // Eagerly touch the container ranking façade so getInstance installs its no-op
         // fallback if Room initialization fails — same startup behavior as before, without

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns playback session control, queue orchestration, and Media3 services (player + offline download foreground service + Android Auto collage provider). Deliberately does **not** own Room schemas, prefs DataStore, ranking, RSS, or smart-download workers (those stay in `:core:data` / `:core:database`).
+Owns playback session control, queue orchestration, and Media3 services (player + offline download foreground service + Android Auto collage provider). Deliberately does **not** own Room schemas, prefs DataStore, ranking, RSS, or smart-download workers (those stay in `:core:data` / `:core:database` / `:core:downloads`).
 
 ## Public API
 
@@ -40,7 +40,7 @@ Gradle edges (project + notable libs):
 - Media3 exoplayer / session / ui
 - Coil (session artwork), coroutines (+ guava await)
 
-Forbidden reverse edge: `:core:data` ↛ `:core:playback`. Backup/history seams use `ports.ListeningHistoryBackupPort`; download starts use the MediaDownloadService FQCN string from data.
+Forbidden reverse edges: `:core:data` ↛ `:core:playback`; `:core:downloads` ↛ `:core:playback` (`:core:downloads` uses `Class.forName` for the `MediaDownloadService` FQCN to avoid the cycle). Backup/history seams use `ports.ListeningHistoryBackupPort`.
 
 ## Threading / lifecycle
 
@@ -74,6 +74,7 @@ Unit tests run with the project suite in CI. Service/Auto paths are primarily de
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
-- [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A1)
+- [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A1, A3)
+- [`:core:downloads` README](../downloads/README.md)
 - [`:core:data` README](../data/README.md)
 - [`:app` README](../../app/README.md)

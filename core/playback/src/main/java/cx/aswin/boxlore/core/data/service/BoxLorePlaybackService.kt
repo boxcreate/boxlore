@@ -65,6 +65,9 @@ class BoxLorePlaybackService : MediaLibraryService() {
     private val sharedDeps by lazy {
         cx.aswin.boxlore.core.data.SharedAppDependenciesHolder.require()
     }
+    private val downloadDeps by lazy {
+        cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder.require()
+    }
     private val userPreferencesRepository by lazy { sharedDeps.userPreferencesRepository }
     private val database by lazy { sharedDeps.database }
     private val podcastRepository by lazy { sharedDeps.podcastRepository }
@@ -1538,7 +1541,7 @@ class BoxLorePlaybackService : MediaLibraryService() {
                         try {
                             val shouldDelete = userPreferencesRepository.autoDownloadDeleteCompletedStream.first()
                             if (shouldDelete) {
-                                sharedDeps.downloadRepository.removeDownload(completedEpId)
+                                downloadDeps.downloadRepository.removeDownload(completedEpId)
                                 android.util.Log.d("BoxLorePlaybackService", "Auto-deleted completed downloaded episode: $completedEpId")
                             }
                         } catch (e: Exception) {

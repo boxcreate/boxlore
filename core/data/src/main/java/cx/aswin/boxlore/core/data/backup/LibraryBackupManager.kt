@@ -180,9 +180,9 @@ class LibraryBackupManager(
                         if (enabled) {
                             val wifiOnly = prefs.smartDownloadsWifiOnly ?: true
                             val chargingOnly = prefs.smartDownloadsChargingOnly ?: false
-                            cx.aswin.boxlore.core.data.SmartDownloadManager.schedulePeriodicSync(context, wifiOnly, chargingOnly)
+                            cx.aswin.boxlore.core.data.ports.SmartDownloadSyncPort.schedulePeriodicSync?.invoke(wifiOnly, chargingOnly)
                         } else {
-                            cx.aswin.boxlore.core.data.SmartDownloadManager.cancelPeriodicSync(context)
+                            cx.aswin.boxlore.core.data.ports.SmartDownloadSyncPort.cancelPeriodicSync?.invoke()
                         }
                     }
                     prefs.smartDownloadsMaxEpisodes?.let { up.setSmartDownloadsMaxEpisodes(it) }

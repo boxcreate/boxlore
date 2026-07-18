@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 
 class PurgeSmartDownloadsWorker(
     appContext: Context,
@@ -12,9 +13,9 @@ class PurgeSmartDownloadsWorker(
 
     override suspend fun doWork(): Result {
         Log.i("BoxLore_BackgroundTrace", "[Worker] PurgeSmartDownloadsWorker started.")
-        val deps = SharedAppDependenciesHolder.require()
-        val database = deps.database
-        val downloadRepository = deps.downloadRepository
+        val sharedDeps = SharedAppDependenciesHolder.require()
+        val database = sharedDeps.database
+        val downloadRepository = DownloadsDependenciesHolder.require().downloadRepository
 
         try {
             val existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()

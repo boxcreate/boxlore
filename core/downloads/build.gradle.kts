@@ -1,10 +1,19 @@
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    alias(libs.plugins.kover)
+}
+
+kover {
+    currentProject {
+        createVariant("merged") {
+            add("debug")
+        }
+    }
 }
 
 android {
-    namespace = "cx.aswin.boxlore.core.playback"
+    namespace = "cx.aswin.boxlore.core.downloads"
     compileSdk = 35
 
     defaultConfig {
@@ -35,28 +44,24 @@ android {
 }
 
 dependencies {
-    api(projects.core.model)
-    api(projects.core.network)
-    api(projects.core.database)
+    // `:core:data` provides PodcastRepository, SubscriptionRepository, RankingFeedbackRepository,
+    // UserPreferencesRepository, BoxLoreDatabase (via :core:database api), domain ports, etc.
     api(projects.core.data)
-    implementation(projects.core.downloads)
+    implementation(projects.core.database)
+    implementation(projects.core.domain)
+    implementation(projects.core.model)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.guava)
 
-    // Media3 (player + Android Auto session + download service)
+    // Media3 offline / cache (DownloadManager, DownloadRepository, ThrottlingDataSource)
     implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.session)
-    implementation(libs.androidx.media3.ui)
 
-    // Artwork for session / Auto collages
-    implementation(libs.coil)
-    implementation(libs.androidx.palette.ktx)
+    // WorkManager (SmartDownloadWorker, AutoDownloadWorker, PurgeSmartDownloadsWorker)
+    implementation(libs.androidx.work.runtime)
 
-    implementation(libs.gson)
-    implementation(libs.okhttp)
-
+    // Testing
     testImplementation(projects.core.testing)
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)

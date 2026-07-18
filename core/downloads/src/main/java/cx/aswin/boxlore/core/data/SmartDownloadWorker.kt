@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import kotlinx.coroutines.flow.first
 
 class SmartDownloadWorker(
@@ -14,8 +15,8 @@ class SmartDownloadWorker(
     override suspend fun doWork(): Result {
         Log.d("SmartDownloadWorker", "WorkManager daily check triggered.")
 
-        val deps = SharedAppDependenciesHolder.require()
-        val userPrefs = deps.userPreferencesRepository
+        val sharedDeps = SharedAppDependenciesHolder.require()
+        val userPrefs = sharedDeps.userPreferencesRepository
 
         // Check if enabled first
         val isEnabled = userPrefs.smartDownloadsEnabledStream.first()
@@ -25,7 +26,8 @@ class SmartDownloadWorker(
         }
 
         try {
-            val success = deps.smartDownloadManager.performSync(isForeground = false)
+            val downloadDeps = DownloadsDependenciesHolder.require()
+            val success = downloadDeps.smartDownloadManager.performSync(isForeground = false)
             return if (success) Result.success() else Result.retry()
         } catch (e: Exception) {
             Log.e("SmartDownloadWorker", "Worker execution failed", e)

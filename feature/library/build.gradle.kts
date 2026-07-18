@@ -47,6 +47,7 @@ dependencies {
 
     implementation(projects.core.model)
     implementation(projects.core.data)
+    implementation(projects.core.downloads)
     implementation(projects.core.playback)
     implementation(projects.core.designsystem)
     

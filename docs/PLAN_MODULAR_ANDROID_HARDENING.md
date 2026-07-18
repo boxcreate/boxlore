@@ -1,6 +1,6 @@
 # Boxlore — Modular Android Hardening & Automation Plan
 
-**Status:** In progress (A0–A2 + B0 landed; A3+ next)  
+**Status:** In progress (A0–A3 + B0 landed; A4+ next)  
 **Branch context:** Builds on `cursor/full-refactor-tests-3b38` / PR #898  
 **Audience:** Implementers continuing architecture, DI, tests, and module docs
 
@@ -348,7 +348,7 @@ Characterise difficulty by **invasiveness** (Low / Med / High) and **blast radiu
 
 ---
 
-### Phase A3 — Extract `:core:downloads`
+### Phase A3 — Extract `:core:downloads` ✅ DONE
 
 **Invasiveness:** Med–High · **FQCN careful**  
 
@@ -373,7 +373,7 @@ Characterise difficulty by **invasiveness** (Low / Med / High) and **blast radiu
 - Update `core/data`, `core/playback`, `feature/library`, `app` READMEs.
 - `ARCHITECTURE.md` edges.
 
-**Exit:** Workers live in `:core:downloads`; data no longer owns WorkManager download stack.
+**Exit:** Workers live in `:core:downloads`; data no longer owns WorkManager download stack. ✅ Landed on `cursor/full-refactor-tests-3b38`.
 
 ---
 
