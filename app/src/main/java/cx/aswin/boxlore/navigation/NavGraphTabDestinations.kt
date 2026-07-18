@@ -2,23 +2,16 @@ package cx.aswin.boxlore.navigation
 
 import android.Manifest
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import androidx.navigation.navDeepLink
 import cx.aswin.boxlore.feature.briefing.BriefingRoute
 import cx.aswin.boxlore.feature.home.HomeRoute
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch as launchCoroutine
 
 internal fun androidx.navigation.NavGraphBuilder.addOnboardingDestination(w: NavGraphWiring) {
@@ -42,8 +35,10 @@ internal fun androidx.navigation.NavGraphBuilder.addOnboardingDestination(w: Nav
             onBack = { navController.popBackStack() },
             onImportClick = {
                 opmlCallbacks.onSourceChange("welcome_screen")
-                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackOnboardingFlowSelected("import_library", "welcome_screen")
-                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackImportSheetOpened()
+                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper
+                    .trackOnboardingFlowSelected("import_library", "welcome_screen")
+                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper
+                    .trackImportSheetOpened()
                 opmlCallbacks.onImportStateChange(OpmlImportState.ShowSelector)
             },
         )
@@ -73,7 +68,8 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
     composable("home") {
         LaunchedEffect(showFeatureDialog) {
             if (shouldRequestNotificationPermission(showFeatureDialog, context)) {
-                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackNotificationPermissionRequested()
+                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper
+                    .trackNotificationPermissionRequested()
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
@@ -89,6 +85,7 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
             rankingFeedbackRepository = container.rankingFeedbackRepository,
             localCatalog = container.localCatalogPort,
             userPreferencesRepository = userPrefs,
+            connectivityStatus = container.connectivityStatus,
             navController = navController,
             onPodcastClick = { podcast, entryPointStr, genreStr, depthVal ->
                 navigateHomePodcast(navController, podcast, entryPointStr, genreStr, depthVal)
@@ -150,21 +147,25 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
     // Learn
     // -----------------------------------------------------------------------
     composable("learn") {
-        val learnHistoryStore = remember {
-            cx.aswin.boxlore.feature.explore.LearnCuriosityHistoryStore(application)
-        }
-        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnViewModel>(
-            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                    cx.aswin.boxlore.feature.explore.LearnViewModel(
-                        podcastRepository = podcastRepository,
-                        application = application,
-                        rankingFeedback = container.rankingFeedbackRepository,
-                        historyStore = learnHistoryStore,
-                    ) as T
-            },
-        )
+        val learnHistoryStore =
+            remember {
+                cx.aswin.boxlore.feature.explore
+                    .LearnCuriosityHistoryStore(application)
+            }
+        val viewModel =
+            androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnViewModel>(
+                factory =
+                    object : androidx.lifecycle.ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                            cx.aswin.boxlore.feature.explore.LearnViewModel(
+                                podcastRepository = podcastRepository,
+                                application = application,
+                                rankingFeedback = container.rankingFeedbackRepository,
+                                historyStore = learnHistoryStore,
+                            ) as T
+                    },
+            )
         cx.aswin.boxlore.feature.explore.LearnScreen(
             viewModel = viewModel,
             playbackRepository = playbackRepository,
@@ -172,12 +173,13 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
             onNavigateToHistory = { navController.navigate("learn/history") },
             onEpisodeClick = { episode ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                val route = "episode/${episode.id}/${encode(episode.title)}/" +
-                    "${encode(episode.description.take(500))}/" +
-                    "${encode(episode.imageUrl)}/" +
-                    "${encode(episode.audioUrl)}/" +
-                    "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
-                    "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
+                val route =
+                    "episode/${episode.id}/${encode(episode.title)}/" +
+                        "${encode(episode.description.take(500))}/" +
+                        "${encode(episode.imageUrl)}/" +
+                        "${encode(episode.audioUrl)}/" +
+                        "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
+                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
                 navController.navigate(route)
             },
             onQueueEpisode = { episode ->
@@ -205,31 +207,36 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
     }
 
     composable("learn/history") {
-        val learnHistoryStore = remember {
-            cx.aswin.boxlore.feature.explore.LearnCuriosityHistoryStore(application)
-        }
-        val historyViewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnHistoryViewModel>(
-            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                    cx.aswin.boxlore.feature.explore.LearnHistoryViewModel(
-                        application = application,
-                        historyStore = learnHistoryStore,
-                    ) as T
-            },
-        )
+        val learnHistoryStore =
+            remember {
+                cx.aswin.boxlore.feature.explore
+                    .LearnCuriosityHistoryStore(application)
+            }
+        val historyViewModel =
+            androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnHistoryViewModel>(
+                factory =
+                    object : androidx.lifecycle.ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                            cx.aswin.boxlore.feature.explore.LearnHistoryViewModel(
+                                application = application,
+                                historyStore = learnHistoryStore,
+                            ) as T
+                    },
+            )
         cx.aswin.boxlore.feature.explore.LearnHistoryScreen(
             viewModel = historyViewModel,
             bottomContentPadding = miniPlayerPadding,
             onBack = { navController.popBackStack() },
             onEpisodeClick = { episode ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                val route = "episode/${episode.id}/${encode(episode.title)}/" +
-                    "${encode(episode.description.take(500))}/" +
-                    "${encode(episode.imageUrl)}/" +
-                    "${encode(episode.audioUrl)}/" +
-                    "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
-                    "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn_history"
+                val route =
+                    "episode/${episode.id}/${encode(episode.title)}/" +
+                        "${encode(episode.description.take(500))}/" +
+                        "${encode(episode.imageUrl)}/" +
+                        "${encode(episode.audioUrl)}/" +
+                        "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
+                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn_history"
                 navController.navigate(route)
             },
         )
@@ -249,13 +256,14 @@ internal fun androidx.navigation.NavGraphBuilder.addBriefingDestination(w: NavGr
     // -----------------------------------------------------------------------
     composable(
         route = "briefing?region={region}",
-        arguments = listOf(
-            navArgument("region") {
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            },
-        ),
+        arguments =
+            listOf(
+                navArgument("region") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
     ) { backStackEntry ->
         val region = backStackEntry.arguments?.getString("region")
         BriefingRoute(
@@ -268,12 +276,13 @@ internal fun androidx.navigation.NavGraphBuilder.addBriefingDestination(w: NavGr
             bottomContentPadding = miniPlayerPadding,
             onEpisodeClick = { episode ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                val route = "episode/${episode.id}/${encode(episode.title)}/" +
-                    "${encode(episode.description.take(500))}/" +
-                    "${encode(episode.imageUrl)}/" +
-                    "${encode(episode.audioUrl)}/" +
-                    "${episode.duration}/${encode(episode.podcastId ?: "briefing")}/" +
-                    "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=briefing"
+                val route =
+                    "episode/${episode.id}/${encode(episode.title)}/" +
+                        "${encode(episode.description.take(500))}/" +
+                        "${encode(episode.imageUrl)}/" +
+                        "${encode(episode.audioUrl)}/" +
+                        "${episode.duration}/${encode(episode.podcastId ?: "briefing")}/" +
+                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=briefing"
                 navController.navigate(route)
             },
         )
@@ -294,38 +303,47 @@ internal fun androidx.navigation.NavGraphBuilder.addExploreDestination(w: NavGra
     // -----------------------------------------------------------------------
     composable(
         route = "explore?category={category}&entryPoint={entryPoint}&tab={tab}",
-        arguments = listOf(
-            navArgument("category") {
-                type = NavType.StringType; nullable = true; defaultValue = null
-            },
-            navArgument("entryPoint") {
-                type = NavType.StringType; nullable = true; defaultValue = "bottom_nav"
-            },
-            navArgument("tab") {
-                type = NavType.StringType; nullable = true; defaultValue = null
-            },
-        ),
+        arguments =
+            listOf(
+                navArgument("category") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("entryPoint") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = "bottom_nav"
+                },
+                navArgument("tab") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
     ) { backStackEntry ->
         val category = backStackEntry.arguments?.getString("category")
         val entryPoint = backStackEntry.arguments?.getString("entryPoint") ?: "bottom_nav"
         val tab = backStackEntry.arguments?.getString("tab")
 
-        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.ExploreViewModel>(
-            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                    cx.aswin.boxlore.feature.explore.ExploreViewModel(
-                        application = application,
-                        podcastRepository = podcastRepository,
-                        subscriptionRepository = subscriptionRepository,
-                        userPrefs = userPrefs,
-                        playbackRepository = playbackRepository,
-                        adaptiveScorer = container.adaptiveCandidateScorer,
-                        initialCategory = category,
-                        initialTab = tab,
-                    ) as T
-            },
-        )
+        val viewModel =
+            androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.ExploreViewModel>(
+                factory =
+                    object : androidx.lifecycle.ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                            cx.aswin.boxlore.feature.explore.ExploreViewModel(
+                                application = application,
+                                podcastRepository = podcastRepository,
+                                subscriptionRepository = subscriptionRepository,
+                                userPrefs = userPrefs,
+                                playbackRepository = playbackRepository,
+                                adaptiveScorer = container.adaptiveCandidateScorer,
+                                initialCategory = category,
+                                initialTab = tab,
+                            ) as T
+                    },
+            )
 
         cx.aswin.boxlore.feature.explore.ExploreScreen(
             viewModel = viewModel,
