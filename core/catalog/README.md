@@ -1,10 +1,10 @@
-# `:core:data`
+# `:core:catalog`
 
 ## Purpose
 
 **Catalog and orchestration layer.** Owns the Podcast Index catalog (`PodcastRepository`), subscriptions, smart queue logic, content sections, cross-promo, engagement, backup/restore, and the shared-deps composition bridge for workers and Media3 services. It is **not** a junk drawer — every type here is a catalog, subscription, or orchestration concern.
 
-**Rename to `:core:catalog` is deferred** — keep the Gradle id `:core:data` until a dedicated rename PR; treat this module as catalog-only in docs and dependency rules.
+Gradle id is `:core:catalog`; Java/Kotlin packages remain `cx.aswin.boxlore.core.data.*` (A8 policy — stable imports and FQCNs across the end-state wave).
 
 Extracted subsystems now live in dedicated modules (re-exported via `api` so existing import paths continue to compile):
 
@@ -57,7 +57,7 @@ src/main/java/cx/aswin/boxlore/core/data/
 - → `:core:model`, `:core:network` (internal)
 - → Firebase (database + messaging), Retrofit, OkHttp, Gson, DataStore
 
-Forbidden: `:core:data` **must not** depend on `:core:playback`, `:core:designsystem`, or `:core:downloads`.
+Forbidden: `:core:catalog` **must not** depend on `:core:playback`, `:core:designsystem`, or `:core:downloads`.
 
 ## Threading / lifecycle
 
@@ -85,8 +85,8 @@ JVM unit tests under `src/test`:
 RSS ID/matcher tests live in `:core:rss`. Production RSS uses create+install from `AppContainer`; catalog JVM tests use `RssPodcastRepository.createForTests`.
 
 ```bash
-./gradlew :core:data:testDebugUnitTest
-./gradlew :core:data:testDebugUnitTest --tests 'cx.aswin.boxlore.core.data.PodcastRepositoryCatalogTest'
+./gradlew :core:catalog:testDebugUnitTest
+./gradlew :core:catalog:testDebugUnitTest --tests 'cx.aswin.boxlore.core.data.PodcastRepositoryCatalogTest'
 ```
 
 ## CI relevance

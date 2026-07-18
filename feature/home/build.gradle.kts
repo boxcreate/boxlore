@@ -53,7 +53,7 @@ android {
 dependencies {
     implementation(projects.core.model)
     implementation(projects.core.domain)
-    implementation(projects.core.data)
+    implementation(projects.core.catalog)
     implementation(projects.core.downloads)
     implementation(projects.core.playback)
     implementation(projects.core.network)

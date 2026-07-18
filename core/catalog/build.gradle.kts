@@ -79,7 +79,7 @@ dependencies {
     api(projects.core.prefs)
     implementation(libs.androidx.core.ktx)
     // RSS layer: RssFeedClient, RssPodcastRepository, RssIdGenerator, RssSourceMatcher,
-    // DownloadCacheRelinker port — api-exported so features/app that depend on :core:data
+    // DownloadCacheRelinker port — api-exported so features/app that depend on :core:catalog
     // see all RSS types without adding a direct :core:rss dependency.
     api(projects.core.rss)
 

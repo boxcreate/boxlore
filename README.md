@@ -292,7 +292,7 @@ cd boxlore
 
 | Module | Role |
 |--------|------|
-| `:core:data` | Repositories, mappers |
+| `:core:catalog` | Repositories, mappers |
 | `:core:designsystem` | Themes, shared composables |
 | `:core:model` | Domain models |
 | `:core:network` | Podcast Index + edge proxy |

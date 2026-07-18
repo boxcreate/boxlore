@@ -22,7 +22,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 
 ## Dependencies
 
-- → `:core:model`, `:core:data` (prefs re-export), `:core:designsystem`
+- → `:core:model`, `:core:catalog` (prefs re-export), `:core:designsystem`
 
 Forbidden: feature → feature; do not read `boxcast_prefs` raw — use `BoxcastPrefs`.
 

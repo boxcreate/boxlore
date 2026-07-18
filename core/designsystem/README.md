@@ -25,7 +25,7 @@ src/main/res/ drawable/ font/
 - → `:core:model`
 - Compose Material3, Coil (api), coroutines
 
-Forbidden: designsystem ↛ `:core:data`, `:core:network`, `:core:database`, or any `:feature:*`. Architecture guards enforce `:core:data` ↛ designsystem.
+Forbidden: designsystem ↛ `:core:catalog`, `:core:network`, `:core:catalogbase`, or any `:feature:*`. Architecture guards enforce `:core:catalog` ↛ designsystem.
 
 ## Threading / lifecycle
 

@@ -4,7 +4,7 @@
 
 Owns adaptive recommendation and candidate scoring for Boxlore: Bayesian facet preferences, LinUCB linear models, diversity re-ranking, and the action/exposure feedback loop. Includes its **own** Room database (`AdaptiveRankingDatabase`).
 
-Does **not** own main catalog Room (`:core:database`), Podcast Index HTTP (`:core:network`), content orchestration (`:core:data`), or feature UI (debug inspector hooks are consumed by `:feature:home`).
+Does **not** own main catalog Room (`:core:catalogbase`), Podcast Index HTTP (`:core:network`), content orchestration (`:core:catalog`), or feature UI (debug inspector hooks are consumed by `:feature:home`).
 
 ## Public API
 
@@ -27,7 +27,7 @@ Does **not** own main catalog Room (`:core:database`), Podcast Index HTTP (`:cor
 ## Internal structure
 
 ```text
-src/main/java/cx/aswin/boxlore/core/data/ranking/
+src/main/java/cx/aswin/boxlore/core/catalog/ranking/
   AdaptiveCandidateScorer.kt
   AdaptiveRankingRepository.kt / AdaptiveLinearModel.kt
   RankingFeedbackRepository.kt / RankingRuntimeControls.kt
@@ -43,12 +43,12 @@ Package stays `cx.aswin.boxlore.core.data.ranking` (Gradle id ≠ package — se
 ## Dependencies
 
 - → `:core:model` (Episode, Podcast, genres, telemetry)
-- → `:core:database` (scoring helpers / history entities used by scorers)
+- → `:core:catalogbase` (scoring helpers / history entities used by scorers)
 - → `:core:domain` (`RankingResetPort`)
 - → `:core:prefs` (`BoxcastPrefs` learner-log gate)
 - Room + KSP (`AdaptiveRankingDatabase`)
 
-Forbidden: ranking ↛ `:core:data`, features, designsystem. `:core:data` depends on ranking (`api`) and re-exports types.
+Forbidden: ranking ↛ `:core:catalog`, features, designsystem. `:core:catalog` depends on ranking (`api`) and re-exports types.
 
 ## Threading / lifecycle
 
@@ -85,5 +85,5 @@ Exercised by `unit-tests.yml`. Soft future Kover gates for ranking noted in `doc
 - [`docs/recommendation-system.md`](../../docs/recommendation-system.md)
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A5)
 - [`:app` README](../../app/README.md) — create+install
-- [`:core:data` README](../data/README.md)
+- [`:core:catalog` README](../catalog/README.md)
 - [`:core:domain` README](../domain/README.md)

@@ -33,7 +33,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 ## Dependencies
 
-- → `:core:model`, `:core:domain`, `:core:data`, `:core:designsystem`
+- → `:core:model`, `:core:domain`, `:core:catalog`, `:core:designsystem`
 
 Forbidden: feature → feature; no `BoxLoreDatabase` in VMs/assemblers.
 
@@ -44,13 +44,13 @@ Forbidden: feature → feature; no `BoxLoreDatabase` in VMs/assemblers.
 
 ## Persistence & identity
 
-None owned. Respects `rss:` IDs and catalog identity from `:core:rss` / `:core:database`.
+None owned. Respects `rss:` IDs and catalog identity from `:core:rss` / `:core:catalogbase`.
 
 ## Testing notes
 
 - JVM: `InfoViewModelAssemblerTest`, `InfoCatalogPortBehaviorTest`, `InfoCatalogPortErrorBehaviorTest`, `logic/EpisodeOfflineMergeLogicTest`, `InfoListeningProgressItemTest`, `EpisodeDurationFormatterTest`
 - Full Info VMs still need Application — prefer port/fake tests
-- Catalog HTTP paths covered in `:core:data` `PodcastRepositoryCatalogTest`
+- Catalog HTTP paths covered in `:core:catalog` `PodcastRepositoryCatalogTest`
 
 ```bash
 ./gradlew :feature:info:testDebugUnitTest
@@ -64,5 +64,5 @@ None owned. Respects `rss:` IDs and catalog identity from `:core:rss` / `:core:d
 ## See also
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
-- [`:core:data` README](../../core/data/README.md) — catalog MockWebServer tests
+- [`:core:catalog` README](../../core/catalog/README.md) — catalog MockWebServer tests
 - [`:app` README](../../app/README.md) — deep-link routes

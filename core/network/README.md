@@ -26,7 +26,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 - → `:core:model`
 - OkHttp, Retrofit, Gson / kotlinx.serialization as configured in Gradle
 
-Forbidden: network ↛ `:core:data`, `:core:database`, features, or designsystem.
+Forbidden: network ↛ `:core:catalog`, `:core:database`, features, or designsystem.
 
 ## Threading / lifecycle
 
@@ -55,6 +55,6 @@ Exercised by `unit-tests.yml` (B1 network contracts).
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
-- [`:core:data` README](../data/README.md) — catalog repositories that call this API
+- [`:core:catalog` README](../catalog/README.md) — catalog repositories that call this API
 - [`:core:rss` README](../rss/README.md) — feed client (separate from this HTTP API)
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase B1)

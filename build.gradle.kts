@@ -57,7 +57,7 @@ subprojects {
 
 dependencies {
     // Merged coverage for modest verify gate (see docs/TESTING.md).
-    kover(projects.core.data)
+    kover(projects.core.catalog)
     kover(projects.core.domain)
     kover(projects.feature.home)
     kover(projects.core.analytics)

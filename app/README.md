@@ -83,7 +83,7 @@ src/main/java/cx/aswin/boxlore/
 
 ## Dependencies
 
-- → all `:feature:*`, `:core:data`, `:core:playback`, `:core:downloads`, `:core:designsystem`, `:core:model`, `:core:network`, and other core modules as needed for wiring
+- → all `:feature:*`, `:core:catalog`, `:core:playback`, `:core:downloads`, `:core:designsystem`, `:core:model`, `:core:network`, and other core modules as needed for wiring
 - Firebase, PostHog, WorkManager, Media3 session client usage via data/playback layers
 
 Forbidden: features must not construct parallel ranking/RSS graphs; use container / holders.
@@ -108,7 +108,7 @@ Forbidden: features must not construct parallel ranking/RSS graphs; use containe
 ## Testing notes
 
 - JVM: `src/test` (e.g. FCM payload parser)
-- Holder unset behavior is covered in `:core:data` (`SharedAppDependenciesHolderTest`)
+- Holder unset behavior is covered in `:core:catalog` (`SharedAppDependenciesHolderTest`)
 - Nav / feature UI covered by feature androidTest + Maestro (see those READMEs)
 
 ```bash
@@ -126,6 +126,6 @@ Forbidden: features must not construct parallel ranking/RSS graphs; use containe
 - Root [`ARCHITECTURE.md`](../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../docs/TESTING.md)
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A1 / A7)
-- [`:core:data` README](../core/data/README.md)
+- [`:core:catalog` README](../core/catalog/README.md)
 - [`:core:downloads` README](../core/downloads/README.md)
 - [`:core:playback` README](../core/playback/README.md)

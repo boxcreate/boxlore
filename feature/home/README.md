@@ -29,7 +29,7 @@ src/main/java/cx/aswin/boxlore/feature/home/
 
 ## Dependencies
 
-- → `:core:model`, `:core:data` (re-exports `:core:prefs` / ranking / domain), `:core:designsystem`
+- → `:core:model`, `:core:catalog` (re-exports `:core:prefs` / ranking / domain), `:core:designsystem`
 - Recommendation / genre caches and learner-log toggle go through `BoxcastPrefs` (no raw `boxcast_prefs`)
 - `HomeViewModel` takes `LocalCatalogPort` (not `BoxLoreDatabase`)
 

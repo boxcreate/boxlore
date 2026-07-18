@@ -44,9 +44,9 @@ android {
 }
 
 dependencies {
-    // `:core:data` provides PodcastRepository, SubscriptionRepository, RankingFeedbackRepository,
+    // `:core:catalog` provides PodcastRepository, SubscriptionRepository, RankingFeedbackRepository,
     // UserPreferencesRepository, BoxLoreDatabase (via :core:database api), domain ports, etc.
-    api(projects.core.data)
+    api(projects.core.catalog)
     implementation(projects.core.database)
     implementation(projects.core.domain)
     implementation(projects.core.model)

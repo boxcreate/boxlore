@@ -26,7 +26,7 @@ Package kept at `cx.aswin.boxlore.core.data.analytics` (no import changes in con
 ## Internal structure
 
 ```text
-src/main/java/cx/aswin/boxlore/core/data/analytics/
+src/main/java/cx/aswin/boxlore/core/catalog/analytics/
   Analytics.kt              # façade interface
   AnalyticsHelper.kt        # PostHog-backed singleton (implements Analytics)
   RecordingAnalytics.kt     # in-memory test double (implements Analytics)
@@ -40,10 +40,10 @@ src/main/java/cx/aswin/boxlore/core/data/analytics/
 - → `libs.posthog.android` (PostHog SDK)
 - → `libs.androidx.core.ktx`
 
-**Forbidden reverse edges:** analytics must not depend on `:core:data`, `:core:database`,
+**Forbidden reverse edges:** analytics must not depend on `:core:catalog`, `:core:catalogbase`,
 `:core:network`, `:core:playback`, `:core:downloads`, or any `feature:*` module.
 
-`:core:data` re-exports `:core:analytics` via `api(projects.core.analytics)` so existing
+`:core:catalog` re-exports `:core:analytics` via `api(projects.core.analytics)` so existing
 consumers get the types transitively without any import changes.
 
 ## Threading / lifecycle
@@ -84,4 +84,4 @@ registered and included in root `:koverVerifyMerged` (with data/domain/home/rss/
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md)
-- `:core:data` README – explains the `api` re-export and what moved
+- `:core:catalog` README – explains the `api` re-export and what moved

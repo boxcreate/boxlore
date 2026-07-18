@@ -40,7 +40,7 @@ None. Guards may *read* `settings.gradle.kts` / module folders / README presence
 
 ## Testing notes
 
-- Architecture guards: feature isolation, `getInstance` allowlist, `:core:data` ↛ designsystem, every included app/core/feature module has `README.md`
+- Architecture guards: feature isolation, `getInstance` allowlist, `:core:catalog` ↛ designsystem, every included app/core/feature module has `README.md`
 - Unit tests set working directory to the Gradle root so Konsist/filesystem rules can read project files
 - No MockK
 

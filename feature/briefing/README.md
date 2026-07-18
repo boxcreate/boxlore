@@ -22,7 +22,7 @@ src/main/java/cx/aswin/boxlore/feature/briefing/
 
 ## Dependencies
 
-- → `:core:model`, `:core:data`, `:core:designsystem` (playback/queue via container-injected types)
+- → `:core:model`, `:core:catalog`, `:core:designsystem` (playback/queue via container-injected types)
 
 Forbidden: feature → feature; do not construct a parallel playback graph.
 

@@ -30,7 +30,7 @@ src/main/java/cx/aswin/boxlore/core/data/database/
 - → `:core:network` (`QueueItem` ↔ `EpisodeItem` debt)
 - Room (api runtime + ktx; ksp compiler), Gson
 
-Forbidden: database ↛ `:core:data`, features, or designsystem.
+Forbidden: database ↛ `:core:catalog`, features, or designsystem.
 
 ## Threading / lifecycle
 
@@ -54,7 +54,7 @@ Ranking DB (`adaptive_ranking_database`) is **not** in this module — see `:cor
 
 This module sets `unitTests.isIncludeAndroidResources = true` and ships `PodcastDaoInMemoryTest` (upsert/get round-trip).
 
-**If that suite fails to configure or run in CI**, documentation + RSS ID fixtures (`:core:rss` `RssIdGeneratorTest`) remain the B4 exit — do not force flaky Room JVM tests. `:core:data` keeps `includeAndroidResources = false` and uses Mockito DB doubles for catalog HTTP tests.
+**If that suite fails to configure or run in CI**, documentation + RSS ID fixtures (`:core:rss` `RssIdGeneratorTest`) remain the B4 exit — do not force flaky Room JVM tests. `:core:catalog` keeps `includeAndroidResources = false` and uses Mockito DB doubles for catalog HTTP tests.
 
 ```bash
 ./gradlew :core:database:testDebugUnitTest
@@ -70,5 +70,5 @@ Exercised by `unit-tests.yml` when DAO tests stay green.
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md) — Room / Robolectric constraints
-- [`:core:data` README](../data/README.md)
+- [`:core:catalog` README](../catalog/README.md)
 - [`:core:ranking` README](../ranking/README.md) — separate adaptive DB

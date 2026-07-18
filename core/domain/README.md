@@ -17,9 +17,9 @@ Stable ports/results other modules may depend on:
 
 **Must not live here:** Room entities, Retrofit DTOs beyond tiny shared network types already on the edge, Compose, managers, or WorkManager workers.
 
-`ListeningHistoryBackupPort` stays in `:core:data` (uses Room `ListeningHistoryEntity` to avoid a domain → database edge).
+`ListeningHistoryBackupPort` stays in `:core:catalog` (uses Room `ListeningHistoryEntity` to avoid a domain → database edge).
 
-Production impls: `RoomLocalCatalog` / `RoomEpisodeOfflineLookup` in `:core:data`; RSS port in `:core:rss`; ranking reset in `:core:ranking` — wired from `AppContainer`.
+Production impls: `RoomLocalCatalog` / `RoomEpisodeOfflineLookup` in `:core:catalog`; RSS port in `:core:rss`; ranking reset in `:core:ranking` — wired from `AppContainer`.
 
 ## Internal structure
 
@@ -41,7 +41,7 @@ src/main/java/cx/aswin/boxlore/core/domain/
 - → `:core:network` (api; `HistoryItem` only)
 - kotlinx-coroutines
 
-Forbidden: domain ↛ `:core:data`, `:core:database`, `:core:playback`, features, or designsystem.
+Forbidden: domain ↛ `:core:catalog`, `:core:catalogbase`, `:core:playback`, features, or designsystem.
 
 ## Threading / lifecycle
 
@@ -50,7 +50,7 @@ Forbidden: domain ↛ `:core:data`, `:core:database`, `:core:playback`, features
 
 ## Persistence & identity
 
-None owned here. Ports may mention `rss:` IDs or episode IDs in docs/contracts; persistence ownership stays in `:core:rss` / `:core:database`.
+None owned here. Ports may mention `rss:` IDs or episode IDs in docs/contracts; persistence ownership stays in `:core:rss` / `:core:catalogbase`.
 
 ## Testing notes
 
@@ -73,5 +73,5 @@ Exercised by `unit-tests.yml`. Included in Kover merged coverage gate.
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
-- [`:core:data` README](../data/README.md) — production implementations
+- [`:core:catalog` README](../catalog/README.md) — production implementations
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md)

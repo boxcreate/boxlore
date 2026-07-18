@@ -4,7 +4,7 @@
 
 Owns the complete RSS podcast stack: feed fetching, parsing, ID generation, episode catalog management, and the RSS subscription port implementation. Deliberately does **not** own download management (lives in `:core:downloads`) or the Podcast Index API client (lives in `:core:network`).
 
-`:core:data` re-exports this module via `api(projects.core.rss)` so existing callers of `cx.aswin.boxlore.core.data.RssPodcastRepository` continue to compile without adding a direct `:core:rss` dependency.
+`:core:catalog` re-exports this module via `api(projects.core.rss)` so existing callers of `cx.aswin.boxlore.core.data.RssPodcastRepository` continue to compile without adding a direct `:core:rss` dependency.
 
 ## Public API
 
@@ -20,7 +20,7 @@ Owns the complete RSS podcast stack: feed fetching, parsing, ID generation, epis
 ## Internal structure
 
 ```text
-src/main/java/cx/aswin/boxlore/core/data/
+src/main/java/cx/aswin/boxlore/core/catalog/
   RssFeedClient.kt          # HTTP + XML parsing; RssIdGenerator + RssSourceMatcher inside
   RssPodcastRepository.kt   # RssSubscriptionPort impl; escapeForSqlLike helper
   ports/
@@ -31,7 +31,7 @@ src/main/java/cx/aswin/boxlore/core/data/
 
 ## Dependencies
 
-- → `:core:database` (`api` — re-exports `BoxLoreDatabase`, `PodcastEntity`, `RssEpisodeEntity`, …)
+- → `:core:catalogbase` (`api` — re-exports `BoxLoreDatabase`, `PodcastEntity`, `RssEpisodeEntity`, …)
 - → `:core:domain` (`api` — re-exports `RssSubscriptionPort`, `RssSubscriptionResult`)
 - → `:core:model` (internal — `Episode`, `Podcast`, `Person`, `Transcript`)
 - → `com.prof18.rssparser` — Atom/RSS library parser path
@@ -80,7 +80,7 @@ Included in the unit-test CI job (`testDebugUnitTest`). Kover `merged` variant i
 ## See also
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
-- [`:core:data` README](../data/README.md) — catalog/orchestration layer that re-exports this module
+- [`:core:catalog` README](../catalog/README.md) — catalog/orchestration layer that re-exports this module
 - [`:core:downloads` README](../downloads/README.md) — `DownloadCacheRelinker` implementation lives here
 - [`:core:domain` README](../domain/README.md) — `RssSubscriptionPort` definition
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A6a)

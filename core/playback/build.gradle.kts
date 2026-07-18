@@ -37,7 +37,7 @@ dependencies {
     api(projects.core.model)
     api(projects.core.network)
     api(projects.core.database)
-    api(projects.core.data)
+    api(projects.core.catalog)
     implementation(projects.core.downloads)
 
     implementation(libs.androidx.core.ktx)

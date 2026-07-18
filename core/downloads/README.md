@@ -4,7 +4,7 @@
 
 Owns the download stack for Boxlore: `DownloadRepository` (Media3 offline cache + DB sync), `SmartDownloadManager` (mixtape-style auto-download scheduling), `ThrottlingDataSource` (speed-limited download I/O), and the three WorkManager workers that drive background downloads.
 
-Does **not** own playback (Media3 session / `BoxLorePlaybackService` — `:core:playback`), prefs (`:core:prefs`), or catalog/ranking (`:core:data` / `:core:ranking`).
+Does **not** own playback (Media3 session / `BoxLorePlaybackService` — `:core:playback`), prefs (`:core:prefs`), or catalog/ranking (`:core:catalog` / `:core:ranking`).
 
 ## Public API
 
@@ -42,13 +42,13 @@ src/main/java/cx/aswin/boxlore/core/
 
 ## Dependencies
 
-- → `:core:data` (api — catalog/DB/prefs/ranking/domain re-exports)
-- → `:core:database`, `:core:domain`, `:core:model` (implementation)
+- → `:core:catalog` (api — catalog/DB/prefs/ranking/domain re-exports)
+- → `:core:catalogbase`, `:core:domain`, `:core:model` (implementation)
 - Media3 exoplayer (DownloadManager, Cache, DataSource), WorkManager
 
 Forbidden reverse edges:
 
-- `:core:data` ↛ `:core:downloads` (cycle)
+- `:core:catalog` ↛ `:core:downloads` (cycle)
 - `:core:downloads` ↛ `:core:playback` — use `DownloadServiceLauncherHolder` instead of compiling against `MediaDownloadService`
 
 ## Threading / lifecycle
@@ -88,5 +88,5 @@ Exercised by `unit-tests.yml`. Included in root `:koverVerifyMerged` with data/d
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A3)
 - [`:app` README](../../app/README.md) — `DownloadServiceLauncherHolder` install
-- [`:core:data` README](../data/README.md)
+- [`:core:catalog` README](../catalog/README.md)
 - [`:core:playback` README](../playback/README.md)

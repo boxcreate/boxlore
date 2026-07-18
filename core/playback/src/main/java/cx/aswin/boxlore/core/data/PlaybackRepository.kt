@@ -11,6 +11,8 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import cx.aswin.boxlore.core.data.BuildConfig
+import cx.aswin.boxlore.core.data.playback.PlaybackArtworkResolver
+import cx.aswin.boxlore.core.data.playback.PlaybackMediaIdPolicy
 import cx.aswin.boxlore.core.data.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.core.data.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.data.ranking.CandidateSource
@@ -33,12 +35,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
-
-private const val LEARN_PREFIX = "learn:"
-private const val EPISODE_PREFIX = "episode:"
-private const val QUEUE_PREFIX = "queue:"
-
-private fun String.stripPlaybackPrefix(): String = removePrefix(LEARN_PREFIX).removePrefix(EPISODE_PREFIX).removePrefix(QUEUE_PREFIX)
 
 data class PlaybackSession(
     val podcastId: String,
@@ -932,7 +928,7 @@ class PlaybackRepository(
                             activePlaybackStartTimeMs = 0L
                         }
                         // Use mediaId to find episode — more reliable than index
-                        val episodeId = mediaItem?.mediaId?.stripPlaybackPrefix() ?: return
+                        val episodeId = mediaItem?.mediaId?.let(PlaybackMediaIdPolicy::stripMediaIdPrefixes) ?: return
                         val queue = _playerState.value.queue
                         val oldState = _playerState.value
 
@@ -1467,13 +1463,10 @@ class PlaybackRepository(
         podcast: Podcast,
         entryPointContext: android.os.Bundle?,
     ): List<MediaItem> {
-        val entryPoint = entryPointContext?.getString("entrypoint") ?: entryPointContext?.getString("entry_point")
-        val isLearn = entryPoint == "learn"
+        val entryPoint = PlaybackMediaIdPolicy.parseEntryPointString(entryPointContext)
+        val isLearn = PlaybackMediaIdPolicy.isLearnEntryPoint(entryPoint)
         return episodes.map { episode ->
-            val resolvedUrl =
-                episode.imageUrl?.takeIf { it.isNotBlank() }
-                    ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
-                    ?: podcast.imageUrl
+            val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(episode, podcast)
             Log.d(
                 "PlaybackRepo",
                 "playQueue: epId=${episode.id}, title='${episode.title}', resolvedImageUrl='$resolvedUrl', isLearn=$isLearn",
@@ -1490,7 +1483,7 @@ class PlaybackRepository(
                     .setExtras(entryPointContext)
                     .build()
 
-            val mediaId = if (isLearn) "$LEARN_PREFIX${episode.id}" else episode.id
+            val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLearn)
             MediaItem
                 .Builder()
                 .setUri(episode.audioUrl)
@@ -1708,7 +1701,7 @@ class PlaybackRepository(
 
         mediaController?.let { controller ->
             Log.d("PlaybackRepo", "addToQueue: mediaController ready, mediaItemCount=${controller.mediaItemCount}")
-            val resolvedUrl = episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl
+            val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(episode, podcast)
             Log.d("PlaybackRepo", "addToQueue: epId=${episode.id}, resolvedImageUrl='$resolvedUrl'")
             val metadata =
                 androidx.media3.common.MediaMetadata
@@ -1721,8 +1714,8 @@ class PlaybackRepository(
                     .setGenre(episode.podcastGenre ?: podcast.genre)
                     .build()
 
-            val isLearn = entryPoint == PlaybackEntryPoint.LEARN
-            val mediaId = if (isLearn) "$LEARN_PREFIX${episode.id}" else episode.id
+            val isLearn = PlaybackMediaIdPolicy.isLearnEntryPoint(entryPoint)
+            val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLearn)
             val mediaItem =
                 MediaItem
                     .Builder()
@@ -1767,7 +1760,7 @@ class PlaybackRepository(
         }
 
         mediaController?.let { controller ->
-            val resolvedUrl = episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast.imageUrl
+            val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(episode, podcast)
             Log.d("PlaybackRepo", "addToQueueNext: epId=${episode.id}, resolvedImageUrl='$resolvedUrl'")
             val metadata =
                 androidx.media3.common.MediaMetadata
@@ -1953,10 +1946,13 @@ class PlaybackRepository(
         val controller = mediaController ?: return
 
         val isLore = removed.contextType == QueueMath.CONTEXT_TYPE_LORE
-        val mediaId = if (isLore) "$LEARN_PREFIX${episode.id}" else episode.id
+        val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLore)
         val resolvedUrl =
-            episode.imageUrl?.takeIf { it.isNotBlank() }
-                ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: ""
+            PlaybackArtworkResolver.resolveEpisodeImageUrl(
+                episodeImageUrl = episode.imageUrl,
+                episodePodcastImageUrl = episode.podcastImageUrl,
+                podcastImageUrl = null,
+            ).orEmpty()
         val metadata =
             androidx.media3.common.MediaMetadata
                 .Builder()
@@ -2474,7 +2470,7 @@ class PlaybackRepository(
         val targetEpisode = _playerState.value.queue.getOrNull(index)
         if (targetEpisode != null) {
             for (i in 0 until controller.mediaItemCount) {
-                if (controller.getMediaItemAt(i).mediaId.stripPlaybackPrefix() == targetEpisode.id) {
+                if (PlaybackMediaIdPolicy.stripMediaIdPrefixes(controller.getMediaItemAt(i).mediaId) == targetEpisode.id) {
                     android.util.Log.d("PlaybackRepo", "skipToEpisode: Found mediaId=${targetEpisode.id} at Media3 index $i")
 
                     storePendingEntryPoint(entryPointContext)

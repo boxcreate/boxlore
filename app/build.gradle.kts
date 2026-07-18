@@ -109,7 +109,7 @@ dependencies {
     // Core Modules
     implementation(projects.core.designsystem)
     implementation(projects.core.domain)
-    implementation(projects.core.data)
+    implementation(projects.core.catalog)
     implementation(projects.core.downloads)
     implementation(projects.core.playback)
     implementation(projects.core.model)

@@ -21,7 +21,7 @@ src/main/java/cx/aswin/boxlore/feature/player/
 
 ## Dependencies
 
-- → `:core:model`, `:core:data`, `:core:network`, `:core:designsystem` (playback types via data/playback re-exports as configured)
+- → `:core:model`, `:core:catalog`, `:core:network`, `:core:designsystem` (playback types via data/playback re-exports as configured)
 - Media3 UI/session client pieces as needed for controls
 
 Forbidden: feature → feature; do not construct a second `PlaybackRepository`.

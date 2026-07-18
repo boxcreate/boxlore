@@ -26,7 +26,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 
 ## Dependencies
 
-- → `:core:model`, `:core:data`, `:core:designsystem` (downloads/playback via container-injected types)
+- → `:core:model`, `:core:catalog`, `:core:designsystem` (downloads/playback via container-injected types)
 
 Forbidden: feature → feature; routes must use container instances (no local repo recreation).
 

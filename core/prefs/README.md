@@ -20,7 +20,7 @@ Kotlin packages remain `cx.aswin.boxlore.core.data` (no import renames). Do **no
 ## Internal structure
 
 ```text
-src/main/java/cx/aswin/boxlore/core/data/
+src/main/java/cx/aswin/boxlore/core/catalog/
   UserPreferencesRepository.kt
   BoxcastPrefs.kt
 ```
@@ -30,7 +30,7 @@ src/main/java/cx/aswin/boxlore/core/data/
 - → `:core:model` (api)
 - AndroidX DataStore Preferences, core-ktx, coroutines
 
-Forbidden reverse edges: prefs ↛ `:core:data`, features, playback, designsystem.
+Forbidden reverse edges: prefs ↛ `:core:catalog`, features, playback, designsystem.
 
 ## Threading / lifecycle
 
@@ -55,11 +55,11 @@ Forbidden reverse edges: prefs ↛ `:core:data`, features, playback, designsyste
 
 ## CI relevance
 
-Exercised by the unit-test CI job (`testDebugUnitTest`). Coverage floors remain on `:core:data` / `:core:domain` / `:feature:home` (Kover merged).
+Exercised by the unit-test CI job (`testDebugUnitTest`). Coverage floors remain on `:core:catalog` / `:core:domain` / `:feature:home` (Kover merged).
 
 ## See also
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A2)
-- [`:core:data` README](../data/README.md)
+- [`:core:catalog` README](../catalog/README.md)

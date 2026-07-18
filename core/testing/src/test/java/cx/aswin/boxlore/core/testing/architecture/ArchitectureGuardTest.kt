@@ -85,8 +85,8 @@ class ArchitectureGuardTest {
     }
 
     @Test
-    fun `core data build file does not depend on designsystem`() {
-        val buildFile = File(projectRoot, "core/data/build.gradle.kts")
+    fun `core catalog build file does not depend on designsystem`() {
+        val buildFile = File(projectRoot, "core/catalog/build.gradle.kts")
         assertTrue(buildFile.isFile, "Missing ${buildFile.relativeTo(projectRoot)}")
         val activeDeps =
             buildFile.readLines().map { it.substringBefore("//").trim() }.filter { it.isNotEmpty() }
@@ -97,7 +97,7 @@ class ArchitectureGuardTest {
             }
         assertTrue(
             hits.isEmpty(),
-            ":core:data must not depend on :core:designsystem:\n" + hits.joinToString("\n"),
+            ":core:catalog must not depend on :core:designsystem:\n" + hits.joinToString("\n"),
         )
     }
 
