@@ -50,6 +50,16 @@ private val TRANSITION_EASING = FastOutSlowInEasing
 internal const val ExploreTabRoutePattern =
     "explore?category={category}&entryPoint={entryPoint}&tab={tab}"
 
+/** Concrete explore navigation target used by the bottom-nav tab. */
+internal const val ExploreBottomNavRoute = "explore?entryPoint=bottom_nav"
+
+/** File-local navigation path constants (exact string targets / prefixes). */
+private object NavRoutes {
+    const val LIBRARY_DOWNLOADS = "library/downloads"
+    const val LIBRARY_SUBSCRIPTIONS = "library/subscriptions"
+    const val LIBRARY_DOWNLOADS_SETTINGS = "library/downloads/settings"
+}
+
 internal fun bottomNavTabRoutePattern(tab: String): String? = when (tab) {
     "home" -> "home"
     "learn" -> "learn"
@@ -128,6 +138,195 @@ data class NavOpmlCallbacks(
     val performJsonImport: (android.net.Uri) -> Unit,
 )
 
+/** Activity-owned session flags and objects needed by multiple destinations. */
+data class NavHostSession(
+    val onboardingCompleted: Boolean,
+    val onOnboardingCompleted: () -> Unit,
+    val onboardingViewModel: cx.aswin.boxlore.feature.onboarding.OnboardingViewModel,
+    val hasDeepLink: Boolean,
+    val currentEpisode: Episode?,
+    val miniPlayerPadding: androidx.compose.ui.unit.Dp,
+    val showFeatureDialog: Boolean,
+    val hasSeenMarkPlayedTip: Boolean,
+    val permissionLauncher: ManagedActivityResultLauncher<String, Boolean>,
+    val appInstanceId: String?,
+)
+
+/** Activity-owned action callbacks used across nav destinations. */
+data class NavHostActions(
+    val onLoreQueueConflictEpisode: (Episode) -> Unit,
+    val queueLoreEpisode: (Episode) -> Unit,
+    val onShowFeedbackSheet: () -> Unit,
+    val onSubmitFeedback: suspend (String, String, String, String) -> Boolean,
+)
+
+/** Internal wiring bag shared by NavGraphBuilder destination helpers. */
+private class NavGraphWiring(
+    val navController: NavHostController,
+    val application: BoxLoreApplication,
+    val session: NavHostSession,
+    val actions: NavHostActions,
+    val opmlCallbacks: NavOpmlCallbacks,
+    val settingsState: NavSettingsState,
+    val scope: kotlinx.coroutines.CoroutineScope,
+    val context: android.content.Context,
+    val isOnline: Boolean,
+    val isSyncingSmartDownloads: androidx.compose.runtime.MutableState<Boolean>,
+) {
+    val container get() = application.container
+    val database get() = container.database
+    val podcastRepository get() = container.podcastRepository
+    val playbackRepository get() = container.playbackRepository
+    val downloadRepository get() = container.downloadRepository
+    val subscriptionRepository get() = container.subscriptionRepository
+    val userPrefs get() = container.userPreferencesRepository
+    val queueManager get() = container.queueManager
+    val smartDownloadManager get() = container.smartDownloadManager
+}
+
+// ---------------------------------------------------------------------------
+// Route-index + transition helpers
+// ---------------------------------------------------------------------------
+
+private fun getRouteIndex(route: String?): Int {
+    if (route == null) return 0
+    if (route == "home") return 0
+    if (route.startsWith("learn")) return 1
+    if (route.startsWith("explore")) return 2
+    if (route == "library" || route.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS)) return 3
+    if (route.startsWith("podcast/")) return 10
+    if (route.startsWith("episode/")) return 11
+    if (route.startsWith("briefing")) return 11
+    if (route.startsWith("library/")) return 12
+    return 0
+}
+
+private fun isTabToTab(fromRoute: String?, toRoute: String?): Boolean {
+    val fromIndex = getRouteIndex(fromRoute)
+    val toIndex = getRouteIndex(toRoute)
+    return fromIndex < 10 && toIndex < 10
+}
+
+private fun navEnterTransition(
+    fromRoute: String?,
+    toRoute: String?,
+): androidx.compose.animation.EnterTransition {
+    val fromIndex = getRouteIndex(fromRoute)
+    val toIndex = getRouteIndex(toRoute)
+    return if (toIndex > fromIndex) {
+        slideInHorizontally(
+            animationSpec = tween(TRANSITION_DURATION, easing = TRANSITION_EASING),
+            initialOffsetX = { it },
+        )
+    } else {
+        slideInHorizontally(
+            animationSpec = tween(TRANSITION_DURATION, easing = TRANSITION_EASING),
+            initialOffsetX = { -it },
+        )
+    }
+}
+
+private fun navExitTransition(
+    fromRoute: String?,
+    toRoute: String?,
+): androidx.compose.animation.ExitTransition {
+    val fromIndex = getRouteIndex(fromRoute)
+    val toIndex = getRouteIndex(toRoute)
+    return if (isTabToTab(fromRoute, toRoute)) {
+        if (toIndex > fromIndex) {
+            slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it }
+        } else {
+            slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it }
+        }
+    } else if (toIndex > fromIndex) {
+        slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it / 3 } +
+            fadeOut(tween(TRANSITION_DURATION, easing = TRANSITION_EASING))
+    } else {
+        slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it / 3 } +
+            fadeOut(tween(TRANSITION_DURATION, easing = TRANSITION_EASING))
+    }
+}
+
+private fun navPopEnterTransition(
+    fromRoute: String?,
+    toRoute: String?,
+): androidx.compose.animation.EnterTransition {
+    val fromIndex = getRouteIndex(fromRoute)
+    val toIndex = getRouteIndex(toRoute)
+    return if (isTabToTab(fromRoute, toRoute)) {
+        if (toIndex > fromIndex) {
+            slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it }
+        } else {
+            slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it }
+        }
+    } else if (toIndex > fromIndex) {
+        slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it } +
+            fadeIn(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
+    } else {
+        slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it / 3 } +
+            fadeIn(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
+    }
+}
+
+private fun navPopExitTransition(
+    fromRoute: String?,
+    toRoute: String?,
+): androidx.compose.animation.ExitTransition {
+    val fromIndex = getRouteIndex(fromRoute)
+    val toIndex = getRouteIndex(toRoute)
+    return if (isTabToTab(fromRoute, toRoute)) {
+        if (toIndex > fromIndex) {
+            slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it }
+        } else {
+            slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it }
+        }
+    } else if (toIndex > fromIndex) {
+        slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it } +
+            fadeOut(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
+    } else {
+        slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it } +
+            fadeOut(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
+    }
+}
+
+@Composable
+private fun rememberIsOnline(): Boolean {
+    val context = LocalContext.current
+    var isOnline by remember {
+        mutableStateOf(
+            try {
+                val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE)
+                    as? android.net.ConnectivityManager
+                val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
+                caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            } catch (_: Exception) {
+                true
+            },
+        )
+    }
+
+    androidx.compose.runtime.DisposableEffect(context) {
+        val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE)
+            as? android.net.ConnectivityManager
+        val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                isOnline = true
+            }
+            override fun onLost(network: android.net.Network) {
+                val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
+                isOnline = caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            }
+        }
+        try {
+            cm?.registerDefaultNetworkCallback(callback)
+        } catch (_: Exception) { /* ignore */ }
+        onDispose {
+            try { cm?.unregisterNetworkCallback(callback) } catch (_: Exception) { /* ignore */ }
+        }
+    }
+    return isOnline
+}
+
 // ---------------------------------------------------------------------------
 // BoxLoreNavHost
 // ---------------------------------------------------------------------------
@@ -159,1240 +358,1288 @@ data class NavOpmlCallbacks(
 fun BoxLoreNavHost(
     navController: NavHostController,
     application: BoxLoreApplication,
-    // Onboarding
-    onboardingCompleted: Boolean,
-    onOnboardingCompleted: () -> Unit,
-    onboardingViewModel: cx.aswin.boxlore.feature.onboarding.OnboardingViewModel,
-    hasDeepLink: Boolean,
-    // Player state
-    currentEpisode: Episode?,
-    miniPlayerPadding: androidx.compose.ui.unit.Dp,
-    isModeSwitching: Boolean,
-    // OPML import (state owned in Activity, dialogs shown outside NavHost)
+    session: NavHostSession,
     opmlCallbacks: NavOpmlCallbacks,
-    // Lore queue conflict (dialog shown outside NavHost)
-    onLoreQueueConflictEpisode: (Episode) -> Unit,
-    queueLoreEpisode: (Episode) -> Unit,
-    // Feedback sheet (shown outside NavHost)
-    onShowFeedbackSheet: () -> Unit,
-    onSubmitFeedback: suspend (String, String, String, String) -> Boolean,
-    // Feature dialog visibility (dialog rendered outside NavHost)
-    showFeatureDialog: Boolean,
-    // Tips
-    hasSeenMarkPlayedTip: Boolean,
-    // Notification permission launcher (Activity-owned)
-    permissionLauncher: ManagedActivityResultLauncher<String, Boolean>,
-    // App instance ID for settings
-    appInstanceId: String?,
-    // Settings pref snapshot
+    actions: NavHostActions,
     settingsState: NavSettingsState,
 ) {
     val scope = rememberCoroutineScope()
-
-    // Derive repositories from the single application container.
-    val container = application.container
-    val database = container.database
-    val podcastRepository = container.podcastRepository
-    val playbackRepository = container.playbackRepository
-    val downloadRepository = container.downloadRepository
-    val subscriptionRepository = container.subscriptionRepository
-    val userPrefs = container.userPreferencesRepository
-    val queueManager = container.queueManager
-    val smartDownloadManager = container.smartDownloadManager
-
-    // ---------------------------------------------------------------------------
-    // Connectivity + smart-download syncing (local to the nav graph)
-    // ---------------------------------------------------------------------------
-
     val context = LocalContext.current
-
-    var isOnline by remember {
-        mutableStateOf(
-            try {
-                val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE)
-                    as? android.net.ConnectivityManager
-                val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
-                caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-            } catch (e: Exception) {
-                true
-            },
-        )
-    }
-
-    androidx.compose.runtime.DisposableEffect(context) {
-        val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE)
-            as? android.net.ConnectivityManager
-        val callback = object : android.net.ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: android.net.Network) {
-                isOnline = true
-            }
-            override fun onLost(network: android.net.Network) {
-                val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
-                isOnline = caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-            }
-        }
-        try {
-            cm?.registerDefaultNetworkCallback(callback)
-        } catch (e: Exception) { /* ignore */ }
-        onDispose {
-            try { cm?.unregisterNetworkCallback(callback) } catch (e: Exception) { /* ignore */ }
-        }
-    }
-
-    var isSyncingSmartDownloads by remember { mutableStateOf(false) }
-
-    // ---------------------------------------------------------------------------
-    // Start destination
-    // ---------------------------------------------------------------------------
+    val isOnline = rememberIsOnline()
+    val isSyncingSmartDownloads = remember { mutableStateOf(false) }
 
     val isOfflineOnLaunch = remember { !isOnline }
     val computedStartDestination = remember {
         when {
-            !onboardingCompleted -> "onboarding"
-            isOfflineOnLaunch && !hasDeepLink -> "library/downloads"
+            !session.onboardingCompleted -> "onboarding"
+            isOfflineOnLaunch && !session.hasDeepLink -> NavRoutes.LIBRARY_DOWNLOADS
             else -> "home"
         }
     }
 
-    // ---------------------------------------------------------------------------
-    // Route-index helpers for directional slide transitions
-    // ---------------------------------------------------------------------------
-
-    fun getRouteIndex(route: String?): Int {
-        if (route == null) return 0
-        if (route == "home") return 0
-        if (route.startsWith("learn")) return 1
-        if (route.startsWith("explore")) return 2
-        if (route == "library" || route.startsWith("library/subscriptions")) return 3
-        if (route.startsWith("podcast/")) return 10
-        if (route.startsWith("episode/")) return 11
-        if (route.startsWith("briefing")) return 11
-        if (route.startsWith("library/")) return 12
-        return 0
-    }
-
-    fun isTabToTab(fromRoute: String?, toRoute: String?): Boolean {
-        val fromIndex = getRouteIndex(fromRoute)
-        val toIndex = getRouteIndex(toRoute)
-        return fromIndex < 10 && toIndex < 10
-    }
-
-    // ---------------------------------------------------------------------------
-    // NavHost
-    // ---------------------------------------------------------------------------
+    val wiring = NavGraphWiring(
+        navController = navController,
+        application = application,
+        session = session,
+        actions = actions,
+        opmlCallbacks = opmlCallbacks,
+        settingsState = settingsState,
+        scope = scope,
+        context = context,
+        isOnline = isOnline,
+        isSyncingSmartDownloads = isSyncingSmartDownloads,
+    )
 
     NavHost(
         navController = navController,
         startDestination = computedStartDestination,
         modifier = androidx.compose.ui.Modifier,
         enterTransition = {
-            val fromIndex = getRouteIndex(initialState.destination.route)
-            val toIndex = getRouteIndex(targetState.destination.route)
-            if (toIndex > fromIndex) {
-                slideInHorizontally(
-                    animationSpec = tween(TRANSITION_DURATION, easing = TRANSITION_EASING),
-                    initialOffsetX = { it },
-                )
-            } else {
-                slideInHorizontally(
-                    animationSpec = tween(TRANSITION_DURATION, easing = TRANSITION_EASING),
-                    initialOffsetX = { -it },
-                )
-            }
+            navEnterTransition(initialState.destination.route, targetState.destination.route)
         },
         exitTransition = {
-            val fromRoute = initialState.destination.route
-            val toRoute = targetState.destination.route
-            val fromIndex = getRouteIndex(fromRoute)
-            val toIndex = getRouteIndex(toRoute)
-            if (isTabToTab(fromRoute, toRoute)) {
-                if (toIndex > fromIndex) {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it }
-                } else {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it }
-                }
-            } else {
-                if (toIndex > fromIndex) {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it / 3 } +
-                        fadeOut(tween(TRANSITION_DURATION, easing = TRANSITION_EASING))
-                } else {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it / 3 } +
-                        fadeOut(tween(TRANSITION_DURATION, easing = TRANSITION_EASING))
-                }
-            }
+            navExitTransition(initialState.destination.route, targetState.destination.route)
         },
         popEnterTransition = {
-            val fromRoute = initialState.destination.route
-            val toRoute = targetState.destination.route
-            val fromIndex = getRouteIndex(fromRoute)
-            val toIndex = getRouteIndex(toRoute)
-            if (isTabToTab(fromRoute, toRoute)) {
-                if (toIndex > fromIndex) {
-                    slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it }
-                } else {
-                    slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it }
-                }
-            } else {
-                if (toIndex > fromIndex) {
-                    slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it } +
-                        fadeIn(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
-                } else {
-                    slideInHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it / 3 } +
-                        fadeIn(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
-                }
-            }
+            navPopEnterTransition(initialState.destination.route, targetState.destination.route)
         },
         popExitTransition = {
-            val fromRoute = initialState.destination.route
-            val toRoute = targetState.destination.route
-            val fromIndex = getRouteIndex(fromRoute)
-            val toIndex = getRouteIndex(toRoute)
-            if (isTabToTab(fromRoute, toRoute)) {
-                if (toIndex > fromIndex) {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it }
-                } else {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it }
-                }
-            } else {
-                if (toIndex > fromIndex) {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { -it } +
-                        fadeOut(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
-                } else {
-                    slideOutHorizontally(tween(TRANSITION_DURATION, easing = TRANSITION_EASING)) { it } +
-                        fadeOut(tween(TRANSITION_DURATION / 2, easing = TRANSITION_EASING))
-                }
-            }
+            navPopExitTransition(initialState.destination.route, targetState.destination.route)
         },
     ) {
-        // -----------------------------------------------------------------------
-        // Onboarding
-        // -----------------------------------------------------------------------
-        composable("onboarding") {
-            cx.aswin.boxlore.feature.onboarding.OnboardingScreen(
-                viewModel = onboardingViewModel,
-                onComplete = {
-                    onOnboardingCompleted()
-                    navController.navigate("home") {
-                        popUpTo("onboarding") { inclusive = true }
-                    }
-                },
-                onBack = { navController.popBackStack() },
-                onImportClick = {
-                    opmlCallbacks.onSourceChange("welcome_screen")
-                    cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackOnboardingFlowSelected("import_library", "welcome_screen")
-                    cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackImportSheetOpened()
-                    opmlCallbacks.onImportStateChange(OpmlImportState.ShowSelector)
-                },
-            )
-        }
+        addOnboardingDestination(wiring)
+        addHomeDestination(wiring)
+        addLearnDestinations(wiring)
+        addBriefingDestination(wiring)
+        addSettingsDestination(wiring)
+        addDebugDestination(wiring)
+        addExploreDestination(wiring)
+        addLibraryDestinations(wiring)
+        addPodcastDestination(wiring)
+        addEpisodeFullPathDestination(wiring)
+        addEpisodeDeepLinkDestination(wiring)
+    }
+}
 
-        // -----------------------------------------------------------------------
-        // Home
-        // -----------------------------------------------------------------------
-        composable("home") {
-            LaunchedEffect(showFeatureDialog) {
-                if (!showFeatureDialog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS,
-                        ) != PackageManager.PERMISSION_GRANTED
-                    ) {
-                        cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackNotificationPermissionRequested()
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
+
+private fun androidx.navigation.NavGraphBuilder.addOnboardingDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val onboardingViewModel = w.session.onboardingViewModel
+    val onOnboardingCompleted = w.session.onOnboardingCompleted
+    val opmlCallbacks = w.opmlCallbacks
+
+    // -----------------------------------------------------------------------
+    // Onboarding
+    // -----------------------------------------------------------------------
+    composable("onboarding") {
+        cx.aswin.boxlore.feature.onboarding.OnboardingScreen(
+            viewModel = onboardingViewModel,
+            onComplete = {
+                onOnboardingCompleted()
+                navController.navigate("home") {
+                    popUpTo("onboarding") { inclusive = true }
                 }
-            }
-            HomeRoute(
-                podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
-                engagementPromptCoordinator = application.engagementPromptCoordinator,
-                subscriptionRepository = subscriptionRepository,
-                downloadRepository = downloadRepository,
-                rssPodcastRepository = container.rssPodcastRepository,
-                adaptiveRankingRepository = container.adaptiveRankingRepository,
-                adaptiveCandidateScorer = container.adaptiveCandidateScorer,
-                rankingFeedbackRepository = container.rankingFeedbackRepository,
-                database = database,
-                navController = navController,
-                onPodcastClick = { podcast, entryPointStr, genreStr, depthVal ->
-                    var route = "podcast/${podcast.id}"
-                    val params = mutableListOf<String>()
-                    params.add("entryPoint=$entryPointStr")
-                    if (genreStr != null) params.add("genre=$genreStr")
-                    if (depthVal != null) params.add("depth=$depthVal")
-                    if (params.isNotEmpty()) route += "?" + params.joinToString("&")
-                    navController.navigate(route)
-                },
-                onPlayClick = { podcast, bundle ->
-                    val episode = podcast.latestEpisode
-                    if (episode != null) {
-                        queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
-                    }
-                },
-                onHeroArrowClick = { heroItem, carouselPos ->
-                    val ep = heroItem.podcast.latestEpisode
-                    if (ep != null) {
-                        fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                        val entryPointStr = "home_hero_${heroItem.type.name.lowercase()}"
-                        navController.navigate(
-                            "episode/${ep.id}/${encode(ep.title)}/" +
-                                "${encode(ep.description.take(500))}/" +
-                                "${encode(ep.imageUrl)}/" +
-                                "${encode(ep.audioUrl)}/" +
-                                "${ep.duration}/${heroItem.podcast.id}/" +
-                                "${encode(heroItem.podcast.title)}" +
-                                "?entryPoint=$entryPointStr&carouselPosition=$carouselPos",
-                        )
-                    } else {
-                        navController.navigate("podcast/${android.net.Uri.encode(heroItem.podcast.id)}")
-                    }
-                },
-                onEpisodeClick = { episode, podcast, entryPointStr ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
-                    navController.navigate(
-                        "episode/${encode(episode.id)}/${encode(episode.title)}/" +
-                            "${encode(episode.description.take(500))}/" +
-                            "${encode(episode.imageUrl)}/" +
-                            "${encode(episode.audioUrl)}/" +
-                            "${episode.duration}/${encode(podcast.id)}/" +
-                            "${encode(podcast.title)}" +
-                            entryPointQuery,
-                    )
-                },
-                onNavigateToLibrary = {
-                    navController.navigate("library/subscriptions") {
-                        popUpTo("home") { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onNavigateToLatestEpisodes = {
-                    navController.navigate("library/subscriptions?tab=1")
-                },
-                onNavigateToExplore = { category, entryPoint, tab ->
-                    val catQuery = if (category != null) "category=$category&" else ""
-                    val tabQuery = if (tab != null) "tab=$tab&" else ""
-                    val route = "explore?${catQuery}${tabQuery}entryPoint=$entryPoint"
-                    navController.navigate(route) {
-                        popUpTo("home") { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onNavigateToSettings = { navController.navigate("settings?page=hub") },
-                onNavigateToPlayStoreReview = {
-                    val activity = context as? androidx.activity.ComponentActivity ?: return@HomeRoute
-                    val reviewManager = com.google.android.play.core.review.ReviewManagerFactory.create(activity)
-                    reviewManager.requestReviewFlow().addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            reviewManager.launchReviewFlow(activity, task.result)
-                        }
-                    }
-                },
-                onSubmitFeedback = onSubmitFeedback,
-                onNavigateToDebug = { navController.navigate("debug") },
-                onImportClick = {
-                    opmlCallbacks.onSourceChange("home_import_banner")
-                    opmlCallbacks.onImportStateChange(OpmlImportState.ShowSelector)
-                },
-                onAiOnboardingClick = {
-                    onboardingViewModel.startOnboarding("home_import_banner")
-                    navController.navigate("onboarding")
-                },
-                onBriefingClick = { region ->
-                    navController.navigate("briefing?region=$region")
-                },
-            )
-        }
+            },
+            onBack = { navController.popBackStack() },
+            onImportClick = {
+                opmlCallbacks.onSourceChange("welcome_screen")
+                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackOnboardingFlowSelected("import_library", "welcome_screen")
+                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackImportSheetOpened()
+                opmlCallbacks.onImportStateChange(OpmlImportState.ShowSelector)
+            },
+        )
+    }
+}
 
-        // -----------------------------------------------------------------------
-        // Learn
-        // -----------------------------------------------------------------------
-        composable("learn") {
-            val learnHistoryStore = remember {
-                cx.aswin.boxlore.feature.explore.LearnCuriosityHistoryStore(application)
-            }
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.explore.LearnViewModel(
-                            podcastRepository = podcastRepository,
-                            application = application,
-                            rankingFeedback = container.rankingFeedbackRepository,
-                            historyStore = learnHistoryStore,
-                        ) as T
-                },
-            )
-            cx.aswin.boxlore.feature.explore.LearnScreen(
-                viewModel = viewModel,
-                playbackRepository = playbackRepository,
-                bottomContentPadding = miniPlayerPadding,
-                onNavigateToHistory = { navController.navigate("learn/history") },
-                onEpisodeClick = { episode ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val route = "episode/${episode.id}/${encode(episode.title)}/" +
-                        "${encode(episode.description.take(500))}/" +
-                        "${encode(episode.imageUrl)}/" +
-                        "${encode(episode.audioUrl)}/" +
-                        "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
-                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
-                    navController.navigate(route)
-                },
-                onQueueEpisode = { episode ->
-                    scope.launch {
-                        try {
-                            if (playbackRepository.hasNonLoreQueue()) {
-                                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackLoreQueueConflictShown(
-                                    episodeId = episode.id,
-                                    normalQueueSize = playbackRepository.playerState.value.queue.size,
-                                )
-                                onLoreQueueConflictEpisode(episode)
-                            } else {
-                                queueLoreEpisode(episode)
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.e("BoxLoreNavHost", "Failed to queue Lore episode", e)
-                        }
-                    }
-                },
-                onPodcastClick = { feedId, _, _, _ ->
-                    val pId = feedId?.toString() ?: ""
-                    navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=learn")
-                },
-            )
-        }
+private fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val application = w.application
+    val container = w.container
+    val database = w.database
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val downloadRepository = w.downloadRepository
+    val subscriptionRepository = w.subscriptionRepository
+    val queueManager = w.queueManager
+    val context = w.context
+    val opmlCallbacks = w.opmlCallbacks
+    val onboardingViewModel = w.session.onboardingViewModel
+    val showFeatureDialog = w.session.showFeatureDialog
+    val permissionLauncher = w.session.permissionLauncher
+    val onSubmitFeedback = w.actions.onSubmitFeedback
 
-        composable("learn/history") {
-            val learnHistoryStore = remember {
-                cx.aswin.boxlore.feature.explore.LearnCuriosityHistoryStore(application)
-            }
-            val historyViewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnHistoryViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.explore.LearnHistoryViewModel(
-                            application = application,
-                            historyStore = learnHistoryStore,
-                        ) as T
-                },
-            )
-            cx.aswin.boxlore.feature.explore.LearnHistoryScreen(
-                viewModel = historyViewModel,
-                bottomContentPadding = miniPlayerPadding,
-                onBack = { navController.popBackStack() },
-                onEpisodeClick = { episode ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val route = "episode/${episode.id}/${encode(episode.title)}/" +
-                        "${encode(episode.description.take(500))}/" +
-                        "${encode(episode.imageUrl)}/" +
-                        "${encode(episode.audioUrl)}/" +
-                        "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
-                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn_history"
-                    navController.navigate(route)
-                },
-            )
-        }
-
-        // -----------------------------------------------------------------------
-        // Briefing
-        // -----------------------------------------------------------------------
-        composable(
-            route = "briefing?region={region}",
-            arguments = listOf(
-                navArgument("region") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-            ),
-        ) { backStackEntry ->
-            val region = backStackEntry.arguments?.getString("region")
-            BriefingRoute(
-                podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
-                queueManager = queueManager,
-                initialRegion = region,
-                onBackClick = { navController.popBackStack() },
-                onFeedbackClick = { onShowFeedbackSheet() },
-                bottomContentPadding = miniPlayerPadding,
-                onEpisodeClick = { episode ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val route = "episode/${episode.id}/${encode(episode.title)}/" +
-                        "${encode(episode.description.take(500))}/" +
-                        "${encode(episode.imageUrl)}/" +
-                        "${encode(episode.audioUrl)}/" +
-                        "${episode.duration}/${encode(episode.podcastId ?: "briefing")}/" +
-                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=briefing"
-                    navController.navigate(route)
-                },
-            )
-        }
-
-        // -----------------------------------------------------------------------
-        // Settings
-        // -----------------------------------------------------------------------
-        composable(
-            route = "settings?page={page}",
-            arguments = listOf(
-                navArgument("page") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-            ),
-        ) { backStackEntry ->
-            val settingsPage = backStackEntry.arguments?.getString("page")
-
-            fun trackAndPersistPlaybackDuration(
-                eventName: String,
-                value: Long,
-                persist: suspend (Long) -> Unit,
+    // -----------------------------------------------------------------------
+    // Home
+    // -----------------------------------------------------------------------
+    composable("home") {
+        LaunchedEffect(showFeatureDialog) {
+            if (
+                !showFeatureDialog &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) != PackageManager.PERMISSION_GRANTED
             ) {
-                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper
-                    .trackSettingsInteraction(eventName, value.toString())
-                scope.launch { persist(value) }
+                cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackNotificationPermissionRequested()
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
-
-            cx.aswin.boxlore.feature.home.settings.SettingsScreen(
-                repositories = cx.aswin.boxlore.feature.home.settings.SettingsRepositories(
-                    rssPodcastRepository = container.rssPodcastRepository,
-                    rankingFeedbackRepository = container.rankingFeedbackRepository,
-                ),
-                config = cx.aswin.boxlore.feature.home.settings.SettingsScreenConfig(
-                    onBack = { navController.popBackStack() },
-                    onResetAnalytics = {
-                        try {
-                            cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.resetIdentity()
-                        } catch (e: Exception) {
-                            android.util.Log.e("Settings", "Failed to reset analytics", e)
-                        }
-                    },
-                    appInstanceId = appInstanceId,
-                    initialPage = settingsPage,
-                ),
-                regionSettings = cx.aswin.boxlore.feature.home.settings.RegionSettings(
-                    currentRegion = settingsState.currentRegion,
-                    onSetRegion = { region -> scope.launch { userPrefs.setRegion(region) } },
-                ),
-                appearanceSettings = cx.aswin.boxlore.feature.home.settings.AppearanceSettings(
-                    state = cx.aswin.boxlore.feature.home.settings.pages.AppearanceUiState(
-                        currentThemeConfig = settingsState.themeConfig,
-                        isDynamicColorEnabled = settingsState.useDynamicColor,
-                        currentThemeBrand = settingsState.themeBrand,
-                        currentSurfaceStyle = settingsState.surfaceStyle,
-                    ),
-                    actions = cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
-                        onSetThemeConfig = { config -> scope.launch { userPrefs.setThemeConfig(config) } },
-                        onToggleDynamicColor = { enabled -> scope.launch { userPrefs.setUseDynamicColor(enabled) } },
-                        onSetThemeBrand = { brand -> scope.launch { userPrefs.setThemeBrand(brand) } },
-                        onSetSurfaceStyle = { style -> scope.launch { userPrefs.setSurfaceStyle(style) } },
-                    ),
-                ),
-                playbackSettings = cx.aswin.boxlore.feature.home.settings.PlaybackSettings(
-                    state = cx.aswin.boxlore.feature.home.settings.pages.PlaybackUiState(
-                        skipBehavior = settingsState.skipBehavior,
-                        skipBeginningMs = settingsState.skipBeginningMs,
-                        skipEndingMs = settingsState.skipEndingMs,
-                        seekBackwardMs = settingsState.seekBackwardMs,
-                        seekForwardMs = settingsState.seekForwardMs,
-                        hideCompletedInHome = settingsState.hideCompletedInHome,
-                        hideCompletedInSubs = settingsState.hideCompletedInSubs,
-                        hideCompletedInShowDetails = settingsState.hideCompletedInShowDetails,
-                    ),
-                    actions = cx.aswin.boxlore.feature.home.settings.pages.PlaybackActions(
-                        onSetSkipBehavior = { behavior -> scope.launch { userPrefs.setSkipBehavior(behavior) } },
-                        onSetSkipBeginningMs = { value ->
-                            trackAndPersistPlaybackDuration("skip_beginning_changed", value, userPrefs::setSkipBeginningMs)
-                        },
-                        onSetSkipEndingMs = { value ->
-                            trackAndPersistPlaybackDuration("skip_ending_changed", value, userPrefs::setSkipEndingMs)
-                        },
-                        onSetSeekBackwardMs = { value ->
-                            trackAndPersistPlaybackDuration("seek_backward_changed", value, userPrefs::setSeekBackwardMs)
-                        },
-                        onSetSeekForwardMs = { value ->
-                            trackAndPersistPlaybackDuration("seek_forward_changed", value, userPrefs::setSeekForwardMs)
-                        },
-                        onSetHideCompletedInHome = { hide -> scope.launch { userPrefs.setHideCompletedInHome(hide) } },
-                        onSetHideCompletedInSubs = { hide -> scope.launch { userPrefs.setHideCompletedInSubs(hide) } },
-                        onSetHideCompletedInShowDetails = { hide -> scope.launch { userPrefs.setHideCompletedInShowDetails(hide) } },
-                    ),
-                ),
-                libraryBackupWriters = cx.aswin.boxlore.feature.home.settings.LibraryBackupWriters(
-                    onExportJson = { uri ->
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                val backupJson = cx.aswin.boxlore.core.data.backup.LibraryBackupManager(
-                                    subscriptionRepository, playbackRepository, podcastRepository, userPrefs, application,
-                                ).exportLibraryAsJson()
-                                (application.contentResolver.openOutputStream(uri)
-                                    ?: error("Unable to open export destination")).use { it.write(backupJson.toByteArray()) }
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                    android.widget.Toast.makeText(application, "Library Exported Successfully", android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            } catch (e: Exception) {
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                    android.widget.Toast.makeText(application, "Failed to export: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    },
-                    onExportOpml = { uri ->
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                val opmlXml = cx.aswin.boxlore.core.data.backup.LibraryBackupManager(
-                                    subscriptionRepository, playbackRepository, podcastRepository, context = application,
-                                ).exportLibraryAsOpml()
-                                (application.contentResolver.openOutputStream(uri)
-                                    ?: error("Unable to open export destination")).use { it.write(opmlXml.toByteArray()) }
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                    android.widget.Toast.makeText(application, "Subscriptions Exported as OPML", android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            } catch (e: Exception) {
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                    android.widget.Toast.makeText(application, "Failed to export OPML: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    },
-                    onImportJson = { uri -> opmlCallbacks.performJsonImport(uri) },
-                    onImportOpml = { uri ->
-                        opmlCallbacks.onImportStateChange(OpmlImportState.Parsing(uri))
-                        opmlCallbacks.onTriggerKeyChange(System.currentTimeMillis())
-                    },
-                ),
-                downloadsNavigation = cx.aswin.boxlore.feature.home.settings.DownloadsNavigation(
-                    onNavigateToSmartDownloads = { navController.navigate("library/downloads/settings") },
-                    onNavigateToAutoDownloads = { navController.navigate("library/auto_downloads/settings") },
-                ),
-            )
         }
-
-        // -----------------------------------------------------------------------
-        // Debug
-        // -----------------------------------------------------------------------
-        composable("debug") {
-            cx.aswin.boxlore.feature.home.DebugScreen(
-                playbackRepository = playbackRepository,
-                subscriptionRepository = subscriptionRepository,
-                userPreferencesRepository = userPrefs,
-                adaptiveRankingRepository = container.adaptiveRankingRepository,
-                onBack = { navController.popBackStack() },
-            )
-        }
-
-        // -----------------------------------------------------------------------
-        // Explore
-        // -----------------------------------------------------------------------
-        composable(
-            route = "explore?category={category}&entryPoint={entryPoint}&tab={tab}",
-            arguments = listOf(
-                navArgument("category") {
-                    type = NavType.StringType; nullable = true; defaultValue = null
-                },
-                navArgument("entryPoint") {
-                    type = NavType.StringType; nullable = true; defaultValue = "bottom_nav"
-                },
-                navArgument("tab") {
-                    type = NavType.StringType; nullable = true; defaultValue = null
-                },
-            ),
-        ) { backStackEntry ->
-            val category = backStackEntry.arguments?.getString("category")
-            val entryPoint = backStackEntry.arguments?.getString("entryPoint") ?: "bottom_nav"
-            val tab = backStackEntry.arguments?.getString("tab")
-
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.ExploreViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.explore.ExploreViewModel(
-                            application = application,
-                            podcastRepository = podcastRepository,
-                            subscriptionRepository = subscriptionRepository,
-                            userPrefs = userPrefs,
-                            playbackRepository = playbackRepository,
-                            adaptiveScorer = container.adaptiveCandidateScorer,
-                            initialCategory = category,
-                            initialTab = tab,
-                        ) as T
-                },
-            )
-
-            cx.aswin.boxlore.feature.explore.ExploreScreen(
-                viewModel = viewModel,
-                entryPoint = entryPoint,
-                onPodcastClick = { podcastId, entryPointStr, genreStr, depthVal ->
-                    var route = "podcast/$podcastId"
-                    val params = mutableListOf<String>()
-                    params.add("entryPoint=$entryPointStr")
-                    if (genreStr != null) params.add("genre=$genreStr")
-                    if (depthVal != null) params.add("depth=$depthVal")
-                    if (params.isNotEmpty()) route += "?" + params.joinToString("&")
-                    navController.navigate(route)
-                },
-                onEpisodeClick = { episode, podcast ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    navController.navigate(
-                        "episode/${encode(episode.id)}/${encode(episode.title)}/" +
-                            "${encode(episode.description.take(500))}/" +
-                            "${encode(episode.imageUrl)}/" +
-                            "${encode(episode.audioUrl)}/" +
-                            "${episode.duration}/${encode(podcast.id)}/" +
-                            "${encode(podcast.title)}" +
-                            "?entryPoint=explore_for_you",
-                    )
-                },
-                onNavigateToRegionSettings = { navController.navigate("settings?page=library") },
-            )
-        }
-
-        // -----------------------------------------------------------------------
-        // Library
-        // -----------------------------------------------------------------------
-        composable("library") {
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.library.LibraryViewModel(
-                            subscriptionRepository,
-                            playbackRepository,
-                            downloadRepository,
-                            userPrefs,
-                            container.adaptiveCandidateScorer,
-                        ) as T
-                },
-            )
-            cx.aswin.boxlore.feature.library.LibraryScreen(
-                viewModel = viewModel,
-                onNavigateToLiked = { navController.navigate("library/liked") },
-                onNavigateToSubscriptions = { navController.navigate("library/subscriptions") },
-                onNavigateToDownloads = { navController.navigate("library/downloads") },
-                onNavigateToHistory = { navController.navigate("library/history") },
-            )
-        }
-
-        composable("library/history") {
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.HistoryViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.library.HistoryViewModel(playbackRepository) as T
-                },
-            )
-            cx.aswin.boxlore.feature.library.HistoryScreen(
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onEpisodeClick = { entity ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val desc = "Resuming from History"
-                    navController.navigate(
-                        "episode/${entity.episodeId}/${encode(entity.episodeTitle)}/" +
-                            "${encode(desc)}/" +
-                            "${encode(entity.episodeImageUrl ?: entity.podcastImageUrl)}/" +
-                            "${encode(entity.episodeAudioUrl)}/" +
-                            "${entity.durationMs}/${encode(entity.podcastId)}/" +
-                            "${encode(entity.podcastName)}" +
-                            "?entryPoint=library_history",
-                    )
-                },
-            )
-        }
-
-        composable("library/liked") {
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.library.LibraryViewModel(
-                            subscriptionRepository,
-                            playbackRepository,
-                            downloadRepository,
-                            userPrefs,
-                            container.adaptiveCandidateScorer,
-                        ) as T
-                },
-            )
-            cx.aswin.boxlore.feature.library.LikedEpisodesScreen(
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onEpisodeClick = { episode, podcast ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    navController.navigate(
-                        "episode/${episode.id}/${encode(episode.title)}/" +
-                            "${encode(episode.description.take(500))}/" +
-                            "${encode(episode.imageUrl)}/" +
-                            "${encode(episode.audioUrl)}/" +
-                            "${episode.duration}/${encode(podcast.id)}/" +
-                            "${encode(podcast.title)}" +
-                            "?entryPoint=library_liked_episodes",
-                    )
-                },
-                onExploreClick = {
-                    navController.navigate("explore?entryPoint=library_history_empty_state") {
-                        popUpTo("home")
-                    }
-                },
-            )
-        }
-
-        composable(
-            "library/subscriptions?tab={tab}",
-            arguments = listOf(
-                navArgument("tab") {
-                    type = NavType.IntType
-                    defaultValue = 0
-                },
-            ),
-        ) { backStackEntry ->
-            val initialTab = backStackEntry.arguments?.getInt("tab") ?: 0
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.library.LibraryViewModel(
-                            subscriptionRepository,
-                            playbackRepository,
-                            downloadRepository,
-                            userPrefs,
-                            container.adaptiveCandidateScorer,
-                        ) as T
-                },
-            )
-            cx.aswin.boxlore.feature.library.SubscriptionsScreen(
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onPodcastClick = { podcastId ->
-                    navController.navigate(
-                        "podcast/${android.net.Uri.encode(podcastId)}?entryPoint=library_subscriptions",
-                    )
-                },
-                onExploreClick = {
-                    navController.navigate("explore?entryPoint=library_subscriptions_empty_state") {
-                        popUpTo("home")
-                    }
-                },
-                onPlayEpisode = { episode, podcast -> queueManager.playEpisode(episode, podcast) },
-                onPlayEpisodes = { episodes, fallbackPodcast -> queueManager.playEpisodes(episodes, fallbackPodcast) },
-                onEpisodeClick = { episode, podcast, entryPointStr ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
-                    navController.navigate(
-                        "episode/${encode(episode.id)}/${encode(episode.title)}/" +
-                            "${encode(episode.description.take(500))}/" +
-                            "${encode(episode.imageUrl)}/" +
-                            "${encode(episode.audioUrl)}/" +
-                            "${episode.duration}/${encode(podcast.id)}/" +
-                            "${encode(podcast.title)}" +
-                            entryPointQuery,
-                    )
-                },
-                isPlayerActive = currentEpisode != null,
-                initialTab = initialTab,
-            )
-        }
-
-        composable("library/downloads") {
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.library.LibraryViewModel(
-                            subscriptionRepository,
-                            playbackRepository,
-                            downloadRepository,
-                            userPrefs,
-                            container.adaptiveCandidateScorer,
-                        ) as T
-                },
-            )
-            cx.aswin.boxlore.feature.library.DownloadedEpisodesScreen(
-                viewModel = viewModel,
-                userPrefs = userPrefs,
-                isOffline = !isOnline,
-                onBack = { navController.popBackStack() },
-                isPlayerActive = currentEpisode != null,
-                onPodcastShowClick = { podcastId, podcastTitle ->
-                    android.util.Log.d("NavHost", "onPodcastShowClick: id=$podcastId title=$podcastTitle")
-                    val encodedTitle = android.net.Uri.encode(podcastTitle.ifEmpty { "_" })
-                    val encodedId = android.net.Uri.encode(podcastId.ifEmpty { "_" })
-                    navController.navigate("library/downloads/show?podcastId=$encodedId&podcastTitle=$encodedTitle")
-                },
-                onExploreClick = {
-                    navController.navigate("explore?entryPoint=library_downloads_empty_state") {
-                        popUpTo("home")
-                    }
-                },
-                onSettingsClick = { navController.navigate("library/downloads/settings") },
-                isSyncing = isSyncingSmartDownloads,
-                onSyncNow = {
-                    scope.launch(Dispatchers.IO) {
-                        isSyncingSmartDownloads = true
-                        try {
-                            smartDownloadManager.performSync(isManual = true)
-                        } finally {
-                            isSyncingSmartDownloads = false
-                        }
-                    }
-                },
-            )
-        }
-
-        composable("library/downloads/settings") {
-            cx.aswin.boxlore.feature.library.SmartDownloadsSettingsScreen(
-                userPrefs = userPrefs,
-                onBack = { navController.popBackStack() },
-            )
-        }
-
-        composable("library/auto_downloads/settings") {
-            cx.aswin.boxlore.feature.library.AutoDownloadSettingsScreen(
-                userPrefs = userPrefs,
-                onBack = { navController.popBackStack() },
-            )
-        }
-
-        composable(
-            route = "library/downloads/show?podcastId={podcastId}&podcastTitle={podcastTitle}",
-            arguments = listOf(
-                navArgument("podcastId") { type = NavType.StringType; defaultValue = "" },
-                navArgument("podcastTitle") { type = NavType.StringType; defaultValue = "" },
-            ),
-        ) { backStackEntry ->
-            val podcastId = backStackEntry.arguments?.getString("podcastId") ?: ""
-            val podcastTitle = backStackEntry.arguments?.getString("podcastTitle") ?: ""
-
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        cx.aswin.boxlore.feature.library.LibraryViewModel(
-                            subscriptionRepository,
-                            playbackRepository,
-                            downloadRepository,
-                            userPrefs,
-                            container.adaptiveCandidateScorer,
-                        ) as T
-                },
-            )
-            cx.aswin.boxlore.feature.library.DownloadedShowEpisodesScreen(
-                viewModel = viewModel,
-                podcastId = podcastId,
-                podcastTitle = podcastTitle,
-                onBack = { navController.popBackStack() },
-                isPlayerActive = currentEpisode != null,
-                onEpisodeClick = { episode, podcast ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    navController.navigate(
-                        "episode/${episode.id}/${encode(episode.title)}/" +
-                            "${encode(episode.description.take(500))}/" +
-                            "${encode(episode.imageUrl)}/" +
-                            "${encode(episode.audioUrl)}/" +
-                            "${episode.duration}/${encode(podcast.id)}/" +
-                            "${encode(podcast.title)}" +
-                            "?entryPoint=library_downloaded_episodes",
-                    )
-                },
-            )
-        }
-
-        // -----------------------------------------------------------------------
-        // Podcast info (+ deep links)
-        // -----------------------------------------------------------------------
-        composable(
-            route = "podcast/{podcastId}?entryPoint={entryPoint}&genre={genre}&depth={depth}&query={query}",
-            arguments = listOf(
-                navArgument("podcastId") { type = NavType.StringType },
-                navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("genre") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("depth") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("query") { type = NavType.StringType; nullable = true; defaultValue = null },
-            ),
-            deepLinks = listOf(
-                navDeepLink { uriPattern = "boxlore://podcast/{podcastId}" },
-                navDeepLink { uriPattern = "boxcast://podcast/{podcastId}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=podcast&id={podcastId}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=podcast&id={podcastId}" },
-            ),
-        ) { backStackEntry ->
-            val podcastId = backStackEntry.arguments?.getString("podcastId") ?: return@composable
-            if (podcastId.startsWith("briefing_")) {
-                val region = podcastId.removePrefix("briefing_")
-                LaunchedEffect(podcastId) {
-                    navController.navigate("briefing?region=$region") {
-                        popUpTo("podcast/{podcastId}?entryPoint={entryPoint}&genre={genre}&depth={depth}&query={query}") {
-                            inclusive = true
-                        }
-                    }
+        HomeRoute(
+            podcastRepository = podcastRepository,
+            playbackRepository = playbackRepository,
+            engagementPromptCoordinator = application.engagementPromptCoordinator,
+            subscriptionRepository = subscriptionRepository,
+            downloadRepository = downloadRepository,
+            rssPodcastRepository = container.rssPodcastRepository,
+            adaptiveRankingRepository = container.adaptiveRankingRepository,
+            adaptiveCandidateScorer = container.adaptiveCandidateScorer,
+            rankingFeedbackRepository = container.rankingFeedbackRepository,
+            database = database,
+            navController = navController,
+            onPodcastClick = { podcast, entryPointStr, genreStr, depthVal ->
+                var route = "podcast/${podcast.id}"
+                val params = mutableListOf<String>()
+                params.add("entryPoint=$entryPointStr")
+                if (genreStr != null) params.add("genre=$genreStr")
+                if (depthVal != null) params.add("depth=$depthVal")
+                if (params.isNotEmpty()) route += "?" + params.joinToString("&")
+                navController.navigate(route)
+            },
+            onPlayClick = { podcast, bundle ->
+                val episode = podcast.latestEpisode
+                if (episode != null) {
+                    queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
                 }
-                return@composable
-            }
-
-            val entryPoint = backStackEntry.arguments?.getString("entryPoint")
-            val genre = backStackEntry.arguments?.getString("genre")
-            val depthStr = backStackEntry.arguments?.getString("depth")
-            val depth = depthStr?.toIntOrNull()
-            val query = backStackEntry.arguments?.getString("query")
-
-            val infoSharedDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
-                podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
-                downloadRepository = downloadRepository,
-                queueManager = queueManager,
-                database = database,
-            )
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.PodcastInfoViewModel>(
-                factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.podcastInfoFactory(
-                    application = application,
-                    deps = infoSharedDeps,
-                    subscriptionRepository = subscriptionRepository,
-                    rssRepository = container.rssPodcastRepository,
-                    routeArgs = cx.aswin.boxlore.feature.info.PodcastInfoRouteArgs(
-                        entryPoint = entryPoint,
-                        genreFilter = genre,
-                        scrollDepth = depth,
-                        searchQuery = query,
-                    ),
-                ),
-            )
-
-            val isPlayerVisible by remember(playbackRepository) {
-                playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
-            }.collectAsState(initial = false)
-
-            val localMiniPlayerPadding = if (isPlayerVisible) {
-                AppNavigationBarHeight + 64.dp + 2.dp
-            } else {
-                AppNavigationBarHeight
-            }
-
-            cx.aswin.boxlore.feature.info.PodcastInfoScreen(
-                podcastId = podcastId,
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                bottomContentPadding = localMiniPlayerPadding,
-                onPodcastClick = { pId ->
-                    navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=podroll")
-                },
-                onEpisodeClick = { episode, entryPointStr, index ->
+            },
+            onHeroArrowClick = { heroItem, carouselPos ->
+                val ep = heroItem.podcast.latestEpisode
+                if (ep != null) {
                     fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    var route = "episode/${episode.id}/${encode(episode.title)}/" +
+                    val entryPointStr = "home_hero_${heroItem.type.name.lowercase()}"
+                    navController.navigate(
+                        "episode/${ep.id}/${encode(ep.title)}/" +
+                            "${encode(ep.description.take(500))}/" +
+                            "${encode(ep.imageUrl)}/" +
+                            "${encode(ep.audioUrl)}/" +
+                            "${ep.duration}/${heroItem.podcast.id}/" +
+                            "${encode(heroItem.podcast.title)}" +
+                            "?entryPoint=$entryPointStr&carouselPosition=$carouselPos",
+                    )
+                } else {
+                    navController.navigate("podcast/${android.net.Uri.encode(heroItem.podcast.id)}")
+                }
+            },
+            onEpisodeClick = { episode, podcast, entryPointStr ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
+                navController.navigate(
+                    "episode/${encode(episode.id)}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
                         "${encode(episode.imageUrl)}/" +
                         "${encode(episode.audioUrl)}/" +
-                        "${episode.duration}/${encode(viewModel.uiState.value.let { if (it is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) it.podcast.id else podcastId })}/" +
-                        "${encode(viewModel.uiState.value.let { if (it is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) it.podcast.title else "Podcast" })}" +
-                        "?entryPoint=$entryPointStr"
-                    if (index != null) route += "&carouselPosition=$index"
-                    navController.navigate(route)
-                },
-                onPlayEpisode = { episode ->
-                    val state = viewModel.uiState.value
-                    if (state is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) {
-                        queueManager.playEpisode(episode, state.podcast)
-                    }
-                },
-            )
-        }
-
-        // -----------------------------------------------------------------------
-        // Episode info — full path route
-        // -----------------------------------------------------------------------
-        composable(
-            route = "episode/{episodeId}/{episodeTitle}/{episodeDescription}/{episodeImageUrl}/{episodeAudioUrl}/{episodeDuration}/{podcastId}/{podcastTitle}?entryPoint={entryPoint}&vibeId={vibeId}&carouselPosition={carouselPosition}",
-            arguments = listOf(
-                navArgument("episodeId") { type = NavType.StringType },
-                navArgument("episodeTitle") { type = NavType.StringType },
-                navArgument("episodeDescription") { type = NavType.StringType },
-                navArgument("episodeImageUrl") { type = NavType.StringType },
-                navArgument("episodeAudioUrl") { type = NavType.StringType },
-                navArgument("episodeDuration") { type = NavType.IntType },
-                navArgument("podcastId") { type = NavType.StringType },
-                navArgument("podcastTitle") { type = NavType.StringType },
-                navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("vibeId") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("carouselPosition") { type = NavType.IntType; defaultValue = -1 },
-            ),
-        ) { backStackEntry ->
-            val args = backStackEntry.arguments ?: return@composable
-            val episodeId = args.getString("episodeId") ?: ""
-            if (episodeId.startsWith("briefing_")) {
-                val region = episodeId.removePrefix("briefing_").substringBefore("_")
-                LaunchedEffect(episodeId) {
-                    navController.navigate("briefing?region=$region") {
-                        popUpTo(
-                            "episode/{episodeId}/{episodeTitle}/{episodeDescription}/{episodeImageUrl}/{episodeAudioUrl}/{episodeDuration}/{podcastId}/{podcastTitle}?entryPoint={entryPoint}&vibeId={vibeId}&carouselPosition={carouselPosition}",
-                        ) { inclusive = true }
+                        "${episode.duration}/${encode(podcast.id)}/" +
+                        "${encode(podcast.title)}" +
+                        entryPointQuery,
+                )
+            },
+            onNavigateToLibrary = {
+                navController.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) {
+                    popUpTo("home") { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+            onNavigateToLatestEpisodes = {
+                navController.navigate("library/subscriptions?tab=1")
+            },
+            onNavigateToExplore = { category, entryPoint, tab ->
+                val catQuery = if (category != null) "category=$category&" else ""
+                val tabQuery = if (tab != null) "tab=$tab&" else ""
+                val route = "explore?${catQuery}${tabQuery}entryPoint=$entryPoint"
+                navController.navigate(route) {
+                    popUpTo("home") { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+            onNavigateToSettings = { navController.navigate("settings?page=hub") },
+            onNavigateToPlayStoreReview = {
+                val activity = context as? androidx.activity.ComponentActivity ?: return@HomeRoute
+                val reviewManager = com.google.android.play.core.review.ReviewManagerFactory.create(activity)
+                reviewManager.requestReviewFlow().addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        reviewManager.launchReviewFlow(activity, task.result)
                     }
                 }
-                return@composable
-            }
+            },
+            onSubmitFeedback = onSubmitFeedback,
+            onNavigateToDebug = { navController.navigate("debug") },
+            onImportClick = {
+                opmlCallbacks.onSourceChange("home_import_banner")
+                opmlCallbacks.onImportStateChange(OpmlImportState.ShowSelector)
+            },
+            onAiOnboardingClick = {
+                onboardingViewModel.startOnboarding("home_import_banner")
+                navController.navigate("onboarding")
+            },
+            onBriefingClick = { region ->
+                navController.navigate("briefing?region=$region")
+            },
+        )
+    }
+}
 
-            val episodeInfoDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
-                podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
-                downloadRepository = downloadRepository,
-                queueManager = queueManager,
-                database = database,
-            )
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
-                factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
-                    application = application,
-                    deps = episodeInfoDeps,
-                    userPrefs = userPrefs,
-                ),
-            )
+private fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGraphWiring) {
+    val navController = w.navController
+    val application = w.application
+    val container = w.container
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val scope = w.scope
+    val miniPlayerPadding = w.session.miniPlayerPadding
+    val onLoreQueueConflictEpisode = w.actions.onLoreQueueConflictEpisode
+    val queueLoreEpisode = w.actions.queueLoreEpisode
 
-            fun decode(s: String?) = try {
-                android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it }
-            } catch (_: Exception) { s ?: "" }
-
-            val podcastId = decode(args.getString("podcastId"))
-            val podcastTitle = decode(args.getString("podcastTitle"))
-            val episodeTitle = decode(args.getString("episodeTitle"))
-            val entryPoint = args.getString("entryPoint")
-            val vibeId = decode(args.getString("vibeId"))
-            val carouselPosition = args.getInt("carouselPosition", -1)
-
-            cx.aswin.boxlore.feature.info.EpisodeInfoScreen(
-                episodeId = episodeId,
-                episodeTitle = episodeTitle,
-                episodeDescription = decode(args.getString("episodeDescription")),
-                episodeImageUrl = decode(args.getString("episodeImageUrl")),
-                episodeAudioUrl = decode(args.getString("episodeAudioUrl")),
-                episodeDuration = args.getInt("episodeDuration"),
-                podcastId = podcastId,
-                podcastTitle = podcastTitle,
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onPodcastClick = { pId ->
-                    navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
-                },
-                onEpisodeClick = { ep ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: podcastId
-                    val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: podcastTitle
-                    navController.navigate(
-                        "episode/${ep.id}/${encode(ep.title)}/${encode(ep.description.take(500))}/${encode(ep.imageUrl)}/${encode(ep.audioUrl)}/${ep.duration}/${encode(targetPodcastId)}/${encode(targetPodcastTitle)}" +
-                            "?entryPoint=episode_related_episodes",
-                    )
-                },
-                onPlay = {
-                    val episode = cx.aswin.boxlore.core.model.Episode(
-                        id = episodeId,
-                        title = episodeTitle,
-                        description = "",
-                        imageUrl = decode(args.getString("episodeImageUrl")),
-                        audioUrl = decode(args.getString("episodeAudioUrl")),
-                        duration = args.getInt("episodeDuration"),
-                        publishedDate = 0L,
-                    )
-                    val podcast = cx.aswin.boxlore.core.model.Podcast(
-                        id = podcastId,
-                        title = podcastTitle,
-                        artist = "",
-                        imageUrl = "",
-                        description = "",
-                        genre = "",
-                    )
-                    val bundle = if (entryPoint != null) {
-                        android.os.Bundle().apply {
-                            putString("entry_point", entryPoint)
-                            if (vibeId.isNotEmpty()) putString("curated_vibe_id", vibeId)
-                            if (carouselPosition >= 0) putInt("curated_carousel_position", carouselPosition)
+    // -----------------------------------------------------------------------
+    // Learn
+    // -----------------------------------------------------------------------
+    composable("learn") {
+        val learnHistoryStore = remember {
+            cx.aswin.boxlore.feature.explore.LearnCuriosityHistoryStore(application)
+        }
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.explore.LearnViewModel(
+                        podcastRepository = podcastRepository,
+                        application = application,
+                        rankingFeedback = container.rankingFeedbackRepository,
+                        historyStore = learnHistoryStore,
+                    ) as T
+            },
+        )
+        cx.aswin.boxlore.feature.explore.LearnScreen(
+            viewModel = viewModel,
+            playbackRepository = playbackRepository,
+            bottomContentPadding = miniPlayerPadding,
+            onNavigateToHistory = { navController.navigate("learn/history") },
+            onEpisodeClick = { episode ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val route = "episode/${episode.id}/${encode(episode.title)}/" +
+                    "${encode(episode.description.take(500))}/" +
+                    "${encode(episode.imageUrl)}/" +
+                    "${encode(episode.audioUrl)}/" +
+                    "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
+                    "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
+                navController.navigate(route)
+            },
+            onQueueEpisode = { episode ->
+                scope.launch {
+                    try {
+                        if (playbackRepository.hasNonLoreQueue()) {
+                            cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.trackLoreQueueConflictShown(
+                                episodeId = episode.id,
+                                normalQueueSize = playbackRepository.playerState.value.queue.size,
+                            )
+                            onLoreQueueConflictEpisode(episode)
+                        } else {
+                            queueLoreEpisode(episode)
                         }
-                    } else null
-                    queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
+                    } catch (e: Exception) {
+                        android.util.Log.e("BoxLoreNavHost", "Failed to queue Lore episode", e)
+                    }
+                }
+            },
+            onPodcastClick = { feedId, _, _, _ ->
+                val pId = feedId?.toString() ?: ""
+                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=learn")
+            },
+        )
+    }
+
+    composable("learn/history") {
+        val learnHistoryStore = remember {
+            cx.aswin.boxlore.feature.explore.LearnCuriosityHistoryStore(application)
+        }
+        val historyViewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.LearnHistoryViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.explore.LearnHistoryViewModel(
+                        application = application,
+                        historyStore = learnHistoryStore,
+                    ) as T
+            },
+        )
+        cx.aswin.boxlore.feature.explore.LearnHistoryScreen(
+            viewModel = historyViewModel,
+            bottomContentPadding = miniPlayerPadding,
+            onBack = { navController.popBackStack() },
+            onEpisodeClick = { episode ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val route = "episode/${episode.id}/${encode(episode.title)}/" +
+                    "${encode(episode.description.take(500))}/" +
+                    "${encode(episode.imageUrl)}/" +
+                    "${encode(episode.audioUrl)}/" +
+                    "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
+                    "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn_history"
+                navController.navigate(route)
+            },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addBriefingDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val queueManager = w.queueManager
+    val miniPlayerPadding = w.session.miniPlayerPadding
+    val onShowFeedbackSheet = w.actions.onShowFeedbackSheet
+
+    // -----------------------------------------------------------------------
+    // Briefing
+    // -----------------------------------------------------------------------
+    composable(
+        route = "briefing?region={region}",
+        arguments = listOf(
+            navArgument("region") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) { backStackEntry ->
+        val region = backStackEntry.arguments?.getString("region")
+        BriefingRoute(
+            podcastRepository = podcastRepository,
+            playbackRepository = playbackRepository,
+            queueManager = queueManager,
+            initialRegion = region,
+            onBackClick = { navController.popBackStack() },
+            onFeedbackClick = { onShowFeedbackSheet() },
+            bottomContentPadding = miniPlayerPadding,
+            onEpisodeClick = { episode ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val route = "episode/${episode.id}/${encode(episode.title)}/" +
+                    "${encode(episode.description.take(500))}/" +
+                    "${encode(episode.imageUrl)}/" +
+                    "${encode(episode.audioUrl)}/" +
+                    "${episode.duration}/${encode(episode.podcastId ?: "briefing")}/" +
+                    "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=briefing"
+                navController.navigate(route)
+            },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val application = w.application
+    val container = w.container
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val subscriptionRepository = w.subscriptionRepository
+    val userPrefs = w.userPrefs
+    val scope = w.scope
+    val opmlCallbacks = w.opmlCallbacks
+    val settingsState = w.settingsState
+    val appInstanceId = w.session.appInstanceId
+
+    // -----------------------------------------------------------------------
+    // Settings
+    // -----------------------------------------------------------------------
+    composable(
+        route = "settings?page={page}",
+        arguments = listOf(
+            navArgument("page") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) { backStackEntry ->
+        val settingsPage = backStackEntry.arguments?.getString("page")
+
+        fun trackAndPersistPlaybackDuration(
+            eventName: String,
+            value: Long,
+            persist: suspend (Long) -> Unit,
+        ) {
+            cx.aswin.boxlore.core.data.analytics.AnalyticsHelper
+                .trackSettingsInteraction(eventName, value.toString())
+            scope.launch { persist(value) }
+        }
+
+        cx.aswin.boxlore.feature.home.settings.SettingsScreen(
+            repositories = cx.aswin.boxlore.feature.home.settings.SettingsRepositories(
+                rssPodcastRepository = container.rssPodcastRepository,
+                rankingFeedbackRepository = container.rankingFeedbackRepository,
+            ),
+            config = cx.aswin.boxlore.feature.home.settings.SettingsScreenConfig(
+                onBack = { navController.popBackStack() },
+                onResetAnalytics = {
+                    try {
+                        cx.aswin.boxlore.core.data.analytics.AnalyticsHelper.resetIdentity()
+                    } catch (e: Exception) {
+                        android.util.Log.e("Settings", "Failed to reset analytics", e)
+                    }
                 },
-                entryPointContext = if (entryPoint != null) {
+                appInstanceId = appInstanceId,
+                initialPage = settingsPage,
+            ),
+            regionSettings = cx.aswin.boxlore.feature.home.settings.RegionSettings(
+                currentRegion = settingsState.currentRegion,
+                onSetRegion = { region -> scope.launch { userPrefs.setRegion(region) } },
+            ),
+            appearanceSettings = cx.aswin.boxlore.feature.home.settings.AppearanceSettings(
+                state = cx.aswin.boxlore.feature.home.settings.pages.AppearanceUiState(
+                    currentThemeConfig = settingsState.themeConfig,
+                    isDynamicColorEnabled = settingsState.useDynamicColor,
+                    currentThemeBrand = settingsState.themeBrand,
+                    currentSurfaceStyle = settingsState.surfaceStyle,
+                ),
+                actions = cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
+                    onSetThemeConfig = { config -> scope.launch { userPrefs.setThemeConfig(config) } },
+                    onToggleDynamicColor = { enabled -> scope.launch { userPrefs.setUseDynamicColor(enabled) } },
+                    onSetThemeBrand = { brand -> scope.launch { userPrefs.setThemeBrand(brand) } },
+                    onSetSurfaceStyle = { style -> scope.launch { userPrefs.setSurfaceStyle(style) } },
+                ),
+            ),
+            playbackSettings = cx.aswin.boxlore.feature.home.settings.PlaybackSettings(
+                state = cx.aswin.boxlore.feature.home.settings.pages.PlaybackUiState(
+                    skipBehavior = settingsState.skipBehavior,
+                    skipBeginningMs = settingsState.skipBeginningMs,
+                    skipEndingMs = settingsState.skipEndingMs,
+                    seekBackwardMs = settingsState.seekBackwardMs,
+                    seekForwardMs = settingsState.seekForwardMs,
+                    hideCompletedInHome = settingsState.hideCompletedInHome,
+                    hideCompletedInSubs = settingsState.hideCompletedInSubs,
+                    hideCompletedInShowDetails = settingsState.hideCompletedInShowDetails,
+                ),
+                actions = cx.aswin.boxlore.feature.home.settings.pages.PlaybackActions(
+                    onSetSkipBehavior = { behavior -> scope.launch { userPrefs.setSkipBehavior(behavior) } },
+                    onSetSkipBeginningMs = { value ->
+                        trackAndPersistPlaybackDuration("skip_beginning_changed", value, userPrefs::setSkipBeginningMs)
+                    },
+                    onSetSkipEndingMs = { value ->
+                        trackAndPersistPlaybackDuration("skip_ending_changed", value, userPrefs::setSkipEndingMs)
+                    },
+                    onSetSeekBackwardMs = { value ->
+                        trackAndPersistPlaybackDuration("seek_backward_changed", value, userPrefs::setSeekBackwardMs)
+                    },
+                    onSetSeekForwardMs = { value ->
+                        trackAndPersistPlaybackDuration("seek_forward_changed", value, userPrefs::setSeekForwardMs)
+                    },
+                    onSetHideCompletedInHome = { hide -> scope.launch { userPrefs.setHideCompletedInHome(hide) } },
+                    onSetHideCompletedInSubs = { hide -> scope.launch { userPrefs.setHideCompletedInSubs(hide) } },
+                    onSetHideCompletedInShowDetails = { hide -> scope.launch { userPrefs.setHideCompletedInShowDetails(hide) } },
+                ),
+            ),
+            libraryBackupWriters = cx.aswin.boxlore.feature.home.settings.LibraryBackupWriters(
+                onExportJson = { uri ->
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            val backupJson = cx.aswin.boxlore.core.data.backup.LibraryBackupManager(
+                                subscriptionRepository, playbackRepository, podcastRepository, userPrefs, application,
+                            ).exportLibraryAsJson()
+                            (application.contentResolver.openOutputStream(uri)
+                                ?: error("Unable to open export destination")).use { it.write(backupJson.toByteArray()) }
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                android.widget.Toast.makeText(application, "Library Exported Successfully", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                android.widget.Toast.makeText(application, "Failed to export: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                },
+                onExportOpml = { uri ->
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            val opmlXml = cx.aswin.boxlore.core.data.backup.LibraryBackupManager(
+                                subscriptionRepository, playbackRepository, podcastRepository, context = application,
+                            ).exportLibraryAsOpml()
+                            (application.contentResolver.openOutputStream(uri)
+                                ?: error("Unable to open export destination")).use { it.write(opmlXml.toByteArray()) }
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                android.widget.Toast.makeText(application, "Subscriptions Exported as OPML", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                android.widget.Toast.makeText(application, "Failed to export OPML: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                },
+                onImportJson = { uri -> opmlCallbacks.performJsonImport(uri) },
+                onImportOpml = { uri ->
+                    opmlCallbacks.onImportStateChange(OpmlImportState.Parsing(uri))
+                    opmlCallbacks.onTriggerKeyChange(System.currentTimeMillis())
+                },
+            ),
+            downloadsNavigation = cx.aswin.boxlore.feature.home.settings.DownloadsNavigation(
+                onNavigateToSmartDownloads = { navController.navigate(NavRoutes.LIBRARY_DOWNLOADS_SETTINGS) },
+                onNavigateToAutoDownloads = { navController.navigate("library/auto_downloads/settings") },
+            ),
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addDebugDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val container = w.container
+    val playbackRepository = w.playbackRepository
+    val subscriptionRepository = w.subscriptionRepository
+    val userPrefs = w.userPrefs
+
+    // -----------------------------------------------------------------------
+    // Debug
+    // -----------------------------------------------------------------------
+    composable("debug") {
+        cx.aswin.boxlore.feature.home.DebugScreen(
+            playbackRepository = playbackRepository,
+            subscriptionRepository = subscriptionRepository,
+            userPreferencesRepository = userPrefs,
+            adaptiveRankingRepository = container.adaptiveRankingRepository,
+            onBack = { navController.popBackStack() },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addExploreDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val application = w.application
+    val container = w.container
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val subscriptionRepository = w.subscriptionRepository
+    val userPrefs = w.userPrefs
+
+    // -----------------------------------------------------------------------
+    // Explore
+    // -----------------------------------------------------------------------
+    composable(
+        route = "explore?category={category}&entryPoint={entryPoint}&tab={tab}",
+        arguments = listOf(
+            navArgument("category") {
+                type = NavType.StringType; nullable = true; defaultValue = null
+            },
+            navArgument("entryPoint") {
+                type = NavType.StringType; nullable = true; defaultValue = "bottom_nav"
+            },
+            navArgument("tab") {
+                type = NavType.StringType; nullable = true; defaultValue = null
+            },
+        ),
+    ) { backStackEntry ->
+        val category = backStackEntry.arguments?.getString("category")
+        val entryPoint = backStackEntry.arguments?.getString("entryPoint") ?: "bottom_nav"
+        val tab = backStackEntry.arguments?.getString("tab")
+
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.explore.ExploreViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.explore.ExploreViewModel(
+                        application = application,
+                        podcastRepository = podcastRepository,
+                        subscriptionRepository = subscriptionRepository,
+                        userPrefs = userPrefs,
+                        playbackRepository = playbackRepository,
+                        adaptiveScorer = container.adaptiveCandidateScorer,
+                        initialCategory = category,
+                        initialTab = tab,
+                    ) as T
+            },
+        )
+
+        cx.aswin.boxlore.feature.explore.ExploreScreen(
+            viewModel = viewModel,
+            entryPoint = entryPoint,
+            onPodcastClick = { podcastId, entryPointStr, genreStr, depthVal ->
+                var route = "podcast/$podcastId"
+                val params = mutableListOf<String>()
+                params.add("entryPoint=$entryPointStr")
+                if (genreStr != null) params.add("genre=$genreStr")
+                if (depthVal != null) params.add("depth=$depthVal")
+                if (params.isNotEmpty()) route += "?" + params.joinToString("&")
+                navController.navigate(route)
+            },
+            onEpisodeClick = { episode, podcast ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                navController.navigate(
+                    "episode/${encode(episode.id)}/${encode(episode.title)}/" +
+                        "${encode(episode.description.take(500))}/" +
+                        "${encode(episode.imageUrl)}/" +
+                        "${encode(episode.audioUrl)}/" +
+                        "${episode.duration}/${encode(podcast.id)}/" +
+                        "${encode(podcast.title)}" +
+                        "?entryPoint=explore_for_you",
+                )
+            },
+            onNavigateToRegionSettings = { navController.navigate("settings?page=library") },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGraphWiring) {
+    val navController = w.navController
+    val container = w.container
+    val playbackRepository = w.playbackRepository
+    val downloadRepository = w.downloadRepository
+    val subscriptionRepository = w.subscriptionRepository
+    val userPrefs = w.userPrefs
+    val smartDownloadManager = w.smartDownloadManager
+    val queueManager = w.queueManager
+    val scope = w.scope
+    val currentEpisode = w.session.currentEpisode
+    val isOnline = w.isOnline
+    var isSyncingSmartDownloads by w.isSyncingSmartDownloads
+
+    // -----------------------------------------------------------------------
+    // Library
+    // -----------------------------------------------------------------------
+    composable("library") {
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.library.LibraryViewModel(
+                        subscriptionRepository,
+                        playbackRepository,
+                        downloadRepository,
+                        userPrefs,
+                        container.adaptiveCandidateScorer,
+                    ) as T
+            },
+        )
+        cx.aswin.boxlore.feature.library.LibraryScreen(
+            viewModel = viewModel,
+            onNavigateToLiked = { navController.navigate("library/liked") },
+            onNavigateToSubscriptions = { navController.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) },
+            onNavigateToDownloads = { navController.navigate(NavRoutes.LIBRARY_DOWNLOADS) },
+            onNavigateToHistory = { navController.navigate("library/history") },
+        )
+    }
+
+    composable("library/history") {
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.HistoryViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.library.HistoryViewModel(playbackRepository) as T
+            },
+        )
+        cx.aswin.boxlore.feature.library.HistoryScreen(
+            viewModel = viewModel,
+            onBack = { navController.popBackStack() },
+            onEpisodeClick = { entity ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val desc = "Resuming from History"
+                navController.navigate(
+                    "episode/${entity.episodeId}/${encode(entity.episodeTitle)}/" +
+                        "${encode(desc)}/" +
+                        "${encode(entity.episodeImageUrl ?: entity.podcastImageUrl)}/" +
+                        "${encode(entity.episodeAudioUrl)}/" +
+                        "${entity.durationMs}/${encode(entity.podcastId)}/" +
+                        "${encode(entity.podcastName)}" +
+                        "?entryPoint=library_history",
+                )
+            },
+        )
+    }
+
+    composable("library/liked") {
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.library.LibraryViewModel(
+                        subscriptionRepository,
+                        playbackRepository,
+                        downloadRepository,
+                        userPrefs,
+                        container.adaptiveCandidateScorer,
+                    ) as T
+            },
+        )
+        cx.aswin.boxlore.feature.library.LikedEpisodesScreen(
+            viewModel = viewModel,
+            onBack = { navController.popBackStack() },
+            onEpisodeClick = { episode, podcast ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                navController.navigate(
+                    "episode/${episode.id}/${encode(episode.title)}/" +
+                        "${encode(episode.description.take(500))}/" +
+                        "${encode(episode.imageUrl)}/" +
+                        "${encode(episode.audioUrl)}/" +
+                        "${episode.duration}/${encode(podcast.id)}/" +
+                        "${encode(podcast.title)}" +
+                        "?entryPoint=library_liked_episodes",
+                )
+            },
+            onExploreClick = {
+                navController.navigate("explore?entryPoint=library_history_empty_state") {
+                    popUpTo("home")
+                }
+            },
+        )
+    }
+
+    composable(
+        "library/subscriptions?tab={tab}",
+        arguments = listOf(
+            navArgument("tab") {
+                type = NavType.IntType
+                defaultValue = 0
+            },
+        ),
+    ) { backStackEntry ->
+        val initialTab = backStackEntry.arguments?.getInt("tab") ?: 0
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.library.LibraryViewModel(
+                        subscriptionRepository,
+                        playbackRepository,
+                        downloadRepository,
+                        userPrefs,
+                        container.adaptiveCandidateScorer,
+                    ) as T
+            },
+        )
+        cx.aswin.boxlore.feature.library.SubscriptionsScreen(
+            viewModel = viewModel,
+            onBack = { navController.popBackStack() },
+            onPodcastClick = { podcastId ->
+                navController.navigate(
+                    "podcast/${android.net.Uri.encode(podcastId)}?entryPoint=library_subscriptions",
+                )
+            },
+            onExploreClick = {
+                navController.navigate("explore?entryPoint=library_subscriptions_empty_state") {
+                    popUpTo("home")
+                }
+            },
+            onPlayEpisode = { episode, podcast -> queueManager.playEpisode(episode, podcast) },
+            onPlayEpisodes = { episodes, fallbackPodcast -> queueManager.playEpisodes(episodes, fallbackPodcast) },
+            onEpisodeClick = { episode, podcast, entryPointStr ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
+                navController.navigate(
+                    "episode/${encode(episode.id)}/${encode(episode.title)}/" +
+                        "${encode(episode.description.take(500))}/" +
+                        "${encode(episode.imageUrl)}/" +
+                        "${encode(episode.audioUrl)}/" +
+                        "${episode.duration}/${encode(podcast.id)}/" +
+                        "${encode(podcast.title)}" +
+                        entryPointQuery,
+                )
+            },
+            isPlayerActive = currentEpisode != null,
+            initialTab = initialTab,
+        )
+    }
+
+    composable(NavRoutes.LIBRARY_DOWNLOADS) {
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.library.LibraryViewModel(
+                        subscriptionRepository,
+                        playbackRepository,
+                        downloadRepository,
+                        userPrefs,
+                        container.adaptiveCandidateScorer,
+                    ) as T
+            },
+        )
+        cx.aswin.boxlore.feature.library.DownloadedEpisodesScreen(
+            viewModel = viewModel,
+            userPrefs = userPrefs,
+            isOffline = !isOnline,
+            onBack = { navController.popBackStack() },
+            isPlayerActive = currentEpisode != null,
+            onPodcastShowClick = { podcastId, podcastTitle ->
+                android.util.Log.d("NavHost", "onPodcastShowClick: id=$podcastId title=$podcastTitle")
+                val encodedTitle = android.net.Uri.encode(podcastTitle.ifEmpty { "_" })
+                val encodedId = android.net.Uri.encode(podcastId.ifEmpty { "_" })
+                navController.navigate("library/downloads/show?podcastId=$encodedId&podcastTitle=$encodedTitle")
+            },
+            onExploreClick = {
+                navController.navigate("explore?entryPoint=library_downloads_empty_state") {
+                    popUpTo("home")
+                }
+            },
+            onSettingsClick = { navController.navigate(NavRoutes.LIBRARY_DOWNLOADS_SETTINGS) },
+            isSyncing = isSyncingSmartDownloads,
+            onSyncNow = {
+                scope.launch(Dispatchers.IO) {
+                    isSyncingSmartDownloads = true
+                    try {
+                        smartDownloadManager.performSync(isManual = true)
+                    } finally {
+                        isSyncingSmartDownloads = false
+                    }
+                }
+            },
+        )
+    }
+
+    composable(NavRoutes.LIBRARY_DOWNLOADS_SETTINGS) {
+        cx.aswin.boxlore.feature.library.SmartDownloadsSettingsScreen(
+            userPrefs = userPrefs,
+            onBack = { navController.popBackStack() },
+        )
+    }
+
+    composable("library/auto_downloads/settings") {
+        cx.aswin.boxlore.feature.library.AutoDownloadSettingsScreen(
+            userPrefs = userPrefs,
+            onBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(
+        route = "library/downloads/show?podcastId={podcastId}&podcastTitle={podcastTitle}",
+        arguments = listOf(
+            navArgument("podcastId") { type = NavType.StringType; defaultValue = "" },
+            navArgument("podcastTitle") { type = NavType.StringType; defaultValue = "" },
+        ),
+    ) { backStackEntry ->
+        val podcastId = backStackEntry.arguments?.getString("podcastId") ?: ""
+        val podcastTitle = backStackEntry.arguments?.getString("podcastTitle") ?: ""
+
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
+            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    cx.aswin.boxlore.feature.library.LibraryViewModel(
+                        subscriptionRepository,
+                        playbackRepository,
+                        downloadRepository,
+                        userPrefs,
+                        container.adaptiveCandidateScorer,
+                    ) as T
+            },
+        )
+        cx.aswin.boxlore.feature.library.DownloadedShowEpisodesScreen(
+            viewModel = viewModel,
+            podcastId = podcastId,
+            podcastTitle = podcastTitle,
+            onBack = { navController.popBackStack() },
+            isPlayerActive = currentEpisode != null,
+            onEpisodeClick = { episode, podcast ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                navController.navigate(
+                    "episode/${episode.id}/${encode(episode.title)}/" +
+                        "${encode(episode.description.take(500))}/" +
+                        "${encode(episode.imageUrl)}/" +
+                        "${encode(episode.audioUrl)}/" +
+                        "${episode.duration}/${encode(podcast.id)}/" +
+                        "${encode(podcast.title)}" +
+                        "?entryPoint=library_downloaded_episodes",
+                )
+            },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val application = w.application
+    val container = w.container
+    val database = w.database
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val downloadRepository = w.downloadRepository
+    val subscriptionRepository = w.subscriptionRepository
+    val queueManager = w.queueManager
+
+    // -----------------------------------------------------------------------
+    // Podcast info (+ deep links)
+    // -----------------------------------------------------------------------
+    composable(
+        route = "podcast/{podcastId}?entryPoint={entryPoint}&genre={genre}&depth={depth}&query={query}",
+        arguments = listOf(
+            navArgument("podcastId") { type = NavType.StringType },
+            navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("genre") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("depth") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("query") { type = NavType.StringType; nullable = true; defaultValue = null },
+        ),
+        deepLinks = listOf(
+            navDeepLink { uriPattern = "boxlore://podcast/{podcastId}" },
+            navDeepLink { uriPattern = "boxcast://podcast/{podcastId}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=podcast&id={podcastId}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=podcast&id={podcastId}" },
+        ),
+    ) { backStackEntry ->
+        val podcastId = backStackEntry.arguments?.getString("podcastId") ?: return@composable
+        if (podcastId.startsWith("briefing_")) {
+            val region = podcastId.removePrefix("briefing_")
+            LaunchedEffect(podcastId) {
+                navController.navigate("briefing?region=$region") {
+                    popUpTo("podcast/{podcastId}?entryPoint={entryPoint}&genre={genre}&depth={depth}&query={query}") {
+                        inclusive = true
+                    }
+                }
+            }
+            return@composable
+        }
+
+        val entryPoint = backStackEntry.arguments?.getString("entryPoint")
+        val genre = backStackEntry.arguments?.getString("genre")
+        val depthStr = backStackEntry.arguments?.getString("depth")
+        val depth = depthStr?.toIntOrNull()
+        val query = backStackEntry.arguments?.getString("query")
+
+        val infoSharedDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
+            podcastRepository = podcastRepository,
+            playbackRepository = playbackRepository,
+            downloadRepository = downloadRepository,
+            queueManager = queueManager,
+            database = database,
+        )
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.PodcastInfoViewModel>(
+            factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.podcastInfoFactory(
+                application = application,
+                deps = infoSharedDeps,
+                subscriptionRepository = subscriptionRepository,
+                rssRepository = container.rssPodcastRepository,
+                routeArgs = cx.aswin.boxlore.feature.info.PodcastInfoRouteArgs(
+                    entryPoint = entryPoint,
+                    genreFilter = genre,
+                    scrollDepth = depth,
+                    searchQuery = query,
+                ),
+            ),
+        )
+
+        val isPlayerVisible by remember(playbackRepository) {
+            playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
+        }.collectAsState(initial = false)
+
+        val localMiniPlayerPadding = if (isPlayerVisible) {
+            AppNavigationBarHeight + 64.dp + 2.dp
+        } else {
+            AppNavigationBarHeight
+        }
+
+        cx.aswin.boxlore.feature.info.PodcastInfoScreen(
+            podcastId = podcastId,
+            viewModel = viewModel,
+            onBack = { navController.popBackStack() },
+            bottomContentPadding = localMiniPlayerPadding,
+            onPodcastClick = { pId ->
+                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=podroll")
+            },
+            onEpisodeClick = { episode, entryPointStr, index ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                var route = "episode/${episode.id}/${encode(episode.title)}/" +
+                    "${encode(episode.description.take(500))}/" +
+                    "${encode(episode.imageUrl)}/" +
+                    "${encode(episode.audioUrl)}/" +
+                    "${episode.duration}/${encode(viewModel.uiState.value.let { if (it is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) it.podcast.id else podcastId })}/" +
+                    "${encode(viewModel.uiState.value.let { if (it is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) it.podcast.title else "Podcast" })}" +
+                    "?entryPoint=$entryPointStr"
+                if (index != null) route += "&carouselPosition=$index"
+                navController.navigate(route)
+            },
+            onPlayEpisode = { episode ->
+                val state = viewModel.uiState.value
+                if (state is cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success) {
+                    queueManager.playEpisode(episode, state.podcast)
+                }
+            },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val application = w.application
+    val database = w.database
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val downloadRepository = w.downloadRepository
+    val userPrefs = w.userPrefs
+    val queueManager = w.queueManager
+    val scope = w.scope
+    val hasSeenMarkPlayedTip = w.session.hasSeenMarkPlayedTip
+
+    // -----------------------------------------------------------------------
+    // Episode info — full path route
+    // -----------------------------------------------------------------------
+    composable(
+        route = "episode/{episodeId}/{episodeTitle}/{episodeDescription}/{episodeImageUrl}/{episodeAudioUrl}/{episodeDuration}/{podcastId}/{podcastTitle}?entryPoint={entryPoint}&vibeId={vibeId}&carouselPosition={carouselPosition}",
+        arguments = listOf(
+            navArgument("episodeId") { type = NavType.StringType },
+            navArgument("episodeTitle") { type = NavType.StringType },
+            navArgument("episodeDescription") { type = NavType.StringType },
+            navArgument("episodeImageUrl") { type = NavType.StringType },
+            navArgument("episodeAudioUrl") { type = NavType.StringType },
+            navArgument("episodeDuration") { type = NavType.IntType },
+            navArgument("podcastId") { type = NavType.StringType },
+            navArgument("podcastTitle") { type = NavType.StringType },
+            navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("vibeId") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("carouselPosition") { type = NavType.IntType; defaultValue = -1 },
+        ),
+    ) { backStackEntry ->
+        val args = backStackEntry.arguments ?: return@composable
+        val episodeId = args.getString("episodeId") ?: ""
+        if (episodeId.startsWith("briefing_")) {
+            val region = episodeId.removePrefix("briefing_").substringBefore("_")
+            LaunchedEffect(episodeId) {
+                navController.navigate("briefing?region=$region") {
+                    popUpTo(
+                        "episode/{episodeId}/{episodeTitle}/{episodeDescription}/{episodeImageUrl}/{episodeAudioUrl}/{episodeDuration}/{podcastId}/{podcastTitle}?entryPoint={entryPoint}&vibeId={vibeId}&carouselPosition={carouselPosition}",
+                    ) { inclusive = true }
+                }
+            }
+            return@composable
+        }
+
+        val episodeInfoDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
+            podcastRepository = podcastRepository,
+            playbackRepository = playbackRepository,
+            downloadRepository = downloadRepository,
+            queueManager = queueManager,
+            database = database,
+        )
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
+            factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
+                application = application,
+                deps = episodeInfoDeps,
+                userPrefs = userPrefs,
+            ),
+        )
+
+        fun decode(s: String?) = try {
+            android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it }
+        } catch (_: Exception) { s ?: "" }
+
+        val podcastId = decode(args.getString("podcastId"))
+        val podcastTitle = decode(args.getString("podcastTitle"))
+        val episodeTitle = decode(args.getString("episodeTitle"))
+        val entryPoint = args.getString("entryPoint")
+        val vibeId = decode(args.getString("vibeId"))
+        val carouselPosition = args.getInt("carouselPosition", -1)
+
+        cx.aswin.boxlore.feature.info.EpisodeInfoScreen(
+            episodeId = episodeId,
+            episodeTitle = episodeTitle,
+            episodeDescription = decode(args.getString("episodeDescription")),
+            episodeImageUrl = decode(args.getString("episodeImageUrl")),
+            episodeAudioUrl = decode(args.getString("episodeAudioUrl")),
+            episodeDuration = args.getInt("episodeDuration"),
+            podcastId = podcastId,
+            podcastTitle = podcastTitle,
+            viewModel = viewModel,
+            onBack = { navController.popBackStack() },
+            onPodcastClick = { pId ->
+                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
+            },
+            onEpisodeClick = { ep ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: podcastId
+                val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: podcastTitle
+                navController.navigate(
+                    "episode/${ep.id}/${encode(ep.title)}/${encode(ep.description.take(500))}/${encode(ep.imageUrl)}/${encode(ep.audioUrl)}/${ep.duration}/${encode(targetPodcastId)}/${encode(targetPodcastTitle)}" +
+                        "?entryPoint=episode_related_episodes",
+                )
+            },
+            onPlay = {
+                val episode = cx.aswin.boxlore.core.model.Episode(
+                    id = episodeId,
+                    title = episodeTitle,
+                    description = "",
+                    imageUrl = decode(args.getString("episodeImageUrl")),
+                    audioUrl = decode(args.getString("episodeAudioUrl")),
+                    duration = args.getInt("episodeDuration"),
+                    publishedDate = 0L,
+                )
+                val podcast = cx.aswin.boxlore.core.model.Podcast(
+                    id = podcastId,
+                    title = podcastTitle,
+                    artist = "",
+                    imageUrl = "",
+                    description = "",
+                    genre = "",
+                )
+                val bundle = if (entryPoint != null) {
                     android.os.Bundle().apply {
                         putString("entry_point", entryPoint)
                         if (vibeId.isNotEmpty()) putString("curated_vibe_id", vibeId)
                         if (carouselPosition >= 0) putInt("curated_carousel_position", carouselPosition)
                     }
-                } else null,
-                showMarkPlayedTip = !hasSeenMarkPlayedTip,
-                onMarkPlayedTipDismissed = { scope.launch { userPrefs.markMarkPlayedTipSeen() } },
-            )
+                } else null
+                queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
+            },
+            entryPointContext = if (entryPoint != null) {
+                android.os.Bundle().apply {
+                    putString("entry_point", entryPoint)
+                    if (vibeId.isNotEmpty()) putString("curated_vibe_id", vibeId)
+                    if (carouselPosition >= 0) putInt("curated_carousel_position", carouselPosition)
+                }
+            } else null,
+            showMarkPlayedTip = !hasSeenMarkPlayedTip,
+            onMarkPlayedTipDismissed = { scope.launch { userPrefs.markMarkPlayedTipSeen() } },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w: NavGraphWiring) {
+    val navController = w.navController
+    val application = w.application
+    val database = w.database
+    val podcastRepository = w.podcastRepository
+    val playbackRepository = w.playbackRepository
+    val downloadRepository = w.downloadRepository
+    val userPrefs = w.userPrefs
+    val queueManager = w.queueManager
+
+    // -----------------------------------------------------------------------
+    // Episode info — simplified deep-link route
+    // -----------------------------------------------------------------------
+    composable(
+        route = "episode/{episodeId}?entryPoint={entryPoint}&t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}",
+        arguments = listOf(
+            navArgument("episodeId") { type = NavType.StringType },
+            navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("t") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("start") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("end") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("autoplay") { type = NavType.StringType; nullable = true; defaultValue = "true" },
+            navArgument("podcastId") { type = NavType.StringType; nullable = true; defaultValue = "" },
+            navArgument("podcastTitle") { type = NavType.StringType; nullable = true; defaultValue = "" },
+        ),
+        deepLinks = listOf(
+            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
+            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
+            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?podcastId={podcastId}&podcastTitle={podcastTitle}" },
+            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}" },
+            navDeepLink { uriPattern = "boxlore://episode/{episodeId}" },
+            navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "boxcast://episode/{episodeId}?autoplay={autoplay}" },
+            navDeepLink { uriPattern = "boxcast://episode/{episodeId}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&autoplay={autoplay}" },
+            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}" },
+        ),
+    ) { backStackEntry ->
+        val args = backStackEntry.arguments ?: return@composable
+        val episodeId = args.getString("episodeId") ?: ""
+        val t = args.getString("t")?.toLongOrNull()
+        val start = args.getString("start")?.toLongOrNull()
+        val autoplay = args.getString("autoplay") ?: "true"
+        val podcastIdArg = args.getString("podcastId") ?: ""
+        val podcastTitleArg = args.getString("podcastTitle") ?: ""
+
+        val deepLinkEpisodeDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
+            podcastRepository = podcastRepository,
+            playbackRepository = playbackRepository,
+            downloadRepository = downloadRepository,
+            queueManager = queueManager,
+            database = database,
+        )
+        val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
+            factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
+                application = application,
+                deps = deepLinkEpisodeDeps,
+                userPrefs = userPrefs,
+            ),
+        )
+
+        LaunchedEffect(episodeId, podcastIdArg, podcastTitleArg) {
+            viewModel.loadEpisode(episodeId = episodeId, podcastId = podcastIdArg, podcastTitle = podcastTitleArg)
         }
 
-        // -----------------------------------------------------------------------
-        // Episode info — simplified deep-link route
-        // -----------------------------------------------------------------------
-        composable(
-            route = "episode/{episodeId}?entryPoint={entryPoint}&t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}",
-            arguments = listOf(
-                navArgument("episodeId") { type = NavType.StringType },
-                navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("t") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("start") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("end") { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument("autoplay") { type = NavType.StringType; nullable = true; defaultValue = "true" },
-                navArgument("podcastId") { type = NavType.StringType; nullable = true; defaultValue = "" },
-                navArgument("podcastTitle") { type = NavType.StringType; nullable = true; defaultValue = "" },
-            ),
-            deepLinks = listOf(
-                navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
-                navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
-                navDeepLink { uriPattern = "boxlore://episode/{episodeId}?podcastId={podcastId}&podcastTitle={podcastTitle}" },
-                navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}" },
-                navDeepLink { uriPattern = "boxlore://episode/{episodeId}" },
-                navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "boxcast://episode/{episodeId}?autoplay={autoplay}" },
-                navDeepLink { uriPattern = "boxcast://episode/{episodeId}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&autoplay={autoplay}" },
-                navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}" },
-            ),
-        ) { backStackEntry ->
-            val args = backStackEntry.arguments ?: return@composable
-            val episodeId = args.getString("episodeId") ?: ""
-            val entryPoint = args.getString("entryPoint")
-            val t = args.getString("t")?.toLongOrNull()
-            val start = args.getString("start")?.toLongOrNull()
-            val autoplay = args.getString("autoplay") ?: "true"
-            val podcastIdArg = args.getString("podcastId") ?: ""
-            val podcastTitleArg = args.getString("podcastTitle") ?: ""
+        val coroutineScope = rememberCoroutineScope()
+        val state by viewModel.uiState.collectAsState()
 
-            val deepLinkEpisodeDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
-                podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
-                downloadRepository = downloadRepository,
-                queueManager = queueManager,
-                database = database,
-            )
-            val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
-                factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
-                    application = application,
-                    deps = deepLinkEpisodeDeps,
-                    userPrefs = userPrefs,
-                ),
-            )
-
-            LaunchedEffect(episodeId, podcastIdArg, podcastTitleArg) {
-                viewModel.loadEpisode(episodeId = episodeId, podcastId = podcastIdArg, podcastTitle = podcastTitleArg)
+        LaunchedEffect(state, t, start, autoplay) {
+            val success = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
+            if (success != null && success.episode.id == episodeId) {
+                val playerState = playbackRepository.playerState.value
+                if (autoplay == "true" && playerState.currentEpisode?.id != episodeId) {
+                    val localPodcastEntity = database.podcastDao().getPodcast(success.podcastId)
+                    val podcast = localPodcastEntity?.let {
+                        cx.aswin.boxlore.core.model.Podcast(
+                            id = it.podcastId,
+                            title = it.title,
+                            artist = it.author,
+                            imageUrl = it.imageUrl,
+                        )
+                    } ?: cx.aswin.boxlore.core.model.Podcast(
+                        id = success.podcastId,
+                        title = success.podcastTitle,
+                        artist = "",
+                        imageUrl = success.episode.podcastImageUrl ?: "",
+                    )
+                    queueManager.playEpisode(success.episode, podcast)
+                }
+                if (t != null && t > 0L) {
+                    playbackRepository.seekTo(t * 1000L, play = autoplay == "true")
+                } else if (start != null && start > 0L) {
+                    playbackRepository.seekTo(start * 1000L, play = autoplay == "true")
+                }
             }
+        }
 
-            val coroutineScope = rememberCoroutineScope()
-            val state by viewModel.uiState.collectAsState()
+        val isPlayerVisible by remember(playbackRepository) {
+            playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
+        }.collectAsState(initial = false)
+        val localMiniPlayerPadding = if (isPlayerVisible) {
+            AppNavigationBarHeight + 64.dp + 2.dp
+        } else {
+            AppNavigationBarHeight
+        }
 
-            LaunchedEffect(state, t, start, autoplay) {
-                val success = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
-                if (success != null && success.episode.id == episodeId) {
-                    val playerState = playbackRepository.playerState.value
-                    if (autoplay == "true" && playerState.currentEpisode?.id != episodeId) {
-                        val localPodcastEntity = database.podcastDao().getPodcast(success.podcastId)
+        val successState = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
+
+        cx.aswin.boxlore.feature.info.EpisodeInfoScreen(
+            episodeId = episodeId,
+            episodeTitle = successState?.episode?.title ?: "",
+            episodeDescription = successState?.episode?.description ?: "",
+            episodeImageUrl = successState?.episode?.imageUrl ?: "",
+            episodeAudioUrl = successState?.episode?.audioUrl ?: "",
+            episodeDuration = successState?.episode?.duration ?: 0,
+            podcastId = successState?.podcastId ?: "",
+            podcastTitle = successState?.podcastTitle ?: "Podcast",
+            viewModel = viewModel,
+            onBack = { navController.popBackStack() },
+            onPodcastClick = { pId ->
+                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
+            },
+            onEpisodeClick = { ep ->
+                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: (successState?.podcastId ?: "")
+                val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: (successState?.podcastTitle ?: "Podcast")
+                navController.navigate(
+                    "episode/${ep.id}/${encode(ep.title)}/${encode(ep.description.take(500))}/${encode(ep.imageUrl)}/${encode(ep.audioUrl)}/${ep.duration}/${encode(targetPodcastId)}/${encode(targetPodcastTitle)}" +
+                        "?entryPoint=episode_related_episodes",
+                )
+            },
+            onPlay = {
+                if (successState != null) {
+                    coroutineScope.launch {
+                        val localPodcastEntity = database.podcastDao().getPodcast(successState.podcastId)
                         val podcast = localPodcastEntity?.let {
                             cx.aswin.boxlore.core.model.Podcast(
                                 id = it.podcastId,
@@ -1401,78 +1648,16 @@ fun BoxLoreNavHost(
                                 imageUrl = it.imageUrl,
                             )
                         } ?: cx.aswin.boxlore.core.model.Podcast(
-                            id = success.podcastId,
-                            title = success.podcastTitle,
+                            id = successState.podcastId,
+                            title = successState.podcastTitle,
                             artist = "",
-                            imageUrl = success.episode.podcastImageUrl ?: "",
+                            imageUrl = successState.episode.podcastImageUrl ?: "",
                         )
-                        queueManager.playEpisode(success.episode, podcast)
-                    }
-                    if (t != null && t > 0L) {
-                        playbackRepository.seekTo(t * 1000L, play = autoplay == "true")
-                    } else if (start != null && start > 0L) {
-                        playbackRepository.seekTo(start * 1000L, play = autoplay == "true")
+                        queueManager.playEpisode(successState.episode, podcast)
                     }
                 }
-            }
-
-            val isPlayerVisible by remember(playbackRepository) {
-                playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
-            }.collectAsState(initial = false)
-            val localMiniPlayerPadding = if (isPlayerVisible) {
-                AppNavigationBarHeight + 64.dp + 2.dp
-            } else {
-                AppNavigationBarHeight
-            }
-
-            val successState = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
-
-            cx.aswin.boxlore.feature.info.EpisodeInfoScreen(
-                episodeId = episodeId,
-                episodeTitle = successState?.episode?.title ?: "",
-                episodeDescription = successState?.episode?.description ?: "",
-                episodeImageUrl = successState?.episode?.imageUrl ?: "",
-                episodeAudioUrl = successState?.episode?.audioUrl ?: "",
-                episodeDuration = successState?.episode?.duration ?: 0,
-                podcastId = successState?.podcastId ?: "",
-                podcastTitle = successState?.podcastTitle ?: "Podcast",
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onPodcastClick = { pId ->
-                    navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
-                },
-                onEpisodeClick = { ep ->
-                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                    val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: (successState?.podcastId ?: "")
-                    val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: (successState?.podcastTitle ?: "Podcast")
-                    navController.navigate(
-                        "episode/${ep.id}/${encode(ep.title)}/${encode(ep.description.take(500))}/${encode(ep.imageUrl)}/${encode(ep.audioUrl)}/${ep.duration}/${encode(targetPodcastId)}/${encode(targetPodcastTitle)}" +
-                            "?entryPoint=episode_related_episodes",
-                    )
-                },
-                onPlay = {
-                    if (successState != null) {
-                        coroutineScope.launch {
-                            val localPodcastEntity = database.podcastDao().getPodcast(successState.podcastId)
-                            val podcast = localPodcastEntity?.let {
-                                cx.aswin.boxlore.core.model.Podcast(
-                                    id = it.podcastId,
-                                    title = it.title,
-                                    artist = it.author,
-                                    imageUrl = it.imageUrl,
-                                )
-                            } ?: cx.aswin.boxlore.core.model.Podcast(
-                                id = successState.podcastId,
-                                title = successState.podcastTitle,
-                                artist = "",
-                                imageUrl = successState.episode.podcastImageUrl ?: "",
-                            )
-                            queueManager.playEpisode(successState.episode, podcast)
-                        }
-                    }
-                },
-                bottomContentPadding = localMiniPlayerPadding,
-            )
-        }
+            },
+            bottomContentPadding = localMiniPlayerPadding,
+        )
     }
 }

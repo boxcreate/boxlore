@@ -95,7 +95,7 @@ class AppContainer(
             context = appContext,
             database = database,
             rankingFeedbackRepository = rankingFeedbackRepository,
-        ).also { repo ->
+        ).also { _ ->
             // Wire the DownloadCacheRelinker into RssPodcastRepository so the RSS module
             // does not need a compile-time dependency on :core:downloads.
             rssPodcastRepository.setDownloadCacheRelinker(

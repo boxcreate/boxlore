@@ -95,7 +95,10 @@ import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
 import cx.aswin.boxlore.navigation.BoxLoreNavHost
+import cx.aswin.boxlore.navigation.ExploreBottomNavRoute
 import cx.aswin.boxlore.navigation.ExploreTabRoutePattern
+import cx.aswin.boxlore.navigation.NavHostActions
+import cx.aswin.boxlore.navigation.NavHostSession
 import cx.aswin.boxlore.navigation.NavOpmlCallbacks
 import cx.aswin.boxlore.navigation.NavSettingsState
 import cx.aswin.boxlore.navigation.bottomNavTabRoutePattern
@@ -935,13 +938,18 @@ class MainActivity : ComponentActivity() {
                             BoxLoreNavHost(
                                 navController = navController,
                                 application = application,
-                                onboardingCompleted = onboardingCompleted,
-                                onOnboardingCompleted = { onboardingCompleted = true },
-                                onboardingViewModel = onboardingViewModel,
-                                hasDeepLink = hasDeepLink,
-                                currentEpisode = currentEpisode,
-                                miniPlayerPadding = miniPlayerPadding,
-                                isModeSwitching = isModeSwitching,
+                                session = NavHostSession(
+                                    onboardingCompleted = onboardingCompleted,
+                                    onOnboardingCompleted = { onboardingCompleted = true },
+                                    onboardingViewModel = onboardingViewModel,
+                                    hasDeepLink = hasDeepLink,
+                                    currentEpisode = currentEpisode,
+                                    miniPlayerPadding = miniPlayerPadding,
+                                    showFeatureDialog = showFeatureDialog,
+                                    hasSeenMarkPlayedTip = hasSeenMarkPlayedTip,
+                                    permissionLauncher = permissionLauncher,
+                                    appInstanceId = appInstanceId,
+                                ),
                                 opmlCallbacks = NavOpmlCallbacks(
                                     importState = opmlImportState,
                                     onImportStateChange = { opmlImportState = it },
@@ -950,14 +958,12 @@ class MainActivity : ComponentActivity() {
                                     onSourceChange = { opmlImportSource = it },
                                     performJsonImport = ::performJsonImport,
                                 ),
-                                onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
-                                queueLoreEpisode = queueLoreEpisode,
-                                onShowFeedbackSheet = { showFeedbackSheet = true },
-                                onSubmitFeedback = onSubmitFeedback,
-                                showFeatureDialog = showFeatureDialog,
-                                hasSeenMarkPlayedTip = hasSeenMarkPlayedTip,
-                                permissionLauncher = permissionLauncher,
-                                appInstanceId = appInstanceId,
+                                actions = NavHostActions(
+                                    onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
+                                    queueLoreEpisode = queueLoreEpisode,
+                                    onShowFeedbackSheet = { showFeedbackSheet = true },
+                                    onSubmitFeedback = onSubmitFeedback,
+                                ),
                                 settingsState = NavSettingsState(
                                     currentRegion = currentRegion,
                                     themeConfig = themeConfig,
@@ -1013,7 +1019,7 @@ class MainActivity : ComponentActivity() {
                                         } else if (route == "explore") {
                                             val popped = navController.popBackStack(ExploreTabRoutePattern, inclusive = false)
                                             if (!popped) {
-                                                navController.navigate("explore?entryPoint=bottom_nav") {
+                                                navController.navigate(ExploreBottomNavRoute) {
                                                     popUpTo("home") { saveState = false }
                                                     launchSingleTop = true
                                                 }
@@ -1043,7 +1049,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                     route == "explore" -> {
-                                        navController.navigate("explore?entryPoint=bottom_nav") {
+                                        navController.navigate(ExploreBottomNavRoute) {
                                             popUpTo("home") { saveState = true }
                                             launchSingleTop = true
                                             restoreState = true
@@ -1062,7 +1068,7 @@ class MainActivity : ComponentActivity() {
                                             navController.popBackStack(tabPattern, inclusive = false)
                                         if (!popped) {
                                             navController.navigate(
-                                                if (route == "explore") "explore?entryPoint=bottom_nav" else route,
+                                                if (route == "explore") ExploreBottomNavRoute else route,
                                             ) {
                                                 popUpTo("home") { saveState = true }
                                                 launchSingleTop = true
