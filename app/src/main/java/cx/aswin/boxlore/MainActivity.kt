@@ -107,6 +107,11 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         intentState.value = intent
+        // Cold-start deep links / push routes must use the same handleDeepLink path as warm starts.
+        if (intent?.data != null || !intent?.getStringExtra("target_route").isNullOrBlank()) {
+            warmStartIntent.value = intent
+        }
+        handlePlayerIntent(intent)
 
         try {
             enableEdgeToEdge()

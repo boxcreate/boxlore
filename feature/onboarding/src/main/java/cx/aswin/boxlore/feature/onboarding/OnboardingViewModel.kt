@@ -1450,7 +1450,7 @@ class OnboardingViewModel(
                         }
                     } catch (ex: Exception) {
                         Log.e("OnboardingViewModel", "Error in fallback synthesis", ex)
-                        val userFriendlyMsg = when (e) {
+                        val userFriendlyMsg = when (ex) {
                             is kotlinx.coroutines.TimeoutCancellationException -> "Our AI is taking a moment to build your feed. Let's try that again."
                             else -> "We encountered a temporary hiccup. Let's try that again."
                         }
@@ -1605,8 +1605,12 @@ class OnboardingViewModel(
                 onDone()
             } catch (e: Exception) {
                 Log.e("OnboardingViewModel", "Error in finishAiOnboarding", e)
-                boxcastPrefs.setOnboardingCompleted(true)
-                onDone()
+                _uiState.update { state ->
+                    state.copy(
+                        isCompleting = false,
+                        onboardingError = "We couldn't finish setup. Please try again.",
+                    )
+                }
             }
         }
     }
