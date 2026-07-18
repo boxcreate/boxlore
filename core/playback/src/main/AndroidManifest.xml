@@ -4,7 +4,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-    <application>
+    <!-- Match :core:data defaults; :app overrides via tools:replace where needed. -->
+    <application
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
         <!-- FQCN must stay cx.aswin.boxlore.core.data.service.* (package unchanged). -->
         <service
             android:name="cx.aswin.boxlore.core.data.service.MediaDownloadService"

@@ -250,16 +250,18 @@ fun HomeRoute(
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelAssembler.factory(
             application = application,
-            podcastRepository = podcastRepository,
-            playbackRepository = playbackRepository,
-            engagementCoordinator = engagementPromptCoordinator,
-            subscriptionRepository = subscriptionRepository,
-            downloadRepository = downloadRepository,
-            rssRepository = rssPodcastRepository,
-            adaptiveRankingRepository = adaptiveRankingRepository,
-            adaptiveScorer = adaptiveCandidateScorer,
-            rankingFeedback = rankingFeedbackRepository,
-            database = database,
+            deps = HomeViewModelDeps(
+                podcastRepository = podcastRepository,
+                playbackRepository = playbackRepository,
+                engagementCoordinator = engagementPromptCoordinator,
+                subscriptionRepository = subscriptionRepository,
+                downloadRepository = downloadRepository,
+                rssRepository = rssPodcastRepository,
+                adaptiveRankingRepository = adaptiveRankingRepository,
+                adaptiveScorer = adaptiveCandidateScorer,
+                rankingFeedback = rankingFeedbackRepository,
+                database = database,
+            ),
         ),
     )
 

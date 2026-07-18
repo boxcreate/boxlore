@@ -413,7 +413,6 @@ class MainActivity : ComponentActivity() {
             val container = application.container
             val database = container.database
             val podcastRepository = container.podcastRepository
-            val queueRepository = container.queueRepository
             val playbackRepository = container.playbackRepository
             val downloadRepository = container.downloadRepository
             val subscriptionRepository = container.subscriptionRepository
@@ -1548,8 +1547,10 @@ class MainActivity : ComponentActivity() {
                                     scope.launch { persist(value) }
                                 }
                                 cx.aswin.boxlore.feature.home.settings.SettingsScreen(
-                                    rssPodcastRepository = container.rssPodcastRepository,
-                                    rankingFeedbackRepository = container.rankingFeedbackRepository,
+                                    repositories = cx.aswin.boxlore.feature.home.settings.SettingsRepositories(
+                                        rssPodcastRepository = container.rssPodcastRepository,
+                                        rankingFeedbackRepository = container.rankingFeedbackRepository,
+                                    ),
                                     config = cx.aswin.boxlore.feature.home.settings.SettingsScreenConfig(
                                         onBack = { navController.popBackStack() },
                                         onResetAnalytics = {
@@ -2066,20 +2067,25 @@ class MainActivity : ComponentActivity() {
                                 val depth = depthStr?.toIntOrNull()
                                 val query = backStackEntry.arguments?.getString("query")
 
+                                val infoSharedDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
+                                    podcastRepository = podcastRepository,
+                                    playbackRepository = playbackRepository,
+                                    downloadRepository = downloadRepository,
+                                    queueManager = queueManager,
+                                    database = database,
+                                )
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.PodcastInfoViewModel>(
                                     factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.podcastInfoFactory(
                                         application = application,
-                                        repository = podcastRepository,
-                                        playbackRepository = playbackRepository,
-                                        downloadRepository = downloadRepository,
-                                        queueManager = queueManager,
+                                        deps = infoSharedDeps,
                                         subscriptionRepository = subscriptionRepository,
                                         rssRepository = container.rssPodcastRepository,
-                                        database = database,
-                                        entryPoint = entryPoint,
-                                        genreFilter = genre,
-                                        scrollDepth = depth,
-                                        searchQuery = query,
+                                        routeArgs = cx.aswin.boxlore.feature.info.PodcastInfoRouteArgs(
+                                            entryPoint = entryPoint,
+                                            genreFilter = genre,
+                                            scrollDepth = depth,
+                                            searchQuery = query,
+                                        ),
                                     ),
                                 )
                                      // Calculate bottom padding for Mini Player
@@ -2159,15 +2165,18 @@ class MainActivity : ComponentActivity() {
                                     }
                                     return@composable
                                 }
+                                val episodeInfoDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
+                                    podcastRepository = podcastRepository,
+                                    playbackRepository = playbackRepository,
+                                    downloadRepository = downloadRepository,
+                                    queueManager = queueManager,
+                                    database = database,
+                                )
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
                                     factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
                                         application = application,
-                                        podcastRepository = podcastRepository,
-                                        playbackRepository = playbackRepository,
-                                        downloadRepository = downloadRepository,
-                                        queueManager = queueManager,
+                                        deps = episodeInfoDeps,
                                         userPrefs = userPrefs,
-                                        database = database,
                                     ),
                                 )
                                 fun decode(s: String?) = try { android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it } } catch (_: Exception) { s ?: "" }
@@ -2293,15 +2302,18 @@ class MainActivity : ComponentActivity() {
                                 val podcastIdArg = args.getString("podcastId") ?: ""
                                 val podcastTitleArg = args.getString("podcastTitle") ?: ""
  
+                                val deepLinkEpisodeDeps = cx.aswin.boxlore.feature.info.InfoSharedDeps(
+                                    podcastRepository = podcastRepository,
+                                    playbackRepository = playbackRepository,
+                                    downloadRepository = downloadRepository,
+                                    queueManager = queueManager,
+                                    database = database,
+                                )
                                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.EpisodeInfoViewModel>(
                                     factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.episodeInfoFactory(
                                         application = application,
-                                        podcastRepository = podcastRepository,
-                                        playbackRepository = playbackRepository,
-                                        downloadRepository = downloadRepository,
-                                        queueManager = queueManager,
+                                        deps = deepLinkEpisodeDeps,
                                         userPrefs = userPrefs,
-                                        database = database,
                                     ),
                                 )
  

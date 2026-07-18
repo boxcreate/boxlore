@@ -75,6 +75,12 @@ data class RegionSettings(
     val onSetRegion: (String) -> Unit = {},
 )
 
+/** RSS + ranking ports needed by [SettingsViewModel] (keeps [SettingsScreen] ≤7 params). */
+data class SettingsRepositories(
+    val rssPodcastRepository: cx.aswin.boxlore.core.data.RssPodcastRepository,
+    val rankingFeedbackRepository: cx.aswin.boxlore.core.data.ranking.RankingFeedbackRepository,
+)
+
 /** [SettingsScreen]'s top-level identifiers/callbacks that aren't tied to a specific sub-page. */
 data class SettingsScreenConfig(
     val onBack: () -> Unit,
@@ -113,8 +119,7 @@ data class PlaybackSettings(
 @Composable
 fun SettingsScreen(
     config: SettingsScreenConfig,
-    rssPodcastRepository: cx.aswin.boxlore.core.data.RssPodcastRepository,
-    rankingFeedbackRepository: cx.aswin.boxlore.core.data.ranking.RankingFeedbackRepository,
+    repositories: SettingsRepositories,
     regionSettings: RegionSettings = RegionSettings(),
     appearanceSettings: AppearanceSettings = AppearanceSettings(),
     playbackSettings: PlaybackSettings = PlaybackSettings(),
@@ -134,8 +139,8 @@ fun SettingsScreen(
     val context = LocalContext.current
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModelAssembler.factory(
-            rssSubscriptionPort = rssPodcastRepository,
-            rankingResetPort = rankingFeedbackRepository,
+            rssSubscriptionPort = repositories.rssPodcastRepository,
+            rankingResetPort = repositories.rankingFeedbackRepository,
         ),
     )
     val rssState by settingsViewModel.uiState.collectAsStateWithLifecycle()

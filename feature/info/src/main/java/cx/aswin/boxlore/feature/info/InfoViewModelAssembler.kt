@@ -12,49 +12,51 @@ import cx.aswin.boxlore.core.data.SubscriptionRepository
 import cx.aswin.boxlore.core.data.UserPreferencesRepository
 import cx.aswin.boxlore.core.data.database.BoxLoreDatabase
 
+/** Shared deps for podcast/episode info ViewModels (keeps assembler APIs ≤7 params). */
+data class InfoSharedDeps(
+    val podcastRepository: PodcastRepository,
+    val playbackRepository: PlaybackRepository,
+    val downloadRepository: DownloadRepository,
+    val queueManager: QueueManager,
+    val database: BoxLoreDatabase,
+)
+
+data class PodcastInfoRouteArgs(
+    val entryPoint: String?,
+    val genreFilter: String?,
+    val scrollDepth: Int?,
+    val searchQuery: String?,
+)
+
 /** Builds Info ViewModels from shared container deps (production or test doubles). */
 object InfoViewModelAssembler {
     fun createPodcastInfo(
         application: Application,
-        repository: PodcastRepository,
-        playbackRepository: PlaybackRepository,
-        downloadRepository: DownloadRepository,
-        queueManager: QueueManager,
+        deps: InfoSharedDeps,
         subscriptionRepository: SubscriptionRepository,
         rssRepository: RssPodcastRepository,
-        database: BoxLoreDatabase,
-        entryPoint: String?,
-        genreFilter: String?,
-        scrollDepth: Int?,
-        searchQuery: String?,
+        routeArgs: PodcastInfoRouteArgs,
     ): PodcastInfoViewModel = PodcastInfoViewModel(
         application = application,
-        repository = repository,
-        playbackRepository = playbackRepository,
-        downloadRepository = downloadRepository,
-        queueManager = queueManager,
+        repository = deps.podcastRepository,
+        playbackRepository = deps.playbackRepository,
+        downloadRepository = deps.downloadRepository,
+        queueManager = deps.queueManager,
         subscriptionRepository = subscriptionRepository,
         rssRepository = rssRepository,
-        database = database,
-        entryPoint = entryPoint,
-        genreFilter = genreFilter,
-        scrollDepth = scrollDepth,
-        searchQuery = searchQuery,
+        database = deps.database,
+        entryPoint = routeArgs.entryPoint,
+        genreFilter = routeArgs.genreFilter,
+        scrollDepth = routeArgs.scrollDepth,
+        searchQuery = routeArgs.searchQuery,
     )
 
     fun podcastInfoFactory(
         application: Application,
-        repository: PodcastRepository,
-        playbackRepository: PlaybackRepository,
-        downloadRepository: DownloadRepository,
-        queueManager: QueueManager,
+        deps: InfoSharedDeps,
         subscriptionRepository: SubscriptionRepository,
         rssRepository: RssPodcastRepository,
-        database: BoxLoreDatabase,
-        entryPoint: String?,
-        genreFilter: String?,
-        scrollDepth: Int?,
-        searchQuery: String?,
+        routeArgs: PodcastInfoRouteArgs,
     ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -63,47 +65,32 @@ object InfoViewModelAssembler {
             }
             return createPodcastInfo(
                 application = application,
-                repository = repository,
-                playbackRepository = playbackRepository,
-                downloadRepository = downloadRepository,
-                queueManager = queueManager,
+                deps = deps,
                 subscriptionRepository = subscriptionRepository,
                 rssRepository = rssRepository,
-                database = database,
-                entryPoint = entryPoint,
-                genreFilter = genreFilter,
-                scrollDepth = scrollDepth,
-                searchQuery = searchQuery,
+                routeArgs = routeArgs,
             ) as T
         }
     }
 
     fun createEpisodeInfo(
         application: Application,
-        podcastRepository: PodcastRepository,
-        playbackRepository: PlaybackRepository,
-        downloadRepository: DownloadRepository,
-        queueManager: QueueManager,
+        deps: InfoSharedDeps,
         userPrefs: UserPreferencesRepository,
-        database: BoxLoreDatabase,
     ): EpisodeInfoViewModel = EpisodeInfoViewModel(
         application = application,
-        podcastRepository = podcastRepository,
-        playbackRepository = playbackRepository,
-        downloadRepository = downloadRepository,
-        queueManager = queueManager,
+        podcastRepository = deps.podcastRepository,
+        playbackRepository = deps.playbackRepository,
+        downloadRepository = deps.downloadRepository,
+        queueManager = deps.queueManager,
         userPrefs = userPrefs,
-        database = database,
+        database = deps.database,
     )
 
     fun episodeInfoFactory(
         application: Application,
-        podcastRepository: PodcastRepository,
-        playbackRepository: PlaybackRepository,
-        downloadRepository: DownloadRepository,
-        queueManager: QueueManager,
+        deps: InfoSharedDeps,
         userPrefs: UserPreferencesRepository,
-        database: BoxLoreDatabase,
     ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -112,12 +99,8 @@ object InfoViewModelAssembler {
             }
             return createEpisodeInfo(
                 application = application,
-                podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
-                downloadRepository = downloadRepository,
-                queueManager = queueManager,
+                deps = deps,
                 userPrefs = userPrefs,
-                database = database,
             ) as T
         }
     }
