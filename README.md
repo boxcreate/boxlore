@@ -55,9 +55,9 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 
 <details open>
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
-<b>🆕 New features:</b>
+<b>🐛 Fixes:</b>
 <ul align="left">
-<li>Added in‑memory session‑only SignalLog recording each ranking engine mutation and model movement, plus Debug UI pa... <a href="https://github.com/ashwkun/boxlore/pull/897"><img src="https://img.shields.io/badge/PR-897-6750A4?style=flat-square" alt="PR #897" height="18"/></a></li>
+<li>Player now keeps mini and full views in sync when you reopen the app, preserving playback state. <a href="https://github.com/ashwkun/boxlore/pull/904"><img src="https://img.shields.io/badge/PR-904-6750A4?style=flat-square" alt="PR #904" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
