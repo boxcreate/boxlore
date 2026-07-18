@@ -19,9 +19,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+
+/** Stable Compose [testTag] ids for Settings RSS dialog instrumentation / Maestro. */
+object SettingsRssTestTags {
+    const val URL_FIELD = "settings_add_rss_url"
+    const val CONFIRM = "settings_add_rss_confirm"
+    const val CANCEL = "settings_add_rss_cancel"
+}
 
 @Composable
 internal fun AddRssFeedDialog(
@@ -63,7 +71,9 @@ internal fun AddRssFeedDialog(
                 OutlinedTextField(
                     value = url,
                     onValueChange = onUrlChange,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(SettingsRssTestTags.URL_FIELD),
                     enabled = !isAdding,
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
@@ -111,6 +121,7 @@ internal fun AddRssFeedDialog(
             Button(
                 onClick = onConfirm,
                 enabled = !isAdding && url.isNotBlank(),
+                modifier = Modifier.testTag(SettingsRssTestTags.CONFIRM),
             ) {
                 Text("Add")
             }
@@ -119,6 +130,7 @@ internal fun AddRssFeedDialog(
             TextButton(
                 onClick = onDismiss,
                 enabled = !isAdding,
+                modifier = Modifier.testTag(SettingsRssTestTags.CANCEL),
             ) {
                 Text("Cancel")
             }

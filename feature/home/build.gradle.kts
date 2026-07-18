@@ -3,14 +3,17 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.kotlinCompose)
+    alias(libs.plugins.kover)
 }
 
 android {
     namespace = "cx.aswin.boxlore.feature.home"
-    compileSdk = 35
+    // compileSdk 36: androidTest pulls activity-compose / core 1.18 AAR metadata
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 31
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
         compose = true
@@ -67,4 +70,11 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // P24 Compose UI tests (JUnit4 + AndroidJUnitRunner; local/device only)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.activity.compose)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
