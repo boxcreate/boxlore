@@ -7,7 +7,54 @@ pluginManagement {
 }
 
 plugins {
+    id("com.gradle.develocity") version "4.5.0"
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+}
+
+val isCi =
+    !System.getenv("CI").isNullOrEmpty() ||
+        !System.getenv("GITHUB_ACTIONS").isNullOrEmpty()
+
+develocity {
+    buildScan {
+        // Required to publish to the public Develocity host without an interactive prompt.
+        // Local builds stay on-demand (`./gradlew <task> --scan`); CI publishes every run.
+        termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
+        termsOfUseAgree.set("yes")
+
+        // CI agents exit as soon as Gradle returns; finish the upload before that.
+        uploadInBackground.set(!isCi)
+
+        if (isCi) {
+            // Default publish-on policy already publishes; no onlyIf needed in CI.
+            tag("CI")
+            System.getenv("GITHUB_WORKFLOW")
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { value("GitHub workflow", it) }
+            val runId = System.getenv("GITHUB_RUN_ID")?.takeIf { it.isNotEmpty() }
+            runId?.let { value("GitHub run id", it) }
+            System.getenv("GITHUB_REF_NAME")
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { value("GitHub ref", it) }
+            System.getenv("GITHUB_SHA")
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { value("GitHub SHA", it.take(12)) }
+            val repository = System.getenv("GITHUB_REPOSITORY")
+            if (!repository.isNullOrEmpty()) {
+                link("GitHub repository", "https://github.com/$repository")
+                if (runId != null) {
+                    link(
+                        "GitHub Actions run",
+                        "https://github.com/$repository/actions/runs/$runId",
+                    )
+                }
+            }
+        } else {
+            // Keep everyday local builds private unless --scan is passed explicitly.
+            publishing.onlyIf { false }
+            tag("Local")
+        }
+    }
 }
 
 /**
