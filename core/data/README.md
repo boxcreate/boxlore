@@ -23,7 +23,7 @@ Extracted subsystems now live in dedicated modules (re-exported via `api` so exi
 - **Catalog:** `PodcastRepository` (Podcast Index HTTP + RSS delegate via `RssPodcastRepository`), `SubscriptionRepository`, `ChapterRepository`, `TranscriptRepository`
 - **Smart queue helpers:** `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine` / `SmartQueueSources`, `MixtapeEngine`
 - **Content sections:** `content/ContentOrchestrator`, `content/GroupedContentSectionProvider`, `content/ContentContextEngine`
-- **Backup/restore:** `backup/LibraryBackupManager` — JSON + OPML export/import, ranking backup, RSS re-import
+- **Backup/restore:** `backup/LibraryBackupManager` — JSON + OPML export/import, ranking backup, RSS re-import. Wire type is `BoxLoreBackup` (Gson field names / `version` unchanged for restore compatibility).
 - **Shared-deps bridge:**
   - `SharedAppDependencies` — interface of Application-scoped instances consumed by workers/services via `SharedAppDependenciesHolder`
   - `SharedAppDependenciesHolder` — `@Volatile` install + `require()` (throws if unset)

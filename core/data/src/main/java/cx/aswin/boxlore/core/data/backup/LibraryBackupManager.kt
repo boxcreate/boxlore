@@ -46,7 +46,7 @@ data class GlobalPreferencesBackup(
     val autoDownloadDeleteCompleted: Boolean? = null
 )
 
-data class BoxCastBackup(
+data class BoxLoreBackup(
     val version: Int = 5,
     val subscriptions: List<PodcastEntity>,
     val history: List<ListeningHistoryEntity>,
@@ -110,7 +110,7 @@ class LibraryBackupManager(
         } else null
 
         val rankingBackup = adaptiveRankingRepository.exportBackup()
-        val backup = BoxCastBackup(
+        val backup = BoxLoreBackup(
             version = 5,
             subscriptions = subscriptions,
             history = allHistory,
@@ -133,7 +133,7 @@ class LibraryBackupManager(
         for (entity in subscriptions) {
             val title = escapeXml(entity.title)
             val feedUrl = escapeXml(
-                entity.feedUrl ?: "${BuildConfig.BOXCAST_API_BASE_URL}/episodes?id=${entity.podcastId}"
+                entity.feedUrl ?: "${BuildConfig.BOXLORE_API_BASE_URL}/episodes?id=${entity.podcastId}"
             )
             sb.append("      <outline type=\"rss\" text=\"$title\" title=\"$title\" xmlUrl=\"$feedUrl\" />\n")
         }
@@ -154,7 +154,7 @@ class LibraryBackupManager(
 
     suspend fun importLibraryFromJson(jsonString: String): Pair<Int, Boolean> {
         return try {
-            val backup = gson.fromJson(jsonString, BoxCastBackup::class.java)
+            val backup = gson.fromJson(jsonString, BoxLoreBackup::class.java)
             
             // 0. Restore global preferences
             backup.globalPreferences?.let { prefs ->

@@ -25,6 +25,15 @@ android {
         localPropsFile.inputStream().use { localProps.load(it) }
     }
 
+    fun Properties.dual(newKey: String, oldKey: String): String {
+        val newest = getProperty(newKey)?.trim().orEmpty()
+        if (newest.isNotEmpty()) return newest
+        return getProperty(oldKey, "") ?: ""
+    }
+
+    val resolvedApiBaseUrl = localProps.dual("BOXLORE_API_BASE_URL", "BOXCAST_API_BASE_URL")
+    val resolvedPublicKey = localProps.dual("BOXLORE_PUBLIC_KEY", "BOXCAST_PUBLIC_KEY")
+
     defaultConfig {
         applicationId = "cx.aswin.boxlore"
         minSdk = 31
@@ -36,9 +45,12 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        
-        buildConfigField("String", "BOXCAST_API_BASE_URL", "\"${localProps.getProperty("BOXCAST_API_BASE_URL", "")}\"")
-        buildConfigField("String", "BOXCAST_PUBLIC_KEY", "\"${localProps.getProperty("BOXCAST_PUBLIC_KEY", "")}\"")
+
+        // Prefer BOXLORE_* local.properties keys; fall back to BOXCAST_* for existing setups.
+        buildConfigField("String", "BOXLORE_API_BASE_URL", "\"$resolvedApiBaseUrl\"")
+        buildConfigField("String", "BOXLORE_PUBLIC_KEY", "\"$resolvedPublicKey\"")
+        buildConfigField("String", "BOXCAST_API_BASE_URL", "\"$resolvedApiBaseUrl\"")
+        buildConfigField("String", "BOXCAST_PUBLIC_KEY", "\"$resolvedPublicKey\"")
         buildConfigField("String", "POSTHOG_API_KEY", "\"${localProps.getProperty("posthog.apiKey", "")}\"")
         buildConfigField("String", "POSTHOG_HOST", "\"${localProps.getProperty("posthog.host", "")}\"")
 

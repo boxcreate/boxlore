@@ -245,8 +245,8 @@ class PlaybackRepository(
 
                                             val updatedEpisode =
                                                 episode?.copy(
-                                                    chaptersUrl = "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
-                                                    transcriptUrl = "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
+                                                    chaptersUrl = "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
+                                                    transcriptUrl = "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
                                                 )
                                             android.util.Log.d(
                                                 "PlaybackRepo",
@@ -1032,8 +1032,8 @@ class PlaybackRepository(
                                         val mappedRegion = mapRegionForBriefing(region)
                                         newEpisode =
                                             newEpisode.copy(
-                                                chaptersUrl = "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
-                                                transcriptUrl = "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
+                                                chaptersUrl = "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
+                                                transcriptUrl = "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
                                             )
                                         android.util.Log.d(
                                             "PlaybackRepo",

@@ -13,7 +13,7 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.R
 
-private const val TAG = "BoxCastTypography"
+private const val TAG = "BoxLoreTypography"
 
 // Google Fonts Provider for dynamic font loading
 private val googleFontProvider = GoogleFont.Provider(
@@ -126,7 +126,7 @@ val SectionHeaderFontFamily = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
 // Material 3 EXPRESSIVE Typography Scale
 // Switched main typography to GoogleSansFamily
-val BoxCastTypography = Typography(
+val BoxLoreTypography = Typography(
     // DISPLAY - Bold, tight, impactful
     displayLarge = TextStyle(
         fontFamily = GoogleSansFamily,

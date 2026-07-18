@@ -873,10 +873,10 @@ private fun PodcastFeed(
                                 publishedDate = publishedDate,
                                 transcriptUrl =
                                     briefing.transcriptUrl
-                                        ?: "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+                                        ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
                                 chaptersUrl =
                                     briefing.chaptersUrl
-                                        ?: "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam",
+                                        ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam",
                             ),
                             cx.aswin.boxlore.core.model.Podcast(
                                 id = "briefing_${briefing.region}",

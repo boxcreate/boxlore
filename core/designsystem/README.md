@@ -6,7 +6,7 @@ Shared Compose theme, shapes, motion/typography helpers, loaders, image helpers,
 
 ## Public API
 
-- Theme: `BoxCastTheme` / expressive theme pieces (`ExpressiveShapes`, `ExpressiveMotion`, typography, dynamic color helpers)
+- Theme: `BoxLoreTheme` / expressive theme pieces (`ExpressiveShapes`, `ExpressiveMotion`, typography, dynamic color helpers)
 - Components: `OptimizedImage`, `BoxLoreLoader`, `AdvancedPlayerControls`, bottom-nav height / sleep-timer chrome as used by `:app`
 - `share.ShareManager` — composite share cards / system share sheet
 

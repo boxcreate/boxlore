@@ -43,7 +43,7 @@ import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationBar
 import cx.aswin.boxlore.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopup
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopupDismissReason
-import cx.aswin.boxlore.core.designsystem.theme.BoxCastTheme
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
@@ -126,8 +126,8 @@ fun BoxLoreAppRoot(
     LaunchedEffect(Unit) {
         val prefs = activity.getSharedPreferences("boxcast_api_config", android.content.Context.MODE_PRIVATE)
         prefs.edit()
-            .putString("base_url", BuildConfig.BOXCAST_API_BASE_URL)
-            .putString("public_key", BuildConfig.BOXCAST_PUBLIC_KEY)
+            .putString("base_url", BuildConfig.BOXLORE_API_BASE_URL)
+            .putString("public_key", BuildConfig.BOXLORE_PUBLIC_KEY)
             .apply()
     }
 
@@ -332,7 +332,7 @@ fun BoxLoreAppRoot(
         dismissedFeatureVersion != "android_auto_1.3.6" &&
         activeAnnouncement == null
 
-    BoxCastTheme(
+    BoxLoreTheme(
         darkTheme = darkTheme,
         dynamicColor = useDynamicColor,
         themeBrand = themeBrand,

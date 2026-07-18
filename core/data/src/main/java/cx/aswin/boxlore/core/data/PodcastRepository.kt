@@ -1414,7 +1414,7 @@ class PodcastRepository(
                         val version = audioUri.getQueryParameter("v")
                         val versionParam = if (version != null) "&v=$version" else ""
                         val chaptersUrl = fallbackBriefing.chaptersUrl
-                            ?: "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/chapters/${fallbackBriefing.region}?d=${fallbackBriefing.date}$versionParam"
+                            ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${fallbackBriefing.region}?d=${fallbackBriefing.date}$versionParam"
                         try {
                             briefingChapters = cx.aswin.boxlore.core.data.ChapterRepository.getChapters(chaptersUrl)
                         } catch (e: Exception) {

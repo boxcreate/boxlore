@@ -5,7 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
-val BoxCastShapes = Shapes(
+val BoxLoreShapes = Shapes(
     // Extra Small (4dp): Autocomplete menu, snackbar, text fields
     extraSmall = RoundedCornerShape(4.dp),
 

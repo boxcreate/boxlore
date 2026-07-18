@@ -51,8 +51,8 @@ class BoxLoreApplication : Application(), Configuration.Provider {
         userPreferencesRepository = UserPreferencesRepository(this)
         container = AppContainer(
             context = this,
-            apiBaseUrl = BuildConfig.BOXCAST_API_BASE_URL,
-            publicKey = BuildConfig.BOXCAST_PUBLIC_KEY,
+            apiBaseUrl = BuildConfig.BOXLORE_API_BASE_URL,
+            publicKey = BuildConfig.BOXLORE_PUBLIC_KEY,
             sharedUserPreferences = userPreferencesRepository,
         )
         SharedAppDependenciesHolder.instance = container

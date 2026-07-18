@@ -19,7 +19,7 @@ Application shell: `BoxLoreApplication`, `MainActivity`, `BoxLoreNavHost`, FCM, 
 - After container creation (`BoxLoreApplication.onCreate`):
   - `SharedAppDependenciesHolder.instance = container`
   - `DownloadsDependenciesHolder.instance = container`
-- `LegacyWorkerFactory` — WorkManager `WorkerFactory` (via `Configuration.Provider`); maps pre-rename worker FQCNs
+- `LegacyWorkerFactory` — **permanent** WorkManager upgrade bridge (`Configuration.Provider`); maps pre-rename `cx.aswin.boxcast.*` worker FQCNs to `cx.aswin.boxlore.*`. Do not delete without verified zero legacy work.
 - `MainActivity` — theme, edge-to-edge, PostHog/survey wiring, player overlay, OPML import, bottom nav
 - `BoxLoreNavHost` — full nav graph; receives deps from `BoxLoreApplication.container`
 
@@ -27,7 +27,7 @@ Application shell: `BoxLoreApplication`, `MainActivity`, `BoxLoreNavHost`, FCM, 
 
 ```
 MainActivity.setContent
-└── BoxCastTheme
+└── BoxLoreTheme
     ├── AlertDialog (lore-queue conflict)          ← activity-scoped mutable state
     ├── InAppAnnouncementDialog                    ← userPrefs.activeAnnouncementStream
     ├── Feature-announcement overlay (full screen) ← PostHog flag "active_feature_announcement"
@@ -94,7 +94,10 @@ Forbidden: features must not construct parallel ranking/RSS graphs; use containe
 ## Persistence & identity
 
 - `applicationId = cx.aswin.boxlore`
-- WorkManager worker FQCNs remain stable (`LegacyWorkerFactory` aliases)
+- WorkManager worker FQCNs remain stable (`LegacyWorkerFactory` is a **permanent** upgrade bridge — keep until verified zero legacy work)
+- Pref file/key strings such as `boxcast_prefs` stay unchanged (identity)
+- Deep links: Manifest + NavHost accept **`boxlore://` and `boxcast://`**, plus `https://aswin.cx/boxlore/share` and `/boxcast/share`
+- BuildConfig: `BOXLORE_API_BASE_URL` / `BOXLORE_PUBLIC_KEY` preferred; `local.properties` may still use `BOXCAST_*` (Gradle dual-reads). Legacy `BOXCAST_*` BuildConfig fields remain populated with the same resolved values
 - DataStore `user_preferences`, Room DB filenames, and ranking DB are owned by core modules — do not rename here
 - CI stub `google-services.json` via `.github/actions/write-ci-google-services` (not a Firebase mock)
 

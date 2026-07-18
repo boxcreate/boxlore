@@ -53,12 +53,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Custom Scheme Deep Linking -->
+            <!-- Custom Scheme Deep Linking (boxlore + legacy boxcast aliases) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="boxlore" />
+                <data android:scheme="boxcast" />
             </intent-filter>
 
             <!-- Web Domain App Links -->
@@ -70,6 +71,7 @@
                 <data android:scheme="https" />
                 <data android:host="aswin.cx" />
                 <data android:pathPrefix="/boxlore/share" />
+                <data android:pathPrefix="/boxcast/share" />
             </intent-filter>
         </activity>
 

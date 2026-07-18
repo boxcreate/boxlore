@@ -144,7 +144,7 @@ class BriefingViewModel(
                 val version = audioUri.getQueryParameter("v")
                 val versionParam = if (version != null) "&v=$version" else ""
                 val chaptersUrl = result.chaptersUrl
-                    ?: "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/chapters/${result.region}?d=${result.date}$versionParam"
+                    ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${result.region}?d=${result.date}$versionParam"
                 try {
                     val chaptersList = ChapterRepository.getChapters(chaptersUrl)
                     _briefingChapters.value = chaptersList
@@ -210,9 +210,9 @@ class BriefingViewModel(
                 duration = 180,
                 publishedDate = publishedDate,
                 transcriptUrl = briefing.transcriptUrl
-                    ?: "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+                    ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
                 chaptersUrl = briefing.chaptersUrl
-                    ?: "${BuildConfig.BOXCAST_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
+                    ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
             )
 
             queueManager.playEpisode(dummyEpisode, dummyPodcast, initialPositionMs = initialPositionMs)

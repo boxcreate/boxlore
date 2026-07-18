@@ -21,7 +21,7 @@ import com.posthog.surveys.OnPostHogSurveyResponse
 import com.posthog.surveys.OnPostHogSurveyShown
 import com.posthog.surveys.PostHogDisplaySurvey
 import cx.aswin.boxlore.core.data.UserPreferencesRepository
-import cx.aswin.boxlore.core.designsystem.theme.BoxCastTheme
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.surveys.internal.ui.SurveySheet
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -134,7 +134,7 @@ internal class BoxcastSurveyHost(
                                     "dark" -> true
                                     else -> isSystemInDarkTheme()
                                 }
-                            BoxCastTheme(
+                            BoxLoreTheme(
                                 darkTheme = darkTheme,
                                 dynamicColor = userPrefs.cachedUseDynamicColor,
                                 themeBrand = userPrefs.cachedThemeBrand,

@@ -20,13 +20,13 @@ import androidx.core.view.WindowCompat
 
 /**
  * CompositionLocal providing the active surface style key (e.g. [SurfaceStyles.AMOLED]).
- * Provided by [BoxCastTheme]; available to any composable in the tree.
+ * Provided by [BoxLoreTheme]; available to any composable in the tree.
  */
 val LocalSurfaceStyle = staticCompositionLocalOf { SurfaceStyles.CLASSIC_DYNAMIC }
 
 /**
  * CompositionLocal providing the effective dark-theme boolean resolved from the
- * surface style. Provided by [BoxCastTheme]; available to any composable in the tree.
+ * surface style. Provided by [BoxLoreTheme]; available to any composable in the tree.
  */
 val LocalEffectiveDarkTheme = staticCompositionLocalOf { false }
 
@@ -70,7 +70,7 @@ fun computeEffectiveDarkTheme(surfaceStyle: String, darkTheme: Boolean): Boolean
 }
 
 @Composable
-fun BoxCastTheme(
+fun BoxLoreTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     themeBrand: String = "violet",
@@ -110,8 +110,8 @@ fun BoxCastTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = BoxCastTypography,
-            shapes = BoxCastShapes,
+            typography = BoxLoreTypography,
+            shapes = BoxLoreShapes,
             content = content
         )
     }

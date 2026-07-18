@@ -6,8 +6,13 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 
 /**
- * Maps pre-rename WorkManager worker class names (`cx.aswin.boxcast.*`) to the
- * current `cx.aswin.boxlore.*` implementations for one release after the package rename.
+ * Permanent upgrade bridge for WorkManager class-name stability.
+ *
+ * Maps pre-rename worker FQCNs (`cx.aswin.boxcast.*`) to current
+ * `cx.aswin.boxlore.*` implementations so scheduled work enqueued before the
+ * package rename still resolves after upgrade. Keep this factory for as long as
+ * any device may still hold legacy work requests — do **not** delete as a
+ * “cleanup” without verified zero inbound legacy work.
  */
 class LegacyWorkerFactory : WorkerFactory() {
     override fun createWorker(
