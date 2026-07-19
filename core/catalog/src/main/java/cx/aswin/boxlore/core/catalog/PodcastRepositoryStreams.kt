@@ -46,21 +46,23 @@ internal fun PodcastRepository.trendingPodcastsStream(country: String = "us", li
         val call = api.getTrendingStream(publicKey, country, limit, category, offset)
         val response = call.execute()
 
-        android.util.Log.d("BoxCastRepo", "Stream: Response code=${response.code()}, isSuccessful=${response.isSuccessful}")
+        response.raw().use {
+            android.util.Log.d("BoxCastRepo", "Stream: Response code=${response.code()}, isSuccessful=${response.isSuccessful}")
 
-        if (!response.isSuccessful || response.body() == null) {
-            android.util.Log.e("BoxCastRepo", "Stream: Failed! code=${response.code()}, body isNull=${response.body() == null}")
-            return@flow
-        }
+            val responseBody = response.body()
+            if (!response.isSuccessful || responseBody == null) {
+                android.util.Log.e("BoxCastRepo", "Stream: Failed! code=${response.code()}, body isNull=${responseBody == null}")
+                return@use
+            }
 
-        val responseBody = response.body()!!
-        readTrendingPodcasts(responseBody, podcasts) { emit(it) }
+            readTrendingPodcasts(responseBody, podcasts) { emit(it) }
 
-        android.util.Log.d("BoxCastRepo", "Stream: Parsed ${podcasts.size} podcasts for category=$category")
+            android.util.Log.d("BoxCastRepo", "Stream: Parsed ${podcasts.size} podcasts for category=$category")
 
-        // Final emission
-        if (podcasts.isNotEmpty()) {
-            emit(podcasts)
+            // Final emission
+            if (podcasts.isNotEmpty()) {
+                emit(podcasts)
+            }
         }
 
     } catch (e: Exception) {

@@ -68,7 +68,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,6 +104,7 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState
@@ -126,12 +129,13 @@ internal fun BriefingStoriesPager(
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
     val scope = rememberCoroutineScope()
     var userClickedPage by remember { mutableStateOf<Int?>(null) }
+    val updateUserClickedPage = remember {
+        { page: Int? -> userClickedPage = page }
+    }
 
     // 1. Playback -> UI Paging Sync
-    // Find the currently active chapter index based on playback position
-    val activeChapterIndex = remember(chapters, currentPositionMs) {
-        val index = chapters.indexOfLast { currentPositionMs >= it.startTime * 1000 }
-        if (index != -1) index else 0
+    val activeChapterIndex by remember(chapters, currentPositionMs) {
+        derivedStateOf { activeChapterIndexFor(chapters, currentPositionMs) }
     }
 
     BriefingPagerEffects(
@@ -141,11 +145,20 @@ internal fun BriefingStoriesPager(
         isDragged = isDragged,
         activeChapterIndex = activeChapterIndex,
         userClickedPage = userClickedPage,
-        onUserClickedPageChange = { userClickedPage = it },
+        onUserClickedPageChange = updateUserClickedPage,
     )
 
     val paragraphs = remember(briefing.script) {
         briefingStoryParagraphs(briefing.script)
+    }
+    val pagerActions = remember(scope, pagerState, updateUserClickedPage, onEpisodeClick, onPlayPauseClick) {
+        BriefingStoriesPagerActions(
+            scope = scope,
+            pagerState = pagerState,
+            onUserClickedPageChange = updateUserClickedPage,
+            onEpisodeClick = onEpisodeClick,
+            onPlayPauseClick = onPlayPauseClick,
+        )
     }
 
     BriefingStoriesPagerContent(
@@ -158,17 +171,20 @@ internal fun BriefingStoriesPager(
                 isPlaying = isPlaying,
                 accentColor = accentColor,
             ),
-        actions =
-            BriefingStoriesPagerActions(
-                scope = scope,
-                pagerState = pagerState,
-                onUserClickedPageChange = { userClickedPage = it },
-                onEpisodeClick = onEpisodeClick,
-                onPlayPauseClick = onPlayPauseClick,
-            ),
+        actions = pagerActions,
     )
 }
 
+private fun activeChapterIndexFor(
+    chapters: List<cx.aswin.boxlore.core.model.Chapter>,
+    currentPositionMs: Long,
+): Int {
+    val positionMs = currentPositionMs.toDouble()
+    val index = chapters.indexOfLast { positionMs >= it.startTime * 1000.0 }
+    return if (index != -1) index else 0
+}
+
+@Stable
 private data class BriefingStoriesPagerUiState(
     val briefing: Briefing,
     val chapters: List<cx.aswin.boxlore.core.model.Chapter>,
@@ -178,6 +194,7 @@ private data class BriefingStoriesPagerUiState(
     val accentColor: Color,
 )
 
+@Stable
 internal data class BriefingStoriesPagerActions(
     val scope: kotlinx.coroutines.CoroutineScope,
     val pagerState: androidx.compose.foundation.pager.PagerState,
@@ -244,15 +261,15 @@ private fun trackChapterPageInteraction(
     userClickedPage: Int?,
 ) {
     if (chapter == null || (!isDragged && userClickedPage == null)) return
-    val method = if (isDragged) "swipe" else "click"
-    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-        action = "chapter_swiped",
+    val isSwipe = isDragged
+    AnalyticsHelper.trackDailyBriefingInteraction(
+        action = if (isSwipe) "chapter_swiped" else "chapter_clicked",
         region = briefing.region,
         date = briefing.date,
         extraProps = mapOf(
             "chapter_index" to page,
             "chapter_title" to chapter.title,
-            "method" to method
+            "method" to if (isSwipe) "swipe" else "click"
         )
     )
 }
@@ -286,6 +303,7 @@ private fun BriefingChapterPager(
         state = actions.pagerState,
         contentPadding = PaddingValues(horizontal = 24.dp),
         pageSpacing = 16.dp,
+        key = { page -> stableChapterKey(uiState.chapters[page]) },
         modifier = Modifier
             .fillMaxWidth()
             .height(500.dp)
@@ -305,6 +323,10 @@ private fun BriefingChapterPager(
         )
     }
 }
+
+private fun stableChapterKey(
+    chapter: cx.aswin.boxlore.core.model.Chapter,
+): String = "${chapter.startTime}:${chapter.title}:${chapter.url.orEmpty()}:${chapter.img.orEmpty()}"
 
 @Composable
 private fun LoadingScriptPlaceholder() {

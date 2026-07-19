@@ -30,7 +30,7 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Dependencies
 
-- Project dependencies: `:core:designsystem`, `:core:catalog`, `:core:playback`, `:core:model`, `:core:network`, `:core:analytics`, and `:core:ranking`.
+- Project dependencies: `:core:designsystem`, `:core:catalog`, `:core:playback`, `:core:model`, `:core:network`, `:core:analytics`, `:core:ranking`, and `:core:prefs`.
 - Libraries: Compose, Navigation, Coil, lifecycle runtime/ViewModel Compose, Palette, Turbine and coroutines-test for tests.
 - Reverse-edge rule: feature modules must not depend on other feature modules.
 

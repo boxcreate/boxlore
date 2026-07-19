@@ -1,4 +1,5 @@
 # Analytics event glossary
+
 Canonical client analytics contract. Emit only listed `event_name` values.
 Companion CSV: [`docs/analytics/event_glossary.csv`](analytics/event_glossary.csv).
 Architecture: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
@@ -50,8 +51,8 @@ Architecture: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 | `playback_heartbeat` | Periodic progress while playing | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; playback_mode:enum; client_surface:enum | duration_seconds:float; percent_complete:float; milestone:int; speed:float; is_subscribed:bool | none |
 | `playback_paused` | Playback paused | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; listened_delta_seconds:float; pause_reason:enum; playback_mode:enum; client_surface:enum | duration_seconds:float; percent_complete:float; is_subscribed:bool | none |
 | `playback_completed` | Episode reached completion | episode_id:string; podcast_id:string; entry_point:enum; listened_delta_seconds:float; playback_mode:enum; client_surface:enum | duration_seconds:float; is_subscribed:bool; speed:float | none |
-| `playback_error` | Playback failed | error_type:string | episode_id:string; podcast_id:string; entry_point:enum; error_message:string; playback_mode:enum; client_surface:enum | none |
-| `playback_buffering` | Buffering stall observed | — | episode_id:string; podcast_id:string; entry_point:enum; buffer_duration_ms:int; playback_mode:enum; client_surface:enum | none |
+| `playback_error` | Playback failed | error_type:string; entry_point:enum | episode_id:string; podcast_id:string; error_message:string; playback_mode:enum; client_surface:enum | none |
+| `playback_buffering` | Buffering stall observed | entry_point:enum | episode_id:string; podcast_id:string; buffer_duration_ms:int; playback_mode:enum; client_surface:enum | none |
 | `playback_seeked` | User seeked in episode | episode_id:string; podcast_id:string; entry_point:enum; from_seconds:float; to_seconds:float | seek_source:string; client_surface:enum | none |
 | `session_restore_prompt` | Resume previous session prompt shown/acted | action:string | episode_id:string; podcast_id:string; position_seconds:float | none |
 | `podcast_subscription_toggled` | User subscribed or unsubscribed | podcast_id:string; is_subscribed:bool | surface:string; source:string | none |

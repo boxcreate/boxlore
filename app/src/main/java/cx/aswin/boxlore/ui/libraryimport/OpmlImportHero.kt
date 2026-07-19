@@ -71,7 +71,10 @@ private fun rememberImportHeroAnimation(visual: ImportHeroVisual): ImportHeroAni
         when (visual) {
             is ImportHeroVisual.Progress -> {
                 showCheck = false
-                ringProgress.snapTo(visual.value.coerceIn(0f, 1f))
+                ringProgress.animateTo(
+                    targetValue = visual.value.coerceIn(0f, 1f),
+                    animationSpec = tween(220, easing = FastOutSlowInEasing)
+                )
             }
             ImportHeroVisual.Indeterminate -> {
                 showCheck = false
@@ -89,15 +92,6 @@ private fun rememberImportHeroAnimation(visual: ImportHeroVisual): ImportHeroAni
                 showCheck = false
             }
         }
-    }
-
-    // Keep determinate ring tracking live progress while importing.
-    LaunchedEffect((visual as? ImportHeroVisual.Progress)?.value) {
-        val progressVisual = visual as? ImportHeroVisual.Progress ?: return@LaunchedEffect
-        ringProgress.animateTo(
-            targetValue = progressVisual.value.coerceIn(0f, 1f),
-            animationSpec = tween(220, easing = FastOutSlowInEasing)
-        )
     }
 
     val checkScale by animateFloatAsState(

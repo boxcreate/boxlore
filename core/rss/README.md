@@ -37,7 +37,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 ## Persistence & identity
 
 - Podcast IDs use `rss:<sha256-hex>` from normalized feed URLs and are Room primary keys.
-- RSS episode IDs are deterministic negative `Long` values to avoid collision with positive Podcast Index IDs.
+- RSS episode IDs are strings encoding deterministic negative `Long` values to avoid collision with positive Podcast Index IDs.
 - RSS episode and podcast rows are persisted in the main database owned by `:core:database`.
 - Package root is `cx.aswin.boxlore.core.rss`.
 

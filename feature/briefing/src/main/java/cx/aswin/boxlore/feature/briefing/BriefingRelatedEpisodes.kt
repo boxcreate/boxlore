@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Episode
 
 @Composable
@@ -46,7 +47,7 @@ internal fun RelatedEpisodesSection(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(recs) { episode ->
+            items(recs, key = ::relatedEpisodeKey) { episode ->
                 CompactEpisodeChip(
                     episode = episode,
                     isActiveCard = state.isActive,
@@ -60,6 +61,9 @@ internal fun RelatedEpisodesSection(
         }
     }
 }
+
+private fun relatedEpisodeKey(episode: Episode): String =
+    "${episode.podcastId.orEmpty()}:${episode.id}:${episode.audioUrl}:${episode.title}"
 
 @Composable
 private fun relatedEpisodesDividerColor(isActive: Boolean): Color =
@@ -109,13 +113,13 @@ private fun trackRelatedEpisodeClick(
     state: BriefingStoryCardState,
     episode: Episode,
 ) {
-    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingRelatedEpisodeClicked(
+    AnalyticsHelper.trackDailyBriefingRelatedEpisodeClicked(
         region = state.briefing.region,
         date = state.briefing.date,
         chapterIndex = state.page,
         episodeId = episode.id,
         episodeTitle = episode.title,
-        podcastId = episode.podcastId ?: "",
-        podcastTitle = episode.podcastTitle ?: ""
+        podcastId = episode.podcastId.orEmpty(),
+        podcastTitle = episode.podcastTitle.orEmpty()
     )
 }
