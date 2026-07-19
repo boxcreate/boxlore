@@ -6,23 +6,15 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,62 +23,34 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ImportExport
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.SettingsBackupRestore
-import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.model.Podcast
-import kotlinx.coroutines.delay
 
-private val ImportHeroSize = 80.dp
 private val ImportCorner = RoundedCornerShape(24.dp)
 
 internal fun contentKeyFor(state: OpmlImportState): String = when (state) {
@@ -164,147 +128,6 @@ internal fun ProgressFlowScaffold(
                 )
 
                 else -> Unit
-            }
-        }
-    }
-}
-
-internal sealed interface ImportHeroVisual {
-    data object Indeterminate : ImportHeroVisual
-    data class Progress(val value: Float) : ImportHeroVisual
-    data object Complete : ImportHeroVisual
-    data object Error : ImportHeroVisual
-}
-
-/**
- * Shared hero slot so the success checkmark feels like a continuation of the wavy loader:
- * progress fills to 1, then the ring resolves into a filled badge with a spring-scaled check.
- */
-@Composable
-internal fun ImportStatusHero(
-    visual: ImportHeroVisual,
-    size: Dp = ImportHeroSize
-) {
-    val isComplete = visual is ImportHeroVisual.Complete
-    val isError = visual is ImportHeroVisual.Error
-
-    var showCheck by remember { mutableStateOf(false) }
-    val ringProgress = remember { Animatable(0f) }
-
-    LaunchedEffect(visual) {
-        when (visual) {
-            is ImportHeroVisual.Progress -> {
-                showCheck = false
-                ringProgress.snapTo(visual.value.coerceIn(0f, 1f))
-            }
-            ImportHeroVisual.Indeterminate -> {
-                showCheck = false
-            }
-            ImportHeroVisual.Complete -> {
-                // Finish the ring, then reveal the check in the same geometry.
-                ringProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(420, easing = FastOutSlowInEasing)
-                )
-                delay(60)
-                showCheck = true
-            }
-            ImportHeroVisual.Error -> {
-                showCheck = false
-            }
-        }
-    }
-
-    // Keep determinate ring tracking live progress while importing.
-    LaunchedEffect((visual as? ImportHeroVisual.Progress)?.value) {
-        val progressVisual = visual as? ImportHeroVisual.Progress ?: return@LaunchedEffect
-        ringProgress.animateTo(
-            targetValue = progressVisual.value.coerceIn(0f, 1f),
-            animationSpec = tween(220, easing = FastOutSlowInEasing)
-        )
-    }
-
-    val checkScale by animateFloatAsState(
-        targetValue = if (showCheck) 1f else 0.55f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "check_scale"
-    )
-    val checkAlpha by animateFloatAsState(
-        targetValue = if (showCheck) 1f else 0f,
-        animationSpec = tween(280),
-        label = "check_alpha"
-    )
-
-    Box(
-        modifier = Modifier.size(size),
-        contentAlignment = Alignment.Center
-    ) {
-        when {
-            isError -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-            }
-
-            isComplete -> {
-                // Keep the wavy ring at full progress under the badge so the motion continues.
-                BoxLoreLoader.CircularWavy(
-                    progress = ringProgress.value,
-                    size = size,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = checkScale
-                            scaleY = checkScale
-                            alpha = checkAlpha
-                        }
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-            }
-
-            visual is ImportHeroVisual.Progress -> {
-                BoxLoreLoader.CircularWavy(
-                    progress = ringProgress.value,
-                    size = size,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            else -> {
-                BoxLoreLoader.CircularWavy(
-                    size = size,
-                    color = MaterialTheme.colorScheme.primary
-                )
             }
         }
     }
@@ -491,171 +314,6 @@ internal fun ImportOptionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
-    }
-}
-
-@Composable
-internal fun AskCompletedContent(
-    state: OpmlImportState.AskCompleted,
-    onSelectionChanged: (Set<String>) -> Unit,
-    onConfirmCompleted: () -> Unit,
-    onSkipCompleted: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 40.dp)
-    ) {
-        Text(
-            text = "Start fresh?",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Mark past episodes as played on selected shows so your queue stays focused on new releases.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SuggestionChip(
-                onClick = {
-                    onSelectionChanged(state.importedPodcasts.map { it.id }.toSet())
-                },
-                label = { Text("Select all") },
-                icon = {
-                    Icon(Icons.Rounded.Check, null, modifier = Modifier.size(16.dp))
-                },
-                shape = RoundedCornerShape(50)
-            )
-            SuggestionChip(
-                onClick = { onSelectionChanged(emptySet()) },
-                label = { Text("Deselect all") },
-                icon = {
-                    Icon(Icons.Rounded.Close, null, modifier = Modifier.size(16.dp))
-                },
-                shape = RoundedCornerShape(50)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            shape = ImportCorner,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                items(state.importedPodcasts, key = { it.id }) { podcast ->
-                    val isChecked = podcast.id in state.selectedIds
-                    ListItem(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val next = if (isChecked) {
-                                    state.selectedIds - podcast.id
-                                } else {
-                                    state.selectedIds + podcast.id
-                                }
-                                onSelectionChanged(next)
-                            },
-                        headlineContent = {
-                            Text(
-                                text = podcast.title,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                text = podcast.artist,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        leadingContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                OptimizedImage(
-                                    url = podcast.imageUrl,
-                                    proxyWidth = 150,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                        },
-                        trailingContent = {
-                            Checkbox(
-                                checked = isChecked,
-                                onCheckedChange = { checked ->
-                                    val next = if (checked) {
-                                        state.selectedIds + podcast.id
-                                    } else {
-                                        state.selectedIds - podcast.id
-                                    }
-                                    onSelectionChanged(next)
-                                }
-                            )
-                        },
-                        colors = ListItemDefaults.colors(
-                            containerColor = androidx.compose.ui.graphics.Color.Transparent
-                        )
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = onConfirmCompleted,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text(
-                text = "Mark selected (${state.selectedIds.size}) as played",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        TextButton(
-            onClick = onSkipCompleted,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) {
-            Text(
-                text = "Keep all unplayed",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
-            )
         }
     }
 }

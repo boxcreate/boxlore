@@ -54,55 +54,7 @@ internal fun PodcastRepository.trendingPodcastsStream(country: String = "us", li
         }
 
         val responseBody = response.body()!!
-        val stream = responseBody.byteStream()
-        val reader = com.google.gson.stream.JsonReader(java.io.InputStreamReader(stream, "UTF-8"))
-
-        reader.isLenient = true
-
-        reader.beginObject()
-        while (reader.hasNext()) {
-            val name = reader.nextName()
-            if (name == "feeds") {
-                reader.beginArray() // [
-                while (reader.hasNext()) {
-                    try {
-                        val feed = com.google.gson.Gson().fromJson<cx.aswin.boxlore.core.network.model.TrendingFeed>(
-                            reader,
-                            cx.aswin.boxlore.core.network.model.TrendingFeed::class.java
-                        )
-
-                        if (feed != null) {
-                            val podcast = Podcast(
-                                id = feed.id.toString(),
-                                title = feed.title,
-                                artist = feed.author ?: "Unknown",
-                                imageUrl = (feed.artwork ?: feed.image).toHttps(),
-                                description = feed.description,
-                                genre = resolvePrimaryGenre(feed.categories),
-                                latestEpisode = feed.latestEpisode?.let { epItem ->
-                                    mapToEpisode(epItem)?.copy(
-                                        podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
-                                        podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
-                                    )
-                                },
-                                medium = feed.medium
-                            )
-                            podcasts.add(podcast)
-
-                            if (podcasts.size % 4 == 0 || podcasts.size == 1) {
-                                 emit(podcasts.toList())
-                            }
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("BoxCastRepo", "Stream: Feed parse error", e)
-                    }
-                }
-                reader.endArray()
-            } else {
-                reader.skipValue()
-            }
-        }
-        reader.endObject()
+        readTrendingPodcasts(responseBody, podcasts) { emit(it) }
 
         android.util.Log.d("BoxCastRepo", "Stream: Parsed ${podcasts.size} podcasts for category=$category")
 
@@ -116,3 +68,78 @@ internal fun PodcastRepository.trendingPodcastsStream(country: String = "us", li
         if (podcasts.isNotEmpty()) emit(podcasts)
     }
 }.flowOn(Dispatchers.IO)
+
+private suspend fun PodcastRepository.readTrendingPodcasts(
+    responseBody: ResponseBody,
+    podcasts: MutableList<Podcast>,
+    emitSnapshot: suspend (List<Podcast>) -> Unit,
+) {
+    val reader = JsonReader(InputStreamReader(responseBody.byteStream(), "UTF-8"))
+    reader.isLenient = true
+    reader.beginObject()
+    while (reader.hasNext()) {
+        readTrendingProperty(reader, podcasts, emitSnapshot)
+    }
+    reader.endObject()
+}
+
+private suspend fun PodcastRepository.readTrendingProperty(
+    reader: JsonReader,
+    podcasts: MutableList<Podcast>,
+    emitSnapshot: suspend (List<Podcast>) -> Unit,
+) {
+    if (reader.nextName() != "feeds") {
+        reader.skipValue()
+        return
+    }
+
+    reader.beginArray()
+    readTrendingFeeds(reader, podcasts, emitSnapshot)
+    reader.endArray()
+}
+
+private suspend fun PodcastRepository.readTrendingFeeds(
+    reader: JsonReader,
+    podcasts: MutableList<Podcast>,
+    emitSnapshot: suspend (List<Podcast>) -> Unit,
+) {
+    val gson = Gson()
+    while (reader.hasNext()) {
+        val feed = readTrendingFeed(reader, gson) ?: continue
+        podcasts.add(toPodcastModel(feed))
+        if (shouldEmitTrendingSnapshot(podcasts.size)) {
+            emitSnapshot(podcasts.toList())
+        }
+    }
+}
+
+private fun readTrendingFeed(
+    reader: JsonReader,
+    gson: Gson,
+): TrendingFeed? =
+    try {
+        gson.fromJson(reader, TrendingFeed::class.java)
+    } catch (e: Exception) {
+        android.util.Log.e("BoxCastRepo", "Stream: Feed parse error", e)
+        null
+    }
+
+private fun PodcastRepository.toPodcastModel(feed: TrendingFeed): Podcast =
+    Podcast(
+        id = feed.id.toString(),
+        title = feed.title,
+        artist = feed.author ?: "Unknown",
+        imageUrl = (feed.artwork ?: feed.image).toHttps(),
+        description = feed.description,
+        genre = resolvePrimaryGenre(feed.categories),
+        latestEpisode = feed.latestEpisode?.let { epItem ->
+            mapToEpisode(epItem)?.copy(
+                podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
+                podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
+            )
+        },
+        medium = feed.medium
+    )
+
+private fun shouldEmitTrendingSnapshot(podcastCount: Int): Boolean =
+    podcastCount == 1 || podcastCount % 4 == 0

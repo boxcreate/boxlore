@@ -104,47 +104,68 @@ internal fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.
 internal fun mapToEpisode(item: cx.aswin.boxlore.core.network.model.EpisodeItem): Episode? {
     val audioUrl = item.enclosureUrl ?: return null
     android.util.Log.d("BoxCastRepo", "mapToEpisode: ${item.title} | persons=${item.persons?.size} | chaptersUrl=${item.chaptersUrl != null} | transcripts=${item.transcripts?.size}")
-    val resolvedTranscriptUrl = item.transcripts?.firstOrNull {
-        it.type == "application/srt" ||
-        it.type == "text/vtt" ||
-        it.type == "application/x-subrip" ||
-        it.url.contains(".srt", ignoreCase = true) ||
-        it.url.contains(".vtt", ignoreCase = true)
-    }?.url
-    ?: item.transcriptUrl?.takeIf {
-        it.contains(".srt", ignoreCase = true) ||
-        it.contains(".vtt", ignoreCase = true)
-    }
-    ?: item.transcriptUrl
-    ?: item.transcripts?.firstOrNull()?.url
-    return Episode(
-        id = item.id.toString(),
-        title = item.title,
-        description = item.description ?: "",
+    return item.toEpisode(
         audioUrl = audioUrl,
-        imageUrl = (item.image?.takeIf { it.isNotBlank() } ?: item.feedImage?.takeIf { it.isNotBlank() }).toHttps(),
-        podcastImageUrl = item.feedImage?.takeIf { it.isNotBlank() }?.let { it.toHttps() },
-        podcastTitle = item.feedTitle,
-        podcastId = item.feedId?.toString(),
-        duration = item.duration ?: 0,
-        publishedDate = item.datePublished ?: 0L,
+        resolvedTranscriptUrl = item.resolvedTranscriptUrl()
+    )
+}
+
+private fun cx.aswin.boxlore.core.network.model.EpisodeItem.resolvedTranscriptUrl(): String? {
+    val preferredTranscript = transcripts?.firstOrNull {
+        it.isPreferredSubtitleTranscript()
+    }
+    if (preferredTranscript != null) return preferredTranscript.url
+
+    val directTranscriptUrl = transcriptUrl
+    if (directTranscriptUrl.isSubtitleTranscriptUrl()) return directTranscriptUrl
+
+    return directTranscriptUrl ?: transcripts?.firstOrNull()?.url
+}
+
+private fun cx.aswin.boxlore.core.network.model.TranscriptItem.isPreferredSubtitleTranscript(): Boolean =
+    type.isSubtitleTranscriptType() || url.isSubtitleTranscriptUrl()
+
+private fun String?.isSubtitleTranscriptType(): Boolean =
+    this == "application/srt" ||
+        this == "text/vtt" ||
+        this == "application/x-subrip"
+
+private fun String?.isSubtitleTranscriptUrl(): Boolean =
+    this?.contains(".srt", ignoreCase = true) == true ||
+        this?.contains(".vtt", ignoreCase = true) == true
+
+private fun cx.aswin.boxlore.core.network.model.EpisodeItem.toEpisode(
+    audioUrl: String,
+    resolvedTranscriptUrl: String?
+): Episode {
+    return Episode(
+        id = id.toString(),
+        title = title,
+        description = description ?: "",
+        audioUrl = audioUrl,
+        imageUrl = (image?.takeIf { it.isNotBlank() } ?: feedImage?.takeIf { it.isNotBlank() }).toHttps(),
+        podcastImageUrl = feedImage?.takeIf { it.isNotBlank() }?.let { it.toHttps() },
+        podcastTitle = feedTitle,
+        podcastId = feedId?.toString(),
+        duration = duration ?: 0,
+        publishedDate = datePublished ?: 0L,
         // Podcast 2.0
-        chaptersUrl = item.chaptersUrl,
+        chaptersUrl = chaptersUrl,
         transcriptUrl = resolvedTranscriptUrl,
-        transcripts = item.transcripts?.map { Transcript(url = it.url, type = it.type) },
-        persons = item.persons?.map { Person(name = it.name, role = it.role, group = it.group, img = it.img, href = it.href) },
-        seasonNumber = item.season,
-        episodeNumber = item.episodeNumber,
-        episodeType = item.episodeType,
-        enclosureType = item.enclosureType,
-        retrievalScore = item.retrievalScore,
-        semanticScore = item.semanticScore,
-        recommendationSource = item.recommendationSource,
-        recommendationReason = item.recommendationReason,
-        serverRank = item.serverRank,
-        recommendationAlgorithmVersion = item.algorithmVersion,
-        language = item.language,
-        podcastGenre = item.genre,
+        transcripts = transcripts?.map { Transcript(url = it.url, type = it.type) },
+        persons = persons?.map { Person(name = it.name, role = it.role, group = it.group, img = it.img, href = it.href) },
+        seasonNumber = season,
+        episodeNumber = episodeNumber,
+        episodeType = episodeType,
+        enclosureType = enclosureType,
+        retrievalScore = retrievalScore,
+        semanticScore = semanticScore,
+        recommendationSource = recommendationSource,
+        recommendationReason = recommendationReason,
+        serverRank = serverRank,
+        recommendationAlgorithmVersion = algorithmVersion,
+        language = language,
+        podcastGenre = genre,
     )
 }
 

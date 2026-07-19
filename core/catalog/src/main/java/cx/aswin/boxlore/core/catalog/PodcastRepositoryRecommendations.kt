@@ -68,14 +68,20 @@ internal fun PodcastRepository.fetchRecommendationV2(
         request,
     ).execute()
     val body = response.body()
-    if (!response.isSuccessful ||
-        body?.status != "true" ||
-        body.contractVersion != 2 ||
-        body.algorithmVersion.isNullOrBlank()
-    ) {
+    val payload = body ?: return null
+    if (!payload.isValidRecommendationV2Response(response.isSuccessful)) {
         return null
     }
-    return body.items.mapNotNull { mapToEpisode(it) }.takeIf { it.isNotEmpty() }
+    return payload.items.mapNotNull { mapToEpisode(it) }.takeIf { it.isNotEmpty() }
+}
+
+private fun cx.aswin.boxlore.core.network.model.RecommendationsV2Response.isValidRecommendationV2Response(
+    isHttpSuccessful: Boolean,
+): Boolean {
+    if (!isHttpSuccessful) return false
+    return status == "true" &&
+        contractVersion == 2 &&
+        !algorithmVersion.isNullOrBlank()
 }
 
 internal fun buildRecommendationSeeds(
