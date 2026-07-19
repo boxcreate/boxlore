@@ -413,7 +413,6 @@ internal fun PlayerQueueSheet(
         )
     }
 }
-
 internal fun queueSheetActions(
     playbackRepository: PlaybackRepository,
     podcast: Podcast,
@@ -515,80 +514,4 @@ internal fun SheetDragHandle(colorScheme: ColorScheme) {
             .clip(MaterialTheme.shapes.extraLarge)
             .background(colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
     )
-}
-
-@Composable
-internal fun PlayerTopBar(
-    colorScheme: ColorScheme,
-    showSwipeMinimizeTip: Boolean,
-    isExpanded: Boolean,
-    onSwipeMinimizeTipDismissed: () -> Unit,
-    onCollapse: () -> Unit,
-    onShare: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(colorScheme.onSurface.copy(alpha = 0.1f))
-                .clickable(onClick = onCollapse),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Rounded.KeyboardArrowDown,
-                contentDescription = "Collapse",
-                tint = colorScheme.onSurface
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        var tipVisible by remember { mutableStateOf(showSwipeMinimizeTip) }
-        LaunchedEffect(showSwipeMinimizeTip, isExpanded) {
-            if (showSwipeMinimizeTip && isExpanded) {
-                tipVisible = true
-                delay(3500)
-                tipVisible = false
-                onSwipeMinimizeTipDismissed()
-            } else {
-                tipVisible = false
-            }
-        }
-        AnimatedContent(
-            targetState = tipVisible && isExpanded,
-            transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
-            label = "topBarLabel"
-        ) { isShowingTip ->
-            Text(
-                text = if (isShowingTip) "↓ Swipe down to minimize" else "Now Playing",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isShowingTip) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(colorScheme.onSurface.copy(alpha = 0.1f))
-                .clickable(onClick = onShare),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Share,
-                contentDescription = "Share",
-                tint = colorScheme.onSurface,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
 }

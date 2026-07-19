@@ -146,8 +146,7 @@ internal fun CompactEpisodeChip(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = if (isActiveCard) MaterialTheme.colorScheme.surfaceContainerHighest
-                else MaterialTheme.colorScheme.surfaceContainer,
+        color = compactEpisodeChipColor(isActiveCard),
         border = BorderStroke(
             0.5.dp,
             if (isActiveCard) MaterialTheme.colorScheme.outline
@@ -165,73 +164,133 @@ internal fun CompactEpisodeChip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            val imageUrl = episode.imageUrl?.takeIf { it.isNotEmpty() }
-                ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
-            OptimizedImage(
-                url = imageUrl,
-                proxyWidth = 120,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(8.dp))
+            CompactEpisodeImage(episode)
+            CompactEpisodeDetails(
+                episode = episode,
+                isActiveCard = isActiveCard,
+                accentColor = accentColor,
             )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = episode.title,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp
-                    ),
-                    color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer
-                            else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                val podTitle = episode.podcastTitle
-                if (!podTitle.isNullOrEmpty()) {
-                    Text(
-                        text = podTitle,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = if (isActiveCard) accentColor.copy(alpha = 0.85f)
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                val infoText = buildString {
-                    if (episode.duration > 0) {
-                        append("${episode.duration / 60} min")
-                    }
-                    if (episode.publishedDate > 0) {
-                        if (isNotEmpty()) append(" • ")
-                        try {
-                            val instant = java.time.Instant.ofEpochSecond(episode.publishedDate)
-                            val date = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault()).toLocalDate()
-                            append(date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")))
-                        } catch (e: Exception) {
-                            // ignore
-                        }
-                    }
-                }
-                if (infoText.isNotEmpty()) {
-                    Text(
-                        text = infoText,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                        color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
-                        maxLines = 1
-                    )
-                }
-            }
         }
+    }
+}
+
+@Composable
+private fun compactEpisodeChipColor(isActiveCard: Boolean): Color =
+    if (isActiveCard) {
+        MaterialTheme.colorScheme.surfaceContainerHighest
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    }
+
+@Composable
+private fun CompactEpisodeImage(episode: Episode) {
+    OptimizedImage(
+        url = compactEpisodeImageUrl(episode),
+        proxyWidth = 120,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .size(52.dp)
+            .clip(RoundedCornerShape(8.dp))
+    )
+}
+
+private fun compactEpisodeImageUrl(episode: Episode): String? =
+    episode.imageUrl?.takeIf { it.isNotEmpty() }
+        ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.CompactEpisodeDetails(
+    episode: Episode,
+    isActiveCard: Boolean,
+    accentColor: Color,
+) {
+    Column(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        CompactEpisodeTitle(episode.title, isActiveCard)
+        CompactEpisodePodcastTitle(
+            podcastTitle = episode.podcastTitle,
+            isActiveCard = isActiveCard,
+            accentColor = accentColor,
+        )
+        CompactEpisodeInfo(
+            infoText = compactEpisodeInfoText(episode),
+            isActiveCard = isActiveCard,
+        )
+    }
+}
+
+@Composable
+private fun CompactEpisodeTitle(
+    title: String,
+    isActiveCard: Boolean,
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelMedium.copy(
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            lineHeight = 14.sp
+        ),
+        color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun CompactEpisodePodcastTitle(
+    podcastTitle: String?,
+    isActiveCard: Boolean,
+    accentColor: Color,
+) {
+    if (podcastTitle.isNullOrEmpty()) return
+    Text(
+        text = podcastTitle,
+        style = MaterialTheme.typography.labelSmall.copy(
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium
+        ),
+        color = if (isActiveCard) accentColor.copy(alpha = 0.85f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun CompactEpisodeInfo(
+    infoText: String,
+    isActiveCard: Boolean,
+) {
+    if (infoText.isEmpty()) return
+    Text(
+        text = infoText,
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+        color =
+            if (isActiveCard) {
+                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+            },
+        maxLines = 1
+    )
+}
+
+private fun compactEpisodeInfoText(episode: Episode): String =
+    listOfNotNull(
+        episode.duration.takeIf { it > 0 }?.let { "${it / 60} min" },
+        formattedEpisodeDate(episode.publishedDate),
+    ).joinToString(" • ")
+
+private fun formattedEpisodeDate(publishedDate: Long): String? {
+    if (publishedDate <= 0) return null
+    return try {
+        val instant = java.time.Instant.ofEpochSecond(publishedDate)
+        val date = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault()).toLocalDate()
+        date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))
+    } catch (e: Exception) {
+        null
     }
 }

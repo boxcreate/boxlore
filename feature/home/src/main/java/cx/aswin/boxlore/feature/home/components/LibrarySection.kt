@@ -849,19 +849,25 @@ fun YourShowsSection(
                                         DenseEpisodeRow(
                                             episode = episode,
                                             podcast = selectedPodcast,
-                                            onClick = { onEpisodeClick(episode, selectedPodcast, "home_filtered_latest_episodes") },
-                                            onPlay = {
-                                                onPlayEpisode(
-                                                    episode,
-                                                    selectedPodcast,
-                                                    cx.aswin.boxlore.core.model.PlaybackEntryPoint.GENERIC,
-                                                )
-                                            },
+                                            actions =
+                                                DenseEpisodeRowActions(
+                                                    onClick = { onEpisodeClick(episode, selectedPodcast, "home_filtered_latest_episodes") },
+                                                    onPlay = {
+                                                        onPlayEpisode(
+                                                            episode,
+                                                            selectedPodcast,
+                                                            cx.aswin.boxlore.core.model.PlaybackEntryPoint.GENERIC,
+                                                        )
+                                                    },
+                                                ),
                                             showPodcastTitle = false,
-                                            overrideStatus = state?.first,
-                                            overrideProgress = state?.second,
-                                            currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                            isPlaying = isPlaying,
+                                            playback =
+                                                DenseEpisodeRowPlayback(
+                                                    overrideStatus = state?.first,
+                                                    overrideProgress = state?.second,
+                                                    currentPlayingEpisodeId = currentPlayingEpisodeId,
+                                                    isPlaying = isPlaying,
+                                                ),
                                             isEligibleForNewTag = episode.id in latestTwoIds,
                                         )
                                     }
