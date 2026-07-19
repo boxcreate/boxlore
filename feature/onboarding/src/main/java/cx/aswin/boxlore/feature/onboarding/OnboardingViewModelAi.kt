@@ -621,7 +621,7 @@ internal fun OnboardingViewModel.finishAiOnboarding(onDone: () -> Unit) {
     }
 }
 
-internal fun OnboardingViewModel.markOnboardingCompletedSilent(onDone: () -> Unit) {
+fun OnboardingViewModel.markOnboardingCompletedSilent(onDone: () -> Unit) {
     boxcastPrefs.setOnboardingCompleted(true)
     onDone()
 }

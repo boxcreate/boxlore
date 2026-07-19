@@ -381,7 +381,7 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
     finalAction()
 }
 
-internal fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<Podcast>) {
+fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<Podcast>) {
     if (importedPodcasts.isEmpty()) return
 
     _uiState.update {

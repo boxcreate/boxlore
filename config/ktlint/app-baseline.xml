@@ -495,34 +495,34 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/ui/BoxLoreAppRoot.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="87" column="5" source="standard:function-naming" />
-        <error line="110" column="38" source="standard:multiline-expression-wrapping" />
-        <error line="110" column="53" source="standard:chain-method-continuation" />
-        <error line="154" column="14" source="standard:chain-method-continuation" />
-        <error line="169" column="31" source="standard:multiline-expression-wrapping" />
-        <error line="196" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="215" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="241" column="1" source="standard:spacing-between-declarations-with-annotations" />
-        <error line="283" column="29" source="standard:multiline-expression-wrapping" />
-        <error line="291" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="298" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="355" column="29" source="standard:multiline-expression-wrapping" />
-        <error line="380" column="42" source="standard:multiline-expression-wrapping" />
-        <error line="394" column="42" source="standard:multiline-expression-wrapping" />
-        <error line="426" column="35" source="standard:multiline-expression-wrapping" />
-        <error line="438" column="41" source="standard:multiline-expression-wrapping" />
-        <error line="446" column="35" source="standard:multiline-expression-wrapping" />
-        <error line="452" column="41" source="standard:multiline-expression-wrapping" />
-        <error line="477" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="483" column="33" source="standard:multiline-expression-wrapping" />
-        <error line="500" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="525" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="531" column="31" source="standard:multiline-expression-wrapping" />
-        <error line="540" column="33" source="standard:blank-line-before-declaration" />
-        <error line="620" column="43" source="standard:multiline-expression-wrapping" />
-        <error line="627" column="43" source="standard:multiline-expression-wrapping" />
-        <error line="641" column="39" source="standard:multiline-expression-wrapping" />
-        <error line="657" column="30" source="standard:multiline-expression-wrapping" />
+        <error line="89" column="5" source="standard:function-naming" />
+        <error line="112" column="38" source="standard:multiline-expression-wrapping" />
+        <error line="112" column="53" source="standard:chain-method-continuation" />
+        <error line="156" column="14" source="standard:chain-method-continuation" />
+        <error line="171" column="31" source="standard:multiline-expression-wrapping" />
+        <error line="198" column="24" source="standard:multiline-expression-wrapping" />
+        <error line="217" column="23" source="standard:multiline-expression-wrapping" />
+        <error line="243" column="1" source="standard:spacing-between-declarations-with-annotations" />
+        <error line="285" column="29" source="standard:multiline-expression-wrapping" />
+        <error line="293" column="21" source="standard:multiline-expression-wrapping" />
+        <error line="300" column="30" source="standard:multiline-expression-wrapping" />
+        <error line="357" column="29" source="standard:multiline-expression-wrapping" />
+        <error line="382" column="42" source="standard:multiline-expression-wrapping" />
+        <error line="396" column="42" source="standard:multiline-expression-wrapping" />
+        <error line="428" column="35" source="standard:multiline-expression-wrapping" />
+        <error line="440" column="41" source="standard:multiline-expression-wrapping" />
+        <error line="448" column="35" source="standard:multiline-expression-wrapping" />
+        <error line="454" column="41" source="standard:multiline-expression-wrapping" />
+        <error line="479" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="485" column="33" source="standard:multiline-expression-wrapping" />
+        <error line="502" column="28" source="standard:multiline-expression-wrapping" />
+        <error line="527" column="30" source="standard:multiline-expression-wrapping" />
+        <error line="533" column="31" source="standard:multiline-expression-wrapping" />
+        <error line="542" column="33" source="standard:blank-line-before-declaration" />
+        <error line="622" column="43" source="standard:multiline-expression-wrapping" />
+        <error line="629" column="43" source="standard:multiline-expression-wrapping" />
+        <error line="643" column="39" source="standard:multiline-expression-wrapping" />
+        <error line="659" column="30" source="standard:multiline-expression-wrapping" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/ui/CoilImageLoaderSetup.kt">
         <error line="15" column="27" source="standard:multiline-expression-wrapping" />
