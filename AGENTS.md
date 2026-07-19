@@ -16,6 +16,8 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
 - Never commit secrets (`local.properties`, `.env`, keystores, `google-services.json`).
 - Do **not** hand-edit `CHANGELOG.md` or README Upcoming — `changelog-on-merge` owns that.
 - **boxlore-only:** do not change other `boxcreate` repos or org-wide bot settings unless asked. Keep proxy/backend internals out of public Android PR text.
+- Product name in user-facing copy is **boxlore** (all lowercase), not “Boxlore” / “BoxLore”.
+- Cards / panels: solid Material 3 surfaces only — no glassmorphism / translucent card backgrounds.
 
 ## Source of truth (priority order)
 

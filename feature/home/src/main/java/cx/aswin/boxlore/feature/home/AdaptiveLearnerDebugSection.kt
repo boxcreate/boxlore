@@ -12,6 +12,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.ranking.FeatureSlot
@@ -92,6 +94,7 @@ internal fun AdaptiveLearnerDebugSection(
     shadowDiagnostics: List<RankingShadowSnapshot>,
     loading: Boolean,
     onRefresh: () -> Unit,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     var paneIndex by remember { mutableIntStateOf(0) }
     val panes = remember { LearnerPane.entries }
@@ -135,9 +138,23 @@ internal fun AdaptiveLearnerDebugSection(
             label = "learner_pane",
         ) { pane ->
             when (pane) {
-                LearnerPane.Signals -> SignalsPane(events = events, logEnabled = logEnabled)
-                LearnerPane.Taste -> TastePane(snapshot = snapshot)
-                LearnerPane.Model -> ModelPane(snapshot = snapshot, shadow = shadowDiagnostics)
+                LearnerPane.Signals ->
+                    SignalsPane(
+                        events = events,
+                        logEnabled = logEnabled,
+                        bottomContentPadding = bottomContentPadding,
+                    )
+                LearnerPane.Taste ->
+                    TastePane(
+                        snapshot = snapshot,
+                        bottomContentPadding = bottomContentPadding,
+                    )
+                LearnerPane.Model ->
+                    ModelPane(
+                        snapshot = snapshot,
+                        shadow = shadowDiagnostics,
+                        bottomContentPadding = bottomContentPadding,
+                    )
             }
         }
     }
@@ -263,6 +280,7 @@ private const val MAX_FEED_ROWS = 120
 private fun SignalsPane(
     events: List<LearningEvent>,
     logEnabled: Boolean,
+    bottomContentPadding: Dp,
 ) {
     if (!logEnabled) {
         InfoCard(
@@ -289,6 +307,7 @@ private fun SignalsPane(
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(key = "session_counters") {
@@ -421,7 +440,10 @@ private fun EventRow(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun TastePane(snapshot: LearnerInspectorSnapshot?) {
+private fun TastePane(
+    snapshot: LearnerInspectorSnapshot?,
+    bottomContentPadding: Dp,
+) {
     if (snapshot == null) {
         InfoCard(title = "No taste profile yet", body = "Interact with content to build genre, show and source affinities.")
         return
@@ -440,6 +462,7 @@ private fun TastePane(snapshot: LearnerInspectorSnapshot?) {
         }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item(key = "genres") { FacetGroupCard("Genres", genres) }
@@ -556,6 +579,7 @@ private fun DivergingBar(
 private fun ModelPane(
     snapshot: LearnerInspectorSnapshot?,
     shadow: List<RankingShadowSnapshot>,
+    bottomContentPadding: Dp,
 ) {
     if (snapshot == null) {
         InfoCard(title = "No model yet", body = "The bandit initializes after the first resolved outcome.")
@@ -570,6 +594,7 @@ private fun ModelPane(
         }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item(key = "objectives") {
