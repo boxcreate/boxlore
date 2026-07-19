@@ -101,6 +101,6 @@ class FakePortsTest {
         val rss = TestFixtures.rssPodcast()
         assertTrue(rss.id.startsWith("-") || rss.id.toLongOrNull()?.let { it < 0 } == true)
         val ep = TestFixtures.rssEpisode()
-        assertTrue(ep.id.startsWith("rss:") || ep.podcastId.startsWith("-"))
+        assertTrue(ep.id.startsWith("rss:") || (ep.podcastId?.startsWith("-") == true))
     }
 }
