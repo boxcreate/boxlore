@@ -1,0 +1,167 @@
+package cx.aswin.boxlore.core.catalog
+
+import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
+import cx.aswin.boxlore.core.catalog.content.ContentContext
+import cx.aswin.boxlore.core.catalog.content.ContentSectionsDaypartResolver
+import cx.aswin.boxlore.core.catalog.content.GroupedContentSections
+import cx.aswin.boxlore.core.catalog.content.buildContentSignalProfile
+import cx.aswin.boxlore.core.catalog.content.contentSectionsCacheKey
+import cx.aswin.boxlore.core.catalog.content.contentSectionsProfileFingerprint
+import cx.aswin.boxlore.core.catalog.content.contentSectionsStaleCachePrefix
+import cx.aswin.boxlore.core.catalog.content.toGroupedContentSections
+import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.Transcript
+import cx.aswin.boxlore.core.model.Briefing
+import cx.aswin.boxlore.core.model.Chapter
+import cx.aswin.boxlore.core.network.BoxLoreApi
+import cx.aswin.boxlore.core.network.NetworkModule
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
+import com.google.gson.Gson
+import com.google.gson.stream.JsonReader
+import okhttp3.ResponseBody
+import java.io.InputStreamReader
+
+import cx.aswin.boxlore.core.network.model.TrendingFeed
+import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
+import cx.aswin.boxlore.core.network.model.ContentSectionRecentSeedDto
+import cx.aswin.boxlore.core.network.model.ContentSectionSeedFallbackDto
+import cx.aswin.boxlore.core.network.model.ContentSectionsV1Request
+import cx.aswin.boxlore.core.network.model.ContentSectionsV1Response
+import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
+import cx.aswin.boxlore.core.rss.RssPodcastRepository
+
+/**
+ * Upgrade HTTP URLs to HTTPS to fix Android cleartext traffic restrictions.
+ * Most CDNs (including BBC's ichef) support HTTPS, so this is safe.
+ */
+internal fun String?.toHttps(): String {
+    if (this.isNullOrEmpty()) return ""
+    return if (this.startsWith("http://")) {
+        this.replaceFirst("http://", "https://")
+    } else {
+        this
+    }
+}
+
+// Sort from most specific/descriptive to most generic to prevent "News" overriding "Sports"
+private val GENRE_PRIORITY = listOf(
+    "True Crime", "Fiction", "Comedy", "Sports", "History", "Science",
+    "Technology", "Music", "TV & Film", "Arts", "Health & Fitness", "Health",
+    "Religion & Spirituality", "Kids & Family", "Education", "Government", "Business",
+    "News", "Leisure", "Society & Culture", "Society", "Culture"
+)
+
+internal fun resolvePrimaryGenre(categories: Map<String, String>?): String {
+    if (categories.isNullOrEmpty()) return "Podcast"
+
+    // 1. Check for exact matches in our priority list (from most specific to generic)
+    for (priority in GENRE_PRIORITY) {
+        val match = categories.values.find { it.equals(priority, ignoreCase = true) }
+        if (match != null) return match
+    }
+
+    // 2. Fallback check for partial matches in our priority list
+    for (priority in GENRE_PRIORITY) {
+        val match = categories.values.find { it.contains(priority, ignoreCase = true) }
+        if (match != null) return match
+    }
+
+    // 3. Last resort: Return the first value that isn't completely useless
+    val ignored = listOf("podcasts", "podcast")
+    return categories.values.firstOrNull { it.lowercase() !in ignored } ?: "Podcast"
+}
+
+internal fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.TrendingFeed>): List<Podcast> {
+    return feeds.map { feed ->
+        Podcast(
+            id = feed.id.toString(),
+            title = feed.title,
+            artist = feed.author ?: "Unknown",
+            imageUrl = (feed.artwork ?: feed.image).toHttps(),
+            description = feed.description,
+            genre = resolvePrimaryGenre(feed.categories),
+            latestEpisode = feed.latestEpisode?.let { epItem ->
+                mapToEpisode(epItem)?.copy(
+                    podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
+                    podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
+                )
+            },
+            medium = feed.medium
+        )
+    }
+}
+
+
+internal fun mapToEpisode(item: cx.aswin.boxlore.core.network.model.EpisodeItem): Episode? {
+    val audioUrl = item.enclosureUrl ?: return null
+    android.util.Log.d("BoxCastRepo", "mapToEpisode: ${item.title} | persons=${item.persons?.size} | chaptersUrl=${item.chaptersUrl != null} | transcripts=${item.transcripts?.size}")
+    val resolvedTranscriptUrl = item.transcripts?.firstOrNull {
+        it.type == "application/srt" ||
+        it.type == "text/vtt" ||
+        it.type == "application/x-subrip" ||
+        it.url.contains(".srt", ignoreCase = true) ||
+        it.url.contains(".vtt", ignoreCase = true)
+    }?.url
+    ?: item.transcriptUrl?.takeIf {
+        it.contains(".srt", ignoreCase = true) ||
+        it.contains(".vtt", ignoreCase = true)
+    }
+    ?: item.transcriptUrl
+    ?: item.transcripts?.firstOrNull()?.url
+    return Episode(
+        id = item.id.toString(),
+        title = item.title,
+        description = item.description ?: "",
+        audioUrl = audioUrl,
+        imageUrl = (item.image?.takeIf { it.isNotBlank() } ?: item.feedImage?.takeIf { it.isNotBlank() }).toHttps(),
+        podcastImageUrl = item.feedImage?.takeIf { it.isNotBlank() }?.let { it.toHttps() },
+        podcastTitle = item.feedTitle,
+        podcastId = item.feedId?.toString(),
+        duration = item.duration ?: 0,
+        publishedDate = item.datePublished ?: 0L,
+        // Podcast 2.0
+        chaptersUrl = item.chaptersUrl,
+        transcriptUrl = resolvedTranscriptUrl,
+        transcripts = item.transcripts?.map { Transcript(url = it.url, type = it.type) },
+        persons = item.persons?.map { Person(name = it.name, role = it.role, group = it.group, img = it.img, href = it.href) },
+        seasonNumber = item.season,
+        episodeNumber = item.episodeNumber,
+        episodeType = item.episodeType,
+        enclosureType = item.enclosureType,
+        retrievalScore = item.retrievalScore,
+        semanticScore = item.semanticScore,
+        recommendationSource = item.recommendationSource,
+        recommendationReason = item.recommendationReason,
+        serverRank = item.serverRank,
+        recommendationAlgorithmVersion = item.algorithmVersion,
+        language = item.language,
+        podcastGenre = item.genre,
+    )
+}
+
+internal fun mapToPodcast(feed: cx.aswin.boxlore.core.network.model.TrendingFeed): Podcast {
+    return Podcast(
+        id = feed.id.toString(),
+        title = feed.title,
+        artist = feed.author ?: "Unknown",
+        imageUrl = (feed.artwork ?: feed.image).toHttps(),
+        description = feed.description,
+        genre = resolvePrimaryGenre(feed.categories),
+        latestEpisode = feed.latestEpisode?.let { epItem ->
+            mapToEpisode(epItem)?.copy(
+                podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
+                podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
+            )
+        },
+        medium = feed.medium
+    )
+}

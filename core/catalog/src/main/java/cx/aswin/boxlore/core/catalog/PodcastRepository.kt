@@ -39,18 +39,6 @@ import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
-/**
- * Upgrade HTTP URLs to HTTPS to fix Android cleartext traffic restrictions.
- * Most CDNs (including BBC's ichef) support HTTPS, so this is safe.
- */
-private fun String?.toHttps(): String {
-    if (this.isNullOrEmpty()) return ""
-    return if (this.startsWith("http://")) {
-        this.replaceFirst("http://", "https://")
-    } else {
-        this
-    }
-}
 
 /**
  * Canonical [PodcastEntity] → [Podcast] mapper shared across the data layer (and by feature
@@ -98,7 +86,7 @@ class PodcastRepository(
     private val baseUrl: String,
     val publicKey: String,
     private val context: android.content.Context,
-    private val rssRepository: RssPodcastRepository,
+    internal val rssRepository: RssPodcastRepository,
     private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
     /**
      * Optional override for hermetic JVM/MockWebServer tests. Production leaves this null so
@@ -107,11 +95,11 @@ class PodcastRepository(
     boxLoreApi: BoxLoreApi? = null,
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     val api: BoxLoreApi = boxLoreApi ?: NetworkModule.createBoxLoreApi(baseUrl, context)
-    private val contentCatalogPreferences = context.applicationContext.getSharedPreferences(
+    internal val contentCatalogPreferences = context.applicationContext.getSharedPreferences(
         "content_catalog_cache",
         android.content.Context.MODE_PRIVATE,
     )
-    private val contentSectionsPreferences = context.applicationContext.getSharedPreferences(
+    internal val contentSectionsPreferences = context.applicationContext.getSharedPreferences(
         "content_sections_cache",
         android.content.Context.MODE_PRIVATE,
     )
@@ -144,131 +132,8 @@ class PodcastRepository(
         }
     }
 
-    fun getTrendingPodcastsStream(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0): kotlinx.coroutines.flow.Flow<List<Podcast>> = kotlinx.coroutines.flow.flow {
-        val podcasts = mutableListOf<Podcast>()
-        try {
-            android.util.Log.d("BoxCastRepo", "Stream: Requesting trending country=$country, limit=$limit, category=$category, offset=$offset")
-            val call = api.getTrendingStream(publicKey, country, limit, category, offset)
-            val response = call.execute()
-            
-            android.util.Log.d("BoxCastRepo", "Stream: Response code=${response.code()}, isSuccessful=${response.isSuccessful}")
-            
-            if (!response.isSuccessful || response.body() == null) {
-                android.util.Log.e("BoxCastRepo", "Stream: Failed! code=${response.code()}, body isNull=${response.body() == null}")
-                return@flow
-            }
-            
-            val responseBody = response.body()!!
-            val stream = responseBody.byteStream()
-            val reader = com.google.gson.stream.JsonReader(java.io.InputStreamReader(stream, "UTF-8"))
-            
-            reader.isLenient = true
-            
-            reader.beginObject() 
-            while (reader.hasNext()) {
-                val name = reader.nextName()
-                if (name == "feeds") {
-                    reader.beginArray() // [
-                    while (reader.hasNext()) {
-                        try {
-                            val feed = com.google.gson.Gson().fromJson<cx.aswin.boxlore.core.network.model.TrendingFeed>(
-                                reader, 
-                                cx.aswin.boxlore.core.network.model.TrendingFeed::class.java
-                            )
-                            
-                            if (feed != null) {
-                                val podcast = Podcast(
-                                    id = feed.id.toString(),
-                                    title = feed.title,
-                                    artist = feed.author ?: "Unknown",
-                                    imageUrl = (feed.artwork ?: feed.image).toHttps(),
-                                    description = feed.description,
-                                    genre = resolvePrimaryGenre(feed.categories),
-                                    latestEpisode = feed.latestEpisode?.let { epItem ->
-                                        mapToEpisode(epItem)?.copy(
-                                            podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
-                                            podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
-                                        )
-                                    },
-                                    medium = feed.medium
-                                )
-                                podcasts.add(podcast)
-                                
-                                if (podcasts.size % 4 == 0 || podcasts.size == 1) {
-                                     emit(podcasts.toList())
-                                }
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.e("BoxCastRepo", "Stream: Feed parse error", e)
-                        }
-                    }
-                    reader.endArray()
-                } else {
-                    reader.skipValue()
-                }
-            }
-            reader.endObject()
-            
-            android.util.Log.d("BoxCastRepo", "Stream: Parsed ${podcasts.size} podcasts for category=$category")
-            
-            // Final emission
-            if (podcasts.isNotEmpty()) {
-                emit(podcasts)
-            }
-            
-        } catch (e: Exception) {
-            android.util.Log.e("BoxCastRepo", "Stream: Exception for category=$category", e)
-            if (podcasts.isNotEmpty()) emit(podcasts)
-        }
-    }.flowOn(Dispatchers.IO)
-
-    // Sort from most specific/descriptive to most generic to prevent "News" overriding "Sports"
-    private val GENRE_PRIORITY = listOf(
-        "True Crime", "Fiction", "Comedy", "Sports", "History", "Science", 
-        "Technology", "Music", "TV & Film", "Arts", "Health & Fitness", "Health", 
-        "Religion & Spirituality", "Kids & Family", "Education", "Government", "Business",
-        "News", "Leisure", "Society & Culture", "Society", "Culture"
-    )
-
-    private fun resolvePrimaryGenre(categories: Map<String, String>?): String {
-        if (categories.isNullOrEmpty()) return "Podcast"
-        
-        // 1. Check for exact matches in our priority list (from most specific to generic)
-        for (priority in GENRE_PRIORITY) {
-            val match = categories.values.find { it.equals(priority, ignoreCase = true) }
-            if (match != null) return match
-        }
-
-        // 2. Fallback check for partial matches in our priority list
-        for (priority in GENRE_PRIORITY) {
-            val match = categories.values.find { it.contains(priority, ignoreCase = true) }
-            if (match != null) return match
-        }
-        
-        // 3. Last resort: Return the first value that isn't completely useless
-        val ignored = listOf("podcasts", "podcast")
-        return categories.values.firstOrNull { it.lowercase() !in ignored } ?: "Podcast"
-    }
-
-    private fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.TrendingFeed>): List<Podcast> {
-        return feeds.map { feed ->
-            Podcast(
-                id = feed.id.toString(),
-                title = feed.title,
-                artist = feed.author ?: "Unknown",
-                imageUrl = (feed.artwork ?: feed.image).toHttps(),
-                description = feed.description,
-                genre = resolvePrimaryGenre(feed.categories),
-                latestEpisode = feed.latestEpisode?.let { epItem ->
-                    mapToEpisode(epItem)?.copy(
-                        podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
-                        podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
-                    )
-                },
-                medium = feed.medium
-            )
-        }
-    }
+    fun getTrendingPodcastsStream(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0): kotlinx.coroutines.flow.Flow<List<Podcast>> =
+        trendingPodcastsStream(country, limit, category, offset)
 
     suspend fun searchPodcastsWithCorrection(query: String): SearchResult = withContext(Dispatchers.IO) {
         try {
@@ -329,110 +194,13 @@ class PodcastRepository(
         searchNetworkEpisodes(feedId, query)
     }
 
-    private suspend fun searchRssEpisodes(feedId: String, query: String): List<Episode> = try {
-        rssRepository.searchEpisodes(feedId, query)
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        android.util.Log.e("PodcastRepository", "RSS searchEpisodes failed for $feedId", e)
-        emptyList()
-    }
-
-    private suspend fun searchNetworkEpisodes(feedId: String, query: String): List<Episode> = try {
-        val resolvedId = resolvePodcastIndexFeedId(feedId)
-        val response = api.searchEpisodes(publicKey, resolvedId, query).execute()
-        if (response.isSuccessful && response.body() != null) {
-            response.body()!!.items.mapNotNull { mapToEpisode(it) }
-        } else {
-            emptyList()
-        }
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        emptyList()
-    }
-
-    override suspend fun getEpisodes(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
-        if (feedId.startsWith("rss:")) {
-            return@withContext getAllRssEpisodes(feedId)
-        }
-        getAllNetworkEpisodes(feedId)
-    }
-
-    private suspend fun getAllRssEpisodes(feedId: String): List<Episode> = try {
-        rssRepository.getAllEpisodes(feedId)
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        android.util.Log.e("PodcastRepository", "RSS getAllEpisodes failed for $feedId", e)
-        emptyList()
-    }
-
-    private suspend fun getAllNetworkEpisodes(feedId: String): List<Episode> = try {
-        val resolvedId = resolvePodcastIndexFeedId(feedId)
-        // Use paginated endpoint with high limit to get "all" (max 1000 per proxy)
-        // This avoids the parsing issue with EpisodesResponse vs EpisodesPaginatedResponse
-        val response = api.getEpisodesPaginated(publicKey, resolvedId, limit = 1000).execute()
-        if (response.isSuccessful && response.body() != null) {
-            response.body()!!.items.mapNotNull { mapToEpisode(it) }
-        } else {
-            emptyList()
-        }
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        emptyList()
-    }
-
-    override suspend fun getEpisode(episodeId: String): Episode? = withContext(Dispatchers.IO) {
-        if (episodeId.toLongOrNull()?.let { it < 0L } == true) {
-            return@withContext getRssEpisode(episodeId)
-        }
-        getNetworkEpisode(episodeId)
-    }
-
-    private suspend fun getRssEpisode(episodeId: String): Episode? = try {
-        rssRepository.getEpisode(episodeId)
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        android.util.Log.e("PodcastRepository", "RSS getEpisode failed for $episodeId", e)
-        null
-    }
-
-    private suspend fun getNetworkEpisode(episodeId: String): Episode? = try {
-        val response = api.getEpisode(publicKey, episodeId).execute()
-        if (response.isSuccessful && response.body() != null) {
-            response.body()!!.episode?.let { mapToEpisode(it) }
-        } else {
-            null
-        }
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        null
-    }
-
-    /** Resolves url:/guid:/itunes: identifiers to a Podcast Index feed id when needed. */
-    private suspend fun resolvePodcastIndexFeedId(feedId: String): String {
-        return if (
-            feedId.startsWith(FEED_PREFIX_URL) ||
-            feedId.startsWith(FEED_PREFIX_GUID) ||
-            feedId.startsWith(FEED_PREFIX_ITUNES)
-        ) {
-            getPodcastDetails(feedId)?.id ?: feedId
-        } else {
-            feedId
-        }
-    }
-
     private val playerPrefs = PrefsFileMigrator.open(
         context,
         newName = PrefsFileMigrator.Files.PLAYER,
         oldName = PrefsFileMigrator.LegacyFiles.PLAYER,
     )
 
-    private fun getOrCreateDeviceUuid(): String {
+    internal fun getOrCreateDeviceUuid(): String {
         val key = "device_uuid"
         var uuid = playerPrefs.getString(key, null)
         if (uuid == null) {
@@ -581,10 +349,10 @@ class PodcastRepository(
         try {
             val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
             if (podcastIndexIds.isEmpty()) return@withContext emptyMap()
-            
+
             val request = cx.aswin.boxlore.core.network.model.SyncRequest(podcastIndexIds)
             val response = api.syncSubscriptions(publicKey, request).execute()
-            
+
             if (response.isSuccessful && response.body() != null) {
                 response.body()!!.items.mapNotNull { item ->
                     val ep = item.latestEpisode?.let { mapToEpisode(it) }?.copy(
@@ -648,18 +416,6 @@ class PodcastRepository(
         }
     }
 
-    private fun readCachedContentCatalog(
-        now: Long,
-    ): cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot? {
-        val json = contentCatalogPreferences.getString(CONTENT_CATALOG_JSON, null) ?: return null
-        val fetchedAt = contentCatalogPreferences.getLong(CONTENT_CATALOG_FETCHED_AT, 0L)
-        return runCatching {
-            Gson().fromJson(
-                json,
-                cx.aswin.boxlore.core.network.model.ContentCatalogResponse::class.java,
-            ).toContentCatalogSnapshot(fetchedAt.takeIf { it > 0L } ?: now)
-        }.getOrNull()
-    }
 
     suspend fun getPersonalizedContentSections(
         contentContext: ContentContext,
@@ -829,98 +585,6 @@ class PodcastRepository(
         }
     }
 
-    private fun readCachedContentSections(
-        cacheKey: String,
-        catalog: ContentCatalogSnapshot,
-        seenPodcastIds: Set<String>,
-        subscribedPodcastIds: Set<String>,
-    ): GroupedContentSections? {
-        val json = contentSectionsPreferences.getString(cacheKey, null) ?: return null
-        return runCatching {
-            val response = Gson().fromJson(json, ContentSectionsV1Response::class.java)
-            if (response.algorithmVersion != PERSONALIZED_CONTENT_SECTIONS_ALGORITHM) {
-                contentSectionsPreferences.edit().remove(cacheKey).apply()
-                null
-            } else {
-                response.toGroupedContentSections(catalog, seenPodcastIds, subscribedPodcastIds)
-            }
-        }.getOrNull()
-    }
-
-    private fun readStaleCachedContentSections(
-        slot: ContentSectionsSlotKey,
-        catalog: ContentCatalogSnapshot,
-        seenPodcastIds: Set<String>,
-        subscribedPodcastIds: Set<String>,
-    ): GroupedContentSections? {
-        val prefix = contentSectionsStaleCachePrefix(
-            catalogVersion = slot.catalogVersion,
-            country = slot.country,
-            surface = slot.surface,
-            resolvedDaypart = ContentSectionsDaypartResolver.resolve(slot.localMinuteOfDay),
-            localDate = slot.localDate,
-        )
-        val pointerKey = contentSectionsLatestPointerKey(prefix)
-        val staleKey = contentSectionsPreferences.getString(pointerKey, null)
-            ?: contentSectionsPreferences.all.keys
-                .asSequence()
-                .filterIsInstance<String>()
-                .filter { it.startsWith(prefix) && it != pointerKey }
-                .maxOrNull()
-            ?: return null
-        return readCachedContentSections(
-            cacheKey = staleKey,
-            catalog = catalog,
-            seenPodcastIds = seenPodcastIds,
-            subscribedPodcastIds = subscribedPodcastIds,
-        )
-    }
-
-    /**
-     * Keeps a single active payload per daypart slot. Older fingerprint keys under the same
-     * prefix are removed so stale-while-revalidate cannot resurrect a superseded profile.
-     */
-    private fun persistContentSectionsCache(
-        activeKey: String,
-        aliasKey: String?,
-        payload: String,
-    ) {
-        val slotPrefixes = buildSet {
-            add(contentSectionsSlotPrefix(activeKey))
-            if (aliasKey != null) add(contentSectionsSlotPrefix(aliasKey))
-        }
-        val editor = contentSectionsPreferences.edit()
-        contentSectionsPreferences.all.keys
-            .asSequence()
-            .filterIsInstance<String>()
-            .filter { key -> slotPrefixes.any { prefix -> key.startsWith(prefix) } }
-            .forEach(editor::remove)
-        editor.putString(activeKey, payload)
-        if (aliasKey != null) {
-            editor.putString(aliasKey, payload)
-        }
-        slotPrefixes.forEach { prefix ->
-            editor.putString(contentSectionsLatestPointerKey(prefix), activeKey)
-        }
-        editor.apply()
-    }
-
-    private fun contentSectionsSlotPrefix(cacheKey: String): String {
-        return cacheKey.dropLast(CONTENT_SECTIONS_PROFILE_FINGERPRINT_HEX_LENGTH)
-    }
-
-    private fun contentSectionsLatestPointerKey(slotPrefix: String): String {
-        return "${slotPrefix}__latest"
-    }
-
-    private data class ContentSectionsSlotKey(
-        val catalogVersion: Int,
-        val country: String,
-        val surface: String,
-        val localMinuteOfDay: Int,
-        val localDate: String,
-    )
-
     suspend fun getPersonalizedRecommendations(
         history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
         interests: List<String> = emptyList(),
@@ -945,7 +609,7 @@ class PodcastRepository(
             append("|")
             append(podcastIndexHistory.joinToString(",") { "${it.episodeId}:${it.progressMs}" })
         }
-        
+
         val now = System.currentTimeMillis()
         val cached = recommendationsCache[cacheKey]
         if (cached != null && now - cached.second < 900_000L) { // 15-minute cache
@@ -981,121 +645,6 @@ class PodcastRepository(
             throw e
         } catch (e: Exception) {
             android.util.Log.e("BoxCastRepo", "Personalized Recommendations Error", e)
-            emptyList()
-        }
-    }
-
-    private fun fetchRecommendationV2(
-        history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
-        interests: List<String>,
-        country: String?,
-        subscribedPodcastIds: List<String>,
-    ): List<Episode>? {
-        val seeds = buildRecommendationSeeds(history, subscribedPodcastIds)
-        val boundedInterests = interests.map(String::trim).filter(String::isNotEmpty).distinct().take(12)
-        if (seeds.isEmpty() && boundedInterests.isEmpty()) return null
-        val request = cx.aswin.boxlore.core.network.model.RecommendationsV2Request(
-            country = country?.lowercase()?.takeIf { it.length in 2..3 } ?: "us",
-            languages = listOf("en"),
-            seeds = seeds,
-            interests = boundedInterests,
-            subscribedPodcastIds = subscribedPodcastIds.mapNotNull(String::toLongOrNull)
-                .filter { it > 0L }
-                .distinct()
-                .take(250),
-            excludedEpisodeIds = history.mapNotNull { it.episodeId?.toLongOrNull() }
-                .filter { it > 0L }
-                .distinct()
-                .take(250),
-        )
-        val response = api.getPersonalizedRecommendationsV2(
-            publicKey,
-            getOrCreateDeviceUuid(),
-            request,
-        ).execute()
-        val body = response.body()
-        if (!response.isSuccessful ||
-            body?.status != "true" ||
-            body.contractVersion != 2 ||
-            body.algorithmVersion.isNullOrBlank()
-        ) {
-            return null
-        }
-        return body.items.mapNotNull { mapToEpisode(it) }.takeIf { it.isNotEmpty() }
-    }
-
-    private fun buildRecommendationSeeds(
-        history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
-        subscribedPodcastIds: List<String>,
-        maximumSeeds: Int = 12,
-    ): List<cx.aswin.boxlore.core.network.model.RecommendationSeedV2> {
-        require(maximumSeeds > 0)
-        val episodeSeeds = history.mapNotNull { item ->
-            val id = item.episodeId?.toLongOrNull()?.takeIf { it > 0L } ?: return@mapNotNull null
-            val durationMs = item.durationMs ?: 0L
-            val progressRatio = if (durationMs > 0L) {
-                (item.progressMs ?: 0L).toDouble() / durationMs
-            } else {
-                0.0
-            }
-            val weight = when {
-                item.isLiked == true -> 1.0
-                item.isCompleted == true -> 0.9
-                progressRatio >= 0.5 -> 0.75
-                progressRatio >= 0.2 -> 0.55
-                else -> 0.35
-            }
-            cx.aswin.boxlore.core.network.model.RecommendationSeedV2(
-                kind = "episode",
-                id = id,
-                weight = weight,
-                fallback = cx.aswin.boxlore.core.network.model.RecommendationSemanticFallback(
-                    episodeTitle = item.episodeTitle.take(180),
-                    podcastTitle = item.podcastTitle.take(180),
-                    genre = item.genre?.take(120),
-                    description = item.episodeDescription.toSemanticFallback(),
-                ),
-            )
-        }.distinctBy { it.id }.sortedByDescending { it.weight }
-        if (episodeSeeds.size >= maximumSeeds) return episodeSeeds.take(maximumSeeds)
-        val podcastSeeds = subscribedPodcastIds.asSequence()
-            .mapNotNull(String::toLongOrNull)
-            .filter { it > 0L }
-            .distinct()
-            .map { id ->
-                cx.aswin.boxlore.core.network.model.RecommendationSeedV2(
-                    kind = "podcast",
-                    id = id,
-                    weight = 0.35,
-                )
-            }
-            .take(maximumSeeds - episodeSeeds.size)
-            .toList()
-        return episodeSeeds.take(maximumSeeds) + podcastSeeds
-    }
-
-    private fun fetchLegacyRecommendations(
-        history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
-        interests: List<String>,
-        country: String?,
-        subscribedPodcastIds: List<String>,
-        subscribedGenres: List<String>,
-    ): List<Episode> {
-        val request = cx.aswin.boxlore.core.network.model.RecommendationsRequest(
-            history = history,
-            interests = interests,
-            country = country,
-            subscribedPodcastIds = subscribedPodcastIds,
-            subscribedGenres = subscribedGenres,
-        )
-        val response = api.getPersonalizedRecommendations(
-            publicKey,
-            getOrCreateDeviceUuid(),
-            request,
-        ).execute()
-        return if (response.isSuccessful) {
-            response.body()?.items.orEmpty().mapNotNull { mapToEpisode(it) }
-        } else {
             emptyList()
         }
     }
@@ -1173,7 +722,7 @@ class PodcastRepository(
             emptyList()
         }
     }
-    
+
     suspend fun submitFeedback(
         category: String,
         message: String,
@@ -1189,53 +738,7 @@ class PodcastRepository(
             false
         }
     }
-    
-    private fun mapToEpisode(item: cx.aswin.boxlore.core.network.model.EpisodeItem): Episode? {
-        val audioUrl = item.enclosureUrl ?: return null
-        android.util.Log.d("BoxCastRepo", "mapToEpisode: ${item.title} | persons=${item.persons?.size} | chaptersUrl=${item.chaptersUrl != null} | transcripts=${item.transcripts?.size}")
-        val resolvedTranscriptUrl = item.transcripts?.firstOrNull { 
-            it.type == "application/srt" || 
-            it.type == "text/vtt" || 
-            it.type == "application/x-subrip" ||
-            it.url.contains(".srt", ignoreCase = true) ||
-            it.url.contains(".vtt", ignoreCase = true)
-        }?.url
-        ?: item.transcriptUrl?.takeIf { 
-            it.contains(".srt", ignoreCase = true) || 
-            it.contains(".vtt", ignoreCase = true) 
-        }
-        ?: item.transcriptUrl
-        ?: item.transcripts?.firstOrNull()?.url
-        return Episode(
-            id = item.id.toString(),
-            title = item.title,
-            description = item.description ?: "",
-            audioUrl = audioUrl,
-            imageUrl = (item.image?.takeIf { it.isNotBlank() } ?: item.feedImage?.takeIf { it.isNotBlank() }).toHttps(),
-            podcastImageUrl = item.feedImage?.takeIf { it.isNotBlank() }?.let { it.toHttps() },
-            podcastTitle = item.feedTitle,
-            podcastId = item.feedId?.toString(),
-            duration = item.duration ?: 0,
-            publishedDate = item.datePublished ?: 0L,
-            // Podcast 2.0
-            chaptersUrl = item.chaptersUrl,
-            transcriptUrl = resolvedTranscriptUrl,
-            transcripts = item.transcripts?.map { Transcript(url = it.url, type = it.type) },
-            persons = item.persons?.map { Person(name = it.name, role = it.role, group = it.group, img = it.img, href = it.href) },
-            seasonNumber = item.season,
-            episodeNumber = item.episodeNumber,
-            episodeType = item.episodeType,
-            enclosureType = item.enclosureType,
-            retrievalScore = item.retrievalScore,
-            semanticScore = item.semanticScore,
-            recommendationSource = item.recommendationSource,
-            recommendationReason = item.recommendationReason,
-            serverRank = item.serverRank,
-            recommendationAlgorithmVersion = item.algorithmVersion,
-            language = item.language,
-            podcastGenre = item.genre,
-        )
-    }
+
     suspend fun getPodcastType(feedId: String): String = withContext(Dispatchers.IO) {
         try {
             val response = getPodcastMeta(feedId)
@@ -1288,24 +791,6 @@ class PodcastRepository(
             android.util.Log.e("PodcastRepository", "Failed to fetch briefing for $region (mapped: $mappedRegion)", e)
             null
         }
-    }
-
-    private fun mapToPodcast(feed: cx.aswin.boxlore.core.network.model.TrendingFeed): Podcast {
-        return Podcast(
-            id = feed.id.toString(),
-            title = feed.title,
-            artist = feed.author ?: "Unknown",
-            imageUrl = (feed.artwork ?: feed.image).toHttps(),
-            description = feed.description,
-            genre = resolvePrimaryGenre(feed.categories),
-            latestEpisode = feed.latestEpisode?.let { epItem ->
-                mapToEpisode(epItem)?.copy(
-                    podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
-                    podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
-                )
-            },
-            medium = feed.medium
-        )
     }
 
     suspend fun getHomeBootstrapDataFast(country: String): HomeBootstrapData = withContext(Dispatchers.IO) {
@@ -1453,24 +938,9 @@ class PodcastRepository(
         private const val FEED_PREFIX_ITUNES = "itunes:"
         // Catalog caches are endpoint-versioned so an otherwise-valid v1/v2 response cannot
         // suppress the v3 fetch and then invalidate grouped v3 section responses.
-        private const val CONTENT_CATALOG_JSON = "catalog_v3_json"
-        private const val CONTENT_CATALOG_ETAG = "catalog_v3_etag"
-        private const val CONTENT_CATALOG_FETCHED_AT = "catalog_v3_fetched_at"
-        private const val MAX_CONTENT_SECTION_SEEDS = 8
-        private const val MAX_CONTENT_SECTION_INTERESTS = 12
-        private const val MAX_CONTENT_SECTION_INTEREST_LENGTH = 80
-        private const val MAX_CONTENT_SECTION_EXCLUSIONS = 250
-        private const val CONTENT_SECTION_CANDIDATE_BUDGET = 120
-        private const val MAX_RECENT_CONTENT_SECTION_IDS = 24
-        private const val MAX_CONTENT_SECTION_ID_LENGTH = 128
-        private const val PERSONALIZED_CONTENT_SECTIONS_ALGORITHM = "personalized-recipe-mmr-v1.1"
-        private const val CONTENT_SECTIONS_PROFILE_FINGERPRINT_HEX_LENGTH = 24
-        private const val MIN_TIMEZONE_OFFSET_MINUTES = -840
-        private const val MAX_TIMEZONE_OFFSET_MINUTES = 840
 
         private val episodesCache = java.util.concurrent.ConcurrentHashMap<String, Pair<EpisodePage, Long>>()
         private val recommendationsCache = java.util.concurrent.ConcurrentHashMap<String, Pair<List<Episode>, Long>>()
         private val becauseYouLikeCache = java.util.concurrent.ConcurrentHashMap<String, Pair<BecauseYouLikeData, Long>>()
     }
 }
-

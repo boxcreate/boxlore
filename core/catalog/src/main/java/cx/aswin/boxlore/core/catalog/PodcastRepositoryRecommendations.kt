@@ -1,0 +1,155 @@
+package cx.aswin.boxlore.core.catalog
+
+import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
+import cx.aswin.boxlore.core.catalog.content.ContentContext
+import cx.aswin.boxlore.core.catalog.content.ContentSectionsDaypartResolver
+import cx.aswin.boxlore.core.catalog.content.GroupedContentSections
+import cx.aswin.boxlore.core.catalog.content.buildContentSignalProfile
+import cx.aswin.boxlore.core.catalog.content.contentSectionsCacheKey
+import cx.aswin.boxlore.core.catalog.content.contentSectionsProfileFingerprint
+import cx.aswin.boxlore.core.catalog.content.contentSectionsStaleCachePrefix
+import cx.aswin.boxlore.core.catalog.content.toGroupedContentSections
+import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.Transcript
+import cx.aswin.boxlore.core.model.Briefing
+import cx.aswin.boxlore.core.model.Chapter
+import cx.aswin.boxlore.core.network.BoxLoreApi
+import cx.aswin.boxlore.core.network.NetworkModule
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
+import com.google.gson.Gson
+import com.google.gson.stream.JsonReader
+import okhttp3.ResponseBody
+import java.io.InputStreamReader
+
+import cx.aswin.boxlore.core.network.model.TrendingFeed
+import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
+import cx.aswin.boxlore.core.network.model.ContentSectionRecentSeedDto
+import cx.aswin.boxlore.core.network.model.ContentSectionSeedFallbackDto
+import cx.aswin.boxlore.core.network.model.ContentSectionsV1Request
+import cx.aswin.boxlore.core.network.model.ContentSectionsV1Response
+import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
+import cx.aswin.boxlore.core.rss.RssPodcastRepository
+
+internal fun PodcastRepository.fetchRecommendationV2(
+    history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
+    interests: List<String>,
+    country: String?,
+    subscribedPodcastIds: List<String>,
+): List<Episode>? {
+    val seeds = buildRecommendationSeeds(history, subscribedPodcastIds)
+    val boundedInterests = interests.map(String::trim).filter(String::isNotEmpty).distinct().take(12)
+    if (seeds.isEmpty() && boundedInterests.isEmpty()) return null
+    val request = cx.aswin.boxlore.core.network.model.RecommendationsV2Request(
+        country = country?.lowercase()?.takeIf { it.length in 2..3 } ?: "us",
+        languages = listOf("en"),
+        seeds = seeds,
+        interests = boundedInterests,
+        subscribedPodcastIds = subscribedPodcastIds.mapNotNull(String::toLongOrNull)
+            .filter { it > 0L }
+            .distinct()
+            .take(250),
+        excludedEpisodeIds = history.mapNotNull { it.episodeId?.toLongOrNull() }
+            .filter { it > 0L }
+            .distinct()
+            .take(250),
+    )
+    val response = api.getPersonalizedRecommendationsV2(
+        publicKey,
+        getOrCreateDeviceUuid(),
+        request,
+    ).execute()
+    val body = response.body()
+    if (!response.isSuccessful ||
+        body?.status != "true" ||
+        body.contractVersion != 2 ||
+        body.algorithmVersion.isNullOrBlank()
+    ) {
+        return null
+    }
+    return body.items.mapNotNull { mapToEpisode(it) }.takeIf { it.isNotEmpty() }
+}
+
+internal fun buildRecommendationSeeds(
+    history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
+    subscribedPodcastIds: List<String>,
+    maximumSeeds: Int = 12,
+): List<cx.aswin.boxlore.core.network.model.RecommendationSeedV2> {
+    require(maximumSeeds > 0)
+    val episodeSeeds = history.mapNotNull { item ->
+        val id = item.episodeId?.toLongOrNull()?.takeIf { it > 0L } ?: return@mapNotNull null
+        val durationMs = item.durationMs ?: 0L
+        val progressRatio = if (durationMs > 0L) {
+            (item.progressMs ?: 0L).toDouble() / durationMs
+        } else {
+            0.0
+        }
+        val weight = when {
+            item.isLiked == true -> 1.0
+            item.isCompleted == true -> 0.9
+            progressRatio >= 0.5 -> 0.75
+            progressRatio >= 0.2 -> 0.55
+            else -> 0.35
+        }
+        cx.aswin.boxlore.core.network.model.RecommendationSeedV2(
+            kind = "episode",
+            id = id,
+            weight = weight,
+            fallback = cx.aswin.boxlore.core.network.model.RecommendationSemanticFallback(
+                episodeTitle = item.episodeTitle.take(180),
+                podcastTitle = item.podcastTitle.take(180),
+                genre = item.genre?.take(120),
+                description = item.episodeDescription.toSemanticFallback(),
+            ),
+        )
+    }.distinctBy { it.id }.sortedByDescending { it.weight }
+    if (episodeSeeds.size >= maximumSeeds) return episodeSeeds.take(maximumSeeds)
+    val podcastSeeds = subscribedPodcastIds.asSequence()
+        .mapNotNull(String::toLongOrNull)
+        .filter { it > 0L }
+        .distinct()
+        .map { id ->
+            cx.aswin.boxlore.core.network.model.RecommendationSeedV2(
+                kind = "podcast",
+                id = id,
+                weight = 0.35,
+            )
+        }
+        .take(maximumSeeds - episodeSeeds.size)
+        .toList()
+    return episodeSeeds.take(maximumSeeds) + podcastSeeds
+}
+
+internal fun PodcastRepository.fetchLegacyRecommendations(
+    history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
+    interests: List<String>,
+    country: String?,
+    subscribedPodcastIds: List<String>,
+    subscribedGenres: List<String>,
+): List<Episode> {
+    val request = cx.aswin.boxlore.core.network.model.RecommendationsRequest(
+        history = history,
+        interests = interests,
+        country = country,
+        subscribedPodcastIds = subscribedPodcastIds,
+        subscribedGenres = subscribedGenres,
+    )
+    val response = api.getPersonalizedRecommendations(
+        publicKey,
+        getOrCreateDeviceUuid(),
+        request,
+    ).execute()
+    return if (response.isSuccessful) {
+        response.body()?.items.orEmpty().mapNotNull { mapToEpisode(it) }
+    } else {
+        emptyList()
+    }
+}

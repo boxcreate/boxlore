@@ -292,14 +292,14 @@ fun BriefingScreen(
                         durationMs = successState.duration,
                         currentRegion = successState.selectedRegion,
                         onRegionSelect = onRegionSelect,
-                        onShowSources = { 
+                        onShowSources = {
                             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
                                 action = "sources_sheet_opened",
                                 region = successState.briefing.region,
                                 date = successState.briefing.date,
                                 extraProps = mapOf("sources_count" to successState.briefing.sources.size)
                             )
-                            showSourcesBottomSheet = true 
+                            showSourcesBottomSheet = true
                         },
                         onPlayPauseClick = { initialPositionMs ->
                             if (successState.isPlaying) {
@@ -361,7 +361,7 @@ fun BriefingScreen(
                                                 .fillMaxWidth()
                                                 .expressiveClickable(
                                                     shape = RoundedCornerShape(16.dp),
-                                                    onClick = { 
+                                                    onClick = {
                                                         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
                                                             action = "source_clicked",
                                                             region = successState.briefing.region,
@@ -499,99 +499,6 @@ fun BriefingContent(
     val morphThreshold = with(density) { 180.dp.toPx() }
     val scrollFraction = (scrollState.value.toFloat() / morphThreshold).coerceIn(0f, 1f)
 
-    val pagerState = rememberPagerState(pageCount = { chapters.size })
-    val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
-    val scope = rememberCoroutineScope()
-    var userClickedPage by remember { mutableStateOf<Int?>(null) }
-
-    // 1. Playback -> UI Paging Sync
-    // Find the currently active chapter index based on playback position
-    val activeChapterIndex = remember(chapters, currentPositionMs) {
-        val index = chapters.indexOfLast { currentPositionMs >= it.startTime * 1000 }
-        if (index != -1) index else 0
-    }
-
-    LaunchedEffect(activeChapterIndex) {
-        if (!isDragged) {
-            val clickedPage = userClickedPage
-            if (clickedPage != null) {
-                if (activeChapterIndex == clickedPage) {
-                    userClickedPage = null
-                }
-            } else if (activeChapterIndex >= 0 && activeChapterIndex < chapters.size) {
-                pagerState.animateScrollToPage(activeChapterIndex)
-            }
-        }
-    }
-
-    LaunchedEffect(pagerState.currentPage) {
-        val chapter = chapters.getOrNull(pagerState.currentPage)
-        if (chapter != null && (isDragged || userClickedPage != null)) {
-            val method = if (isDragged) "swipe" else "click"
-            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                action = "chapter_swiped",
-                region = briefing.region,
-                date = briefing.date,
-                extraProps = mapOf(
-                    "chapter_index" to pagerState.currentPage,
-                    "chapter_title" to chapter.title,
-                    "method" to method
-                )
-            )
-        }
-    }
-
-    val paragraphs = remember(briefing.script) {
-        val raw = briefing.script.split("\n\n").filter { it.isNotBlank() }
-        raw.mapIndexed { index, paragraph ->
-            var text = paragraph.trim()
-            if (index == 0) {
-                val greetingPrefixes = listOf(
-                    "This is the boxlore brief for",
-                    "This is the boxcast brief for",
-                    "Welcome to the boxlore brief for",
-                    "Welcome to the boxcast brief for",
-                    "Welcome to the daily brief for"
-                )
-                for (prefix in greetingPrefixes) {
-                    if (text.startsWith(prefix, ignoreCase = true)) {
-                        val periodIndex = text.indexOf('.')
-                        if (periodIndex != -1 && periodIndex < 120) {
-                            text = text.substring(periodIndex + 1).trim()
-                        }
-                        break
-                    }
-                }
-            }
-            if (index == raw.lastIndex) {
-                val outroSubstrings = listOf(
-                    "That's your boxlore brief. See you tomorrow.",
-                    "That's your boxcast brief. See you tomorrow.",
-                    "That's your boxlore brief. See you tomorrow",
-                    "That's your boxcast brief. See you tomorrow",
-                    "See you tomorrow.",
-                    "See you tomorrow"
-                )
-                for (outro in outroSubstrings) {
-                    val outroIndex = text.indexOf(outro, ignoreCase = true)
-                    if (outroIndex != -1) {
-                        text = text.substring(0, outroIndex).trim()
-                        break
-                    }
-                }
-                val lastBoxloreIndex = text.lastIndexOf("boxlore brief", ignoreCase = true)
-                val lastBoxcastIndex = text.lastIndexOf("boxcast brief", ignoreCase = true)
-                val lastIndex = lastBoxloreIndex.coerceAtLeast(lastBoxcastIndex)
-                if (lastIndex != -1 && text.length - lastIndex < 100) {
-                    val lastPeriod = text.lastIndexOf('.', text.length - 2)
-                    if (lastPeriod != -1) {
-                        text = text.substring(0, lastPeriod + 1).trim()
-                    }
-                }
-            }
-            text
-        }.filter { it.isNotBlank() }
-    }
 
     Box(
         modifier = modifier
@@ -781,284 +688,15 @@ fun BriefingContent(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Swipable cards pager
-            if (chapters.isNotEmpty()) {
-                HorizontalPager(
-                    state = pagerState,
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    pageSpacing = 16.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(500.dp)
-                ) { page ->
-                    val chapter = chapters[page]
-                    val paragraph = paragraphs.getOrNull(page) ?: ""
-                    val isThisCardActive = activeChapterIndex == page && isPlaying
-
-                    Card(
-                       shape = RoundedCornerShape(24.dp),
-                       colors = CardDefaults.cardColors(
-                           containerColor = if (isThisCardActive) MaterialTheme.colorScheme.primaryContainer
-                                           else MaterialTheme.colorScheme.surfaceContainerHigh
-                       ),
-                       border = BorderStroke(
-                           1.dp,
-                           if (isThisCardActive) accentColor
-                           else MaterialTheme.colorScheme.outlineVariant
-                       ),
-                       modifier = Modifier
-                           .fillMaxWidth()
-                           .fillMaxHeight()
-                           .shadow(6.dp, RoundedCornerShape(24.dp))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(18.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                // Card Header: STORY X OF Y & Time Badge
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
-                                                else MaterialTheme.colorScheme.secondaryContainer,
-                                    ) {
-                                        Text(
-                                            text = "STORY ${page + 1} OF ${chapters.size}".uppercase(),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer
-                                                    else MaterialTheme.colorScheme.onSecondaryContainer,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
-
-                                    Text(
-                                        text = formatChapterTime(chapter.startTime.toLong()),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isThisCardActive) accentColor
-                                                else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                // Story Headline
-                                Text(
-                                    text = chapter.title,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer
-                                            else MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                // Story Paragraph (Scrollable inside the card)
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .weight(1f)
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .verticalScroll(rememberScrollState())
-                                    ) {
-                                        Text(
-                                            text = paragraph.trim(),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            lineHeight = 22.sp,
-                                            color = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-
-
-                                    }
-                                }
-                            }
-
-                            // Related Episodes inline (compact row)
-                            val recs = chapter.relatedEpisodes
-                            if (!recs.isNullOrEmpty()) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 12.dp),
-                                    thickness = 0.8.dp,
-                                    color = if (isThisCardActive) Color.White.copy(alpha = 0.15f)
-                                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                                )
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        modifier = Modifier.padding(horizontal = 4.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Podcasts,
-                                            contentDescription = null,
-                                            tint = if (isThisCardActive) Color.White.copy(alpha = 0.6f)
-                                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Text(
-                                            text = "LISTEN DEEPER",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                letterSpacing = 1.2.sp,
-                                                fontSize = 9.sp
-                                            ),
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isThisCardActive) Color.White.copy(alpha = 0.7f)
-                                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                        )
-                                    }
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        items(recs) { episode ->
-                                            CompactEpisodeChip(
-                                                episode = episode,
-                                                isActiveCard = isThisCardActive,
-                                                accentColor = accentColor,
-                                                onClick = {
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingRelatedEpisodeClicked(
-                                                        region = briefing.region,
-                                                        date = briefing.date,
-                                                        chapterIndex = page,
-                                                        episodeId = episode.id,
-                                                        episodeTitle = episode.title,
-                                                        podcastId = episode.podcastId ?: "",
-                                                        podcastTitle = episode.podcastTitle ?: ""
-                                                    )
-                                                    onEpisodeClick(episode)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            } else {
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Card prominent play button
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = if (isThisCardActive) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .expressiveClickable(
-                                        shape = RoundedCornerShape(16.dp),
-                                        onClick = {
-                                            val storyProps = mapOf(
-                                                "chapter_index" to page,
-                                                "chapter_title" to chapter.title,
-                                                "start_time_seconds" to chapter.startTime.toLong()
-                                            )
-                                            if (isThisCardActive) {
-                                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                                                    action = "story_pause_clicked",
-                                                    region = briefing.region,
-                                                    date = briefing.date,
-                                                    extraProps = storyProps
-                                                )
-                                                onPlayPauseClick(null)
-                                            } else {
-                                                userClickedPage = page
-                                                scope.launch {
-                                                    pagerState.animateScrollToPage(page)
-                                                }
-                                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                                                    action = "story_play_clicked",
-                                                    region = briefing.region,
-                                                    date = briefing.date,
-                                                    extraProps = storyProps
-                                                )
-                                                onPlayPauseClick(chapter.startTime.toLong() * 1000L)
-                                            }
-                                        }
-                                    )
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(
-                                        imageVector = if (isThisCardActive) Icons.Rounded.Pause
-                                                      else Icons.Rounded.PlayArrow,
-                                        contentDescription = null,
-                                        tint = if (isThisCardActive) MaterialTheme.colorScheme.primaryContainer
-                                               else MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = if (isThisCardActive) "PAUSE STORY" else "PLAY THIS STORY",
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = if (isThisCardActive) MaterialTheme.colorScheme.primaryContainer
-                                               else MaterialTheme.colorScheme.onPrimary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Fallback if chapters are empty
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(380.dp)
-                        .padding(horizontal = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Loading script...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Page indicators dots
-            if (chapters.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .height(16.dp)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(chapters.size) { iteration ->
-                        val isSelected = pagerState.currentPage == iteration
-                        val color = if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-                        Box(
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(color)
-                                .size(if (isSelected) 8.dp else 6.dp)
-                        )
-                    }
-                }
-            }
+            BriefingStoriesPager(
+                briefing = briefing,
+                chapters = chapters,
+                isPlaying = isPlaying,
+                currentPositionMs = currentPositionMs,
+                accentColor = accentColor,
+                onEpisodeClick = onEpisodeClick,
+                onPlayPauseClick = onPlayPauseClick,
+            )
 
 
 
@@ -1135,14 +773,14 @@ fun BriefingContent(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Text(
                     text = "This daily briefing contains AI-generated summary content and audio narration. We do not claim ownership of the underlying news stories, which are compiled and attributed to the original sources listed above.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 16.sp
                 )
-                
+
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -1173,11 +811,6 @@ fun BriefingContent(
     }
 }
 
-private fun formatChapterTime(seconds: Long): String {
-    val mins = seconds / 60
-    val secs = seconds % 60
-    return String.format(java.util.Locale.US, "%d:%02d", mins, secs)
-}
 
 @Composable
 fun ErrorContent(
@@ -1221,23 +854,6 @@ fun ErrorContent(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
             )
         }
-    }
-}
-
-private fun formatRemaining(totalSeconds: Long): String? {
-    if (totalSeconds <= 0) return null
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    return if (hours > 0) "${hours}h ${minutes}m left" else "${minutes}m left"
-}
-
-private fun getDomainName(url: String): String {
-    return try {
-        val uri = URI(url)
-        val domain = uri.host ?: ""
-        if (domain.startsWith("www.")) domain.substring(4) else domain
-    } catch (e: Exception) {
-        url
     }
 }
 
@@ -1350,104 +966,3 @@ fun VerticalRecommendedEpisodeCard(
         }
     }
 }
-
-@Composable
-private fun CompactEpisodeChip(
-    episode: Episode,
-    isActiveCard: Boolean,
-    accentColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = if (isActiveCard) MaterialTheme.colorScheme.surfaceContainerHighest
-                else MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(
-            0.5.dp,
-            if (isActiveCard) MaterialTheme.colorScheme.outline
-            else MaterialTheme.colorScheme.outlineVariant
-        ),
-        modifier = modifier
-            .width(260.dp)
-            .expressiveClickable(
-                shape = RoundedCornerShape(16.dp),
-                onClick = onClick
-            )
-    ) {
-        Row(
-            modifier = Modifier.padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            val imageUrl = episode.imageUrl?.takeIf { it.isNotEmpty() }
-                ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
-            OptimizedImage(
-                url = imageUrl,
-                proxyWidth = 120,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = episode.title,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp
-                    ),
-                    color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer
-                            else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                val podTitle = episode.podcastTitle
-                if (!podTitle.isNullOrEmpty()) {
-                    Text(
-                        text = podTitle,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = if (isActiveCard) accentColor.copy(alpha = 0.85f)
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                val infoText = buildString {
-                    if (episode.duration > 0) {
-                        append("${episode.duration / 60} min")
-                    }
-                    if (episode.publishedDate > 0) {
-                        if (isNotEmpty()) append(" • ")
-                        try {
-                            val instant = java.time.Instant.ofEpochSecond(episode.publishedDate)
-                            val date = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault()).toLocalDate()
-                            append(date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")))
-                        } catch (e: Exception) {
-                            // ignore
-                        }
-                    }
-                }
-                if (infoText.isNotEmpty()) {
-                    Text(
-                        text = infoText,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                        color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
-                        maxLines = 1
-                    )
-                }
-            }
-        }
-    }
-}
-
