@@ -16,50 +16,19 @@
         <error line="632" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/EpisodeInfoScreen.kt">
-        <error line="103" column="5" source="standard:function-naming" />
-        <error line="312" column="141" source="standard:max-line-length" />
+        <error line="95" column="5" source="standard:function-naming" />
+        <error line="304" column="141" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt">
-        <error line="7" column="1" source="standard:no-unused-imports" />
-        <error line="9" column="1" source="standard:no-unused-imports" />
-        <error line="59" column="1" source="standard:no-unused-imports" />
-        <error line="60" column="1" source="standard:no-unused-imports" />
-        <error line="61" column="1" source="standard:no-unused-imports" />
-        <error line="68" column="1" source="standard:no-unused-imports" />
-        <error line="73" column="1" source="standard:no-wildcard-imports" />
-        <error line="75" column="1" source="standard:no-unused-imports" />
-        <error line="77" column="1" source="standard:no-unused-imports" />
-        <error line="105" column="1" source="standard:no-unused-imports" />
-        <error line="143" column="1" source="standard:no-unused-imports" />
-        <error line="146" column="1" source="standard:no-unused-imports" />
-        <error line="152" column="1" source="standard:no-unused-imports" />
-        <error line="174" column="5" source="standard:function-naming" />
-        <error line="464" column="21" source="standard:function-naming" />
-        <error line="951" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="1014" column="141" source="standard:max-line-length" />
-        <error line="1015" column="141" source="standard:max-line-length" />
-        <error line="1051" column="13" source="standard:function-naming" />
-        <error line="1168" column="13" source="standard:function-naming" />
-        <error line="1256" column="13" source="standard:function-naming" />
-        <error line="1386" column="13" source="standard:function-naming" />
-        <error line="1450" column="5" source="standard:function-naming" />
-        <error line="1744" column="13" source="standard:function-naming" />
-        <error line="1775" column="13" source="standard:function-naming" />
-        <error line="1914" column="141" source="standard:max-line-length" />
-        <error line="2057" column="141" source="standard:max-line-length" />
-        <error line="2108" column="141" source="standard:max-line-length" />
-        <error line="2183" column="5" source="standard:function-naming" />
-        <error line="2431" column="5" source="standard:function-naming" />
-        <error line="2543" column="5" source="standard:function-naming" />
-        <error line="2706" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="2708" column="5" source="standard:function-naming" />
+        <error line="105" column="5" source="standard:function-naming" />
+        <error line="395" column="21" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoViewModel.kt">
-        <error line="69" column="17" source="standard:backing-property-naming" />
-        <error line="942" column="1" source="standard:indent" />
-        <error line="943" column="1" source="standard:indent" />
-        <error line="944" column="1" source="standard:indent" />
-        <error line="945" column="1" source="standard:indent" />
+        <error line="46" column="17" source="standard:backing-property-naming" />
+        <error line="897" column="1" source="standard:indent" />
+        <error line="898" column="1" source="standard:indent" />
+        <error line="899" column="1" source="standard:indent" />
+        <error line="900" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeActionRail.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -90,6 +59,9 @@
         <error line="91" column="14" source="standard:function-naming" />
         <error line="202" column="13" source="standard:function-naming" />
     </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeListItem.kt">
+        <error line="42" column="5" source="standard:function-naming" />
+    </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeOptionsSheet.kt">
         <error line="45" column="5" source="standard:function-naming" />
         <error line="171" column="13" source="standard:function-naming" />
@@ -98,6 +70,19 @@
         <error line="59" column="14" source="standard:function-naming" />
         <error line="155" column="13" source="standard:function-naming" />
         <error line="245" column="13" source="standard:function-naming" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeToolbar.kt">
+        <error line="86" column="14" source="standard:function-naming" />
+        <error line="117" column="14" source="standard:function-naming" />
+        <error line="256" column="141" source="standard:max-line-length" />
+        <error line="399" column="141" source="standard:max-line-length" />
+        <error line="450" column="141" source="standard:max-line-length" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoChrome.kt">
+        <error line="142" column="14" source="standard:function-naming" />
+        <error line="255" column="14" source="standard:function-naming" />
+        <error line="339" column="14" source="standard:function-naming" />
+        <error line="469" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoMetadataChips.kt">
         <error line="18" column="1" source="standard:no-wildcard-imports" />
@@ -114,9 +99,26 @@
         <error line="475" column="14" source="standard:function-naming" />
         <error line="561" column="1" source="standard:no-consecutive-blank-lines" />
     </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoSearchOverlay.kt">
+        <error line="41" column="5" source="standard:function-naming" />
+    </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/PodcastPlaybackSettingsSheet.kt">
         <error line="49" column="5" source="standard:function-naming" />
         <error line="128" column="13" source="standard:function-naming" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/info/components/PodcastTrailerCards.kt">
+        <error line="50" column="5" source="standard:function-naming" />
+        <error line="162" column="5" source="standard:function-naming" />
+        <error line="325" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="327" column="5" source="standard:function-naming" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/info/logic/PodcastInfoToolbarLogic.kt">
+        <error line="18" column="141" source="standard:max-line-length" />
+        <error line="19" column="141" source="standard:max-line-length" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/info/sections/EpisodeInfoRecommendationCards.kt">
+        <error line="44" column="14" source="standard:function-naming" />
+        <error line="208" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/sections/PodcastInfoDescriptionSection.kt">
         <error line="46" column="29" source="standard:chain-method-continuation" />
