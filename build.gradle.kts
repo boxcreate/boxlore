@@ -85,11 +85,11 @@ kover {
                     "*.R$*",
                     "*.databinding.*",
                     // Fat Media3 / Auto orchestration (Phase 2 PR4 extracts + tests).
-                    // Merged gate still includes :core:playback pure helpers under core.data.playback.*.
-                    "cx.aswin.boxlore.core.data.PlaybackRepository",
-                    "cx.aswin.boxlore.core.data.PlaybackRepository$*",
-                    "cx.aswin.boxlore.core.data.service.*",
-                    "cx.aswin.boxlore.core.data.service.auto.*",
+                    // Merged gate still includes :core:playback pure helpers under core.playback.*.
+                    "cx.aswin.boxlore.core.playback.PlaybackRepository",
+                    "cx.aswin.boxlore.core.playback.PlaybackRepository$*",
+                    "cx.aswin.boxlore.core.playback.service.*",
+                    "cx.aswin.boxlore.core.playback.service.auto.*",
                 )
                 annotatedBy(
                     "androidx.compose.runtime.Composable",
