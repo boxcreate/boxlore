@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 import org.junit.Assert.assertEquals
@@ -34,12 +35,13 @@ class SubscriptionSortChipsUiTest {
         composeRule.onNodeWithText("Smart Rank").assertIsDisplayed()
         composeRule.onNodeWithText("Recently Updated").assertIsDisplayed()
         composeRule.onNodeWithText("A-Z").assertIsDisplayed()
-        composeRule.onNodeWithText("Most Listened").assertIsDisplayed()
+        // LazyRow: last chip is often off-screen on narrow emulator widths.
+        composeRule.onNodeWithText("Most Listened").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("A-Z").performClick()
         assertEquals(SubscriptionSort.Alphabetical, lastSort)
 
-        composeRule.onNodeWithText("Most Listened").performClick()
+        composeRule.onNodeWithText("Most Listened").performScrollTo().performClick()
         assertEquals(SubscriptionSort.MostListened, lastSort)
     }
 }
