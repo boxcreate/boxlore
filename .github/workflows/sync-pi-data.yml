@@ -42,10 +42,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
+      - name: Generate boxlore pusher token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.BOXLORE_PUSHER_APP_ID }}
+          private-key: ${{ secrets.BOXLORE_PUSHER_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: master
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -129,10 +137,12 @@ jobs:
 
       - name: Commit pipeline state
         if: always()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://github.com/${{ github.repository }}.git"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           git add scripts/data/sync_cache.json scripts/data/db_cost_history.json scripts/data/db_cost_report.md
           if git diff --cached --quiet; then
             echo "No state changes to commit"
@@ -161,10 +171,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Generate boxlore pusher token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.BOXLORE_PUSHER_APP_ID }}
+          private-key: ${{ secrets.BOXLORE_PUSHER_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: master
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -184,10 +202,12 @@ jobs:
         run: node scripts/sync/07-record-stats.js
 
       - name: Commit pipeline state
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://github.com/${{ github.repository }}.git"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           # Stage and commit BEFORE any rebase: an up-front pull fails on the
           # unstaged sync_cache.json changes stage 6 just wrote. The push
           # retry loop below rebases only after committing, like the sync job.

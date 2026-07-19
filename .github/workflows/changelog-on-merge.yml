@@ -51,11 +51,18 @@ jobs:
       group: changelog-on-merge
       cancel-in-progress: false
     steps:
+      - name: Generate boxlore pusher token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.BOXLORE_PUSHER_APP_ID }}
+          private-key: ${{ secrets.BOXLORE_PUSHER_PRIVATE_KEY }}
+
       - name: Checkout master
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: master
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Append merged PR event to CHANGELOG
         if: github.event_name == 'pull_request'
@@ -70,7 +77,7 @@ jobs:
       - name: Load and append backfill PR
         if: github.event_name == 'workflow_dispatch'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
           PR_NUMBER: ${{ github.event.inputs.pr_number }}
         run: |
@@ -133,17 +140,24 @@ jobs:
       group: prepare-release
       cancel-in-progress: false
     steps:
+      - name: Generate boxlore pusher token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.BOXLORE_PUSHER_APP_ID }}
+          private-key: ${{ secrets.BOXLORE_PUSHER_PRIVATE_KEY }}
+
       - name: Checkout master with release history
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: master
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Resolve current GitHub Latest release
         id: latest
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           latest_tag="$(gh release view \
             --repo "$GITHUB_REPOSITORY" \
@@ -206,7 +220,7 @@ jobs:
 
       - name: Open release PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BRANCH: ${{ steps.release.outputs.branch }}
           TAG: ${{ steps.release.outputs.tag }}
           CURRENT_VERSION: ${{ steps.release.outputs.current_version }}
@@ -247,7 +261,7 @@ jobs:
       - name: Cleanup orphan release branch on failure
         if: failure() && steps.push_release.outcome == 'success'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           TAG: ${{ steps.release.outputs.tag }}
         run: python3 .github/scripts/prepare_release.py cleanup-stale --tag "$TAG"
 

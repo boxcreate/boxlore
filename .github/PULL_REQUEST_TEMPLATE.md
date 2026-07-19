@@ -9,26 +9,22 @@ Use Conventional Commits. Examples from this repo:
 
 Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish the announcement dialog`).
 
-## Merge CI (required before merge)
+## Merge queue (required before merge)
 
-Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate do **not** run on every push.
+Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate run **only in the merge queue** (plus optional Actions → Run workflow). They do **not** run on every PR push.
 
 Master uses a **merge queue**. Required checks before merge:
 
-1. **`testDebugUnitTest`** — add the **`merge-ci`** label to start
+1. **`testDebugUnitTest`** — runs when the PR enters the merge queue
 2. **`SonarCloud Code Analysis`** — quality gate must pass (aim: zero open issues)
 3. **`CodeRabbit`** — review must be green; resolve all review threads
 
 1. Open the PR and iterate as usual (Sonar + CodeRabbit still run).
-2. When ready, add **`merge-ci`**, wait for **`testDebugUnitTest`**, resolve CodeRabbit threads.
-3. Use **Merge when ready** — the PR enters the merge queue (squash).
-4. Do **not** leave `merge-ci` on while force-pushing WIP.
+2. Resolve CodeRabbit threads; wait for SonarCloud.
+3. Use **Merge when ready** — the PR enters the merge queue (squash), which runs **`testDebugUnitTest`**.
+4. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
-```bash
-gh pr edit <n> --add-label merge-ci
-```
-
-Scheduled bots (`github-actions[bot]`) keep direct-push access to `master` via ruleset bypass.
+Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ruleset Integration bypass).
 
 ## Summary
 
@@ -97,7 +93,7 @@ Add impact labels on the PR (`gh pr edit <n> --add-label user-impact-high --add-
 
 - [ ] Built / installed locally (`./gradlew installDebug`) when UI or app behavior changed
 - [ ] Manual checks for the user-visible paths touched by this PR
-- [ ] Added **`merge-ci`** when ready, and required checks are green before merge
+- [ ] Required checks are green in the merge queue before merge completes
 - [ ]
 
 ## Notes (optional)

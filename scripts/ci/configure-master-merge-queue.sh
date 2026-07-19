@@ -2,13 +2,13 @@
 # Enable master merge queue + required checks, with bot-safe bypass.
 #
 # Required checks (must be green before merge / in the queue):
-#   1. testDebugUnitTest          — unit job (merge-ci label or merge_group)
+#   1. testDebugUnitTest          — unit job (merge_group or workflow_dispatch)
 #   2. SonarCloud Code Analysis  — SonarCloud GitHub App (bridged on merge_group)
 #   3. CodeRabbit                — CodeRabbit status (bridged on merge_group)
 #
-# Bypass (always): GitHub Actions Integration + Organization admins.
-# Scheduled bots (episode tracker, sync-pi-data, changelog-on-merge, …) push
-# directly to master as github-actions[bot] and must not be blocked.
+# Bypass (always): boxlore-master-pusher Integration (app 4340323) + Organization admins.
+# Scheduled bots (episode tracker, sync-pi-data, changelog-on-merge, …) mint an
+# installation token for that app and push directly to master.
 #
 #   ./scripts/ci/configure-master-merge-queue.sh
 set -euo pipefail
@@ -17,8 +17,9 @@ OWNER="${OWNER:-boxcreate}"
 REPO="${REPO:-boxlore}"
 RULESET_NAME="master-merge-queue"
 
-# GitHub Actions app (Integration) — confirmed via `gh api apps/github-actions`
-ACTIONS_APP_ID="${ACTIONS_APP_ID:-15368}"
+# Custom GitHub App installed on the org for ruleset-bypassing master pushes.
+# Do NOT use the built-in GitHub Actions app (15368) — API returns 422 on org repos.
+PUSHER_APP_ID="${PUSHER_APP_ID:-4340323}"
 # OrganizationAdmin role constant for ruleset bypass_actors
 ORG_ADMIN_ACTOR_ID=1
 
@@ -28,13 +29,6 @@ if ! gh api "repos/${OWNER}/${REPO}" --jq '.permissions.admin' | grep -qx true; 
   echo "       Sign in as an org admin: gh auth login" >&2
   exit 1
 fi
-
-echo "Ensuring label merge-ci..."
-gh label create merge-ci \
-  --repo "${OWNER}/${REPO}" \
-  --description "Add when ready to merge — starts full unit merge gate (not on every push)." \
-  --color "0E8A16" \
-  --force
 
 # Classic branch protection conflicts with ruleset merge queue + blocks bot pushes.
 if gh api "repos/${OWNER}/${REPO}/branches/master/protection" >/dev/null 2>&1; then
@@ -59,12 +53,12 @@ gh api --method PATCH "repos/${OWNER}/${REPO}" \
   >/dev/null
 
 build_ruleset_body() {
-  local include_actions_integration="$1"
+  local include_pusher_integration="$1"
   jq -n \
     --arg name "${RULESET_NAME}" \
-    --argjson actions_app_id "${ACTIONS_APP_ID}" \
+    --argjson pusher_app_id "${PUSHER_APP_ID}" \
     --argjson org_admin_id "${ORG_ADMIN_ACTOR_ID}" \
-    --argjson include_actions "${include_actions_integration}" \
+    --argjson include_pusher "${include_pusher_integration}" \
     '{
       name: $name,
       target: "branch",
@@ -83,9 +77,9 @@ build_ruleset_body() {
             bypass_mode: "always"
           }
         ]
-        + if $include_actions then
+        + if $include_pusher then
             [{
-              actor_id: $actions_app_id,
+              actor_id: $pusher_app_id,
               actor_type: "Integration",
               bypass_mode: "always"
             }]
@@ -180,7 +174,7 @@ EXISTING_ID="$(
     | head -n1
 )"
 
-ACTIONS_BYPASS_OK=true
+PUSHER_BYPASS_OK=true
 RULESET_BODY="$(build_ruleset_body true)"
 if ! apply_ruleset "${RULESET_BODY}" "${EXISTING_ID}"; then
   EXISTING_ID="$(
@@ -189,24 +183,15 @@ if ! apply_ruleset "${RULESET_BODY}" "${EXISTING_ID}"; then
       | head -n1
   )"
 
-  # Common: built-in GitHub Actions app (15368) cannot be a ruleset Integration bypass
-  # on many org repos — API returns 422 with this message.
-  if echo "${LAST_RULESET_ERR}" | grep -q "GitHub Actions integration must be part"; then
-    echo >&2
-    echo "BLOCKER: cannot add Integration ${ACTIONS_APP_ID} (GitHub Actions) as bypass_actor." >&2
-    echo "GitHub API: Actor GitHub Actions integration must be part of the ruleset source or owner organization" >&2
-    echo "Retrying ruleset without Integration bypass (OrganizationAdmin only)..." >&2
-    ACTIONS_BYPASS_OK=false
-    RULESET_BODY="$(build_ruleset_body false)"
-    apply_ruleset "${RULESET_BODY}" "${EXISTING_ID}"
-  else
-    echo "Retrying with OrganizationAdmin-only bypass in case Integration is the sole failure..." >&2
-    ACTIONS_BYPASS_OK=false
-    RULESET_BODY="$(build_ruleset_body false)"
-    if ! apply_ruleset "${RULESET_BODY}" "${EXISTING_ID}"; then
-      echo "error: ruleset create/update failed after retries" >&2
-      exit 1
-    fi
+  echo >&2
+  echo "BLOCKER: cannot add Integration ${PUSHER_APP_ID} (boxlore-master-pusher) as bypass_actor." >&2
+  echo "Retrying ruleset without Integration bypass (OrganizationAdmin only)..." >&2
+  # Do not fall back to GitHub Actions app 15368 — it 422s on org repos.
+  PUSHER_BYPASS_OK=false
+  RULESET_BODY="$(build_ruleset_body false)"
+  if ! apply_ruleset "${RULESET_BODY}" "${EXISTING_ID}"; then
+    echo "error: ruleset create/update failed after retries" >&2
+    exit 1
   fi
 fi
 
@@ -220,25 +205,24 @@ echo
 echo "Master merge queue is active (ruleset id=${FINAL_ID})."
 echo "  Rules: https://github.com/${OWNER}/${REPO}/settings/rules"
 echo "  Required checks: testDebugUnitTest | SonarCloud Code Analysis | CodeRabbit"
-if [[ "${ACTIONS_BYPASS_OK}" == "true" ]]; then
-  echo "  Bypass: GitHub Actions (app ${ACTIONS_APP_ID}) + Organization admins"
+if [[ "${PUSHER_BYPASS_OK}" == "true" ]]; then
+  echo "  Bypass: boxlore-master-pusher (app ${PUSHER_APP_ID}) + Organization admins"
 else
-  echo "  Bypass: Organization admins ONLY (Integration ${ACTIONS_APP_ID} rejected by GitHub API)"
+  echo "  Bypass: Organization admins ONLY (Integration ${PUSHER_APP_ID} rejected by GitHub API)"
   echo
-  echo "BLOCKER: github-actions[bot] (GITHUB_TOKEN) cannot bypass this ruleset." >&2
-  echo "  Options: (1) custom GitHub App installed on the org + Integration bypass," >&2
-  echo "           (2) org-admin PAT in workflows that push to master," >&2
-  echo "           (3) GitHub support / product change to allow app ${ACTIONS_APP_ID}." >&2
+  echo "BLOCKER: bot pushes via Integration bypass are NOT configured." >&2
+  echo "  Ensure app ${PUSHER_APP_ID} (boxlore-master-pusher) is installed on the org," >&2
+  echo "  and BOXLORE_PUSHER_APP_ID / BOXLORE_PUSHER_PRIVATE_KEY are set as repo secrets." >&2
 fi
 echo
 echo "Human PR flow:"
-echo "  1. Open / iterate PR (Sonar + CodeRabbit run; unit suite waits for merge-ci)"
+echo "  1. Open / iterate PR (Sonar + CodeRabbit run; unit suite waits for merge queue)"
 echo "  2. Resolve all review threads (CodeRabbit included)"
-echo "  3. Add label merge-ci → wait for testDebugUnitTest"
-echo "  4. Merge when ready → enters merge queue (re-runs unit + bridges Sonar/CodeRabbit)"
+echo "  3. Merge when ready → enters merge queue (runs unit + bridges Sonar/CodeRabbit)"
+echo "  4. Optional: Actions → Run workflow (unit-tests) for a manual gate"
 echo
-if [[ "${ACTIONS_BYPASS_OK}" == "true" ]]; then
-  echo "Bots (github-actions[bot]) keep direct-push access via Integration bypass."
+if [[ "${PUSHER_BYPASS_OK}" == "true" ]]; then
+  echo "Bots keep direct-push access via boxlore-master-pusher Integration bypass."
   exit 0
 else
   echo "WARNING: bot direct-push via Integration bypass is NOT configured." >&2

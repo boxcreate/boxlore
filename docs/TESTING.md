@@ -13,7 +13,7 @@ How Boxlore is tested: layers, commands, coverage floors, architecture gates, an
 
 ## Goal
 
-Automated coverage focused on **hermetic JVM** for product logic (queue fill, ranking, catalog, prefs, feature `logic/`). High Kover floors fail CI on drop. Architecture guards fail `merge-ci` on graph drift.
+Automated coverage focused on **hermetic JVM** for product logic (queue fill, ranking, catalog, prefs, feature `logic/`). High Kover floors fail CI on drop. Architecture guards fail the unit merge-queue job on graph drift.
 
 **Strategy:** constructors, domain ports, shared fakes in `:core:testing`, assemblers, Turbine. No MockK/Hilt. No Application-backed Home/Info suites. Media3 service / `PlaybackRepository` stay out of the line gate; covered by policy unit tests. Maestro YAML is validated nightly (no paid Maestro Cloud device runs).
 
@@ -90,7 +90,7 @@ Reports: `build/reports/kover/`.
 
 ## Architecture CI (fail on deviate)
 
-`merge-ci` (`unit-tests.yml`) fails when architecture drifts:
+`unit-tests.yml` (merge queue / dispatch) fails when architecture drifts:
 
 | Guard | What it enforces |
 | :--- | :--- |
@@ -167,11 +167,11 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
-| `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | `merge-ci` / merge queue / dispatch | Done |
+| `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | merge queue / dispatch | Done |
 | `merge-queue-external-gates.yml` | Re-assert SonarCloud + CodeRabbit on merge group SHA | merge queue | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML | Nightly / manual | Done |
 
-**Merge gate:** master uses a merge queue. Required checks: **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, **`CodeRabbit`** (resolve all review threads). Add `merge-ci` to start the unit suite. `github-actions[bot]` bypasses the ruleset for direct master pushes.
+**Merge gate:** master uses a merge queue. Required checks: **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, **`CodeRabbit`** (resolve all review threads). The unit suite runs in the merge queue (or via Actions → Run workflow). Bots push to master via **boxlore-master-pusher** (ruleset Integration bypass).
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 

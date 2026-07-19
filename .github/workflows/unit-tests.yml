@@ -1,30 +1,22 @@
 name: Unit Tests
 
-# Merge-gate + merge queue:
-# - Add the `merge-ci` label when ready to merge → runs once on that commit.
-# - Pushes do NOT re-trigger (no `synchronize`) — remove+re-add `merge-ci`,
-#   or use Actions → Run workflow, to start another full gate.
-# - `merge_group` re-runs the suite inside the master merge queue.
-# Direct bot pushes to master bypass the ruleset (GitHub Actions Integration).
+# Merge queue only (plus manual dispatch):
+# - `merge_group` runs the suite inside the master merge queue.
+# - `workflow_dispatch` for a manual full gate.
+# Unit tests do NOT run on pull_request / merge-ci label.
+# Bot pushes to master use boxlore-master-pusher (ruleset Integration bypass).
 on:
-  pull_request:
-    types: [labeled, opened, reopened, ready_for_review]
   merge_group:
   workflow_dispatch:
 
-# One active run per PR/ref — later pushes cancel the backlog instead of queueing.
+# One active run per ref — later queue entries cancel the backlog instead of queueing.
 concurrency:
-  group: unit-tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: unit-tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   unit-tests:
     name: testDebugUnitTest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'merge_group' ||
-      (github.event_name == 'pull_request' &&
-       contains(github.event.pull_request.labels.*.name, 'merge-ci'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

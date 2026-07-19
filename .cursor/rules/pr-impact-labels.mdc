@@ -1,5 +1,5 @@
 ---
-description: PR labels for user-impact level (required), optional backend-change, and merge-ci gate
+description: PR labels for user-impact level (required), optional backend-change, and merge-queue gate
 alwaysApply: true
 ---
 
@@ -27,33 +27,26 @@ Examples:
 - `--label no-user-impact --label backend-change`
 - `--label user-impact-medium`
 
-## Merge CI gate (`merge-ci`) — required before merge
+## Merge queue gate — required before merge
 
-Unit CI (and detekt/ktlint/Kover in the unit job) does **not** run on every PR push.
+Unit CI (and detekt/ktlint/Kover in the unit job) runs **only** on `merge_group` (and optional `workflow_dispatch`). It does **not** run on every PR push or via a `merge-ci` label.
 
 Master is protected by a **merge queue** ruleset. Required checks:
 
 | Check | Meaning |
 |:--|:--|
-| `testDebugUnitTest` | Full unit / static / Kover / Roborazzi gate (started by `merge-ci`) |
+| `testDebugUnitTest` | Full unit / static / Kover / Roborazzi gate (runs in merge queue) |
 | `SonarCloud Code Analysis` | SonarCloud quality gate must pass |
 | `CodeRabbit` | CodeRabbit review green; resolve all review threads |
 
-| Label | Meaning |
-|:--|:--|
-| `merge-ci` | Start the unit merge-gate workflow |
-
 Agent / maintainer flow:
 
-1. Open and iterate the PR **without** `merge-ci` (avoids burning CI on WIP pushes).
-2. When ready: `gh pr edit <n> --add-label merge-ci`
-3. Wait for **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, and **`CodeRabbit`** green; resolve all review threads.
-4. Merge via **Merge when ready** (merge queue, squash).
-5. Do **not** add `merge-ci` while still iterating heavily — remove+re-add `merge-ci`, or Actions → Run workflow, to re-run the unit suite.
+1. Open and iterate the PR (Sonar + CodeRabbit still run; unit suite waits for the queue).
+2. Wait for **`SonarCloud Code Analysis`** and **`CodeRabbit`** green; resolve all review threads.
+3. Merge via **Merge when ready** (merge queue, squash) — the queue runs **`testDebugUnitTest`**.
+4. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
-**Bot bypass:** `github-actions[bot]` and organization admins bypass the ruleset so scheduled workflows can push chore commits to `master` directly. Never remove that Integration bypass.
-
-Direct bot/owner pushes to `master` do not use the `merge-ci` label.
+**Bot bypass:** **boxlore-master-pusher** (GitHub App 4340323) and organization admins bypass the ruleset so scheduled workflows can push chore commits to `master` directly. Never remove that Integration bypass.
 
 ## PR title (required)
 
@@ -70,4 +63,4 @@ Use Conventional Commits only:
 4. Never apply two user-impact level labels on the same PR.
 5. If the label is `user-impact-high` or `user-impact-medium`, the PR body **must** include **Listener impact → What changes in the user’s life** in plain listener language (not just engineering bullets). Skip that section only for `user-impact-low` or `no-user-impact`.
 6. If a PR title violates Conventional Commits, rename it with `gh pr edit <n> --title "type(scope): …"` before merge.
-7. Before merging: add `merge-ci`, confirm Unit + SonarCloud + CodeRabbit are green and review threads are resolved, then **Merge when ready** (merge queue). Do not add `merge-ci` on create unless the PR is already merge-ready.
+7. Before merging: confirm SonarCloud + CodeRabbit are green and review threads are resolved, then **Merge when ready** (merge queue runs unit tests). Do not force-push into an active queue entry.
