@@ -55,7 +55,6 @@ src/main/java/cx/aswin/boxlore/feature/briefing/
 ## CI relevance
 
 - `unit-tests.yml` compiles and runs briefing JVM tests with the project suite.
-- Coverage is JVM-focused (`src/test`); no Compose androidTest suite.
 
 ## See also
 

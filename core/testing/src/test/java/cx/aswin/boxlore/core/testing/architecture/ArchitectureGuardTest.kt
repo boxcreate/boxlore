@@ -368,21 +368,17 @@ class ArchitectureGuardTest {
             if (baseName in allowlist) continue
 
             val moduleRoot = normalized.substringBefore("/src/main/")
-            val testDirs =
-                listOf("$moduleRoot/src/test", "$moduleRoot/src/androidTest").map(::File)
+            val testDir = File("$moduleRoot/src/test")
             val hasMatchingTest =
-                testDirs
-                    .filter { it.isDirectory }
-                    .any { dir ->
-                        dir
-                            .walkTopDown()
-                            .any { it.isFile && it.name.startsWith(baseName) && it.name.endsWith("Test.kt") }
-                    }
+                testDir.isDirectory &&
+                    testDir
+                        .walkTopDown()
+                        .any { it.isFile && it.name.startsWith(baseName) && it.name.endsWith("Test.kt") }
             if (!hasMatchingTest) {
                 violations +=
                     "${mainFile.relativeTo(projectRoot).path.replace('\\', '/')}: " +
-                    "needs a matching $baseName*Test.kt under the module's src/test or " +
-                    "src/androidTest (or add it to the documented allowlist in ArchitectureGuardTest)"
+                    "needs a matching $baseName*Test.kt under the module's src/test " +
+                    "(or add it to the documented allowlist in ArchitectureGuardTest)"
             }
         }
 

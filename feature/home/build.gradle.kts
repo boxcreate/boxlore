@@ -104,6 +104,6 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.androidx.ui.test.junit4)
     testImplementation("org.mockito:mockito-core:5.14.2")
-    // Roborazzi / Compose preview host (JVM unit tests only — no androidTest suite).
+    // Roborazzi / Compose preview host for JVM screenshot tests.
     debugImplementation(libs.androidx.ui.test.manifest)
 }

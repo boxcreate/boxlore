@@ -44,7 +44,7 @@ src/main/res/
 
 - Unit tests live under `core/designsystem/src/test`.
 - `ThemeBrandTokensTest` covers brand seed and contrast helper behavior.
-- Screenshot and Compose UI tests live in app or feature modules.
+- Screenshot goldens (Roborazzi) live in feature modules (see `:feature:home`).
 
 ```bash
 ./gradlew :core:designsystem:testDebugUnitTest

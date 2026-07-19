@@ -233,10 +233,9 @@ How the tree is tested — commands, coverage floors, and layer status — is in
 | Layer | Role | Where |
 | :--- | :--- | :--- |
 | JVM unit | Logic, ports, ViewModel slices | [`docs/TESTING.md`](docs/TESTING.md) |
-| Compose UI | Controls, tags, navigation wiring | [`docs/TESTING.md`](docs/TESTING.md) |
-| Maestro | Device E2E smoke | [`maestro/README.md`](maestro/README.md) |
+| Maestro | Device E2E smoke (local; YAML validated in CI) | [`maestro/README.md`](maestro/README.md) |
 | Architecture-as-code | Konsist and filesystem guards | `:core:testing` |
-| Screenshots | Visual baselines | [`docs/screenshots/README.md`](docs/screenshots/README.md) |
+| Screenshots | Visual baselines (Roborazzi) | [`docs/screenshots/README.md`](docs/screenshots/README.md) |
 
 Shared test fixtures live in `:core:testing`. The project does not use MockK or Hilt.
 

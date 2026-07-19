@@ -6,7 +6,6 @@ name: Unit Tests
 #   or use Actions → Run workflow, to start another full gate.
 # - `merge_group` kept for orgs that enable a merge queue later.
 # Direct bot/owner pushes to master never open a PR, so they are unaffected.
-# Instrumented / emulator CI was removed — merge gate is this unit job only.
 on:
   pull_request:
     types: [labeled, opened, reopened, ready_for_review]

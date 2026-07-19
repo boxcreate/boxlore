@@ -59,9 +59,9 @@ Anything that must stay stable across releases:
 
 ## Testing notes
 
-- Test locations (`src/test`, `androidTest`)
+- Test locations (`src/test`)
 - Fakes / fixtures (link `:core:testing`)
-- Compose `testTag`s when UI
+- Compose `testTag`s when UI (Maestro / manual)
 - Local command:
 
 ```bash

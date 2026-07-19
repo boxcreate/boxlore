@@ -49,7 +49,7 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:network`, `:core:designsystem`, `:core:analytics`, `:core:ranking`, and `:core:rss`.
-- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3, Coil, Kotlin serialization, Roborazzi for local visual capture tests, Turbine, Mockito, and Compose UI test libraries.
+- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3, Coil, Kotlin serialization, Roborazzi for local visual capture tests, Turbine, and Mockito.
 - Reverse-edge rule: feature modules must not depend on other feature modules. ViewModels and assemblers must not directly depend on `BoxLoreDatabase`.
 
 ## Threading / lifecycle

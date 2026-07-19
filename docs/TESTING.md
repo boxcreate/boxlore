@@ -15,7 +15,7 @@ How Boxlore is tested: layers, commands, coverage floors, architecture gates, an
 
 Automated coverage focused on **hermetic JVM** for product logic (queue fill, ranking, catalog, prefs, feature `logic/`). High Kover floors fail CI on drop. Architecture guards fail `merge-ci` on graph drift.
 
-**Strategy:** constructors, domain ports, shared fakes in `:core:testing`, assemblers, Turbine. No MockK/Hilt. No Application-backed Home/Info suites. No Compose `androidTest` / emulator matrix — low ROI versus JVM for engines. Media3 service / `PlaybackRepository` stay out of the line gate; covered by policy unit tests. Maestro YAML is validated nightly (no paid Maestro Cloud device runs).
+**Strategy:** constructors, domain ports, shared fakes in `:core:testing`, assemblers, Turbine. No MockK/Hilt. No Application-backed Home/Info suites. Media3 service / `PlaybackRepository` stay out of the line gate; covered by policy unit tests. Maestro YAML is validated nightly (no paid Maestro Cloud device runs).
 
 ## Layers
 
@@ -28,7 +28,6 @@ Automated coverage focused on **hermetic JVM** for product logic (queue fill, ra
 | Coverage (Kover) | `./gradlew :koverVerifyMerged` | Merged floor (ratchet toward 80%) | WIP |
 | Screenshots | `screenshots/baselines/` + Roborazzi verify | Visual regressions | Done |
 | Maestro | `maestro/` YAML validate | Flow file presence/syntax | Done |
-| Compose `androidTest` | — | — | **Removed** (not maintained) |
 
 Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 
@@ -171,7 +170,7 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 | `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | `merge-ci` / dispatch | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML | Nightly / manual | Done |
 
-**Merge gate:** add `merge-ci` when ready; required check is **`testDebugUnitTest`** (no instrumented emulator job).
+**Merge gate:** add `merge-ci` when ready; required check is **`testDebugUnitTest`**.
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 
@@ -183,7 +182,6 @@ Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secr
 - Keep DataStore name `user_preferences`, DB filename, and `rss:` / negative IDs stable in fixtures.
 - Room/Robolectric DAO tests need `unitTests.isIncludeAndroidResources = true` where required.
 - Workers that need listen history use `HistoryRecommendationSource` / ports — not a second `PlaybackRepository`.
-- Do not add Compose `androidTest` / emulator CI without an explicit product decision.
 
 ## Module README checklist
 

@@ -59,7 +59,6 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 ## CI relevance
 
 - `unit-tests.yml` runs Explore JVM tests with the project suite.
-- Coverage is JVM-focused (`src/test`); no Compose androidTest suite.
 
 ## See also
 
