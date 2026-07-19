@@ -79,3 +79,4 @@ posthog-setup-report.md
 # Keep cloud-agent install hook committed; ignore other local Cursor files.
 .cursor/*
 !.cursor/environment.json
+!.cursor/rules/pr-impact-labels.mdc

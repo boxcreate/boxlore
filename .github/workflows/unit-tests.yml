@@ -1,11 +1,11 @@
 name: Unit Tests
 
-# Merge-gate only (not every PR push):
+# Merge-gate + merge queue:
 # - Add the `merge-ci` label when ready to merge → runs once on that commit.
 # - Pushes do NOT re-trigger (no `synchronize`) — remove+re-add `merge-ci`,
 #   or use Actions → Run workflow, to start another full gate.
-# - `merge_group` kept for orgs that enable a merge queue later.
-# Direct bot/owner pushes to master never open a PR, so they are unaffected.
+# - `merge_group` re-runs the suite inside the master merge queue.
+# Direct bot pushes to master bypass the ruleset (GitHub Actions Integration).
 on:
   pull_request:
     types: [labeled, opened, reopened, ready_for_review]

@@ -21,7 +21,7 @@ If you have an idea for a new feature or improvement, please submit an issue usi
 - If your PR introduces a new feature, include relevant documentation updates.
 - Please detail your changes clearly in the PR description so we can review your work properly.
 - Follow the PR template (Conventional Commit title, exactly one `user-impact-*` label).
-- **Merge CI:** expensive checks do not run on every push. When the PR is ready to merge, add the `merge-ci` label, wait for Unit checks to pass, then merge. See `.github/PULL_REQUEST_TEMPLATE.md`.
+- **Merge CI:** expensive unit checks do not run on every push. When ready, add `merge-ci`, wait for Unit + SonarCloud + CodeRabbit (resolve threads), then **Merge when ready** (merge queue). See `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## API & Proxy Repository
 

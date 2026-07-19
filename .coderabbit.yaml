@@ -5,7 +5,10 @@ language: en-US
 
 reviews:
   profile: assertive
-  request_changes_workflow: false
+  # Block merge until CodeRabbit findings are addressed or dismissed.
+  request_changes_workflow: true
+  # Approve once threads are resolved and pre-merge checks pass.
+  auto_approve: true
   high_level_summary: true
   high_level_summary_in_walkthrough: true
   collapse_walkthrough: true
@@ -102,11 +105,18 @@ reviews:
 
   pre_merge_checks:
     title:
-      mode: warning
+      mode: error
       requirements: |
         PR titles must follow Conventional Commits: type(scope): description
         Allowed types: feat, fix, ci, docs, style, refactor, perf, test, chore
         Use imperative mood. Keep the title under ~72 characters.
+    custom_checks:
+      - name: Unresolved review threads
+        mode: error
+        instructions: |
+          Fail if any CodeRabbit review comments or other review threads remain
+          unresolved. All findings must be fixed and marked resolved, or explicitly
+          dismissed with a short rationale, before merge.
 
   tools:
     gitleaks:

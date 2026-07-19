@@ -13,16 +13,22 @@ Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish th
 
 Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate do **not** run on every push.
 
-1. Open the PR and iterate as usual (no expensive CI yet).
-2. When the PR is ready to merge, add the **`merge-ci`** label.
-3. Wait until **`testDebugUnitTest`** is green (process gate — not a GitHub ruleset on this repo).
-4. Then merge.
+Master uses a **merge queue**. Required checks before merge:
+
+1. **`testDebugUnitTest`** — add the **`merge-ci`** label to start
+2. **`SonarCloud Code Analysis`** — quality gate must pass (aim: zero open issues)
+3. **`CodeRabbit`** — review must be green; resolve all review threads
+
+1. Open the PR and iterate as usual (Sonar + CodeRabbit still run).
+2. When ready, add **`merge-ci`**, wait for **`testDebugUnitTest`**, resolve CodeRabbit threads.
+3. Use **Merge when ready** — the PR enters the merge queue (squash).
+4. Do **not** leave `merge-ci` on while force-pushing WIP.
 
 ```bash
 gh pr edit <n> --add-label merge-ci
 ```
 
-Do **not** leave `merge-ci` on while you are still force-pushing WIP — every later push while the label is present re-runs the unit suite.
+Scheduled bots (`github-actions[bot]`) keep direct-push access to `master` via ruleset bypass.
 
 ## Summary
 

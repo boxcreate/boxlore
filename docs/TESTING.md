@@ -167,10 +167,11 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
-| `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | `merge-ci` / dispatch | Done |
+| `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | `merge-ci` / merge queue / dispatch | Done |
+| `merge-queue-external-gates.yml` | Re-assert SonarCloud + CodeRabbit on merge group SHA | merge queue | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML | Nightly / manual | Done |
 
-**Merge gate:** add `merge-ci` when ready; required check is **`testDebugUnitTest`**.
+**Merge gate:** master uses a merge queue. Required checks: **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, **`CodeRabbit`** (resolve all review threads). Add `merge-ci` to start the unit suite. `github-actions[bot]` bypasses the ruleset for direct master pushes.
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 
