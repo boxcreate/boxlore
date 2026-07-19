@@ -10,7 +10,7 @@
 # Does NOT write BOXCAST_*, PostHog, signing, or admin keys. BuildConfig fields
 # default to empty strings when those properties are absent (see app/build.gradle.kts).
 # GitHub merge-ci workflows write the same stub independently; Cursor Secrets are
-# not needed for assembleDebug / unit / instrumented checks.
+# not needed for assembleDebug / unit checks.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -84,4 +84,4 @@ EOF
   echo "Wrote local.properties (sdk.dir=${SDK_DIR})"
 fi
 
-echo "Cloud/local stub config ready. No Cursor Secrets required for build + merge-ci."
+echo "Cloud/local stub config ready. No Cursor Secrets required for build + merge-ci unit tests."

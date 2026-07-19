@@ -23,7 +23,7 @@ roborazzi {
 
 android {
     namespace = "cx.aswin.boxlore.feature.home"
-    // compileSdk 36: androidTest pulls activity-compose / core 1.18 AAR metadata
+    // compileSdk 36: keep AAR metadata aligned with Compose / core deps
     compileSdk = 36
 
     defaultConfig {
@@ -104,12 +104,6 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.androidx.ui.test.junit4)
     testImplementation("org.mockito:mockito-core:5.14.2")
-    debugImplementation(libs.androidx.ui.test.manifest)
-
-    // P24 Compose UI tests (JUnit4 + AndroidJUnitRunner; CI via android-instrumented-tests.yml)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.activity.compose)
+    // Roborazzi / Compose preview host (JVM unit tests only — no androidTest suite).
     debugImplementation(libs.androidx.ui.test.manifest)
 }

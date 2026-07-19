@@ -61,7 +61,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## CI relevance
 
 - `unit-tests.yml` runs Library JVM tests with the project suite.
-- Downloads settings UI coverage is currently in `:feature:home` instrumented tests.
+- Downloads settings visual coverage is in `:feature:home` Roborazzi goldens.
 
 ## See also
 

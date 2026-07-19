@@ -11,20 +11,18 @@ Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish th
 
 ## Merge CI (required before merge)
 
-Unit tests, instrumented tests, detekt, ktlint, and the Kover coverage gate do **not** run on every push.
+Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate do **not** run on every push.
 
 1. Open the PR and iterate as usual (no expensive CI yet).
 2. When the PR is ready to merge, add the **`merge-ci`** label.
-3. Wait until these checks are green (process gate — not a GitHub ruleset on this repo):
-   - `testDebugUnitTest`
-   - `feature:home connectedDebugAndroidTest`
+3. Wait until **`testDebugUnitTest`** is green (process gate — not a GitHub ruleset on this repo).
 4. Then merge.
 
 ```bash
 gh pr edit <n> --add-label merge-ci
 ```
 
-Do **not** leave `merge-ci` on while you are still force-pushing WIP — every later push while the label is present re-runs the full suite.
+Do **not** leave `merge-ci` on while you are still force-pushing WIP — every later push while the label is present re-runs the unit suite.
 
 ## Summary
 

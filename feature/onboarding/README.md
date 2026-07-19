@@ -69,7 +69,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 ## CI relevance
 
 - `unit-tests.yml` runs onboarding JVM tests with the project suite.
-- No dedicated instrumented job is configured for this module.
+- Coverage is JVM-focused (`src/test`); no Compose androidTest suite.
 
 ## See also
 

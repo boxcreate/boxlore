@@ -70,19 +70,16 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 
 - Unit tests live under `feature/home/src/test`.
 - Existing coverage includes Settings ViewModel tests, connectivity dependency coverage, Home listening-history formatting, discovery greeting, and pure Home logic helpers.
-- Android UI tests live under `feature/home/src/androidTest` for RSS dialog, downloads settings, reset dialog, and tagged composition smoke.
-- Roborazzi capture tests are local reference aids; no golden comparison is required in CI.
+- Roborazzi goldens for settings dialogs are verified in merge CI (`:feature:home:verifyRoborazziDebug`).
 
 ```bash
 ./gradlew :feature:home:testDebugUnitTest
-./gradlew :feature:home:compileDebugAndroidTestKotlin
-./gradlew :feature:home:connectedDebugAndroidTest
+./gradlew :feature:home:verifyRoborazziDebug
 ```
 
 ## CI relevance
 
-- `unit-tests.yml` runs Home JVM tests and includes the module in merged coverage verification.
-- `android-instrumented-tests.yml` runs Home instrumented UI tests.
+- `unit-tests.yml` runs Home JVM tests, Roborazzi verify, and includes the module in merged coverage verification.
 - `scripts/ci/check-feature-no-boxlore-database.sh` guards direct database usage in feature ViewModels and assemblers.
 
 ## See also

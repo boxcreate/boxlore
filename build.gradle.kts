@@ -96,17 +96,17 @@ kover {
                     "*.R",
                     "*.R$*",
                     "*.databinding.*",
-                    // Irreducible Media3 / Auto orchestration — covered by policy tests + Maestro.
+                    // Irreducible Media3 / Auto orchestration — policy unit tests only.
                     "cx.aswin.boxlore.core.playback.PlaybackRepository",
                     "cx.aswin.boxlore.core.playback.PlaybackRepository$*",
                     "cx.aswin.boxlore.core.playback.service.*",
                     "cx.aswin.boxlore.core.playback.service.auto.*",
-                    // Application / Activity glue — covered by instrumented / Maestro.
+                    // Application / Activity glue — excluded from line gate.
                     "cx.aswin.boxlore.BoxLoreApplication",
                     "cx.aswin.boxlore.BoxLoreApplication$*",
                     "cx.aswin.boxlore.MainActivity",
                     "cx.aswin.boxlore.MainActivity$*",
-                    // :app Compose nav / FCM / survey chrome — covered by androidTest + Maestro.
+                    // :app Compose nav / FCM / survey chrome — excluded from line gate.
                     "cx.aswin.boxlore.navigation.*",
                     "cx.aswin.boxlore.ui.*",
                     "cx.aswin.boxlore.fcm.*",

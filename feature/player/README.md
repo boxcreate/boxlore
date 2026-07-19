@@ -67,7 +67,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 ## CI relevance
 
 - `unit-tests.yml` runs player JVM tests with the project suite.
-- No dedicated instrumented job is configured for this module.
+- Coverage is JVM-focused (`src/test`); no Compose androidTest suite.
 
 ## See also
 

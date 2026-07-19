@@ -86,10 +86,4 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.6.1")
 
-    // Compose UI tests (JUnit4 + AndroidJUnitRunner; CI via android-instrumented-tests.yml)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.activity.compose)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }

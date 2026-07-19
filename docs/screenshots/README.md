@@ -12,8 +12,6 @@ screenshots/baselines/reset_analytics_dialog.png
 screenshots/baselines/downloads_settings_page.png
 ```
 
-Home instrumented tests additionally verify dialog composition through stable Compose test tags.
-
 ## Layout
 
 ```text
@@ -49,4 +47,3 @@ Verify re-renders each screen and compares it against the committed baseline; mi
 
 - [`docs/TESTING.md`](../TESTING.md)
 - [`feature/home/README.md`](../../feature/home/README.md)
-- `feature/home/src/androidTest/java/cx/aswin/boxlore/feature/home/settings/`
