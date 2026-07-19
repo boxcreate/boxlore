@@ -53,8 +53,9 @@
 -keep class cx.aswin.boxlore.core.model.** { *; }
 -keep class cx.aswin.boxlore.core.network.** { *; }
 -keep class cx.aswin.boxlore.core.network.model.** { *; }
-# Dual-keep: transitional core.data (stubs + catalog until PR10) + aligned packages
+# Dual-keep: permanent old-FQCN stubs under core.data + aligned module packages
 -keep class cx.aswin.boxlore.core.data.** { *; }
+-keep class cx.aswin.boxlore.core.catalog.** { *; }
 -keep class cx.aswin.boxlore.core.prefs.** { *; }
 -keep class cx.aswin.boxlore.core.analytics.** { *; }
 -keep class cx.aswin.boxlore.core.rss.** { *; }
@@ -69,6 +70,7 @@
 # Keep BuildConfig
 -keep class cx.aswin.boxlore.BuildConfig { *; }
 -keep class cx.aswin.boxlore.core.network.BuildConfig { *; }
+-keep class cx.aswin.boxlore.core.catalog.BuildConfig { *; }
 
 # Fix R8 compilation errors due to missing Kotlin 2.0 classes in transitive dependencies
 -dontwarn kotlin.uuid.**

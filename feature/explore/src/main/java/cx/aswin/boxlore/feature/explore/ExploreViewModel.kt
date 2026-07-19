@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
-import cx.aswin.boxlore.core.data.PodcastRepository
-import cx.aswin.boxlore.core.data.SearchResult
-import cx.aswin.boxlore.core.data.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SearchResult
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput

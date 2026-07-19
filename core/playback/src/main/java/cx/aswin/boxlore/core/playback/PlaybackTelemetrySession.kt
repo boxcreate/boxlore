@@ -5,10 +5,10 @@ import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.playback.QueueMath
 import cx.aswin.boxlore.core.playback.QueueSkipMemory
-import cx.aswin.boxlore.core.data.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.analytics.PendingEntryPoint

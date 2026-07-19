@@ -3,7 +3,7 @@ package cx.aswin.boxlore.core.domain.ports
 /**
  * Offline episode metadata for deep links / Episode Info when network args are incomplete.
  *
- * Production: [cx.aswin.boxlore.core.data.RoomEpisodeOfflineLookup].
+ * Production: [cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup].
  */
 data class OfflineEpisodeSnapshot(
     val podcastId: String,

@@ -2,7 +2,7 @@ package cx.aswin.boxlore.surveys
 
 import android.util.Log
 import com.posthog.PostHog
-import cx.aswin.boxlore.core.data.EngagementPromptCoordinator
+import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import kotlinx.coroutines.CoroutineScope

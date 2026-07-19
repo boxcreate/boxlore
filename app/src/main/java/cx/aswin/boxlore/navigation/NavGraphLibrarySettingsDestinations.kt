@@ -130,7 +130,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                 onExportJson = { uri ->
                     scope.launch(Dispatchers.IO) {
                         try {
-                            val backupJson = cx.aswin.boxlore.core.data.backup.LibraryBackupManager(
+                            val backupJson = cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager(
                                 subscriptionRepository, playbackRepository, podcastRepository, userPrefs, application,
                             ).exportLibraryAsJson()
                             (application.contentResolver.openOutputStream(uri)
@@ -148,7 +148,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                 onExportOpml = { uri ->
                     scope.launch(Dispatchers.IO) {
                         try {
-                            val opmlXml = cx.aswin.boxlore.core.data.backup.LibraryBackupManager(
+                            val opmlXml = cx.aswin.boxlore.core.catalog.backup.LibraryBackupManager(
                                 subscriptionRepository, playbackRepository, podcastRepository, context = application,
                             ).exportLibraryAsOpml()
                             (application.contentResolver.openOutputStream(uri)

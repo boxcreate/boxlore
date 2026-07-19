@@ -172,7 +172,8 @@ Rebuild these on **new** event names after PR7 (document links in PR description
 - Stop querying legacy names for live dashboards; use `replaces_legacy` only for historical ranges.
 - Person props: prefer `first_seen_at` / `first_play_at` (`$set_once`); `first_seen_date` is legacy.
 - Raw text: AI turns use `user_input_text`; search uses `search_query` (never hashed).
-- Phase C events (`adaptive_ranking_status`, Auto chapters/transcripts, `proxy_fallback_triggered`, late-night safeguard) are **not emitted** until PR9.
+- Phase C events (`adaptive_ranking_status`, Auto chapters/transcripts, `proxy_fallback_triggered`, late-night safeguard) shipped in PR9.
+- PR10 Final: Must-dashboard tags above are the PostHog rebuild checklist (see [`PHASE2_FINAL_DOD.md`](PHASE2_FINAL_DOD.md)).
 
 ---
 

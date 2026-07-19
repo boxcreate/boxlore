@@ -4,11 +4,11 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.media3.common.Player
-import cx.aswin.boxlore.core.data.BuildConfig
+import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.QueueRepository
-import cx.aswin.boxlore.core.data.mapRegionForBriefing
+import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CoroutineScope

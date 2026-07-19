@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.data.content.ContentDaypart
+import cx.aswin.boxlore.core.catalog.content.ContentDaypart
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDate

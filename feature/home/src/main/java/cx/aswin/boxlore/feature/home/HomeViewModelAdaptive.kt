@@ -1,11 +1,11 @@
 package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.data.PersonalizedContentSectionInputs
-import cx.aswin.boxlore.core.data.content.ContentCatalogSnapshot
-import cx.aswin.boxlore.core.data.content.ContentContext
-import cx.aswin.boxlore.core.data.content.ContentContextInput
-import cx.aswin.boxlore.core.data.content.ContentSection
+import cx.aswin.boxlore.core.catalog.PersonalizedContentSectionInputs
+import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
+import cx.aswin.boxlore.core.catalog.content.ContentContext
+import cx.aswin.boxlore.core.catalog.content.ContentContextInput
+import cx.aswin.boxlore.core.catalog.content.ContentSection
 import cx.aswin.boxlore.core.ranking.CandidateFeatureBuilder
 import cx.aswin.boxlore.core.ranking.CandidateSignals
 import cx.aswin.boxlore.core.ranking.RankingExposure
@@ -22,8 +22,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 internal suspend fun HomeViewModel.loadPersonalizedDiscoverySections(
-    context: cx.aswin.boxlore.core.data.content.ContentContext,
-): cx.aswin.boxlore.core.data.content.GroupedContentSections? {
+    context: cx.aswin.boxlore.core.catalog.content.ContentContext,
+): cx.aswin.boxlore.core.catalog.content.GroupedContentSections? {
     val catalog = podcastRepository.getContentCatalog() ?: return null
     val interests = boxcastPrefs.getUserGenres().toList()
     val history = playbackRepository.getHistoryForRecommendations(30)

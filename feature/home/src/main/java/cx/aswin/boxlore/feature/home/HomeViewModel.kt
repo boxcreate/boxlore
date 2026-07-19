@@ -9,15 +9,15 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
-import cx.aswin.boxlore.core.data.PodcastRepository
-import cx.aswin.boxlore.core.data.content.AdaptiveContentCandidateRanker
-import cx.aswin.boxlore.core.data.content.ContentContextEngine
-import cx.aswin.boxlore.core.data.content.ContentOrchestrator
-import cx.aswin.boxlore.core.data.content.ContentSection
-import cx.aswin.boxlore.core.data.content.ContentSectionsDaypartResolver
-import cx.aswin.boxlore.core.data.content.RecentSectionIntentStore
-import cx.aswin.boxlore.core.data.content.ServerGroupedSectionProvider
-import cx.aswin.boxlore.core.data.content.ServerIntentCandidateProvider
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.content.AdaptiveContentCandidateRanker
+import cx.aswin.boxlore.core.catalog.content.ContentContextEngine
+import cx.aswin.boxlore.core.catalog.content.ContentOrchestrator
+import cx.aswin.boxlore.core.catalog.content.ContentSection
+import cx.aswin.boxlore.core.catalog.content.ContentSectionsDaypartResolver
+import cx.aswin.boxlore.core.catalog.content.RecentSectionIntentStore
+import cx.aswin.boxlore.core.catalog.content.ServerGroupedSectionProvider
+import cx.aswin.boxlore.core.catalog.content.ServerIntentCandidateProvider
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
@@ -53,8 +53,8 @@ class HomeViewModel(
     application: Application,
     val podcastRepository: PodcastRepository,
     internal val playbackRepository: cx.aswin.boxlore.core.playback.PlaybackRepository,
-    internal val engagementCoordinator: cx.aswin.boxlore.core.data.EngagementPromptCoordinator,
-    internal val subscriptionRepository: cx.aswin.boxlore.core.data.SubscriptionRepository,
+    internal val engagementCoordinator: cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator,
+    internal val subscriptionRepository: cx.aswin.boxlore.core.catalog.SubscriptionRepository,
     internal val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
     internal val rssRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
     internal val adaptiveRankingRepository: AdaptiveRankingRepository,

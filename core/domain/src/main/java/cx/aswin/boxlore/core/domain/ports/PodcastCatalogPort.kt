@@ -6,7 +6,7 @@ import cx.aswin.boxlore.core.model.Podcast
 /**
  * Narrow podcast/episode catalog seam for Info ViewModels (and fakes in tests).
  *
- * Production: [cx.aswin.boxlore.core.data.PodcastRepository].
+ * Production: [cx.aswin.boxlore.core.catalog.PodcastRepository].
  */
 interface PodcastCatalogPort {
     suspend fun getPodcastDetails(feedId: String): Podcast?

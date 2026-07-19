@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.playback.PlaybackRepository
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
-import cx.aswin.boxlore.core.data.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort

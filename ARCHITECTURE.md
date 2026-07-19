@@ -31,7 +31,7 @@ Folder path equals Gradle id (`core/playback` → `:core:playback`).
 
 **Policy (Phase 2 Final):** Kotlin/Java package roots **must match** Gradle module ids (e.g. `:core:playback` → `cx.aswin.boxlore.core.playback`). The old A8 “Gradle id ≠ package is permanent” policy is **retired**.
 
-Package alignment for satellite cores (`prefs`, `analytics`, `rss`, `ranking`, `downloads`) landed in PR8 with upgrade failsafes (`LegacyWorkerFactory` + old-FQCN stubs, dual ProGuard, `PrefsFileMigrator`). Playback/database/catalog package align follows in PR9–PR10 — those may still use transitional `cx.aswin.boxlore.core.data.*` until then.
+Package alignment is complete for all extracted cores (`prefs`, `analytics`, `rss`, `ranking`, `downloads`, `playback`, `database`, `catalog`) with upgrade failsafes (`LegacyWorkerFactory` + old-FQCN stubs under `core.data.*`, dual ProGuard, `PrefsFileMigrator`). See [`docs/PACKAGE_MIGRATION_MAP.md`](docs/PACKAGE_MIGRATION_MAP.md).
 
 | Module | Owns |
 | :--- | :--- |
@@ -158,7 +158,7 @@ Home / Settings / Info construct VMs via assemblers (`HomeViewModelAssembler`, `
 
 Extracted and live: `:core:playback`, `:core:domain`, `:core:database`, `:core:network`, `:core:prefs`, `:core:downloads`, `:core:analytics`, `:core:ranking`, `:core:rss`, plus `feature/*` and `:core:testing` / `:core:designsystem` / `:core:model`.
 
-`:core:catalog` is **catalog/orchestration only** (not a junk drawer). Gradle id `:core:catalog`; Phase 2 package root `cx.aswin.boxlore.core.catalog`. New modules must ship a comprehensive folder `README.md` in the same change (see `docs/MODULE_README_TEMPLATE.md`).
+`:core:catalog` is **catalog/orchestration only** (not a junk drawer). Gradle id `:core:catalog`; package root `cx.aswin.boxlore.core.catalog`. New modules must ship a comprehensive folder `README.md` in the same change (see `docs/MODULE_README_TEMPLATE.md`).
 
 **Program history:** [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](docs/PLAN_MODULAR_ANDROID_HARDENING.md) (A0–A8 / B0–B10 scaffold complete).
 

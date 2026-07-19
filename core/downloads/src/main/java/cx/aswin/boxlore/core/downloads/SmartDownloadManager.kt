@@ -11,9 +11,9 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.PodcastScoring
-import cx.aswin.boxlore.core.data.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.downloads.SmartDownloadCandidateLogic.MixtapeCandidate
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource

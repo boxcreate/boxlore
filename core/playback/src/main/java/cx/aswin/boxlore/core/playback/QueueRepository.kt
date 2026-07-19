@@ -10,7 +10,7 @@ import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Transcript
 import cx.aswin.boxlore.core.network.model.EpisodeItem
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray

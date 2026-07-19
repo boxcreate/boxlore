@@ -4,7 +4,7 @@
 
 **Catalog and orchestration layer.** Owns the Podcast Index catalog (`PodcastRepository`), subscriptions, content sections, cross-promo, engagement, backup/restore, and the shared-deps composition bridge for workers and Media3 services. It is **not** a junk drawer — every type here is a catalog, subscription, or orchestration concern.
 
-Gradle id is `:core:catalog`. **Phase 2 target package root:** `cx.aswin.boxlore.core.catalog` (PR10). Until then, sources may still live under transitional `cx.aswin.boxlore.core.data.*` with upgrade failsafes.
+Gradle id is `:core:catalog`. Package root: `cx.aswin.boxlore.core.catalog` (namespace + Kotlin packages aligned in Phase 2 PR10).
 
 Extracted subsystems now live in dedicated modules:
 
@@ -31,12 +31,12 @@ Extracted subsystems now live in dedicated modules:
 - **Data-only ports:** `ports.ListeningHistoryBackupPort`, `ports.SmartDownloadSyncPort`
 - **Domain port impls:** `RoomLocalCatalog` (`LocalCatalogPort`), `RoomEpisodeOfflineLookup` (`EpisodeOfflineLookupPort`)
 
-> `ports.DownloadCacheRelinker` lives in `:core:rss` (package `cx.aswin.boxlore.core.data.ports`; re-exported via `api(core:rss)`).
+> `ports.DownloadCacheRelinker` lives in `:core:rss` (package `cx.aswin.boxlore.core.rss.ports`; re-exported via `api(core:rss)`).
 
 ## Internal structure
 
 ```text
-src/main/java/cx/aswin/boxlore/core/data/
+src/main/java/cx/aswin/boxlore/core/catalog/
   PodcastRepository.kt
   SubscriptionRepository.kt
   ChapterRepository.kt / TranscriptRepository.kt
@@ -67,9 +67,10 @@ Forbidden: `:core:catalog` **must not** depend on `:core:playback`, `:core:desig
 
 | Stable | Why |
 | :--- | :--- |
-| DataStore `user_preferences` / SharedPrefs `boxcast_prefs` (owned by `:core:prefs`) | Existing installs |
+| DataStore `user_preferences` / SharedPrefs via `:core:prefs` (`boxlore_*` files; dual-read migrate from `boxcast_*`) | Existing installs |
 | Main Room DB filename (owned by `:core:database`) | User data |
 | `rss:` podcast IDs and negative episode IDs (owned by `:core:rss`) | Catalog identity |
+| Namespace `cx.aswin.boxlore.core.catalog` (`R` / `BuildConfig`) | Module resources |
 
 ## Testing notes
 
@@ -85,7 +86,7 @@ RSS ID/matcher tests live in `:core:rss`. Production RSS uses create+install fro
 
 ```bash
 ./gradlew :core:catalog:testDebugUnitTest
-./gradlew :core:catalog:testDebugUnitTest --tests 'cx.aswin.boxlore.core.data.PodcastRepositoryCatalogTest'
+./gradlew :core:catalog:testDebugUnitTest --tests 'cx.aswin.boxlore.core.catalog.PodcastRepositoryCatalogTest'
 ```
 
 ## CI relevance
@@ -95,9 +96,9 @@ Exercised by `unit-tests.yml` (`testDebugUnitTest`). Kover `merged` variant part
 ## See also
 
 - Root [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
+- [`docs/PACKAGE_MIGRATION_MAP.md`](../../docs/PACKAGE_MIGRATION_MAP.md)
 - [`:core:rss` README](../rss/README.md)
 - [`:core:ranking` README](../ranking/README.md)
 - [`:core:downloads` README](../downloads/README.md)
-- [`:core:domain` README](../domain/README.md)
 - [`:core:playback` README](../playback/README.md)
-- [`docs/PLAN_MODULAR_ANDROID_HARDENING.md`](../../docs/PLAN_MODULAR_ANDROID_HARDENING.md) (Phase A6)
+- [`:core:prefs` README](../prefs/README.md)

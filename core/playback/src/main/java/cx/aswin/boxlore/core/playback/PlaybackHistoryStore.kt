@@ -3,7 +3,7 @@ package cx.aswin.boxlore.core.playback
 import android.content.Context
 import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.core.playback.PlayerState
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.ranking.FeedbackTarget

@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.feature.home.logic
 
-import cx.aswin.boxlore.core.data.content.ContentCandidate
-import cx.aswin.boxlore.core.data.content.ContentIntent
-import cx.aswin.boxlore.core.data.content.ContentLayout
-import cx.aswin.boxlore.core.data.content.ContentSection
+import cx.aswin.boxlore.core.catalog.content.ContentCandidate
+import cx.aswin.boxlore.core.catalog.content.ContentIntent
+import cx.aswin.boxlore.core.catalog.content.ContentLayout
+import cx.aswin.boxlore.core.catalog.content.ContentSection
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface

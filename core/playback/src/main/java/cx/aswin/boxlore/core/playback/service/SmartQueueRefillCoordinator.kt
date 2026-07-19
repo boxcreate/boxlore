@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.ExoPlayer
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.playback.SmartQueueEngine
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository

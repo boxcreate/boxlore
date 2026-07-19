@@ -201,7 +201,7 @@
         <error line="110" column="27" source="standard:multiline-expression-wrapping" />
         <error line="129" column="36" source="standard:multiline-expression-wrapping" />
         <error line="133" column="46" source="standard:multiline-expression-wrapping" />
-        <error line="133" column="79" source="standard:chain-method-continuation" />
+        <error line="133" column="82" source="standard:chain-method-continuation" />
         <error line="134" column="57" source="standard:argument-list-wrapping" />
         <error line="134" column="77" source="standard:argument-list-wrapping" />
         <error line="134" column="96" source="standard:argument-list-wrapping" />
@@ -223,7 +223,7 @@
         <error line="143" column="143" source="standard:argument-list-wrapping" />
         <error line="143" column="144" source="standard:chain-method-continuation" />
         <error line="151" column="43" source="standard:multiline-expression-wrapping" />
-        <error line="151" column="76" source="standard:chain-method-continuation" />
+        <error line="151" column="79" source="standard:chain-method-continuation" />
         <error line="152" column="57" source="standard:argument-list-wrapping" />
         <error line="152" column="77" source="standard:argument-list-wrapping" />
         <error line="152" column="96" source="standard:argument-list-wrapping" />

@@ -150,10 +150,10 @@ internal class PlaybackServicePlayerFactory(
                 .Builder()
                 .setDisplayName(
                     context.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_seek_back,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_seek_back,
                         seekBackwardMs / 1_000L,
                     ),
-                ).setIconResId(cx.aswin.boxlore.core.data.R.drawable.rounded_replay_24)
+                ).setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.rounded_replay_24)
                 .setSessionCommand(SessionCommand("SEEK_BACK", Bundle.EMPTY))
                 .build()
         val seekForward =
@@ -161,10 +161,10 @@ internal class PlaybackServicePlayerFactory(
                 .Builder()
                 .setDisplayName(
                     context.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_seek_forward,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_seek_forward,
                         seekForwardMs / 1_000L,
                     ),
-                ).setIconResId(cx.aswin.boxlore.core.data.R.drawable.rounded_forward_24)
+                ).setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.rounded_forward_24)
                 .setSessionCommand(SessionCommand("SEEK_FORWARD", Bundle.EMPTY))
                 .build()
         return SeekButtons(seekBack = seekBack, seekForward = seekForward)
@@ -174,24 +174,24 @@ internal class PlaybackServicePlayerFactory(
         val like =
             CommandButton
                 .Builder()
-                .setDisplayName(context.getString(cx.aswin.boxlore.core.data.R.string.auto_like))
-                .setIconResId(cx.aswin.boxlore.core.data.R.drawable.ic_auto_like)
+                .setDisplayName(context.getString(cx.aswin.boxlore.core.catalog.R.string.auto_like))
+                .setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.ic_auto_like)
                 .setSessionCommand(
                     SessionCommand(AutoBrowseContract.COMMAND_TOGGLE_LIKE, Bundle.EMPTY),
                 ).build()
         val addToQueue =
             CommandButton
                 .Builder()
-                .setDisplayName(context.getString(cx.aswin.boxlore.core.data.R.string.auto_add_queue))
-                .setIconResId(cx.aswin.boxlore.core.data.R.drawable.ic_auto_queue_add)
+                .setDisplayName(context.getString(cx.aswin.boxlore.core.catalog.R.string.auto_add_queue))
+                .setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.ic_auto_queue_add)
                 .setSessionCommand(
                     SessionCommand(AutoBrowseContract.COMMAND_ADD_TO_QUEUE, Bundle.EMPTY),
                 ).build()
         val markComplete =
             CommandButton
                 .Builder()
-                .setDisplayName(context.getString(cx.aswin.boxlore.core.data.R.string.auto_mark_complete))
-                .setIconResId(cx.aswin.boxlore.core.data.R.drawable.ic_auto_complete)
+                .setDisplayName(context.getString(cx.aswin.boxlore.core.catalog.R.string.auto_mark_complete))
+                .setIconResId(cx.aswin.boxlore.core.catalog.R.drawable.ic_auto_complete)
                 .setSessionCommand(
                     SessionCommand(AutoBrowseContract.COMMAND_MARK_COMPLETE, Bundle.EMPTY),
                 ).build()

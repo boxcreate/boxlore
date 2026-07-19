@@ -3,7 +3,7 @@ package cx.aswin.boxlore.feature.explore
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.ranking.CandidateFeatureBuilder
 import cx.aswin.boxlore.core.ranking.CandidateSignals
 import cx.aswin.boxlore.core.ranking.CandidateSource

@@ -32,7 +32,7 @@ dependencies {
     // Model types (Episode, Podcast, PodcastGenres, RankingAggregateTelemetry)
     implementation(projects.core.model)
 
-    // PodcastScoring / ScorablePodcast live in :core:database (same package cx.aswin.boxlore.core.data)
+    // PodcastScoring / ScorablePodcast live in :core:database (package cx.aswin.boxlore.core.database)
     // ListeningHistoryEntity also lives there.
     implementation(projects.core.database)
 

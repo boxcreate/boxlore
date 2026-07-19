@@ -78,10 +78,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import cx.aswin.boxlore.core.data.BuildConfig
-import cx.aswin.boxlore.core.data.content.ContentCandidate
-import cx.aswin.boxlore.core.data.content.ContentDaypart
-import cx.aswin.boxlore.core.data.content.ContentSection
+import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.content.ContentCandidate
+import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import cx.aswin.boxlore.core.catalog.content.ContentSection
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.domain.ports.AlwaysOnlineConnectivity
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
@@ -195,10 +195,10 @@ data class HomeScreenCallbacks(
 @Composable
 @Suppress("LongParameterList", "LongMethod")
 fun HomeRoute(
-    podcastRepository: cx.aswin.boxlore.core.data.PodcastRepository,
+    podcastRepository: cx.aswin.boxlore.core.catalog.PodcastRepository,
     playbackRepository: cx.aswin.boxlore.core.playback.PlaybackRepository,
-    engagementPromptCoordinator: cx.aswin.boxlore.core.data.EngagementPromptCoordinator,
-    subscriptionRepository: cx.aswin.boxlore.core.data.SubscriptionRepository,
+    engagementPromptCoordinator: cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator,
+    subscriptionRepository: cx.aswin.boxlore.core.catalog.SubscriptionRepository,
     downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
     rssPodcastRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
     adaptiveRankingRepository: cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository,

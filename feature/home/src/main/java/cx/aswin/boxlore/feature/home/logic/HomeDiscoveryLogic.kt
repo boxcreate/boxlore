@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.feature.home.logic
 
-import cx.aswin.boxlore.core.data.content.ContentSection
+import cx.aswin.boxlore.core.catalog.content.ContentSection
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 

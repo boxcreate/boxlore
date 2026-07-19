@@ -36,8 +36,8 @@ internal class AutoBrowseTreeBuilder(
         listOf(
             AutoMediaItemFactory.browsable(
                 id = HOME_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_home),
-                subtitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_home_subtitle),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_home),
+                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_home_subtitle),
                 artworkUri = folderArtwork(HOME_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 singleItemStyle =
@@ -45,8 +45,8 @@ internal class AutoBrowseTreeBuilder(
             ),
             AutoMediaItemFactory.browsable(
                 id = LIBRARY_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_library),
-                subtitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_library_subtitle),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_library),
+                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_library_subtitle),
                 artworkUri = folderArtwork(LIBRARY_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 singleItemStyle =
@@ -54,8 +54,8 @@ internal class AutoBrowseTreeBuilder(
             ),
             AutoMediaItemFactory.browsable(
                 id = DISCOVER_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_discover),
-                subtitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_discover_subtitle),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_discover),
+                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_discover_subtitle),
                 artworkUri = folderArtwork(DISCOVER_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 singleItemStyle =
@@ -63,8 +63,8 @@ internal class AutoBrowseTreeBuilder(
             ),
             AutoMediaItemFactory.browsable(
                 id = DOWNLOADS_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_downloads),
-                subtitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_downloads_subtitle),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_downloads),
+                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_downloads_subtitle),
                 artworkUri = folderArtwork(DOWNLOADS_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 singleItemStyle =
@@ -89,7 +89,7 @@ internal class AutoBrowseTreeBuilder(
                 subtitle = subtitle,
                 groupTitle =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_group_continue,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_group_continue,
                     ),
             )
         }
@@ -130,7 +130,7 @@ internal class AutoBrowseTreeBuilder(
                                 androidx.media3.session.MediaConstants
                                     .EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
                                 host.getString(
-                                    cx.aswin.boxlore.core.data.R.string.auto_group_subscriptions,
+                                    cx.aswin.boxlore.core.catalog.R.string.auto_group_subscriptions,
                                 ),
                             )
                         },
@@ -153,11 +153,11 @@ internal class AutoBrowseTreeBuilder(
             }
         val newEpSubtitle =
             when {
-                newEpCount == 0 -> host.getString(cx.aswin.boxlore.core.data.R.string.auto_new_none)
-                newEpCount == 1 -> host.getString(cx.aswin.boxlore.core.data.R.string.auto_new_one)
+                newEpCount == 0 -> host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_new_none)
+                newEpCount == 1 -> host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_new_one)
                 else ->
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_new_many,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_new_many,
                         newEpCount,
                     )
             }
@@ -167,7 +167,7 @@ internal class AutoBrowseTreeBuilder(
                 id = HOME_CONTINUE_LISTENING_ID,
                 title =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_continue_listening,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_continue_listening,
                     ),
                 artworkUri = folderArtwork(HOME_CONTINUE_LISTENING_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
@@ -177,10 +177,10 @@ internal class AutoBrowseTreeBuilder(
             ),
             AutoMediaItemFactory.browsable(
                 id = AutoBrowseContract.HOME_DRIVE_MIX_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_drive_mix),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_drive_mix),
                 subtitle =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_drive_mix_subtitle,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_drive_mix_subtitle,
                     ),
                 artworkUri = folderArtwork(AutoBrowseContract.HOME_DRIVE_MIX_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
@@ -190,7 +190,7 @@ internal class AutoBrowseTreeBuilder(
             ),
             AutoMediaItemFactory.browsable(
                 id = HOME_NEW_EPISODES_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_whats_new),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_whats_new),
                 subtitle = newEpSubtitle,
                 artworkUri = folderArtwork(HOME_NEW_EPISODES_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
@@ -215,10 +215,10 @@ internal class AutoBrowseTreeBuilder(
         return listOf(
             AutoMediaItemFactory.browsable(
                 id = AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_drive_picks),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_drive_picks),
                 subtitle =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_drive_picks_subtitle,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_drive_picks_subtitle,
                     ),
                 artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
@@ -229,12 +229,12 @@ internal class AutoBrowseTreeBuilder(
                 id = AutoBrowseContract.DISCOVER_TIME_PICKS_ID,
                 title =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_time_picks,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_time_picks,
                         timeLabel,
                     ),
                 subtitle =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_time_picks_subtitle,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_time_picks_subtitle,
                     ),
                 artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_TIME_PICKS_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
@@ -243,10 +243,10 @@ internal class AutoBrowseTreeBuilder(
             ),
             AutoMediaItemFactory.browsable(
                 id = AutoBrowseContract.DISCOVER_GENRES_ID,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_browse_genre),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_browse_genre),
                 subtitle =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_browse_genre_subtitle,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_browse_genre_subtitle,
                     ),
                 artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_GENRES_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
@@ -305,7 +305,7 @@ internal class AutoBrowseTreeBuilder(
             listOf(
                 AutoMediaItemFactory.browsable(
                     id = AutoBrowseContract.LIBRARY_LIKED_ID,
-                    title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_liked_episodes),
+                    title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_liked_episodes),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                     childStyleExtras = AutoBrowseContract.listChildrenExtras(),
                     singleItemStyle =
@@ -313,7 +313,7 @@ internal class AutoBrowseTreeBuilder(
                 ),
                 AutoMediaItemFactory.browsable(
                     id = AutoBrowseContract.LIBRARY_HISTORY_ID,
-                    title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_listening_history),
+                    title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_listening_history),
                     mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                     childStyleExtras = AutoBrowseContract.listChildrenExtras(),
                     singleItemStyle =
@@ -339,7 +339,7 @@ internal class AutoBrowseTreeBuilder(
                             it.podcastName,
                             it.durationMs,
                         ),
-                    groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_liked),
+                    groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_liked),
                 )
             }
         return if (items.size > 1) {
@@ -370,7 +370,7 @@ internal class AutoBrowseTreeBuilder(
                         it.podcastName,
                         it.durationMs,
                     ),
-                groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_history),
+                groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_history),
             )
         }
 
@@ -433,7 +433,7 @@ internal class AutoBrowseTreeBuilder(
                         podcastTitle = podcast.title,
                         groupTitle =
                             host.getString(
-                                cx.aswin.boxlore.core.data.R.string.auto_group_mixtape,
+                                cx.aswin.boxlore.core.catalog.R.string.auto_group_mixtape,
                             ),
                     )
                 }
@@ -467,7 +467,7 @@ internal class AutoBrowseTreeBuilder(
                     ),
                 podcastTitle = episode.podcastTitle,
                 mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
-                groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_queue),
+                groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue),
             )
         }
 
@@ -513,7 +513,7 @@ internal class AutoBrowseTreeBuilder(
                 uri = sourceUri,
                 groupTitle =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_group_downloads,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_group_downloads,
                     ),
             )
         }
@@ -594,7 +594,7 @@ internal class AutoBrowseTreeBuilder(
                             episode.imageUrl ?: podcast.imageUrl,
                         ),
                     podcastTitle = podcast.title,
-                    groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_drive),
+                    groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_drive),
                 )
             }
         val result =
@@ -668,7 +668,7 @@ internal class AutoBrowseTreeBuilder(
                     podcastTitle = pod.title,
                     groupTitle =
                         host.getString(
-                            cx.aswin.boxlore.core.data.R.string.auto_group_new,
+                            cx.aswin.boxlore.core.catalog.R.string.auto_group_new,
                         ),
                 )
             },
@@ -814,10 +814,10 @@ internal class AutoBrowseTreeBuilder(
         AutoMediaItemFactory.playable(
             AutoPlayableSpec(
                 mediaId = id,
-                title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_play_all, count),
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_play_all, count),
                 podcastTitle =
                     host.getString(
-                        cx.aswin.boxlore.core.data.R.string.auto_play_all_subtitle,
+                        cx.aswin.boxlore.core.catalog.R.string.auto_play_all_subtitle,
                     ),
                 source = source,
                 supportedCommands = emptyList(),

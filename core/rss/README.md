@@ -54,7 +54,7 @@ These identifiers are persisted in Room and must never change:
 | :--- | :--- |
 | Podcast IDs: `rss:<sha256-hex>` | Room `podcasts` table PK; user subscriptions |
 | Episode IDs: negative `Long` string | Room `rss_episodes` PK; listening history FK; download FK |
-| Package `cx.aswin.boxlore.core.data` | Opaque references across modules |
+| Package `cx.aswin.boxlore.core.rss` | Module package root (matches `:core:rss`) |
 
 **Negative episode IDs:** `RssIdGenerator.episodeIdForPodcast` maps the first 8 bytes of `SHA-256(podcastId + "\0" + identity)` to a positive `Long`, then negates it (never `0` / `Long.MIN_VALUE`; never collides with positive Podcast Index IDs).
 

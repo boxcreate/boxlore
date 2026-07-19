@@ -14,7 +14,7 @@ Konsist / unit tests must stay aligned with this table.
 | `:core:downloads` | `cx.aswin.boxlore.core.downloads` |
 | `:core:playback` | `cx.aswin.boxlore.core.playback` |
 | `:core:database` | `cx.aswin.boxlore.core.database` |
-| `:core:catalog` | `cx.aswin.boxlore.core.catalog` (PR10) |
+| `:core:catalog` | `cx.aswin.boxlore.core.catalog` |
 
 ## Workers (PR8)
 
@@ -38,6 +38,19 @@ Stubs and `LegacyWorkerFactory` are **permanent** upgrade bridges.
 | `cx.aswin.boxlore.core.data.service.AutoCollageProvider` | `cx.aswin.boxlore.core.playback.service.AutoCollageProvider` | Manifest + **stub** |
 
 Room package moves to `cx.aswin.boxlore.core.database` — **no** schema / filename migration (`boxlore_database` unchanged).
+
+## Catalog types (PR10)
+
+| Old package | New package | Notes |
+|:--|:--|:--|
+| `…core.data.PodcastRepository` etc. | `…core.catalog.*` | Namespace `cx.aswin.boxlore.core.catalog` (`R` / `BuildConfig`) |
+| `…core.data.content.*` | `…core.catalog.content.*` | |
+| `…core.data.backup.*` | `…core.catalog.backup.*` | Gson field names / backup `version` unchanged |
+| `…core.data.crosspromo.*` | `…core.catalog.crosspromo.*` | |
+| `…core.data.privacy.*` | `…core.catalog.privacy.*` | |
+| `…core.data.ports.*` (catalog ports) | `…core.catalog.ports.*` | `DownloadCacheRelinker` stays in `:core:rss` |
+
+No WorkManager / Manifest stubs required for catalog (no workers/services owned here).
 
 ## SharedPreferences files (PR8)
 
@@ -66,11 +79,12 @@ Key strings inside files are unchanged. Dual-read window applies if copy fails.
 
 ## ProGuard
 
-Dual `-keep` for `cx.aswin.boxlore.core.data.**` (stubs + remaining modules) and aligned
-`core.prefs|analytics|rss|ranking|downloads.**`.
+Dual `-keep` for `cx.aswin.boxlore.core.data.**` (permanent stubs) and aligned
+`core.catalog|prefs|analytics|rss|ranking|downloads|playback|database.**`.
 
 ## Tests
 
 - `PrefsFileMigratorTest` — old-only / new-only / both / empty-new+full-old
 - `LegacyWorkerFactoryTest` — every alias target is a `ListenableWorker`; old FQCN stubs resolve
 - `OldFqcnStubResolvesTest` covered inside `LegacyWorkerFactoryTest.oldFqcnStubsResolve`
+- `ArchitectureGuardTest` — package=module for extracted cores; stub paths under `core/data/` allowlisted

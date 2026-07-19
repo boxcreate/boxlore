@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import cx.aswin.boxlore.BuildConfig
-import cx.aswin.boxlore.core.data.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import java.io.File
 
 /** FCM topic subscribe helpers and post-restore reconciliation. */

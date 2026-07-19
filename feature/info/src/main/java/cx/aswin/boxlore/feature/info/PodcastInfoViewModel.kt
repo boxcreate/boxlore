@@ -4,7 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -31,7 +31,7 @@ class PodcastInfoViewModel(
     private val playbackRepository: cx.aswin.boxlore.core.playback.PlaybackRepository,
     private val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
     private val queueManager: cx.aswin.boxlore.core.playback.QueueManager,
-    private val subscriptionRepository: cx.aswin.boxlore.core.data.SubscriptionRepository,
+    private val subscriptionRepository: cx.aswin.boxlore.core.catalog.SubscriptionRepository,
     private val rssRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
     private val localCatalog: LocalCatalogPort,
     private val userPreferencesRepository: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
@@ -463,10 +463,10 @@ class PodcastInfoViewModel(
         podcastId: String,
         limit: Int,
         sortParam: String,
-    ): Pair<Podcast?, cx.aswin.boxlore.core.data.PodcastRepository.EpisodePage> =
+    ): Pair<Podcast?, cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage> =
         kotlinx.coroutines.coroutineScope {
             val apiPodcast: Podcast?
-            val page: cx.aswin.boxlore.core.data.PodcastRepository.EpisodePage
+            val page: cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage
 
             if (podcastId.startsWith("url:") || podcastId.startsWith("guid:")) {
                 apiPodcast = repository.getPodcastDetails(podcastId)
@@ -476,7 +476,7 @@ class PodcastInfoViewModel(
                     page = episodesDeferred.await()
                 } else {
                     page =
-                        cx.aswin.boxlore.core.data.PodcastRepository
+                        cx.aswin.boxlore.core.catalog.PodcastRepository
                             .EpisodePage(emptyList(), false)
                 }
             } else {

@@ -1,6 +1,6 @@
 # Boxlore — Modular Android Hardening & Automation Plan
 
-**Status:** Scaffold A0–A8 / B0–B10 landed. **Phase 2** (package=module + prefs migration + analytics glossary replace) is the last architecture mega-wave — see §11. After Phase 2 Final: **Phase 3 = testing only**.  
+**Status:** Scaffold A0–A8 / B0–B10 landed. **Phase 2 Final** (package=module + prefs migration + analytics glossary replace) is complete — see §11. **Phase 3 = testing only**.  
 **Branch context:** Builds on `cursor/full-refactor-tests-3b38` / PR #898  
 **Audience:** Implementers continuing architecture, DI, tests, and module docs
 
@@ -680,13 +680,15 @@ Each PR updates **touched module READMEs in the same change**.
 
 ## 11. Immediate next action / Final
 
-**End-state wave landed.** Phase 2 (**Android Phase 2 — Final adherence**) is the last architecture/modular mega-wave: package=module, prefs migration, analytics glossary replace, LOC/Kover floors, docs truth.
+**Status: Final (Phase 2 complete).** Phase 2 (**Android Phase 2 — Final adherence**) was the last architecture/modular mega-wave: package=module, prefs migration, analytics glossary replace, LOC/Kover floors, docs truth.
 
 After Phase 2 PR10 Final signoff: **Phase 3 = testing only** (coverage depth, E2E/Maestro, CI hardening, bugs found by tests). No Phase 3 architecture / modular redesign.
 
 Do not recreate `master-required-checks` rulesets; use the **`merge-ci`** label gate. Phase 2 PR titles include `[skip changelog]` unless listener-facing.
 
 Analytics contracts: [`ANALYTICS_PRODUCT_INSIGHT.md`](ANALYTICS_PRODUCT_INSIGHT.md), [`ANALYTICS_EVENT_MAP.md`](ANALYTICS_EVENT_MAP.md), [`ANALYTICS_EVENT_GLOSSARY.md`](ANALYTICS_EVENT_GLOSSARY.md).
+
+Adherence checklist: [`PHASE2_FINAL_DOD.md`](PHASE2_FINAL_DOD.md). Package map: [`PACKAGE_MIGRATION_MAP.md`](PACKAGE_MIGRATION_MAP.md).
 
 ---
 

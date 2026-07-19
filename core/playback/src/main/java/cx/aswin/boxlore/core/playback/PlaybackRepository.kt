@@ -14,7 +14,7 @@ import cx.aswin.boxlore.core.playback.PlaybackMediaControllerHandle
 import cx.aswin.boxlore.core.playback.PlaybackQueueCoordinator
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.core.playback.PlaybackTransportHelper
-import cx.aswin.boxlore.core.data.ports.ListeningHistoryBackupPort
+import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService
 import cx.aswin.boxlore.core.model.AutoTranscriptState
@@ -23,8 +23,8 @@ import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
-import cx.aswin.boxlore.core.data.PodcastRepository
-import cx.aswin.boxlore.core.data.TranscriptSegment
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

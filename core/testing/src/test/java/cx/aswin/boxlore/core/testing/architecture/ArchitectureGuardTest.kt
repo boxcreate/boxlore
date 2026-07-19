@@ -186,4 +186,85 @@ class ArchitectureGuardTest {
                 violations.joinToString("\n"),
         )
     }
+
+    @Test
+    fun `extracted core modules keep package equal to module with stub allowlist`() {
+        // Permanent upgrade stubs may live under core.data (workers / services).
+        val stubAllowlistPrefixes =
+            listOf(
+                "core/downloads/src/main/java/cx/aswin/boxlore/core/data/",
+                "core/playback/src/main/java/cx/aswin/boxlore/core/data/",
+            )
+        val modulePackageRoots =
+            mapOf(
+                "catalog" to "cx.aswin.boxlore.core.catalog",
+                "playback" to "cx.aswin.boxlore.core.playback",
+                "downloads" to "cx.aswin.boxlore.core.downloads",
+                "prefs" to "cx.aswin.boxlore.core.prefs",
+                "analytics" to "cx.aswin.boxlore.core.analytics",
+                "rss" to "cx.aswin.boxlore.core.rss",
+                "ranking" to "cx.aswin.boxlore.core.ranking",
+                "database" to "cx.aswin.boxlore.core.database",
+            )
+        val violations =
+            modulePackageRoots.flatMap { (module, expectedRoot) ->
+                packageModuleViolationsFor(
+                    module = module,
+                    expectedRoot = expectedRoot,
+                    stubAllowlistPrefixes = stubAllowlistPrefixes,
+                )
+            }
+        assertTrue(
+            violations.isEmpty(),
+            "package=module violated (stub paths under core/data are allowlisted):\n" +
+                violations.joinToString("\n"),
+        )
+    }
+
+    private fun packageModuleViolationsFor(
+        module: String,
+        expectedRoot: String,
+        stubAllowlistPrefixes: List<String>,
+    ): List<String> {
+        val mainJava = File(projectRoot, "core/$module/src/main/java")
+        if (!mainJava.isDirectory) {
+            return listOf("missing sources: core/$module/src/main/java")
+        }
+        return mainJava
+            .walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .mapNotNull { file ->
+                packageDeclarationViolation(
+                    file = file,
+                    expectedRoot = expectedRoot,
+                    stubAllowlistPrefixes = stubAllowlistPrefixes,
+                )
+            }.toList()
+    }
+
+    private fun packageDeclarationViolation(
+        file: File,
+        expectedRoot: String,
+        stubAllowlistPrefixes: List<String>,
+    ): String? {
+        val relative = file.relativeTo(projectRoot).path.replace('\\', '/')
+        val pkg =
+            Regex("""^package\s+([\w.]+)""", RegexOption.MULTILINE)
+                .find(file.readText())
+                ?.groupValues
+                ?.getOrNull(1)
+        if (stubAllowlistPrefixes.any { relative.startsWith(it) }) {
+            return if (pkg == null || !pkg.startsWith("cx.aswin.boxlore.core.data")) {
+                "$relative: stub allowlist requires package under " +
+                    "cx.aswin.boxlore.core.data (found $pkg)"
+            } else {
+                null
+            }
+        }
+        if (pkg == null) return "$relative: missing package declaration"
+        if (pkg != expectedRoot && !pkg.startsWith("$expectedRoot.")) {
+            return "$relative: package $pkg must be $expectedRoot or a subpackage"
+        }
+        return null
+    }
 }

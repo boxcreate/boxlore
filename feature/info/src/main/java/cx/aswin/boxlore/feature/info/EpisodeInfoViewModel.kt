@@ -46,7 +46,7 @@ sealed interface EpisodeInfoUiState {
 
 class EpisodeInfoViewModel(
     application: Application,
-    private val podcastRepository: cx.aswin.boxlore.core.data.PodcastRepository,
+    private val podcastRepository: cx.aswin.boxlore.core.catalog.PodcastRepository,
     private val playbackRepository: cx.aswin.boxlore.core.playback.PlaybackRepository,
     private val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
     private val queueManager: cx.aswin.boxlore.core.playback.QueueManager,
@@ -667,7 +667,7 @@ class EpisodeInfoViewModel(
                 }
 
                 val detector =
-                    cx.aswin.boxlore.core.data.crosspromo
+                    cx.aswin.boxlore.core.catalog.crosspromo
                         .CrossPromotionDetector()
                 val result = detector.detect(episode, hostPodcastTitle)
                 val extractedName = result.extractedShowName
@@ -675,7 +675,7 @@ class EpisodeInfoViewModel(
                 if (result.isCrossPromotion && extractedName != null) {
                     android.util.Log.d("EpisodeInfo", "Cross promotion detected: $extractedName")
                     val resolver =
-                        cx.aswin.boxlore.core.data.crosspromo
+                        cx.aswin.boxlore.core.catalog.crosspromo
                             .CrossPromotionResolver(podcastRepository)
                     val targetPodcast = resolver.resolve(extractedName)
 

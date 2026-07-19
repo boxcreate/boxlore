@@ -1,11 +1,11 @@
 package cx.aswin.boxlore.core.playback
 
-import cx.aswin.boxlore.core.data.BuildConfig
-import cx.aswin.boxlore.core.data.ChapterRepository
+import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.playback.PlayerState
-import cx.aswin.boxlore.core.data.PodcastRepository
-import cx.aswin.boxlore.core.data.TranscriptRepository
-import cx.aswin.boxlore.core.data.mapRegionForBriefing
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.TranscriptRepository
+import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

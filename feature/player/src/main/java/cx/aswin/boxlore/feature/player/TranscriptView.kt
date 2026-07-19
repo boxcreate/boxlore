@@ -46,7 +46,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.data.TranscriptSegment
+import cx.aswin.boxlore.core.catalog.TranscriptSegment
 
 @Composable
 fun TranscriptView(

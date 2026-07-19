@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.core.downloads
 
-import cx.aswin.boxlore.core.data.SharedAppDependencies
-import cx.aswin.boxlore.core.data.SharedAppDependenciesHolder
-import cx.aswin.boxlore.core.data.PodcastRepository
-import cx.aswin.boxlore.core.data.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.SharedAppDependencies
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 

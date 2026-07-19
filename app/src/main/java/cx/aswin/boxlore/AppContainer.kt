@@ -3,24 +3,24 @@ package cx.aswin.boxlore
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
 import cx.aswin.boxlore.core.downloads.DownloadRepository
-import cx.aswin.boxlore.core.data.InstallReferrerManager
+import cx.aswin.boxlore.core.catalog.InstallReferrerManager
 import cx.aswin.boxlore.core.playback.PlaybackRepository
-import cx.aswin.boxlore.core.data.PodcastRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.playback.QueueRepository
-import cx.aswin.boxlore.core.data.RoomEpisodeOfflineLookup
-import cx.aswin.boxlore.core.data.RoomLocalCatalog
+import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
+import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
-import cx.aswin.boxlore.core.data.SharedAppDependencies
+import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.downloads.SmartDownloadManager
-import cx.aswin.boxlore.core.data.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncher
 import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
-import cx.aswin.boxlore.core.data.ports.SmartDownloadSyncPort
-import cx.aswin.boxlore.core.data.privacy.ConsentManager
+import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
+import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
@@ -41,7 +41,7 @@ import cx.aswin.boxlore.core.downloads.DownloadsDependencies
  *
  * Ranking/RSS are [create]+[install]ed here (not via production getInstance call sites).
  * Workers/services consume the same instances via
- * [cx.aswin.boxlore.core.data.SharedAppDependenciesHolder] and
+ * [cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder] and
  * [cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder].
  */
 class AppContainer(

@@ -42,7 +42,7 @@ internal class AutoVoiceSearchHandler(
                             ),
                         groupTitle =
                             host.getString(
-                                cx.aswin.boxlore.core.data.R.string.auto_group_search,
+                                cx.aswin.boxlore.core.catalog.R.string.auto_group_search,
                             ),
                     )
             }.sortedByDescending { it.first }
@@ -326,7 +326,7 @@ internal class AutoVoiceSearchHandler(
                     episode.imageUrl ?: episode.podcastImageUrl ?: podcastImageUrl,
                 ),
             podcastTitle = podcastTitle,
-            groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_search),
+            groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_search),
         )
 
     private fun voiceHistoryItem(history: cx.aswin.boxlore.core.database.ListeningHistoryEntity): MediaItem =
@@ -344,7 +344,7 @@ internal class AutoVoiceSearchHandler(
                     history.progressMs,
                     history.durationMs,
                 ),
-            groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_continue),
+            groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_continue),
         )
 
     suspend fun handlePlayAllNewEpisodes(): MutableList<MediaItem> {
@@ -396,7 +396,7 @@ internal class AutoVoiceSearchHandler(
                             history.podcastName,
                             history.durationMs,
                         ),
-                    groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_liked),
+                    groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_liked),
                 )
             }.toMutableList()
     }
@@ -463,7 +463,7 @@ internal class AutoVoiceSearchHandler(
                             episode.imageUrl ?: episode.podcastImageUrl,
                         ),
                     mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
-                    groupTitle = host.getString(cx.aswin.boxlore.core.data.R.string.auto_group_queue),
+                    groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue),
                 )
             }.toMutableList()
     }

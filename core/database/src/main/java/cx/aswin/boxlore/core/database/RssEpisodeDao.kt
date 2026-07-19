@@ -43,7 +43,7 @@ interface RssEpisodeDao {
     suspend fun getAllNewest(podcastId: String): List<RssEpisodeEntity>
 
     /**
-     * [query] must already be escaped for SQL LIKE (see [cx.aswin.boxlore.core.data.escapeForSqlLike])
+     * [query] must already be escaped for SQL LIKE (see [cx.aswin.boxlore.core.catalog.escapeForSqlLike])
      * so literal `%`/`_` characters in a user's search don't get treated as wildcards.
      *
      * Full-text search (FTS4) was deliberately deferred here: Room's external-content FTS4

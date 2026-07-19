@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.core.downloads
 
-import cx.aswin.boxlore.core.data.SharedAppDependenciesHolder
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 
 import android.content.Context
 import android.util.Log

@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.data.content.ContentDaypart
-import cx.aswin.boxlore.core.data.content.ContentSection
+import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import cx.aswin.boxlore.core.catalog.content.ContentSection
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast

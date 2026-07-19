@@ -13,8 +13,8 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
-import cx.aswin.boxlore.core.data.EngagementPromptCoordinator
-import cx.aswin.boxlore.core.data.SharedAppDependenciesHolder
+import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.ranking.LearningEventLog

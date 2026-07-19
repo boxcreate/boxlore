@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
 import androidx.compose.runtime.Immutable
-import cx.aswin.boxlore.core.data.content.ContentDaypart
+import cx.aswin.boxlore.core.catalog.content.ContentDaypart
 import java.time.DayOfWeek
 import java.time.LocalDate
 

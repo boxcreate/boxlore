@@ -6,7 +6,7 @@ import cx.aswin.boxlore.core.model.Podcast
  * Local podcast catalog seam for feature ViewModels (Home / Info) and nav helpers.
  *
  * Hides Room / [PodcastDao] so presentation never takes [BoxLoreDatabase].
- * Production: [cx.aswin.boxlore.core.data.RoomLocalCatalog].
+ * Production: [cx.aswin.boxlore.core.catalog.RoomLocalCatalog].
  */
 interface LocalCatalogPort {
     /** Row for [id], or null if never stored locally. */

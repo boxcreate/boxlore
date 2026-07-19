@@ -307,7 +307,7 @@ internal class AutoBrowseLibraryCallback(
                 .setMediaMetadata(
                     MediaMetadata
                         .Builder()
-                        .setTitle(host.getString(cx.aswin.boxlore.core.data.R.string.auto_app_name))
+                        .setTitle(host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name))
                         .setIsPlayable(false)
                         .setIsBrowsable(true)
                         .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
@@ -461,7 +461,7 @@ internal class AutoBrowseLibraryCallback(
                     ).firstOrNull { it.mediaId == mediaId }
                         ?: AutoMediaItemFactory.browsable(
                             id = mediaId,
-                            title = host.getString(cx.aswin.boxlore.core.data.R.string.auto_app_name),
+                            title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name),
                         )
                 }
             LibraryResult.ofItem(item, null)

@@ -10,34 +10,35 @@ Stable types/entry points other modules may depend on:
 
 - `PlaybackRepository` — one UI/session instance; ctor-injected `RankingFeedbackRepository` (never call ranking `getInstance` here)
 - `QueueRepository` / `QueueManager` — queue persistence + explicit play/add orchestration
-- `QueueMath` / `QueueSkipMemory` / `SmartQueueEngine` / `SmartQueueSources` / `MixtapeEngine` — smart-queue helpers (packages remain `cx.aswin.boxlore.core.data` until PR8–10)
-- `playback.PlaybackMediaIdPolicy` / `PlaybackArtworkResolver` — media-id encoding and artwork URL resolution
-- `playback.PlaybackSkipPolicy` — intro/outro trim and seek policy
-- `playback.HistoryRecommendationLogic` — pure eligibility filter for recommendation history
-- `playback.AutoVoiceSearchLogic` / `SmartQueueRefillPolicy` / `MixtapeResumePolicy` / `NightWindowLogic` / `ListeningHistoryUpsertLogic`
-- `playback.PlaybackIntroOutroController` — intro skip / outro trim lifecycle
+- `QueueMath` / `QueueSkipMemory` / `SmartQueueEngine` / `SmartQueueSources` / `MixtapeEngine` — smart-queue helpers (`cx.aswin.boxlore.core.playback`)
+- `PlaybackMediaIdPolicy` / `PlaybackArtworkResolver` — media-id encoding and artwork URL resolution
+- `PlaybackSkipPolicy` — intro/outro trim and seek policy
+- `HistoryRecommendationLogic` — pure eligibility filter for recommendation history
+- `AutoVoiceSearchLogic` / `SmartQueueRefillPolicy` / `MixtapeResumePolicy` / `NightWindowLogic` / `ListeningHistoryUpsertLogic`
+- `PlaybackIntroOutroController` — intro skip / outro trim lifecycle
 - `service.SmartQueueRefillCoordinator` — service-owned Smart Queue auto-refill
 - `service.auto.AutoBrowseLibraryCallback` + `AutoBrowseLibraryHost` — Android Auto browse
 - `PlaybackRepository.getRecentHistoryList(limit)` — scoring/history slices without feature → DAO access
 - `service.CoilBitmapLoader` — Media3 bitmap loader (extracted from the playback service)
-- Services (FQCN must stay stable across releases):
+- Services (Manifest uses new FQCNs; old FQCNs keep permanent stubs):
   - `cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService` — uses `SharedAppDependenciesHolder.require()` for podcast/ranking/download/prefs (no parallel graph)
   - `cx.aswin.boxlore.core.playback.service.MediaDownloadService`
   - `cx.aswin.boxlore.core.playback.service.AutoCollageProvider`
 
-Packages remain under `cx.aswin.boxlore.core.data.*` for AndroidManifest / WorkManager / MediaSession stability.
+**Package root:** `cx.aswin.boxlore.core.playback` (matches module). Permanent stubs remain at `cx.aswin.boxlore.core.data.service.*`.
 
 ## Internal structure
 
 ```text
-src/main/java/cx/aswin/boxlore/core/data/
+src/main/java/cx/aswin/boxlore/core/playback/
   PlaybackRepository.kt
   QueueManager.kt / QueueRepository.kt
   QueueMath.kt / QueueSkipMemory.kt
   SmartQueueEngine.kt / SmartQueueSources.kt / MixtapeEngine.kt
-  playback/     # PlaybackSkipPolicy, HistoryRecommendationLogic, refill policy, …
+  PlaybackSkipPolicy.kt, HistoryRecommendationLogic.kt, …
   service/      # BoxLorePlaybackService, MediaDownloadService, AutoCollage*, SmartQueueRefillCoordinator
   service/auto/ # Android Auto browse helpers
+src/main/java/cx/aswin/boxlore/core/data/service/  # permanent old-FQCN stubs
 ```
 
 Android Auto browse session callbacks live in `service/auto/`; `BoxLorePlaybackService` implements `AutoBrowseLibraryHost` and delegates `MediaLibrarySession.Callback` behavior to `AutoBrowseLibraryCallback`.

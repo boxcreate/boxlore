@@ -58,7 +58,7 @@ open class BoxLorePlaybackService :
      * Installed in [cx.aswin.boxlore.BoxLoreApplication] via SharedAppDependenciesHolder.
      */
     private val sharedDeps by lazy {
-        cx.aswin.boxlore.core.data.SharedAppDependenciesHolder
+        cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
             .require()
     }
     private val downloadDeps by lazy {
