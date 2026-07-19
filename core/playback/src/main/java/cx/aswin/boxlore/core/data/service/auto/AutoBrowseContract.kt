@@ -151,3 +151,8 @@ internal object AutoBrowseContract {
             putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, playable)
         }
 }
+
+internal fun String.stripEpisodePrefix(): String =
+    removePrefix(AutoBrowseContract.LEARN_PREFIX)
+        .removePrefix(AutoBrowseContract.EPISODE_PREFIX)
+        .removePrefix(AutoBrowseContract.QUEUE_PREFIX)

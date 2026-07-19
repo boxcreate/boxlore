@@ -46,27 +46,68 @@
         <error line="1248" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModel.kt">
-        <error line="265" column="17" source="standard:backing-property-naming" />
-        <error line="266" column="17" source="standard:backing-property-naming" />
-        <error line="267" column="17" source="standard:backing-property-naming" />
-        <error line="268" column="17" source="standard:backing-property-naming" />
-        <error line="269" column="17" source="standard:backing-property-naming" />
-        <error line="270" column="17" source="standard:backing-property-naming" />
-        <error line="271" column="17" source="standard:backing-property-naming" />
-        <error line="272" column="17" source="standard:backing-property-naming" />
-        <error line="274" column="17" source="standard:backing-property-naming" />
-        <error line="275" column="17" source="standard:backing-property-naming" />
-        <error line="276" column="17" source="standard:backing-property-naming" />
-        <error line="277" column="17" source="standard:backing-property-naming" />
-        <error line="278" column="17" source="standard:backing-property-naming" />
-        <error line="279" column="17" source="standard:backing-property-naming" />
-        <error line="280" column="17" source="standard:backing-property-naming" />
-        <error line="529" column="17" source="standard:backing-property-naming" />
-        <error line="530" column="17" source="standard:backing-property-naming" />
-        <error line="531" column="17" source="standard:backing-property-naming" />
-        <error line="532" column="17" source="standard:backing-property-naming" />
-        <error line="533" column="17" source="standard:backing-property-naming" />
-        <error line="537" column="17" source="standard:backing-property-naming" />
+        <error line="50" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="78" column="18" source="standard:backing-property-naming" />
+        <error line="88" column="18" source="standard:backing-property-naming" />
+        <error line="91" column="18" source="standard:backing-property-naming" />
+        <error line="95" column="18" source="standard:backing-property-naming" />
+        <error line="98" column="18" source="standard:backing-property-naming" />
+        <error line="101" column="18" source="standard:backing-property-naming" />
+        <error line="101" column="18" source="standard:backing-property-naming" />
+        <error line="102" column="18" source="standard:backing-property-naming" />
+        <error line="102" column="18" source="standard:backing-property-naming" />
+        <error line="103" column="18" source="standard:backing-property-naming" />
+        <error line="103" column="18" source="standard:backing-property-naming" />
+        <error line="104" column="18" source="standard:backing-property-naming" />
+        <error line="104" column="18" source="standard:backing-property-naming" />
+        <error line="105" column="18" source="standard:backing-property-naming" />
+        <error line="105" column="18" source="standard:backing-property-naming" />
+        <error line="106" column="18" source="standard:backing-property-naming" />
+        <error line="106" column="18" source="standard:backing-property-naming" />
+        <error line="107" column="18" source="standard:backing-property-naming" />
+        <error line="107" column="18" source="standard:backing-property-naming" />
+        <error line="108" column="18" source="standard:backing-property-naming" />
+        <error line="108" column="18" source="standard:backing-property-naming" />
+        <error line="110" column="18" source="standard:backing-property-naming" />
+        <error line="110" column="18" source="standard:backing-property-naming" />
+        <error line="111" column="18" source="standard:backing-property-naming" />
+        <error line="111" column="18" source="standard:backing-property-naming" />
+        <error line="112" column="18" source="standard:backing-property-naming" />
+        <error line="112" column="18" source="standard:backing-property-naming" />
+        <error line="113" column="18" source="standard:backing-property-naming" />
+        <error line="113" column="18" source="standard:backing-property-naming" />
+        <error line="114" column="18" source="standard:backing-property-naming" />
+        <error line="114" column="18" source="standard:backing-property-naming" />
+        <error line="115" column="18" source="standard:backing-property-naming" />
+        <error line="115" column="18" source="standard:backing-property-naming" />
+        <error line="116" column="18" source="standard:backing-property-naming" />
+        <error line="116" column="18" source="standard:backing-property-naming" />
+        <error line="352" column="18" source="standard:backing-property-naming" />
+        <error line="352" column="18" source="standard:backing-property-naming" />
+        <error line="353" column="18" source="standard:backing-property-naming" />
+        <error line="353" column="18" source="standard:backing-property-naming" />
+        <error line="354" column="18" source="standard:backing-property-naming" />
+        <error line="354" column="18" source="standard:backing-property-naming" />
+        <error line="355" column="18" source="standard:backing-property-naming" />
+        <error line="355" column="18" source="standard:backing-property-naming" />
+        <error line="356" column="18" source="standard:backing-property-naming" />
+        <error line="356" column="18" source="standard:backing-property-naming" />
+        <error line="360" column="18" source="standard:backing-property-naming" />
+        <error line="360" column="18" source="standard:backing-property-naming" />
+        <error line="503" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="529" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="753" column="1" source="standard:no-consecutive-blank-lines" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelAdaptive.kt">
+        <error line="241" column="1" source="standard:no-consecutive-blank-lines" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelBecauseYouLike.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="184" column="1" source="standard:no-consecutive-blank-lines" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelLoadData.kt">
+        <error line="12" column="1" source="standard:no-unused-imports" />
+        <error line="552" column="1" source="standard:no-consecutive-blank-lines" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/BecauseYouLikeSection.kt">
         <error line="4" column="1" source="standard:no-wildcard-imports" />
@@ -250,6 +291,12 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/SettingsHub.kt">
         <error line="17" column="14" source="standard:function-naming" />
+    </file>
+    <file name="src/test/java/cx/aswin/boxlore/feature/home/logic/HomeCatchUpLogicTest.kt">
+        <error line="48" column="46" source="standard:chain-method-continuation" />
+        <error line="48" column="55" source="standard:chain-method-continuation" />
+        <error line="50" column="64" source="standard:chain-method-continuation" />
+        <error line="50" column="73" source="standard:chain-method-continuation" />
     </file>
     <file name="src/test/java/cx/aswin/boxlore/feature/home/logic/HomeMappingLogicTest.kt">
         <error line="12" column="25" source="standard:chain-method-continuation" />
