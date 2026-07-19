@@ -299,6 +299,97 @@ class ArchitectureGuardTest {
         )
     }
 
+    /**
+     * AndroidViewModels that are hard to construct hermetically (Application-backed, heavy repo
+     * graphs) but whose behaviour is already exercised by hermetic `logic/` package suites.
+     * These are allowlisted so the guard still forces a matching `*Test.kt` for any NEW ViewModel.
+     */
+    private val viewModelTestAllowlist =
+        setOf(
+            "BriefingViewModel",
+            "DebugViewModel",
+            "EpisodeInfoViewModel",
+            "ExploreViewModel",
+            "HistoryViewModel",
+            "LearnHistoryViewModel",
+            "LearnViewModel",
+            "LibraryViewModel",
+            "OnboardingViewModel",
+        )
+
+    /**
+     * Repositories covered by differently-named suites or irreducible Media3 orchestration.
+     * `PlaybackRepository` is excluded from the merged line gate entirely (see docs/TESTING.md).
+     */
+    private val repositoryTestAllowlist =
+        setOf(
+            // Media3 MediaController orchestration; covered by policy unit tests + Maestro.
+            "PlaybackRepository",
+            // Media3 DownloadManager-bound; covered by AutoDownload/SmartDownload worker suites.
+            "DownloadRepository",
+            // Covered by RssRepositoryHelpers/RssSourceMatcher suites + Room DAO paths.
+            "RssPodcastRepository",
+        )
+
+    @Test
+    fun `new ViewModels and Repositories ship with a matching test suite`() {
+        val stubMarker = "/src/main/java/cx/aswin/boxlore/core/data/"
+        val roots =
+            listOf("app", "core", "feature").map { File(projectRoot, it) }.filter { it.isDirectory }
+
+        val mainFiles =
+            roots.flatMap { root ->
+                root
+                    .walkTopDown()
+                    .onEnter { dir -> dir.name != "build" && dir.name != ".gradle" }
+                    .filter { file ->
+                        file.isFile &&
+                            file.extension == "kt" &&
+                            file.path.replace('\\', '/').contains("/src/main/") &&
+                            (
+                                file.name.endsWith("ViewModel.kt") ||
+                                    file.name.endsWith("Repository.kt")
+                            )
+                    }.toList()
+            }
+        require(mainFiles.isNotEmpty()) { "No ViewModel/Repository sources found under $projectRoot" }
+
+        val violations = mutableListOf<String>()
+        for (mainFile in mainFiles) {
+            val normalized = mainFile.path.replace('\\', '/')
+            if (normalized.contains(stubMarker)) continue
+
+            val baseName = mainFile.nameWithoutExtension
+            val isViewModel = baseName.endsWith("ViewModel")
+            val allowlist = if (isViewModel) viewModelTestAllowlist else repositoryTestAllowlist
+            if (baseName in allowlist) continue
+
+            val moduleRoot = normalized.substringBefore("/src/main/")
+            val testDirs =
+                listOf("$moduleRoot/src/test", "$moduleRoot/src/androidTest").map(::File)
+            val hasMatchingTest =
+                testDirs
+                    .filter { it.isDirectory }
+                    .any { dir ->
+                        dir
+                            .walkTopDown()
+                            .any { it.isFile && it.name.startsWith(baseName) && it.name.endsWith("Test.kt") }
+                    }
+            if (!hasMatchingTest) {
+                violations +=
+                    "${mainFile.relativeTo(projectRoot).path.replace('\\', '/')}: " +
+                        "needs a matching ${baseName}*Test.kt under the module's src/test or " +
+                        "src/androidTest (or add it to the documented allowlist in ArchitectureGuardTest)"
+            }
+        }
+
+        assertTrue(
+            violations.isEmpty(),
+            "New *ViewModel / *Repository sources must ship with a similarly named test suite:\n" +
+                violations.joinToString("\n"),
+        )
+    }
+
     @Test
     fun `extracted core modules keep package equal to module with stub allowlist`() {
         // Permanent upgrade stubs may live under core.data (workers / services).

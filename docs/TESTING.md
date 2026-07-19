@@ -60,9 +60,26 @@ Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 
 | Target | Status |
 | :--- | :--- |
-| Merged floor ≥ **40%** on full gated set | WIP (ratchet start) |
+| Merged floor ≥ **40%** on full gated set | Done (enforced by `:koverVerifyMerged`) |
+| Measured merged line coverage | **≈ 47.9%** (13,358 / 27,869 lines) |
 | Per-module ≥ 70% on logic modules | Yet to start |
 | Merged floor ≥ 55% / 70% / **80%** | Yet to start |
+
+The floor stays at **40** for now (measured ≈ 47.9%, so we sit in the 40–55 band). Reaching the
+next **55** rung requires exercising the Application-backed feature `*ViewModel`s and Media3-bound
+components (`PlaybackRepository`, `PlaybackQueueCoordinator`, `PlaybackTelemetrySession`,
+`PlaybackHistoryStore`, `DownloadRepository`, `SmartDownloadManager`) plus concrete repository
+graphs (`PodcastRepository`, `RssPodcastRepository`, `LibraryBackupManager`), which cannot be
+constructed hermetically without MockK/Hilt or a full Media3/Room stack. Those remain covered by
+hermetic `logic/`-package suites, assembler + port suites, `androidTest`, and Maestro rather than
+direct JVM instantiation. The measured line % above reflects the pure/hermetic ceiling reached with
+the `:app` Compose nav / FCM / survey chrome excluded from the line gate (see
+[`build.gradle.kts`](../build.gradle.kts) `kover { }`).
+
+Recent hermetic additions raising the floor toward 55: `AdaptiveCandidateScorer` (ranking, Room via
+Robolectric), `MixtapeEngine` (pure + adaptive branch), `AdaptiveContentCandidateRanker`,
+`LearnCuriosityHistoryStore` (SharedPreferences via Robolectric), `HomeHeroLogic` branch coverage,
+and the `feature:library` download-model formatters.
 
 Gated modules: `:core:catalog`, `:core:domain`, `:core:analytics`, `:core:rss`, `:core:downloads`, `:core:playback`, `:core:ranking`, `:core:prefs`, `:core:network`, `:core:database`, `:core:model`, `:feature:home`, `:feature:info`, `:feature:explore`, `:feature:library`, `:feature:onboarding`, `:feature:briefing`, `:feature:player`, `:app`.
 

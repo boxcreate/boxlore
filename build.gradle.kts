@@ -106,6 +106,11 @@ kover {
                     "cx.aswin.boxlore.BoxLoreApplication$*",
                     "cx.aswin.boxlore.MainActivity",
                     "cx.aswin.boxlore.MainActivity$*",
+                    // :app Compose nav / FCM / survey chrome — covered by androidTest + Maestro.
+                    "cx.aswin.boxlore.navigation.*",
+                    "cx.aswin.boxlore.ui.*",
+                    "cx.aswin.boxlore.fcm.*",
+                    "cx.aswin.boxlore.surveys.*",
                 )
                 annotatedBy(
                     "androidx.compose.runtime.Composable",
