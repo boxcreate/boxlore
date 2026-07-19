@@ -6,23 +6,23 @@ Use Conventional Commits. Examples from this repo:
 - `fix(scope): short description`
 - `chore: short description`
 - `release: vX.Y.Z [skip changelog]`
-- `docs: … [skip unit]` / `chore: … [skip unit]` — no-ops merge-queue unit suite (still reports green). **Only** for docs/chore with no logic risk.
+- `docs: … [skip unit]` / `chore: … [skip unit]` — no-ops unit suite on PR + merge queue (still reports green). **Only** for docs/chore with no logic risk.
 
 Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish the announcement dialog`).
 
 ## Merge queue (required before merge)
 
-Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate run **only in the merge queue** (plus optional Actions → Run workflow). They do **not** run on every PR push.
+Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate run on **every PR push** (a new commit cancels the previous in-progress unit run) and again in the **merge queue** (plus optional Actions → Run workflow).
 
 Master uses a **merge queue**. Required checks before merge:
 
-1. **`testDebugUnitTest`** — runs when the PR enters the merge queue (put `[skip unit]` in the PR title to no-op for safe docs/chore only; check still reports green)
+1. **`testDebugUnitTest`** — runs on PR pushes and again in the merge queue (put `[skip unit]` in the PR title to no-op for safe docs/chore only; check still reports green)
 2. **`SonarCloud Code Analysis`** — quality gate must pass (**0 new-code issues**)
 3. **`CodeRabbit`** — review must be green; resolve all review threads
 
-1. Open the PR and iterate as usual (Sonar + CodeRabbit still run).
-2. Resolve CodeRabbit threads; wait for SonarCloud.
-3. Use **Merge when ready** — the PR enters the merge queue (squash), which runs **`testDebugUnitTest`**.
+1. Open the PR and iterate as usual (Sonar + CodeRabbit + unit suite run on each push).
+2. Resolve CodeRabbit threads; wait for SonarCloud and unit tests.
+3. Use **Merge when ready** — the PR enters the merge queue (squash), which re-runs **`testDebugUnitTest`**.
 4. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ruleset Integration bypass).

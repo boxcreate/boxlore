@@ -32,26 +32,26 @@ Examples:
 
 ## Merge queue gate — required before merge
 
-There is **no `merge-ci` label flow**. Unit CI (detekt / ktlint / Kover / Roborazzi in the unit job) runs **only** on `merge_group` (and optional `workflow_dispatch`). It does **not** run on every PR push.
+There is **no `merge-ci` label flow**. Unit CI (detekt / ktlint / Kover / Roborazzi) runs on **every PR push** and again in the **merge queue** (`merge_group`), plus optional `workflow_dispatch`. A new commit cancels any in-progress unit run for that PR.
 
 Master is protected by a **merge queue** ruleset. Required checks:
 
 | Check | Meaning |
 |:--|:--|
-| `testDebugUnitTest` | Full unit / static / Kover / Roborazzi gate (runs in merge queue) |
+| `testDebugUnitTest` | Full unit / static / Kover / Roborazzi gate (PR + merge queue) |
 | `SonarCloud Code Analysis` | SonarCloud quality gate must pass (**0 new-code issues**) |
 | `CodeRabbit` | CodeRabbit review green; resolve all review threads |
 
 Agent / maintainer flow:
 
-1. Open and iterate the PR (Sonar + CodeRabbit still run; unit suite waits for the queue).
-2. Wait for **`SonarCloud Code Analysis`** and **`CodeRabbit`** green; resolve all review threads.
-3. Merge via **Merge when ready** (merge queue, squash) — the queue runs **`testDebugUnitTest`**.
+1. Open and iterate the PR (Sonar + CodeRabbit + unit suite run on each push).
+2. Wait for **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, and **`CodeRabbit`** green; resolve all review threads.
+3. Merge via **Merge when ready** (merge queue, squash) — the queue re-runs **`testDebugUnitTest`**.
 4. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 **Title skips (when appropriate only):**
 
-- `[skip unit]` in the PR title — no-ops the merge-queue unit suite (still reports green). **Only** for safe docs/chore with no logic risk.
+- `[skip unit]` in the PR title — no-ops the unit suite on PR and merge queue (still reports green). **Only** for safe docs/chore with no logic risk.
 - `[skip changelog]` — skips changelog-on-merge (e.g. `release: vX.Y.Z [skip changelog]`).
 
 **Bot bypass:** **boxlore-master-pusher** (GitHub App 4340323) and organization admins bypass the ruleset so scheduled workflows can push chore commits to `master` directly. Never remove that Integration bypass.
@@ -73,4 +73,4 @@ Use Conventional Commits only:
 4. Never apply two user-impact level labels on the same PR.
 5. If the label is `user-impact-high` or `user-impact-medium`, the PR body **must** include **Listener impact → What changes in the user’s life** in plain listener language (not just engineering bullets). Skip that section only for `user-impact-low` or `no-user-impact`.
 6. If a PR title violates Conventional Commits, rename it with `gh pr edit <n> --title "type(scope): …"` before merge.
-7. Before merging: confirm SonarCloud + CodeRabbit are green and review threads are resolved, then **Merge when ready** (merge queue runs unit tests). Do not force-push into an active queue entry.
+7. Before merging: confirm SonarCloud + CodeRabbit + unit tests are green and review threads are resolved, then **Merge when ready** (merge queue re-runs unit tests). Do not force-push into an active queue entry.
