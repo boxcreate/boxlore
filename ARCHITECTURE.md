@@ -30,7 +30,7 @@ Cross-module contract for the Android app. Module-local detail lives in each mod
 
 | Invariant | Rule |
 | :--- | :--- |
-| `applicationId` | `cx.aswin.boxlore` — never change for package renames |
+| `applicationId` | `cx.aswin.boxlore` |
 | Code packages / namespaces | `cx.aswin.boxlore.*` |
 | SharedPreferences **files** | Migrate `boxcast_*` → `boxlore_*` via `PrefsFileMigrator`; **key** strings inside files unchanged |
 | DataStore | Name `user_preferences` unchanged |
