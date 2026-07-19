@@ -2,7 +2,6 @@ package cx.aswin.boxlore.feature.info
 
 import android.app.Application
 import android.util.Log
-import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.data.PodcastRepository
@@ -24,28 +23,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-enum class EpisodeSort { NEWEST, OLDEST }
-
-@Immutable
-sealed interface PodcastInfoUiState {
-    data object Loading : PodcastInfoUiState
-
-    data class Success(
-        val podcast: Podcast,
-        val episodes: List<Episode>,
-        val isSubscribed: Boolean,
-        val isLoadingMore: Boolean = false,
-        val isRssRefreshing: Boolean = false,
-        val hasMoreEpisodes: Boolean = true,
-        val currentSort: EpisodeSort = EpisodeSort.NEWEST,
-        val searchQuery: String = "",
-        val isSearching: Boolean = false,
-        val searchResults: List<Episode>? = null, // null = not searching, empty = no results
-    ) : PodcastInfoUiState
-
-    data object Error : PodcastInfoUiState
-}
 
 @Suppress("kotlin:S6310")
 class PodcastInfoViewModel(
@@ -378,7 +355,11 @@ class PodcastInfoViewModel(
 
             try {
                 val initialType = currentPodcast?.type ?: "episodic"
-                val initialSort = resolveInitialSort(localPodcast?.preferredSort, initialType)
+                val initialSort =
+                    cx.aswin.boxlore.feature.info.logic.PodcastInfoSortLogic.resolveInitialSort(
+                        localPodcast?.preferredSort,
+                        initialType,
+                    )
                 val limit = if (initialSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
                 val sortParam = if (initialSort == EpisodeSort.OLDEST) "oldest" else "newest"
 
@@ -405,7 +386,14 @@ class PodcastInfoViewModel(
                     fetchPodcastAndEpisodes(effectivePodcastId, limit, sortParam)
 
                 if (apiPodcast != null) {
-                    val apiPodcastWithFallback = enrichPodcastWithFallback(apiPodcast, currentPodcast, localPodcast, page, sortParam)
+                    val apiPodcastWithFallback =
+                        cx.aswin.boxlore.feature.info.logic.PodcastInfoEnrichLogic.enrichPodcastWithFallback(
+                            apiPodcast = apiPodcast,
+                            currentPodcast = currentPodcast,
+                            localPodcast = localPodcast,
+                            pageEpisodes = page.episodes,
+                            sortParam = sortParam,
+                        )
                     currentPodcast = apiPodcastWithFallback
                     currentPodcastId = apiPodcastWithFallback.id
                     _currentPodcastIdFlow.value = apiPodcastWithFallback.id
@@ -471,16 +459,6 @@ class PodcastInfoViewModel(
         }
     }
 
-    private fun resolveInitialSort(
-        preferredSort: String?,
-        initialType: String,
-    ): EpisodeSort =
-        when (preferredSort) {
-            "oldest" -> EpisodeSort.OLDEST
-            "newest" -> EpisodeSort.NEWEST
-            else -> if (initialType == "serial") EpisodeSort.OLDEST else EpisodeSort.NEWEST
-        }
-
     private suspend fun fetchPodcastAndEpisodes(
         podcastId: String,
         limit: Int,
@@ -509,29 +487,6 @@ class PodcastInfoViewModel(
             }
             Pair(apiPodcast, page)
         }
-
-    private fun enrichPodcastWithFallback(
-        apiPodcast: Podcast,
-        currentPodcast: Podcast?,
-        localPodcast: Podcast?,
-        page: cx.aswin.boxlore.core.data.PodcastRepository.EpisodePage,
-        sortParam: String,
-    ): Podcast =
-        apiPodcast.copy(
-            fallbackImageUrl =
-                apiPodcast.fallbackImageUrl.takeIf { !it.isNullOrBlank() }
-                    ?: currentPodcast?.fallbackImageUrl
-                    ?: page.episodes.firstOrNull()?.imageUrl,
-            subscribedAt = currentPodcast?.subscribedAt ?: 0L,
-            notificationsEnabled = localPodcast?.notificationsEnabled ?: false,
-            autoDownloadEnabled = localPodcast?.autoDownloadEnabled ?: false,
-            skipBeginningOverrideMs = localPodcast?.skipBeginningOverrideMs,
-            skipEndingOverrideMs = localPodcast?.skipEndingOverrideMs,
-            latestEpisode =
-                apiPodcast.latestEpisode
-                    ?: currentPodcast?.latestEpisode
-                    ?: (if (sortParam == "newest") page.episodes.firstOrNull() else page.episodes.maxByOrNull { it.publishedDate }),
-        )
 
     private fun trackScreenViewed(
         podcastId: String,
