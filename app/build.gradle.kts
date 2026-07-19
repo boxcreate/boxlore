@@ -7,6 +7,15 @@ plugins {
     alias(libs.plugins.firebaseCrashlytics)
     alias(libs.plugins.kotlinCompose)
     alias(libs.plugins.dependencyGuard)
+    alias(libs.plugins.kover)
+}
+
+kover {
+    currentProject {
+        createVariant("merged") {
+            add("debug")
+        }
+    }
 }
 
 android {

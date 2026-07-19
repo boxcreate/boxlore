@@ -102,6 +102,118 @@ class ArchitectureGuardTest {
     }
 
     @Test
+    fun `core catalog build file does not depend on playback`() {
+        val buildFile = File(projectRoot, "core/catalog/build.gradle.kts")
+        assertTrue(buildFile.isFile, "Missing ${buildFile.relativeTo(projectRoot)}")
+        val activeDeps =
+            buildFile.readLines().map { it.substringBefore("//").trim() }.filter { it.isNotEmpty() }
+        val hits =
+            activeDeps.filter {
+                it.contains("projects.core.playback") ||
+                    Regex("""\b:core:playback\b""").containsMatchIn(it)
+            }
+        assertTrue(
+            hits.isEmpty(),
+            ":core:catalog must not depend on :core:playback:\n" + hits.joinToString("\n"),
+        )
+    }
+
+    @Test
+    fun `core catalog does not api-export analytics or ranking`() {
+        val buildFile = File(projectRoot, "core/catalog/build.gradle.kts")
+        assertTrue(buildFile.isFile, "Missing ${buildFile.relativeTo(projectRoot)}")
+        val violations = mutableListOf<String>()
+        buildFile.readLines().forEachIndexed { index, raw ->
+            val line = raw.substringBefore("//").trim()
+            if (!line.startsWith("api(")) return@forEachIndexed
+            if (line.contains("projects.core.analytics") || line.contains("projects.core.ranking")) {
+                violations += "${buildFile.relativeTo(projectRoot)}:${index + 1}: $line"
+            }
+        }
+        assertTrue(
+            violations.isEmpty(),
+            ":core:catalog must not api( analytics or ranking ); use implementation or none:\n" +
+                violations.joinToString("\n"),
+        )
+    }
+
+    @Test
+    fun `no Hilt Koin Dagger or MockK in production sources or Gradle deps`() {
+        val forbiddenGradle =
+            Regex(
+                """(?i)(hilt|koin|dagger|mockk|com\.google\.dagger|io\.insert-koin|io\.mockk)""",
+            )
+        val forbiddenImport =
+            Regex(
+                """^import\s+(dagger\.|.*\.hilt\.|org\.koin\.|io\.mockk\.)""",
+            )
+        val violations = mutableListOf<String>()
+
+        val buildFiles =
+            listOf("app", "core", "feature")
+                .map { File(projectRoot, it) }
+                .filter { it.isDirectory }
+                .flatMap { root ->
+                    root
+                        .walkTopDown()
+                        .onEnter { dir -> dir.name != "build" && dir.name != ".gradle" }
+                        .filter { it.isFile && it.name == "build.gradle.kts" }
+                        .toList()
+                }
+        for (buildFile in buildFiles) {
+            buildFile.readLines().forEachIndexed { index, raw ->
+                val line = raw.substringBefore("//").trim()
+                if (line.isEmpty()) return@forEachIndexed
+                // Comments about "no MockK" are fine; only dependency-like lines.
+                if (!line.contains("implementation") &&
+                    !line.contains("api(") &&
+                    !line.contains("testImplementation") &&
+                    !line.contains("androidTestImplementation") &&
+                    !line.contains("ksp(") &&
+                    !line.contains("classpath") &&
+                    !line.contains("alias(libs")
+                ) {
+                    return@forEachIndexed
+                }
+                if (forbiddenGradle.containsMatchIn(line) &&
+                    !line.contains("no MockK", ignoreCase = true)
+                ) {
+                    violations +=
+                        "${buildFile.relativeTo(projectRoot)}:${index + 1}: $line"
+                }
+            }
+        }
+
+        val sourceRoots =
+            listOf("app", "core", "feature").map { File(projectRoot, it) }.filter { it.isDirectory }
+        for (root in sourceRoots) {
+            root
+                .walkTopDown()
+                .onEnter { dir -> dir.name != "build" && dir.name != ".gradle" }
+                .filter {
+                    it.isFile &&
+                        it.extension == "kt" &&
+                        (it.path.contains("/src/main/") || it.path.contains("/src/test/") ||
+                            it.path.contains("/src/androidTest/"))
+                }.forEach { file ->
+                    file.readLines().forEachIndexed { index, line ->
+                        val code = line.trim()
+                        if (forbiddenImport.containsMatchIn(code)) {
+                            violations +=
+                                "${file.relativeTo(projectRoot)}:${index + 1}: $code"
+                        }
+                    }
+                }
+        }
+
+        assertTrue(
+            violations.isEmpty(),
+            "Hilt/Koin/Dagger/MockK are forbidden (manual AppContainer + fakes):\n" +
+                violations.joinToString("\n"),
+        )
+    }
+
+    @Test
     fun `included app core and feature modules have README md`() {
         val settings = File(projectRoot, "settings.gradle.kts").readText()
         val includes =

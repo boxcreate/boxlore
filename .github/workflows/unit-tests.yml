@@ -41,11 +41,11 @@ jobs:
       - name: Write CI stub google-services.json
         uses: ./.github/actions/write-ci-google-services
 
-      - name: Architecture boundary (Home/Info no BoxLoreDatabase)
-        run: bash scripts/ci/check-feature-no-boxlore-database.sh
-
-      - name: Architecture boundary (feature modules no PostHog)
-        run: bash scripts/ci/check-feature-no-posthog.sh
+      - name: Architecture guards (boundaries + Konsist)
+        run: |
+          bash scripts/ci/check-feature-no-boxlore-database.sh
+          bash scripts/ci/check-feature-no-posthog.sh
+          ./gradlew :core:testing:testDebugUnitTest
 
       - name: Run detekt
         run: ./gradlew detekt
