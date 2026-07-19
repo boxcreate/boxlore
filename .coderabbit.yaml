@@ -49,9 +49,11 @@ reviews:
 
     ## Module README (must enforce)
 
-    - If the PR changes behavior, public API, or ownership under app/, core/*/, or feature/*/,
-      the matching module README.md must be updated in the same PR (see docs/MODULE_README_TEMPLATE.md).
-    - Flag missing or stale module README updates when production Kotlin in that module changed.
+    - If the PR changes any production Kotlin under app/, core/<module>/, or feature/<module>/
+      (paths containing src/main), the matching module README.md must be updated in the same PR
+      (see docs/MODULE_README_TEMPLATE.md). No exceptions for "internal-only", formatting-adjacent,
+      or "behavior unchanged" claims when production sources in that module changed.
+    - Flag missing module README updates whenever production Kotlin in that module changed.
     - Do not require hand-edits to root CHANGELOG.md or README Upcoming (changelog-on-merge owns those).
 
     ## Unit tests (must enforce)
@@ -104,16 +106,16 @@ reviews:
         Feature module rules:
         - Must not import other feature packages or PostHog.
         - Jetpack Compose: unstable params, heavy work in composition, keyed lazy items.
-        - If production Kotlin under feature/<name>/ changed, require feature/<name>/README.md
-          updated in the same PR when API/behavior/ownership changed.
+        - If any production Kotlin under feature/<name>/src/main/ changed, require
+          feature/<name>/README.md updated in the same PR (unconditional).
         - Require matching JVM src/test coverage for new/changed logic helpers and ViewModel logic.
     - path: "core/**/*.kt"
       instructions: |
         Core module rules:
         - Respect module ownership in ARCHITECTURE.md (catalog vs playback vs downloads, etc.).
         - DAO/repository/network must not block the main thread.
-        - If production Kotlin under core/<name>/ changed, require core/<name>/README.md updated
-          when API/behavior/ownership changed.
+        - If any production Kotlin under core/<name>/src/main/ changed, require
+          core/<name>/README.md updated in the same PR (unconditional).
         - Require hermetic JVM tests for new/changed engines, DAOs math, and pure helpers.
     - path: "core/network/**"
       instructions: |
@@ -122,7 +124,9 @@ reviews:
     - path: "app/**"
       instructions: |
         App shell: AppContainer is the only composition root. No second graph.
-        NavHost lifecycle-aware collection. Update app/README.md when ownership/API changes.
+        NavHost lifecycle-aware collection.
+        If any production Kotlin under app/src/main/ changed, require app/README.md updated
+        in the same PR (unconditional).
         Prefer JVM tests for pure helpers; do not demand androidTest.
     - path: "**/src/main/**/*.kt"
       instructions: |
@@ -130,7 +134,9 @@ reviews:
         *Test.kt under src/test for that behavior. Flag gaps explicitly.
     - path: "**/README.md"
       instructions: |
-        Module READMEs must match MODULE_README_TEMPLATE sections when ownership/API changes.
+        Module READMEs must match MODULE_README_TEMPLATE sections.
+        Whenever production Kotlin in the same module changed in the PR, the README must also
+        change in the PR (unconditional).
         Flag READMEs that claim androidTest/Espresso/instrumented suites (removed).
 
   auto_review:
@@ -180,10 +186,12 @@ reviews:
       - name: Module README updated
         mode: error
         instructions: |
-          If the PR changes production code under app/, core/<module>/, or feature/<module>/
-          in a way that affects behavior, public API, or ownership, fail unless the matching
-          module README.md is also updated in the PR (see docs/MODULE_README_TEMPLATE.md).
-          Pure test-only or formatting-only changes may pass. Do not require CHANGELOG.md edits.
+          Fail whenever the PR changes any production Kotlin under app/src/main/,
+          core/<module>/src/main/, or feature/<module>/src/main/ unless the matching
+          module README.md is also modified in the same PR (see docs/MODULE_README_TEMPLATE.md).
+          This is unconditional — do not exempt "internal-only", "no API change", or
+          "behavior unchanged" claims. Pure test-only PRs (no src/main production Kotlin
+          changes) may pass. Do not require CHANGELOG.md edits.
       - name: JVM tests for changed logic
         mode: error
         instructions: |
