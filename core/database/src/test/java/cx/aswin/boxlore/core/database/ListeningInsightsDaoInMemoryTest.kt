@@ -20,7 +20,9 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class ListeningInsightsDaoInMemoryTest {
     private lateinit var database: BoxLoreDatabase
-    private lateinit var dao: ListeningInsightsDao
+    private lateinit var sessions: ListeningSessionDao
+    private lateinit var rollups: ListeningRollupDao
+    private lateinit var maintenance: ListeningInsightsMaintenance
 
     @Before
     fun setUp() {
@@ -30,7 +32,9 @@ class ListeningInsightsDaoInMemoryTest {
                 .inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java)
                 .allowMainThreadQueries()
                 .build()
-        dao = database.listeningInsightsDao()
+        sessions = database.listeningSessionDao()
+        rollups = database.listeningRollupDao()
+        maintenance = database.listeningInsightsMaintenance()
     }
 
     @After
@@ -38,58 +42,55 @@ class ListeningInsightsDaoInMemoryTest {
         database.close()
     }
 
-    private fun session(
-        id: String,
-        episodeId: String = "ep-1",
-        podcastId: String = "pod-1",
-        startedAt: Long = 1_000L,
-        endedAt: Long = 2_000L,
-        consumedMs: Long = 1_000L,
-        completed: Boolean = false,
-        localDay: Long = 10L,
-        timeBucket: Int = 0,
-    ) = ListeningSessionEntity(
-        sessionId = id,
-        episodeId = episodeId,
-        podcastId = podcastId,
-        startedAt = startedAt,
-        endedAt = endedAt,
-        consumedMs = consumedMs,
-        completed = completed,
-        localDay = localDay,
-        timeBucket = timeBucket,
-    )
+    private fun session(id: String) =
+        ListeningSessionEntity(
+            sessionId = id,
+            episodeId = "ep-1",
+            podcastId = "pod-1",
+            startedAt = 1_000L,
+            endedAt = 2_000L,
+            consumedMs = 1_000L,
+            completed = false,
+            localDay = 10L,
+            timeBucket = 0,
+        )
 
     @Test
     fun upsertAndQuerySessions() =
         runTest {
-            dao.upsertSession(session("s1", consumedMs = 500))
-            assertEquals(500L, dao.getAllSessions().single().consumedMs)
+            sessions.upsertSession(session("s1").copy(consumedMs = 500))
+            assertEquals(500L, sessions.getAllSessions().single().consumedMs)
         }
 
     @Test
     fun rollupSkipsTodayAndMergesOlderSessions() =
         runTest {
             val today = 100L
-            dao.upsertSessions(
+            sessions.upsertSessions(
                 listOf(
-                    session("old-a", localDay = 10, endedAt = 10_000, consumedMs = 100, timeBucket = 0),
-                    session("old-b", localDay = 10, endedAt = 11_000, consumedMs = 200, completed = true, timeBucket = 1),
-                    session("today", localDay = today, endedAt = 99_000, consumedMs = 999, timeBucket = 2),
+                    session("old-a").copy(localDay = 10, endedAt = 10_000, consumedMs = 100, timeBucket = 0),
+                    session("old-b").copy(
+                        localDay = 10,
+                        endedAt = 11_000,
+                        consumedMs = 200,
+                        completed = true,
+                        timeBucket = 1,
+                    ),
+                    session("today").copy(localDay = today, endedAt = 99_000, consumedMs = 999, timeBucket = 2),
                 ),
             )
 
             val rolled =
-                dao.rollUpEligibleSessions(
+                maintenance.rollUpEligibleSessions(
                     cutoffEndedAtExclusive = 50_000L,
                     todayLocalDay = today,
                 )
 
             assertEquals(2, rolled)
-            assertEquals(1, dao.getAllSessions().size)
-            assertEquals("today", dao.getAllSessions().single().sessionId)
+            assertEquals(1, sessions.getAllSessions().size)
+            assertEquals("today", sessions.getAllSessions().single().sessionId)
 
-            val rollup = dao.getRollup(10L, "ep-1")!!
+            val rollup = rollups.getRollup(10L, "ep-1")!!
             assertEquals(300L, rollup.consumedMs)
             assertEquals(2, rollup.sessionCount)
             assertEquals(1, rollup.completionCount)
@@ -101,24 +102,24 @@ class ListeningInsightsDaoInMemoryTest {
     fun rollupIsIdempotentAndMergesIntoExisting() =
         runTest {
             val today = 200L
-            dao.upsertSession(session("old-1", localDay = 5, endedAt = 5_000, consumedMs = 50))
-            dao.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
-            assertEquals(50L, dao.getRollup(5L, "ep-1")!!.consumedMs)
+            sessions.upsertSession(session("old-1").copy(localDay = 5, endedAt = 5_000, consumedMs = 50))
+            maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
+            assertEquals(50L, rollups.getRollup(5L, "ep-1")!!.consumedMs)
 
-            dao.upsertSession(session("old-2", localDay = 5, endedAt = 6_000, consumedMs = 25))
-            dao.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
+            sessions.upsertSession(session("old-2").copy(localDay = 5, endedAt = 6_000, consumedMs = 25))
+            maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
 
-            val rollup = dao.getRollup(5L, "ep-1")!!
+            val rollup = rollups.getRollup(5L, "ep-1")!!
             assertEquals(75L, rollup.consumedMs)
             assertEquals(2, rollup.sessionCount)
-            assertTrue(dao.getAllSessions().isEmpty())
+            assertTrue(sessions.getAllSessions().isEmpty())
         }
 
     @Test
     fun samePodcastCanExistInRollupAndTodayRaw() =
         runTest {
             val today = 50L
-            dao.upsertRollup(
+            rollups.upsertRollup(
                 ListeningRollupEntity(
                     localDay = 1L,
                     episodeId = "ep-old",
@@ -129,9 +130,8 @@ class ListeningInsightsDaoInMemoryTest {
                     lastListenedAt = 1_000L,
                 ),
             )
-            dao.upsertSession(
-                session(
-                    "today-s",
+            sessions.upsertSession(
+                session("today-s").copy(
                     episodeId = "ep-new",
                     podcastId = "pod-shared",
                     localDay = today,
@@ -140,20 +140,20 @@ class ListeningInsightsDaoInMemoryTest {
                 ),
             )
 
-            dao.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
+            maintenance.rollUpEligibleSessions(cutoffEndedAtExclusive = 10_000L, todayLocalDay = today)
 
-            assertEquals(1, dao.getAllRollups().size)
-            assertEquals(1, dao.getAllSessions().size)
-            assertEquals("pod-shared", dao.getAllSessions().single().podcastId)
-            assertEquals("pod-shared", dao.getAllRollups().single().podcastId)
+            assertEquals(1, rollups.getAllRollups().size)
+            assertEquals(1, sessions.getAllSessions().size)
+            assertEquals("pod-shared", sessions.getAllSessions().single().podcastId)
+            assertEquals("pod-shared", rollups.getAllRollups().single().podcastId)
         }
 
     @Test
     fun deleteEpisodeAndClearAll() =
         runTest {
-            dao.upsertSession(session("s1", episodeId = "ep-a"))
-            dao.upsertSession(session("s2", episodeId = "ep-b"))
-            dao.upsertRollup(
+            sessions.upsertSession(session("s1").copy(episodeId = "ep-a"))
+            sessions.upsertSession(session("s2").copy(episodeId = "ep-b"))
+            rollups.upsertRollup(
                 ListeningRollupEntity(
                     localDay = 1,
                     episodeId = "ep-a",
@@ -165,13 +165,13 @@ class ListeningInsightsDaoInMemoryTest {
                 ),
             )
 
-            dao.deleteEpisodeAnalytics("ep-a")
-            assertNull(dao.getRollup(1, "ep-a"))
-            assertEquals(listOf("ep-b"), dao.getAllSessions().map { it.episodeId })
+            maintenance.deleteEpisodeAnalytics("ep-a")
+            assertNull(rollups.getRollup(1, "ep-a"))
+            assertEquals(listOf("ep-b"), sessions.getAllSessions().map { it.episodeId })
 
-            dao.clearAllAnalytics()
-            assertTrue(dao.getAllSessions().isEmpty())
-            assertTrue(dao.getAllRollups().isEmpty())
+            maintenance.clearAllAnalytics()
+            assertTrue(sessions.getAllSessions().isEmpty())
+            assertTrue(rollups.getAllRollups().isEmpty())
         }
 }
 
@@ -222,15 +222,15 @@ class ListeningInsightsMigration29To30Test {
         val db = openHelper.writableDatabase
         BoxLoreDatabaseMigrations.migrate29To30(db)
 
-        val sessions =
+        val sessionTables =
             db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='listening_sessions'")
-        assertTrue(sessions.moveToFirst())
-        sessions.close()
+        assertTrue(sessionTables.moveToFirst())
+        sessionTables.close()
 
-        val rollups =
+        val rollupTables =
             db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='listening_rollups'")
-        assertTrue(rollups.moveToFirst())
-        rollups.close()
+        assertTrue(rollupTables.moveToFirst())
+        rollupTables.close()
         db.close()
     }
 }

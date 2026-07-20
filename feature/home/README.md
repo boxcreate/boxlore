@@ -28,6 +28,7 @@ src/main/java/cx/aswin/boxlore/feature/home/
   HomeDataModels.kt
   HomeUiModels.kt
   DebugScreen.kt
+  DebugScreenContent.kt
   DebugViewModel.kt
   AdaptiveLearnerDebugSection.kt
   components/

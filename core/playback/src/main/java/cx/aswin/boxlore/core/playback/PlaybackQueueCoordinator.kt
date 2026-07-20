@@ -4,6 +4,9 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PlaybackEntryPoint
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.QueueMath
 import cx.aswin.boxlore.core.playback.QueueRepository
@@ -12,9 +15,6 @@ import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.PlaybackEntryPoint
-import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.guava.await
@@ -261,7 +261,7 @@ internal class PlaybackQueueCoordinator(
                 // MediaController callback, so the onIsPlayingChanged edge-trigger below
                 // won't see a false->true transition for this path. Trigger explicitly.
                 val wasPlaying = playerStateFlow.value.isPlaying
-                playerStateFlow.value =
+                val baseState =
                     playerStateFlow.value.copy(
                         currentEpisode = currentEp,
                         currentPodcast = podcast,
@@ -270,6 +270,11 @@ internal class PlaybackQueueCoordinator(
                         duration = currentEp.duration.toLong() * 1000,
                         queue = uniqueEpisodes,
                         isLiked = initialLikeState,
+                    )
+                playerStateFlow.value =
+                    PlaybackControlSync.withSyncedPlaybackSpeed(
+                        baseState,
+                        controllerSpeed = controller.playbackParameters.speed,
                     )
                 if (!wasPlaying) {
                     onPlaybackStarted()
@@ -435,12 +440,10 @@ internal class PlaybackQueueCoordinator(
     }
 
     /**
-     * Snapshot of a removed queue item, returned so the UI can offer Undo and so the
-     * skip signal (analytics + skip memory) can be deferred until the undo window lapses.
-     */
-    
-    /**
      * Removes an episode from the queue (Media3 + in-memory + DB).
+     *
+     * Snapshot of a removed queue item is returned so the UI can offer Undo and so the
+     * skip signal (analytics + skip memory) can be deferred until the undo window lapses.
      *
      * @param deferSkipSignal when true, the AUTO_FILL rejection signal is NOT recorded
      *   here — the caller must invoke [confirmQueueRemoval] once the undo window lapses
@@ -560,11 +563,12 @@ internal class PlaybackQueueCoordinator(
         val isLore = removed.contextType == QueueMath.CONTEXT_TYPE_LORE
         val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLore)
         val resolvedUrl =
-            PlaybackArtworkResolver.resolveEpisodeImageUrl(
-                episodeImageUrl = episode.imageUrl,
-                episodePodcastImageUrl = episode.podcastImageUrl,
-                podcastImageUrl = null,
-            ).orEmpty()
+            PlaybackArtworkResolver
+                .resolveEpisodeImageUrl(
+                    episodeImageUrl = episode.imageUrl,
+                    episodePodcastImageUrl = episode.podcastImageUrl,
+                    podcastImageUrl = null,
+                ).orEmpty()
         val metadata =
             androidx.media3.common.MediaMetadata
                 .Builder()
@@ -705,10 +709,14 @@ internal class PlaybackQueueCoordinator(
      * the user confirms starting a fresh Lore queue over an existing normal queue.
      */
     suspend fun stopAndClearQueue() {
+        val previous = playerStateFlow.value
+        val controllerSpeed = mediaHandle.controller?.playbackParameters?.speed
         mediaHandle.controller?.stop()
         mediaHandle.controller?.clearMediaItems()
         stopProgressTicker()
-        playerStateFlow.value = PlayerState()
+        // Preserve speed / seek sizes — ExoPlayer still holds the persisted rate.
+        playerStateFlow.value =
+            PlaybackControlSync.clearedStatePreservingControls(previous, controllerSpeed)
         // A new queue is about to start; don't block session restore on next launch.
         prefs.edit().putBoolean(playerDismissedKey, false).apply()
         try {

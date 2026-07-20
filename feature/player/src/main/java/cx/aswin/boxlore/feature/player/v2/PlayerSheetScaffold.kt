@@ -49,7 +49,12 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.playback.PlaybackArtworkResolver
+import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.pause
+import cx.aswin.boxlore.core.playback.skipBackward
+import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
@@ -128,7 +133,14 @@ fun PlayerSheetScaffold(
     val hasSeenSwipeMinimizeTip by userPrefs.hasSeenSwipeMinimizeTip.collectAsStateWithLifecycle(initialValue = true)
     val effectiveDarkTheme = LocalEffectiveDarkTheme.current
     PlayerSheetSystemBars(window, effectiveDarkTheme)
-    val colorScheme = rememberPlayerColorScheme(episode.imageUrl)
+    val artworkUrl = remember(episode.imageUrl, episode.podcastImageUrl, podcast?.imageUrl) {
+        PlaybackArtworkResolver.resolveEpisodeImageUrl(
+            episodeImageUrl = episode.imageUrl,
+            episodePodcastImageUrl = episode.podcastImageUrl,
+            podcastImageUrl = podcast?.imageUrl,
+        )
+    }
+    val colorScheme = rememberPlayerColorScheme(artworkUrl)
     // Thresholds/specs factory is deprecated in favor of AnchoredDraggableDefaults.flingBehavior;
     // keep it here so mini-player settle velocity/feel stays identical.
     @Suppress("DEPRECATION")

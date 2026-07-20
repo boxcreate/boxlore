@@ -289,7 +289,10 @@ class ContentOrchestratorTest {
 
             assertEquals(
                 listOf("episode-a", "episode-b"),
-                first.sections.single().items.map(ContentCandidate::id),
+                first.sections
+                    .single()
+                    .items
+                    .map(ContentCandidate::id),
             )
             assertTrue(second.sections.isEmpty())
             assertEquals(2, calls)
@@ -299,7 +302,10 @@ class ContentOrchestratorTest {
 
             assertEquals(
                 listOf("episode-a", "episode-b"),
-                third.sections.single().items.map(ContentCandidate::id),
+                third.sections
+                    .single()
+                    .items
+                    .map(ContentCandidate::id),
             )
         }
 

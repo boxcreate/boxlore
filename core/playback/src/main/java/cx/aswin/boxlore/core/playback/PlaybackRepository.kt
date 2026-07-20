@@ -2,37 +2,24 @@ package cx.aswin.boxlore.core.playback
 
 import android.content.ComponentName
 import android.content.Context
-import android.util.Log
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
-import cx.aswin.boxlore.core.playback.PlaybackChaptersTranscriptController
-import cx.aswin.boxlore.core.playback.PlaybackHistoryStore
-import cx.aswin.boxlore.core.playback.PlaybackMediaControllerBridge
-import cx.aswin.boxlore.core.playback.PlaybackMediaControllerHandle
-import cx.aswin.boxlore.core.playback.PlaybackQueueCoordinator
-import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
-import cx.aswin.boxlore.core.playback.PlaybackTransportHelper
-import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
-import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
-import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
-import cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService
-import cx.aswin.boxlore.core.model.AutoTranscriptState
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.ListeningHistoryItem
-import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
-import cx.aswin.boxlore.core.model.ListeningInsightSummary
-import cx.aswin.boxlore.core.model.ListeningPeriod
-import cx.aswin.boxlore.core.model.PlaybackEntryPoint
-import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
+import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
+import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
+import cx.aswin.boxlore.core.model.AutoTranscriptState
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PlaybackEntryPoint
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService
+import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -90,32 +77,81 @@ object PlaybackLifecycleSignals {
     @Volatile var effectiveSkipEndingMs: Long? = null
 }
 
-class PlaybackRepository(
+@Suppress("LongParameterList") // historyStore is required for `by` delegation; public ctor stays at 9 args
+class PlaybackRepository internal constructor(
     private val context: Context,
     private val listeningHistoryDao: cx.aswin.boxlore.core.database.ListeningHistoryDao,
-    private val listeningInsightsDao: cx.aswin.boxlore.core.database.ListeningInsightsDao,
+    private val listeningSessionDao: cx.aswin.boxlore.core.database.ListeningSessionDao,
+    private val listeningRollupDao: cx.aswin.boxlore.core.database.ListeningRollupDao,
+    private val listeningInsightsMaintenance: cx.aswin.boxlore.core.database.ListeningInsightsMaintenance,
     private val queueRepository: cx.aswin.boxlore.core.playback.QueueRepository,
     private val podcastRepository: PodcastRepository,
     private val rankingFeedbackRepository: RankingFeedbackRepository,
-    private val userPreferencesRepository: UserPreferencesRepository,
-) : ListeningHistoryBackupPort, ListeningHistoryPort {
+    internal val userPreferencesRepository: UserPreferencesRepository,
+    internal val historyStore: PlaybackHistoryStore,
+) : ListeningHistoryBackupPort by historyStore,
+    ListeningHistoryPort by historyStore {
     /** Nested alias so existing `PlaybackRepository.RemovedQueueItem` call sites keep compiling. */
     typealias RemovedQueueItem = cx.aswin.boxlore.core.playback.RemovedQueueItem
 
-    private val mediaHandle = PlaybackMediaControllerHandle()
+    /**
+     * AppContainer / production entry. Builds [historyStore] from the DAO and repository args
+     * (same call site as before the delegation split).
+     */
+    constructor(
+        context: Context,
+        listeningHistoryDao: cx.aswin.boxlore.core.database.ListeningHistoryDao,
+        listeningSessionDao: cx.aswin.boxlore.core.database.ListeningSessionDao,
+        listeningRollupDao: cx.aswin.boxlore.core.database.ListeningRollupDao,
+        listeningInsightsMaintenance: cx.aswin.boxlore.core.database.ListeningInsightsMaintenance,
+        queueRepository: cx.aswin.boxlore.core.playback.QueueRepository,
+        podcastRepository: PodcastRepository,
+        rankingFeedbackRepository: RankingFeedbackRepository,
+        userPreferencesRepository: UserPreferencesRepository,
+    ) : this(
+        context = context,
+        listeningHistoryDao = listeningHistoryDao,
+        listeningSessionDao = listeningSessionDao,
+        listeningRollupDao = listeningRollupDao,
+        listeningInsightsMaintenance = listeningInsightsMaintenance,
+        queueRepository = queueRepository,
+        podcastRepository = podcastRepository,
+        rankingFeedbackRepository = rankingFeedbackRepository,
+        userPreferencesRepository = userPreferencesRepository,
+        historyStore =
+            defaultPlaybackHistoryStore(
+                context = context,
+                listeningHistoryDao = listeningHistoryDao,
+                listeningSessionDao = listeningSessionDao,
+                listeningRollupDao = listeningRollupDao,
+                listeningInsightsMaintenance = listeningInsightsMaintenance,
+                podcastRepository = podcastRepository,
+                rankingFeedbackRepository = rankingFeedbackRepository,
+            ),
+    )
+
+    internal val mediaHandle = PlaybackMediaControllerHandle()
     val controller: MediaController? get() = mediaHandle.controller
 
-    private val _playerState = kotlinx.coroutines.flow.MutableStateFlow(PlayerState())
-    val playerState = _playerState.asStateFlow()
+    internal val repositoryScope = historyStore.playerDeps.scope
+    internal val playerStateFlow: MutableStateFlow<PlayerState> = historyStore.playerDeps.playerStateFlow
+    val playerState = playerStateFlow.asStateFlow()
 
     // Preferences for session state
-    private val prefs = PrefsFileMigrator.open(
-        context,
-        newName = PrefsFileMigrator.Files.PLAYER,
-        oldName = PrefsFileMigrator.LegacyFiles.PLAYER,
-    )
+    private val prefs =
+        PrefsFileMigrator.open(
+            context,
+            newName = PrefsFileMigrator.Files.PLAYER,
+            oldName = PrefsFileMigrator.LegacyFiles.PLAYER,
+        )
+
+    @Suppress("PropertyName")
     private val KEY_PLAYER_DISMISSED = "player_dismissed"
+
+    @Suppress("PropertyName")
     private val KEY_LAST_SLEEP_PROMPT_WINDOW_ID = "last_sleep_prompt_window_id"
+
+    @Suppress("PropertyName")
     private val KEY_DEBUG_SKIP_SLEEP_WINDOW = "debug_skip_sleep_window"
 
     private var currentSkipBehavior: String = "just_skip"
@@ -142,44 +178,38 @@ class PlaybackRepository(
         return uuid
     }
 
-    // Scope for progress updates
-    private val repositoryScope =
-        kotlinx.coroutines.CoroutineScope(
-            kotlinx.coroutines.Dispatchers.Main + kotlinx.coroutines.SupervisorJob(),
-        )
     private var progressJob: Job? = null
-    private var sleepTimerJob: Job? = null
 
+    @Suppress("PropertyName")
     private val QUEUE_MAX_SIZE = 50
 
     // Local memory of rejected auto-fill suggestions (feeds the SmartQueueEngine).
     private val queueSkipMemory = QueueSkipMemory.fromContext(context)
 
-    private val historyStore =
-        PlaybackHistoryStore(
-            context = context,
-            scope = repositoryScope,
-            playerState = playerState,
-            playerStateFlow = _playerState,
-            listeningHistoryDao = listeningHistoryDao,
-            listeningInsightsDao = listeningInsightsDao,
-            podcastRepository = podcastRepository,
-            rankingFeedbackRepository = rankingFeedbackRepository,
-        )
-
-    private val chaptersController =
+    internal val chaptersController =
         PlaybackChaptersTranscriptController(
             scope = repositoryScope,
             playerState = playerState,
-            playerStateFlow = _playerState,
+            playerStateFlow = playerStateFlow,
             podcastRepository = podcastRepository,
             deviceUuid = ::getOrCreateDeviceUuid,
         )
 
-    private val queueCoordinator =
+    internal val sleepController =
+        PlaybackSleepController(
+            scope = repositoryScope,
+            playerStateFlow = playerStateFlow,
+            prefs = prefs,
+            mediaHandle = mediaHandle,
+            stopProgressTicker = ::stopProgressTicker,
+            lastSleepPromptWindowIdKey = KEY_LAST_SLEEP_PROMPT_WINDOW_ID,
+            debugSkipSleepWindowKey = KEY_DEBUG_SKIP_SLEEP_WINDOW,
+        )
+
+    internal val queueCoordinator =
         PlaybackQueueCoordinator(
             scope = repositoryScope,
-            playerStateFlow = _playerState,
+            playerStateFlow = playerStateFlow,
             mediaHandle = mediaHandle,
             queueRepository = queueRepository,
             rankingFeedbackRepository = rankingFeedbackRepository,
@@ -190,16 +220,16 @@ class PlaybackRepository(
             checkSavedProgress = { startEpisodeId, initialPositionMs, entryPoint ->
                 checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint)
             },
-            onPlaybackStarted = ::onPlaybackStarted,
+            onPlaybackStarted = { sleepController.onPlaybackStarted() },
             storePendingEntryPoint = ::storePendingEntryPoint,
             saveCurrentState = { updateLastPlayedAt -> saveCurrentState(updateLastPlayedAt) },
             stopProgressTicker = ::stopProgressTicker,
         )
 
-    private val transportHelper =
+    internal val transportHelper =
         PlaybackTransportHelper(
             scope = repositoryScope,
-            playerStateFlow = _playerState,
+            playerStateFlow = playerStateFlow,
             mediaHandle = mediaHandle,
             listeningHistoryDao = listeningHistoryDao,
             storePendingEntryPoint = ::storePendingEntryPoint,
@@ -232,54 +262,55 @@ class PlaybackRepository(
         }
         repositoryScope.launch {
             userPreferencesRepository.seekBackwardMsStream.collect { value ->
-                _playerState.value =
-                    _playerState.value.copy(
+                playerStateFlow.value =
+                    playerStateFlow.value.copy(
                         seekBackwardMs = value.coerceAtLeast(1_000L),
                     )
             }
         }
         repositoryScope.launch {
             userPreferencesRepository.seekForwardMsStream.collect { value ->
-                _playerState.value =
-                    _playerState.value.copy(
+                playerStateFlow.value =
+                    playerStateFlow.value.copy(
                         seekForwardMs = value.coerceAtLeast(1_000L),
                     )
             }
         }
     }
 
-    fun generateAutoTranscript() = chaptersController.generateAutoTranscript()
-
-    fun generateAutoChapters() = chaptersController.generateAutoChapters()
-
     private fun initializeMediaController() {
         val sessionToken = SessionToken(context, ComponentName(context, BoxLorePlaybackService::class.java))
         mediaHandle.future = MediaController.Builder(context, sessionToken).buildAsync()
         mediaHandle.future?.addListener({
             mediaHandle.controller = mediaHandle.future?.get()
-            // Restore the persisted playback speed so it survives app restarts.
+            // Restore the persisted playback speed so UI and ExoPlayer stay aligned
+            // across process death and session clears (even when the rate is already 1×).
             repositoryScope.launch {
-                val savedSpeed = userPreferencesRepository.playbackSpeedStream.first()
-                if (savedSpeed != 1.0f && mediaHandle.controller?.playbackParameters?.speed != savedSpeed) {
-                    mediaHandle.controller?.playbackParameters = PlaybackParameters(savedSpeed)
-                    _playerState.value = _playerState.value.copy(playbackSpeed = savedSpeed)
+                val savedSpeed =
+                    userPreferencesRepository.playbackSpeedStream
+                        .first()
+                        .coerceIn(0.5f, 3.0f)
+                val controller = mediaHandle.controller
+                if (controller != null && controller.playbackParameters.speed != savedSpeed) {
+                    controller.playbackParameters = PlaybackParameters(savedSpeed)
                 }
+                playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = savedSpeed)
             }
             mediaHandle.controller?.addListener(
                 PlaybackMediaControllerBridge(
                     context = context,
                     scope = repositoryScope,
-                    playerStateFlow = _playerState,
+                    playerStateFlow = playerStateFlow,
                     mediaHandle = mediaHandle,
                     queueRepository = queueRepository,
                     currentSkipBehavior = { currentSkipBehavior },
                     activePlaybackStartTimeMs = { activePlaybackStartTimeMs },
                     setActivePlaybackStartTimeMs = { activePlaybackStartTimeMs = it },
-                    onPlaybackStarted = ::onPlaybackStarted,
+                    onPlaybackStarted = { sleepController.onPlaybackStarted() },
                     startProgressTicker = ::startProgressTicker,
                     stopProgressTicker = ::stopProgressTicker,
                     saveCurrentState = { updateLastPlayedAt -> saveCurrentState(updateLastPlayedAt) },
-                    cancelSleepTimer = { sleepTimerJob?.cancel() },
+                    cancelSleepTimer = { sleepController.cancelSleepTimerJob() },
                     syncQueueToDb = { queueCoordinator.syncQueueToDb() },
                     reconcileQueueWithController = { queueCoordinator.reconcileQueueWithController() },
                     markEpisodeAsCompleted = { episode, podcast ->
@@ -308,7 +339,7 @@ class PlaybackRepository(
         val duration = controller.duration.coerceAtLeast(0)
         val hasMedia = controller.mediaItemCount > 0
 
-        if (hasMedia && _playerState.value.currentEpisode == null) {
+        if (hasMedia && playerStateFlow.value.currentEpisode == null) {
             // MediaController has media but we don't have metadata - restore from DB
             repositoryScope.launch {
                 val lastSession = listeningHistoryDao.getLastPlayedSessionAny()
@@ -334,7 +365,7 @@ class PlaybackRepository(
                             genre = "Podcast",
                         )
                     // Enrich with P2.0 data from queue if available
-                    val currentQueue = _playerState.value.queue
+                    val currentQueue = playerStateFlow.value.queue
                     val queueEp = currentQueue.find { it.id == episode.id }
                     if (queueEp != null) {
                         episode =
@@ -345,7 +376,7 @@ class PlaybackRepository(
                                 transcripts = queueEp.transcripts,
                             )
                     }
-                    _playerState.value =
+                    playerStateFlow.value =
                         PlayerState(
                             currentEpisode = episode,
                             currentPodcast = podcast,
@@ -355,7 +386,7 @@ class PlaybackRepository(
                             bufferedPosition = bufferedPosition,
                             duration = if (duration > 0) duration else lastSession.durationMs,
                             playbackSpeed = controller.playbackParameters.speed,
-                            queue = _playerState.value.queue, // Preserve queue
+                            queue = playerStateFlow.value.queue, // Preserve queue
                             isLiked = lastSession.isLiked,
                         )
                     if (isPlaying) startProgressTicker()
@@ -363,13 +394,13 @@ class PlaybackRepository(
             }
         } else {
             // Just sync playback state
-            _playerState.value =
-                _playerState.value.copy(
+            playerStateFlow.value =
+                playerStateFlow.value.copy(
                     isPlaying = isPlaying,
                     isLoading = isLoading,
-                    position = if (currentPosition > 0) currentPosition else _playerState.value.position,
+                    position = if (currentPosition > 0) currentPosition else playerStateFlow.value.position,
                     bufferedPosition = bufferedPosition,
-                    duration = if (duration > 0) duration else _playerState.value.duration,
+                    duration = if (duration > 0) duration else playerStateFlow.value.duration,
                     playbackSpeed = controller.playbackParameters.speed,
                 )
             if (isPlaying) startProgressTicker()
@@ -391,8 +422,8 @@ class PlaybackRepository(
                             val bufferedPos = controller.bufferedPosition
                             val currentDur = controller.duration.coerceAtLeast(0)
 
-                            _playerState.value =
-                                _playerState.value.copy(
+                            playerStateFlow.value =
+                                playerStateFlow.value.copy(
                                     position = currentPos,
                                     bufferedPosition = bufferedPos,
                                     duration = currentDur,
@@ -416,7 +447,7 @@ class PlaybackRepository(
 
     // Helper to save current state
     private suspend fun saveCurrentState(updateLastPlayedAt: Boolean = true) {
-        val state = _playerState.value
+        val state = playerStateFlow.value
         val episode = state.currentEpisode ?: return
         val podcast = state.currentPodcast ?: return
 
@@ -438,21 +469,23 @@ class PlaybackRepository(
         val finalCompleted = wasCompleted || isCompletedNow
         val finalPosition = if (isCompletedNow && !wasCompleted) 0L else state.position
 
-        savePlaybackState(
-            podcastId = podcast.id,
-            episodeId = episode.id,
-            positionMs = finalPosition,
-            durationMs = state.duration,
-            episodeTitle = episode.title,
-            episodeImageUrl = episode.imageUrl,
-            podcastImageUrl = podcast.imageUrl,
-            episodeAudioUrl = episode.audioUrl,
-            podcastName = podcast.title,
-            isCompleted = finalCompleted,
-            isLiked = state.isLiked,
-            lastPlayedAt = lastPlayed,
-            enclosureType = episode.enclosureType,
-            episodeDescription = episode.description,
+        historyStore.savePlaybackState(
+            ListeningHistoryUpsertLogic.ProgressSaveInput(
+                podcastId = podcast.id,
+                episodeId = episode.id,
+                positionMs = finalPosition,
+                durationMs = state.duration,
+                episodeTitle = episode.title,
+                episodeImageUrl = episode.imageUrl,
+                podcastImageUrl = podcast.imageUrl,
+                episodeAudioUrl = episode.audioUrl,
+                podcastName = podcast.title,
+                isCompleted = finalCompleted,
+                isLiked = state.isLiked,
+                lastPlayedAt = lastPlayed,
+                enclosureType = episode.enclosureType,
+                episodeDescription = episode.description,
+            ),
         )
     }
 
@@ -466,7 +499,7 @@ class PlaybackRepository(
         durationMs: Long,
         entryPoint: PlaybackEntryPoint,
     ): Boolean =
-        cx.aswin.boxlore.core.playback.MixtapeResumePolicy.shouldResetPlayback(
+        MixtapeResumePolicy.shouldResetPlayback(
             savedProgressMs = savedProgressMs,
             durationMs = durationMs,
             entryPoint = entryPoint,
@@ -506,39 +539,6 @@ class PlaybackRepository(
         return Pair(initialPosition.positionMs, initialLikeState)
     }
 
-    /**
-     * Returns a stable id for the current "night window" (10:30 PM - 4:00 AM), or null if
-     * the current time is outside that window. Nights that cross midnight share the id of the
-     * calendar day the window started on, so a single window is never split in two.
-     */
-    private fun currentNightWindowId(): String? =
-        cx.aswin.boxlore.core.playback.NightWindowLogic
-            .currentNightWindowId()
-
-    fun isDebugSkipSleepWindowEnabled(): Boolean = prefs.getBoolean(KEY_DEBUG_SKIP_SLEEP_WINDOW, false)
-
-    fun setDebugSkipSleepWindow(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_DEBUG_SKIP_SLEEP_WINDOW, enabled).apply()
-    }
-
-    /**
-     * Single chokepoint for the late-night sleep prompt. Called whenever playback transitions
-     * from paused/stopped to playing, from any entry point (new episode, resume, skip,
-     * notification, Bluetooth, auto-advance). Shows the prompt once per night window.
-     */
-    private fun onPlaybackStarted() {
-        if (isDebugSkipSleepWindowEnabled()) {
-            _playerState.value = _playerState.value.copy(showLateNightNudge = true)
-            return
-        }
-        val windowId = currentNightWindowId() ?: return
-        val stored = prefs.getString(KEY_LAST_SLEEP_PROMPT_WINDOW_ID, null)
-        if (windowId != stored) {
-            prefs.edit().putString(KEY_LAST_SLEEP_PROMPT_WINDOW_ID, windowId).apply()
-            _playerState.value = _playerState.value.copy(showLateNightNudge = true)
-        }
-    }
-
     private fun storePendingEntryPoint(entryPointContext: android.os.Bundle?) {
         if (entryPointContext != null) {
             val map = mutableMapOf<String, Any>()
@@ -555,63 +555,6 @@ class PlaybackRepository(
             }
         }
     }
-
-    suspend fun playQueue(
-        episodes: List<Episode>,
-        podcast: Podcast,
-        startIndex: Int = 0,
-        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-        initialPositionMs: Long? = null,
-        sourceContext: android.os.Bundle? = null,
-    ) = queueCoordinator.playQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext)
-
-    suspend fun addToQueue(
-        episode: Episode,
-        podcast: Podcast,
-        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-    ) = queueCoordinator.addToQueue(episode, podcast, entryPoint)
-
-    suspend fun addToQueueNext(
-        episode: Episode,
-        podcast: Podcast,
-    ) = queueCoordinator.addToQueueNext(episode, podcast)
-
-    suspend fun removeFromQueue(
-        episodeId: String,
-        deferSkipSignal: Boolean = false,
-    ): RemovedQueueItem? = queueCoordinator.removeFromQueue(episodeId, deferSkipSignal)
-
-    fun confirmQueueRemoval(removed: RemovedQueueItem) = queueCoordinator.confirmQueueRemoval(removed)
-
-    suspend fun undoQueueRemoval(removed: RemovedQueueItem) = queueCoordinator.undoQueueRemoval(removed)
-
-    fun moveQueueItem(
-        fromQueueIndex: Int,
-        toQueueIndex: Int,
-    ) = queueCoordinator.moveQueueItem(fromQueueIndex, toQueueIndex)
-
-    suspend fun persistQueueOrder(
-        movedEpisodeId: String? = null,
-        fromQueueIndex: Int = -1,
-        toQueueIndex: Int = -1,
-    ) = queueCoordinator.persistQueueOrder(movedEpisodeId, fromQueueIndex, toQueueIndex)
-
-    suspend fun hasNonLoreQueue(): Boolean = queueCoordinator.hasNonLoreQueue()
-
-    suspend fun stopAndClearQueue() = queueCoordinator.stopAndClearQueue()
-
-    suspend fun playEpisode(
-        episode: Episode,
-        podcast: Podcast,
-        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-        initialPositionMs: Long? = null,
-    ) = queueCoordinator.playEpisode(episode, podcast, entryPoint, initialPositionMs)
-
-    suspend fun playFromQueueIndex(
-        episodeId: String,
-        queueList: List<Episode>,
-        podcast: Podcast,
-    ) = queueCoordinator.playFromQueueIndex(episodeId, queueList, podcast)
 
     /**
      * Restore the last played session on app startup (does NOT auto-play)
@@ -682,15 +625,18 @@ class PlaybackRepository(
         val controllerPosition = controller?.currentPosition?.takeIf { it > 0 }
         val controllerDuration = controller?.duration?.takeIf { it > 0 }
 
-        _playerState.value =
-            _playerState.value.copy(
-                currentEpisode = episode,
-                currentPodcast = podcast,
-                isPlaying = controllerPlaying,
-                position = controllerPosition ?: lastSession.progressMs,
-                duration = controllerDuration ?: lastSession.durationMs,
-                isLiked = lastSession.isLiked,
-                queue = restoredQueue,
+        playerStateFlow.value =
+            PlaybackControlSync.withSyncedPlaybackSpeed(
+                playerStateFlow.value.copy(
+                    currentEpisode = episode,
+                    currentPodcast = podcast,
+                    isPlaying = controllerPlaying,
+                    position = controllerPosition ?: lastSession.progressMs,
+                    duration = controllerDuration ?: lastSession.durationMs,
+                    isLiked = lastSession.isLiked,
+                    queue = restoredQueue,
+                ),
+                controllerSpeed = controller?.playbackParameters?.speed,
             )
 
         // Re-sync after metadata restore in case the controller connected first and
@@ -706,39 +652,25 @@ class PlaybackRepository(
      * Clear the current session (for swipe-to-dismiss)
      */
     fun clearSession() {
+        val previous = playerStateFlow.value
+        val controllerSpeed = mediaHandle.controller?.playbackParameters?.speed
         mediaHandle.controller?.stop()
         mediaHandle.controller?.clearMediaItems()
         stopProgressTicker()
-        _playerState.value = PlayerState()
+        sleepController.cancelTimer()
+        // Keep speed / seek sizes so the next episode's UI matches ExoPlayer + prefs.
+        playerStateFlow.value =
+            PlaybackControlSync.clearedStatePreservingControls(previous, controllerSpeed)
         // Mark as dismissed so we don't restore on next app launch
         prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, true).apply()
     }
-
-    fun togglePlayPause(entryPointContext: android.os.Bundle? = null) {
-        val controller = mediaHandle.controller ?: return
-        if (controller.isPlaying) {
-            // Need to set extras for pausing if we want them?
-            // Actually pause just acts on current item. We can't change extras easily on pause via controller.
-            // But we can trigger pause.
-            controller.pause()
-        } else {
-            // Use our robust resume() which handles state restoration
-            resume(entryPointContext)
-        }
-    }
-
-    fun pause() {
-        mediaHandle.controller?.pause()
-    }
-
-    fun resume(entryPointContext: android.os.Bundle? = null) = transportHelper.resume(entryPointContext)
 
     fun seekTo(
         positionMs: Long,
         play: Boolean = false,
     ) {
         mediaHandle.controller?.seekTo(positionMs)
-        _playerState.value = _playerState.value.copy(position = positionMs)
+        playerStateFlow.value = playerStateFlow.value.copy(position = positionMs)
 
         if (play) {
             mediaHandle.controller?.play()
@@ -747,253 +679,4 @@ class PlaybackRepository(
         // Save state on seek (do not update lastPlayedAt to prevent reordering on scrub)
         repositoryScope.launch { saveCurrentState(updateLastPlayedAt = false) }
     }
-
-    fun skipForward() {
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper
-            .setSeekSource("seek_forward")
-        val state = _playerState.value
-        val incrementMs = PlaybackSkipPolicy.sanitizeSeekForward(state.seekForwardMs)
-        seekTo((state.position + incrementMs).coerceAtMost(state.duration))
-    }
-
-    fun skipBackward() {
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper
-            .setSeekSource("seek_backward")
-        val state = _playerState.value
-        val incrementMs = PlaybackSkipPolicy.sanitizeSeekBackward(state.seekBackwardMs)
-        seekTo((state.position - incrementMs).coerceAtLeast(0))
-    }
-
-    fun skipToEpisode(
-        index: Int,
-        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-        sourceContext: android.os.Bundle? = null,
-    ) = transportHelper.skipToEpisode(index, entryPoint, sourceContext)
-
-    fun skipToNextEpisode() = transportHelper.skipToNextEpisode()
-
-    fun skipToPreviousEpisode() = transportHelper.skipToPreviousEpisode()
-
-    fun setPlaybackSpeed(speed: Float) {
-        mediaHandle.controller?.playbackParameters = PlaybackParameters(speed)
-        _playerState.value = _playerState.value.copy(playbackSpeed = speed)
-        repositoryScope.launch {
-            try {
-                userPreferencesRepository.setPlaybackSpeed(speed)
-            } catch (exception: java.io.IOException) {
-                Log.w("PlaybackRepo", "Unable to persist playback speed", exception)
-            }
-        }
-    }
-
-    fun setSleepTimer(
-        durationMinutes: Int,
-        dismissNudge: Boolean = true,
-    ) {
-        Log.d("PlaybackRepo", "setSleepTimer called: $durationMinutes minutes, dismissNudge=$dismissNudge")
-        sleepTimerJob?.cancel()
-
-        if (durationMinutes <= 0) {
-            Log.d("PlaybackRepo", "Sleep timer: OFF")
-            SleepTimerHolder.activeSleepTimerEndMs = null
-            SleepTimerHolder.sleepAtEndOfEpisode = false
-            _playerState.value =
-                _playerState.value.copy(
-                    sleepTimerEnd = null,
-                    sleepAtEndOfEpisode = false,
-                    showLateNightNudge = if (dismissNudge) false else _playerState.value.showLateNightNudge,
-                )
-            return
-        }
-
-        // Special marker for "End of Episode" mode
-        if (durationMinutes == cx.aswin.boxlore.core.model.SleepTimerConstants.END_OF_EPISODE_MINUTES) {
-            Log.d("PlaybackRepo", "Sleep timer: End of Episode mode ENABLED")
-            SleepTimerHolder.activeSleepTimerEndMs = null
-            SleepTimerHolder.sleepAtEndOfEpisode = true
-            _playerState.value =
-                _playerState.value.copy(
-                    sleepAtEndOfEpisode = true,
-                    sleepTimerEnd = null,
-                    showLateNightNudge = if (dismissNudge) false else _playerState.value.showLateNightNudge,
-                )
-
-            sleepTimerJob =
-                repositoryScope.launch {
-                    while (true) {
-                        val state = _playerState.value
-                        if (!state.sleepAtEndOfEpisode) break
-
-                        if (state.duration > 0 && state.position > 0) {
-                            val remaining = (state.duration - state.position).coerceAtLeast(0)
-                            val dynamicEndTime = System.currentTimeMillis() + remaining
-                            _playerState.value = _playerState.value.copy(sleepTimerEnd = dynamicEndTime)
-                        }
-
-                        delay(1000)
-                    }
-                }
-        } else {
-            // Fixed timer mode
-            val endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
-            Log.d("PlaybackRepo", "Sleep timer: Fixed ${durationMinutes}m, endTime=$endTime")
-            SleepTimerHolder.activeSleepTimerEndMs = endTime
-            SleepTimerHolder.sleepAtEndOfEpisode = false
-            _playerState.value =
-                _playerState.value.copy(
-                    sleepTimerEnd = endTime,
-                    sleepAtEndOfEpisode = false,
-                    showLateNightNudge = if (dismissNudge) false else _playerState.value.showLateNightNudge,
-                )
-
-            sleepTimerJob =
-                repositoryScope.launch {
-                    while (true) {
-                        val currentEnd = SleepTimerHolder.activeSleepTimerEndMs
-                        if (currentEnd == null) break
-                        if (System.currentTimeMillis() >= currentEnd) {
-                            Log.d("PlaybackRepo", "Sleep timer: FIRING! Pausing playback.")
-                            SleepTimerHolder.activeSleepTimerEndMs = null
-                            mediaHandle.controller?.pause()
-                            stopProgressTicker()
-                            _playerState.value =
-                                _playerState.value.copy(
-                                    sleepTimerEnd = null,
-                                    isPlaying = false,
-                                    showLateNightNudge = false,
-                                )
-                            break
-                        }
-                        delay(1000)
-                    }
-                }
-        }
-    }
-
-    /** True when the current time falls inside the 10:30 PM - 4:00 AM night window. */
-    fun isInNightWindow(): Boolean = currentNightWindowId() != null
-
-    fun dismissLateNightNudge() {
-        Log.d("PlaybackRepo", "dismissLateNightNudge() called, current showLateNightNudge=${_playerState.value.showLateNightNudge}")
-        _playerState.value = _playerState.value.copy(showLateNightNudge = false)
-        // Snooze for the rest of this window even if it wasn't stamped on show
-        // (e.g. a debug-forced prompt outside the normal trigger).
-        currentNightWindowId()?.let { windowId ->
-            prefs.edit().putString(KEY_LAST_SLEEP_PROMPT_WINDOW_ID, windowId).apply()
-        }
-    }
-
-    /** Clears the once-per-night guard so the prompt can be re-triggered for testing. */
-    fun resetSleepNudgeForTesting() {
-        prefs.edit().remove(KEY_LAST_SLEEP_PROMPT_WINDOW_ID).apply()
-        setSleepTimer(0)
-    }
-
-    /** Debug-only: force the prompt to show immediately, bypassing all cadence checks. */
-    fun forceShowSleepPromptForTesting() {
-        _playerState.value = _playerState.value.copy(showLateNightNudge = true)
-    }
-
-    val lastPlayedSession: Flow<PlaybackSession?> = historyStore.lastPlayedSession
-
-    val resumeSessions: Flow<List<PlaybackSession>> = historyStore.resumeSessions
-
-    override fun getAllHistory(): Flow<List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>> =
-        historyStore.getAllHistory()
-
-    val likedEpisodes: Flow<List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>> =
-        historyStore.likedEpisodes
-
-    val completedEpisodeIds: Flow<Set<String>> = historyStore.completedEpisodeIds
-
-    override suspend fun upsertHistoryEntity(entity: cx.aswin.boxlore.core.database.ListeningHistoryEntity) {
-        historyStore.upsertHistoryEntity(entity)
-    }
-
-    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> =
-        historyStore.observeHistoryTimeline()
-
-    override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> =
-        historyStore.observeInsights(period)
-
-    override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? =
-        historyStore.removeHistoryItem(episodeId)
-
-    override suspend fun restoreHistoryRemoval(removal: ListeningHistoryRemoval) =
-        historyStore.restoreHistoryRemoval(removal)
-
-    override suspend fun clearHistory() = historyStore.clearHistory()
-
-    override suspend fun maintainListeningAnalytics() = historyStore.maintainListeningAnalytics()
-
-    suspend fun recordListeningSession(session: cx.aswin.boxlore.core.database.ListeningSessionEntity) =
-        historyStore.recordListeningSession(session)
-
-    suspend fun toggleLike(
-        episode: Episode,
-        podcastId: String,
-        podcastTitle: String,
-        podcastImageUrl: String?,
-    ) = historyStore.toggleLike(episode, podcastId, podcastTitle, podcastImageUrl)
-
-    suspend fun toggleCompletion(
-        episode: Episode,
-        podcastId: String,
-        podcastTitle: String,
-        podcastImageUrl: String?,
-    ) = historyStore.toggleCompletion(episode, podcastId, podcastTitle, podcastImageUrl)
-
-    suspend fun savePlaybackState(
-        podcastId: String,
-        episodeId: String,
-        positionMs: Long,
-        durationMs: Long,
-        episodeTitle: String,
-        episodeImageUrl: String?,
-        podcastImageUrl: String?,
-        episodeAudioUrl: String,
-        podcastName: String,
-        isCompleted: Boolean,
-        isLiked: Boolean,
-        lastPlayedAt: Long = System.currentTimeMillis(),
-        enclosureType: String? = null,
-        episodeDescription: String? = null,
-    ) = historyStore.savePlaybackState(
-        podcastId,
-        episodeId,
-        positionMs,
-        durationMs,
-        episodeTitle,
-        episodeImageUrl,
-        podcastImageUrl,
-        episodeAudioUrl,
-        podcastName,
-        isCompleted,
-        isLiked,
-        lastPlayedAt,
-        enclosureType,
-        episodeDescription,
-    )
-
-    suspend fun toggleLike() = historyStore.toggleLike()
-
-    suspend fun deleteSession(episodeId: String) = historyStore.deleteSession(episodeId)
-
-    suspend fun getSession(episodeId: String): PlaybackSession? = historyStore.getSession(episodeId)
-
-    suspend fun getRecentHistoryList(limit: Int): List<cx.aswin.boxlore.core.database.ListeningHistoryEntity> =
-        historyStore.getRecentHistoryList(limit)
-
-    override suspend fun markAllEpisodesCompleted(
-        episodes: List<Episode>,
-        podcastId: String,
-        podcastTitle: String,
-        podcastImageUrl: String?,
-    ) = historyStore.markAllEpisodesCompleted(episodes, podcastId, podcastTitle, podcastImageUrl)
-
-    suspend fun markAllEpisodesUncompleted(episodes: List<Episode>) =
-        historyStore.markAllEpisodesUncompleted(episodes)
-
-    suspend fun getHistoryForRecommendations(limit: Int = 15): List<cx.aswin.boxlore.core.network.model.HistoryItem> =
-        historyStore.getHistoryForRecommendations(limit)
 }

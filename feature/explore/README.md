@@ -7,7 +7,7 @@ Owns Explore discovery and the Learn tab presentation: browse/search discovery, 
 ## Public API
 
 - `ExploreScreen` and `ExploreViewModel` for the Explore route.
-- `LearnScreen` and `LearnViewModel` for the Learn route.
+- `LearnScreen` and `LearnViewModel` for the Learn route (curiosity cards, queue/play actions).
 - `LearnHistoryScreen` and `LearnHistoryViewModel` for Learn history.
 - `LearnCuriosityHistoryStore` for Learn history persistence through prefs APIs.
 - `LearnCuriosityCard` as the feature UI model for curiosity cards.

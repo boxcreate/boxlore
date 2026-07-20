@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.getHistoryForRecommendations
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
 

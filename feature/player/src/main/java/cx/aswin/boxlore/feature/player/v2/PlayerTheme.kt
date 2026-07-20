@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -15,10 +16,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
+import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import coil.request.SuccessResult
 import coil.size.Size
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.designsystem.theme.LocalSurfaceStyle
@@ -28,37 +29,50 @@ import cx.aswin.boxlore.feature.player.extractSeedColor
 /**
  * Extracts an artwork-seeded Material color scheme for the player.
  * Falls back to the ambient [MaterialTheme.colorScheme] until extraction completes.
+ *
+ * Uses Coil [coil.ImageLoader.execute] (not an undisplayed AsyncImagePainter) so palette
+ * extraction still runs after process death when the memory cache is cold. Disk cache
+ * is enabled so a kill-from-recents reopen can reseed from disk without waiting on
+ * network — matching how Explore extracts card accents.
  */
 @Composable
 fun rememberPlayerColorScheme(imageUrl: String?): ColorScheme {
     val context = LocalContext.current
     val surfaceStyle = LocalSurfaceStyle.current
     val effectiveDarkTheme = LocalEffectiveDarkTheme.current
+    val ambientScheme = MaterialTheme.colorScheme
 
-    var extracted by remember { mutableStateOf<ColorScheme?>(null) }
-
-    val painter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(context)
-            .data(imageUrl)
-            .size(Size(100, 100))
-            .allowHardware(false) // Required for Palette
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.DISABLED)
-            .build()
-    )
-
-    LaunchedEffect(imageUrl, painter.state, effectiveDarkTheme, surfaceStyle) {
-        val painterState = painter.state
-        if (painterState is AsyncImagePainter.State.Success) {
-            val bitmap = (painterState.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-            if (bitmap != null) {
-                val seedColor = extractSeedColor(bitmap)
-                extracted = generateBrandColorScheme(seedColor, effectiveDarkTheme, surfaceStyle)
-            }
-        }
+    var extracted by remember(imageUrl, effectiveDarkTheme, surfaceStyle) {
+        mutableStateOf<ColorScheme?>(null)
     }
 
-    return extracted ?: MaterialTheme.colorScheme
+    LaunchedEffect(imageUrl, effectiveDarkTheme, surfaceStyle) {
+        if (imageUrl.isNullOrBlank()) {
+            extracted = null
+            return@LaunchedEffect
+        }
+        extracted =
+            runCatching {
+                val request =
+                    ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .size(Size(100, 100))
+                        .allowHardware(false) // Required for Palette pixel reads
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .build()
+                val result =
+                    context.imageLoader.execute(request) as? SuccessResult
+                        ?: return@runCatching null
+                val bitmap =
+                    (result.drawable as? BitmapDrawable)?.bitmap
+                        ?: return@runCatching null
+                val seedColor = extractSeedColor(bitmap)
+                generateBrandColorScheme(seedColor, effectiveDarkTheme, surfaceStyle)
+            }.getOrNull()
+    }
+
+    return extracted ?: ambientScheme
 }
 
 /**

@@ -26,6 +26,17 @@ src/main/java/cx/aswin/boxlore/feature/library/
   PlayAllFab.kt
   SmartDownloadsSettingsScreen.kt
   SubscriptionsScreen.kt
+  history/
+    HistoryActivityGraphs.kt      — weekly activity + time-of-day charts, day filter chips
+    HistoryDialogs.kt           — tracking notice, clear-all, date-picker dialogs
+    HistoryEmptyState.kt          — zero-history empty state
+    HistoryInsightCarousel.kt     — swipeable insight metric cards
+    HistoryListItems.kt           — timeline rows, status filter, date headers
+    HistoryScreenBody.kt          — loading / empty / success body switch
+    HistoryScreenEffects.kt       — lifecycle, analytics, undo snackbar
+    HistoryStatsCards.kt          — period selector, listening-time hero card
+    HistorySuccessList.kt         — success-state LazyColumn (stats + timeline)
+    HistoryTopBar.kt              — collapsible top app bar + overflow menu
 ```
 
 ## Dependencies
@@ -50,6 +61,8 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## Testing notes
 
 - Unit tests live under `feature/library/src/test`.
+- History date-picker conversion uses UTC midnight millis (`ZoneOffset.UTC`) so the selected calendar day is preserved.
+- History back navigation exposes `history_back` for TalkBack.
 - `HistoryFilterTest` covers history filtering behavior.
 - `SubscriptionSortTest` covers subscription ordering.
 - Broader ViewModel coverage should use fakes for catalog, download, playback, and ranking dependencies.

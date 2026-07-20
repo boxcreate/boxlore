@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="history_title">Listening History</string>
+    <string name="history_back">Back</string>
     <string name="history_clear_all">Clear all</string>
     <string name="history_clear_confirm_title">Clear listening history?</string>
     <string name="history_clear_confirm_body">This removes your timeline and on-device listening insights. This cannot be undone.</string>

@@ -12,8 +12,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.playback.pause
+import cx.aswin.boxlore.core.playback.resume
+import cx.aswin.boxlore.core.playback.setSleepTimer
+import cx.aswin.boxlore.core.playback.generateAutoTranscript
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
+import cx.aswin.boxlore.core.playback.setPlaybackSpeed
+import cx.aswin.boxlore.core.playback.skipBackward
+import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.player.FullscreenTranscriptScreen

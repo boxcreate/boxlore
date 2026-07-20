@@ -4,6 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.core.playback.isDebugSkipSleepWindowEnabled
+import cx.aswin.boxlore.core.playback.setDebugSkipSleepWindow
+import cx.aswin.boxlore.core.playback.forceShowSleepPromptForTesting
+import cx.aswin.boxlore.core.playback.setSleepTimer
+import cx.aswin.boxlore.core.playback.resetSleepNudgeForTesting
+import cx.aswin.boxlore.core.playback.deleteSession
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository

@@ -6,10 +6,13 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 
 ## Public API
 
-- `PlaybackRepository` exposes player/session operations to app and feature UI.
+- `PlaybackRepository` exposes player/session operations to app and feature UI (history ports via
+  class delegation to `PlaybackHistoryStore`; queue / transport / sleep / history helpers via
+  same-package extension API files).
 - `QueueRepository` and `QueueManager` persist and orchestrate explicit queue operations.
 - `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic.
 - `PlaybackMediaIdPolicy`, `PlaybackArtworkResolver`, and `PlaybackSkipPolicy` define session IDs, artwork, and skip behavior.
+- `PlaybackControlSync` keeps UI playback speed / seek sizes aligned with Media3 when a session is cleared or a new queue starts, and sanitizes user-requested speeds before apply/persist.
 - `HistoryRecommendationLogic`, `AutoVoiceSearchLogic`, `SmartQueueRefillPolicy`, `MixtapeResumePolicy`, `NightWindowLogic`, and `ListeningHistoryUpsertLogic` are JVM-testable playback helpers.
 - `PlaybackIntroOutroController` manages intro-skip and outro-trim playback lifecycle.
 - `service.BoxLorePlaybackService`, `service.MediaDownloadService`, and `service.AutoCollageProvider` are manifest-facing services.
@@ -19,17 +22,19 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 
 ```text
 src/main/java/cx/aswin/boxlore/core/playback/
-  PlaybackRepository.kt
+  PlaybackRepository.kt              # session core; delegates ListeningHistory* ports
+  PlaybackHistoryStore.kt            # history ports only; implements history ports
+  PlaybackHistoryStoreApi.kt         # non-port history helpers (extensions)
+  PlaybackHistoryMappings.kt         # history entity ↔ model mappers
+  PlaybackHistoryDeps.kt             # player + data deps for HistoryStore ctors
+  PlaybackSleepController.kt         # sleep timer + late-night nudge
+  PlaybackRepositoryQueueApi.kt      # queue extension API
+  PlaybackRepositoryTransportApi.kt  # transport / seek / speed extension API
+  PlaybackRepositoryHistoryApi.kt    # non-port history extension API
+  PlaybackRepositorySleepApi.kt      # sleep / nudge extension API
+  PlaybackRepositoryChaptersApi.kt   # chapters / transcript extension API
   QueueManager.kt
   QueueRepository.kt
-  QueueMath.kt
-  QueueSkipMemory.kt
-  SmartQueueEngine.kt
-  SmartQueueSources.kt
-  MixtapeEngine.kt
-  PlaybackMediaIdPolicy.kt
-  PlaybackArtworkResolver.kt
-  PlaybackSkipPolicy.kt
   ...
   service/
     BoxLorePlaybackService.kt
@@ -42,6 +47,11 @@ src/main/java/cx/aswin/boxlore/core/data/service/
   BoxLorePlaybackService.kt
   MediaDownloadService.kt
 ```
+
+`PlaybackRepository` implements `ListeningHistoryPort` / `ListeningHistoryBackupPort` via Kotlin
+class delegation to `PlaybackHistoryStore`. Same-package extension files expose the remaining
+public one-liner API (`playQueue`, `toggleLike`, `setSleepTimer`, …) so the repository class
+stays under detekt LargeClass / TooManyFunctions limits.
 
 Files under `core/data/service` are compatibility stubs for old service class names.
 
@@ -68,7 +78,7 @@ Files under `core/data/service` are compatibility stubs for old service class na
 ## Testing notes
 
 - Unit tests live under `core/playback/src/test`.
-- Existing coverage includes skip policy, media ID policy, artwork resolution, history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue, and playback session mapping.
+- Existing coverage includes skip policy, media ID policy, artwork resolution, control sync (speed/seek preserve on clear), history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue, and playback session mapping.
 - Service-level tests must install shared dependency holders before exercising service code.
 
 ```bash

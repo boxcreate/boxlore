@@ -44,10 +44,16 @@ class ListeningSessionRecordLogicTest {
     @Test
     fun retentionCutoffIsLocalDayBoundary() {
         val zone = ZoneId.of("UTC")
-        val now = LocalDate.of(2026, 7, 19).atStartOfDay(zone).toInstant().toEpochMilli()
+        val now =
+            LocalDate
+                .of(2026, 7, 19)
+                .atStartOfDay(zone)
+                .toInstant()
+                .toEpochMilli()
         val cutoff = ListeningSessionRecordLogic.retentionCutoffEndedAtExclusive(now, zone)
         val expected =
-            LocalDate.of(2026, 7, 19)
+            LocalDate
+                .of(2026, 7, 19)
                 .minusDays(180)
                 .atStartOfDay(zone)
                 .toInstant()

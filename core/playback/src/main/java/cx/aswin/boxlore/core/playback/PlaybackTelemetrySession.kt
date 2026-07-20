@@ -464,7 +464,8 @@ internal class PlaybackTelemetrySession(
                         ),
                     ) ?: return@launch
                 ListeningSessionRecordLogic.persistSessionAndRollUp(
-                    dao = database.listeningInsightsDao(),
+                    sessions = database.listeningSessionDao(),
+                    maintenance = database.listeningInsightsMaintenance(),
                     session = entity,
                 )
             } catch (e: Exception) {

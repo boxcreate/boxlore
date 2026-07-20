@@ -31,6 +31,7 @@ src/main/java/cx/aswin/boxlore/feature/player/
     PlayerHero.kt
     PlayerSeekbar.kt
     PlayerSheetScaffold.kt
+    PlayerTheme.kt
     logic/
 ```
 
@@ -46,6 +47,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 
 - The player overlay lives with Activity composition rather than a navigation destination.
 - Playback and queue state come from application-scoped core dependencies supplied by app wiring.
+- Artwork-tinted player colors are reseeding via Coil `ImageLoader.execute` (disk+memory cache) from the resolved episode→podcast artwork URL so process death does not leave the sheet on the default theme seed.
 - UI runs on the main thread; playback operations delegate to core repositories and Media3 session APIs.
 
 ## Persistence & identity

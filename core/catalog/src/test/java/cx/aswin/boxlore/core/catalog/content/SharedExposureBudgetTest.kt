@@ -68,7 +68,13 @@ class SharedExposureBudgetTest {
                 now = 2L,
             )
 
-        assertEquals(listOf("ep-1", "ep-2"), first.sections.single().items.map(ContentCandidate::id))
+        assertEquals(
+            listOf("ep-1", "ep-2"),
+            first.sections
+                .single()
+                .items
+                .map(ContentCandidate::id),
+        )
         assertTrue(second.sections.isEmpty())
     }
 
@@ -95,7 +101,13 @@ class SharedExposureBudgetTest {
                 now = 2L,
             )
 
-        assertEquals(listOf("ep-1"), afterReset.sections.single().items.map(ContentCandidate::id))
+        assertEquals(
+            listOf("ep-1"),
+            afterReset.sections
+                .single()
+                .items
+                .map(ContentCandidate::id),
+        )
     }
 
     @Test

@@ -4,6 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.getSession
+import cx.aswin.boxlore.core.playback.pause
+import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.model.Briefing
