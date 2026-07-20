@@ -7,6 +7,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 ## Public API
 
 - `BoxLoreApplication.container` exposes the process-scoped `AppContainer`.
+- On startup, `BoxLoreApplication` configures `LearningEventLog` via `BoxcastPrefs.resolveLearnerLogEnabled`: on by default in debug when unset; **always off in release** unless the user has explicitly persisted an opt-in from the debug screen.
 - `AppContainer` constructs the shared graph: database, network, RSS, ranking, catalog, playback, queue, downloads, prefs, and analytics dependencies.
 - `SharedAppDependenciesHolder` and `DownloadsDependenciesHolder` are installed from the application so workers and Media3 services reuse the same graph.
 - `DownloadServiceLauncherHolder` is installed with `MediaDownloadService::class.java` so `:core:downloads` can launch the foreground download service without depending on `:core:playback`.
