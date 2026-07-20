@@ -18,11 +18,12 @@ Master uses a **merge queue**. Required checks before merge:
 
 1. **`testDebugUnitTest`** — runs on PR pushes and again in the merge queue (put `[skip unit]` in the PR title to no-op for safe docs/chore only; check still reports green)
 2. **`SonarCloud Code Analysis`** — quality gate must pass (**0 new-code issues**)
-3. **`CodeRabbit`** — review must be green; resolve all review threads
+3. **`CodeRabbit`** — review job finished (does **not** mean findings are cleared)
+4. **`coderabbit-threads-resolved`** — **mandatory:** every non-outdated CodeRabbit review thread is marked Resolved
 
 1. Open the PR and iterate as usual (Sonar + CodeRabbit + unit suite run on each push).
-2. Resolve CodeRabbit threads; wait for SonarCloud and unit tests.
-3. Use **Merge when ready** — the PR enters the merge queue (squash), which re-runs **`testDebugUnitTest`**.
+2. Address CodeRabbit findings and mark every CodeRabbit thread **Resolved**; wait for SonarCloud, unit tests, and **`coderabbit-threads-resolved`**.
+3. Use **Merge when ready** — the PR enters the merge queue (squash), which re-runs **`testDebugUnitTest`** and re-checks threads.
 4. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ruleset Integration bypass).

@@ -1,10 +1,11 @@
 name: Merge queue external gates
 
-# Merge queue required checks include SonarCloud + CodeRabbit, which normally
-# report on pull_request SHAs only. On merge_group, re-assert those conclusions
-# as check runs on the queue SHA so the queue does not time out waiting.
+# Merge queue required checks include SonarCloud + CodeRabbit + coderabbit-threads-resolved,
+# which normally report on pull_request SHAs only. On merge_group, re-assert those
+# conclusions as check runs on the queue SHA so the queue does not time out waiting.
 #
 # Does not invent a pass: fails if the contributing PR head never went green.
+# For coderabbit-threads-resolved, re-evaluates live CodeRabbit threads (not a stale bridge).
 on:
   merge_group:
 
@@ -112,13 +113,20 @@ jobs:
               });
             }
 
-            // Also require review threads resolved (CodeRabbit included).
+            // Live gate: unresolved CodeRabbit threads must be resolved before merge.
+            // Publishes the named required check `coderabbit-threads-resolved`.
             const threads = await github.graphql(`
               query($owner: String!, $repo: String!, $number: Int!) {
                 repository(owner: $owner, name: $repo) {
                   pullRequest(number: $number) {
                     reviewThreads(first: 100) {
-                      nodes { isResolved isOutdated }
+                      nodes {
+                        isResolved
+                        isOutdated
+                        comments(first: 1) {
+                          nodes { author { login } url body }
+                        }
+                      }
                     }
                   }
                 }
@@ -128,11 +136,46 @@ jobs:
               repo: context.repo.repo,
               number: prNumber,
             });
-            const openThreads = (threads.repository.pullRequest.reviewThreads.nodes || [])
-              .filter((t) => !t.isResolved && !t.isOutdated);
-            if (openThreads.length > 0) {
+            const openCodeRabbit = (threads.repository.pullRequest.reviewThreads.nodes || [])
+              .filter((t) => !t.isResolved && !t.isOutdated)
+              .filter((t) => {
+                const login = (t.comments?.nodes?.[0]?.author?.login || '').toLowerCase();
+                return login.includes('coderabbit');
+              });
+
+            const threadsOk = openCodeRabbit.length === 0;
+            const threadSummary = threadsOk
+              ? `No unresolved, non-outdated CodeRabbit review threads on PR #${prNumber}.`
+              : [
+                  `### Unresolved CodeRabbit review threads (${openCodeRabbit.length})`,
+                  '',
+                  ...openCodeRabbit.map((t) => {
+                    const c = t.comments?.nodes?.[0] || {};
+                    const preview = (c.body || '').split('\n').find((l) => l.trim()) || '';
+                    return `- **@${c.author?.login || 'coderabbit'}**: ${preview.slice(0, 160)}\n  ${c.url || ''}`;
+                  }),
+                  '',
+                  'Merge is blocked until these threads are addressed and marked Resolved.',
+                ].join('\n');
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'coderabbit-threads-resolved',
+              head_sha: headSha,
+              status: 'completed',
+              conclusion: threadsOk ? 'success' : 'failure',
+              output: {
+                title: threadsOk
+                  ? 'All CodeRabbit threads resolved'
+                  : `${openCodeRabbit.length} unresolved CodeRabbit thread(s)`,
+                summary: threadSummary,
+              },
+            });
+
+            if (!threadsOk) {
               failures.push(
-                `PR #${prNumber} has ${openThreads.length} unresolved review thread(s)`
+                `PR #${prNumber} has ${openCodeRabbit.length} unresolved CodeRabbit review thread(s)`
               );
             }
 

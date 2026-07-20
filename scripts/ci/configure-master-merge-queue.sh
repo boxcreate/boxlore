@@ -2,9 +2,10 @@
 # Enable master merge queue + required checks, with bot-safe bypass.
 #
 # Required checks (must be green before merge / in the queue):
-#   1. testDebugUnitTest          — unit job (merge_group or workflow_dispatch)
-#   2. SonarCloud Code Analysis  — SonarCloud GitHub App (bridged on merge_group)
-#   3. CodeRabbit                — CodeRabbit status (bridged on merge_group)
+#   1. testDebugUnitTest               — unit job (merge_group or workflow_dispatch)
+#   2. SonarCloud Code Analysis       — SonarCloud GitHub App (bridged on merge_group)
+#   3. CodeRabbit                     — CodeRabbit status (bridged on merge_group)
+#   4. coderabbit-threads-resolved    — unresolved CodeRabbit threads must be Resolved
 #
 # Bypass (always): boxlore-master-pusher Integration (app 4340323) + Organization admins.
 # Scheduled bots (episode tracker, sync-pi-data, changelog-on-merge, …) mint an
@@ -119,7 +120,8 @@ build_ruleset_body() {
             required_status_checks: [
               { context: "testDebugUnitTest" },
               { context: "SonarCloud Code Analysis" },
-              { context: "CodeRabbit" }
+              { context: "CodeRabbit" },
+              { context: "coderabbit-threads-resolved" }
             ]
           }
         },
@@ -204,7 +206,7 @@ FINAL_ID="$(
 echo
 echo "Master merge queue is active (ruleset id=${FINAL_ID})."
 echo "  Rules: https://github.com/${OWNER}/${REPO}/settings/rules"
-echo "  Required checks: testDebugUnitTest | SonarCloud Code Analysis | CodeRabbit"
+echo "  Required checks: testDebugUnitTest | SonarCloud Code Analysis | CodeRabbit | coderabbit-threads-resolved"
 if [[ "${PUSHER_BYPASS_OK}" == "true" ]]; then
   echo "  Bypass: boxlore-master-pusher (app ${PUSHER_APP_ID}) + Organization admins"
 else
@@ -215,10 +217,10 @@ else
   echo "  and BOXLORE_PUSHER_APP_ID / BOXLORE_PUSHER_PRIVATE_KEY are set as repo secrets." >&2
 fi
 echo
-echo "Human PR flow:"
-echo "  1. Open / iterate PR (Sonar + CodeRabbit run; unit suite waits for merge queue)"
-echo "  2. Resolve all review threads (CodeRabbit included)"
-echo "  3. Merge when ready → enters merge queue (runs unit + bridges Sonar/CodeRabbit)"
+echo "Human / Cursor PR flow:"
+echo "  1. Open / iterate PR (Sonar + CodeRabbit + coderabbit-threads-resolved; unit suite on PR + queue)"
+echo "  2. Address CodeRabbit findings and mark every CodeRabbit thread Resolved"
+echo "  3. Merge when ready → enters merge queue (runs unit + bridges Sonar/CodeRabbit/threads)"
 echo "  4. Optional: Actions → Run workflow (unit-tests) for a manual gate"
 echo
 if [[ "${PUSHER_BYPASS_OK}" == "true" ]]; then

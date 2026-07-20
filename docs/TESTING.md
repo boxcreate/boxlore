@@ -168,10 +168,11 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
 | `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | PR / merge queue / dispatch | Done |
-| `merge-queue-external-gates.yml` | Re-assert SonarCloud + CodeRabbit on merge group SHA | merge queue | Done |
+| `merge-queue-external-gates.yml` | Re-assert SonarCloud + CodeRabbit + live `coderabbit-threads-resolved` on merge group SHA | merge queue | Done |
+| `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / thread events / merge queue | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML | Nightly / manual | Done |
 
-**Merge gate:** master uses a merge queue. Required checks: **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, **`CodeRabbit`** (resolve all review threads). The unit suite runs on every PR push (new commits cancel prior in-progress runs) and again in the merge queue (or via Actions → Run workflow). Put `[skip unit]` in the PR title to no-op that job for docs/chore-only changes (still reports green; `workflow_dispatch` always runs full). Bots push to master via **boxlore-master-pusher** (ruleset Integration bypass).
+**Merge gate:** master uses a merge queue. Required checks: **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, **`CodeRabbit`**, and **`coderabbit-threads-resolved`** (CodeRabbit findings addressed and every non-outdated CodeRabbit thread marked Resolved — the bare `CodeRabbit` check only means the review job finished). The unit suite runs on every PR push (new commits cancel prior in-progress runs) and again in the merge queue (or via Actions → Run workflow). Put `[skip unit]` in the PR title to no-op that job for docs/chore-only changes (still reports green; `workflow_dispatch` always runs full). Bots push to master via **boxlore-master-pusher** (ruleset Integration bypass).
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 
