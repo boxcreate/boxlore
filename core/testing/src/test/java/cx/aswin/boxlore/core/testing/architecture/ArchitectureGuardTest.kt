@@ -301,7 +301,7 @@ class ArchitectureGuardTest {
                                         .orEmpty()
                                         .substringBefore("//")
                                         .trim()
-                                "$prior$code"
+                                "$prior${code.trimStart()}"
                             } else {
                                 code
                             }
