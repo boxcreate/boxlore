@@ -4,6 +4,9 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PlaybackEntryPoint
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.QueueMath
 import cx.aswin.boxlore.core.playback.QueueRepository
@@ -12,9 +15,6 @@ import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.PlaybackEntryPoint
-import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.guava.await
@@ -440,12 +440,10 @@ internal class PlaybackQueueCoordinator(
     }
 
     /**
-     * Snapshot of a removed queue item, returned so the UI can offer Undo and so the
-     * skip signal (analytics + skip memory) can be deferred until the undo window lapses.
-     */
-    
-    /**
      * Removes an episode from the queue (Media3 + in-memory + DB).
+     *
+     * Snapshot of a removed queue item is returned so the UI can offer Undo and so the
+     * skip signal (analytics + skip memory) can be deferred until the undo window lapses.
      *
      * @param deferSkipSignal when true, the AUTO_FILL rejection signal is NOT recorded
      *   here — the caller must invoke [confirmQueueRemoval] once the undo window lapses
@@ -565,11 +563,12 @@ internal class PlaybackQueueCoordinator(
         val isLore = removed.contextType == QueueMath.CONTEXT_TYPE_LORE
         val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLore)
         val resolvedUrl =
-            PlaybackArtworkResolver.resolveEpisodeImageUrl(
-                episodeImageUrl = episode.imageUrl,
-                episodePodcastImageUrl = episode.podcastImageUrl,
-                podcastImageUrl = null,
-            ).orEmpty()
+            PlaybackArtworkResolver
+                .resolveEpisodeImageUrl(
+                    episodeImageUrl = episode.imageUrl,
+                    episodePodcastImageUrl = episode.podcastImageUrl,
+                    podcastImageUrl = null,
+                ).orEmpty()
         val metadata =
             androidx.media3.common.MediaMetadata
                 .Builder()

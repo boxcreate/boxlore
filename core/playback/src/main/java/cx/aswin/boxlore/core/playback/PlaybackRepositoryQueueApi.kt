@@ -30,11 +30,9 @@ suspend fun PlaybackRepository.removeFromQueue(
     deferSkipSignal: Boolean = false,
 ): PlaybackRepository.RemovedQueueItem? = queueCoordinator.removeFromQueue(episodeId, deferSkipSignal)
 
-fun PlaybackRepository.confirmQueueRemoval(removed: PlaybackRepository.RemovedQueueItem) =
-    queueCoordinator.confirmQueueRemoval(removed)
+fun PlaybackRepository.confirmQueueRemoval(removed: PlaybackRepository.RemovedQueueItem) = queueCoordinator.confirmQueueRemoval(removed)
 
-suspend fun PlaybackRepository.undoQueueRemoval(removed: PlaybackRepository.RemovedQueueItem) =
-    queueCoordinator.undoQueueRemoval(removed)
+suspend fun PlaybackRepository.undoQueueRemoval(removed: PlaybackRepository.RemovedQueueItem) = queueCoordinator.undoQueueRemoval(removed)
 
 fun PlaybackRepository.moveQueueItem(
     fromQueueIndex: Int,

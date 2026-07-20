@@ -13,6 +13,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 - `LegacyWorkerFactory` maps legacy worker class names to current worker implementations for WorkManager continuity.
 - `MainActivity` hosts theme, edge-to-edge setup, app update hooks, surveys, OPML import state, bottom navigation, and the player overlay.
 - `BoxLoreNavHost` owns app route registration and delegates screen bodies to feature modules.
+- Tab destinations in `NavGraphTabDestinations` wire Home / Explore / Learn / Library / player entry points to feature screens.
 
 ## Internal structure
 

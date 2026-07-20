@@ -12,7 +12,7 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - `QueueRepository` and `QueueManager` persist and orchestrate explicit queue operations.
 - `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic.
 - `PlaybackMediaIdPolicy`, `PlaybackArtworkResolver`, and `PlaybackSkipPolicy` define session IDs, artwork, and skip behavior.
-- `PlaybackControlSync` keeps UI playback speed / seek sizes aligned with Media3 when a session is cleared or a new queue starts.
+- `PlaybackControlSync` keeps UI playback speed / seek sizes aligned with Media3 when a session is cleared or a new queue starts, and sanitizes user-requested speeds before apply/persist.
 - `HistoryRecommendationLogic`, `AutoVoiceSearchLogic`, `SmartQueueRefillPolicy`, `MixtapeResumePolicy`, `NightWindowLogic`, and `ListeningHistoryUpsertLogic` are JVM-testable playback helpers.
 - `PlaybackIntroOutroController` manages intro-skip and outro-trim playback lifecycle.
 - `service.BoxLorePlaybackService`, `service.MediaDownloadService`, and `service.AutoCollageProvider` are manifest-facing services.

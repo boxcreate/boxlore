@@ -14,8 +14,6 @@ fun PlaybackRepository.resetSleepNudgeForTesting() = sleepController.resetSleepN
 
 fun PlaybackRepository.forceShowSleepPromptForTesting() = sleepController.forceShowSleepPromptForTesting()
 
-fun PlaybackRepository.isDebugSkipSleepWindowEnabled(): Boolean =
-    sleepController.isDebugSkipSleepWindowEnabled()
+fun PlaybackRepository.isDebugSkipSleepWindowEnabled(): Boolean = sleepController.isDebugSkipSleepWindowEnabled()
 
-fun PlaybackRepository.setDebugSkipSleepWindow(enabled: Boolean) =
-    sleepController.setDebugSkipSleepWindow(enabled)
+fun PlaybackRepository.setDebugSkipSleepWindow(enabled: Boolean) = sleepController.setDebugSkipSleepWindow(enabled)

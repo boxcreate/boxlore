@@ -12,7 +12,7 @@ import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.feature.library.HistoryViewModel
 import cx.aswin.boxlore.feature.library.R
 import java.time.Instant
-import java.time.ZoneId
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +69,7 @@ internal fun HistoryScreenDialogs(
                     onClick = {
                         pickerState.selectedDateMillis?.let { millis ->
                             val date =
-                                Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                                Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
                             viewModel.setFilterDate(date)
                         }
                         onDismissDatePicker()

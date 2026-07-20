@@ -35,6 +35,19 @@ object PlaybackControlSync {
     }
 
     /**
+     * Clamp user-requested / persisted speed to a finite positive value in the supported range.
+     */
+    fun sanitizePlaybackSpeed(
+        speed: Float,
+        fallback: Float = 1.0f,
+        min: Float = 0.5f,
+        max: Float = 3.0f,
+    ): Float {
+        if (!speed.isFinite() || speed <= 0f) return fallback
+        return speed.coerceIn(min, max)
+    }
+
+    /**
      * Media3 [Player.Listener.onPlaybackParametersChanged] → UI state.
      * No-op when the reported speed already matches [PlayerState.playbackSpeed].
      */

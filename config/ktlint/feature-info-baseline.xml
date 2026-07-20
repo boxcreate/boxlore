@@ -19,10 +19,6 @@
         <error line="95" column="5" source="standard:function-naming" />
         <error line="304" column="141" source="standard:max-line-length" />
     </file>
-    <file name="src/main/java/cx/aswin/boxlore/feature/info/EpisodeInfoViewModel.kt">
-        <error line="297" column="64" source="standard:chain-method-continuation" />
-        <error line="655" column="56" source="standard:chain-method-continuation" />
-    </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/InfoViewModelAssembler.kt">
         <error line="3" column="1" source="standard:import-ordering" />
     </file>
@@ -31,11 +27,12 @@
         <error line="395" column="21" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoViewModel.kt">
-        <error line="46" column="17" source="standard:backing-property-naming" />
-        <error line="897" column="1" source="standard:indent" />
-        <error line="898" column="1" source="standard:indent" />
-        <error line="899" column="1" source="standard:indent" />
-        <error line="900" column="1" source="standard:indent" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="55" column="17" source="standard:backing-property-naming" />
+        <error line="906" column="1" source="standard:indent" />
+        <error line="907" column="1" source="standard:indent" />
+        <error line="908" column="1" source="standard:indent" />
+        <error line="909" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeActionRail.kt">
         <error line="3" column="1" source="standard:import-ordering" />

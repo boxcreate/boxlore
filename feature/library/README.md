@@ -61,6 +61,8 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## Testing notes
 
 - Unit tests live under `feature/library/src/test`.
+- History date-picker conversion uses UTC midnight millis (`ZoneOffset.UTC`) so the selected calendar day is preserved.
+- History back navigation exposes `history_back` for TalkBack.
 - `HistoryFilterTest` covers history filtering behavior.
 - `SubscriptionSortTest` covers subscription ordering.
 - Broader ViewModel coverage should use fakes for catalog, download, playback, and ranking dependencies.

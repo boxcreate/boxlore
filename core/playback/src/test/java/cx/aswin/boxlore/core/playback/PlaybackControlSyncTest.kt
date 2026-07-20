@@ -182,4 +182,19 @@ class PlaybackControlSyncTest {
         val restored = PlaybackControlSync.withSyncedPlaybackSpeed(state, controllerSpeed = 1.75f)
         assertEquals(1.75f, restored.playbackSpeed, 0.0001f)
     }
+
+    @Test
+    fun sanitizePlaybackSpeedRejectsNaNAndNonPositive() {
+        assertEquals(1.0f, PlaybackControlSync.sanitizePlaybackSpeed(Float.NaN), 0.0001f)
+        assertEquals(1.0f, PlaybackControlSync.sanitizePlaybackSpeed(0f), 0.0001f)
+        assertEquals(1.0f, PlaybackControlSync.sanitizePlaybackSpeed(-2f), 0.0001f)
+        assertEquals(1.0f, PlaybackControlSync.sanitizePlaybackSpeed(Float.POSITIVE_INFINITY), 0.0001f)
+    }
+
+    @Test
+    fun sanitizePlaybackSpeedClampsToSupportedRange() {
+        assertEquals(0.5f, PlaybackControlSync.sanitizePlaybackSpeed(0.1f), 0.0001f)
+        assertEquals(3.0f, PlaybackControlSync.sanitizePlaybackSpeed(4.0f), 0.0001f)
+        assertEquals(1.5f, PlaybackControlSync.sanitizePlaybackSpeed(1.5f), 0.0001f)
+    }
 }

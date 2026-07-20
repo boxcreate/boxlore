@@ -6,17 +6,17 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
-import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.catalog.TranscriptSegment
-import cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,7 +89,8 @@ class PlaybackRepository internal constructor(
     private val rankingFeedbackRepository: RankingFeedbackRepository,
     internal val userPreferencesRepository: UserPreferencesRepository,
     internal val historyStore: PlaybackHistoryStore,
-) : ListeningHistoryBackupPort by historyStore, ListeningHistoryPort by historyStore {
+) : ListeningHistoryBackupPort by historyStore,
+    ListeningHistoryPort by historyStore {
     /** Nested alias so existing `PlaybackRepository.RemovedQueueItem` call sites keep compiling. */
     typealias RemovedQueueItem = cx.aswin.boxlore.core.playback.RemovedQueueItem
 
@@ -128,6 +129,7 @@ class PlaybackRepository internal constructor(
                 rankingFeedbackRepository = rankingFeedbackRepository,
             ),
     )
+
     internal val mediaHandle = PlaybackMediaControllerHandle()
     val controller: MediaController? get() = mediaHandle.controller
 
@@ -142,8 +144,14 @@ class PlaybackRepository internal constructor(
             newName = PrefsFileMigrator.Files.PLAYER,
             oldName = PrefsFileMigrator.LegacyFiles.PLAYER,
         )
+
+    @Suppress("PropertyName")
     private val KEY_PLAYER_DISMISSED = "player_dismissed"
+
+    @Suppress("PropertyName")
     private val KEY_LAST_SLEEP_PROMPT_WINDOW_ID = "last_sleep_prompt_window_id"
+
+    @Suppress("PropertyName")
     private val KEY_DEBUG_SKIP_SLEEP_WINDOW = "debug_skip_sleep_window"
 
     private var currentSkipBehavior: String = "just_skip"
@@ -172,6 +180,7 @@ class PlaybackRepository internal constructor(
 
     private var progressJob: Job? = null
 
+    @Suppress("PropertyName")
     private val QUEUE_MAX_SIZE = 50
 
     // Local memory of rejected auto-fill suggestions (feeds the SmartQueueEngine).

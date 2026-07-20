@@ -1,16 +1,5 @@
 package cx.aswin.boxlore.feature.info
 
-import cx.aswin.boxlore.core.playback.likedEpisodes
-import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.toggleCompletion
-import cx.aswin.boxlore.core.playback.toggleLike
-import cx.aswin.boxlore.core.playback.getSession
-import cx.aswin.boxlore.core.playback.togglePlayPause
-import cx.aswin.boxlore.core.playback.savePlaybackState
-import cx.aswin.boxlore.core.playback.removeFromQueue
-import cx.aswin.boxlore.core.playback.addToQueueNext
-import cx.aswin.boxlore.core.playback.ListeningHistoryUpsertLogic
-
 import android.app.Application
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
@@ -18,6 +7,15 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.playback.addToQueueNext
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.getSession
+import cx.aswin.boxlore.core.playback.likedEpisodes
+import cx.aswin.boxlore.core.playback.removeFromQueue
+import cx.aswin.boxlore.core.playback.savePlaybackState
+import cx.aswin.boxlore.core.playback.toggleCompletion
+import cx.aswin.boxlore.core.playback.toggleLike
+import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.feature.info.logic.EpisodeOfflineMergeLogic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -305,7 +303,8 @@ class EpisodeInfoViewModel(
                             }
                         }
                     }
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEpisodeInfoScreenViewed(props)
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                    .trackEpisodeInfoScreenViewed(props)
 
                 // 2. Fetch full details if we haven't already
                 if (finalEpisodeDescription.isEmpty()) {
@@ -550,21 +549,14 @@ class EpisodeInfoViewModel(
             } else {
                 viewModelScope.launch {
                     playbackRepository.savePlaybackState(
-                        cx.aswin.boxlore.core.playback.ListeningHistoryUpsertLogic.ProgressSaveInput(
+                        cx.aswin.boxlore.feature.info.logic.EpisodeInfoSeekLogic.progressSaveInputForSeek(
                             podcastId = currentState.podcastId,
-                            episodeId = currentState.episode.id,
+                            podcastTitle = currentState.podcastTitle,
+                            episode = currentState.episode,
                             positionMs = positionMs,
                             durationMs = currentState.durationMs,
-                            episodeTitle = currentState.episode.title,
-                            episodeImageUrl = currentState.episode.imageUrl,
-                            podcastImageUrl = currentState.episode.podcastImageUrl,
-                            episodeAudioUrl = currentState.episode.audioUrl,
-                            podcastName = currentState.podcastTitle,
-                            isCompleted = false,
                             isLiked = likedEpisodeIds.value.contains(currentState.episode.id),
                             lastPlayedAt = System.currentTimeMillis(),
-                            enclosureType = currentState.episode.enclosureType,
-                            episodeDescription = currentState.episode.description,
                         ),
                     )
                     val pod =
@@ -666,7 +658,8 @@ class EpisodeInfoViewModel(
                     put("source_entry_point", sourceEntryPoint!!)
                 }
             }
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEpisodeInfoScreenSession(props)
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper
+            .trackEpisodeInfoScreenSession(props)
     }
 
     private fun detectCrossPromotion(

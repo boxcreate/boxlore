@@ -7,20 +7,26 @@ Owns the main Room database, entities, DAOs, type converters, and migrations for
 ## Public API
 
 - `BoxLoreDatabase` and its `getDatabase` factory.
-- Entities: `PodcastEntity`, `ListeningHistoryEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, and `entities.QueueItem`.
-- DAOs: `PodcastDao`, `ListeningHistoryDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, and `dao.QueueDao`.
+- Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, and `entities.QueueItem`.
+- DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, and `dao.QueueDao`.
+- `ListeningInsightsMaintenance` for rolling session/rollup maintenance (via `BoxLoreDatabase.listeningInsightsMaintenance()`).
+- `ListeningRollupMerge` for pure session→rollup merge logic.
 - `Converters` for Room type conversion.
 
 ## Internal structure
 
 ```text
-src/main/java/cx/aswin/boxlore/core/data/database/
+src/main/java/cx/aswin/boxlore/core/database/
   BoxLoreDatabase.kt
   Converters.kt
   DownloadedEpisodeDao.kt
   DownloadedEpisodeEntity.kt
   ListeningHistoryDao.kt
   ListeningHistoryEntity.kt
+  ListeningInsightsMaintenance.kt
+  ListeningRollupDao.kt
+  ListeningRollupMerge.kt
+  ListeningSessionDao.kt
   PodcastDao.kt
   PodcastEntity.kt
   RssEpisodeDao.kt
@@ -55,6 +61,7 @@ src/main/java/cx/aswin/boxlore/core/data/database/
 
 - Unit tests live under `core/database/src/test`.
 - `PodcastDaoInMemoryTest` verifies the in-memory Room DAO path when Android resources are available to JVM tests.
+- `ListeningRollupMergeTest` covers session→rollup merge, including the empty-sessions guard.
 - Prefer repository or port fakes for feature tests instead of depending on Room directly.
 
 ```bash

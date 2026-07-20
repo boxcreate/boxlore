@@ -89,7 +89,7 @@ internal class PlaybackSleepController(
             playerStateFlow.value.copy(
                 sleepTimerEnd = null,
                 sleepAtEndOfEpisode = false,
-                showLateNightNudge = if (dismissNudge) false else playerStateFlow.value.showLateNightNudge,
+                showLateNightNudge = !dismissNudge && playerStateFlow.value.showLateNightNudge,
             )
     }
 
@@ -101,7 +101,7 @@ internal class PlaybackSleepController(
             playerStateFlow.value.copy(
                 sleepAtEndOfEpisode = true,
                 sleepTimerEnd = null,
-                showLateNightNudge = if (dismissNudge) false else playerStateFlow.value.showLateNightNudge,
+                showLateNightNudge = !dismissNudge && playerStateFlow.value.showLateNightNudge,
             )
 
         sleepTimerJob =
@@ -130,7 +130,7 @@ internal class PlaybackSleepController(
             playerStateFlow.value.copy(
                 sleepTimerEnd = endTime,
                 sleepAtEndOfEpisode = false,
-                showLateNightNudge = if (dismissNudge) false else playerStateFlow.value.showLateNightNudge,
+                showLateNightNudge = !dismissNudge && playerStateFlow.value.showLateNightNudge,
             )
 
         sleepTimerJob =

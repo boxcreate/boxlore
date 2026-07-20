@@ -19,10 +19,9 @@ Owns analytics event capture and non-fatal error reporting for Boxlore. The modu
 ```text
 src/main/java/cx/aswin/boxlore/core/analytics/
   Analytics.kt
-  AnalyticsHelper.kt
-  AnalyticsHelperFacadesA.kt … AnalyticsHelperFacadesH.kt  # track façades as extensions
+  AnalyticsHelper.kt                                   # PostHog singleton + track façades
   AnalyticsEmit.kt
-  *AnalyticsTracks.kt                                      # domain emit implementations
+  *AnalyticsTracks.kt                                  # domain emit implementations
   ErrorReporter.kt
   PendingEntryPoint.kt
   RecordingAnalytics.kt

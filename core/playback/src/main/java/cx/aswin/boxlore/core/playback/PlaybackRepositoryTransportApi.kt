@@ -3,12 +3,11 @@ package cx.aswin.boxlore.core.playback
 import android.util.Log
 import androidx.media3.common.PlaybackParameters
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
-import java.io.IOException
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 /** Transport / seek / speed [PlaybackRepository] API. */
-fun PlaybackRepository.resume(entryPointContext: android.os.Bundle? = null) =
-    transportHelper.resume(entryPointContext)
+fun PlaybackRepository.resume(entryPointContext: android.os.Bundle? = null) = transportHelper.resume(entryPointContext)
 
 fun PlaybackRepository.skipToEpisode(
     index: Int,
@@ -50,11 +49,12 @@ fun PlaybackRepository.skipBackward() {
 }
 
 fun PlaybackRepository.setPlaybackSpeed(speed: Float) {
-    controller?.playbackParameters = PlaybackParameters(speed)
-    playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = speed)
+    val sanitized = PlaybackControlSync.sanitizePlaybackSpeed(speed)
+    controller?.playbackParameters = PlaybackParameters(sanitized)
+    playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = sanitized)
     repositoryScope.launch {
         try {
-            userPreferencesRepository.setPlaybackSpeed(speed)
+            userPreferencesRepository.setPlaybackSpeed(sanitized)
         } catch (exception: IOException) {
             Log.w("PlaybackRepo", "Unable to persist playback speed", exception)
         }

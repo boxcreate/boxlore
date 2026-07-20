@@ -78,4 +78,14 @@ class ListeningRollupMergeTest {
         assertEquals(800L, merged.lastListenedAt)
         assertEquals(50L, merged.morningMs)
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun emptySessionsThrows() {
+        ListeningRollupMerge.mergeSessionsIntoRollup(
+            localDay = 10L,
+            episodeId = "ep-1",
+            sessions = emptyList(),
+            existing = null,
+        )
+    }
 }

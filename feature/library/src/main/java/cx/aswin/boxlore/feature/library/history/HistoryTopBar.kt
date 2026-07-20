@@ -53,7 +53,7 @@ internal fun HistoryTopBar(
             IconButton(onClick = callbacks.onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.history_back),
                 )
             }
         },

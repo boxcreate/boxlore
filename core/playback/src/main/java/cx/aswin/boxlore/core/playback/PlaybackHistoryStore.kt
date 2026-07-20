@@ -34,7 +34,8 @@ import java.time.ZoneId
 internal class PlaybackHistoryStore(
     internal val player: PlaybackHistoryPlayerDeps,
     internal val data: PlaybackHistoryDataDeps,
-) : ListeningHistoryPort, ListeningHistoryBackupPort {
+) : ListeningHistoryPort,
+    ListeningHistoryBackupPort {
     /** Exposed so [PlaybackRepository] can share scope / player state created with the store. */
     internal val playerDeps: PlaybackHistoryPlayerDeps get() = player
 
@@ -73,8 +74,7 @@ internal class PlaybackHistoryStore(
         }
     }
 
-    override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> =
-        data.listeningHistoryDao.getAllHistory()
+    override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = data.listeningHistoryDao.getAllHistory()
 
     override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> =
         data.listeningHistoryDao.getAllHistory().map { entities ->

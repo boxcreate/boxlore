@@ -19,8 +19,7 @@ val PlaybackRepository.likedEpisodes: Flow<List<ListeningHistoryEntity>>
 val PlaybackRepository.completedEpisodeIds: Flow<Set<String>>
     get() = historyStore.completedEpisodeIds
 
-suspend fun PlaybackRepository.recordListeningSession(session: ListeningSessionEntity) =
-    historyStore.recordListeningSession(session)
+suspend fun PlaybackRepository.recordListeningSession(session: ListeningSessionEntity) = historyStore.recordListeningSession(session)
 
 suspend fun PlaybackRepository.toggleLike(
     episode: Episode,
@@ -43,14 +42,11 @@ suspend fun PlaybackRepository.toggleLike() = historyStore.toggleLike()
 
 suspend fun PlaybackRepository.deleteSession(episodeId: String) = historyStore.deleteSession(episodeId)
 
-suspend fun PlaybackRepository.getSession(episodeId: String): PlaybackSession? =
-    historyStore.getSession(episodeId)
+suspend fun PlaybackRepository.getSession(episodeId: String): PlaybackSession? = historyStore.getSession(episodeId)
 
-suspend fun PlaybackRepository.getRecentHistoryList(limit: Int): List<ListeningHistoryEntity> =
-    historyStore.getRecentHistoryList(limit)
+suspend fun PlaybackRepository.getRecentHistoryList(limit: Int): List<ListeningHistoryEntity> = historyStore.getRecentHistoryList(limit)
 
-suspend fun PlaybackRepository.markAllEpisodesUncompleted(episodes: List<Episode>) =
-    historyStore.markAllEpisodesUncompleted(episodes)
+suspend fun PlaybackRepository.markAllEpisodesUncompleted(episodes: List<Episode>) = historyStore.markAllEpisodesUncompleted(episodes)
 
 suspend fun PlaybackRepository.getHistoryForRecommendations(limit: Int = 15): List<HistoryItem> =
     historyStore.getHistoryForRecommendations(limit)
