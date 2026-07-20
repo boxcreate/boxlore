@@ -646,24 +646,24 @@
  "2026-07-20": {
   "global": {
    "import-podcasts": {
-    "reads": 36251,
+    "reads": 73272,
     "writes": 0,
-    "runs": 1
+    "runs": 2
    },
    "sync-episodes": {
-    "reads": 551,
-    "writes": 1102,
-    "runs": 1
+    "reads": 49969,
+    "writes": 2702,
+    "runs": 2
    },
    "vectorize-episodes": {
-    "reads": 22355,
-    "writes": 814,
-    "runs": 1
+    "reads": 43437,
+    "writes": 1066,
+    "runs": 2
    },
    "vectorize-shows": {
     "reads": 0,
     "writes": 0,
-    "runs": 1
+    "runs": 2
    }
   }
  }
