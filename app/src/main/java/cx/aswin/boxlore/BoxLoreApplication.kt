@@ -63,11 +63,11 @@ class BoxLoreApplication : Application(), Configuration.Provider {
         // a second RankingFeedbackRepository client diverging from the container.
         container.rankingFeedbackRepository
 
-        // Live learner signal log: on by default in debug builds, off for release users
-        // unless they explicitly opt in via the debug screen toggle. A persisted choice wins.
+        // Live learner signal log: on by default in debug; release stays off unless the
+        // user explicitly opts in via the debug-screen toggle (persisted true).
         LearningEventLog.configure(
             cx.aswin.boxlore.core.prefs.BoxcastPrefs(this)
-                .isLearnerLogEnabled(default = BuildConfig.DEBUG),
+                .resolveLearnerLogEnabled(isDebugBuild = BuildConfig.DEBUG),
         )
 
         val config = PostHogAndroidConfig(

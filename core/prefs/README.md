@@ -9,6 +9,7 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 - `UserPreferencesRepository` exposes DataStore-backed settings such as theme, region, skip durations, smart downloads, and playback preferences.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
 - `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, Learn history, and learner-log gates.
+- `resolveLearnerLogEnabled(isDebugBuild)`: debug defaults on when unset; **release is always off** unless the user explicitly persisted `true` via the debug-screen toggle.
 - `UserPreferenceKeys` centralizes DataStore preference keys.
 - `PrefsFileMigrator` opens canonical SharedPreferences files and migrates from legacy file names.
 - `PlaybackSkipBounds` and `EngagementPromptConstants` provide shared preference-related bounds and thresholds.

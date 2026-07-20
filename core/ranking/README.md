@@ -47,7 +47,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 - Production ranking instances are application-scoped and installed from `AppContainer`.
 - Room and model updates use background dispatchers through suspend APIs.
 - Scorers may be called from UI, service, or worker paths; keep scoring APIs suspend where they touch persisted state.
-- `LearningEventLog` is process/session state and is not a durable event log.
+- `LearningEventLog` is process/session state and is not a durable event log. Capture is gated at app start via `BoxcastPrefs.resolveLearnerLogEnabled`: on by default in debug; **always off in release** unless the user explicitly opts in on the debug screen.
 
 ## Persistence & identity
 
