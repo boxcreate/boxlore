@@ -26,6 +26,17 @@ src/main/java/cx/aswin/boxlore/feature/library/
   PlayAllFab.kt
   SmartDownloadsSettingsScreen.kt
   SubscriptionsScreen.kt
+  history/
+    HistoryActivityGraphs.kt      — weekly activity + time-of-day charts, day filter chips
+    HistoryDialogs.kt           — tracking notice, clear-all, date-picker dialogs
+    HistoryEmptyState.kt          — zero-history empty state
+    HistoryInsightCarousel.kt     — swipeable insight metric cards
+    HistoryListItems.kt           — timeline rows, status filter, date headers
+    HistoryScreenBody.kt          — loading / empty / success body switch
+    HistoryScreenEffects.kt       — lifecycle, analytics, undo snackbar
+    HistoryStatsCards.kt          — period selector, listening-time hero card
+    HistorySuccessList.kt         — success-state LazyColumn (stats + timeline)
+    HistoryTopBar.kt              — collapsible top app bar + overflow menu
 ```
 
 ## Dependencies
