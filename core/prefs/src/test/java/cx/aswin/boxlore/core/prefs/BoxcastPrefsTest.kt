@@ -76,4 +76,20 @@ class BoxcastPrefsTest {
         prefs.setLearnerLogEnabled(true)
         assertTrue(prefs.isLearnerLogEnabled(default = false))
     }
+
+    @Test
+    fun resolveLearnerLogEnabled_releaseOffUnlessExplicitOptIn() {
+        assertFalse(prefs.resolveLearnerLogEnabled(isDebugBuild = false))
+        prefs.setLearnerLogEnabled(true)
+        assertTrue(prefs.resolveLearnerLogEnabled(isDebugBuild = false))
+        prefs.setLearnerLogEnabled(false)
+        assertFalse(prefs.resolveLearnerLogEnabled(isDebugBuild = false))
+    }
+
+    @Test
+    fun resolveLearnerLogEnabled_debugDefaultsOnWhenUnset() {
+        assertTrue(prefs.resolveLearnerLogEnabled(isDebugBuild = true))
+        prefs.setLearnerLogEnabled(false)
+        assertFalse(prefs.resolveLearnerLogEnabled(isDebugBuild = true))
+    }
 }

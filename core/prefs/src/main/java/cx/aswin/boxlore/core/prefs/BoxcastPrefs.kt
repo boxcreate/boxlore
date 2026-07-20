@@ -115,6 +115,21 @@ class BoxcastPrefs(context: Context) {
         prefs.edit().putBoolean(KEY_LEARNER_LOG_ENABLED, enabled).apply()
     }
 
+    /**
+     * Startup gate for [cx.aswin.boxlore.core.ranking.LearningEventLog].
+     *
+     * - Debug: on when the pref is unset; a persisted toggle always wins.
+     * - Release: **always off** unless the user has explicitly persisted `true`
+     *   (debug-screen toggle via [setLearnerLogEnabled]). Never defaults on.
+     */
+    fun resolveLearnerLogEnabled(isDebugBuild: Boolean): Boolean {
+        if (!isDebugBuild) {
+            return prefs.contains(KEY_LEARNER_LOG_ENABLED) &&
+                prefs.getBoolean(KEY_LEARNER_LOG_ENABLED, false)
+        }
+        return isLearnerLogEnabled(default = true)
+    }
+
     companion object {
         /** Canonical SharedPreferences file name (migrated from `boxcast_prefs`). */
         const val PREFS_NAME = PrefsFileMigrator.Files.PREFS
