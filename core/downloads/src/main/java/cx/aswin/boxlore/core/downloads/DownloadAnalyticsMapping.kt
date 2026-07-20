@@ -18,4 +18,14 @@ object DownloadAnalyticsMapping {
             false -> "manual"
             null -> null
         }
+
+    /** Allowlisted failure codes — never forward raw exception messages to PostHog. */
+    fun failureReason(error: Throwable?): String =
+        when (error) {
+            null -> "unknown"
+            is java.io.IOException -> "io_error"
+            is SecurityException -> "permission_denied"
+            is IllegalStateException -> "illegal_state"
+            else -> "download_failed"
+        }
 }

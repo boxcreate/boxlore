@@ -89,18 +89,8 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         "Skipping Whats New push on Play Store install (category=${parsed.category})",
                     )
                 } else {
-                    showPushNotification(
-                        parsed.title,
-                        parsed.body,
-                        parsed.route,
-                        parsed.imageUrl,
-                        parsed.sound,
-                        parsed.actionLabel,
-                        parsed.showActionInPush,
-                        type,
-                        parsed.podcastId,
-                        parsed.episodeId,
-                    )
+                    // Prefer outer `type` (defaults to "push") over parser's "both" default.
+                    showPushNotification(parsed.copy(type = type))
                 }
             }
         }
@@ -276,21 +266,9 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
-    @Suppress("LongParameterList", "kotlin:S107")
-    private fun showPushNotification(
-        title: String, 
-        body: String, 
-        route: String?, 
-        imageUrl: String?, 
-        sound: String?, 
-        actionLabel: String?, 
-        showActionInPush: Boolean,
-        notificationType: String = "push",
-        podcastId: String? = null,
-        episodeId: String? = null,
-    ) {
+    private fun showPushNotification(notification: ParsedFcmNotification) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val config = getPushChannelConfig(sound)
+        val config = getPushChannelConfig(notification.sound)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(config.id, config.name, config.importance).apply {
@@ -308,43 +286,55 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = createPushIntent(route, notificationType, podcastId, episodeId)
+        val intent =
+            createPushIntent(
+                notification.route,
+                notification.type,
+                notification.podcastId,
+                notification.episodeId,
+            )
         val pendingIntent = PendingIntent.getActivity(
-            this, 
-            0, 
-            intent, 
+            this,
+            0,
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, config.id)
             .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
             .setColor(android.graphics.Color.parseColor("#5B5BD6")) // Brand purple color matching launcher icon
-            .setContentTitle(title)
-            .setContentText(body)
+            .setContentTitle(notification.title)
+            .setContentText(notification.body)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-            
+
         if (config.soundUri != null) {
             notificationBuilder.setSound(config.soundUri)
         }
 
-        if (showActionInPush && !route.isNullOrBlank()) {
-            val actionIntent = createPushIntent(route, notificationType, podcastId, episodeId)
+        val route = notification.route
+        if (notification.showActionInPush && !route.isNullOrBlank()) {
+            val actionIntent =
+                createPushIntent(
+                    route,
+                    notification.type,
+                    notification.podcastId,
+                    notification.episodeId,
+                )
             val actionPendingIntent = PendingIntent.getActivity(
                 this,
                 route.hashCode(),
                 actionIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            val btnLabel = actionLabel ?: "View"
             notificationBuilder.addAction(
                 cx.aswin.boxlore.R.drawable.ic_notification_custom,
-                btnLabel,
+                notification.actionLabel,
                 actionPendingIntent
             )
         }
 
-        loadPushImage(notificationBuilder, imageUrl)
+        loadPushImage(notificationBuilder, notification.imageUrl)
         notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
     }
 

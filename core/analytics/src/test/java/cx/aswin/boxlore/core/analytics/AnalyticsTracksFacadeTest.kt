@@ -311,7 +311,7 @@ class AnalyticsTracksFacadeTest {
         AnalyticsHelper.trackFullPlayerScreenSession("p1", "e1", mapOf("k" to "v"), "Pod", "Ep")
         AnalyticsHelper.trackFullPlayerScreenSession(null, null, emptyMap())
         AnalyticsHelper.trackNotificationTapped()
-        AnalyticsHelper.trackDownloadCompleted(12.5f)
+        AnalyticsHelper.trackDownloadCompleted("e1", "p1", source = "manual", fileSizeMb = 12.5f)
         AnalyticsHelper.trackDownloadFailed("network")
         AnalyticsHelper.trackPlayMixClicked(5)
         AnalyticsHelper.trackHomePodcastFiltered("p1", "Pod")

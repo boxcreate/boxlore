@@ -14,6 +14,7 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Runs OPML / JSON library import work when [importTriggerKey] changes. */
 @Composable
@@ -118,6 +119,7 @@ fun OpmlImportEffects(
                         )
                     }
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     Log.e("OPML_IMPORT", "Error during parsing/importing", e)
                     val code =
                         LibraryBackupAnalyticsErrors.fromThrowable(
@@ -167,6 +169,7 @@ fun OpmlImportEffects(
                         ),
                     )
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     Log.e("OPML_IMPORT", "Error marking completed", e)
                     AnalyticsHelper.trackOnboardingImportFailed(
                         "opml",
@@ -238,6 +241,7 @@ suspend fun performJsonLibraryImport(
                 )
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             val code =
                 LibraryBackupAnalyticsErrors.fromThrowable(
                     e,

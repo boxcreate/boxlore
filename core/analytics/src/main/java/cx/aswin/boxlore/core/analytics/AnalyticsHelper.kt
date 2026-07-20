@@ -819,11 +819,6 @@ object AnalyticsHelper : Analytics {
         fileSizeMb: Float? = null,
     ) = LibraryAnalyticsTracks.trackDownloadCompleted(episodeId, podcastId, source, fileSizeMb)
 
-    /** @see trackDownloadCompleted with episode/podcast ids. */
-    @Deprecated("Prefer trackDownloadCompleted with episode/podcast ids")
-    fun trackDownloadCompleted(fileSizeMb: Float) =
-        LibraryAnalyticsTracks.trackDownloadCompleted("unknown", "unknown", source = null, fileSizeMb = fileSizeMb)
-
     fun trackDownloadFailed(
         errorReason: String,
         episodeId: String? = null,

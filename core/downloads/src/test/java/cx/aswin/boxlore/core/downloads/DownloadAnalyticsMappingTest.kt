@@ -24,4 +24,22 @@ class DownloadAnalyticsMappingTest {
         assertEquals("smart", DownloadAnalyticsMapping.source(true))
         assertEquals("manual", DownloadAnalyticsMapping.source(false))
     }
+
+    @Test
+    fun failureReason_isAllowlistedNeverRawMessage() {
+        assertEquals("unknown", DownloadAnalyticsMapping.failureReason(null))
+        assertEquals("io_error", DownloadAnalyticsMapping.failureReason(java.io.IOException("secret path")))
+        assertEquals(
+            "permission_denied",
+            DownloadAnalyticsMapping.failureReason(SecurityException("denied")),
+        )
+        assertEquals(
+            "illegal_state",
+            DownloadAnalyticsMapping.failureReason(IllegalStateException("boom")),
+        )
+        assertEquals(
+            "download_failed",
+            DownloadAnalyticsMapping.failureReason(RuntimeException("https://cdn.example/secret")),
+        )
+    }
 }

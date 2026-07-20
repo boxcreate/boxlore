@@ -10,6 +10,7 @@ import cx.aswin.boxlore.feature.home.settings.DownloadsNavigation
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGraphWiring) {
     val navController = w.navController
@@ -157,6 +158,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                                         ).show()
                                 }
                             } catch (e: Exception) {
+                                if (e is CancellationException) throw e
                                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackBackupRestoreResult(
                                     action = "export",
                                     success = false,
@@ -208,6 +210,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                                         ).show()
                                 }
                             } catch (e: Exception) {
+                                if (e is CancellationException) throw e
                                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackBackupRestoreResult(
                                     action = "export",
                                     success = false,

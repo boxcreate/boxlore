@@ -77,20 +77,18 @@ class InstallReferrerManager(
                                 // referrer unprocessed so a later launch can resolve the channel.
                                 Log.e(TAG, "Failed to get referrer details", e)
                             } finally {
-                                try {
-                                    referrerClient.endConnection()
-                                } catch (e: Exception) {
-                                    // Ignore
-                                }
+                                endReferrerConnection(referrerClient)
                             }
                         }
                         InstallReferrerClient.InstallReferrerResponse.FEATURE_NOT_SUPPORTED -> {
                             Log.w(TAG, "Install Referrer API not supported on this device.")
                             notifyAttribution(null)
                             prefs.edit().putBoolean(KEY_REFERRER_PROCESSED, true).apply()
+                            endReferrerConnection(referrerClient)
                         }
                         InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE -> {
                             Log.w(TAG, "Install Referrer service is currently unavailable.")
+                            endReferrerConnection(referrerClient)
                         }
                     }
                 }
@@ -100,6 +98,14 @@ class InstallReferrerManager(
                 }
             },
         )
+    }
+
+    private fun endReferrerConnection(referrerClient: InstallReferrerClient) {
+        try {
+            referrerClient.endConnection()
+        } catch (_: Exception) {
+            // Ignore
+        }
     }
 
     private fun notifyAttribution(referrerUrl: String?) {

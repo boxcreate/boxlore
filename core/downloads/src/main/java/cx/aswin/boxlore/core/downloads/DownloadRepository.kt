@@ -69,7 +69,7 @@ class DownloadRepository(
                             }
                         }
                     } else if (state == androidx.media3.exoplayer.offline.Download.STATE_FAILED) {
-                        val errorReason = finalException?.message ?: "Unknown Error"
+                        val errorReason = DownloadAnalyticsMapping.failureReason(finalException)
 
                         CoroutineScope(Dispatchers.IO).launch {
                             val existing = database.downloadedEpisodeDao().getDownload(episodeId)
