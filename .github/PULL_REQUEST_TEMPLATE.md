@@ -16,17 +16,18 @@ Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate run on **ever
 
 Master uses a **merge queue**. Required checks before merge:
 
-1. **`testDebugUnitTest`** — runs on PR pushes and again in the merge queue (put `[skip unit]` in the PR title to no-op for safe docs/chore only; check still reports green)
-2. **`SonarCloud Code Analysis`** — quality gate must pass (**0 new-code issues**)
-3. **`CodeRabbit`** — review job finished (does **not** mean findings are cleared)
-4. **`coderabbit-threads-resolved`** — **mandatory:** every non-outdated CodeRabbit review thread is marked Resolved
+1. **`testDebugUnitTest`** — PR pushes + merge queue (new commits cancel the prior run; `[skip unit]` in the title no-ops for safe docs/chore only)
+2. **`coderabbit-threads-resolved`** — every non-outdated CodeRabbit review thread is marked Resolved
+
+Also on PRs (not ruleset-required): SonarCloud App, CodeRabbit App, Gitleaks.
 
 Flow:
 
-1. Open the PR and iterate as usual (Sonar + CodeRabbit + unit suite run on each push).
-2. Address CodeRabbit findings and mark every CodeRabbit thread **Resolved**; wait for SonarCloud, unit tests, and **`coderabbit-threads-resolved`**.
-3. Use **Merge when ready** — the PR enters the merge queue (squash), which re-runs **`testDebugUnitTest`** and re-checks threads.
-4. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
+1. Open the PR and iterate (unit suite cancels prior runs).
+2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; wait for unit + **`coderabbit-threads-resolved`**.
+3. If review decision is **`CHANGES_REQUESTED`**, do not agent-merge — ask a human to merge (or dismiss) manually.
+4. Otherwise use **Merge when ready** — merge queue re-runs unit + threads gate.
+5. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ruleset Integration bypass).
 

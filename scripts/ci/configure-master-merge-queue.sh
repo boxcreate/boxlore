@@ -2,14 +2,15 @@
 # Enable master merge queue + required checks, with bot-safe bypass.
 #
 # Required checks (must be green before merge / in the queue):
-#   1. testDebugUnitTest               — unit job (merge_group or workflow_dispatch)
-#   2. SonarCloud Code Analysis       — SonarCloud GitHub App (bridged on merge_group)
-#   3. CodeRabbit                     — CodeRabbit status (bridged on merge_group)
-#   4. coderabbit-threads-resolved    — unresolved CodeRabbit threads must be Resolved
+#   1. testDebugUnitTest            — unit job (PR + merge_group; cancel-in-progress)
+#   2. coderabbit-threads-resolved — unresolved CodeRabbit threads must be Resolved
+#
+# Not required (still run on PRs, no bridge WF):
+#   - SonarCloud App (quality gate fails the Sonar check on the PR)
+#   - CodeRabbit App status (means "review finished" only — not a merge gate)
+#   - Gitleaks (secret scan on PR/push)
 #
 # Bypass (always): boxlore-master-pusher Integration (app 4340323) + Organization admins.
-# Scheduled bots (episode tracker, sync-pi-data, changelog-on-merge, …) mint an
-# installation token for that app and push directly to master.
 #
 #   ./scripts/ci/configure-master-merge-queue.sh
 set -euo pipefail
@@ -119,8 +120,6 @@ build_ruleset_body() {
             do_not_enforce_on_create: true,
             required_status_checks: [
               { context: "testDebugUnitTest" },
-              { context: "SonarCloud Code Analysis" },
-              { context: "CodeRabbit" },
               { context: "coderabbit-threads-resolved" }
             ]
           }
@@ -206,7 +205,7 @@ FINAL_ID="$(
 echo
 echo "Master merge queue is active (ruleset id=${FINAL_ID})."
 echo "  Rules: https://github.com/${OWNER}/${REPO}/settings/rules"
-echo "  Required checks: testDebugUnitTest | SonarCloud Code Analysis | CodeRabbit | coderabbit-threads-resolved"
+echo "  Required checks: testDebugUnitTest | coderabbit-threads-resolved"
 if [[ "${PUSHER_BYPASS_OK}" == "true" ]]; then
   echo "  Bypass: boxlore-master-pusher (app ${PUSHER_APP_ID}) + Organization admins"
 else
@@ -217,11 +216,11 @@ else
   echo "  and BOXLORE_PUSHER_APP_ID / BOXLORE_PUSHER_PRIVATE_KEY are set as repo secrets." >&2
 fi
 echo
-echo "Human / Cursor PR flow:"
-echo "  1. Open / iterate PR (Sonar + CodeRabbit + coderabbit-threads-resolved; unit suite on PR + queue)"
-echo "  2. Address CodeRabbit findings and mark every CodeRabbit thread Resolved"
-echo "  3. Merge when ready → enters merge queue (runs unit + bridges Sonar/CodeRabbit/threads)"
-echo "  4. Optional: Actions → Run workflow (unit-tests) for a manual gate"
+echo "PR flow:"
+echo "  1. Push → unit tests (cancel prior) + gitleaks + Sonar/CodeRabbit apps + threads gate"
+echo "  2. Resolve CodeRabbit threads until coderabbit-threads-resolved is green"
+echo "  3. Merge when ready → merge queue re-runs unit + threads gate"
+echo "  4. Optional: Actions → Run workflow (Unit Tests) for a manual full gate"
 echo
 if [[ "${PUSHER_BYPASS_OK}" == "true" ]]; then
   echo "Bots keep direct-push access via boxlore-master-pusher Integration bypass."

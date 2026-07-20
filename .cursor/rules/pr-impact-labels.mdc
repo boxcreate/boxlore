@@ -38,18 +38,19 @@ Master is protected by a **merge queue** ruleset. Required checks:
 
 | Check | Meaning |
 |:--|:--|
-| `testDebugUnitTest` | Full unit / static / Kover / Roborazzi gate (PR + merge queue) |
-| `SonarCloud Code Analysis` | SonarCloud quality gate must pass (**0 new-code issues**) |
-| `CodeRabbit` | CodeRabbit review job finished (not “no open findings”) |
-| `coderabbit-threads-resolved` | **Mandatory:** every non-outdated CodeRabbit review thread is Resolved |
+| `testDebugUnitTest` | Full unit / static / Kover / Roborazzi gate (PR + merge queue; cancels prior run on new commit) |
+| `coderabbit-threads-resolved` | Every non-outdated CodeRabbit review thread is Resolved |
+
+Still run on PRs (not ruleset-required): SonarCloud App, CodeRabbit App status, Gitleaks.
 
 Agent / maintainer flow:
 
-1. Open and iterate the PR (Sonar + CodeRabbit + unit suite run on each push).
-2. Wait for **`testDebugUnitTest`**, **`SonarCloud Code Analysis`**, **`CodeRabbit`**, and **`coderabbit-threads-resolved`** green.
-3. Address CodeRabbit findings and mark each CodeRabbit thread **Resolved** (required for merge; Cursor agents must not merge while this check is red). After resolving without a new push, re-run **CodeRabbit Threads Resolved** (`workflow_dispatch` with `pr_number`) so the check flips green.
-4. Merge via **Merge when ready** (merge queue, squash) — the queue re-runs **`testDebugUnitTest`** and re-checks threads.
-5. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
+1. Open and iterate the PR (unit suite cancels prior runs; Sonar/CodeRabbit/Gitleaks also run).
+2. Wait for **`testDebugUnitTest`** and **`coderabbit-threads-resolved`** green.
+3. Address **every** CodeRabbit finding and mark each CodeRabbit thread **Resolved**. After resolving without a push, re-run **CodeRabbit Threads Resolved** (`workflow_dispatch` with `pr_number`).
+4. If review decision is **`CHANGES_REQUESTED`**: **stop** — do not dismiss, do not enqueue merge. Ask the user to merge (or dismiss) manually.
+5. Otherwise merge via **Merge when ready** (merge queue, squash) — the queue re-runs unit + threads gate.
+6. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 **Title skips (when appropriate only):**
 
@@ -75,4 +76,4 @@ Use Conventional Commits only:
 4. Never apply two user-impact level labels on the same PR.
 5. If the label is `user-impact-high` or `user-impact-medium`, the PR body **must** include **Listener impact → What changes in the user’s life** in plain listener language (not just engineering bullets). Skip that section only for `user-impact-low` or `no-user-impact`.
 6. If a PR title violates Conventional Commits, rename it with `gh pr edit <n> --title "type(scope): …"` before merge.
-7. Before merging: confirm SonarCloud + CodeRabbit + **`coderabbit-threads-resolved`** + unit tests are green, then **Merge when ready** (merge queue re-runs unit tests). Do not force-push into an active queue entry.
+7. Before merging: confirm **`testDebugUnitTest`** + **`coderabbit-threads-resolved`** are green, every CodeRabbit thread is Resolved, and review decision is **not** `CHANGES_REQUESTED`. If it is `CHANGES_REQUESTED`, stop and ask the user to merge manually. Do not force-push into an active queue entry.

@@ -3,20 +3,10 @@
 # Required on `master` (merge queue ruleset) as check name:
 #   coderabbit-threads-resolved
 #
-# Why this exists:
-# - The CodeRabbit App check often means "review finished", not "no open findings".
-# - Cursor / merge-when-ready can merge once required checks are green; without this
-#   gate, open CodeRabbit threads do not block merge.
-# - GitHub's `required_review_thread_resolution` helps for human review UX, but we
-#   also publish an explicit named check Cursor agents and the merge queue can require.
+# Why: the CodeRabbit App status only means "review finished", not "findings cleared".
+# This job is the merge gate for CodeRabbit. SonarCloud is its own App (no bridge WF).
 #
-# Scope: only threads whose first comment author login contains "coderabbit"
-# (bot or app). Human review threads are still covered by the ruleset flag
-# `required_review_thread_resolution: true`.
-#
-# Note: GitHub Actions does not support `pull_request_review_thread` as a workflow
-# event. After resolving threads without a new push, re-run this workflow
-# (Actions → CodeRabbit Threads Resolved, or workflow_dispatch with pr_number).
+# After resolving threads without a new push, re-run via workflow_dispatch (pr_number).
 
 name: CodeRabbit Threads Resolved
 
@@ -40,9 +30,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read       # metadata / no checkout required
-  pull-requests: read  # resolve PR number / head SHA; read review threads
-  checks: write        # publish the coderabbit-threads-resolved check run
+  contents: read
+  pull-requests: read
 
 jobs:
   coderabbit-threads-resolved:
@@ -53,13 +42,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Resolve head SHA + PR number
-        id: meta
+      - name: Require CodeRabbit review threads resolved
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER_INPUT: ${{ github.event.inputs.pr_number || '' }}
-          # pull_request and pull_request_review both expose PR under github.event.pull_request
           PR_NUMBER_EVENT: ${{ github.event.pull_request.number || '' }}
           HEAD_SHA_PR: ${{ github.event.pull_request.head.sha || '' }}
           HEAD_SHA_MG: ${{ github.event.merge_group.head_sha || '' }}
@@ -68,13 +55,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          HEAD_SHA=""
           PR_NUMBER="${PR_NUMBER_INPUT:-}"
-
           case "$EVENT_NAME" in
             pull_request|pull_request_review)
-              HEAD_SHA="$HEAD_SHA_PR"
               PR_NUMBER="${PR_NUMBER_EVENT}"
+              HEAD_SHA="$HEAD_SHA_PR"
               ;;
             merge_group)
               HEAD_SHA="$HEAD_SHA_MG"
@@ -83,10 +68,6 @@ jobs:
               HEAD_SHA="$HEAD_SHA_CHECK"
               ;;
             workflow_dispatch)
-              if [[ -z "${PR_NUMBER}" ]]; then
-                echo "::error::workflow_dispatch requires pr_number"
-                exit 1
-              fi
               HEAD_SHA="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq .head.sha)"
               ;;
             *)
@@ -94,48 +75,22 @@ jobs:
               ;;
           esac
 
-          if [[ -z "$HEAD_SHA" ]]; then
-            echo "::error::Could not resolve head SHA for event=${EVENT_NAME}"
-            exit 1
-          fi
-
-          if [[ -z "${PR_NUMBER}" ]]; then
+          if [[ -z "${PR_NUMBER}" && -n "${HEAD_SHA:-}" ]]; then
             PR_NUMBER="$(
               gh api "repos/${REPO}/commits/${HEAD_SHA}/pulls" \
                 --jq '.[0].number // empty' 2>/dev/null || true
             )"
           fi
 
-          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
-          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
-          echo "Resolved head_sha=${HEAD_SHA} pr_number=${PR_NUMBER:-none}"
-
-      - name: Require CodeRabbit review threads resolved
-        id: gate
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.meta.outputs.head_sha }}
-        run: |
-          set -euo pipefail
-
           if [[ -z "${PR_NUMBER}" ]]; then
-            echo "::notice::No PR associated with ${HEAD_SHA}; treating as pass (docs/branch-only SHA)."
-            {
-              echo "conclusion=success"
-              echo "summary=No pull request for this SHA; nothing to gate."
-              echo "title=No PR — skipped"
-            } >> "$GITHUB_OUTPUT"
+            echo "::notice::No PR for this event; nothing to gate."
             exit 0
           fi
 
-          echo "Evaluating CodeRabbit threads on PR #${PR_NUMBER} @ ${HEAD_SHA}"
+          echo "Evaluating CodeRabbit threads on PR #${PR_NUMBER}"
 
           OWNER="${REPO%/*}"
           NAME="${REPO#*/}"
-
-          # Paginate reviewThreads — GitHub caps first/last at 100 per page.
           QUERY='query($owner:String!, $repo:String!, $number:Int!, $cursor:String) {
             repository(owner:$owner, name:$repo) {
               pullRequest(number:$number) {
@@ -145,11 +100,7 @@ jobs:
                     isResolved
                     isOutdated
                     comments(first:1) {
-                      nodes {
-                        author { login }
-                        url
-                        body
-                      }
+                      nodes { author { login } url body }
                     }
                   }
                 }
@@ -160,28 +111,18 @@ jobs:
           ALL_NODES='[]'
           CURSOR=""
           while true; do
-            ARGS=(
-              -f query="$QUERY"
-              -F owner="$OWNER"
-              -F repo="$NAME"
-              -F number="$PR_NUMBER"
-            )
+            ARGS=(-f query="$QUERY" -F owner="$OWNER" -F repo="$NAME" -F number="$PR_NUMBER")
             if [[ -n "$CURSOR" ]]; then
               ARGS+=(-f cursor="$CURSOR")
             else
-              # Explicit GraphQL null for the first page
               ARGS+=(-F cursor=null)
             fi
             RESPONSE="$(gh api graphql "${ARGS[@]}")"
-
             PAGE_NODES="$(echo "$RESPONSE" | jq -c '.data.repository.pullRequest.reviewThreads.nodes // []')"
             ALL_NODES="$(jq -c --argjson a "$ALL_NODES" --argjson b "$PAGE_NODES" '$a + $b')"
-
             HAS_NEXT="$(echo "$RESPONSE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')"
             CURSOR="$(echo "$RESPONSE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor // empty')"
-            if [[ "$HAS_NEXT" != "true" || -z "$CURSOR" ]]; then
-              break
-            fi
+            [[ "$HAS_NEXT" == "true" && -n "$CURSOR" ]] || break
           done
 
           OPEN_JSON="$(
@@ -210,71 +151,12 @@ jobs:
 
           COUNT="$(echo "$OPEN_JSON" | jq 'length')"
           echo "open_coderabbit_threads=${COUNT}"
-
           if [[ "$COUNT" -gt 0 ]]; then
-            {
-              echo "### Unresolved CodeRabbit review threads (${COUNT})"
-              echo
-              echo "Merge is blocked until these threads are addressed **and resolved** on GitHub."
-              echo
-              echo "$OPEN_JSON" | jq -r '.[] | "- **@\(.author)**: \(.preview)\n  \(.url)"'
-              echo
-              echo "Agents: fix or consciously dismiss each finding, then mark the thread **Resolved**."
-              echo "Then re-run this workflow (or push) so the check turns green."
-              echo "Do not merge while this check is red."
-            } > /tmp/cr-threads-summary.md
-
-            {
-              echo "conclusion=failure"
-              echo "title=${COUNT} unresolved CodeRabbit thread(s)"
-              echo "summary<<EOF"
-              cat /tmp/cr-threads-summary.md
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-
-            cat /tmp/cr-threads-summary.md
+            echo "### Unresolved CodeRabbit review threads (${COUNT})"
+            echo "$OPEN_JSON" | jq -r '.[] | "- **@\(.author)**: \(.preview)\n  \(.url)"'
             echo "::error::${COUNT} unresolved CodeRabbit review thread(s) on PR #${PR_NUMBER}"
+            echo "Fix or dismiss each finding, mark the thread Resolved, then re-run this workflow or push."
             exit 1
           fi
 
-          {
-            echo "conclusion=success"
-            echo "title=All CodeRabbit threads resolved"
-            echo "summary=No unresolved, non-outdated CodeRabbit review threads on PR #${PR_NUMBER}."
-          } >> "$GITHUB_OUTPUT"
           echo "All CodeRabbit review threads are resolved (or outdated)."
-
-      - name: Publish check run
-        if: always() && steps.meta.outputs.head_sha != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ steps.meta.outputs.head_sha }}
-          CONCLUSION: ${{ steps.gate.outputs.conclusion || 'failure' }}
-          TITLE: ${{ steps.gate.outputs.title || 'CodeRabbit threads gate failed' }}
-          SUMMARY: ${{ steps.gate.outputs.summary || 'Gate step did not complete.' }}
-        run: |
-          set -euo pipefail
-          CONCLUSION="${CONCLUSION:-failure}"
-          case "$CONCLUSION" in
-            success|failure|neutral|cancelled|skipped|timed_out|action_required) ;;
-            *) CONCLUSION=failure ;;
-          esac
-
-          jq -n \
-            --arg name "coderabbit-threads-resolved" \
-            --arg head_sha "$HEAD_SHA" \
-            --arg status "completed" \
-            --arg conclusion "$CONCLUSION" \
-            --arg title "$TITLE" \
-            --arg summary "$SUMMARY" \
-            '{
-              name: $name,
-              head_sha: $head_sha,
-              status: $status,
-              conclusion: $conclusion,
-              output: {
-                title: $title,
-                summary: $summary
-              }
-            }' | gh api --method POST "repos/${REPO}/check-runs" --input -

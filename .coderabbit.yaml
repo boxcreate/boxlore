@@ -6,9 +6,11 @@ language: en-US
 
 reviews:
   profile: assertive
-  # Block merge until CodeRabbit findings are addressed or dismissed.
-  request_changes_workflow: true
-  # Approve once threads are resolved and pre-merge checks pass.
+  # Do NOT use request_changes_workflow — it leaves a sticky CHANGES_REQUESTED
+  # review that blocks merge even when every CI check is green and threads are
+  # resolved. Merge gating for CodeRabbit is the Actions check
+  # `coderabbit-threads-resolved` (+ GitHub required_review_thread_resolution).
+  request_changes_workflow: false
   auto_approve: true
   high_level_summary: true
   high_level_summary_in_walkthrough: true
