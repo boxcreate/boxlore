@@ -24,3 +24,8 @@ Only build and/or deploy the application, and let the user verify behavior manua
 ## Test and Scratch File Purge
 
 Delete all test scripts, mock JSONs, scratch files, and intermediate logs once the feature PR is completed.
+
+## CodeRabbit / merge
+
+- Address every CodeRabbit finding and mark **every** CodeRabbit review thread **Resolved** before merge. Hard gate: required check `coderabbit-threads-resolved`.
+- If the PR review decision is **`CHANGES_REQUESTED`**: **stop**. Do not dismiss the review. Do not enqueue or force merge. Ask the user to merge (or dismiss) manually.

@@ -11,8 +11,11 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
 - Extend JVM `src/test` for touched logic; **bug fix ⇒ regression test** (same failure mode app-wide when shared). No Compose `androidTest` / emulator CI.
 - Commit / push / open a PR **only when the user asks**. Conventional Commits titles.
 - Every PR needs **exactly one** user-impact label (`user-impact-high|medium|low` or `no-user-impact`); optional `backend-change`. Changelog / README upcoming workflows depend on these — see [`.cursor/rules/pr-impact-labels.mdc`](.cursor/rules/pr-impact-labels.mdc).
-- Merge via **Merge when ready** (merge queue). Required checks: **`testDebugUnitTest`** + **`coderabbit-threads-resolved`**. SonarCloud / Gitleaks / CodeRabbit apps still run on PRs (fix Sonar issues; resolve CodeRabbit threads). Unit suite cancels prior in-progress runs on new commits; `[skip unit]` / `[skip changelog]` only when appropriate. No `merge-ci`.
-- SonarCloud: **0 new-code issues** on the PR (App quality gate). CodeRabbit merge gate is **`coderabbit-threads-resolved`** — address findings and mark every CodeRabbit thread **Resolved** (do not rely on the bare `CodeRabbit` status).
+- Merge via **Merge when ready** (merge queue). Required checks: **`testDebugUnitTest`** + **`coderabbit-threads-resolved`**. SonarCloud / Gitleaks / CodeRabbit apps still run on PRs (fix Sonar issues). Unit suite cancels prior in-progress runs on new commits; `[skip unit]` / `[skip changelog]` only when appropriate. No `merge-ci`.
+- CodeRabbit (mandatory for agents):
+  - Address every CodeRabbit finding and mark **every** CodeRabbit review thread **Resolved** before merge. Do not rely on the bare `CodeRabbit` status (that only means the review job finished). The hard gate is **`coderabbit-threads-resolved`**.
+  - If the PR review decision is **`CHANGES_REQUESTED`** (CodeRabbit or anyone with write access): **stop**. Do **not** dismiss the review, do **not** force-merge / queue merge. Tell the user the PR is blocked on requested changes and ask them to merge (or dismiss) manually.
+- SonarCloud: **0 new-code issues** on the PR (App quality gate). Fix Sonar findings; do not treat a missing Sonar ruleset requirement as permission to ignore them.
 - Never commit secrets (`local.properties`, `.env`, keystores, `google-services.json`).
 - Do **not** hand-edit `CHANGELOG.md` or README Upcoming — `changelog-on-merge` owns that.
 - **boxlore-only:** do not change other `boxcreate` repos or org-wide bot settings unless asked. Keep proxy/backend internals out of public Android PR text.

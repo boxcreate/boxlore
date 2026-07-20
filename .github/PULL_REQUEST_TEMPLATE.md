@@ -24,9 +24,10 @@ Also on PRs (not ruleset-required): SonarCloud App, CodeRabbit App, Gitleaks.
 Flow:
 
 1. Open the PR and iterate (unit suite cancels prior runs).
-2. Address CodeRabbit findings and mark every CodeRabbit thread **Resolved**; wait for unit + **`coderabbit-threads-resolved`**.
-3. Use **Merge when ready** — merge queue re-runs unit + threads gate.
-4. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
+2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; wait for unit + **`coderabbit-threads-resolved`**.
+3. If review decision is **`CHANGES_REQUESTED`**, do not agent-merge — ask a human to merge (or dismiss) manually.
+4. Otherwise use **Merge when ready** — merge queue re-runs unit + threads gate.
+5. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ruleset Integration bypass).
 
