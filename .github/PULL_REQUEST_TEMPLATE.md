@@ -6,17 +6,17 @@ Use Conventional Commits. Examples from this repo:
 - `fix(scope): short description`
 - `chore: short description`
 - `release: vX.Y.Z [skip changelog]`
-- `docs: … [skip unit]` / `chore: … [skip unit]` — no-ops unit suite on PR + merge queue (still reports green). **Only** for docs/chore with no logic risk.
+- `docs: … [skip unit]` / `chore: … [skip unit]` — no-ops unit suite on PR (still reports green). **Only** for docs/chore with no logic risk.
 
 Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish the announcement dialog`).
 
-## Merge queue (required before merge)
+## Merge gate (required before merge)
 
-Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate run on **every PR push** (a new commit cancels the previous in-progress unit run) and again in the **merge queue** (plus optional Actions → Run workflow).
+Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate run on **every PR push** (a new commit cancels the previous in-progress unit run; plus optional Actions → Run workflow). There is **no merge queue**.
 
-Master uses a **merge queue**. Required checks before merge:
+Master is protected by a branch ruleset. Required checks before merge:
 
-1. **`testDebugUnitTest`** — PR pushes + merge queue (new commits cancel the prior run; `[skip unit]` in the title no-ops for safe docs/chore only)
+1. **`testDebugUnitTest`** — PR pushes (new commits cancel the prior run; `[skip unit]` in the title no-ops for safe docs/chore only)
 2. **`coderabbit-threads-resolved`** — every non-outdated CodeRabbit review thread is marked Resolved
 
 Also on PRs (not ruleset-required): SonarCloud App, CodeRabbit App, Gitleaks.
@@ -26,7 +26,7 @@ Flow:
 1. Open the PR and iterate (unit suite cancels prior runs).
 2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; wait for unit + **`coderabbit-threads-resolved`**.
 3. If review decision is **`CHANGES_REQUESTED`**, do not agent-merge — ask a human to merge (or dismiss) manually.
-4. Otherwise use **Merge when ready** — merge queue re-runs unit + threads gate.
+4. Otherwise squash-merge when required checks are green.
 5. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ruleset Integration bypass).
@@ -98,7 +98,7 @@ Add impact labels on the PR (`gh pr edit <n> --add-label user-impact-high --add-
 
 - [ ] Built / installed locally (`./gradlew installDebug`) when UI or app behavior changed
 - [ ] Manual checks for the user-visible paths touched by this PR
-- [ ] Required checks are green in the merge queue before merge completes
+- [ ] Required checks are green before merge completes
 - [ ]
 
 ## Notes (optional)

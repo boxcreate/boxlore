@@ -13,7 +13,7 @@ How Boxlore is tested: layers, commands, coverage floors, architecture gates, an
 
 ## Goal
 
-Automated coverage focused on **hermetic JVM** for product logic (queue fill, ranking, catalog, prefs, feature `logic/`). High Kover floors fail CI on drop. Architecture guards fail the unit merge-queue job on graph drift.
+Automated coverage focused on **hermetic JVM** for product logic (queue fill, ranking, catalog, prefs, feature `logic/`). High Kover floors fail CI on drop. Architecture guards fail the unit PR job on graph drift.
 
 **Strategy:** constructors, domain ports, shared fakes in `:core:testing`, assemblers, Turbine. No MockK/Hilt. No Application-backed Home/Info suites. Media3 service / `PlaybackRepository` stay out of the line gate; covered by policy unit tests. Maestro YAML is validated nightly (no paid Maestro Cloud device runs).
 
@@ -90,7 +90,7 @@ Reports: `build/reports/kover/`.
 
 ## Architecture CI (fail on deviate)
 
-`unit-tests.yml` (PR / merge queue / dispatch) fails when architecture drifts:
+`unit-tests.yml` (PR / dispatch) fails when architecture drifts:
 
 | Guard | What it enforces |
 | :--- | :--- |
@@ -167,12 +167,12 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
-| `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | PR / merge queue / dispatch | Done |
-| `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / review / merge queue | Done |
+| `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | PR / dispatch | Done |
+| `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / review | Done |
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML | Nightly / manual | Done |
 
-**Merge gate:** master uses a merge queue. Required checks: **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud / CodeRabbit / Gitleaks still run on PRs (fix Sonar new-code issues; resolve CodeRabbit threads — the bare `CodeRabbit` status only means the review finished). The unit suite cancels prior in-progress runs on each PR push and runs again in the merge queue (or via Actions → Run workflow). Put `[skip unit]` in the PR title to no-op that job for docs/chore-only changes (still reports green; `workflow_dispatch` always runs full). Bots push to master via **boxlore-master-pusher** (ruleset Integration bypass).
+**Merge gate:** master uses a branch ruleset (no merge queue). Required checks: **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud / CodeRabbit / Gitleaks still run on PRs (fix Sonar new-code issues; resolve CodeRabbit threads — the bare `CodeRabbit` status only means the review finished). The unit suite cancels prior in-progress runs on each PR push (or via Actions → Run workflow). Put `[skip unit]` in the PR title to no-op that job for docs/chore-only changes (still reports green; `workflow_dispatch` always runs full). Bots push to master via **boxlore-master-pusher** (ruleset Integration bypass).
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 

@@ -2,14 +2,12 @@ name: Unit Tests
 
 # Runs on:
 # - `pull_request` — every PR push (new commits cancel the previous in-progress run)
-# - `merge_group` — master merge queue (required check)
 # - `workflow_dispatch` — manual full gate (always runs; ignores [skip unit])
 # Put `[skip unit]` in the PR title to no-op (still reports green as `testDebugUnitTest`).
 # Use only for docs/chore with no logic risk.
 # Bot pushes to master use boxlore-master-pusher (ruleset Integration bypass).
 on:
   pull_request:
-  merge_group:
   workflow_dispatch:
 
 # One active run per PR / ref — a new commit cancels the previous in-progress run.
@@ -28,28 +26,13 @@ jobs:
     steps:
       - name: Detect [skip unit] in PR title
         id: skip
-        if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         env:
-          GH_TOKEN: ${{ github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          HEAD_REF: ${{ github.event.merge_group.head_ref || '' }}
           PR_TITLE: ${{ github.event.pull_request.title || '' }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            TITLE="$PR_TITLE"
-            echo "PR title: ${TITLE}"
-          elif [[ "$HEAD_REF" =~ /pr-([0-9]+)- ]]; then
-            PR_NUMBER="${BASH_REMATCH[1]}"
-            TITLE=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .title)
-            echo "merge_group.head_ref=$HEAD_REF"
-            echo "PR #${PR_NUMBER} title: ${TITLE}"
-          else
-            echo "Could not parse PR number from head_ref; running full suite"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if echo "$TITLE" | grep -qi '\[skip unit\]'; then
+          echo "PR title: ${PR_TITLE}"
+          if echo "$PR_TITLE" | grep -qi '\[skip unit\]'; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "skipped via [skip unit]"
           else

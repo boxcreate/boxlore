@@ -1,6 +1,6 @@
 # Fail when CodeRabbit left unresolved, non-outdated PR review threads.
 #
-# Required on `master` (merge queue ruleset) as check name:
+# Required on `master` (branch ruleset) as check name:
 #   coderabbit-threads-resolved
 #
 # Why: the CodeRabbit App status only means "review finished", not "findings cleared".
@@ -17,7 +17,6 @@ on:
     types: [submitted, dismissed]
   check_run:
     types: [completed]
-  merge_group:
   workflow_dispatch:
     inputs:
       pr_number:
@@ -49,7 +48,6 @@ jobs:
           PR_NUMBER_INPUT: ${{ github.event.inputs.pr_number || '' }}
           PR_NUMBER_EVENT: ${{ github.event.pull_request.number || '' }}
           HEAD_SHA_PR: ${{ github.event.pull_request.head.sha || '' }}
-          HEAD_SHA_MG: ${{ github.event.merge_group.head_sha || '' }}
           HEAD_SHA_CHECK: ${{ github.event.check_run.head_sha || '' }}
           REPO: ${{ github.repository }}
         run: |
@@ -60,9 +58,6 @@ jobs:
             pull_request|pull_request_review)
               PR_NUMBER="${PR_NUMBER_EVENT}"
               HEAD_SHA="$HEAD_SHA_PR"
-              ;;
-            merge_group)
-              HEAD_SHA="$HEAD_SHA_MG"
               ;;
             check_run)
               HEAD_SHA="$HEAD_SHA_CHECK"
