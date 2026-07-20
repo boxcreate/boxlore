@@ -210,18 +210,22 @@ jobs:
         env:
           BRANCH: ${{ steps.release.outputs.branch }}
           TAG: ${{ steps.release.outputs.tag }}
+          # Push with GITHUB_TOKEN — the pusher app lacks `workflows` permission, so
+          # it cannot push any ref whose ancestry includes workflow-file commits
+          # (even when the new tip only touches Gradle/CHANGELOG/README).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add app/build.gradle.kts CHANGELOG.md README.md
           git commit -m "release: prepare ${TAG} [skip changelog]"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push --set-upstream origin "$BRANCH"
 
       - name: Open release PR
         env:
-          # Use the workflow GITHUB_TOKEN for PR creation — the pusher app can
-          # push release branches (ruleset bypass) but is not granted pull_requests:write.
+          # GITHUB_TOKEN has pull-requests:write; the pusher app does not.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ steps.release.outputs.branch }}
           TAG: ${{ steps.release.outputs.tag }}
@@ -264,7 +268,7 @@ EOF
       - name: Cleanup orphan release branch on failure
         if: failure() && steps.push_release.outcome == 'success'
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
         run: python3 .github/scripts/prepare_release.py cleanup-stale --tag "$TAG"
 
