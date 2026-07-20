@@ -711,66 +711,6 @@
         <error line="343" column="44" source="standard:trailing-comma-on-call-site" />
         <error line="350" column="25" source="standard:trailing-comma-on-call-site" />
     </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/designsystem/share/ShareCardRenderer.kt">
-        <error line="15" column="28" source="standard:trailing-comma-on-declaration-site" />
-        <error line="20" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="23" column="53" source="standard:trailing-comma-on-call-site" />
-        <error line="31" column="30" source="standard:trailing-comma-on-call-site" />
-        <error line="36" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="40" column="37" source="standard:trailing-comma-on-call-site" />
-        <error line="46" column="31" source="standard:trailing-comma-on-call-site" />
-        <error line="50" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="60" column="35" source="standard:trailing-comma-on-call-site" />
-        <error line="70" column="36" source="standard:trailing-comma-on-call-site" />
-        <error line="73" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="83" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="93" column="36" source="standard:trailing-comma-on-call-site" />
-        <error line="104" column="25" source="standard:trailing-comma-on-declaration-site" />
-        <error line="106" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="119" column="26" source="standard:trailing-comma-on-call-site" />
-        <error line="128" column="48" source="standard:trailing-comma-on-call-site" />
-        <error line="137" column="48" source="standard:trailing-comma-on-call-site" />
-        <error line="146" column="48" source="standard:trailing-comma-on-call-site" />
-        <error line="157" column="38" source="standard:trailing-comma-on-declaration-site" />
-        <error line="159" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="162" column="26" source="standard:trailing-comma-on-call-site" />
-        <error line="179" column="29" source="standard:trailing-comma-on-declaration-site" />
-        <error line="183" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="193" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="195" column="1" source="standard:indent" />
-        <error line="204" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="204" column="50" source="standard:multiline-expression-wrapping" />
-        <error line="205" column="83" source="standard:trailing-comma-on-call-site" />
-        <error line="217" column="18" source="standard:trailing-comma-on-call-site" />
-        <error line="225" column="44" source="standard:chain-method-continuation" />
-        <error line="227" column="74" source="standard:trailing-comma-on-call-site" />
-        <error line="228" column="20" source="standard:chain-method-continuation" />
-        <error line="234" column="37" source="standard:trailing-comma-on-call-site" />
-        <error line="248" column="85" source="standard:trailing-comma-on-call-site" />
-        <error line="262" column="28" source="standard:trailing-comma-on-declaration-site" />
-        <error line="264" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="273" column="83" source="standard:trailing-comma-on-call-site" />
-        <error line="279" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="288" column="89" source="standard:trailing-comma-on-call-site" />
-        <error line="291" column="34" source="standard:multiline-expression-wrapping" />
-        <error line="300" column="89" source="standard:trailing-comma-on-call-site" />
-        <error line="316" column="44" source="standard:trailing-comma-on-declaration-site" />
-        <error line="318" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="323" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="323" column="55" source="standard:chain-method-continuation" />
-        <error line="328" column="18" source="standard:trailing-comma-on-call-site" />
-        <error line="330" column="13" source="standard:chain-method-continuation" />
-        <error line="346" column="19" source="standard:trailing-comma-on-declaration-site" />
-        <error line="348" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="350" column="75" source="standard:trailing-comma-on-call-site" />
-        <error line="359" column="28" source="standard:trailing-comma-on-declaration-site" />
-        <error line="364" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="368" column="35" source="standard:trailing-comma-on-call-site" />
-        <error line="370" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="375" column="51" source="standard:trailing-comma-on-call-site" />
-        <error line="386" column="14" source="standard:trailing-comma-on-call-site" />
-        <error line="398" column="14" source="standard:trailing-comma-on-call-site" />
-    </file>
     <file name="src/main/java/cx/aswin/boxlore/core/designsystem/share/ShareManager.kt">
         <error line="17" column="1" source="standard:no-empty-first-line-in-class-body" />
         <error line="19" column="1" source="standard:no-trailing-spaces" />

@@ -12,53 +12,56 @@ internal object ShareCardRenderer {
         artwork: android.graphics.Bitmap,
         title: String,
         subtitle: String,
-        target: ShareTarget
+        target: ShareTarget,
     ): android.graphics.Bitmap {
         val isStory = target == ShareTarget.INSTAGRAM_STORY
         val width = if (isStory) 1080 else 1200
         val height = if (isStory) 1920 else 1200
-        val output = android.graphics.Bitmap.createBitmap(
-            width,
-            height,
-            android.graphics.Bitmap.Config.ARGB_8888
-        )
+        val output =
+            android.graphics.Bitmap.createBitmap(
+                width,
+                height,
+                android.graphics.Bitmap.Config.ARGB_8888,
+            )
         val canvas = android.graphics.Canvas(output)
         canvas.drawColor(android.graphics.Color.parseColor("#2E2DD0"))
         drawShareCardShapes(
             canvas = canvas,
             width = width.toFloat(),
             height = height.toFloat(),
-            isStory = isStory
+            isStory = isStory,
         )
 
         val artworkSize = if (isStory) 760f else 680f
         val artworkTop = if (isStory) 290f else 55f
-        val artworkRect = android.graphics.RectF(
-            (width - artworkSize) / 2f,
-            artworkTop,
-            (width + artworkSize) / 2f,
-            artworkTop + artworkSize
-        )
+        val artworkRect =
+            android.graphics.RectF(
+                (width - artworkSize) / 2f,
+                artworkTop,
+                (width + artworkSize) / 2f,
+                artworkTop + artworkSize,
+            )
         drawRoundedArtwork(
             canvas = canvas,
             artwork = artwork,
             destination = artworkRect,
-            cornerRadius = 72f
+            cornerRadius = 72f,
         )
 
         if (isStory) {
-            val textBottom = drawShareText(
-                context = context,
-                canvas = canvas,
-                canvasWidth = width,
-                title = title,
-                subtitle = subtitle,
-                titleTop = 1_110f,
-                titleWidth = 860,
-                titleSize = 60f,
-                subtitleSize = 44f,
-                blockSpacing = 13f
-            )
+            val textBottom =
+                drawShareText(
+                    context = context,
+                    canvas = canvas,
+                    canvasWidth = width,
+                    title = title,
+                    subtitle = subtitle,
+                    titleTop = 1_110f,
+                    titleWidth = 860,
+                    titleSize = 60f,
+                    subtitleSize = 44f,
+                    blockSpacing = 13f,
+                )
             drawShareBranding(
                 context = context,
                 canvas = canvas,
@@ -67,21 +70,22 @@ internal object ShareCardRenderer {
                 brandingLabelSize = 34f,
                 logoWidth = 480,
                 listenNowGap = 22f,
-                listenNowSize = 32f
+                listenNowSize = 32f,
             )
         } else {
-            val textBottom = drawShareText(
-                context = context,
-                canvas = canvas,
-                canvasWidth = width,
-                title = title,
-                subtitle = subtitle,
-                titleTop = 785f,
-                titleWidth = 960,
-                titleSize = 48f,
-                subtitleSize = 36f,
-                blockSpacing = 8f
-            )
+            val textBottom =
+                drawShareText(
+                    context = context,
+                    canvas = canvas,
+                    canvasWidth = width,
+                    title = title,
+                    subtitle = subtitle,
+                    titleTop = 785f,
+                    titleWidth = 960,
+                    titleSize = 48f,
+                    subtitleSize = 36f,
+                    blockSpacing = 8f,
+                )
             drawShareBranding(
                 context = context,
                 canvas = canvas,
@@ -90,7 +94,7 @@ internal object ShareCardRenderer {
                 brandingLabelSize = 28f,
                 logoWidth = 400,
                 listenNowGap = 17f,
-                listenNowSize = 28f
+                listenNowSize = 28f,
             )
         }
 
@@ -101,13 +105,14 @@ internal object ShareCardRenderer {
         canvas: android.graphics.Canvas,
         width: Float,
         height: Float,
-        isStory: Boolean
+        isStory: Boolean,
     ) {
-        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            color = android.graphics.Color.parseColor("#5B5BDF")
-            alpha = 185
-            style = android.graphics.Paint.Style.FILL
-        }
+        val paint =
+            android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = android.graphics.Color.parseColor("#5B5BDF")
+                alpha = 185
+                style = android.graphics.Paint.Style.FILL
+            }
 
         drawExpressiveShape(
             canvas = canvas,
@@ -116,7 +121,7 @@ internal object ShareCardRenderer {
             top = if (isStory) -145f else -165f,
             size = if (isStory) 500f else 455f,
             rotation = 14f,
-            paint = paint
+            paint = paint,
         )
         drawExpressiveShape(
             canvas = canvas,
@@ -125,7 +130,7 @@ internal object ShareCardRenderer {
             top = if (isStory) 710f else height * 0.35f,
             size = if (isStory) 390f else 320f,
             rotation = -18f,
-            paint = paint.apply { alpha = 155 }
+            paint = paint.apply { alpha = 155 },
         )
         drawExpressiveShape(
             canvas = canvas,
@@ -134,7 +139,7 @@ internal object ShareCardRenderer {
             top = if (isStory) 35f else -20f,
             size = if (isStory) 390f else 325f,
             rotation = -24f,
-            paint = paint.apply { alpha = 130 }
+            paint = paint.apply { alpha = 130 },
         )
         drawExpressiveShape(
             canvas = canvas,
@@ -143,7 +148,7 @@ internal object ShareCardRenderer {
             top = if (isStory) 710f else 530f,
             size = if (isStory) 430f else 370f,
             rotation = 20f,
-            paint = paint.apply { alpha = 180 }
+            paint = paint.apply { alpha = 180 },
         )
     }
 
@@ -154,13 +159,14 @@ internal object ShareCardRenderer {
         top: Float,
         size: Float,
         rotation: Float,
-        paint: android.graphics.Paint
+        paint: android.graphics.Paint,
     ) {
-        val path = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.androidPath(
-            type = type,
-            width = size,
-            height = size
-        )
+        val path =
+            cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.androidPath(
+                type = type,
+                width = size,
+                height = size,
+            )
         canvas.save()
         canvas.translate(left, top)
         canvas.rotate(rotation, size / 2f, size / 2f)
@@ -176,22 +182,24 @@ internal object ShareCardRenderer {
         brandingLabelSize: Float,
         logoWidth: Int,
         listenNowGap: Float,
-        listenNowSize: Float
+        listenNowSize: Float,
     ) {
         val brandingLeft = (canvasWidth - logoWidth) / 2f
         val brandingRight = brandingLeft + logoWidth
-        val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            color = android.graphics.Color.WHITE
-            textSize = brandingLabelSize
-            typeface = googleSansTypeface(context, android.graphics.Typeface.BOLD)
-        }
+        val textPaint =
+            android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = android.graphics.Color.WHITE
+                textSize = brandingLabelSize
+                typeface = googleSansTypeface(context, android.graphics.Typeface.BOLD)
+            }
         val label = "is better on"
         val labelBaseline = brandingTop - textPaint.fontMetrics.ascent
         canvas.drawText(label, brandingLeft, labelBaseline, textPaint)
 
         val waveStart = brandingLeft + textPaint.measureText(label) + 20f
-        val waveCenter = brandingTop + (
-            textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
+        val waveCenter =
+            brandingTop + (
+                textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
             ) / 2f
         if (brandingRight > waveStart) {
             val path = android.graphics.Path()
@@ -201,9 +209,11 @@ internal object ShareCardRenderer {
             path.moveTo(x, waveCenter)
             while (x < brandingRight) {
                 x = (x + 3f).coerceAtMost(brandingRight)
-                val y = waveCenter + amplitude * kotlin.math.sin(
-                    ((x - waveStart) / wavelength) * 2f * kotlin.math.PI.toFloat()
-                )
+                val y =
+                    waveCenter + amplitude *
+                        kotlin.math.sin(
+                            ((x - waveStart) / wavelength) * 2f * kotlin.math.PI.toFloat(),
+                        )
                 path.lineTo(x, y)
             }
             canvas.drawPath(
@@ -214,7 +224,7 @@ internal object ShareCardRenderer {
                     strokeWidth = 4f
                     strokeCap = android.graphics.Paint.Cap.ROUND
                     strokeJoin = android.graphics.Paint.Join.ROUND
-                }
+                },
             )
         }
 
@@ -222,19 +232,21 @@ internal object ShareCardRenderer {
         val logoTop = (brandingTop + labelHeight + 18f).toInt()
         val logoHeight = (logoWidth * 110f / 805f).toInt()
         val logoLeft = (canvasWidth - logoWidth) / 2
-        androidx.core.content.ContextCompat.getDrawable(
-            context,
-            cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_logo
-        )?.mutate()?.apply {
-            setTint(android.graphics.Color.WHITE)
-            setBounds(
-                logoLeft,
-                logoTop,
-                logoLeft + logoWidth,
-                logoTop + logoHeight
-            )
-            draw(canvas)
-        }
+        androidx.core.content.ContextCompat
+            .getDrawable(
+                context,
+                cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_logo,
+            )?.mutate()
+            ?.apply {
+                setTint(android.graphics.Color.WHITE)
+                setBounds(
+                    logoLeft,
+                    logoTop,
+                    logoLeft + logoWidth,
+                    logoTop + logoHeight,
+                )
+                draw(canvas)
+            }
         val listenNowTop = logoTop + logoHeight + listenNowGap
         drawCenteredTextBlock(
             canvas = canvas,
@@ -245,7 +257,7 @@ internal object ShareCardRenderer {
             textSize = listenNowSize,
             maxLines = 1,
             color = android.graphics.Color.parseColor("#DCDCF8"),
-            typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL)
+            typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL),
         )
     }
 
@@ -259,46 +271,49 @@ internal object ShareCardRenderer {
         titleWidth: Int,
         titleSize: Float,
         subtitleSize: Float,
-        blockSpacing: Float
+        blockSpacing: Float,
     ): Float {
-        val titleHeight = drawCenteredTextBlock(
-            canvas = canvas,
-            canvasWidth = canvasWidth,
-            text = title,
-            top = titleTop,
-            width = titleWidth,
-            textSize = titleSize,
-            maxLines = 2,
-            color = android.graphics.Color.WHITE,
-            typeface = googleSansTypeface(context, android.graphics.Typeface.BOLD)
-        )
+        val titleHeight =
+            drawCenteredTextBlock(
+                canvas = canvas,
+                canvasWidth = canvasWidth,
+                text = title,
+                top = titleTop,
+                width = titleWidth,
+                textSize = titleSize,
+                maxLines = 2,
+                color = android.graphics.Color.WHITE,
+                typeface = googleSansTypeface(context, android.graphics.Typeface.BOLD),
+            )
         var nextTop = titleTop + titleHeight
         if (subtitle.isNotBlank()) {
             val bySize = subtitleSize * 0.78f
             val byTop = nextTop + blockSpacing
-            val byHeight = drawCenteredTextBlock(
-                canvas = canvas,
-                canvasWidth = canvasWidth,
-                text = "by",
-                top = byTop,
-                width = titleWidth,
-                textSize = bySize,
-                maxLines = 1,
-                color = android.graphics.Color.parseColor("#BEBEE8"),
-                typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL)
-            )
+            val byHeight =
+                drawCenteredTextBlock(
+                    canvas = canvas,
+                    canvasWidth = canvasWidth,
+                    text = "by",
+                    top = byTop,
+                    width = titleWidth,
+                    textSize = bySize,
+                    maxLines = 1,
+                    color = android.graphics.Color.parseColor("#BEBEE8"),
+                    typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL),
+                )
             val subtitleTop = byTop + byHeight + blockSpacing * 0.5f
-            val subtitleHeight = drawCenteredTextBlock(
-                canvas = canvas,
-                canvasWidth = canvasWidth,
-                text = subtitle,
-                top = subtitleTop,
-                width = titleWidth,
-                textSize = subtitleSize,
-                maxLines = 1,
-                color = android.graphics.Color.parseColor("#DCDCF8"),
-                typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL)
-            )
+            val subtitleHeight =
+                drawCenteredTextBlock(
+                    canvas = canvas,
+                    canvasWidth = canvasWidth,
+                    text = subtitle,
+                    top = subtitleTop,
+                    width = titleWidth,
+                    textSize = subtitleSize,
+                    maxLines = 1,
+                    color = android.graphics.Color.parseColor("#DCDCF8"),
+                    typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL),
+                )
             nextTop = subtitleTop + subtitleHeight
         }
         return nextTop
@@ -313,26 +328,28 @@ internal object ShareCardRenderer {
         textSize: Float,
         maxLines: Int,
         color: Int,
-        typeface: android.graphics.Typeface
+        typeface: android.graphics.Typeface,
     ): Int {
-        val textPaint = android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = color
-            this.textSize = textSize
-            this.typeface = typeface
-        }
-        val layout = android.text.StaticLayout.Builder.obtain(
-            text,
-            0,
-            text.length,
-            textPaint,
-            width
-        )
-            .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
-            .setIncludePad(false)
-            .setLineSpacing(0f, 1.02f)
-            .setMaxLines(maxLines)
-            .setEllipsize(android.text.TextUtils.TruncateAt.END)
-            .build()
+        val textPaint =
+            android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = color
+                this.textSize = textSize
+                this.typeface = typeface
+            }
+        val layout =
+            android.text.StaticLayout.Builder
+                .obtain(
+                    text,
+                    0,
+                    text.length,
+                    textPaint,
+                    width,
+                ).setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+                .setIncludePad(false)
+                .setLineSpacing(0f, 1.02f)
+                .setMaxLines(maxLines)
+                .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                .build()
 
         canvas.save()
         canvas.translate((canvasWidth - width) / 2f, top)
@@ -343,12 +360,13 @@ internal object ShareCardRenderer {
 
     private fun googleSansTypeface(
         context: Context,
-        style: Int
+        style: Int,
     ): android.graphics.Typeface {
-        val font = androidx.core.content.res.ResourcesCompat.getFont(
-            context,
-            cx.aswin.boxlore.core.designsystem.R.font.google_sans_variable
-        )
+        val font =
+            androidx.core.content.res.ResourcesCompat.getFont(
+                context,
+                cx.aswin.boxlore.core.designsystem.R.font.google_sans_variable,
+            )
         return android.graphics.Typeface.create(font, style)
     }
 
@@ -356,25 +374,27 @@ internal object ShareCardRenderer {
         canvas: android.graphics.Canvas,
         artwork: android.graphics.Bitmap,
         destination: android.graphics.RectF,
-        cornerRadius: Float
+        cornerRadius: Float,
     ) {
         val sourceSide = minOf(artwork.width, artwork.height)
         val sourceLeft = (artwork.width - sourceSide) / 2
         val sourceTop = (artwork.height - sourceSide) / 2
-        val source = android.graphics.Rect(
-            sourceLeft,
-            sourceTop,
-            sourceLeft + sourceSide,
-            sourceTop + sourceSide
-        )
-        val clipPath = android.graphics.Path().apply {
-            addRoundRect(
-                destination,
-                cornerRadius,
-                cornerRadius,
-                android.graphics.Path.Direction.CW
+        val source =
+            android.graphics.Rect(
+                sourceLeft,
+                sourceTop,
+                sourceLeft + sourceSide,
+                sourceTop + sourceSide,
             )
-        }
+        val clipPath =
+            android.graphics.Path().apply {
+                addRoundRect(
+                    destination,
+                    cornerRadius,
+                    cornerRadius,
+                    android.graphics.Path.Direction.CW,
+                )
+            }
         canvas.save()
         canvas.clipPath(clipPath)
         canvas.drawBitmap(
@@ -383,7 +403,7 @@ internal object ShareCardRenderer {
             destination,
             android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 isFilterBitmap = true
-            }
+            },
         )
         canvas.restore()
 
@@ -395,7 +415,7 @@ internal object ShareCardRenderer {
                 color = android.graphics.Color.argb(52, 255, 255, 255)
                 style = android.graphics.Paint.Style.STROKE
                 strokeWidth = 2f
-            }
+            },
         )
     }
 }
