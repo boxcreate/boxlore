@@ -6,7 +6,9 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 
 ## Public API
 
-- `PlaybackRepository` exposes player/session operations to app and feature UI.
+- `PlaybackRepository` exposes player/session operations to app and feature UI (history ports via
+  class delegation to `PlaybackHistoryStore`; queue / transport / sleep / history helpers via
+  same-package extension API files).
 - `QueueRepository` and `QueueManager` persist and orchestrate explicit queue operations.
 - `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic.
 - `PlaybackMediaIdPolicy`, `PlaybackArtworkResolver`, and `PlaybackSkipPolicy` define session IDs, artwork, and skip behavior.
@@ -20,18 +22,19 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 
 ```text
 src/main/java/cx/aswin/boxlore/core/playback/
-  PlaybackRepository.kt
+  PlaybackRepository.kt              # session core; delegates ListeningHistory* ports
+  PlaybackHistoryStore.kt            # history ports only; implements history ports
+  PlaybackHistoryStoreApi.kt         # non-port history helpers (extensions)
+  PlaybackHistoryMappings.kt         # history entity ↔ model mappers
+  PlaybackHistoryDeps.kt             # player + data deps for HistoryStore ctors
+  PlaybackSleepController.kt         # sleep timer + late-night nudge
+  PlaybackRepositoryQueueApi.kt      # queue extension API
+  PlaybackRepositoryTransportApi.kt  # transport / seek / speed extension API
+  PlaybackRepositoryHistoryApi.kt    # non-port history extension API
+  PlaybackRepositorySleepApi.kt      # sleep / nudge extension API
+  PlaybackRepositoryChaptersApi.kt   # chapters / transcript extension API
   QueueManager.kt
   QueueRepository.kt
-  QueueMath.kt
-  QueueSkipMemory.kt
-  SmartQueueEngine.kt
-  SmartQueueSources.kt
-  MixtapeEngine.kt
-  PlaybackMediaIdPolicy.kt
-  PlaybackArtworkResolver.kt
-  PlaybackControlSync.kt
-  PlaybackSkipPolicy.kt
   ...
   service/
     BoxLorePlaybackService.kt
@@ -44,6 +47,11 @@ src/main/java/cx/aswin/boxlore/core/data/service/
   BoxLorePlaybackService.kt
   MediaDownloadService.kt
 ```
+
+`PlaybackRepository` implements `ListeningHistoryPort` / `ListeningHistoryBackupPort` via Kotlin
+class delegation to `PlaybackHistoryStore`. Same-package extension files expose the remaining
+public one-liner API (`playQueue`, `toggleLike`, `setSleepTimer`, …) so the repository class
+stays under detekt LargeClass / TooManyFunctions limits.
 
 Files under `core/data/service` are compatibility stubs for old service class names.
 

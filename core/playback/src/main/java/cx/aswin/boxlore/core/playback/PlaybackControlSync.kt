@@ -33,4 +33,28 @@ object PlaybackControlSync {
         if (fromController != null) return fromController
         return stateSpeed.takeIf { it.isFinite() && it > 0f } ?: fallback
     }
+
+    /**
+     * Media3 [Player.Listener.onPlaybackParametersChanged] → UI state.
+     * No-op when the reported speed already matches [PlayerState.playbackSpeed].
+     */
+    fun applyPlaybackParametersSpeed(
+        state: PlayerState,
+        speed: Float,
+    ): PlayerState {
+        if (state.playbackSpeed == speed) return state
+        return state.copy(playbackSpeed = speed)
+    }
+
+    /**
+     * Optimistic [playQueue] / restore copy: keep episode metadata updates but sync speed
+     * from the live controller when available.
+     */
+    fun withSyncedPlaybackSpeed(
+        state: PlayerState,
+        controllerSpeed: Float?,
+    ): PlayerState =
+        state.copy(
+            playbackSpeed = resolvePlaybackSpeed(controllerSpeed, state.playbackSpeed),
+        )
 }

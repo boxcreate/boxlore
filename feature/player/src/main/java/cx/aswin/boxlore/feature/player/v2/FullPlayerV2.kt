@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.playback.skipToNextEpisode
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.model.AutoTranscriptState

@@ -261,12 +261,7 @@ internal class PlaybackQueueCoordinator(
                 // MediaController callback, so the onIsPlayingChanged edge-trigger below
                 // won't see a false->true transition for this path. Trigger explicitly.
                 val wasPlaying = playerStateFlow.value.isPlaying
-                val syncedSpeed =
-                    PlaybackControlSync.resolvePlaybackSpeed(
-                        controllerSpeed = controller.playbackParameters.speed,
-                        stateSpeed = playerStateFlow.value.playbackSpeed,
-                    )
-                playerStateFlow.value =
+                val baseState =
                     playerStateFlow.value.copy(
                         currentEpisode = currentEp,
                         currentPodcast = podcast,
@@ -275,7 +270,11 @@ internal class PlaybackQueueCoordinator(
                         duration = currentEp.duration.toLong() * 1000,
                         queue = uniqueEpisodes,
                         isLiked = initialLikeState,
-                        playbackSpeed = syncedSpeed,
+                    )
+                playerStateFlow.value =
+                    PlaybackControlSync.withSyncedPlaybackSpeed(
+                        baseState,
+                        controllerSpeed = controller.playbackParameters.speed,
                     )
                 if (!wasPlaying) {
                     onPlaybackStarted()

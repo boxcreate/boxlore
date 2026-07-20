@@ -24,11 +24,20 @@ import cx.aswin.boxlore.core.database.dao.QueueDao
 @TypeConverters(Converters::class)
 abstract class BoxLoreDatabase : RoomDatabase() {
     abstract fun listeningHistoryDao(): ListeningHistoryDao
-    abstract fun listeningInsightsDao(): ListeningInsightsDao
+
+    abstract fun listeningSessionDao(): ListeningSessionDao
+
+    abstract fun listeningRollupDao(): ListeningRollupDao
+
     abstract fun podcastDao(): PodcastDao
+
     abstract fun rssEpisodeDao(): RssEpisodeDao
+
     abstract fun downloadedEpisodeDao(): DownloadedEpisodeDao
+
     abstract fun queueDao(): QueueDao
+
+    fun listeningInsightsMaintenance(): ListeningInsightsMaintenance = ListeningInsightsMaintenance(this)
 
     companion object {
         private val MIGRATION_12_13 = object : Migration(12, 13) {

@@ -69,10 +69,11 @@ internal class PlaybackMediaControllerBridge(
                 override fun onPlaybackParametersChanged(
                     playbackParameters: androidx.media3.common.PlaybackParameters,
                 ) {
-                    val speed = playbackParameters.speed
-                    if (playerStateFlow.value.playbackSpeed != speed) {
-                        playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = speed)
-                    }
+                    playerStateFlow.value =
+                        PlaybackControlSync.applyPlaybackParametersSpeed(
+                            playerStateFlow.value,
+                            playbackParameters.speed,
+                        )
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {

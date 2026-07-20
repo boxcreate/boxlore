@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
+
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.logic.HomeSerialLogic

@@ -2,7 +2,6 @@ package cx.aswin.boxlore.feature.home
 
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,20 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Bedtime
-import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.PlayCircle
-import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -48,11 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -60,21 +48,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.playback.isInNightWindow
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-
-private enum class DebugTab(
-    val label: String,
-    val icon: ImageVector,
-) {
-    Learner("Learner", Icons.Rounded.AutoAwesome),
-    Sleep("Sleep", Icons.Rounded.Bedtime),
-    Playback("Playback", Icons.Rounded.PlayCircle),
-    Database("Database", Icons.Rounded.Storage),
-    Flags("Flags", Icons.Rounded.CleaningServices),
-}
 
 /**
  * Full-screen debug tools: sleep-prompt testing (including a night-window bypass), a live
@@ -85,9 +65,9 @@ private enum class DebugTab(
 @Composable
 fun DebugScreen(
     playbackRepository: PlaybackRepository,
-    subscriptionRepository: cx.aswin.boxlore.core.catalog.SubscriptionRepository,
-    userPreferencesRepository: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
-    adaptiveRankingRepository: cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository,
+    subscriptionRepository: SubscriptionRepository,
+    userPreferencesRepository: UserPreferencesRepository,
+    adaptiveRankingRepository: AdaptiveRankingRepository,
     onBack: () -> Unit,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier,
@@ -119,7 +99,6 @@ fun DebugScreen(
     val history by viewModel.history.collectAsStateWithLifecycle(initialValue = emptyList())
     val podcasts by viewModel.podcasts.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    // Re-derive the night-window status periodically so the readout stays live while open.
     var nowTick by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -129,9 +108,6 @@ fun DebugScreen(
     }
     val isInNightWindow = remember(nowTick) { playbackRepository.isInNightWindow() }
 
-    val tabs = remember { DebugTab.entries }
-    val pagerState = rememberPagerState(pageCount = { tabs.size })
-    val scope = rememberCoroutineScope()
     val scrollBottomPadding =
         bottomContentPadding +
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
@@ -156,121 +132,29 @@ fun DebugScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface,
     ) { paddingValues ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            PrimaryScrollableTabRow(
-                selectedTabIndex = pagerState.currentPage,
-                edgePadding = 12.dp,
-                containerColor = MaterialTheme.colorScheme.surface,
-            ) {
-                tabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = pagerState.currentPage == index,
-                        onClick = {
-                            scope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        text = { Text(tab.label) },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        },
-                    )
-                }
-            }
-
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                beyondViewportPageCount = 1,
-            ) { page ->
-                when (tabs[page]) {
-                    DebugTab.Learner -> {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
-                        ) {
-                            AdaptiveLearnerDebugSection(
-                                state =
-                                    AdaptiveLearnerDebugState(
-                                        snapshot = learnerSnapshot,
-                                        events = learningEvents,
-                                        logEnabled = logEnabled,
-                                        shadowDiagnostics = shadowDiagnostics,
-                                        loading = learnerLoading,
-                                    ),
-                                onSetLogEnabled = viewModel::setLogEnabled,
-                                onRefresh = viewModel::refreshLearnerSnapshot,
-                                bottomContentPadding = scrollBottomPadding,
-                            )
-                        }
-                    }
-
-                    DebugTab.Sleep ->
-                        DebugTabScrollPane(bottomContentPadding = scrollBottomPadding) {
-                            SleepTestingSection(
-                                state =
-                                    SleepTestingState(
-                                        skipSleepWindow = skipSleepWindow,
-                                        isInNightWindow = isInNightWindow,
-                                        showLateNightNudge = playerState.showLateNightNudge,
-                                        sleepTimerEnd = playerState.sleepTimerEnd,
-                                        sleepAtEndOfEpisode = playerState.sleepAtEndOfEpisode,
-                                    ),
-                                actions =
-                                    SleepTestingActions(
-                                        onToggleSkipSleepWindow = viewModel::setSkipSleepWindow,
-                                        onForcePromptNow = viewModel::forceSleepPromptNow,
-                                        onClearSleepTimer = viewModel::clearSleepTimer,
-                                        onResetSleepWindowGuard = viewModel::resetSleepWindowGuard,
-                                    ),
-                            )
-                        }
-
-                    DebugTab.Playback ->
-                        DebugTabScrollPane(bottomContentPadding = scrollBottomPadding) {
-                            PlaybackStateSection(
-                                episodeTitle = playerState.currentEpisode?.title,
-                                podcastTitle = playerState.currentPodcast?.title,
-                                isPlaying = playerState.isPlaying,
-                                isLoading = playerState.isLoading,
-                                position = playerState.position,
-                                duration = playerState.duration,
-                            )
-                        }
-
-                    DebugTab.Database ->
-                        DebugTabScrollPane(bottomContentPadding = scrollBottomPadding) {
-                            DbInspectorSection(
-                                history = history,
-                                podcasts = podcasts,
-                                onDeleteHistoryItem = viewModel::deleteHistoryItem,
-                            )
-                        }
-
-                    DebugTab.Flags ->
-                        DebugTabScrollPane(bottomContentPadding = scrollBottomPadding) {
-                            FlagsCacheSection(
-                                onResetFeatureFlag = viewModel::resetFeatureFlag,
-                                onClearDismissedCuriosities = viewModel::clearDismissedCuriosities,
-                            )
-                        }
-                }
-            }
-        }
+        DebugScreenContent(
+            viewModel = viewModel,
+            state =
+                DebugScreenContentState(
+                    skipSleepWindow = skipSleepWindow,
+                    isInNightWindow = isInNightWindow,
+                    playerState = playerState,
+                    learnerSnapshot = learnerSnapshot,
+                    learnerLoading = learnerLoading,
+                    learningEvents = learningEvents,
+                    logEnabled = logEnabled,
+                    shadowDiagnostics = shadowDiagnostics,
+                    history = history,
+                    podcasts = podcasts,
+                    scrollBottomPadding = scrollBottomPadding,
+                ),
+            modifier = Modifier.padding(paddingValues),
+        )
     }
 }
 
 @Composable
-private fun DebugTabScrollPane(
+internal fun DebugTabScrollPane(
     bottomContentPadding: Dp,
     content: @Composable () -> Unit,
 ) {
@@ -289,7 +173,7 @@ private fun DebugTabScrollPane(
     }
 }
 
-private data class SleepTestingState(
+internal data class SleepTestingState(
     val skipSleepWindow: Boolean,
     val isInNightWindow: Boolean,
     val showLateNightNudge: Boolean,
@@ -297,7 +181,7 @@ private data class SleepTestingState(
     val sleepAtEndOfEpisode: Boolean,
 )
 
-private data class SleepTestingActions(
+internal data class SleepTestingActions(
     val onToggleSkipSleepWindow: (Boolean) -> Unit,
     val onForcePromptNow: () -> Unit,
     val onClearSleepTimer: () -> Unit,
@@ -305,7 +189,7 @@ private data class SleepTestingActions(
 )
 
 @Composable
-private fun StatusRow(
+internal fun StatusRow(
     label: String,
     value: String,
     valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
@@ -321,7 +205,7 @@ private fun StatusRow(
 }
 
 @Composable
-private fun SleepTestingSection(
+internal fun SleepTestingSection(
     state: SleepTestingState,
     actions: SleepTestingActions,
 ) {
@@ -371,7 +255,7 @@ private fun SleepTestingSection(
 }
 
 @Composable
-private fun PlaybackStateSection(
+internal fun PlaybackStateSection(
     episodeTitle: String?,
     podcastTitle: String?,
     isPlaying: Boolean,
@@ -396,7 +280,7 @@ private fun PlaybackStateSection(
 }
 
 @Composable
-private fun DbInspectorSection(
+internal fun DbInspectorSection(
     history: List<DebugHistoryItem>,
     podcasts: List<PodcastEntity>,
     onDeleteHistoryItem: (String) -> Unit,
@@ -435,7 +319,7 @@ private fun DbInspectorSection(
 }
 
 @Composable
-private fun FlagsCacheSection(
+internal fun FlagsCacheSection(
     onResetFeatureFlag: () -> Unit,
     onClearDismissedCuriosities: () -> Unit,
 ) {
@@ -450,7 +334,7 @@ private fun FlagsCacheSection(
 }
 
 @Composable
-private fun HistoryDebugCard(
+internal fun HistoryDebugCard(
     item: DebugHistoryItem,
     onDelete: (String) -> Unit,
 ) {
@@ -485,7 +369,7 @@ private fun HistoryDebugCard(
 }
 
 @Composable
-private fun PodcastDebugCard(item: PodcastEntity) {
+internal fun PodcastDebugCard(item: PodcastEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),

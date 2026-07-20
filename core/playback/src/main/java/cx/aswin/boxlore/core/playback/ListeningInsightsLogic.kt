@@ -1,7 +1,8 @@
 package cx.aswin.boxlore.core.playback
 
-import cx.aswin.boxlore.core.database.ListeningInsightsDao
+import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
+import cx.aswin.boxlore.core.database.ListeningSessionDao
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
@@ -65,14 +66,15 @@ object ListeningSessionRecordLogic {
     }
 
     suspend fun persistSessionAndRollUp(
-        dao: ListeningInsightsDao,
+        sessions: ListeningSessionDao,
+        maintenance: ListeningInsightsMaintenance,
         session: ListeningSessionEntity,
         nowMs: Long = System.currentTimeMillis(),
         zoneId: ZoneId = ZoneId.systemDefault(),
     ) {
-        dao.upsertSession(session)
+        sessions.upsertSession(session)
         val today = Instant.ofEpochMilli(nowMs).atZone(zoneId).toLocalDate()
-        dao.rollUpEligibleSessions(
+        maintenance.rollUpEligibleSessions(
             cutoffEndedAtExclusive = retentionCutoffEndedAtExclusive(nowMs, zoneId),
             todayLocalDay = today.toEpochDay(),
         )
