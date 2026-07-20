@@ -60,8 +60,8 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             val type = data["type"] ?: "push"
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackNotificationReceived(
                 notificationType = type,
-                podcastId = data["podcast_id"] ?: data["podcastId"],
-                episodeId = data["episode_id"] ?: data["episodeId"],
+                podcastId = FcmPayloadParser.podcastId(data),
+                episodeId = FcmPayloadParser.episodeId(data),
             )
             if (type == "new_episode") {
                 handleNewEpisodeMessage(data)
@@ -96,7 +96,10 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         parsed.imageUrl,
                         parsed.sound,
                         parsed.actionLabel,
-                        parsed.showActionInPush
+                        parsed.showActionInPush,
+                        type,
+                        parsed.podcastId,
+                        parsed.episodeId,
                     )
                 }
             }
@@ -273,6 +276,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
+    @Suppress("LongParameterList")
     private fun showPushNotification(
         title: String, 
         body: String, 
@@ -280,7 +284,10 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         imageUrl: String?, 
         sound: String?, 
         actionLabel: String?, 
-        showActionInPush: Boolean
+        showActionInPush: Boolean,
+        notificationType: String = "push",
+        podcastId: String? = null,
+        episodeId: String? = null,
     ) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val config = getPushChannelConfig(sound)
@@ -301,7 +308,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = createPushIntent(route)
+        val intent = createPushIntent(route, notificationType, podcastId, episodeId)
         val pendingIntent = PendingIntent.getActivity(
             this, 
             0, 
@@ -322,7 +329,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
 
         if (showActionInPush && !route.isNullOrBlank()) {
-            val actionIntent = createPushIntent(route)
+            val actionIntent = createPushIntent(route, notificationType, podcastId, episodeId)
             val actionPendingIntent = PendingIntent.getActivity(
                 this,
                 route.hashCode(),
@@ -415,7 +422,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 builder.setStyle(
                     NotificationCompat.BigPictureStyle()
                         .bigPicture(bitmap)
-                        .bigLargeIcon(null as android.graphics.Bitmap?)
+                        .bigLargeIcon(null as android.graphics.Bitmap?),
                 )
                 builder.setLargeIcon(bitmap)
             }

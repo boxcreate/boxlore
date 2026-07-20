@@ -77,15 +77,17 @@ class QueueManager(
 
                 // Add to Player (carry provenance so the queue sheet can label the row)
                 val domainEpisode = episode.toDomain(podcast).copy(contextType = contextType)
-                playbackRepository.addToQueue(domainEpisode, podcast, entryPoint)
-                android.util.Log.d(TAG, "addToQueue: Complete. Current queue size: ${playbackRepository.playerState.value.queue.size}")
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
-                    action = "add",
-                    episodeId = domainEpisode.id,
-                    podcastId = podcast.id,
-                    queueSize = playbackRepository.playerState.value.queue.size,
-                    source = entryPoint.name.lowercase(),
-                )
+                val added = playbackRepository.addToQueue(domainEpisode, podcast, entryPoint)
+                android.util.Log.d(TAG, "addToQueue: Complete. added=$added queue size: ${playbackRepository.playerState.value.queue.size}")
+                if (added) {
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
+                        action = "add",
+                        episodeId = domainEpisode.id,
+                        podcastId = podcast.id,
+                        queueSize = playbackRepository.playerState.value.queue.size,
+                        source = entryPoint.name.lowercase(),
+                    )
+                }
             } else {
                 android.util.Log.e(TAG, "addToQueue: Podcast is null, ignoring!")
             }

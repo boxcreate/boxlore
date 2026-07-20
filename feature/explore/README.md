@@ -37,7 +37,8 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 ## Threading / lifecycle
 
 - ViewModels are scoped by app navigation.
-- Catalog, playback, ranking, analytics, and prefs access come through injected application-scoped dependencies.
+- Catalog, playback, ranking, and prefs access come through injected application-scoped dependencies.
+- Analytics: Explore/Learn ViewModels and screens call `:core:analytics` façades for glossary search / Learn exhaustion events (no PostHog direct).
 - UI runs on the main thread; search, recommendation, and history work use suspend APIs.
 
 ## Persistence & identity

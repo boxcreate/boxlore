@@ -6,8 +6,9 @@ Owns offline download orchestration: Media3 offline cache access, download datab
 
 ## Public API
 
-- `DownloadRepository` coordinates Media3 `DownloadManager`, cache helpers, and Room download state.
-- `SmartDownloadManager` selects and schedules automatic downloads.
+- `DownloadRepository` coordinates Media3 `DownloadManager`, cache helpers, and Room download state. Download completed/failed analytics omit `file_size_mb` when Media3 length is unknown and omit `source` when Room provenance is missing (never invent `0` / `"manual"`).
+- `DownloadAnalyticsMapping` is the pure helper for those property decisions.
+- `SmartDownloadManager` selects and schedules automatic downloads; `smart_download_sync.completed_count` is completed-only (`STATUS_COMPLETED`), while the download loop still budgets against active+queued counts.
 - `SmartDownloadWorker`, `AutoDownloadWorker`, and `PurgeSmartDownloadsWorker` perform background download work.
 - `DownloadsDependencies` and `DownloadsDependenciesHolder` expose application-scoped download dependencies to workers.
 - `DownloadSpeedLimiter`, `ThrottlingDataSource`, and `SmartDownloadCandidateLogic` support download I/O and candidate filtering.
@@ -59,7 +60,7 @@ Files under `core/data` are compatibility stubs for previously scheduled WorkMan
 ## Testing notes
 
 - Unit tests live under `core/downloads/src/test`.
-- Existing coverage includes worker behavior, dependency-holder behavior, and smart-download candidate logic.
+- Existing coverage includes worker behavior, dependency-holder behavior, smart-download candidate logic, and `DownloadAnalyticsMapping` size/source mapping.
 - Robolectric and WorkManager testing are enabled for worker tests.
 
 ```bash

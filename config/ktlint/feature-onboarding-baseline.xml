@@ -107,10 +107,10 @@
         <error line="13" column="1" source="standard:no-wildcard-imports" />
         <error line="14" column="1" source="standard:no-wildcard-imports" />
         <error line="83" column="5" source="standard:function-naming" />
-        <error line="291" column="13" source="standard:function-naming" />
-        <error line="645" column="13" source="standard:function-naming" />
-        <error line="667" column="9" source="standard:property-naming" />
-        <error line="720" column="13" source="standard:function-naming" />
+        <error line="309" column="13" source="standard:function-naming" />
+        <error line="663" column="13" source="standard:function-naming" />
+        <error line="685" column="9" source="standard:property-naming" />
+        <error line="738" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/onboarding/OnboardingViewModel.kt">
         <error line="34" column="18" source="standard:backing-property-naming" />

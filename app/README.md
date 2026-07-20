@@ -9,6 +9,10 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 - `BoxLoreApplication.container` exposes the process-scoped `AppContainer`.
 - On startup, `BoxLoreApplication` configures `LearningEventLog` via `BoxcastPrefs.resolveLearnerLogEnabled`: on by default in debug when unset; **always off in release** unless the user has explicitly persisted an opt-in from the debug screen.
 - `AppContainer` constructs the shared graph: database, network, RSS, ranking, catalog, playback, queue, downloads, prefs, and analytics dependencies.
+- Install attribution: `AppContainer` wires `InstallReferrerManager.onInstallReferrerResolved` → analytics person properties (`install_channel`). Catalog stays free of `:core:analytics`.
+- FCM (`BoxLoreFcmService`) owns notification_received / tap extras (`notification_type`, podcast/episode ids for snake+camel keys). Generic push intents propagate those extras so taps are not always `"push"`.
+- Library backup/import analytics (`trackBackupRestoreResult`, import failed) use allowlisted error codes from `LibraryBackupAnalyticsErrors` — never raw exception text.
+- `MainActivity` / `BoxLoreAppRoot` own deep-link and session-restore analytics at the shell layer.
 - `SharedAppDependenciesHolder` and `DownloadsDependenciesHolder` are installed from the application so workers and Media3 services reuse the same graph.
 - `DownloadServiceLauncherHolder` is installed with `MediaDownloadService::class.java` so `:core:downloads` can launch the foreground download service without depending on `:core:playback`.
 - `LegacyWorkerFactory` maps legacy worker class names to current worker implementations for WorkManager continuity.
@@ -71,7 +75,7 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 
 ## Testing notes
 
-- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing, and push-target route allowlisting.
+- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids), library backup analytics error codes, and push-target route allowlisting.
 - Navigation and feature UI behavior are covered mainly in feature module tests and Maestro smoke flows.
 
 ```bash

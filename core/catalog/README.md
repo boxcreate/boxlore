@@ -11,6 +11,7 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 - `content.ContentOrchestrator`, `GroupedContentSectionProvider`, `ContentContextEngine`, and related content contracts assemble personalized Home and discovery sections.
 - `backup.LibraryBackupManager` imports and exports library data, OPML, listening history, and ranking backup payloads.
 - `SharedAppDependencies` and `SharedAppDependenciesHolder` expose application-scoped instances to workers and services.
+- `InstallReferrerManager` parses Play Install Referrer deep links and exposes optional `onInstallReferrerResolved` (channel + raw referrer). `:app` wires that callback into analytics; catalog must not depend on `:core:analytics`.
 - `RoomLocalCatalog` implements `LocalCatalogPort`; `RoomEpisodeOfflineLookup` implements `EpisodeOfflineLookupPort`.
 - `ports.ListeningHistoryBackupPort` and `ports.SmartDownloadSyncPort` keep backup and download seams out of UI modules.
 - `:core:rss`, `:core:domain`, `:core:database`, and `:core:prefs` are re-exported where existing public signatures require those types.
@@ -67,7 +68,7 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 ## Testing notes
 
 - Unit tests live under `core/catalog/src/test`.
-- Existing coverage includes `PodcastRepositoryCatalogTest`, content orchestration tests, content signal enrichment, grouped sections, recent section intent storage, cross-promotion detection, transcript behavior, and dependency-holder behavior.
+- Existing coverage includes `PodcastRepositoryCatalogTest`, `InstallReferrerManager` channel derivation / attribution callback seams, content orchestration tests, content signal enrichment, grouped sections, recent section intent storage, cross-promotion detection, transcript behavior, and dependency-holder behavior.
 - RSS ID and matcher tests live in `:core:rss`; smart-queue tests live in `:core:playback`.
 
 ```bash

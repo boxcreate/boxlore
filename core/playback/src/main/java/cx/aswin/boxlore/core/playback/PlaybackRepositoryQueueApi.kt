@@ -18,7 +18,7 @@ suspend fun PlaybackRepository.addToQueue(
     episode: Episode,
     podcast: Podcast,
     entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-) = queueCoordinator.addToQueue(episode, podcast, entryPoint)
+): Boolean = queueCoordinator.addToQueue(episode, podcast, entryPoint)
 
 suspend fun PlaybackRepository.addToQueueNext(
     episode: Episode,

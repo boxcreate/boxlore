@@ -57,6 +57,7 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 
 - ViewModels are scoped by app navigation or Activity owners.
 - Repositories, ports, playback, downloads, prefs, and ranking dependencies are application-scoped instances supplied by app wiring.
+- Home surfaces emit glossary analytics through `:core:analytics` (no PostHog direct in the feature).
 - UI state is exposed through flows and collected by Compose on the main thread.
 - Network and database operations run through injected suspend APIs.
 

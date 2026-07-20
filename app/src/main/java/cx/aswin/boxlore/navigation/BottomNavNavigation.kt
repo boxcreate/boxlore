@@ -69,8 +69,9 @@ fun NavHostController.navigateBottomNavTab(route: String, activeTab: String) {
         }
         else -> {
             val tabPattern = bottomNavTabRoutePattern(route)
-            val popped = tabPattern != null &&
-                popBackStack(tabPattern, inclusive = false)
+            val popped =
+                tabPattern != null &&
+                    popBackStack(tabPattern, inclusive = false)
             if (!popped) {
                 navigate(
                     if (route == "explore") ExploreBottomNavRoute else route,

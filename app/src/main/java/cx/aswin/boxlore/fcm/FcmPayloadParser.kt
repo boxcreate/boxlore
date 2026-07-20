@@ -13,7 +13,9 @@ data class ParsedFcmNotification(
     val actionLabel: String,
     val showActionInPush: Boolean,
     val showActionInApp: Boolean,
-    val category: String
+    val category: String,
+    val podcastId: String? = null,
+    val episodeId: String? = null,
 )
 
 /**
@@ -21,7 +23,6 @@ data class ParsedFcmNotification(
  * Built to be cleanly testable under JVM unit tests.
  */
 object FcmPayloadParser {
-    
     fun parse(data: Map<String, String>): ParsedFcmNotification {
         val title = data["title"] ?: "boxlore Update"
         val body = data["body"] ?: "Check out what's new in boxlore!"
@@ -44,7 +45,15 @@ object FcmPayloadParser {
             actionLabel = actionLabel,
             showActionInPush = showActionInPush,
             showActionInApp = showActionInApp,
-            category = category
+            category = category,
+            podcastId = podcastId(data),
+            episodeId = episodeId(data),
         )
     }
+
+    /** Snake or camel case podcast id from FCM data. */
+    fun podcastId(data: Map<String, String>): String? = data["podcast_id"] ?: data["podcastId"]
+
+    /** Snake or camel case episode id from FCM data. */
+    fun episodeId(data: Map<String, String>): String? = data["episode_id"] ?: data["episodeId"]
 }

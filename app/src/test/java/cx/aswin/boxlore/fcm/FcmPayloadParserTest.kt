@@ -66,4 +66,35 @@ class FcmPayloadParserTest {
         assertFalse(parsed.showActionInApp)
         assertEquals("WHAT'S NEW", parsed.category)
     }
+
+    @Test
+    fun podcastAndEpisodeIds_preferSnakeCaseThenCamelCase() {
+        assertEquals(
+            "p-snake",
+            FcmPayloadParser.podcastId(mapOf("podcast_id" to "p-snake", "podcastId" to "p-camel")),
+        )
+        assertEquals("p-camel", FcmPayloadParser.podcastId(mapOf("podcastId" to "p-camel")))
+        assertEquals(
+            "e-snake",
+            FcmPayloadParser.episodeId(mapOf("episode_id" to "e-snake", "episodeId" to "e-camel")),
+        )
+        assertEquals("e-camel", FcmPayloadParser.episodeId(mapOf("episodeId" to "e-camel")))
+        assertNull(FcmPayloadParser.podcastId(emptyMap()))
+        assertNull(FcmPayloadParser.episodeId(emptyMap()))
+    }
+
+    @Test
+    fun testParse_propagatesNotificationTypeAndIds() {
+        val parsed =
+            FcmPayloadParser.parse(
+                mapOf(
+                    "type" to "new_episode",
+                    "podcast_id" to "pod-1",
+                    "episodeId" to "ep-9",
+                ),
+            )
+        assertEquals("new_episode", parsed.type)
+        assertEquals("pod-1", parsed.podcastId)
+        assertEquals("ep-9", parsed.episodeId)
+    }
 }

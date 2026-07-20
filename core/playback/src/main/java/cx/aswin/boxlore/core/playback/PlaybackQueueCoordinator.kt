@@ -300,13 +300,13 @@ internal class PlaybackQueueCoordinator(
         episode: Episode,
         podcast: Podcast,
         entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-    ) {
+    ): Boolean {
         Log.d("PlaybackRepo", "addToQueue called: episodeId=${episode.id}, title=${episode.title}, entryPoint=$entryPoint")
 
         // Prevent Duplicates in active queue (by ID)
         if (playerStateFlow.value.queue.any { it.id == episode.id }) {
             Log.w("PlaybackRepo", "addToQueue: Episode ${episode.title} already in active queue (ID match). Skipping.")
-            return
+            return false
         }
 
         // ID-based dedup is sufficient — title matching is too fragile
@@ -315,7 +315,7 @@ internal class PlaybackQueueCoordinator(
         // Enforce queue size cap
         if (playerStateFlow.value.queue.size >= queueMaxSize) {
             Log.w("PlaybackRepo", "addToQueue: Queue at max capacity ($queueMaxSize). Skipping.")
-            return
+            return false
         }
 
         if (mediaHandle.controller == null) {
@@ -372,7 +372,9 @@ internal class PlaybackQueueCoordinator(
                     ),
                 action = RankingAction.EXPLICIT_QUEUE,
             )
+            return true
         } ?: Log.e("PlaybackRepo", "addToQueue: mediaHandle.controller still NULL after await!")
+        return false
     }
 
     suspend fun addToQueueNext(
@@ -605,6 +607,14 @@ internal class PlaybackQueueCoordinator(
         currentQueue.add(insertQueueIndex, episode)
         playerStateFlow.value = playerStateFlow.value.copy(queue = currentQueue.toList())
         syncQueueToDb()
+        // Compensating add: remove analytics already fired; undo must emit the inverse.
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
+            action = "add",
+            episodeId = episode.id,
+            podcastId = episode.podcastId,
+            queueSize = currentQueue.size,
+            source = "undo",
+        )
     }
 
     /**

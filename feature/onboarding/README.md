@@ -40,6 +40,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:catalog`, `:core:designsystem`, `:core:network`, and `:core:analytics`.
+- Onboarding owns step / import / AI glossary events through `:core:analytics` (no PostHog direct).
 - Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Coil, coroutines, Retrofit, Kotlin serialization, and Material icons.
 - Reverse-edge rule: feature modules must not depend on other feature modules or read raw preference files.
 

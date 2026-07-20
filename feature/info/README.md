@@ -40,6 +40,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 - ViewModels are scoped by app navigation.
 - Catalog, local catalog, offline lookup, RSS, download, playback, and analytics dependencies are supplied by app wiring.
+- Podcast/episode info emits glossary analytics via `:core:analytics` façades (no PostHog direct).
 - UI runs on the main thread; refresh, subscribe, lookup, and related-content work use suspend APIs.
 
 ## Persistence & identity

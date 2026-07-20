@@ -161,7 +161,12 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                                     action = "export",
                                     success = false,
                                     format = "json",
-                                    errorMessage = e.message,
+                                    errorMessage =
+                                        cx.aswin.boxlore.ui.libraryimport.LibraryBackupAnalyticsErrors
+                                            .fromThrowable(
+                                                e,
+                                                cx.aswin.boxlore.ui.libraryimport.LibraryBackupAnalyticsErrors.EXPORT_FAILED,
+                                            ),
                                 )
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                     android.widget.Toast
@@ -207,7 +212,12 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                                     action = "export",
                                     success = false,
                                     format = "opml",
-                                    errorMessage = e.message,
+                                    errorMessage =
+                                        cx.aswin.boxlore.ui.libraryimport.LibraryBackupAnalyticsErrors
+                                            .fromThrowable(
+                                                e,
+                                                cx.aswin.boxlore.ui.libraryimport.LibraryBackupAnalyticsErrors.EXPORT_FAILED,
+                                            ),
                                 )
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                     android.widget.Toast

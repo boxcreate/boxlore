@@ -9,7 +9,8 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - `PlaybackRepository` exposes player/session operations to app and feature UI (history ports via
   class delegation to `PlaybackHistoryStore`; queue / transport / sleep / history helpers via
   same-package extension API files).
-- `QueueRepository` and `QueueManager` persist and orchestrate explicit queue operations.
+- `QueueRepository` and `QueueManager` persist and orchestrate explicit queue operations. `QueueManager` emits `queue_modified` add only after `PlaybackRepository.addToQueue` returns success.
+- `PlaybackQueueCoordinator` emits `queue_modified` remove on remove; `undoQueueRemoval` emits a compensating `add` (`source=undo`) so undone removals do not permanently skew analytics.
 - `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic.
 - `PlaybackMediaIdPolicy`, `PlaybackArtworkResolver`, and `PlaybackSkipPolicy` define session IDs, artwork, and skip behavior.
 - `PlaybackControlSync` keeps UI playback speed / seek sizes aligned with Media3 when a session is cleared or a new queue starts, and sanitizes user-requested speeds before apply/persist.

@@ -85,4 +85,58 @@ class InstallReferrerManagerTest {
         assertNull(intent.start)
         assertNull(intent.end)
     }
+
+    @Test
+    fun deriveInstallChannel_blankIsUnknown() {
+        assertEquals("unknown", InstallReferrerManager.deriveInstallChannel(null))
+        assertEquals("unknown", InstallReferrerManager.deriveInstallChannel(""))
+        assertEquals("unknown", InstallReferrerManager.deriveInstallChannel("   "))
+    }
+
+    @Test
+    fun deriveInstallChannel_googlePlayIsOrganicBeforeGenericUtm() {
+        assertEquals("organic", InstallReferrerManager.deriveInstallChannel("utm_source=google-play"))
+        assertEquals(
+            "organic",
+            InstallReferrerManager.deriveInstallChannel("utm_source=google-play&utm_medium=organic"),
+        )
+        assertEquals("organic", InstallReferrerManager.deriveInstallChannel("utm_medium=organic"))
+    }
+
+    @Test
+    fun deriveInstallChannel_sharePatterns() {
+        assertEquals("share", InstallReferrerManager.deriveInstallChannel("type=episode&id=1"))
+        assertEquals("share", InstallReferrerManager.deriveInstallChannel("type_podcast_id_99"))
+        assertEquals("share", InstallReferrerManager.deriveInstallChannel("episode_555_t_45"))
+        assertEquals("share", InstallReferrerManager.deriveInstallChannel("podcast_98765"))
+    }
+
+    @Test
+    fun deriveInstallChannel_genericUtm() {
+        assertEquals("utm", InstallReferrerManager.deriveInstallChannel("utm_source=newsletter"))
+        assertEquals("utm", InstallReferrerManager.deriveInstallChannel("utm_source=twitter&utm_campaign=launch"))
+    }
+
+    @Test
+    fun deriveInstallChannel_unrecognizedIsUnknown() {
+        assertEquals("unknown", InstallReferrerManager.deriveInstallChannel("some-random-referrer"))
+    }
+
+    @Test
+    fun emitAttribution_invokesCallbackWithDerivedChannel() {
+        val mgr = manager()
+        var seenChannel: String? = null
+        var seenRaw: String? = "sentinel"
+        mgr.onInstallReferrerResolved = { channel, raw ->
+            seenChannel = channel
+            seenRaw = raw
+        }
+        mgr.emitAttributionForTest(null)
+        assertEquals("unknown", seenChannel)
+        assertNull(seenRaw)
+
+        mgr.emitAttributionForTest("utm_source=google-play")
+        assertEquals("organic", seenChannel)
+        assertEquals("utm_source=google-play", seenRaw)
+    }
 }
