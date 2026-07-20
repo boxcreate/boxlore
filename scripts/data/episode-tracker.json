@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-20T18:52:27.111Z",
+  "lastRun": "2026-07-20T20:19:54.346Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -205,6 +205,11 @@
       "lastEpisodeId": "57793191904",
       "lastEpisodeTitle": "The Clapper: Light work",
       "lastCheckedAt": 1784471912429
+    },
+    "7587315": {
+      "lastEpisodeId": "57814365820",
+      "lastEpisodeTitle": "The Hole In Your Brain That Makes You Doomscroll",
+      "lastCheckedAt": 1784578798877
     },
     "7634730": {
       "lastEpisodeId": "57728019851",
