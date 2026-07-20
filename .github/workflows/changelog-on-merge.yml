@@ -239,26 +239,27 @@ jobs:
             --base master \
             --head "$BRANCH" \
             --title "release: ${TAG} [skip changelog]" \
+            --label "no-user-impact" \
             --body "$(cat <<EOF
-          ## Release
-          - Version: \`${CURRENT_VERSION} (${CURRENT_CODE}) → ${NEW_VERSION} (${NEW_CODE})\`
-          - Date: \`${RELEASE_DATE}\`
-          - Reconciled PRs since the latest release: \`${RECONCILED_PRS}\`
-          - APK asset: \`${APK_ASSET}\`
-          - AAB asset: \`${AAB_ASSET}\`
+## Release
+- Version: \`${CURRENT_VERSION} (${CURRENT_CODE}) → ${NEW_VERSION} (${NEW_CODE})\`
+- Date: \`${RELEASE_DATE}\`
+- Reconciled PRs since the latest release: \`${RECONCILED_PRS}\`
+- APK asset: \`${APK_ASSET}\`
+- AAB asset: \`${AAB_ASSET}\`
 
-          > Changelog and README summaries are AI-generated and may contain mistakes. Verify them against the linked pull requests before merging.
+> Changelog and README summaries are AI-generated and may contain mistakes. Verify them against the linked pull requests before merging.
 
-          ## On merge
-          The protected release job will rebuild this exact merge commit, verify versions and signing identity, then publish the signed APK and AAB with checksums.
+## On merge
+The protected release job will rebuild this exact merge commit, verify versions and signing identity, then publish the signed APK and AAB with checksums.
 
-          ## Review checklist
-          - [ ] Gradle version transition is correct
-          - [ ] CHANGELOG contains every intended change
-          - [ ] README What's New summary is accurate
-          - [ ] Only Gradle, CHANGELOG, and README release files changed
-          EOF
-          )"
+## Review checklist
+- [ ] Gradle version transition is correct
+- [ ] CHANGELOG contains every intended change
+- [ ] README What's New summary is accurate
+- [ ] Only Gradle, CHANGELOG, and README release files changed
+EOF
+)"
 
       - name: Cleanup orphan release branch on failure
         if: failure() && steps.push_release.outcome == 'success'
