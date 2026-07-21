@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-21T06:28:48.436Z",
+  "lastRun": "2026-07-21T09:12:56.387Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -62,9 +62,9 @@
       "lastCheckedAt": 1784362768992
     },
     "577105": {
-      "lastEpisodeId": "57209328529",
-      "lastEpisodeTitle": "NSL",
-      "lastCheckedAt": 1783789049094
+      "lastEpisodeId": "57873436953",
+      "lastEpisodeTitle": "National Public Data",
+      "lastCheckedAt": 1784625178920
     },
     "585994": {
       "lastEpisodeId": "40591739575",
@@ -156,6 +156,11 @@
       "lastEpisodeTitle": "L’IA, la générosité très calculée de Pékin",
       "lastCheckedAt": 1784542209841
     },
+    "5972153": {
+      "lastEpisodeId": "57847608042",
+      "lastEpisodeTitle": "Spain's World Cup win, new UK PM and US voter fraud claims",
+      "lastCheckedAt": 1784625181731
+    },
     "6655297": {
       "lastEpisodeId": "57324887790",
       "lastEpisodeTitle": "#62. The State of the Modern Life Sim (feat. Paralives)",
@@ -217,9 +222,9 @@
       "lastCheckedAt": 1784362772237
     },
     "7837137": {
-      "lastEpisodeId": "57534534228",
-      "lastEpisodeTitle": "Encontra peruca ao lado do corpo e descobre a vida dupla",
-      "lastCheckedAt": 1784021197180
+      "lastEpisodeId": "57875815786",
+      "lastEpisodeTitle": "Sorveteira Confessa Dois Assassinatos Após Três Anos Vendendo Sorvete Acima dos Cadáveres",
+      "lastCheckedAt": 1784625183964
     }
   }
 }
