@@ -32,6 +32,10 @@ open class BoxLorePlaybackService :
     AutoBrowseLibraryHost {
     override fun asContext(): android.content.Context = this
 
+    override fun requestAutoCollageRefresh(force: Boolean) {
+        serviceScope.launch { autoCollagePrewarmer.prewarm(force = force) }
+    }
+
     override var mediaSession: MediaLibrarySession? = null
         protected set
     private var exoPlayer: ExoPlayer? = null
@@ -92,10 +96,11 @@ open class BoxLorePlaybackService :
         )
     }
     override val queueRepository by lazy {
-        cx.aswin.boxlore.core.playback.QueueRepository(database, podcastRepository)
+        cx.aswin.boxlore.core.playback
+            .QueueRepository(database, podcastRepository)
     }
     override var isRefilling = false
-    private val QUEUE_MAX_SIZE = 50
+    private val queueMaxSize = 50
     private val smartQueueRefillCoordinator by lazy {
         SmartQueueRefillCoordinator(
             database = database,
@@ -106,7 +111,7 @@ open class BoxLorePlaybackService :
             mainDispatcher = mainDispatcher,
             ioDispatcher = ioDispatcher,
             findPodcastIdForEpisode = ::findPodcastIdForEpisode,
-            queueMaxSize = QUEUE_MAX_SIZE,
+            queueMaxSize = queueMaxSize,
             mediaIdPrefixStripper = cx.aswin.boxlore.core.playback.SmartQueueRefillPolicy::stripQueuePrefixes,
         )
     }
@@ -189,7 +194,9 @@ open class BoxLorePlaybackService :
             adaptiveCandidateScorer = adaptiveCandidateScorer,
             toAutoPodcast = ::toAutoPodcast,
             mediaSessionProvider = { mediaSession },
-            onCollagesReady = { autoCollageUris = it },
+            onCollagesReady = { fresh ->
+                autoCollageUris = autoCollageUris + fresh
+            },
         )
     }
 
@@ -726,6 +733,8 @@ open class BoxLorePlaybackService :
         database.listeningHistoryDao().upsert(completed)
         mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, 20, null)
         mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_HISTORY_ID, 50, null)
+        // Resume / Home collage tiles must track completed episodes, not stay on a stale PNG.
+        requestAutoCollageRefresh(force = true)
     }
 
     override fun observeManualCompletion(episodeId: String) {
@@ -869,6 +878,7 @@ open class BoxLorePlaybackService :
                             )
                         database.listeningHistoryDao().upsert(updated)
                         android.util.Log.d("BoxLorePlaybackService", "Marked current episode completed: $episodeId")
+                        requestAutoCollageRefresh(force = true)
 
                         telemetrySession.trackManualCompletion(
                             episodeId = episodeId,
