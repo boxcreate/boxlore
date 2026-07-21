@@ -5,7 +5,7 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 
 /** Bottom-nav tab click handler shared by the Activity shell. */
 fun NavHostController.navigateBottomNavTab(route: String, activeTab: String) {
-    AnalyticsHelper.trackNavTabClicked(route)
+    AnalyticsHelper.trackNavTabClicked(route, previousTab = activeTab)
     when {
         activeTab == route -> {
             when (route) {
@@ -69,8 +69,9 @@ fun NavHostController.navigateBottomNavTab(route: String, activeTab: String) {
         }
         else -> {
             val tabPattern = bottomNavTabRoutePattern(route)
-            val popped = tabPattern != null &&
-                popBackStack(tabPattern, inclusive = false)
+            val popped =
+                tabPattern != null &&
+                    popBackStack(tabPattern, inclusive = false)
             if (!popped) {
                 navigate(
                     if (route == "explore") ExploreBottomNavRoute else route,

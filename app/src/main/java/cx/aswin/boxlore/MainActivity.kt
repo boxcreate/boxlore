@@ -12,8 +12,8 @@ import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.posthog.PostHog
-import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.surveys.NpsSurveyTriggers
 import cx.aswin.boxlore.ui.BoxLoreAppRoot
 import cx.aswin.boxlore.ui.CoilImageLoaderSetup
@@ -45,19 +45,19 @@ class MainActivity : ComponentActivity() {
     @Volatile
     private var playbackRepositoryRef: PlaybackRepository? = null
 
-    private fun isCurrentlyPlaying(): Boolean =
-        playbackRepositoryRef?.playerState?.value?.isPlaying == true
+    private fun isCurrentlyPlaying(): Boolean = playbackRepositoryRef?.playerState?.value?.isPlaying == true
 
-    private val updateLauncher = registerForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult(),
-    ) { result ->
-        if (result.resultCode != RESULT_OK) {
-            android.util.Log.e(
-                "AppUpdate",
-                "Update flow failed or cancelled. Result code: ${result.resultCode}",
-            )
+    private val updateLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartIntentSenderForResult(),
+        ) { result ->
+            if (result.resultCode != RESULT_OK) {
+                android.util.Log.e(
+                    "AppUpdate",
+                    "Update flow failed or cancelled. Result code: ${result.resultCode}",
+                )
+            }
         }
-    }
 
     private val playAppUpdateHelper by lazy {
         PlayAppUpdateHelper(this, updateLauncher)
@@ -79,7 +79,14 @@ class MainActivity : ComponentActivity() {
         }
         if (intent.getBooleanExtra("from_push", false)) {
             intent.removeExtra("from_push")
-            AnalyticsHelper.trackNotificationTapped()
+            AnalyticsHelper.trackNotificationTapped(
+                notificationType = intent.getStringExtra("notification_type") ?: "unknown",
+                podcastId = intent.getStringExtra("podcast_id"),
+                episodeId = intent.getStringExtra("episode_id"),
+                targetRoute =
+                    intent.getStringExtra("target_route")
+                        ?: intent.data?.toString(),
+            )
         }
     }
 
@@ -88,7 +95,9 @@ class MainActivity : ComponentActivity() {
         isFirstResumeAfterLaunch = false
         PostHog.register(
             "local_time_of_day",
-            java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+            java.util.Calendar
+                .getInstance()
+                .get(java.util.Calendar.HOUR_OF_DAY),
         )
         NpsSurveyTriggers.check(
             surveyPrefs = surveyPrefs,

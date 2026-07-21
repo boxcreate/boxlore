@@ -57,7 +57,12 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
         val data = message.data
         if (data.isNotEmpty()) {
-            val type = data["type"]
+            val type = data["type"] ?: "push"
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackNotificationReceived(
+                notificationType = type,
+                podcastId = FcmPayloadParser.podcastId(data),
+                episodeId = FcmPayloadParser.episodeId(data),
+            )
             if (type == "new_episode") {
                 handleNewEpisodeMessage(data)
                 return
@@ -84,15 +89,8 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         "Skipping Whats New push on Play Store install (category=${parsed.category})",
                     )
                 } else {
-                    showPushNotification(
-                        parsed.title,
-                        parsed.body,
-                        parsed.route,
-                        parsed.imageUrl,
-                        parsed.sound,
-                        parsed.actionLabel,
-                        parsed.showActionInPush
-                    )
+                    // Prefer outer `type` (defaults to "push") over parser's "both" default.
+                    showPushNotification(parsed.copy(type = type))
                 }
             }
         }
@@ -135,6 +133,10 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             setPackage(packageName)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("from_push", true)
+            putExtra("notification_type", "new_episode")
+            putExtra("podcast_id", podcastId)
+            putExtra("episode_id", episodeId)
+            putExtra("target_route", route)
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -264,17 +266,9 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
-    private fun showPushNotification(
-        title: String, 
-        body: String, 
-        route: String?, 
-        imageUrl: String?, 
-        sound: String?, 
-        actionLabel: String?, 
-        showActionInPush: Boolean
-    ) {
+    private fun showPushNotification(notification: ParsedFcmNotification) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val config = getPushChannelConfig(sound)
+        val config = getPushChannelConfig(notification.sound)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(config.id, config.name, config.importance).apply {
@@ -292,43 +286,55 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = createPushIntent(route)
+        val intent =
+            createPushIntent(
+                notification.route,
+                notification.type,
+                notification.podcastId,
+                notification.episodeId,
+            )
         val pendingIntent = PendingIntent.getActivity(
-            this, 
-            0, 
-            intent, 
+            this,
+            0,
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, config.id)
             .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
             .setColor(android.graphics.Color.parseColor("#5B5BD6")) // Brand purple color matching launcher icon
-            .setContentTitle(title)
-            .setContentText(body)
+            .setContentTitle(notification.title)
+            .setContentText(notification.body)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-            
+
         if (config.soundUri != null) {
             notificationBuilder.setSound(config.soundUri)
         }
 
-        if (showActionInPush && !route.isNullOrBlank()) {
-            val actionIntent = createPushIntent(route)
+        val route = notification.route
+        if (notification.showActionInPush && !route.isNullOrBlank()) {
+            val actionIntent =
+                createPushIntent(
+                    route,
+                    notification.type,
+                    notification.podcastId,
+                    notification.episodeId,
+                )
             val actionPendingIntent = PendingIntent.getActivity(
                 this,
                 route.hashCode(),
                 actionIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            val btnLabel = actionLabel ?: "View"
             notificationBuilder.addAction(
                 cx.aswin.boxlore.R.drawable.ic_notification_custom,
-                btnLabel,
+                notification.actionLabel,
                 actionPendingIntent
             )
         }
 
-        loadPushImage(notificationBuilder, imageUrl)
+        loadPushImage(notificationBuilder, notification.imageUrl)
         notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
     }
 
@@ -362,18 +368,30 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
-    private fun createPushIntent(route: String?): Intent {
+    private fun createPushIntent(
+        route: String?,
+        notificationType: String = "push",
+        podcastId: String? = null,
+        episodeId: String? = null,
+    ): Intent {
         val isUriRoute = route != null && PushTargetRouteAllowlist.isAppOrWebUri(route)
         return if (isUriRoute) {
             Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
                 setClass(this@BoxLoreFcmService, MainActivity::class.java)
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 putExtra("from_push", true)
+                putExtra("notification_type", notificationType)
+                podcastId?.let { putExtra("podcast_id", it) }
+                episodeId?.let { putExtra("episode_id", it) }
+                putExtra("target_route", route)
             }
         } else {
             Intent(this, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 putExtra("from_push", true)
+                putExtra("notification_type", notificationType)
+                podcastId?.let { putExtra("podcast_id", it) }
+                episodeId?.let { putExtra("episode_id", it) }
                 if (route != null && PushTargetRouteAllowlist.isAllowed(route)) {
                     putExtra("target_route", route)
                 }
@@ -394,7 +412,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 builder.setStyle(
                     NotificationCompat.BigPictureStyle()
                         .bigPicture(bitmap)
-                        .bigLargeIcon(null as android.graphics.Bitmap?)
+                        .bigLargeIcon(null as android.graphics.Bitmap?),
                 )
                 builder.setLargeIcon(bitmap)
             }

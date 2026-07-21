@@ -2,35 +2,35 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
-import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
-import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.playback.QueueManager
-import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
-import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
-import cx.aswin.boxlore.core.downloads.SmartDownloadManager
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
-import cx.aswin.boxlore.core.database.BoxLoreDatabase
-import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
-import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncher
-import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
-import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
-import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
-import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
-import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
-import cx.aswin.boxlore.core.playback.service.MediaDownloadService
+import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
+import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.downloads.DownloadsDependencies
+import cx.aswin.boxlore.core.downloads.SmartDownloadManager
+import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncher
+import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.QueueManager
+import cx.aswin.boxlore.core.playback.QueueRepository
+import cx.aswin.boxlore.core.playback.service.MediaDownloadService
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
+import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
+import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
+import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
+import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 
 /**
  * Application-scoped composition root for shared DB / repositories / managers.
@@ -198,6 +198,13 @@ class AppContainer(
     }
 
     val installReferrerManager: InstallReferrerManager by lazy {
-        InstallReferrerManager(appContext)
+        InstallReferrerManager(appContext).also { manager ->
+            manager.onInstallReferrerResolved = { channel, raw ->
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackInstallChannelAttributed(
+                    installChannel = channel,
+                    referrerRaw = raw,
+                )
+            }
+        }
     }
 }

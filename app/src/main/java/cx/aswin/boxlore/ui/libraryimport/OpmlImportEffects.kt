@@ -14,6 +14,7 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Runs OPML / JSON library import work when [importTriggerKey] changes. */
 @Composable
@@ -37,7 +38,7 @@ fun OpmlImportEffects(
                     if (inputStream == null) {
                         AnalyticsHelper.trackOnboardingImportFailed(
                             "opml",
-                            "Failed to open the selected file.",
+                            LibraryBackupAnalyticsErrors.FILE_OPEN_FAILED,
                         )
                         onStateChange(OpmlImportState.Error("Failed to open the selected file."))
                         return@withContext
@@ -55,7 +56,7 @@ fun OpmlImportEffects(
                     if (feeds.isEmpty()) {
                         AnalyticsHelper.trackOnboardingImportFailed(
                             "opml",
-                            "No podcast feeds found in the OPML file.",
+                            LibraryBackupAnalyticsErrors.NO_FEEDS,
                         )
                         onStateChange(
                             OpmlImportState.Error("No podcast feeds found in the OPML file."),
@@ -92,14 +93,24 @@ fun OpmlImportEffects(
                     if (importedList.isEmpty()) {
                         AnalyticsHelper.trackOnboardingImportFailed(
                             "opml",
-                            "Could not resolve or subscribe to any podcasts from this OPML file.",
+                            LibraryBackupAnalyticsErrors.NO_PODCASTS_RESOLVED,
+                        )
+                        AnalyticsHelper.trackBackupRestoreResult(
+                            action = "import",
+                            success = false,
+                            format = "opml",
+                            errorMessage = LibraryBackupAnalyticsErrors.NO_PODCASTS_RESOLVED,
                         )
                         onStateChange(
-                            OpmlImportState.Error(
-                                "Could not resolve or subscribe to any podcasts from this OPML file.",
-                            ),
+                            OpmlImportState.Error(OPML_NO_PODCASTS_RESOLVED),
                         )
                     } else {
+                        AnalyticsHelper.trackBackupRestoreResult(
+                            action = "import",
+                            success = true,
+                            itemCount = importedList.size,
+                            format = "opml",
+                        )
                         onStateChange(
                             OpmlImportState.AskCompleted(
                                 importedPodcasts = importedList.toList(),
@@ -108,8 +119,20 @@ fun OpmlImportEffects(
                         )
                     }
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     Log.e("OPML_IMPORT", "Error during parsing/importing", e)
-                    AnalyticsHelper.trackOnboardingImportFailed("opml", e.message)
+                    val code =
+                        LibraryBackupAnalyticsErrors.fromThrowable(
+                            e,
+                            LibraryBackupAnalyticsErrors.IMPORT_FAILED,
+                        )
+                    AnalyticsHelper.trackOnboardingImportFailed("opml", code)
+                    AnalyticsHelper.trackBackupRestoreResult(
+                        action = "import",
+                        success = false,
+                        format = "opml",
+                        errorMessage = code,
+                    )
                     onStateChange(OpmlImportState.Error("OPML Import failed: ${e.message}"))
                 }
             }
@@ -146,8 +169,12 @@ fun OpmlImportEffects(
                         ),
                     )
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     Log.e("OPML_IMPORT", "Error marking completed", e)
-                    AnalyticsHelper.trackOnboardingImportFailed("opml", e.message)
+                    AnalyticsHelper.trackOnboardingImportFailed(
+                        "opml",
+                        LibraryBackupAnalyticsErrors.MARK_COMPLETED_FAILED,
+                    )
                     onStateChange(
                         OpmlImportState.Error(
                             "Failed to mark episodes as completed: ${e.message}",
@@ -158,6 +185,9 @@ fun OpmlImportEffects(
         }
     }
 }
+
+private const val OPML_NO_PODCASTS_RESOLVED =
+    "Could not resolve or subscribe to any podcasts from this OPML file."
 
 /** Import a JSON library backup on a background dispatcher. */
 suspend fun performJsonLibraryImport(
@@ -177,7 +207,10 @@ suspend fun performJsonLibraryImport(
                     it.bufferedReader().readText()
                 }
             if (jsonStr == null) {
-                AnalyticsHelper.trackOnboardingImportFailed("json", "Failed to read the JSON file.")
+                AnalyticsHelper.trackOnboardingImportFailed(
+                    "json",
+                    LibraryBackupAnalyticsErrors.FILE_OPEN_FAILED,
+                )
                 withContext(Dispatchers.Main) {
                     onStateChange(OpmlImportState.Error("Failed to read the JSON file."))
                 }
@@ -191,6 +224,12 @@ suspend fun performJsonLibraryImport(
                     userPrefs,
                     context,
                 ).importLibraryFromJson(jsonStr)
+            AnalyticsHelper.trackBackupRestoreResult(
+                action = "import",
+                success = true,
+                itemCount = count,
+                format = "json",
+            )
             withContext(Dispatchers.Main) {
                 onStateChange(
                     OpmlImportState.Success(
@@ -202,7 +241,19 @@ suspend fun performJsonLibraryImport(
                 )
             }
         } catch (e: Exception) {
-            AnalyticsHelper.trackOnboardingImportFailed("json", e.message)
+            if (e is CancellationException) throw e
+            val code =
+                LibraryBackupAnalyticsErrors.fromThrowable(
+                    e,
+                    LibraryBackupAnalyticsErrors.IMPORT_FAILED,
+                )
+            AnalyticsHelper.trackOnboardingImportFailed("json", code)
+            AnalyticsHelper.trackBackupRestoreResult(
+                action = "import",
+                success = false,
+                format = "json",
+                errorMessage = code,
+            )
             withContext(Dispatchers.Main) {
                 onStateChange(OpmlImportState.Error("JSON Import failed: ${e.message}"))
             }

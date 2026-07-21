@@ -29,10 +29,10 @@
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoViewModel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
         <error line="55" column="17" source="standard:backing-property-naming" />
-        <error line="906" column="1" source="standard:indent" />
-        <error line="907" column="1" source="standard:indent" />
-        <error line="908" column="1" source="standard:indent" />
-        <error line="909" column="1" source="standard:indent" />
+        <error line="923" column="1" source="standard:indent" />
+        <error line="924" column="1" source="standard:indent" />
+        <error line="925" column="1" source="standard:indent" />
+        <error line="926" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeActionRail.kt">
         <error line="3" column="1" source="standard:import-ordering" />

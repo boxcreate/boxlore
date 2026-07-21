@@ -284,12 +284,28 @@ class ArchitectureGuardTest {
                         relative.endsWith("AppContainer.kt") ||
                             relative.contains("Database.kt") ||
                             declaresGetInstance
-                    text.lines().forEachIndexed { index, line ->
+                    val lines = text.lines()
+                    lines.forEachIndexed { index, line ->
                         val code = line.substringBefore("//")
                         if (!callPattern.containsMatchIn(code)) return@forEachIndexed
                         if (definitionPattern.containsMatchIn(code)) return@forEachIndexed
                         if (allowFile) return@forEachIndexed
-                        if (allowedReceiver.containsMatchIn(code)) return@forEachIndexed
+                        // ktlint may put `.getInstance(` on its own line; join prior receiver.
+                        val context =
+                            if (code.trimStart().startsWith(".getInstance")) {
+                                val prior =
+                                    lines
+                                        .take(index)
+                                        .asReversed()
+                                        .firstOrNull { it.substringBefore("//").isNotBlank() }
+                                        .orEmpty()
+                                        .substringBefore("//")
+                                        .trim()
+                                "$prior${code.trimStart()}"
+                            } else {
+                                code
+                            }
+                        if (allowedReceiver.containsMatchIn(context)) return@forEachIndexed
                         violations += "$relative:${index + 1}: ${line.trim()}"
                     }
                 }

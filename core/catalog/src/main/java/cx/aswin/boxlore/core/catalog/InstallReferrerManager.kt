@@ -21,19 +21,28 @@ data class ReferralIntent(
     val id: String,
     val timestamp: Long? = null,
     val start: Long? = null,
-    val end: Long? = null
+    val end: Long? = null,
 )
 
-class InstallReferrerManager(private val context: Context) {
-
+class InstallReferrerManager(
+    private val context: Context,
+) {
     private val _referralFlow = MutableSharedFlow<ReferralIntent>(replay = 1)
     val referralFlow: SharedFlow<ReferralIntent> = _referralFlow.asSharedFlow()
 
-    private val prefs = PrefsFileMigrator.open(
-        context,
-        newName = PREFS_NAME,
-        oldName = PrefsFileMigrator.LegacyFiles.REFERRER,
-    )
+    /**
+     * Optional attribution hook (wired from `:app` → analytics). Catalog must not depend on
+     * `:core:analytics`. Invoked once per first install-referrer resolution with a channel
+     * label (`organic`, `share`, `utm`, or `unknown`).
+     */
+    var onInstallReferrerResolved: ((installChannel: String, referrerRaw: String?) -> Unit)? = null
+
+    private val prefs =
+        PrefsFileMigrator.open(
+            context,
+            newName = PREFS_NAME,
+            oldName = PrefsFileMigrator.LegacyFiles.REFERRER,
+        )
     private val scope = CoroutineScope(Dispatchers.IO)
 
     fun checkInstallReferrer() {
@@ -44,44 +53,89 @@ class InstallReferrerManager(private val context: Context) {
 
         Log.d(TAG, "Starting Google Play Install Referrer check...")
         val referrerClient = InstallReferrerClient.newBuilder(context).build()
-        referrerClient.startConnection(object : InstallReferrerStateListener {
-            override fun onInstallReferrerSetupFinished(responseCode: Int) {
-                when (responseCode) {
-                    InstallReferrerClient.InstallReferrerResponse.OK -> {
-                        try {
-                            val response = referrerClient.installReferrer
-                            val referrerUrl = response.installReferrer
-                            Log.d(TAG, "Retrieved referrer: $referrerUrl")
-
-                            if (!referrerUrl.isNullOrEmpty()) {
-                                handleReferrer(referrerUrl)
-                            }
-                            
-                            // Mark as processed so we don't handle it on subsequent launches
-                            prefs.edit().putBoolean(KEY_REFERRER_PROCESSED, true).apply()
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Failed to get referrer details", e)
-                        } finally {
+        referrerClient.startConnection(
+            object : InstallReferrerStateListener {
+                override fun onInstallReferrerSetupFinished(responseCode: Int) {
+                    when (responseCode) {
+                        InstallReferrerClient.InstallReferrerResponse.OK -> {
                             try {
-                                referrerClient.endConnection()
+                                val response = referrerClient.installReferrer
+                                val referrerUrl = response.installReferrer
+                                Log.d(TAG, "Retrieved referrer: $referrerUrl")
+
+                                if (!referrerUrl.isNullOrEmpty()) {
+                                    handleReferrer(referrerUrl)
+                                    notifyAttribution(referrerUrl)
+                                } else {
+                                    notifyAttribution(null)
+                                }
+
+                                // Mark as processed so we don't handle it on subsequent launches
+                                prefs.edit().putBoolean(KEY_REFERRER_PROCESSED, true).apply()
                             } catch (e: Exception) {
-                                // Ignore
+                                // Transient fetch failure: do not $set_once unknown — leave
+                                // referrer unprocessed so a later launch can resolve the channel.
+                                Log.e(TAG, "Failed to get referrer details", e)
+                            } finally {
+                                endReferrerConnection(referrerClient)
                             }
                         }
-                    }
-                    InstallReferrerClient.InstallReferrerResponse.FEATURE_NOT_SUPPORTED -> {
-                        Log.w(TAG, "Install Referrer API not supported on this device.")
-                    }
-                    InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE -> {
-                        Log.w(TAG, "Install Referrer service is currently unavailable.")
+                        InstallReferrerClient.InstallReferrerResponse.FEATURE_NOT_SUPPORTED -> {
+                            Log.w(TAG, "Install Referrer API not supported on this device.")
+                            notifyAttribution(null)
+                            prefs.edit().putBoolean(KEY_REFERRER_PROCESSED, true).apply()
+                            endReferrerConnection(referrerClient)
+                        }
+                        InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE -> {
+                            Log.w(TAG, "Install Referrer service is currently unavailable.")
+                            endReferrerConnection(referrerClient)
+                        }
                     }
                 }
-            }
 
-            override fun onInstallReferrerServiceDisconnected() {
-                Log.d(TAG, "Install Referrer service disconnected.")
+                override fun onInstallReferrerServiceDisconnected() {
+                    Log.d(TAG, "Install Referrer service disconnected.")
+                }
+            },
+        )
+    }
+
+    private fun endReferrerConnection(referrerClient: InstallReferrerClient) {
+        try {
+            referrerClient.endConnection()
+        } catch (_: Exception) {
+            // Ignore
+        }
+    }
+
+    private fun notifyAttribution(referrerUrl: String?) {
+        val channel = deriveInstallChannel(referrerUrl)
+        onInstallReferrerResolved?.invoke(channel, referrerUrl)
+    }
+
+    /** Test seam for attribution callback outcomes (terminal paths only). */
+    internal fun emitAttributionForTest(referrerUrl: String?) = notifyAttribution(referrerUrl)
+
+    companion object {
+        fun deriveInstallChannel(referrerUrl: String?): String {
+            if (referrerUrl.isNullOrBlank()) return "unknown"
+            val decoded =
+                android.net.Uri
+                    .decode(referrerUrl)
+                    .lowercase()
+            return when {
+                // Organic / Play Store default must beat generic utm_source= matching.
+                decoded.contains("organic") || decoded.contains("utm_source=google-play") -> "organic"
+                decoded.contains("type_podcast") ||
+                    decoded.contains("type=podcast") ||
+                    decoded.contains("type_episode") ||
+                    decoded.contains("type=episode") ||
+                    decoded.startsWith("podcast_") ||
+                    decoded.startsWith("episode_") -> "share"
+                decoded.contains("utm_source=") -> "utm"
+                else -> "unknown"
             }
-        })
+        }
     }
 
     /**
