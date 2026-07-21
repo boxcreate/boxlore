@@ -8,6 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.net.InetAddress
 import java.net.URI
 
 @RunWith(RobolectricTestRunner::class)
@@ -28,10 +29,7 @@ class AutoArtworkDownloaderTest {
     }
 
     @Test
-    fun isPublicHttpsUrlRejectsLoopbackAndNonHttps() {
-        val loopback = URI("https://127.0.0.1/cover.jpg").toURL()
-        assertFalse(AutoArtworkDownloader.isPublicHttpsUrl(loopback))
-
+    fun isPublicHttpsUrlRejectsNonHttpsAndNon443WithoutDns() {
         val http = URI("http://example.com/cover.jpg").toURL()
         assertFalse(AutoArtworkDownloader.isPublicHttpsUrl(http))
 
@@ -40,9 +38,18 @@ class AutoArtworkDownloaderTest {
     }
 
     @Test
-    fun isPublicHttpsUrlAcceptsPublicHttpsHost() {
-        // example.com resolves to documentation IPs that are not site-local.
-        val url = URI("https://example.com/cover.jpg").toURL()
-        assertTrue(AutoArtworkDownloader.isPublicHttpsUrl(url))
+    fun isPublicAddressClassifiesLocalRangesWithoutDns() {
+        val loopback = InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1))
+        assertFalse(AutoArtworkDownloader.isPublicAddress(loopback))
+
+        val siteLocal = InetAddress.getByAddress(byteArrayOf(192.toByte(), 168.toByte(), 1, 1))
+        assertFalse(AutoArtworkDownloader.isPublicAddress(siteLocal))
+
+        val linkLocal = InetAddress.getByAddress(byteArrayOf(169.toByte(), 254.toByte(), 1, 1))
+        assertFalse(AutoArtworkDownloader.isPublicAddress(linkLocal))
+
+        // 8.8.8.8 is a well-known public address used only as a classifier fixture.
+        val publicV4 = InetAddress.getByAddress(byteArrayOf(8, 8, 8, 8))
+        assertTrue(AutoArtworkDownloader.isPublicAddress(publicV4))
     }
 }

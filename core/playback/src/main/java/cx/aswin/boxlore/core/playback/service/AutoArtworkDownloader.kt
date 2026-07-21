@@ -42,16 +42,16 @@ internal object AutoArtworkDownloader {
         val addresses =
             runCatching { InetAddress.getAllByName(url.host) }.getOrNull()
                 ?: return false
-        return addresses.isNotEmpty() &&
-            addresses.all { address ->
-                !address.isAnyLocalAddress &&
-                    !address.isLoopbackAddress &&
-                    !address.isLinkLocalAddress &&
-                    !address.isSiteLocalAddress &&
-                    !address.isMulticastAddress &&
-                    !address.isUniqueLocalIpv6()
-            }
+        return addresses.isNotEmpty() && addresses.all(::isPublicAddress)
     }
+
+    fun isPublicAddress(address: InetAddress): Boolean =
+        !address.isAnyLocalAddress &&
+            !address.isLoopbackAddress &&
+            !address.isLinkLocalAddress &&
+            !address.isSiteLocalAddress &&
+            !address.isMulticastAddress &&
+            !address.isUniqueLocalIpv6()
 
     private fun fetchOnce(url: URL): FetchOutcome? {
         if (!isPublicHttpsUrl(url)) return null
