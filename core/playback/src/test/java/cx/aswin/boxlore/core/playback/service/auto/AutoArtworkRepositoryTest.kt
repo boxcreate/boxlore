@@ -106,6 +106,16 @@ class AutoArtworkRepositoryTest {
     }
 
     @Test
+    fun collageUriIncludesCacheBusterFromSignatureFile() {
+        val dir = File(context.cacheDir, "auto_collages").apply { mkdirs() }
+        File(dir, "folder_1.png").writeBytes(byteArrayOf(1))
+        File(dir, "folder_1.signature").writeText("sig-123")
+
+        val uri = AutoArtworkRepository.collageUri(context, "folder-1")!!
+        assertEquals("sig-123", uri.getQueryParameter("v"))
+    }
+
+    @Test
     fun collageUriSanitizesFolderIdIntoFilename() {
         val dir = File(context.cacheDir, "auto_collages").apply { mkdirs() }
         // "a/b c" → "a_b_c" per safeFileName().

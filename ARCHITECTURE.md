@@ -217,6 +217,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | `boxcast_theme_fast_cache` | `boxlore_theme_fast_cache` | `UserPreferencesRepository` |
 | `boxcast_analytics_prefs` | `boxlore_analytics_prefs` | `AnalyticsHelper` |
 | `boxcast_player` | `boxlore_player` | `PlaybackRepository` / `PodcastRepository` |
+| — | `android_auto_artwork_sources` | `AutoArtworkSourceStore` / `AutoCollageProvider` (Android Auto art URI map; do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

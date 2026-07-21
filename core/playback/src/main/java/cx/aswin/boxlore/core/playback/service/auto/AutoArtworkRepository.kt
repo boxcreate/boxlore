@@ -6,8 +6,6 @@ import java.io.File
 import java.security.MessageDigest
 
 internal object AutoArtworkRepository {
-    private const val SOURCE_PREFS = "android_auto_artwork_sources"
-
     fun remoteUri(
         context: Context,
         remoteUrl: String?,
@@ -24,11 +22,7 @@ internal object AutoArtworkRepository {
         val normalized = source.replaceFirst("http://", "https://")
         if (!normalized.startsWith("https://")) return null
         val key = normalized.sha256()
-        context
-            .getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(key, normalized)
-            .apply()
+        AutoArtworkSourceStore.put(context, key, normalized)
         return Uri
             .Builder()
             .scheme("content")
@@ -52,11 +46,7 @@ internal object AutoArtworkRepository {
             ).mapNotNull { runCatching(it::getCanonicalFile).getOrNull() }
         if (allowedRoots.none { canonicalFile.isInside(it) } || !canonicalFile.isFile) return null
         val key = canonicalFile.path.sha256()
-        context
-            .getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(key, canonicalFile.path)
-            .apply()
+        AutoArtworkSourceStore.put(context, key, canonicalFile.path)
         return Uri
             .Builder()
             .scheme("content")
@@ -69,17 +59,29 @@ internal object AutoArtworkRepository {
     fun collageUri(
         context: Context,
         folderId: String,
+        version: String? = null,
     ): Uri? {
         val filename = "${folderId.safeFileName()}.png"
-        val file = File(File(context.cacheDir, "auto_collages"), filename)
+        val collageDir = File(context.cacheDir, "auto_collages")
+        val file = File(collageDir, filename)
         if (!file.exists()) return null
-        return Uri
-            .Builder()
-            .scheme("content")
-            .authority("${context.packageName}.collage")
-            .appendPath("collage")
-            .appendPath(filename)
-            .build()
+        val cacheBuster =
+            version?.takeIf { it.isNotBlank() }
+                ?: File(collageDir, "${folderId.safeFileName()}.signature")
+                    .takeIf { it.isFile }
+                    ?.readText()
+                    ?.takeIf { it.isNotBlank() }
+        val builder =
+            Uri
+                .Builder()
+                .scheme("content")
+                .authority("${context.packageName}.collage")
+                .appendPath("collage")
+                .appendPath(filename)
+        if (!cacheBuster.isNullOrBlank()) {
+            builder.appendQueryParameter("v", cacheBuster)
+        }
+        return builder.build()
     }
 
     private fun String.safeFileName(): String = replace(Regex("[^a-zA-Z0-9_]"), "_")

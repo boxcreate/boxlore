@@ -196,6 +196,7 @@ internal class AutoBrowseLibraryCallback(
         )
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, 20, null)
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_HISTORY_ID, 50, null)
+        host.requestAutoCollageRefresh(force = true)
         return true
     }
 
@@ -249,6 +250,7 @@ internal class AutoBrowseLibraryCallback(
         }
         if (queuedEpisode == null) host.queueRepository.replaceQueue(existingQueue + episode)
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_QUEUE_ID, 50, null)
+        host.requestAutoCollageRefresh(force = true)
         return true
     }
 
@@ -318,7 +320,6 @@ internal class AutoBrowseLibraryCallback(
         val resultParams = LibraryParams.Builder().setExtras(rootExtras).build()
         return Futures.immediateFuture(LibraryResult.ofItem(rootItem, resultParams))
     }
-
 
     override fun onGetChildren(
         session: MediaLibrarySession,
@@ -390,7 +391,6 @@ internal class AutoBrowseLibraryCallback(
         }
     }
 
-
     override fun onSearch(
         session: MediaLibrarySession,
         browser: MediaSession.ControllerInfo,
@@ -436,7 +436,6 @@ internal class AutoBrowseLibraryCallback(
             }
         }
     }
-
 
     override fun onGetItem(
         session: MediaLibrarySession,
@@ -568,9 +567,8 @@ internal class AutoBrowseLibraryCallback(
     ): MutableList<MediaItem> {
         android.util.Log.d(
             "BoxCastPlayer",
-            "onAddMediaItems: selectedItem.mediaId=${selectedItem.mediaId}, extrasKeys=${selectedItem.mediaMetadata.extras?.keySet()?.joinToString(
-                ", ",
-            )}",
+            "onAddMediaItems: selectedItem.mediaId=${selectedItem.mediaId}, " +
+                "extrasKeys=${selectedItem.mediaMetadata.extras?.keySet()?.joinToString(", ")}",
         )
         cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
             mapOf("entry_point" to "android_auto_$source"),
@@ -594,5 +592,4 @@ internal class AutoBrowseLibraryCallback(
         }
         return mutableListOf(resolvedItem)
     }
-
 }

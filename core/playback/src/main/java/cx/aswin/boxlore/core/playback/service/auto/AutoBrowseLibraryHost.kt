@@ -34,6 +34,9 @@ interface AutoBrowseLibraryHost {
 
     fun asContext(): Context
 
+    /** Rebuild folder collage tiles when resume/history/queue content changes. */
+    fun requestAutoCollageRefresh(force: Boolean = false)
+
     fun getString(
         @StringRes id: Int,
         vararg formatArgs: Any,
