@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Expressive listening history insights: session rollups, calendar & stats UI, Room persistence layer, and playback telemetry integration. ([#932](https://github.com/boxcreate/boxlore/pull/932)) <!-- impact:user-impact-high -->
+- Home now displays up to three curated editorial rows per daypart using PodcastRepository.getCuratedVibes with playable filtering and cross‑row de‑duplication ([#942](https://github.com/boxcreate/boxlore/pull/942)) <!-- impact:user-impact-medium -->
 - In‑memory SignalLog for ranking engine mutations and model movement, with Debug UI panels (Signals, Taste, Model) replacing animated learner visualizations. ([#897](https://github.com/boxcreate/boxlore/pull/897))
 ### Changed
+- Greeting line on Home now shows title only without subtitle; editorial rows are rendered flush with the feed ([#942](https://github.com/boxcreate/boxlore/pull/942)) <!-- impact:user-impact-medium -->
 - Enabled SignalLog capture by default in debug builds, disabled in release unless opted‑in; Learner engine now uses atomic exposure resolution with synchronized enable/disable of SignalLog. ([#897](https://github.com/boxcreate/boxlore/pull/897))
 - Updated @libsql/client to 0.17.4 in Gradle build scripts. ([#894](https://github.com/boxcreate/boxlore/pull/894)) <!-- impact:no-user-impact -->
 - Pinned transitive dependencies (Netty 4.1.136, BouncyCastle 1.84, jose4j 0.9.6, jdom2 2.0.6.1, commons‑compress 1.26.2, protobuf 3.25.5) and overridden protobufjs 7.6.5, uuid 11.1.1 to address Dependabot Maven alerts and npm audit findings. ([#896](https://github.com/boxcreate/boxlore/pull/896)) <!-- impact:no-user-impact -->
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LearningEventLog startup gating now defaults to off in release builds unless BoxcastPrefs.resolveLearnerLogEnabled indicates an explicit opt‑in. ([#936](https://github.com/boxcreate/boxlore/pull/936)) <!-- impact:no-user-impact -->
 ### Removed
 - Migrated Firebase Hosting config to aswin.cx; removed `.agents` Android‑ASO skill and associated documentation. ([#932](https://github.com/boxcreate/boxlore/pull/932)) <!-- impact:user-impact-high -->
+- Adaptive `/content/sections/v1` recipe rails and related UI wiring from Home surface ([#942](https://github.com/boxcreate/boxlore/pull/942)) <!-- impact:user-impact-medium -->
 ## [v0.0.10] - 2026-07-17
 
 ### Added
