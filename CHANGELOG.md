@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Add node test suite for CSV helpers; flatten CR/LF in Podcast Index dump export and make CSV import quote‑aware, skipping rows with mismatched field count ([#945](https://github.com/boxcreate/boxlore/pull/945)) <!-- impact:no-user-impact+backend-change -->
 ## [v0.0.11] - 2026-07-22
 
 ### Added
