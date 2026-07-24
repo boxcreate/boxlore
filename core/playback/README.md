@@ -23,7 +23,7 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - Android Auto browse artwork:
   - `AutoArtworkRepository` + `AutoArtworkSourceStore` register remote/local sources into an in-memory map immediately and `commit` prefs on a background thread before/while returning `content://…/art|local|collage/…` URIs.
   - `AutoCollageProvider` lazily fetches remote covers with validated HTTPS redirects, lenient image content-types, magic-byte checks, and one retry; folder collage URIs include a `v=` cache-buster so Auto hosts reload when resume/history content changes.
-  - `AutoCollagePrewarmer` / `AutoCollageGenerator` / `AutoCollageLayouts` rebuild section collages from content keys (resume episode IDs, queue IDs, subscriptions, …), use a shorter TTL for partial/fallback tiles, and refresh on mark-complete / queue changes via `AutoBrowseLibraryHost.requestAutoCollageRefresh`. MIX/RESUME badge labels use Google Sans Flex via `:core:designsystem` `GoogleSansFlexTypeface`, reading lettering roundness from `boxlore_theme_fast_cache` through `:core:prefs` `FontRoundnessAxis`.
+  - `AutoCollagePrewarmer` / `AutoCollageGenerator` / `AutoCollageLayouts` rebuild section collages from content keys (resume episode IDs, queue IDs, subscriptions, …), use a shorter TTL for partial/fallback tiles, and refresh on mark-complete / queue changes via `AutoBrowseLibraryHost.requestAutoCollageRefresh`. MIX/RESUME badge labels prefer app-merged Google Sans Flex with lettering roundness from `boxlore_theme_fast_cache` via `:core:prefs` `FontRoundnessAxis` (no `:core:designsystem` dependency).
   - `AutoArtworkDownloader` is the shared HTTPS fetch path (validated redirects + public-host checks) used by both collage generation and the ContentProvider.
 
 ## Internal structure
@@ -65,7 +65,7 @@ Files under `core/data/service` are compatibility stubs for old service class na
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:network`, `:core:database`, `:core:catalog`, `:core:downloads`, `:core:ranking`, `:core:analytics`, `:core:prefs`, and `:core:designsystem`.
+- Project dependencies: `:core:model`, `:core:network`, `:core:database`, `:core:catalog`, `:core:downloads`, `:core:ranking`, `:core:analytics`, and `:core:prefs`.
 - Libraries: Media3 ExoPlayer, Media3 Session, Media3 UI, Coil, Palette, Gson, OkHttp, coroutines, and AndroidX core.
 - Reverse-edge rule: catalog and downloads must not depend back on playback. Downloads launch `MediaDownloadService` through the app-installed launcher port.
 

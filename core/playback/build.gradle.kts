@@ -60,7 +60,6 @@ dependencies {
     implementation(projects.core.ranking)
     implementation(projects.core.analytics)
     implementation(projects.core.prefs)
-    implementation(projects.core.designsystem)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
