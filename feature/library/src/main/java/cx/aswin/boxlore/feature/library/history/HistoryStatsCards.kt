@@ -12,12 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.library.R
@@ -38,7 +36,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.min
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HistoryPeriodSelector(
     selected: ListeningPeriod,
@@ -52,51 +49,13 @@ fun HistoryPeriodSelector(
             ListeningPeriod.DAYS_180 to stringResource(R.string.history_period_180d),
             ListeningPeriod.ALL to stringResource(R.string.history_period_all),
         )
-    val roundedPressShape = RoundedCornerShape(12.dp)
-    val checkedShape = ButtonGroupDefaults.connectedButtonCheckedShape
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-    ) {
-        options.forEachIndexed { index, (period, label) ->
-            ToggleButton(
-                checked = selected == period,
-                onCheckedChange = { checked -> if (checked) onSelect(period) },
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .semantics { role = Role.RadioButton },
-                shapes =
-                    when (index) {
-                        0 ->
-                            ButtonGroupDefaults.connectedLeadingButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                        options.lastIndex ->
-                            ButtonGroupDefaults.connectedTrailingButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                        else ->
-                            ButtonGroupDefaults.connectedMiddleButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                    },
-            ) {
-                Text(
-                    text = label,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
-        }
-    }
+    ConnectedOptionSelector(
+        options = options,
+        selected = selected,
+        onSelect = onSelect,
+        modifier = modifier,
+        labelStyle = MaterialTheme.typography.labelLarge,
+    )
 }
 
 @Composable

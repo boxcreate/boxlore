@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -20,16 +19,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberCondensedGoogleSansFamily
 import kotlinx.coroutines.launch
 
 // Genre data matching GenreSelector.kt
@@ -61,23 +57,6 @@ val ONBOARDING_GENRES =
         GenreItem("Leisure", "Leisure", Icons.Rounded.Weekend),
         GenreItem("Govt", "Government", Icons.Rounded.Gavel),
     )
-
-@OptIn(ExperimentalTextApi::class)
-private val CondensedGoogleSans =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        FontFamily(
-            Font(
-                cx.aswin.boxlore.core.designsystem.R.font.google_sans_variable,
-                variationSettings =
-                    FontVariation.Settings(
-                        FontVariation.weight(700),
-                        FontVariation.Setting("wdth", 75f),
-                    ),
-            ),
-        )
-    } else {
-        FontFamily.Default
-    }
 
 @Composable
 fun OnboardingScreen(
@@ -312,6 +291,7 @@ private fun WelcomeScreen(
     onSkip: () -> Unit,
     onImportClick: () -> Unit,
 ) {
+    val condensedFamily = rememberCondensedGoogleSansFamily()
     val entranceProgress = remember { Animatable(0f) }
     val driftProgress = remember { Animatable(0f) }
 
@@ -417,7 +397,7 @@ private fun WelcomeScreen(
                         text = "Welcome to",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = CondensedGoogleSans,
+                        fontFamily = condensedFamily,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )

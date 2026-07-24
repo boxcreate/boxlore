@@ -139,6 +139,10 @@ internal class BoxcastSurveyHost(
                                 dynamicColor = userPrefs.cachedUseDynamicColor,
                                 themeBrand = userPrefs.cachedThemeBrand,
                                 surfaceStyle = userPrefs.cachedSurfaceStyle,
+                                fontRoundness =
+                                    cx.aswin.boxlore.core.designsystem.theme.FontRoundness.axisValue(
+                                        userPrefs.cachedFontRoundness,
+                                    ),
                             ) {
                                 CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
                                     SurveySheet(

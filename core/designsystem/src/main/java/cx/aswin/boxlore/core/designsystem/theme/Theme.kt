@@ -13,6 +13,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -23,6 +24,12 @@ import androidx.core.view.WindowCompat
  * Provided by [BoxLoreTheme]; available to any composable in the tree.
  */
 val LocalSurfaceStyle = staticCompositionLocalOf { SurfaceStyles.CLASSIC_DYNAMIC }
+
+/**
+ * CompositionLocal providing Google Sans Flex ROND axis (0–100).
+ * Provided by [BoxLoreTheme]; default Soft (50).
+ */
+val LocalFontRoundness = staticCompositionLocalOf { GoogleSansFlexRoundness }
 
 /**
  * CompositionLocal providing the effective dark-theme boolean resolved from the
@@ -75,7 +82,8 @@ fun BoxLoreTheme(
     dynamicColor: Boolean = true,
     themeBrand: String = "violet",
     surfaceStyle: String = SurfaceStyles.CLASSIC_DYNAMIC,
-    content: @Composable () -> Unit
+    fontRoundness: Float = GoogleSansFlexRoundness,
+    content: @Composable () -> Unit,
 ) {
     // Determine effective darkTheme
     val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
@@ -83,18 +91,22 @@ fun BoxLoreTheme(
     // Determine effective dynamicColor. All themes support dynamic accent coloring if enabled.
     val effectiveDynamicColor = dynamicColor
 
-    val colorScheme = when {
-        effectiveDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            val baseScheme = if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            // Apply surface style overrides to dynamic colors
-            applySurfaceStyle(baseScheme, effectiveDarkTheme, surfaceStyle)
+    val colorScheme =
+        when {
+            effectiveDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                val context = LocalContext.current
+                val baseScheme =
+                    if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                // Apply surface style overrides to dynamic colors
+                applySurfaceStyle(baseScheme, effectiveDarkTheme, surfaceStyle)
+            }
+            else -> {
+                val seedColor = resolveThemeSeedColor(themeBrand)
+                generateBrandColorScheme(seedColor, effectiveDarkTheme, surfaceStyle)
+            }
         }
-        else -> {
-            val seedColor = resolveThemeSeedColor(themeBrand)
-            generateBrandColorScheme(seedColor, effectiveDarkTheme, surfaceStyle)
-        }
-    }
+
+    val typography = remember(fontRoundness) { buildBoxLoreTypography(fontRoundness) }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -106,13 +118,14 @@ fun BoxLoreTheme(
 
     CompositionLocalProvider(
         LocalSurfaceStyle provides surfaceStyle,
-        LocalEffectiveDarkTheme provides effectiveDarkTheme
+        LocalEffectiveDarkTheme provides effectiveDarkTheme,
+        LocalFontRoundness provides fontRoundness,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = BoxLoreTypography,
+            typography = typography,
             shapes = BoxLoreShapes,
-            content = content
+            content = content,
         )
     }
 }

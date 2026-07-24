@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -198,7 +198,7 @@ internal fun ExploreSectionHeader(
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall.copy(
-                    fontFamily = SectionHeaderFontFamily
+                    fontFamily = rememberSectionHeaderFontFamily()
                 ),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -258,7 +258,7 @@ internal fun ExploreSearchHeader() {
             Text(
                 text = "Search Results",
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = SectionHeaderFontFamily
+                    fontFamily = rememberSectionHeaderFontFamily()
                 ),
                 color = MaterialTheme.colorScheme.onSurface
             )

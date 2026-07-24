@@ -109,6 +109,7 @@ data class NavSettingsState(
     val useDynamicColor: Boolean,
     val themeBrand: String,
     val surfaceStyle: String,
+    val fontRoundness: String,
     val skipBehavior: String,
     val skipBeginningMs: Long,
     val skipEndingMs: Long,

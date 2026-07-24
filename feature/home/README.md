@@ -10,7 +10,7 @@ Owns Home feed presentation, Settings screens, RSS-add UI, and local debug surfa
 - The discovery area below the daypart greeting presents three editorial rows from the
   catalog’s existing curated provider endpoint. Provider IDs remain internal; listener copy
   uses concise editorial titles and never exposes backend terminology.
-- `settings.SettingsScreen`, `SettingsViewModel`, and `SettingsViewModelAssembler` for Settings.
+- `settings.SettingsScreen`, `SettingsViewModel`, and `SettingsViewModelAssembler` for Settings. Appearance includes Theme (System / Light / Dark connected toggle), Background, **Lettering** (Crisp / Soft / Round connected toggle, same chip language as content region, plus an expandable sample preview), and Colors.
 - `DebugScreen` and `DebugViewModel` for local learner and runtime diagnostics.
 - Extracted Home UI pieces such as `LibrarySectionRows`, `LibrarySection`, and section/card components.
 - Pure logic helpers under `logic/` for Home assembly, discovery, hero ordering, selection, playback-state mapping, serial episodes, and affinity behavior.

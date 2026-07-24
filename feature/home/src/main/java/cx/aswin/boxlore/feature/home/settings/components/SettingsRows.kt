@@ -45,7 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import kotlin.math.roundToInt
@@ -101,7 +101,7 @@ internal fun SettingsCategoryCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontFamily = SectionHeaderFontFamily,
+                    fontFamily = rememberSectionHeaderFontFamily(),
                     fontWeight = FontWeight.Bold,
                     color = contentColor,
                     maxLines = 1,

@@ -84,6 +84,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             isDynamicColorEnabled = settingsState.useDynamicColor,
                             currentThemeBrand = settingsState.themeBrand,
                             currentSurfaceStyle = settingsState.surfaceStyle,
+                            currentFontRoundness = settingsState.fontRoundness,
                         ),
                     actions =
                         cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
@@ -91,6 +92,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             onToggleDynamicColor = { enabled -> scope.launch { userPrefs.setUseDynamicColor(enabled) } },
                             onSetThemeBrand = { brand -> scope.launch { userPrefs.setThemeBrand(brand) } },
                             onSetSurfaceStyle = { style -> scope.launch { userPrefs.setSurfaceStyle(style) } },
+                            onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
                         ),
                 ),
             playbackSettings =

@@ -6,7 +6,8 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 
 ## Public API
 
-- `UserPreferencesRepository` exposes DataStore-backed settings such as theme, region, skip durations, smart downloads, and playback preferences.
+- `UserPreferencesRepository` exposes DataStore-backed settings such as theme, lettering roundness (`font_roundness`: `crisp` / `soft` / `round`), region, skip durations, smart downloads, and playback preferences. Theme fast-cache (`boxlore_theme_fast_cache`) mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, and `font_roundness` for cold-start / non-Compose readers.
+- `FontRoundnessAxis` centralizes lettering preset keys and ROND axis values for prefs, playback (Android Auto collage badges), and other non-Compose readers.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
 - `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, Learn history, and learner-log gates.
 - `resolveLearnerLogEnabled(isDebugBuild)`: debug defaults on when unset; **release is always off** unless the user explicitly persisted `true` via the debug-screen toggle.
@@ -23,6 +24,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   PlaybackSkipBounds.kt
   PrefsFileMigrator.kt
   UserPreferenceKeys.kt
+  FontRoundnessAxis.kt
   UserPreferencesRepository.kt
 ```
 

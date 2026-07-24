@@ -18,8 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
@@ -27,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,13 +33,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.library.HistoryFilter
@@ -50,7 +44,6 @@ import cx.aswin.boxlore.feature.library.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HistoryStatusFilterSelector(
     selected: HistoryFilter,
@@ -63,50 +56,12 @@ fun HistoryStatusFilterSelector(
             HistoryFilter.IN_PROGRESS to stringResource(R.string.history_filter_in_progress),
             HistoryFilter.COMPLETED to stringResource(R.string.history_filter_completed),
         )
-    val roundedPressShape = RoundedCornerShape(12.dp)
-    val checkedShape = ButtonGroupDefaults.connectedButtonCheckedShape
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        options.forEachIndexed { index, (filter, label) ->
-            ToggleButton(
-                checked = selected == filter,
-                onCheckedChange = { checked -> if (checked) onSelect(filter) },
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .semantics { role = Role.RadioButton },
-                shapes =
-                    when (index) {
-                        0 ->
-                            ButtonGroupDefaults.connectedLeadingButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                        options.lastIndex ->
-                            ButtonGroupDefaults.connectedTrailingButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                        else ->
-                            ButtonGroupDefaults.connectedMiddleButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                    },
-            ) {
-                Text(
-                    text = label,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
+    ConnectedOptionSelector(
+        options = options,
+        selected = selected,
+        onSelect = onSelect,
+        modifier = modifier,
+    )
 }
 
 @Composable

@@ -39,7 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -209,7 +209,7 @@ fun CuratedVibeHeader(title: String) {
         Text(
             text = "Curated: $title",
             style = MaterialTheme.typography.headlineSmall.copy(
-                fontFamily = SectionHeaderFontFamily
+                fontFamily = rememberSectionHeaderFontFamily()
             ),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,

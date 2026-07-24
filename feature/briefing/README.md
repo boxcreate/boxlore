@@ -7,6 +7,7 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 ## Public API
 
 - `BriefingScreen` is the route-level composable used by `:app`.
+- Section headers in briefing UI use `rememberSectionHeaderFontFamily()` from `:core:designsystem` so lettering roundness follows Appearance settings.
 - `BriefingViewModel` exposes briefing state and actions using injected catalog, playback, and queue dependencies.
 - `BriefingUiState` models screen state.
 - `BriefingIdentity` contains pure identity helpers for tests and UI mapping.

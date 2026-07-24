@@ -39,6 +39,7 @@ android {
 
 dependencies {
     implementation(projects.core.model)
+    implementation(projects.core.prefs)
     implementation(projects.core.analytics)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

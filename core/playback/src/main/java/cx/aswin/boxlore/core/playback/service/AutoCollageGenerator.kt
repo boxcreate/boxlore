@@ -107,7 +107,7 @@ object AutoCollageGenerator {
             )
         }
 
-        val built = createCollageBitmap(urls, folderId) ?: return null
+        val built = createCollageBitmap(context, urls, folderId) ?: return null
         val loaded = built.loadedImageCount
         val signature =
             AutoCollageFreshnessLogic.buildSignature(
@@ -144,6 +144,7 @@ object AutoCollageGenerator {
     )
 
     private suspend fun createCollageBitmap(
+        context: Context,
         imageUrls: List<String>,
         folderId: String,
     ): BuiltCollage? =
@@ -156,7 +157,7 @@ object AutoCollageGenerator {
                     .map { url -> async(Dispatchers.IO) { downloadBitmap(url) } }
                     .awaitAll()
                     .filterNotNull()
-            AutoCollageLayouts.draw(canvas, size, folderId, bitmaps)
+            AutoCollageLayouts.draw(context, canvas, size, folderId, bitmaps)
             bitmaps.forEach { it.recycle() }
             BuiltCollage(bitmap = bitmap, loadedImageCount = bitmaps.size)
         }

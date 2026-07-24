@@ -17,6 +17,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
+import cx.aswin.boxlore.core.designsystem.theme.LocalFontRoundness
 
 private class LinkTextView(context: android.content.Context) : TextView(context) {
     var linkClickListener: ((String) -> Boolean)? = null
@@ -83,12 +85,21 @@ fun HtmlText(
     val context = LocalContext.current
     val linkTextColor = remember(linkColor) { linkColor.toArgb() }
     val textColor = remember(color) { color.toArgb() }
-    
+    val fontRoundness = LocalFontRoundness.current
+    val bodyTypeface =
+        remember(context, fontRoundness) {
+            GoogleSansTypefaces.create(context, weight = 400, roundness = fontRoundness)
+        }
+    val boldTypeface =
+        remember(context, fontRoundness) {
+            GoogleSansTypefaces.create(context, weight = 700, roundness = fontRoundness)
+        }
+
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
             LinkTextView(ctx).apply {
-                params(this, style, textColor, linkTextColor, maxLines)
+                params(this, style, textColor, linkTextColor, maxLines, bodyTypeface)
                 linkClickListener = onLinkClicked
                 setOnClickListener {
                     onClick?.invoke()
@@ -96,9 +107,9 @@ fun HtmlText(
             }
         },
         update = { linkTextView ->
-            params(linkTextView, style, textColor, linkTextColor, maxLines)
+            params(linkTextView, style, textColor, linkTextColor, maxLines, bodyTypeface)
             linkTextView.linkClickListener = onLinkClicked
-            
+
             val htmlSpanned = HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_COMPACT)
             val spannable = android.text.SpannableString(htmlSpanned)
             val urls = spannable.getSpans(0, spannable.length, android.text.style.URLSpan::class.java)
@@ -106,23 +117,24 @@ fun HtmlText(
                 val start = spannable.getSpanStart(urlSpan)
                 val end = spannable.getSpanEnd(urlSpan)
                 val flags = spannable.getSpanFlags(urlSpan)
-                
-                val customSpan = object : android.text.style.URLSpan(urlSpan.url) {
-                    override fun updateDrawState(ds: android.text.TextPaint) {
-                        super.updateDrawState(ds)
-                        ds.isUnderlineText = false
-                        ds.typeface = android.graphics.Typeface.create(ds.typeface, android.graphics.Typeface.BOLD)
+
+                val customSpan =
+                    object : android.text.style.URLSpan(urlSpan.url) {
+                        override fun updateDrawState(ds: android.text.TextPaint) {
+                            super.updateDrawState(ds)
+                            ds.isUnderlineText = false
+                            ds.typeface = boldTypeface
+                        }
                     }
-                }
                 spannable.removeSpan(urlSpan)
                 spannable.setSpan(customSpan, start, end, flags)
             }
-            
+
             linkTextView.text = spannable
             linkTextView.setOnClickListener {
                 onClick?.invoke()
             }
-        }
+        },
     )
 }
 
@@ -131,28 +143,23 @@ private fun params(
     style: TextStyle,
     textColor: Int,
     linkTextColor: Int,
-    maxLines: Int
+    maxLines: Int,
+    typeface: android.graphics.Typeface,
 ) {
     textView.apply {
         setTextColor(textColor)
         setLinkTextColor(linkTextColor)
         setTextSize(TypedValue.COMPLEX_UNIT_SP, style.fontSize.value)
-        
-        // Basic line height / spacing
-        // Note: fully bridging Compose TextStyle to TextView is complex (font family etc)
-        // For now relying on default system font or maybe simplified handling.
-        // Ideally we'd map style.fontFamily to Typeface but M3 typography uses custom fonts potentially.
-        
+        this.typeface = typeface
+
         this.maxLines = maxLines
         ellipsize = android.text.TextUtils.TruncateAt.END
-        
-        // Line spacing
+
         if (style.lineHeight.isSp) {
-            // approximate
-            // setLineSpacing(style.lineHeight.value - style.fontSize.value, 1f) 
-            // Simple way for basic readability:
-            val spacingExtra = 4f // dp/sp
-             setLineSpacing(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics), 1.0f)
+            setLineSpacing(
+                TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics),
+                1.0f,
+            )
         }
     }
 }

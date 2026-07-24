@@ -35,6 +35,10 @@ class UserPreferencesRepository(
     val cachedSurfaceStyle: String
         get() = syncPrefs.getString("surface_style", null) ?: "classic_dynamic"
 
+    /** Lettering roundness preset key: `crisp` | `soft` (default) | `round`. */
+    val cachedFontRoundness: String
+        get() = FontRoundnessAxis.sanitizeKey(syncPrefs.getString(FontRoundnessAxis.PREF_KEY, null))
+
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
 
@@ -262,6 +266,24 @@ class UserPreferencesRepository(
         syncPrefs.edit().putString("surface_style", surfaceStyle).apply()
         dataStore.edit { preferences ->
             preferences[Keys.SURFACE_STYLE] = surfaceStyle
+        }
+    }
+
+    val fontRoundnessStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                val roundness = FontRoundnessAxis.sanitizeKey(preferences[Keys.FONT_ROUNDNESS])
+                syncPrefs.edit().putString(FontRoundnessAxis.PREF_KEY, roundness).apply()
+                roundness
+            }.distinctUntilChanged()
+
+    suspend fun setFontRoundness(fontRoundness: String) {
+        val sanitized = FontRoundnessAxis.sanitizeKey(fontRoundness)
+        syncPrefs.edit().putString(FontRoundnessAxis.PREF_KEY, sanitized).apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.FONT_ROUNDNESS] = sanitized
         }
     }
 
@@ -1013,5 +1035,11 @@ class UserPreferencesRepository(
         dataStore.edit { preferences ->
             preferences.remove(stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$podcastId"))
         }
+    }
+
+    companion object {
+        const val FONT_ROUNDNESS_CRISP = FontRoundnessAxis.CRISP
+        const val FONT_ROUNDNESS_SOFT = FontRoundnessAxis.SOFT
+        const val FONT_ROUNDNESS_ROUND = FontRoundnessAxis.ROUND
     }
 }

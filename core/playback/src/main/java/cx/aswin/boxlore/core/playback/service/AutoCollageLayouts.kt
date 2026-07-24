@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.playback.service
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -9,10 +10,17 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
+import android.graphics.fonts.Font
+import android.graphics.fonts.FontFamily
+import android.graphics.fonts.FontStyle
+import android.os.Build
+import androidx.core.content.res.ResourcesCompat
+import cx.aswin.boxlore.core.prefs.FontRoundnessAxis
 
 /** Layout helpers for [AutoCollageGenerator] Android Auto folder tiles. */
 internal object AutoCollageLayouts {
     fun draw(
+        context: Context,
         canvas: Canvas,
         size: Int,
         folderId: String,
@@ -26,12 +34,13 @@ internal object AutoCollageLayouts {
             else -> drawFourGrid(canvas, size, bitmaps)
         }
         when {
-            folderId.contains("drive_mix") -> drawLabelBadge(canvas, size, "MIX")
-            folderId.contains("continue") -> drawLabelBadge(canvas, size, "RESUME")
+            folderId.contains("drive_mix") -> drawLabelBadge(context, canvas, size, "MIX")
+            folderId.contains("continue") -> drawLabelBadge(context, canvas, size, "RESUME")
         }
     }
 
     private fun drawLabelBadge(
+        context: Context,
         canvas: Canvas,
         size: Int,
         label: String,
@@ -58,11 +67,45 @@ internal object AutoCollageLayouts {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.WHITE
                 textSize = size * 0.065f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = loadBadgeTypeface(context)
                 textAlign = Paint.Align.CENTER
             }
         val centerY = badge.centerY() - (textPaint.ascent() + textPaint.descent()) / 2f
         canvas.drawText(label, badge.centerX(), centerY, textPaint)
+    }
+
+    /**
+     * Prefer bundled Google Sans Flex (app-merged font) with lettering roundness from
+     * theme fast-cache. Avoids a `:core:designsystem` Gradle edge into playback.
+     */
+    private fun loadBadgeTypeface(context: Context): Typeface {
+        val roundness = FontRoundnessAxis.cachedAxisValue(context)
+        val fontResId =
+            context.resources.getIdentifier(
+                "google_sans_flex_variable",
+                "font",
+                context.packageName,
+            )
+        if (fontResId != 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val font =
+                    Font.Builder(context.resources, fontResId)
+                        .setFontVariationSettings("'ROND' $roundness")
+                        .setWeight(700)
+                        .setSlant(FontStyle.FONT_SLANT_UPRIGHT)
+                        .build()
+                val family = FontFamily.Builder(font).build()
+                return Typeface.CustomFallbackBuilder(family).build()
+            } catch (_: Exception) {
+                // Fall through.
+            }
+        }
+        if (fontResId != 0) {
+            ResourcesCompat.getFont(context, fontResId)?.let {
+                return Typeface.create(it, Typeface.BOLD)
+            }
+        }
+        return Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
     }
 
     private fun drawSingleCover(

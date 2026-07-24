@@ -362,14 +362,12 @@ internal object ShareCardRenderer {
     private fun googleSansTypeface(
         context: Context,
         style: Int,
-    ): android.graphics.Typeface {
-        val font =
-            androidx.core.content.res.ResourcesCompat.getFont(
-                context,
-                cx.aswin.boxlore.core.designsystem.R.font.google_sans_variable,
-            )
-        return android.graphics.Typeface.create(font, style)
-    }
+    ): android.graphics.Typeface =
+        cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces.create(
+            context = context,
+            style = style,
+            roundness = cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces.cachedRoundness(context),
+        )
 
     private fun drawRoundedArtwork(
         canvas: android.graphics.Canvas,

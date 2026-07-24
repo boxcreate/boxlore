@@ -71,7 +71,7 @@ import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -217,7 +217,7 @@ fun YourShowsSection(
                     text = "Your Shows",
                     style =
                         MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = SectionHeaderFontFamily,
+                            fontFamily = rememberSectionHeaderFontFamily(),
                             fontWeight = FontWeight.Bold,
                         ),
                     letterSpacing = (-0.5).sp,
@@ -568,7 +568,7 @@ fun YourShowsSection(
                                             text = "Play My Daily Mix",
                                             style =
                                                 MaterialTheme.typography.labelLarge.copy(
-                                                    fontFamily = SectionHeaderFontFamily,
+                                                    fontFamily = rememberSectionHeaderFontFamily(),
                                                     fontWeight = FontWeight.Bold,
                                                     letterSpacing = 0.2.sp,
                                                 ),

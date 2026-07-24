@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,13 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,10 +23,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.BrandSeeds
+import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
+import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
+import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.isCustomThemeBrand
 import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
 import cx.aswin.boxlore.feature.home.settings.components.AccentSwatchGrid
@@ -45,6 +51,7 @@ data class AppearanceUiState(
     val isDynamicColorEnabled: Boolean,
     val currentThemeBrand: String,
     val currentSurfaceStyle: String,
+    val currentFontRoundness: String = FontRoundness.DEFAULT_KEY,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -53,6 +60,7 @@ data class AppearanceActions(
     val onToggleDynamicColor: (Boolean) -> Unit,
     val onSetThemeBrand: (String) -> Unit,
     val onSetSurfaceStyle: (String) -> Unit,
+    val onSetFontRoundness: (String) -> Unit = {},
 )
 
 @Composable
@@ -92,6 +100,11 @@ internal fun AppearanceSettingsPage(
             },
         )
 
+        LetteringSection(
+            currentFontRoundness = state.currentFontRoundness,
+            onSetFontRoundness = actions.onSetFontRoundness,
+        )
+
         ColorsSection(
             isDynamicColorEnabled = state.isDynamicColorEnabled,
             onToggleDynamicColor = actions.onToggleDynamicColor,
@@ -101,7 +114,6 @@ internal fun AppearanceSettingsPage(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ThemeModeSection(
     currentThemeConfig: String,
@@ -123,25 +135,17 @@ private fun ThemeModeSection(
             if (modeLock != null) {
                 ForcedModeBadge(modeLock.mode)
             }
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                ThemeMode.entries.forEachIndexed { index, mode ->
-                    SegmentedButton(
-                        selected = selectedMode == mode,
-                        onClick = {
-                            if (modeLock != null && mode != modeLock.mode) {
-                                onUnlockToAutomatic(modeLock.automaticSiblingStyle)
-                            }
-                            onSetThemeConfig(mode.key)
-                        },
-                        shape =
-                            SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = ThemeMode.entries.size,
-                            ),
-                        label = { Text(mode.label) },
-                    )
-                }
-            }
+            ConnectedOptionSelector(
+                options = ThemeMode.entries.map { it.key to it.label },
+                selected = selectedMode.key,
+                onSelect = { key ->
+                    val mode = ThemeMode.fromKey(key) ?: return@ConnectedOptionSelector
+                    if (modeLock != null && mode != modeLock.mode) {
+                        onUnlockToAutomatic(modeLock.automaticSiblingStyle)
+                    }
+                    onSetThemeConfig(mode.key)
+                },
+            )
         }
     }
 }
@@ -193,6 +197,165 @@ private fun BackgroundLookSection(
                 SettingsDivider()
             }
         }
+    }
+}
+
+@Composable
+private fun LetteringSection(
+    currentFontRoundness: String,
+    onSetFontRoundness: (String) -> Unit,
+) {
+    var previewExpanded by remember { mutableStateOf(false) }
+    val selectedKey = FontRoundness.sanitizeKey(currentFontRoundness)
+    val axis = remember(selectedKey) { FontRoundness.axisValue(selectedKey) }
+    val bodyFamily = remember(axis) { buildGoogleSansFamily(axis) }
+    val headerFamily = remember(axis) { buildSectionHeaderFontFamily(axis) }
+
+    SettingsGroup(
+        title = "Lettering",
+        footer = "How rounded Google Sans Flex letters feel across the app.",
+    ) {
+        SettingsContent {
+            ConnectedOptionSelector(
+                options = FontRoundness.entries.map { it.key to it.label },
+                selected = selectedKey,
+                onSelect = onSetFontRoundness,
+            )
+            LetteringTips(
+                modifier = Modifier.padding(top = 10.dp),
+            )
+            LetteringPreviewToggle(
+                expanded = previewExpanded,
+                onToggle = { previewExpanded = !previewExpanded },
+            )
+            AnimatedVisibility(visible = previewExpanded) {
+                LetteringPreviewSamples(
+                    bodyFamily = bodyFamily,
+                    headerFamily = headerFamily,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LetteringTips(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = "Most visible in large titles; smaller text changes less.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "Some skins (like Xiaomi HyperOS) may use the system font instead.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun LetteringPreviewToggle(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+                .clickable(role = Role.Button, onClick = onToggle)
+                .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = if (expanded) "Hide preview" else "Show preview",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Icon(
+            imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+@Composable
+private fun LetteringPreviewSamples(
+    bodyFamily: FontFamily,
+    headerFamily: FontFamily,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        LetteringPreviewLine(
+            label = "Section",
+            sample = "Your morning stack",
+            fontFamily = headerFamily,
+            fontWeight = FontWeight.ExtraBold,
+            fontSizeSp = 22f,
+            lineHeightSp = 26f,
+        )
+        LetteringPreviewLine(
+            label = "Title",
+            sample = "The Daily Briefing",
+            fontFamily = bodyFamily,
+            fontWeight = FontWeight.SemiBold,
+            fontSizeSp = 18f,
+            lineHeightSp = 22f,
+        )
+        LetteringPreviewLine(
+            label = "Body",
+            sample = "A short episode about curiosity, craft, and listening habits.",
+            fontFamily = bodyFamily,
+            fontWeight = FontWeight.Normal,
+            fontSizeSp = 15f,
+            lineHeightSp = 22f,
+        )
+        LetteringPreviewLine(
+            label = "Caption",
+            sample = "Updated just now · 24 min",
+            fontFamily = bodyFamily,
+            fontWeight = FontWeight.Medium,
+            fontSizeSp = 12f,
+            lineHeightSp = 16f,
+        )
+    }
+}
+
+@Composable
+private fun LetteringPreviewLine(
+    label: String,
+    sample: String,
+    fontFamily: FontFamily,
+    fontWeight: FontWeight,
+    fontSizeSp: Float,
+    lineHeightSp: Float,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = sample,
+            fontFamily = fontFamily,
+            fontWeight = fontWeight,
+            fontSize = fontSizeSp.sp,
+            lineHeight = lineHeightSp.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 

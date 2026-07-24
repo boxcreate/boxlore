@@ -98,8 +98,9 @@ data class AppearanceSettings(
             isDynamicColorEnabled = true,
             currentThemeBrand = "violet",
             currentSurfaceStyle = "standard",
+            currentFontRoundness = "soft",
         ),
-    val actions: AppearanceActions = AppearanceActions({}, {}, {}, {}),
+    val actions: AppearanceActions = AppearanceActions({}, {}, {}, {}, {}),
 )
 
 /** Playback sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -378,6 +379,10 @@ private fun AppearanceActions.trackedForAnalytics(): AppearanceActions =
         onSetSurfaceStyle = {
             AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
             onSetSurfaceStyle(it)
+        },
+        onSetFontRoundness = {
+            AnalyticsHelper.trackSettingsInteraction("font_roundness_changed", it)
+            onSetFontRoundness(it)
         },
     )
 

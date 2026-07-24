@@ -82,7 +82,7 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
@@ -315,7 +315,7 @@ fun BriefingScreen(
                             ) {
                                 Text(
                                     text = "References & Sources",
-                                    fontFamily = SectionHeaderFontFamily,
+                                    fontFamily = rememberSectionHeaderFontFamily(),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,

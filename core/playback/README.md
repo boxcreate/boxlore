@@ -23,7 +23,7 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - Android Auto browse artwork:
   - `AutoArtworkRepository` + `AutoArtworkSourceStore` register remote/local sources into an in-memory map immediately and `commit` prefs on a background thread before/while returning `content://…/art|local|collage/…` URIs.
   - `AutoCollageProvider` lazily fetches remote covers with validated HTTPS redirects, lenient image content-types, magic-byte checks, and one retry; folder collage URIs include a `v=` cache-buster so Auto hosts reload when resume/history content changes.
-  - `AutoCollagePrewarmer` / `AutoCollageGenerator` / `AutoCollageLayouts` rebuild section collages from content keys (resume episode IDs, queue IDs, subscriptions, …), use a shorter TTL for partial/fallback tiles, and refresh on mark-complete / queue changes via `AutoBrowseLibraryHost.requestAutoCollageRefresh`.
+  - `AutoCollagePrewarmer` / `AutoCollageGenerator` / `AutoCollageLayouts` rebuild section collages from content keys (resume episode IDs, queue IDs, subscriptions, …), use a shorter TTL for partial/fallback tiles, and refresh on mark-complete / queue changes via `AutoBrowseLibraryHost.requestAutoCollageRefresh`. MIX/RESUME badge labels prefer app-merged Google Sans Flex with lettering roundness from `boxlore_theme_fast_cache` via `:core:prefs` `FontRoundnessAxis` (no `:core:designsystem` dependency).
   - `AutoArtworkDownloader` is the shared HTTPS fetch path (validated redirects + public-host checks) used by both collage generation and the ContentProvider.
 
 ## Internal structure

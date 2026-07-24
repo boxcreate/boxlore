@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 
 /**
  * Discover Section - Genre-filtered podcast discovery.
@@ -55,7 +55,7 @@ fun DiscoverSection(
                     text = if (selectedCategory == null) "Explore" else "Top in $selectedCategory",
                     style =
                         MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = SectionHeaderFontFamily,
+                            fontFamily = rememberSectionHeaderFontFamily(),
                         ),
                     color = MaterialTheme.colorScheme.onSurface,
                 )

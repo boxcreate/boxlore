@@ -161,10 +161,27 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun setFontRoundnessUpdatesStreamAndCache() =
+        runTest {
+            repository.setFontRoundness("round")
+            assertEquals("round", repository.fontRoundnessStream.first())
+            assertEquals("round", repository.cachedFontRoundness)
+
+            repository.setFontRoundness("CRISP")
+            assertEquals("crisp", repository.fontRoundnessStream.first())
+            assertEquals("crisp", repository.cachedFontRoundness)
+
+            repository.setFontRoundness("unknown")
+            assertEquals("soft", repository.fontRoundnessStream.first())
+            assertEquals("soft", repository.cachedFontRoundness)
+        }
+
+    @Test
     fun cachedGettersReturnDefaultsBeforeAnyWrite() {
         assertEquals("system", repository.cachedThemeConfig)
         assertEquals("classic_dynamic", repository.cachedSurfaceStyle)
         assertEquals("violet", repository.cachedThemeBrand)
+        assertEquals("soft", repository.cachedFontRoundness)
         assertFalse(repository.cachedUseDynamicColor)
     }
 

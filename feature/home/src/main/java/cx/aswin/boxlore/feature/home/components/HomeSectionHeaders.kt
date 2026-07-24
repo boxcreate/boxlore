@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 
 enum class HomeChildHeaderTone {
     PRIMARY,
@@ -56,7 +56,7 @@ fun HomeTopLevelSectionHeader(
                     text = title,
                     style =
                         MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = SectionHeaderFontFamily,
+                            fontFamily = rememberSectionHeaderFontFamily(),
                             fontWeight = FontWeight.Bold,
                         ),
                 )

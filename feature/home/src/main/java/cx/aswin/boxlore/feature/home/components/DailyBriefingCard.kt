@@ -54,7 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.theme.SectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -539,7 +539,7 @@ private fun DailyBriefingNormalContent(
         // Title
         Text(
             text = state.briefing.title,
-            fontFamily = SectionHeaderFontFamily,
+            fontFamily = rememberSectionHeaderFontFamily(),
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
@@ -658,7 +658,7 @@ private fun DailyBriefingForeverContent(
         // Title
         Text(
             text = "Are you sure?",
-            fontFamily = SectionHeaderFontFamily,
+            fontFamily = rememberSectionHeaderFontFamily(),
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,

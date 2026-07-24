@@ -167,7 +167,7 @@ private fun SpecRow(
             modifier = Modifier.weight(0.65f),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            fontFamily = if (monospace) FontFamily.Monospace else FontFamily.Default,
+            fontFamily = if (monospace) FontFamily.Monospace else null,
             textAlign = TextAlign.End,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
