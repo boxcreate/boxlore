@@ -10,12 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Hermetic cache encode/decode helpers for shared recommendations and corresponding unit tests ([#947](https://github.com/boxcreate/boxlore/pull/947)) <!-- impact:user-impact-medium -->
+- Hermetic cache encode/decode helpers for shared recommendations with unit tests ([#947](https://github.com/boxcreate/boxlore/pull/947)) <!-- impact:user-impact-medium -->
+- Google Sans Flex variable font (OFL licensed) with new Appearance → Lettering presets (Crisp, Soft, Round) and preview toggle; ConnectedOptionSelector shared chip component for Appearance Theme and Lettering settings; DataStore keys `font_roundness` and `boxlore_theme_fast_cache` plus `BoxLoreTheme(fontRoundness)` and `LocalFontRoundness` for fast theme caching; Typography across section headers, onboarding, HtmlText, About, share cards, and Auto collage badges now uses Flex font respecting selected roundness ([#948](https://github.com/boxcreate/boxlore/pull/948)) <!-- impact:user-impact-medium -->
 ### Changed
 - Explore For You now hydrates from the shared BoxcastPrefs recommendations cache and refreshes via getHomeBootstrapData, removing the empty‑seed early‑return path ([#947](https://github.com/boxcreate/boxlore/pull/947)) <!-- impact:user-impact-medium -->
+- Default lettering roundness set to Soft (ROND 50) for fresh installs, with unset preference sanitizing to Soft; Theme system/light/dark chip style unified with connected chip UI and integrated with fast‑cache ([#948](https://github.com/boxcreate/boxlore/pull/948)) <!-- impact:user-impact-medium -->
 - Add node test suite for CSV helpers; flatten CR/LF in Podcast Index dump export and make CSV import quote‑aware, skipping rows with mismatched field count ([#945](https://github.com/boxcreate/boxlore/pull/945)) <!-- impact:no-user-impact+backend-change -->
 ### Fixed
 - For You blank state on fresh installs by sharing Home bootstrap recommendations via BoxcastPrefs cache ([#947](https://github.com/boxcreate/boxlore/pull/947)) <!-- impact:user-impact-medium -->
+### Removed
+- Legacy Google Sans TTF assets ([#948](https://github.com/boxcreate/boxlore/pull/948)) <!-- impact:user-impact-medium -->
 ## [v0.0.11] - 2026-07-22
 
 ### Added

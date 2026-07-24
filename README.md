@@ -57,7 +57,8 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Explore For You now loads recommendations from cache, preventing blank screens on fresh installs <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
+<li>Explore For You now loads recommendations faster and never shows a blank screen on new installs. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
+<li>New flexible font lets you choose crisp, soft, or round lettering, and the app remembers your choice instantly. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
