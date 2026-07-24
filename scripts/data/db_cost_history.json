@@ -800,6 +800,11 @@
     "reads": 20662,
     "writes": 931,
     "runs": 5
+   },
+   "cleanup-non-chart": {
+    "reads": 91021,
+    "writes": 1909,
+    "runs": 1
    }
   }
  }
