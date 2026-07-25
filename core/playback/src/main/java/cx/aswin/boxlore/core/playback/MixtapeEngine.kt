@@ -38,8 +38,10 @@ object MixtapeEngine {
         val source: CandidateSource,
         val progressMs: Long = 0L,
         val durationMs: Long = 0L,
+        val lastPlayedAtMs: Long? = null,
     )
 
+    @Suppress("LongParameterList", "CyclomaticComplexMethod")
     suspend fun build(
         subscriptions: List<Podcast>,
         history: List<ListeningHistoryEntity>,
@@ -51,6 +53,7 @@ object MixtapeEngine {
         ),
         adaptiveRanking: AdaptiveRanking? = null,
         nowMs: Long = System.currentTimeMillis(),
+        staleRestartEnabled: Boolean = true,
     ): Result {
         val historyByEpisode = history.associateBy(ListeningHistoryEntity::episodeId)
         val subscriptionsById = subscriptions.associateBy(Podcast::id)
@@ -104,8 +107,12 @@ object MixtapeEngine {
             ordered = ordered.take(MAX_ITEMS).toMutableList()
         }
         val podcasts = ordered.map { candidate ->
+            val softExpireProgress =
+                candidate.isProgress &&
+                    staleRestartEnabled &&
+                    PlaybackSkipPolicy.isStaleLastPlayed(candidate.lastPlayedAtMs, nowMs)
             val status = when {
-                candidate.isProgress -> EpisodeStatus.IN_PROGRESS
+                candidate.isProgress && !softExpireProgress -> EpisodeStatus.IN_PROGRESS
                 historyByEpisode[candidate.episode.id]?.isCompleted == true ->
                     EpisodeStatus.COMPLETED
                 else -> EpisodeStatus.UNPLAYED
@@ -177,6 +184,7 @@ object MixtapeEngine {
                 source = CandidateSource.LOCAL_HISTORY,
                 progressMs = item.progressMs,
                 durationMs = item.durationMs,
+                lastPlayedAtMs = item.lastPlayedAt,
             )
         }
 

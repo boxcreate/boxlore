@@ -14,10 +14,22 @@ object PlaybackSkipPolicy {
     const val MEANINGFUL_RESUME_MS = 2_000L
     const val MIN_PLAYABLE_CONTENT_MS = 30_000L
 
+    /** Soft-expire window for implicit mid-episode seek when restart-forgotten is enabled. */
+    const val STALE_RESUME_MS = 7L * 24L * 60L * 60L * 1_000L
+
     data class EffectiveTrim(
         val skipBeginningMs: Long,
         val skipEndingMs: Long,
     )
+
+    /**
+     * Whether the listener chose an unfinished episode (true resume) vs something that just started
+     * playing (queue / mixtape / Smart Queue / casual play).
+     */
+    enum class ResumeIntent {
+        EXPLICIT,
+        IMPLICIT,
+    }
 
     enum class InitialPositionReason {
         EXPLICIT,
@@ -30,6 +42,27 @@ object PlaybackSkipPolicy {
         val positionMs: Long,
         val reason: InitialPositionReason,
     )
+
+    /**
+     * Maps free-form `entry_point` strings to [ResumeIntent].
+     * Jump Back In / listening history → [ResumeIntent.EXPLICIT]; everything else → implicit.
+     */
+    fun resumeIntentFromEntryPoint(raw: String?): ResumeIntent {
+        val key = raw?.trim()?.lowercase().orEmpty()
+        if (key.isEmpty()) return ResumeIntent.IMPLICIT
+        if (key.contains("home_hero_resume")) return ResumeIntent.EXPLICIT
+        if (key == "library_history" || key.contains("listening_history")) return ResumeIntent.EXPLICIT
+        return ResumeIntent.IMPLICIT
+    }
+
+    fun isStaleLastPlayed(
+        lastPlayedAtMs: Long?,
+        nowMs: Long,
+        warmWindowMs: Long = STALE_RESUME_MS,
+    ): Boolean {
+        if (lastPlayedAtMs == null || lastPlayedAtMs <= 0L) return true
+        return nowMs - lastPlayedAtMs > warmWindowMs
+    }
 
     fun sanitizeTrim(valueMs: Long): Long = PlaybackSkipBounds.sanitizeTrim(valueMs)
 
@@ -54,18 +87,31 @@ object PlaybackSkipPolicy {
                 ),
         )
 
+    @Suppress("LongParameterList")
     fun resolveInitialPosition(
         explicitPositionMs: Long?,
         savedProgressMs: Long,
         isCompleted: Boolean,
         skipBeginningMs: Long,
         resetRequested: Boolean = false,
+        resumeIntent: ResumeIntent = ResumeIntent.IMPLICIT,
+        lastPlayedAtMs: Long? = null,
+        staleRestartEnabled: Boolean = false,
+        nowMs: Long = System.currentTimeMillis(),
     ): InitialPosition {
         if (explicitPositionMs != null) {
             return InitialPosition(explicitPositionMs.coerceAtLeast(0L), InitialPositionReason.EXPLICIT)
         }
-        if (!resetRequested && !isCompleted && savedProgressMs > MEANINGFUL_RESUME_MS) {
-            return InitialPosition(savedProgressMs, InitialPositionReason.RESUME)
+        val meaningfulProgress =
+            !resetRequested && !isCompleted && savedProgressMs > MEANINGFUL_RESUME_MS
+        if (meaningfulProgress) {
+            val softExpire =
+                staleRestartEnabled &&
+                    resumeIntent == ResumeIntent.IMPLICIT &&
+                    isStaleLastPlayed(lastPlayedAtMs, nowMs)
+            if (!softExpire) {
+                return InitialPosition(savedProgressMs, InitialPositionReason.RESUME)
+            }
         }
         val sanitizedBeginning = sanitizeTrim(skipBeginningMs)
         return if (sanitizedBeginning > 0L) {

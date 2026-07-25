@@ -109,6 +109,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             hideCompletedInHome = settingsState.hideCompletedInHome,
                             hideCompletedInSubs = settingsState.hideCompletedInSubs,
                             hideCompletedInShowDetails = settingsState.hideCompletedInShowDetails,
+                            restartForgottenEpisodes = settingsState.restartForgottenEpisodes,
                         ),
                     actions =
                         cx.aswin.boxlore.feature.home.settings.pages.PlaybackActions(
@@ -128,6 +129,9 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             onSetHideCompletedInHome = { hide -> scope.launch { userPrefs.setHideCompletedInHome(hide) } },
                             onSetHideCompletedInSubs = { hide -> scope.launch { userPrefs.setHideCompletedInSubs(hide) } },
                             onSetHideCompletedInShowDetails = { hide -> scope.launch { userPrefs.setHideCompletedInShowDetails(hide) } },
+                            onSetRestartForgottenEpisodes = { enabled ->
+                                scope.launch { userPrefs.setRestartForgottenEpisodes(enabled) }
+                            },
                         ),
                 ),
             libraryBackupWriters =

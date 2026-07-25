@@ -17,6 +17,7 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.feature.home.components.CuratedEpisodeCard
 import cx.aswin.boxlore.feature.home.components.HomeChildHeaderTone
 import cx.aswin.boxlore.feature.home.components.HomeChildSectionHeader
+import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 
 internal fun LazyStaggeredGridScope.editorialFeedItems(
     content: PodcastFeedContent,
@@ -75,12 +76,11 @@ private fun EditorialRow(
     ) {
         HomeChildSectionHeader(
             title = row.title,
-            subtitle = row.subtitle,
             icon = row.icon.toHomeEditorialIcon(),
             tone = tone,
         )
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
         ) {
             itemsIndexed(
                 items = row.podcasts,
@@ -110,7 +110,8 @@ private fun EditorialRow(
                             position,
                         )
                     },
-                    modifier = Modifier.width(156.dp),
+                    showSubtitle = false,
+                    modifier = Modifier.width(HomeFeedSpacing.RailCardWidth),
                 )
             }
         }

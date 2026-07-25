@@ -65,6 +65,7 @@ data class HomeUiState(
     val isSelectedPodcastLoading: Boolean = false,
     val isSelectedRssRefreshing: Boolean = false,
     val episodePlaybackState: Map<String, Pair<EpisodeStatus, Float>> = emptyMap(),
+    val softExpireProgressEpisodeIds: Set<String> = emptySet(),
     val showImportBanner: Boolean = false,
     val briefing: Briefing? = null,
     val briefingChapters: List<cx.aswin.boxlore.core.model.Chapter> = emptyList(),

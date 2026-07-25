@@ -23,6 +23,7 @@ class QueueLabelLogicTest {
             mapOf(
                 "same_podcast" to "Continuing series",
                 "resume" to "Pick up where you left off",
+                "resume_stale" to "Starting over",
                 "subscription" to "From your subscriptions",
                 "server_rec" to "Recommended for you",
                 "personalized_rec" to "Recommended for you",

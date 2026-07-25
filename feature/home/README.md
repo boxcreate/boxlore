@@ -7,10 +7,9 @@ Owns Home feed presentation, Settings screens, RSS-add UI, and local debug surfa
 ## Public API
 
 - `HomeRoute`, `HomeScreen`, `HomeFeed`, `HomeViewModel`, and `HomeViewModelAssembler` for the Home route. `HomeRoute` reports after its initial loaded feed has committed two frames so the app shell can begin nonessential launch animation without competing with first-paint work.
-- The discovery area below the daypart greeting presents three editorial rows from the
-  catalog’s existing curated provider endpoint. Provider IDs remain internal; listener copy
-  uses concise editorial titles and never exposes backend terminology.
-- `settings.SettingsScreen`, `SettingsViewModel`, and `SettingsViewModelAssembler` for Settings. Appearance includes Theme (System / Light / Dark connected toggle), Background, **Lettering** (Crisp / Soft / Round connected toggle, same chip language as content region, plus an expandable sample preview), Navigation (Floating / Classic), and Colors.
+- Discovery from **Because You Like** downward uses calmer poster cards: title-only under art (no author on podcast cards, no show name on episode posters), equal-height horizontal rails and 2-col grids (`HomeFeedSpacing` / `EqualHeightPosterGrid`) that reserve two title lines for shows and three for episodes (vertically centering shorter titles). For You shows a featured hero plus up to eight body cards (1+4+4); Home Explore shows up to six. Daypart greeting editorial rows and Based on Your Taste use title-only section headers (no subtitles) and never expose backend terminology.
+- Hero carousel grid cards (**Jump back in** / **New episodes**) use title-only cells with a lighter scrim: resume taps play (progress + now-playing ring), new-episodes taps open episode info (NEW badge when fresh).
+- `settings.SettingsScreen`, `SettingsViewModel`, and `SettingsViewModelAssembler` for Settings. Appearance includes Theme (System / Light / Dark connected toggle), Background, **Lettering** (Crisp / Soft / Round connected toggle, same chip language as content region, plus an expandable sample preview), Navigation (Floating / Classic), and Colors. Playback includes **Restart forgotten episodes** (default on; soft-expires mid-episode seek for queue/mixtape after 7 days — see `:core:playback` `PlaybackSkipPolicy`). Mixtape cards hide progress chrome for soft-expired picks; Smart Queue labels those fills “Starting over”.
 - `DebugScreen` and `DebugViewModel` for local learner and runtime diagnostics.
 - Extracted Home UI pieces such as `LibrarySectionRows`, `LibrarySection`, and section/card components. Their Google Sans Flex emphasis uses shared centralized weight tokens.
 - Pure logic helpers under `logic/` for Home assembly, discovery, hero ordering, selection, playback-state mapping, serial episodes, and affinity behavior.
@@ -78,7 +77,8 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 
 - Unit tests live under `feature/home/src/test`.
 - Existing coverage includes Settings ViewModel tests, Home listening-history formatting,
-  discovery greeting, editorial-row selection and de-duplication, and pure Home logic helpers.
+  discovery greeting, editorial-row selection and de-duplication, equal-height poster grid
+  extent math, and pure Home logic helpers.
 - Optional Roborazzi goldens for settings dialogs (local only; not CI-gated).
 
 ```bash

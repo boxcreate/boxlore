@@ -35,6 +35,7 @@ data class GlobalPreferencesBackup(
     val hideCompletedInShowDetails: Boolean? = null,
     val hideCompletedInHome: Boolean? = null,
     val hideCompletedInSubs: Boolean? = null,
+    val restartForgottenEpisodes: Boolean? = null,
     val smartDownloadsEnabled: Boolean? = null,
     val smartDownloadsMaxEpisodes: Int? = null,
     val smartDownloadsStorageBudget: Long? = null,
@@ -97,6 +98,7 @@ class LibraryBackupManager(
                 hideCompletedInShowDetails = userPrefs.hideCompletedInShowDetailsStream.first(),
                 hideCompletedInHome = userPrefs.hideCompletedInHomeStream.first(),
                 hideCompletedInSubs = userPrefs.hideCompletedInSubsStream.first(),
+                restartForgottenEpisodes = userPrefs.restartForgottenEpisodesStream.first(),
                 smartDownloadsEnabled = userPrefs.smartDownloadsEnabledStream.first(),
                 smartDownloadsMaxEpisodes = userPrefs.smartDownloadsMaxEpisodesStream.first(),
                 smartDownloadsStorageBudget = userPrefs.smartDownloadsStorageBudgetStream.first(),
@@ -175,6 +177,7 @@ class LibraryBackupManager(
                     prefs.hideCompletedInShowDetails?.let { up.setHideCompletedInShowDetails(it) }
                     prefs.hideCompletedInHome?.let { up.setHideCompletedInHome(it) }
                     prefs.hideCompletedInSubs?.let { up.setHideCompletedInSubs(it) }
+                    prefs.restartForgottenEpisodes?.let { up.setRestartForgottenEpisodes(it) }
                     prefs.smartDownloadsEnabled?.let { enabled ->
                         up.setSmartDownloadsEnabled(enabled)
                         if (enabled) {

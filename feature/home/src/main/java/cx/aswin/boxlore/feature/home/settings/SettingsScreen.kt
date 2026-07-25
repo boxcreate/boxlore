@@ -115,8 +115,9 @@ data class PlaybackSettings(
             hideCompletedInHome = true,
             hideCompletedInSubs = true,
             hideCompletedInShowDetails = false,
+            restartForgottenEpisodes = true,
         ),
-    val actions: PlaybackActions = PlaybackActions({}, {}, {}, {}, {}, {}, {}, {}),
+    val actions: PlaybackActions = PlaybackActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
 )
 
 @Composable

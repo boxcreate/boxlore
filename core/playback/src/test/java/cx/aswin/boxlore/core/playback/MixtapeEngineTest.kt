@@ -81,6 +81,48 @@ class MixtapeEngineTest {
         }
 
     @Test
+    fun softExpiredResumeStillSelectedButPresentedWithoutProgressChrome() =
+        runTest {
+            val result =
+                MixtapeEngine.build(
+                    subscriptions = emptyList(),
+                    history =
+                        listOf(
+                            history(
+                                episodeId = "ep-stale",
+                                lastPlayedAt = nowMs - 8L * 24 * 60 * 60 * 1000L,
+                            ),
+                        ),
+                    nowMs = nowMs,
+                    staleRestartEnabled = true,
+                )
+            assertEquals(listOf("ep-stale"), result.episodes.map { it.id })
+            val podcast = result.podcasts.single()
+            assertEquals(EpisodeStatus.UNPLAYED, podcast.episodeStatus)
+            assertNull(podcast.resumeProgress)
+        }
+
+    @Test
+    fun softExpiredResumeKeepsProgressChromeWhenSettingOff() =
+        runTest {
+            val result =
+                MixtapeEngine.build(
+                    subscriptions = emptyList(),
+                    history =
+                        listOf(
+                            history(
+                                episodeId = "ep-stale",
+                                lastPlayedAt = nowMs - 8L * 24 * 60 * 60 * 1000L,
+                            ),
+                        ),
+                    nowMs = nowMs,
+                    staleRestartEnabled = false,
+                )
+            assertEquals(EpisodeStatus.IN_PROGRESS, result.podcasts.single().episodeStatus)
+            assertNotNull(result.podcasts.single().resumeProgress)
+        }
+
+    @Test
     fun resumeWithoutAudioUrlIsSkipped() =
         runTest {
             val result =

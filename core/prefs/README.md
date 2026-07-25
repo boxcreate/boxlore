@@ -6,7 +6,7 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 
 ## Public API
 
-- `UserPreferencesRepository` exposes DataStore-backed settings such as theme, lettering roundness (`font_roundness`: `crisp` / `soft` / `round`, default `round`), navigation style (`navigation_style`: `floating` / `classic`), region, skip durations, smart downloads, and playback preferences. Theme fast-cache (`boxlore_theme_fast_cache`) mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, and `navigation_style` for cold-start / non-Compose readers.
+- `UserPreferencesRepository` exposes DataStore-backed settings such as theme, lettering roundness (`font_roundness`: `crisp` / `soft` / `round`, default `round`), navigation style (`navigation_style`: `floating` / `classic`), region, skip durations, smart downloads, playback preferences, and `restart_forgotten_episodes` (default on — soft-expires mid-episode seek for implicit plays after 7 days; see `:core:playback` `PlaybackSkipPolicy`). Theme fast-cache (`boxlore_theme_fast_cache`) mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, and `navigation_style` for cold-start / non-Compose readers.
 - `FontRoundnessAxis` centralizes lettering preset keys and ROND axis values for prefs, playback (Android Auto collage badges), and other non-Compose readers.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
 - `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, Learn history, and learner-log gates.

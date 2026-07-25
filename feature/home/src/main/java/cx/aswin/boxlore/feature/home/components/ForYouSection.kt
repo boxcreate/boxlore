@@ -6,8 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -34,10 +32,9 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 
 /**
- * Emits the "For You" section directly into a [LazyStaggeredGridScope] instead of composing
- * the whole section as one heavy full-line item. The hero card stays full-line, while the
- * remaining masonry cards become individual 1-span items so only the cards actually scrolling
- * into view are composed each frame (removes the atomic ~9-card compose spike).
+ * Emits the "For You" section into a [LazyStaggeredGridScope].
+ * Hero stays full-line; body cards sit in one full-line [EqualHeightPosterGrid]
+ * with fixed 3-line title feet.
  */
 fun LazyStaggeredGridScope.forYouItems(
     recommendations: StableEpisodeList,
@@ -46,37 +43,33 @@ fun LazyStaggeredGridScope.forYouItems(
     showTasteHeader: Boolean = true,
     isFallback: Boolean = true,
 ) {
-    val items = recommendations.list.take(9)
+    val items = recommendations.list.take(HomeFeedSpacing.ForYouTotalCap)
 
     if (showTasteHeader) {
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_header", contentType = "for_you_header") {
             HomeChildSectionHeader(
                 title = if (isFallback) "Popular in your Region" else "Based on Your Taste",
-                subtitle =
-                    if (isFallback) {
-                        "Popular picks from listeners near you"
-                    } else {
-                        "Picked from your listening patterns"
-                    },
                 icon = Icons.Rounded.AutoAwesome,
             )
         }
     }
 
     if (items.isEmpty()) {
-        // Skeleton: hero + a handful of grid skeletons, each an individual staggered item.
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero_skeleton", contentType = "for_you_hero_skeleton") {
             val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
             val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
             ForYouHeroSkeleton(baseColor = baseColor, highlightColor = highlightColor)
         }
-        items(8, key = { "for_you_skel_$it" }, contentType = { "for_you_skel" }) {
-            GridSkeletonItem()
+        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_skeleton", contentType = "for_you_body_skeleton") {
+            EqualHeightPosterGrid {
+                repeat(HomeFeedSpacing.ForYouBodyCount) {
+                    GridSkeletonItem()
+                }
+            }
         }
         return
     }
 
-    // Hero card (index 0) — full width. Also hosts the impression analytics effect.
     item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
         LaunchedEffect(recommendations.list, discoveryContextTitle) {
             AnalyticsHelper.trackHomeRecommendationsImpression(
@@ -113,39 +106,43 @@ fun LazyStaggeredGridScope.forYouItems(
         )
     }
 
-    // Remaining items become individual staggered (masonry) cards.
     val remaining = items.drop(1)
-    itemsIndexed(
-        remaining,
-        key = { _, ep -> "for_you_${ep.id}" },
-        contentType = { _, _ -> "for_you_card" },
-    ) { index, ep ->
-        val originalIndex = index + 1
-        val parentPodcast =
-            Podcast(
-                id = ep.podcastId ?: "",
-                title = ep.podcastTitle ?: "Podcast",
-                artist = "",
-                imageUrl = ep.podcastImageUrl?.takeIf { it.isNotBlank() } ?: ep.imageUrl?.takeIf { it.isNotBlank() } ?: "",
-                description = "",
-                genre = ep.podcastGenre ?: "Podcast",
-            )
-        CuratedEpisodeCard(
-            podcast = parentPodcast,
-            episode = ep,
-            onClick = {
-                AnalyticsHelper.trackHomeRecommendationCardTapped(
-                    episodeId = ep.id,
-                    episodeTitle = ep.title,
-                    podcastId = parentPodcast.id,
-                    podcastName = parentPodcast.title,
-                    positionIndex = originalIndex,
-                    timeBlockTitle = discoveryContextTitle,
-                )
-                onEpisodeClick(ep, parentPodcast)
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
+    if (remaining.isNotEmpty()) {
+        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body", contentType = "for_you_body") {
+            EqualHeightPosterGrid {
+                remaining.forEachIndexed { index, ep ->
+                    val originalIndex = index + 1
+                    val parentPodcast =
+                        Podcast(
+                            id = ep.podcastId ?: "",
+                            title = ep.podcastTitle ?: "Podcast",
+                            artist = "",
+                            imageUrl =
+                                ep.podcastImageUrl?.takeIf { it.isNotBlank() }
+                                    ?: ep.imageUrl?.takeIf { it.isNotBlank() }
+                                    ?: "",
+                            description = "",
+                            genre = ep.podcastGenre ?: "Podcast",
+                        )
+                    CuratedEpisodeCard(
+                        podcast = parentPodcast,
+                        episode = ep,
+                        onClick = {
+                            AnalyticsHelper.trackHomeRecommendationCardTapped(
+                                episodeId = ep.id,
+                                episodeTitle = ep.title,
+                                podcastId = parentPodcast.id,
+                                podcastName = parentPodcast.title,
+                                positionIndex = originalIndex,
+                                timeBlockTitle = discoveryContextTitle,
+                            )
+                            onEpisodeClick(ep, parentPodcast)
+                        },
+                        showSubtitle = false,
+                    )
+                }
+            }
+        }
     }
 }
 

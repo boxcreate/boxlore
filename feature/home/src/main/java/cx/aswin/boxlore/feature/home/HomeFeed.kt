@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.components.HeroCarousel
+import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 
 @androidx.compose.runtime.Stable
 internal data class PodcastFeedContent(
@@ -64,6 +65,7 @@ internal data class PodcastFeedLoadingState(
 internal data class PodcastFeedPlayback(
     val player: HomePlaybackUi,
     val episodePlaybackState: StablePlaybackStateMap,
+    val softExpireProgressEpisodeIds: Set<String> = emptySet(),
 )
 
 @androidx.compose.runtime.Stable
@@ -90,8 +92,8 @@ internal fun PodcastFeed(
         state = layout.gridState,
         modifier = layout.modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 160.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalItemSpacing = 12.dp,
+        horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
+        verticalItemSpacing = HomeFeedSpacing.GridGap,
     ) {
         smartHeroItem(content, playback, callbacks, derivedState)
         yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
@@ -123,7 +125,7 @@ private fun rememberPodcastFeedDerivedState(
     val viewportReady = !loadingState.isLoading
     val discoverItems =
         remember(content.gridItems.list, feedState.selectedCategory) {
-            content.gridItems.list.distinctBy { it.id }.take(10)
+            content.gridItems.list.distinctBy { it.id }.take(HomeFeedSpacing.ExploreGridCap)
         }
     return PodcastFeedDerivedState(
         viewportReady = viewportReady,
@@ -132,7 +134,7 @@ private fun rememberPodcastFeedDerivedState(
         hasRecommendations = recommendationState.isRecommendationsLoading || content.recommendations.list.isNotEmpty(),
         discoverItems = discoverItems,
         showDiscoverContent = !loadingState.isLoading && !loadingState.isFilterLoading && discoverItems.isNotEmpty(),
-        discoverGenreChip = feedState.selectedCategory == null,
+        discoverGenreChip = false,
     )
 }
 

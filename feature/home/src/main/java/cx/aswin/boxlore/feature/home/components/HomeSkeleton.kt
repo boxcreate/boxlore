@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,7 +41,7 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Adaptive(150.dp),
         contentPadding = PaddingValues(bottom = 24.dp, start = 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
         verticalItemSpacing = 16.dp,
         modifier = modifier.fillMaxSize(),
     ) {
@@ -99,13 +98,13 @@ fun RisingSkeleton() {
         // Rail
         LazyRow(
             contentPadding = PaddingValues(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
         ) {
             items(4) {
                 Box(
                     modifier =
                         Modifier
-                            .width(160.dp)
+                            .width(HomeFeedSpacing.RailCardWidth)
                             .height(200.dp)
                             .clip(MaterialTheme.shapes.large)
                             .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.large),
@@ -144,13 +143,12 @@ fun GridSkeletonItem(modifier: Modifier = Modifier) {
                         .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
             )
 
-            // Text area skeleton matching padding and layout of FeedMediaCard
+            // Text area skeleton matching title-only FeedMediaCard grid foot
             Column(
                 modifier =
                     Modifier
-                        .padding(10.dp)
-                        .heightIn(min = 58.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                        .padding(HomeFeedSpacing.CardTextPadding),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 // Title line 1
                 Box(
@@ -167,16 +165,6 @@ fun GridSkeletonItem(modifier: Modifier = Modifier) {
                         Modifier
                             .fillMaxWidth(0.6f)
                             .height(14.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp)),
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                // Artist line
-                Box(
-                    modifier =
-                        Modifier
-                            .width(80.dp)
-                            .height(12.dp)
                             .clip(RoundedCornerShape(4.dp))
                             .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp)),
                 )
@@ -334,27 +322,19 @@ fun EditorialRowsSkeleton(modifier: Modifier = Modifier) {
                                 ),
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        SkeletonBlock(
-                            width = 132.dp,
-                            height = 17.dp,
-                            baseColor = baseColor,
-                            highlightColor = highlightColor,
-                        )
-                        SkeletonBlock(
-                            width = 210.dp,
-                            height = 12.dp,
-                            baseColor = baseColor,
-                            highlightColor = highlightColor,
-                        )
-                    }
+                    SkeletonBlock(
+                        width = 132.dp,
+                        height = 17.dp,
+                        baseColor = baseColor,
+                        highlightColor = highlightColor,
+                    )
                 }
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap)) {
                     items(4) {
                         Box(
                             modifier =
                                 Modifier
-                                    .width(156.dp)
+                                    .width(HomeFeedSpacing.RailCardWidth)
                                     .height(214.dp)
                                     .clip(MaterialTheme.shapes.large)
                                     .m3Shimmer(
