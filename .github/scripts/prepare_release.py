@@ -1016,6 +1016,39 @@ def delete_published_release_branch(
     return [f"deleted release branch {branch}"]
 
 
+def resolve_latest_refresh(args: argparse.Namespace) -> None:
+    """Resolve build metadata for clobbering assets on an existing Latest release.
+
+    Requires the checked-out Gradle versionName/versionCode to match the Latest
+    GitHub release tag (e.g. Gradle 0.0.12 ↔ tag v0.0.12). Does not bump versions.
+    """
+    current = read_app_version()
+    latest_tag = args.latest_tag.strip()
+    if not latest_tag:
+        fail("Latest release tag is empty")
+    expected = _parse_release_tag(latest_tag)
+    if current.name != expected.name:
+        fail(
+            "Gradle versionName does not match the Latest GitHub release tag: "
+            f"Gradle={current.tag}, Latest={latest_tag}. "
+            "Publish a new release, or align app/build.gradle.kts with Latest before "
+            "refreshing artifacts."
+        )
+    print(
+        f"Refreshing artifacts for {current.tag} "
+        f"(versionCode={current.code}) from current checkout"
+    )
+    write_outputs(
+        {
+            "version": current.name,
+            "version_code": current.code,
+            "tag": current.tag,
+            "apk_asset": current.apk_asset,
+            "aab_asset": current.aab_asset,
+        }
+    )
+
+
 def delete_release_branch_after_publish(args: argparse.Namespace) -> None:
     repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
     token = os.environ.get("GITHUB_TOKEN", "").strip()
@@ -1055,6 +1088,12 @@ def main() -> None:
         help="Verify the checked-out master commit is a merged release",
     )
 
+    refresh_parser = subparsers.add_parser(
+        "resolve-latest-refresh",
+        help="Resolve Gradle metadata for refreshing Latest release artifacts",
+    )
+    refresh_parser.add_argument("--latest-tag", required=True)
+
     notes_parser = subparsers.add_parser(
         "notes",
         help="Extract release notes for the current Gradle version",
@@ -1086,6 +1125,8 @@ def main() -> None:
             verify_release(args)
         elif args.command == "verify-merged":
             verify_merged_commit()
+        elif args.command == "resolve-latest-refresh":
+            resolve_latest_refresh(args)
         elif args.command == "notes":
             write_release_notes(args)
         elif args.command == "notification":

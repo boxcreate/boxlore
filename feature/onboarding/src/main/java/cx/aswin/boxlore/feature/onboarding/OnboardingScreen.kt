@@ -15,12 +15,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -286,6 +288,14 @@ fun OnboardingScreen(
     }
 }
 
+/** One marquee loop: 6×(110dp card + 12dp gap) including the gap before the next loop. */
+private const val CoverLoopCount = 6
+private const val CoverCardDp = 110
+private const val CoverGapDp = 12
+private const val CoverLoopPeriodDp = CoverLoopCount * (CoverCardDp + CoverGapDp) // 732
+/** Enough tiled loops for entrance offsets (~2400dp) without ~480 Image nodes. */
+private const val CoverLoopRepeats = 8
+
 @Composable
 private fun WelcomeScreen(
     onHelpMeFind: () -> Unit,
@@ -298,13 +308,15 @@ private fun WelcomeScreen(
     val driftProgress = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        // Run entrance and drift concurrently for a seamless transition
+        // Let the first cover frames compose/decode before motion — avoids start hitch.
+        withFrameNanos { }
+        withFrameNanos { }
         launch {
             entranceProgress.animateTo(
                 targetValue = 1f,
                 animationSpec =
                     tween(
-                        durationMillis = 4800, // Gentle 4.8 seconds
+                        durationMillis = 4800,
                         easing = LinearEasing,
                     ),
             )
@@ -316,7 +328,7 @@ private fun WelcomeScreen(
                     infiniteRepeatable(
                         animation =
                             tween(
-                                durationMillis = 25000, // Matched with 732dp loop distance for a smooth 29dp/s speed
+                                durationMillis = 25000, // 732dp loop ≈ 29dp/s
                                 easing = LinearEasing,
                             ),
                         repeatMode = RepeatMode.Restart,
@@ -325,99 +337,121 @@ private fun WelcomeScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) { innerPadding ->
+    // Grid is a sibling of inset-padded chrome so status-bar/nav inset settle doesn't jitter covers,
+    // and so foreground recomposition (logo/CTAs) doesn't rebuild hundreds of Images each frame.
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface),
+    ) {
+        CinematicBackgroundGrid(
+            entranceProgress = entranceProgress,
+            driftProgress = driftProgress,
+        )
+
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            WelcomeForeground(
+                entranceProgress = entranceProgress,
+                condensedFamily = condensedFamily,
+                onHelpMeFind = onHelpMeFind,
+                onSearch = onSearch,
+                onSkip = onSkip,
+                onImportClick = onImportClick,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+            )
+        }
+    }
+}
+
+@Composable
+@Suppress("LongMethod")
+private fun WelcomeForeground(
+    entranceProgress: Animatable<Float, AnimationVector1D>,
+    condensedFamily: FontFamily,
+    onHelpMeFind: () -> Unit,
+    onSearch: () -> Unit,
+    onSkip: () -> Unit,
+    onImportClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        val logoProgress = ((entranceProgress.value - 0.20f) / 0.55f).coerceIn(0f, 1f)
+        val logoEase = FastOutSlowInEasing.transform(logoProgress)
+
+        val scrimColor = MaterialTheme.colorScheme.surface
+        val scrimEdge = 0.68f - (logoEase * 0.23f)
+        val scrimMid = 0.76f - (logoEase * 0.24f)
+        val scrimFull = 0.81f - (logoEase * 0.24f)
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-        ) {
-            // 0. Shared animation progress (linear timeline mapped to FastOutSlowInEasing)
-            val logoProgress = ((entranceProgress.value - 0.20f) / 0.55f).coerceIn(0f, 1f)
-            val logoEase = FastOutSlowInEasing.transform(logoProgress)
-
-            // 1. Podcast Cover Grid — occupies entire background, always visible
-            CinematicBackgroundGrid(
-                entranceProgressProvider = { entranceProgress.value },
-                driftProgressProvider = { driftProgress.value },
-            )
-
-            // 2. Bottom-heavy gradient scrim — grows dynamically as logo/buttons shift up to cover the final logo position
-            val scrimColor = MaterialTheme.colorScheme.surface
-            val scrimEdge = 0.68f - (logoEase * 0.23f) // 0.68f → 0.45f
-            val scrimMid = 0.76f - (logoEase * 0.24f) // 0.76f → 0.52f
-            val scrimFull = 0.81f - (logoEase * 0.24f) // 0.81f → 0.57f
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colorStops =
-                                    arrayOf(
-                                        0.0f to scrimColor.copy(alpha = 0.0f),
-                                        (scrimEdge - 0.15f).coerceAtLeast(0f) to scrimColor.copy(alpha = 0.0f),
-                                        scrimEdge to scrimColor.copy(alpha = 0.5f),
-                                        scrimMid to scrimColor.copy(alpha = 0.9f),
-                                        scrimFull to scrimColor,
-                                        1.0f to scrimColor,
-                                    ),
-                            ),
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops =
+                                arrayOf(
+                                    0.0f to scrimColor.copy(alpha = 0.0f),
+                                    (scrimEdge - 0.15f).coerceAtLeast(0f) to scrimColor.copy(alpha = 0.0f),
+                                    scrimEdge to scrimColor.copy(alpha = 0.5f),
+                                    scrimMid to scrimColor.copy(alpha = 0.9f),
+                                    scrimFull to scrimColor,
+                                    1.0f to scrimColor,
+                                ),
                         ),
-            )
+                    ),
+        )
 
-            // 3. Content — logo always visible, slides up to reveal buttons
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Bottom,
+        ) {
+            Spacer(modifier = Modifier.weight(1f))
+
+            val logoScale = 1.3f - (logoEase * 0.3f)
+            val logoOffsetY = (1f - logoEase) * 150f
             Column(
                 modifier =
                     Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 28.dp),
+                        .graphicsLayer {
+                            scaleX = logoScale
+                            scaleY = logoScale
+                            translationY = logoOffsetY * density
+                        },
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Bottom,
             ) {
-                // Push everything to the bottom half
-                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "Welcome to",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = GoogleSansWeight.bold,
+                    fontFamily = condensedFamily,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo(
+                    textColor = MaterialTheme.colorScheme.primary,
+                )
+            }
 
-                // Logo block — always visible, starts bigger and centered in white space,
-                // then scales down and nudges up to make room for buttons.
-                val logoScale = 1.3f - (logoEase * 0.3f) // 1.3 → 1.0
-                val logoOffsetY = (1f - logoEase) * 150f // starts 150dp lower, ends at 0
-                Column(
-                    modifier =
-                        Modifier
-                            .graphicsLayer {
-                                scaleX = logoScale
-                                scaleY = logoScale
-                                translationY = logoOffsetY * density
-                            },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = "Welcome to",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        fontFamily = condensedFamily,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-                    cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo(
-                        textColor = MaterialTheme.colorScheme.primary,
-                    )
-                }
+            Spacer(modifier = Modifier.height(32.dp))
 
-                Spacer(modifier = Modifier.height(32.dp))
+            val btn1RawProgress = ((entranceProgress.value - 0.45f) / 0.30f).coerceIn(0f, 1f)
+            val btn2RawProgress = ((entranceProgress.value - 0.53f) / 0.30f).coerceIn(0f, 1f)
+            val btn3RawProgress = ((entranceProgress.value - 0.61f) / 0.30f).coerceIn(0f, 1f)
 
-                // Staggered button reveal — starts after the logo has mostly moved up
-                val btn1RawProgress = ((entranceProgress.value - 0.45f) / 0.30f).coerceIn(0f, 1f)
-                val btn2RawProgress = ((entranceProgress.value - 0.53f) / 0.30f).coerceIn(0f, 1f)
-                val btn3RawProgress = ((entranceProgress.value - 0.61f) / 0.30f).coerceIn(0f, 1f)
-
-                val btn1Alpha = FastOutSlowInEasing.transform(btn1RawProgress)
-                val btn2Alpha = FastOutSlowInEasing.transform(btn2RawProgress)
-                val btn3Alpha = FastOutSlowInEasing.transform(btn3RawProgress)
+            val btn1Alpha = FastOutSlowInEasing.transform(btn1RawProgress)
+            val btn2Alpha = FastOutSlowInEasing.transform(btn2RawProgress)
+            val btn3Alpha = FastOutSlowInEasing.transform(btn3RawProgress)
 
                 // Primary CTA
                 Box(
@@ -638,13 +672,12 @@ private fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(36.dp))
             }
         }
-    }
 }
 
 @Composable
 private fun CinematicBackgroundGrid(
-    entranceProgressProvider: () -> Float,
-    driftProgressProvider: () -> Float,
+    entranceProgress: Animatable<Float, AnimationVector1D>,
+    driftProgress: Animatable<Float, AnimationVector1D>,
 ) {
     val context = LocalContext.current
     val allCovers =
@@ -658,60 +691,49 @@ private fun CinematicBackgroundGrid(
 
     if (allCovers.isEmpty()) return
 
-    // 4 rows of covers — top half of the screen
     val row1Covers = remember(allCovers) { allCovers.filterIndexed { idx, _ -> idx % 4 == 0 } }
     val row2Covers = remember(allCovers) { allCovers.filterIndexed { idx, _ -> idx % 4 == 1 } }
     val row3Covers = remember(allCovers) { allCovers.filterIndexed { idx, _ -> idx % 4 == 2 } }
     val row4Covers = remember(allCovers) { allCovers.filterIndexed { idx, _ -> idx % 4 == 3 } }
 
-    val SmoothBurstEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1.0f)
+    val smoothBurstEasing = remember { CubicBezierEasing(0.25f, 0.1f, 0.25f, 1.0f) }
 
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(CoverGapDp.dp, Alignment.Top),
     ) {
         Spacer(modifier = Modifier.height(8.dp))
         ScrollingRow(
             covers = row1Covers,
-            translationX = {
-                val ent = entranceProgressProvider()
-                val scrollProgress = (ent / 0.75f).coerceIn(0f, 1f)
-                val scrollEase = SmoothBurstEasing.transform(scrollProgress)
-                val drft = driftProgressProvider()
-                -2200f + (600f * scrollEase) + (732f * drft)
-            },
+            entranceProgress = entranceProgress,
+            driftProgress = driftProgress,
+            baseOffsetDp = -2200f,
+            direction = 1f,
+            entranceEasing = smoothBurstEasing,
         )
         ScrollingRow(
             covers = row2Covers,
-            translationX = {
-                val ent = entranceProgressProvider()
-                val scrollProgress = (ent / 0.75f).coerceIn(0f, 1f)
-                val scrollEase = SmoothBurstEasing.transform(scrollProgress)
-                val drft = driftProgressProvider()
-                -100f - (600f * scrollEase) - (732f * drft)
-            },
+            entranceProgress = entranceProgress,
+            driftProgress = driftProgress,
+            baseOffsetDp = -100f,
+            direction = -1f,
+            entranceEasing = smoothBurstEasing,
         )
         ScrollingRow(
             covers = row3Covers,
-            translationX = {
-                val ent = entranceProgressProvider()
-                val scrollProgress = (ent / 0.75f).coerceIn(0f, 1f)
-                val scrollEase = SmoothBurstEasing.transform(scrollProgress)
-                val drft = driftProgressProvider()
-                -2400f + (600f * scrollEase) + (732f * drft)
-            },
+            entranceProgress = entranceProgress,
+            driftProgress = driftProgress,
+            baseOffsetDp = -2400f,
+            direction = 1f,
+            entranceEasing = smoothBurstEasing,
         )
         ScrollingRow(
             covers = row4Covers,
-            translationX = {
-                val ent = entranceProgressProvider()
-                val scrollProgress = (ent / 0.75f).coerceIn(0f, 1f)
-                val scrollEase = SmoothBurstEasing.transform(scrollProgress)
-                val drft = driftProgressProvider()
-                -300f - (600f * scrollEase) - (732f * drft)
-            },
+            entranceProgress = entranceProgress,
+            driftProgress = driftProgress,
+            baseOffsetDp = -300f,
+            direction = -1f,
+            entranceEasing = smoothBurstEasing,
         )
     }
 }
@@ -719,29 +741,49 @@ private fun CinematicBackgroundGrid(
 @Composable
 private fun ScrollingRow(
     covers: List<Int>,
-    translationX: () -> Float,
+    entranceProgress: Animatable<Float, AnimationVector1D>,
+    driftProgress: Animatable<Float, AnimationVector1D>,
+    baseOffsetDp: Float,
+    direction: Float,
+    entranceEasing: Easing,
 ) {
-    // Take exactly 6 covers for a precise 732dp (6 * 122dp) seamless restart loop
-    val loopCovers = remember(covers) { covers.take(6) }
-    // Repeat covers list 20 times to simulate an infinite list within the bounds of scroll + drift
-    val infiniteCovers = remember(loopCovers) { List(20) { loopCovers }.flatten() }
+    val loopCovers =
+        remember(covers) {
+            if (covers.isEmpty()) {
+                emptyList()
+            } else {
+                List(CoverLoopCount) { index -> covers[index % covers.size] }
+            }
+        }
+    val tiledCovers =
+        remember(loopCovers) {
+            List(CoverLoopRepeats) { loopCovers }.flatten()
+        }
 
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .wrapContentWidth(unbounded = true, align = Alignment.Start)
-                .graphicsLayer { this.translationX = translationX().dp.toPx() },
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .graphicsLayer {
+                    val scrollProgress = (entranceProgress.value / 0.75f).coerceIn(0f, 1f)
+                    val scrollEase = entranceEasing.transform(scrollProgress)
+                    val translationDp =
+                        baseOffsetDp +
+                            direction * (600f * scrollEase) +
+                            direction * (CoverLoopPeriodDp.toFloat() * driftProgress.value)
+                    translationX = translationDp.dp.toPx()
+                },
+        horizontalArrangement = Arrangement.spacedBy(CoverGapDp.dp),
     ) {
-        infiniteCovers.forEach { drawableResId ->
+        tiledCovers.forEach { drawableResId ->
             val cardShape = RoundedCornerShape(16.dp)
-            Card(
+            Box(
                 modifier =
                     Modifier
-                        .size(110.dp),
-                shape = cardShape,
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        .size(CoverCardDp.dp)
+                        .clip(cardShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Image(
                     painter = painterResource(id = drawableResId),
