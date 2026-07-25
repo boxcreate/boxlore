@@ -57,12 +57,13 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>A floating bottom navigation bar with three tabs and a Lore button appears, and the mini‑player is reshaped for better spacing. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
-<li>Choose new lettering styles (Crisp, Soft, Round) with a variable Google Sans font that updates instantly across the app. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
+<li>A floating bottom bar with three tabs and a Lore button now appears; you can switch to classic style in Settings → Appearance → Navigation, and the mini‑player was resized to avoid overlap. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
+<li>Episodes you haven’t played in 7 days will automatically restart from the beginning, the queue labels them “Starting over”, and you can toggle this in Settings → Playback → Resume. <a href="https://github.com/boxcreate/boxlore/pull/950"><img src="https://img.shields.io/badge/PR-950-6750A4?style=flat-square" alt="PR #950" height="18"/></a></li>
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Your ‘For You’ feed loads faster and never shows a blank screen, thanks to a new recommendation cache. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
+<li>The For You page now loads recommendations instantly, using a new cache so fresh installs no longer show a blank state. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
+<li>New lettering styles (Crisp, Soft, Round) and a variable Google Sans Flex font let you customize text appearance, and theme changes are now faster thanks to caching. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
