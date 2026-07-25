@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
@@ -37,11 +38,14 @@ import com.posthog.PostHog
 import cx.aswin.boxlore.BoxLoreApplication
 import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.designsystem.component.AppMiniPlayerHeight
-import cx.aswin.boxlore.core.designsystem.component.AppMiniPlayerNavGap
-import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHeight
+import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHorizontalInset
 import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationBar
+import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.PredictiveBackWrapper
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
+import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopup
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopupDismissReason
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
@@ -58,7 +62,6 @@ import cx.aswin.boxlore.feature.home.ModeSwitchState
 import cx.aswin.boxlore.feature.home.components.FeedbackSheet
 import cx.aswin.boxlore.feature.onboarding.generateRecommendationsFromOpml
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
-import cx.aswin.boxlore.feature.player.v2.MiniPlayerHeight
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
@@ -299,6 +302,10 @@ fun BoxLoreAppRoot(
     val fontRoundnessKey by userPrefs.fontRoundnessStream.collectAsStateWithLifecycle(
         initialValue = remember { userPrefs.cachedFontRoundness },
     )
+    val navigationStyleKey by userPrefs.navigationStyleStream.collectAsState(
+        initial = remember { userPrefs.cachedNavigationStyle },
+    )
+    val navigationStyle = remember(navigationStyleKey) { NavigationStyle.fromKey(navigationStyleKey) }
     val fontRoundness =
         remember(fontRoundnessKey) {
             cx.aswin.boxlore.core.designsystem.theme.FontRoundness.axisValue(fontRoundnessKey)
@@ -322,12 +329,11 @@ fun BoxLoreAppRoot(
     DownloadBandwidthEffect(isPlaying = isPlaying)
 
     val miniPlayerPadding =
-        remember(currentEpisode) {
-            if (currentEpisode != null) {
-                AppNavigationBarHeight + AppMiniPlayerHeight + AppMiniPlayerNavGap
-            } else {
-                AppNavigationBarHeight
-            }
+        remember(currentEpisode, navigationStyle) {
+            appBottomChromeContentPadding(
+                style = navigationStyle,
+                isMiniPlayerVisible = currentEpisode != null,
+            )
         }
 
     val darkTheme =
@@ -338,6 +344,7 @@ fun BoxLoreAppRoot(
         }
 
     var appInstanceId by remember { mutableStateOf<String?>(null) }
+    var isInitialHomeContentReady by remember { mutableStateOf(false) }
     val permissionLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission(),
@@ -420,6 +427,7 @@ fun BoxLoreAppRoot(
         surfaceStyle = surfaceStyle,
         fontRoundness = fontRoundness,
     ) {
+        CompositionLocalProvider(LocalNavigationStyle provides navigationStyle) {
         loreQueueConflictEpisode?.let { pendingLoreEpisode ->
             LoreQueueConflictDialog(
                 pendingLoreEpisode = pendingLoreEpisode,
@@ -488,6 +496,7 @@ fun BoxLoreAppRoot(
                                 NavHostSession(
                                     onboardingCompleted = onboardingCompleted,
                                     onOnboardingCompleted = { onboardingCompleted = true },
+                                onInitialHomeContentReady = { isInitialHomeContentReady = true },
                                     onboardingViewModel = onboardingViewModel,
                                     hasDeepLink = hasDeepLink,
                                     currentEpisode = currentEpisode,
@@ -521,6 +530,7 @@ fun BoxLoreAppRoot(
                                     themeBrand = themeBrand,
                                     surfaceStyle = surfaceStyle,
                                     fontRoundness = fontRoundnessKey,
+                                    navigationStyle = navigationStyleKey,
                                     skipBehavior = skipBehavior,
                                     skipBeginningMs = skipBeginningMs,
                                     skipEndingMs = skipEndingMs,
@@ -538,12 +548,24 @@ fun BoxLoreAppRoot(
             val density = LocalDensity.current
             val screenHeightDp = maxHeight
             val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            val appNavBarHeight = AppNavigationBarHeight
+            val chromeMetrics = navigationChromeMetrics(navigationStyle)
+            val bottomChromeClearance = chromeMetrics.bottomNavigationClearance
+            val playerSystemNavigationInset =
+                if (navigationStyleUsesExternalSystemNavigationInset(navigationStyle)) {
+                    systemNavBarHeight
+                } else {
+                    0.dp
+                }
             val containerHeight = screenHeightDp + systemNavBarHeight + 50.dp
-            val miniPlayerBottomMargin = 2.dp
             val collapsedTargetY =
                 with(density) {
-                    (screenHeightDp - MiniPlayerHeight - appNavBarHeight - systemNavBarHeight - miniPlayerBottomMargin).toPx()
+                    (
+                        screenHeightDp -
+                            chromeMetrics.miniPlayerHeight -
+                            bottomChromeClearance -
+                            playerSystemNavigationInset -
+                            chromeMetrics.miniPlayerNavigationGap
+                    ).toPx()
                 }
 
             if (showBottomNav) {
@@ -558,7 +580,18 @@ fun BoxLoreAppRoot(
                     onNavigate = { route ->
                         navController.navigateBottomNavTab(route, activeTab)
                     },
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    style = navigationStyle,
+                    initialContentReady = isInitialHomeContentReady,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .let { navigationModifier ->
+                                if (navigationStyleUsesExternalSystemNavigationInset(navigationStyle)) {
+                                    navigationModifier.padding(bottom = systemNavBarHeight)
+                                } else {
+                                    navigationModifier
+                                }
+                            },
                 )
             }
 
@@ -596,7 +629,13 @@ fun BoxLoreAppRoot(
                         PlayerSheetLayout(
                             collapsedTargetY = collapsedTargetY,
                             containerHeight = containerHeight,
-                            collapsedHorizontalPadding = 12.dp,
+                            collapsedHorizontalPadding =
+                                if (navigationStyle == NavigationStyle.Floating) {
+                                    AppNavigationBarHorizontalInset
+                                } else {
+                                    12.dp
+                                },
+                            navigationStyle = navigationStyle,
                             expandTrigger = expandPlayerTrigger,
                         ),
                     actions =
@@ -764,6 +803,7 @@ fun BoxLoreAppRoot(
                 },
                 onDismissRequest = { showFeedbackSheet = false },
             )
+        }
         }
     }
 }

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.briefing
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -317,7 +319,7 @@ fun BriefingScreen(
                                     text = "References & Sources",
                                     fontFamily = rememberSectionHeaderFontFamily(),
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Normal,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
@@ -366,7 +368,7 @@ fun BriefingScreen(
                                                         Text(
                                                             text = cleanDomain.uppercase(),
                                                             style = MaterialTheme.typography.labelSmall,
-                                                            fontWeight = FontWeight.Bold,
+                                                            fontWeight = GoogleSansWeight.bold,
                                                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                                         )
@@ -374,7 +376,7 @@ fun BriefingScreen(
                                                     Text(
                                                         text = source.title,
                                                         style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = FontWeight.Medium,
+                                                        fontWeight = GoogleSansWeight.medium,
                                                         color = MaterialTheme.colorScheme.onSurface,
                                                         modifier = Modifier.padding(top = 2.dp)
                                                     )
@@ -557,17 +559,17 @@ fun BriefingContent(
                 }
             }
 
-            val durationMin = remember(durationMs) {
-                val totalSeconds = durationMs / 1000
-                val mins = (totalSeconds + 30) / 60
-                if (mins > 0) mins else 3
+            val listenDuration = remember(durationMs) {
+                formatBriefingListenDuration(durationMs)
             }
 
             Text(
-                text = "$displayDate • $durationMin min listen".uppercase(),
+                text = listOfNotNull(displayDate, listenDuration)
+                    .joinToString(separator = " • ")
+                    .uppercase(),
                 style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
 
@@ -577,7 +579,7 @@ fun BriefingContent(
             Text(
                 text = briefing.title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 textAlign = TextAlign.Start,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 3,
@@ -622,7 +624,7 @@ fun BriefingContent(
                                 Text(
                                     text = label,
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     textAlign = TextAlign.Center
                                 )
                             }
@@ -710,7 +712,7 @@ fun BriefingContent(
                             Text(
                                 text = "${briefing.sources.size} Sources",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -745,7 +747,7 @@ fun BriefingContent(
                 Text(
                     text = "Disclaimer & Feedback",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
@@ -776,7 +778,7 @@ fun BriefingContent(
                         Text(
                             text = "Report an Issue / Send Feedback",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -811,7 +813,7 @@ fun ErrorContent(
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
+            fontWeight = GoogleSansWeight.medium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(bottom = 24.dp)
@@ -825,7 +827,7 @@ fun ErrorContent(
                 text = "Retry",
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
             )
         }
@@ -897,7 +899,7 @@ fun VerticalRecommendedEpisodeCard(
                     text = episode.title,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 18.sp
@@ -908,7 +910,7 @@ fun VerticalRecommendedEpisodeCard(
                         text = podTitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = GoogleSansWeight.medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -209,7 +211,7 @@ fun SubscriptionsScreen(
                         title = {
                             Text(
                                 text = "Subscriptions",
-                                fontWeight = FontWeight.Bold
+                                fontWeight = GoogleSansWeight.bold
                             )
                         },
                         colors = TopAppBarDefaults.topAppBarColors(

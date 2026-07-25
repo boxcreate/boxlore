@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.ui.announcement
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -22,7 +24,7 @@ internal fun parseSimpleMarkdownInline(text: String): AnnotatedString {
         for (match in matches) {
             append(text.substring(currentIndex, match.range.first))
             if (match.groups[1] != null) {
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                withStyle(SpanStyle(fontWeight = GoogleSansWeight.bold)) {
                     append(match.groupValues[1])
                 }
             } else if (match.groups[2] != null) {

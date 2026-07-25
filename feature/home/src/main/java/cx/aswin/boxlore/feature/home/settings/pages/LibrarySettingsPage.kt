@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -164,7 +166,7 @@ private fun CountryNotListedFaq(
                 text = "Why is my country not listed?",
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 color = MaterialTheme.colorScheme.primary,
             )
             Icon(
@@ -198,7 +200,7 @@ private fun CountryNotListedFaq(
                 Text(
                     text = "Why isn't my country listed?",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 FaqParagraph(
@@ -207,7 +209,7 @@ private fun CountryNotListedFaq(
                 Text(
                     text = "How this affects your experience:",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 FaqParagraph(
@@ -222,7 +224,7 @@ private fun CountryNotListedFaq(
                 Text(
                     text = "Want your country added next?",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 FaqParagraph(

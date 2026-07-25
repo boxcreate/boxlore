@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,7 +59,7 @@ fun HomeTopLevelSectionHeader(
                     style =
                         MaterialTheme.typography.headlineSmall.copy(
                             fontFamily = rememberSectionHeaderFontFamily(),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Normal,
                         ),
                 )
                 subtitle?.let {
@@ -129,7 +131,7 @@ fun HomeChildSectionHeader(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
             )
             subtitle?.let {
                 Text(

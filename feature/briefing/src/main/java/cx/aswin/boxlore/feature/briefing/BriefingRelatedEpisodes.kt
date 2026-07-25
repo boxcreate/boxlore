@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.briefing
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -92,7 +94,7 @@ private fun RelatedEpisodesHeader(isActive: Boolean) {
                 letterSpacing = 1.2.sp,
                 fontSize = 9.sp
             ),
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = relatedEpisodesHeaderColor(isActive, alpha = 0.7f)
         )
     }

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -83,7 +85,7 @@ fun NotesPreviewCard(
             ) {
                 Text(
                     text = "Show notes",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                     color = colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
@@ -115,7 +117,7 @@ fun NotesPreviewCard(
             ) {
                 Text(
                     text = if (expanded) "Show less" else "Read more",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.semiBold)
                 )
                 Icon(
                     imageVector = if (expanded) {

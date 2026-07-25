@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -411,7 +413,7 @@ private fun CuriosityCardContent(
                     Text(
                         text = daily.question,
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = Color.White,
                         textAlign = TextAlign.Start,
                         modifier = Modifier.semantics { heading() }
@@ -474,7 +476,7 @@ private fun CuriosityCardContent(
                             Text(
                                 text = daily.podcastTitle ?: "Podcast",
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = GoogleSansWeight.semiBold,
                                 color = Color.White.copy(alpha = 0.72f),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
@@ -568,7 +570,7 @@ private fun CardQuickAction(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
+            fontWeight = GoogleSansWeight.medium,
             color = Color.White.copy(alpha = 0.58f)
         )
     }
@@ -647,7 +649,7 @@ private fun EpisodePlayButton(
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = GoogleSansWeight.bold,
                 color = Color.White
             )
             Spacer(modifier = Modifier.width(12.dp))

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,7 +38,7 @@ private fun ChaptersHeader(onClose: () -> Unit, colorScheme: ColorScheme) {
         Text(
             text = "Chapters",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = colorScheme.onSurface
         )
         TextButton(onClick = onClose) {
@@ -85,7 +87,7 @@ private fun ChaptersEmptyPlaceholder(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "Generate AI Chapters",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold)
                 )
             }
         }
@@ -218,7 +220,7 @@ fun ChapterRow(
             Text(
                 text = chapter.title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (isActive) GoogleSansWeight.bold else FontWeight.Normal,
                 color = contentColor,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -228,7 +230,7 @@ fun ChapterRow(
                 text = formatTime(startMs),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isActive) colorScheme.primary else colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                fontWeight = FontWeight.SemiBold
+                fontWeight = GoogleSansWeight.semiBold
             )
         }
     }

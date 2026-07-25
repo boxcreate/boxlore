@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -325,7 +327,7 @@ internal fun EpisodeToolbar(
                             Text(
                                 text = "Subscribe",
                                 style = textStyle,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                             )
                         }
                         1 -> {
@@ -348,7 +350,7 @@ internal fun EpisodeToolbar(
                             Text(
                                 text = "Subscribed",
                                 style = textStyle,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                             )
                         }
                     }

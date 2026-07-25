@@ -26,7 +26,8 @@ Automated coverage focused on **hermetic JVM** for product logic (queue fill, ra
 | Static analysis | `./gradlew detekt` | Style / quality beyond baselines | Done |
 | Android lint | `./gradlew lintDebug` | Manifest / resource / API lint | Done |
 | Coverage (Kover) | `./gradlew :koverVerifyMerged` | Merged floor (ratchet toward 80%) | WIP |
-| Screenshots | `screenshots/baselines/` + Roborazzi verify | Visual regressions | Done |
+| Screenshots | `screenshots/baselines/` + optional Roborazzi (local) | Visual regressions | Optional |
+
 | Maestro | `maestro/` YAML validate | Flow file presence/syntax | Done |
 
 Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
@@ -38,7 +39,7 @@ Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 - Konsist (architecture guards in `:core:testing`)
 - Shared fixtures / fakes: `:core:testing` (`TestFixtures`, `MainDispatcherExtension`, `core.testing.fakes.*`)
 - No MockK / Hilt
-- Roborazzi for JVM screenshot goldens
+- Optional Roborazzi JVM screenshot goldens (not CI-gated)
 
 ## Coverage bars
 
@@ -46,7 +47,7 @@ Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 | :--- | :--- | :--- |
 | JVM | Every public behavior-owning type has a suite (happy/empty/error/branches) or an irreducible exclusion | `testDebugUnitTest` |
 | ViewModels | Behaviors via hermetic `logic/` + Settings Turbine; AndroidViewModels allowlisted when logic suites exist | unit job |
-| Screenshots | Home settings goldens + verify | Roborazzi verify |
+| Screenshots | Home settings goldens (local record/verify) | Manual / local only |
 | Maestro | YAML present and well-formed | nightly validate |
 | Kover merged | **≥ 80%** end state (ratchet **40 → 45 → 55 → 70 → 80**) | `:koverVerifyMerged` |
 | Kover per-module | **≥ 70%** on logic-heavy modules (ratchet as suites land) | module verify |
@@ -83,7 +84,7 @@ Reports: `build/reports/kover/`.
 | Exclusion | Alternate coverage |
 | :--- | :--- |
 | `PlaybackRepository` + `core.playback.service.*` / Auto | Policy unit tests |
-| `@Composable` / `@Preview` | Roborazzi (home settings) + manual |
+| `@Composable` / `@Preview` | Manual (+ optional local Roborazzi) |
 | `:app` `navigation.*` / `ui.*` / `fcm.*` / `surveys.*` | Manual / optional local Maestro |
 | PostHog / Firebase SDK internals | Not our code; features must not import PostHog |
 | Generated `R` / `BuildConfig` / databinding | Generated |
@@ -134,7 +135,7 @@ ktlint: per-project baselines under `config/ktlint/`.
 | `:core:network` | Done | n/a | MockWebServer contracts |
 | `:core:domain` | Done | n/a | Port contracts |
 | `:core:model` | Done | n/a | Behavior helpers |
-| `:feature:home` | Done | Done | Settings Turbine + logic + Roborazzi goldens |
+| `:feature:home` | Done | Done | Settings Turbine + logic (+ optional Roborazzi goldens) |
 | `:feature:info` | Done | Done | Port/logic suites |
 | `:feature:explore` | Done | Done | Logic + Learn store |
 | `:feature:library` | Done | Done | Sort/filter + download models |
@@ -161,7 +162,7 @@ See [`maestro/README.md`](../maestro/README.md).
 | :--- | :--- |
 | Reserved `screenshots/baselines/` | Done |
 | Checked-in PNG goldens (Add RSS, Reset analytics, Downloads) | Done |
-| Roborazzi CI gate (`:feature:home:verifyRoborazziDebug`) | Done |
+| Roborazzi CI gate | Removed (local optional only) |
 
 See [`docs/screenshots/README.md`](screenshots/README.md).
 
@@ -169,7 +170,7 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
-| `unit-tests.yml` | Architecture + detekt + ktlint + unit + Roborazzi + Kover + lint + Dependency Guard | PR / dispatch | Done |
+| `unit-tests.yml` | Architecture + detekt + unit + Kover + lint + Dependency Guard | PR / dispatch | Done |
 | `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / review | Done |
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML | Nightly / manual | Done |

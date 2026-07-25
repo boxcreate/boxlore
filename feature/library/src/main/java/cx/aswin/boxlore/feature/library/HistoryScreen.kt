@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -42,8 +44,8 @@ fun HistoryScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle =
         lerp(
-            start = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-            stop = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+            start = MaterialTheme.typography.headlineMedium.copy(fontWeight = GoogleSansWeight.bold),
+            stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
             fraction = scrollBehavior.state.collapsedFraction,
         )
 

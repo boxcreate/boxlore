@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -211,7 +213,7 @@ private fun TranscriptSegmentItem(
         label = "textOpacity"
     )
     
-    val textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+    val textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold)
     
     Box(
         modifier = Modifier
@@ -271,7 +273,7 @@ private fun TranscriptSyncButton(
                 )
                 Text(
                     text = "Sync Scroll",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
                     color = colorScheme.onSecondaryContainer
                 )
             }
@@ -327,7 +329,7 @@ fun FullscreenTranscriptScreen(
             Text(
                 text = "Transcript",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = colorScheme.onSurface
             )
             
@@ -381,12 +383,12 @@ fun FullscreenTranscriptScreen(
                 ) {
                     Text(
                         text = formatTime(positionMs),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
                         color = colorScheme.primary.copy(alpha = 0.85f)
                     )
                     Text(
                         text = "-" + formatTime((durationMs - positionMs).coerceAtLeast(0)),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
                         color = colorScheme.primary.copy(alpha = 0.85f)
                     )
                 }

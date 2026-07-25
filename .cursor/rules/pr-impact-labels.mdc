@@ -32,13 +32,13 @@ Examples:
 
 ## Merge gate — required before merge
 
-There is **no `merge-ci` label flow** and **no merge queue**. Unit CI (detekt / ktlint / Kover / Roborazzi) runs on **every PR push**, plus optional `workflow_dispatch`. A new commit cancels any in-progress unit run for that PR.
+There is **no `merge-ci` label flow** and **no merge queue**. Unit CI (detekt / ktlint / Kover) runs on **every PR push**, plus optional `workflow_dispatch`. A new commit cancels any in-progress unit run for that PR.
 
 Master is protected by a branch ruleset. Required checks:
 
 | Check | Meaning |
 |:--|:--|
-| `testDebugUnitTest` | Full unit / static / Kover / Roborazzi gate (PR; cancels prior run on new commit) |
+| `testDebugUnitTest` | Full unit / static / Kover gate (PR; cancels prior run on new commit) |
 | `coderabbit-threads-resolved` | Every non-outdated CodeRabbit review thread is Resolved |
 
 Still run on PRs (not ruleset-required): SonarCloud App, CodeRabbit App status, Gitleaks.

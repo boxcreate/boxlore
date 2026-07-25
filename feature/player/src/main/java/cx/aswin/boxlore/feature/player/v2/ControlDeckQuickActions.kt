@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
@@ -452,7 +454,7 @@ internal fun LabelAction(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
             color = content,
             maxLines = 1
         )
@@ -519,7 +521,7 @@ internal fun UtilityAction(
             if (state.status != null) {
                 Text(
                     text = state.status,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
                     color = content,
                     maxLines = 1
                 )

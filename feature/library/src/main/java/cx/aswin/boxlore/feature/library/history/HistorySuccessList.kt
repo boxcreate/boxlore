@@ -19,9 +19,9 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.component.AppMiniPlayerHeight
-import cx.aswin.boxlore.core.designsystem.component.AppMiniPlayerNavGap
-import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHeight
+import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.library.HistorySuccessState
 import cx.aswin.boxlore.feature.library.HistoryViewModel
@@ -37,8 +37,12 @@ internal fun HistorySuccessList(
     modifier: Modifier = Modifier,
 ) {
     val bottomInset =
-        AppMiniPlayerHeight + AppMiniPlayerNavGap + AppNavigationBarHeight +
-            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        appBottomChromeContentPadding(isMiniPlayerVisible = true) +
+            if (navigationStyleUsesExternalSystemNavigationInset(LocalNavigationStyle.current)) {
+                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            } else {
+                0.dp
+            }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(contentPadding),

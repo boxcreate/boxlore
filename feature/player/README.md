@@ -7,9 +7,12 @@ Owns player presentation: mini player, full player sheet, queue screen UI, contr
 ## Public API
 
 - `v2.PlayerSheetScaffold` is composed by `:app` as the mini/full player overlay.
+- The collapsed v2 mini player follows Appearance → Navigation: Floating is a 64dp pill with 32dp corners; Classic restores the 72dp legacy shape with 26dp top and 14dp bottom corners. Both retain circular artwork, a primary play/pause control, and smaller circular seek controls.
 - `v2.FullPlayerV2`, `FullPlayerV2Content`, `FullPlayerV2Sheets`, `ControlDeck`, and `ControlDeckQuickActions` provide full-player presentation pieces.
+- The expanded-player transport group gives play/pause and both seek controls the same brief, coordinated width feedback when pressed or tapped.
 - `QueueScreen`, `PlayerControls`, `ChaptersSheet`, and `TranscriptView` support player sub-surfaces.
 - `v2.logic.*` contains JVM-testable layout, control, queue-label, transcript-dialog, mini-player, and seekbar logic.
+- Player UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 
 ## Internal structure
 

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.sections
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -82,7 +84,7 @@ internal fun EpisodeInfoMoreLikeThisCard(
                     text = "More Like This",
                     style =
                         MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             letterSpacing = (-0.1).sp,
                         ),
                     color = MaterialTheme.colorScheme.onSurface,
@@ -172,7 +174,7 @@ internal fun EpisodeInfoMoreLikeThisCard(
                                         text = episode.title,
                                         style =
                                             MaterialTheme.typography.labelMedium.copy(
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = GoogleSansWeight.bold,
                                                 lineHeight = 14.sp,
                                             ),
                                         color = MaterialTheme.colorScheme.onSurface,
@@ -187,7 +189,7 @@ internal fun EpisodeInfoMoreLikeThisCard(
                                             style =
                                                 MaterialTheme.typography.bodySmall.copy(
                                                     fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Medium,
+                                                    fontWeight = GoogleSansWeight.medium,
                                                 ),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
@@ -253,7 +255,7 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                     text = "More from ${state.podcastTitle}",
                     style =
                         MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             letterSpacing = (-0.1).sp,
                         ),
                     color = MaterialTheme.colorScheme.onSurface,
@@ -359,7 +361,7 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                                     text = episode.title,
                                     style =
                                         MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = GoogleSansWeight.semiBold,
                                             lineHeight = 14.sp,
                                         ),
                                     color = MaterialTheme.colorScheme.onSurface,

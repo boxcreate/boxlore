@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.history
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -107,7 +109,7 @@ fun HistoryActivityGraph(
                 Text(
                     text = stringResource(R.string.history_activity_title),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                 )
                 Text(
                     text = rangeLabel,
@@ -174,7 +176,7 @@ fun HistoryTimeOfDayGraph(
                 Text(
                     text = stringResource(R.string.history_tod_title),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                 )
                 if (peakLabel != null && totalMs > 0) {
                     Text(
@@ -295,7 +297,7 @@ private fun TimeOfDayBarColumn(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (bucket == peakBucket) FontWeight.SemiBold else FontWeight.Medium,
+            fontWeight = if (bucket == peakBucket) GoogleSansWeight.semiBold else GoogleSansWeight.medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -352,7 +354,7 @@ private fun WeekdayBars(
                     text =
                         date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = GoogleSansWeight.medium,
                 )
             }
         }

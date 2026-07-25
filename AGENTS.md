@@ -63,8 +63,8 @@ Standard commands, all via the Gradle wrapper (see also `.github/workflows/unit-
 - Build debug APK: `./gradlew assembleDebug` (first run downloads Gradle 9.6.1 + deps, ~4–5 min).
 - Unit tests: `./gradlew testDebugUnitTest --continue`
 - Lint: `./gradlew detekt ktlintCheck lintDebug`
-- Coverage floor / screenshots / dep guard: `./gradlew :koverVerifyMerged :feature:home:verifyRoborazziDebug :app:dependencyGuard`
-- Roborazzi renders real Compose screens on the JVM (no emulator): `./gradlew :feature:home:recordRoborazziDebug` → PNGs in `feature/home/build/intermediates/roborazzi/`.
+- Coverage floor / dep guard: `./gradlew :koverVerifyMerged :app:dependencyGuard`
+- Optional local screenshot goldens (not CI-gated): `./gradlew :feature:home:recordRoborazziDebug` → PNGs under `screenshots/baselines/`.
 
 ### Running the app on the emulator (non-obvious gotchas)
 - There is **no `/dev/kvm`** here, so the emulator runs with software CPU emulation (`-no-accel -gpu swiftshader_indirect -no-window`). It is usable but very slow: boot takes several minutes and the starved CPU triggers frequent system-wide "System UI / Process system isn't responding" ANR dialogs. These are environment slowness, not app bugs — dismiss with "Wait" and give screens 60–90s to settle.

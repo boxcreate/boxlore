@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -138,7 +140,7 @@ fun PlayerSeekbar(
             ) {
                 Text(
                     text = previewText,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
                     color = colorScheme.onPrimaryContainer,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                     maxLines = 1,
@@ -204,7 +206,7 @@ fun PlayerSeekbar(
             val previewPosition = dragFraction?.let { (it * duration).toLong() } ?: position
             Text(
                 text = formatTime(previewPosition),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
                 color = colorScheme.primary.copy(alpha = 0.85f)
             )
             Text(
@@ -213,7 +215,7 @@ fun PlayerSeekbar(
                 } else {
                     "-" + formatTime((duration - previewPosition).coerceAtLeast(0))
                 },
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
                 color = colorScheme.primary.copy(alpha = 0.85f),
                 modifier = Modifier.pointerInput(Unit) {
                     detectTapGestures { showTotalDuration = !showTotalDuration }

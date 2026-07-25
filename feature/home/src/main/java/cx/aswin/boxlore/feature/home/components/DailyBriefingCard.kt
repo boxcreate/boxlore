@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -255,7 +257,7 @@ fun DailyBriefingCard(
                             text = formattedDate,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             letterSpacing = 0.3.sp,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         )
@@ -388,7 +390,7 @@ private fun DailyBriefingChapterRow(
         Text(
             text = timeStr,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
             modifier = Modifier.width(36.dp),
         )
@@ -411,7 +413,7 @@ private fun DailyBriefingChapterRow(
                 Text(
                     text = "+${totalChapters - 3}",
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = Color.White.copy(alpha = 0.6f),
                 )
                 Icon(
@@ -480,7 +482,7 @@ private fun DailyBriefingPlayButton(
                         else -> "Listen Now · $durationMin min"
                     },
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onPrimary,
                 letterSpacing = 0.3.sp,
             )
@@ -541,7 +543,7 @@ private fun DailyBriefingNormalContent(
             text = state.briefing.title,
             fontFamily = rememberSectionHeaderFontFamily(),
             fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Normal,
             color = Color.White,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
@@ -611,7 +613,7 @@ private fun DailyBriefingDismissContent(
                 Text(
                     text = "Dismiss for Today",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onPrimary,
                     letterSpacing = 0.3.sp,
                 )
@@ -626,7 +628,7 @@ private fun DailyBriefingDismissContent(
                 MaterialTheme.typography.labelMedium.copy(
                     textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
                 ),
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
             color = Color.White.copy(alpha = 0.6f),
             modifier =
                 Modifier
@@ -660,7 +662,7 @@ private fun DailyBriefingForeverContent(
             text = "Are you sure?",
             fontFamily = rememberSectionHeaderFontFamily(),
             fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Normal,
             color = Color.White,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier.padding(horizontal = 20.dp),
@@ -712,7 +714,7 @@ private fun DailyBriefingForeverContent(
                     Text(
                         text = "Send Feedback",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
@@ -744,7 +746,7 @@ private fun DailyBriefingForeverContent(
                     Text(
                         text = "I'm Sure",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = Color.White,
                     )
                 }

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
@@ -217,7 +219,7 @@ private fun ForYouHeroCard(
                         MaterialTheme.typography.labelSmall.copy(
                             color = MaterialTheme.colorScheme.onPrimary,
                             fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             letterSpacing = 0.5.sp,
                         ),
                 )
@@ -240,7 +242,7 @@ private fun ForYouHeroCard(
                     MaterialTheme.typography.labelMedium.copy(
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = GoogleSansWeight.semiBold,
                         letterSpacing = 0.4.sp,
                     ),
                 maxLines = 1,
@@ -253,7 +255,7 @@ private fun ForYouHeroCard(
                 style =
                     MaterialTheme.typography.titleMedium.copy(
                         color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = GoogleSansWeight.bold,
                         fontSize = 16.sp,
                         lineHeight = 20.sp,
                     ),
@@ -274,7 +276,7 @@ private fun ForYouHeroCard(
                             MaterialTheme.typography.bodySmall.copy(
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = GoogleSansWeight.medium,
                             ),
                     )
                 }
@@ -292,7 +294,7 @@ private fun ForYouHeroCard(
                             MaterialTheme.typography.bodySmall.copy(
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = GoogleSansWeight.medium,
                             ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -375,7 +377,7 @@ private fun ForYouHorizontalBentoCard(
                         MaterialTheme.typography.labelSmall.copy(
                             color = Color.White,
                             fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                         ),
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                 )
@@ -420,7 +422,7 @@ private fun ForYouHorizontalBentoCard(
                         MaterialTheme.typography.labelSmall.copy(
                             color = Color.White,
                             fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                         ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -442,7 +444,7 @@ private fun ForYouHorizontalBentoCard(
                 text = episode.title,
                 style =
                     MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = GoogleSansWeight.bold,
                         fontSize = 14.sp,
                         lineHeight = 18.sp,
                         color = Color.White,

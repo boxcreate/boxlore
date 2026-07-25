@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -73,7 +75,7 @@ internal fun PlayerMetadata(
 ) {
     MarqueeMetadataText(
         text = episode.title.replace("+", " "),
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
         color = colorScheme.onSurface,
         velocity = 26.dp,
         onClick = {
@@ -85,7 +87,7 @@ internal fun PlayerMetadata(
     Spacer(modifier = Modifier.height(3.dp))
     MarqueeMetadataText(
         text = podcast.title.replace("+", " "),
-        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = GoogleSansWeight.medium),
         color = colorScheme.onSurfaceVariant,
         velocity = 24.dp,
         onClick = {

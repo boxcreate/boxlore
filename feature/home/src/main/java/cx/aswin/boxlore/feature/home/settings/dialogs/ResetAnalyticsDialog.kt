@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.dialogs
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -57,7 +59,7 @@ internal fun ResetAnalyticsDialog(
                         Text(
                             text = "Data in the app is not deleted",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(

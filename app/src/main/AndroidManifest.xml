@@ -62,12 +62,11 @@
                 <data android:scheme="boxcast" />
             </intent-filter>
 
-            <!-- Web Domain App Links -->
+            <!-- Web Domain App Links (HTTPS only; HTTP DAL redirects and fails autoVerify) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" />
                 <data android:scheme="https" />
                 <data android:host="aswin.cx" />
                 <data android:pathPrefix="/boxlore/share" />

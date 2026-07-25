@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -70,7 +72,7 @@ fun BoxScope.NewEpisodeBadge(
             text = "NEW",
             style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 7.sp,
-                fontWeight = FontWeight.Black,
+                fontWeight = GoogleSansWeight.extraBold,
                 letterSpacing = 0.5.sp,
                 lineHeight = 8.sp
             ),

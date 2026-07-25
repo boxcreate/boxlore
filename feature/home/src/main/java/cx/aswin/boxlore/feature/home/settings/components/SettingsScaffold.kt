@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -46,8 +48,8 @@ internal fun SettingsScaffold(
     val currentOnUnconsumedTap = rememberUpdatedState(onUnconsumedTap)
     val titleStyle =
         lerp(
-            start = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-            stop = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+            start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
+            stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
             fraction = scrollBehavior.state.collapsedFraction,
         )
 

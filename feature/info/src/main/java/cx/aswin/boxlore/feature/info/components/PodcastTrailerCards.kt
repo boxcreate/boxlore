@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -112,7 +114,7 @@ fun SingleTrailerCard(
                     Text(
                         text = episode.title,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -128,7 +130,7 @@ fun SingleTrailerCard(
                             Text(
                                 text = "Trailer",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             )
@@ -211,7 +213,7 @@ fun TrailerStackCard(
                         Text(
                             text = "Promotional Trailers",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(

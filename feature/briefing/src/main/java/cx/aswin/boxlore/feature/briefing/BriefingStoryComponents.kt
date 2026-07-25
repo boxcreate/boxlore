@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.briefing
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +43,12 @@ internal fun formatRemaining(totalSeconds: Long): String? {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     return if (hours > 0) "${hours}h ${minutes}m left" else "${minutes}m left"
+}
+
+internal fun formatBriefingListenDuration(durationMs: Long): String? {
+    if (durationMs <= 0) return null
+    val minutes = ((durationMs + 30_000L) / 60_000L).coerceAtLeast(1)
+    return "$minutes min listen"
 }
 
 internal fun getDomainName(url: String): String {
@@ -148,7 +156,7 @@ private fun CompactEpisodeTitle(
     Text(
         text = title,
         style = MaterialTheme.typography.labelMedium.copy(
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             fontSize = 11.sp,
             lineHeight = 14.sp
         ),
@@ -169,7 +177,7 @@ private fun CompactEpisodePodcastTitle(
         text = podcastTitle,
         style = MaterialTheme.typography.labelSmall.copy(
             fontSize = 10.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = GoogleSansWeight.medium
         ),
         color = if (isActiveCard) accentColor.copy(alpha = 0.85f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
         maxLines = 1,

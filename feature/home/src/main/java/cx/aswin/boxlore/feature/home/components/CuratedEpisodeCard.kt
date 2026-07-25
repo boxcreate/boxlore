@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -46,7 +48,7 @@ fun CuratedEpisodeCard(
                     Text(
                         text = "NEW",
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, lineHeight = 8.sp),
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
@@ -66,7 +68,7 @@ fun CuratedEpisodeCard(
                     Text(
                         text = formatDuration(episode.duration),
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = GoogleSansWeight.medium,
                         color = Color.White,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )

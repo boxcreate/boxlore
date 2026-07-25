@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.surveys.internal.ui
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -129,7 +131,7 @@ private fun RowScope.RatingSegment(
             text = value.toString(),
             color = textColor,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+            fontWeight = if (isSelected) GoogleSansWeight.semiBold else GoogleSansWeight.medium,
             textAlign = TextAlign.Center,
             maxLines = 1,
         )

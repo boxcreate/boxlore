@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -190,7 +192,7 @@ fun LearnHistoryScreen(
                                     Text(
                                         text = "Your Lore history",
                                         style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.ExtraBold
+                                        fontWeight = GoogleSansWeight.bold
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
@@ -250,7 +252,7 @@ private fun LearnHistoryEmptyState(modifier: Modifier = Modifier) {
                 Text(
                     text = "No Lore to revisit yet",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = GoogleSansWeight.bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -313,7 +315,7 @@ private fun LearnHistoryRow(
                 Text(
                     text = entry.question.ifBlank { entry.episodeTitle },
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = GoogleSansWeight.bold
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 if (entry.question.isNotBlank()) {
@@ -347,7 +349,7 @@ private fun LearnHistoryRow(
                             .filter { it.isNotBlank() }
                             .joinToString(" · "),
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     )
                 }

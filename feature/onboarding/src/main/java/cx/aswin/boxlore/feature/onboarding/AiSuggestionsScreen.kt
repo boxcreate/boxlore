@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -137,7 +139,7 @@ internal fun AiSuggestionsScreen(
                         ) {
                             Text(
                                 text = "Your Curations",
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = GoogleSansWeight.bold,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                         }
@@ -223,7 +225,7 @@ internal fun AiSuggestionsScreen(
                                         }
                                     Text(
                                         text = text,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = GoogleSansWeight.bold,
                                         fontSize = 16.sp,
                                         color = MaterialTheme.colorScheme.onPrimary,
                                     )
@@ -269,7 +271,7 @@ internal fun AiSuggestionsScreen(
                                 },
                             style =
                                 MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -330,7 +332,7 @@ internal fun AiSuggestionsScreen(
                             Text(
                                 text = "Designed for You",
                                 style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -376,7 +378,7 @@ internal fun AiSuggestionsScreen(
                                     text = "Curated Collections",
                                     style =
                                         MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.ExtraBold,
+                                            fontWeight = GoogleSansWeight.bold,
                                             fontSize = 18.sp,
                                         ),
                                     color = MaterialTheme.colorScheme.onSurface,
@@ -470,7 +472,7 @@ internal fun AiSuggestionsScreen(
                                                     text = title,
                                                     color = contentColor,
                                                     style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = FontWeight.Bold,
+                                                    fontWeight = GoogleSansWeight.bold,
                                                 )
                                             }
                                         }
@@ -494,7 +496,7 @@ internal fun AiSuggestionsScreen(
                                         text = "Top Hits in ${uiState.selectedGenres.joinToString(", ")}",
                                         style =
                                             MaterialTheme.typography.titleMedium.copy(
-                                                fontWeight = FontWeight.ExtraBold,
+                                                fontWeight = GoogleSansWeight.bold,
                                                 fontSize = 18.sp,
                                             ),
                                         color = MaterialTheme.colorScheme.onSurface,
@@ -543,7 +545,7 @@ internal fun AiSuggestionsScreen(
                                                 Text(
                                                     text = label,
                                                     style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    fontWeight = if (isSelected) GoogleSansWeight.bold else FontWeight.Normal,
                                                     color =
                                                         if (isSelected) {
                                                             MaterialTheme.colorScheme.onPrimaryContainer
@@ -646,7 +648,7 @@ internal fun AiSuggestionsScreen(
                                             text = if (allSelected) "Deselect Group" else "Select Group",
                                             color = if (allSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                             style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = GoogleSansWeight.bold,
                                         )
                                     }
                                 }

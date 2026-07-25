@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,7 +83,7 @@ fun ShareBottomSheet(
             Text(
                 text = "Share the good stuff",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
@@ -115,13 +117,13 @@ fun ShareBottomSheet(
                         Text(
                             text = if (type == "podcast") "PODCAST" else "EPISODE",
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = primaryColor
                         )
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
@@ -157,7 +159,7 @@ fun ShareBottomSheet(
                         Text(
                             text = "Start at ${formatTime(currentPositionMs)}",
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = GoogleSansWeight.medium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
@@ -272,7 +274,7 @@ private fun ShareActionTile(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = contentColor
             )
         }

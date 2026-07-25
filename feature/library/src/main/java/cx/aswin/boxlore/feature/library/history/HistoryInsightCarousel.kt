@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.history
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -269,7 +271,7 @@ private fun MetricCardBody(card: InsightCard.Metric) {
                 Text(
                     text = card.label,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -297,7 +299,7 @@ private fun MetricCardBody(card: InsightCard.Metric) {
                             fontSize = valueSp,
                             lineHeight = valueSp * 1.05f,
                         ),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -351,7 +353,7 @@ private fun TopShowCardBody(card: InsightCard.TopShow) {
             Text(
                 text = stringResource(R.string.history_card_top_show),
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -364,7 +366,7 @@ private fun TopShowCardBody(card: InsightCard.TopShow) {
                 Text(
                     text = card.name,
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

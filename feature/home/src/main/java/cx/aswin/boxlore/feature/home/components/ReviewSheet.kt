@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -114,7 +116,7 @@ fun ReviewPromptSheet(
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
@@ -229,7 +231,7 @@ fun PostReviewSheet(
             Text(
                 text = "Glad you're enjoying boxlore",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
@@ -376,7 +378,7 @@ fun FeedbackSheet(
                 Text(
                     text = "Share your thoughts",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 IconButton(onClick = onDismissRequest) {
@@ -418,7 +420,7 @@ fun FeedbackSheet(
                         Text(
                             text = "Sent — thank you!",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }

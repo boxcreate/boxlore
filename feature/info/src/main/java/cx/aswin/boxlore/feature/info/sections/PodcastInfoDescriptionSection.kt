@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.sections
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.net.Uri
 import android.text.Html
 import androidx.compose.animation.animateContentSize
@@ -77,7 +79,7 @@ internal fun LockedFeedNotice() {
         Text(
             text = "Podcast feed is locked",
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.error,
         )
         Icon(
@@ -102,7 +104,7 @@ internal fun LockedFeedNotice() {
                 Text(
                     text = "Podcast Locked",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                 )
             },
             text = {
@@ -135,7 +137,7 @@ internal fun PodrollRecommendations(
     Text(
         text = "Creator Recommends",
         style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
+        fontWeight = GoogleSansWeight.bold,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
@@ -268,7 +270,7 @@ internal fun RecommendedPodcastCard(
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

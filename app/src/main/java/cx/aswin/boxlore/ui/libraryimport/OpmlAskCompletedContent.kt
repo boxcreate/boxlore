@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.ui.libraryimport
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,7 +83,7 @@ private fun AskCompletedHeader() {
     Text(
         text = "Start fresh?",
         style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
+        fontWeight = GoogleSansWeight.bold,
         color = MaterialTheme.colorScheme.onSurface,
     )
     Spacer(modifier = Modifier.height(8.dp))
@@ -197,7 +199,7 @@ private fun AskCompletedPodcastTitle(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.bodyLarge,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = GoogleSansWeight.semiBold,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
@@ -250,7 +252,7 @@ private fun AskCompletedFooterActions(
         Text(
             text = "Mark selected ($selectedCount) as played",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
         )
     }
     TextButton(
@@ -263,7 +265,7 @@ private fun AskCompletedFooterActions(
         Text(
             text = "Keep all unplayed",
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
         )
     }
 }

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.PlaybackRepository
@@ -372,7 +374,7 @@ private fun LoreStateCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = GoogleSansWeight.bold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(10.dp))

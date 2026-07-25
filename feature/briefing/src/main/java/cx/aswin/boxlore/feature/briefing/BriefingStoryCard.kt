@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.briefing
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -107,7 +109,7 @@ private fun StoryCardHeader(state: BriefingStoryCardState) {
         Text(
             text = formatChapterTime(state.chapter.startTime.toLong()),
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = if (state.isActive) state.accentColor else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -127,7 +129,7 @@ private fun StoryCountBadge(state: BriefingStoryCardState) {
         Text(
             text = "STORY ${state.page + 1} OF ${state.pageCount}".uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color =
                 if (state.isActive) {
                     MaterialTheme.colorScheme.onPrimaryContainer
@@ -144,7 +146,7 @@ private fun StoryHeadline(state: BriefingStoryCardState) {
     Text(
         text = state.chapter.title,
         style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
+        fontWeight = GoogleSansWeight.bold,
         color = if (state.isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
@@ -222,7 +224,7 @@ private fun StoryPlayIcon(isActive: Boolean) {
 private fun StoryPlayLabel(isActive: Boolean) {
     Text(
         text = if (isActive) "PAUSE STORY" else "PLAY THIS STORY",
-        fontWeight = FontWeight.Bold,
+        fontWeight = GoogleSansWeight.bold,
         style = MaterialTheme.typography.labelLarge,
         color = if (isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.onPrimary
     )

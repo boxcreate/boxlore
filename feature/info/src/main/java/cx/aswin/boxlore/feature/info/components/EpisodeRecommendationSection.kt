@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -105,7 +107,7 @@ internal fun EpisodeRecommendationSection(
                     text = state.title,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = GoogleSansWeight.extraBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -203,7 +205,7 @@ private fun ExpressiveEpisodeCard(
                         Text(
                             text = durationText,
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = GoogleSansWeight.medium,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         )
                     }

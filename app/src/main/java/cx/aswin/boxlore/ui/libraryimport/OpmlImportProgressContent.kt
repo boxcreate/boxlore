@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.ui.libraryimport
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -151,7 +153,7 @@ internal fun ProgressCopy(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
@@ -174,7 +176,7 @@ internal fun ProgressCopy(
                 Text(
                     text = detail,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
@@ -225,7 +227,7 @@ internal fun SelectorContent(
         Text(
             text = "Import library",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
@@ -305,7 +307,7 @@ internal fun ImportOptionCard(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -355,7 +357,7 @@ internal fun SuccessCopy(
         Text(
             text = "You're all set",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
@@ -388,7 +390,7 @@ internal fun SuccessCopy(
             Text(
                 text = "Continue",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
             )
         }
     }
@@ -418,7 +420,7 @@ internal fun ImportSuccessSummary(state: OpmlImportState.Success) {
             Text(
                 text = "Summary",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SummaryRow(label = "Imported shows", value = "${state.importedCount}")
@@ -466,7 +468,7 @@ internal fun ImportNotificationPermissionCard() {
             Text(
                 text = "Enable notifications",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.error,
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -514,7 +516,7 @@ internal fun SummaryRow(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
@@ -538,7 +540,7 @@ internal fun ErrorContent(
         Text(
             text = "Import failed",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = MaterialTheme.colorScheme.error,
             textAlign = TextAlign.Center,
         )
@@ -575,7 +577,7 @@ internal fun ErrorContent(
             Text(
                 text = "Close",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
             )
         }
     }

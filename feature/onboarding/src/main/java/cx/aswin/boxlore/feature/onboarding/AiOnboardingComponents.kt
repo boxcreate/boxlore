@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -99,7 +101,7 @@ internal fun ChoiceRow(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = contentColor,
                 )
                 Text(
@@ -264,7 +266,7 @@ internal fun UserMessageBubble(
                         fontSize = if (isCompact) 13.sp else 15.sp,
                         lineHeight = if (isCompact) 18.sp else 22.sp,
                     ),
-                fontWeight = if (isCompact) FontWeight.Normal else FontWeight.Medium,
+                fontWeight = if (isCompact) FontWeight.Normal else GoogleSansWeight.medium,
                 color = if (isCompact) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary,
             )
         }
@@ -330,7 +332,7 @@ internal fun DelayBypassBanner(
                 Text(
                     text = "Choose Topics Manually",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
@@ -748,7 +750,7 @@ internal fun SuggestionBubble(
             Text(
                 text = option,
                 style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
                 color = contentColor,
                 modifier = Modifier.weight(1f),
                 maxLines = 3,
@@ -852,7 +854,7 @@ internal fun BuildFeedNowChip(
                 Text(
                     text = "✨ Build my feed now",
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = contentColor,
                 )
                 Text(

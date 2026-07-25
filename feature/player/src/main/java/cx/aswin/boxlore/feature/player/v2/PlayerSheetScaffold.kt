@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.playback.PlaybackArtworkResolver
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.PlaybackRepository
@@ -59,6 +61,7 @@ import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.player.v2.logic.calculatePlayerSheetGeometry
+import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetGeometryInput
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.NonCancellable
@@ -81,6 +84,7 @@ data class PlayerSheetLayout(
     val collapsedTargetY: Float,
     val containerHeight: Dp,
     val collapsedHorizontalPadding: Dp = 12.dp,
+    val navigationStyle: NavigationStyle = NavigationStyle.Floating,
     val expandTrigger: Long = 0L
 )
 
@@ -207,6 +211,7 @@ fun PlayerSheetScaffold(
 private data class PlayerSheetGeometry(
     val sheetOffset: Float,
     val expansionFraction: Float,
+    val miniPlayerHeight: Dp,
     val sheetHeight: Dp,
     val topCornerRadius: Dp,
     val bottomCornerRadius: Dp,
@@ -264,15 +269,21 @@ private fun rememberPlayerSheetGeometry(
     }
     val fullEntranceOffsetPx = remember(density) { with(density) { 24.dp.toPx() } }
     val values = calculatePlayerSheetGeometry(
-        sheetOffset = sheetOffset,
-        collapsedTargetY = layout.collapsedTargetY,
-        containerHeight = layout.containerHeight,
-        collapsedHorizontalPadding = layout.collapsedHorizontalPadding,
-        fullEntranceOffsetPx = fullEntranceOffsetPx
+        PlayerSheetGeometryInput(
+            sheetOffset = sheetOffset,
+            collapsedTargetY = layout.collapsedTargetY,
+            containerHeight = layout.containerHeight,
+            collapsedHorizontalPadding = layout.collapsedHorizontalPadding,
+            miniPlayerHeight = navigationChromeMetrics(layout.navigationStyle).miniPlayerHeight,
+            collapsedTopCornerRadius = navigationChromeMetrics(layout.navigationStyle).miniPlayerTopCornerRadius,
+            collapsedBottomCornerRadius = navigationChromeMetrics(layout.navigationStyle).miniPlayerBottomCornerRadius,
+            fullEntranceOffsetPx = fullEntranceOffsetPx,
+        ),
     )
     return PlayerSheetGeometry(
         sheetOffset = sheetOffset,
         expansionFraction = values.expansionFraction,
+        miniPlayerHeight = values.miniPlayerHeight,
         sheetHeight = values.sheetHeight,
         topCornerRadius = values.topCornerRadius,
         bottomCornerRadius = values.bottomCornerRadius,
@@ -420,7 +431,7 @@ private fun MiniPlayerLayer(
                 }
             ),
             modifier = Modifier
-                .height(MiniPlayerHeight)
+                .height(geometry.miniPlayerHeight)
                 .fillMaxWidth()
                 .graphicsLayer { alpha = geometry.miniAlpha }
                 .zIndex(if (geometry.expansionFraction < 0.5f) 1f else 0f)

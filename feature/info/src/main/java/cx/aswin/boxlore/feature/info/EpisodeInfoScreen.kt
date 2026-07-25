@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -361,7 +363,7 @@ fun EpisodeInfoScreen(
                                 text = state.episode.title,
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onBackground,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
@@ -383,7 +385,7 @@ fun EpisodeInfoScreen(
                                     text = state.podcastTitle,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = GoogleSansWeight.medium,
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f, fill = false), // shrink text, never push > off screen
@@ -468,7 +470,7 @@ fun EpisodeInfoScreen(
                                                 text = formatDuration(episodeDuration),
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.Medium,
+                                                fontWeight = GoogleSansWeight.medium,
                                             )
                                         }
                                     }
@@ -497,7 +499,7 @@ fun EpisodeInfoScreen(
                                                     text = dateText,
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Medium,
+                                                    fontWeight = GoogleSansWeight.medium,
                                                 )
                                             }
                                         }
@@ -537,7 +539,7 @@ fun EpisodeInfoScreen(
                                                     text = seLabel,
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Medium,
+                                                    fontWeight = GoogleSansWeight.medium,
                                                 )
                                             }
                                         }
@@ -566,7 +568,7 @@ fun EpisodeInfoScreen(
                                                     text = state.episode.episodeType!!.replaceFirstChar { it.uppercase() },
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Medium,
+                                                    fontWeight = GoogleSansWeight.medium,
                                                 )
                                             }
                                         }
@@ -700,7 +702,7 @@ fun EpisodeInfoScreen(
                                         Text(
                                             text = "↑ Tap to mark completed",
                                             style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = GoogleSansWeight.bold,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                         )
@@ -833,7 +835,7 @@ fun EpisodeInfoScreen(
             Text(
                 text = episodeTitle,
                 fontSize = titleFontSize,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = titleMaxLines,
                 overflow = TextOverflow.Ellipsis,

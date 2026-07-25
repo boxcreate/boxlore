@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.animateContentSize
@@ -287,7 +289,7 @@ internal fun EpisodeDescriptionCard(
                 Text(
                     text = "Cast & Crew",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp),
                 )
@@ -324,7 +326,7 @@ internal fun EpisodeDescriptionCard(
                 Text(
                     text = "Episode Resources",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp),
                 )
@@ -359,7 +361,7 @@ internal fun EpisodeDescriptionCard(
             Text(
                 text = "About this episode",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
@@ -422,7 +424,7 @@ internal fun EpisodeDescriptionCard(
                     Text(
                         text = if (expanded) "Show less" else "Read more",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = accentColor.copy(alpha = 0.9f),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -595,7 +597,7 @@ internal fun PersonChip(
                     Text(
                         text = person.name.firstOrNull()?.uppercase() ?: "?",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
@@ -606,7 +608,7 @@ internal fun PersonChip(
                 Text(
                     text = person.name,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -654,7 +656,7 @@ private fun SocialChip(
             Text(
                 text = link.platform,
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 color = link.brandColor,
             )
         }

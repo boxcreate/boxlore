@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -123,7 +125,7 @@ private fun PrivacyHeader() {
         Text(
             text = "Data & Privacy",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             textAlign = TextAlign.Center
         )
         Text(
@@ -177,7 +179,7 @@ private fun DataCollectedExpander() {
             Text(
                 text = "View Data Collected",
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = GoogleSansWeight.semiBold
             )
             Icon(
                 imageVector = if (isExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
@@ -245,7 +247,7 @@ private fun ConsentOptions(
                     Text(
                         text = "Agree to All",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = GoogleSansWeight.bold
                     )
                     Text(
                         text = "Enables Crash Reporting, Usage Analytics, and accepts Privacy Policy.",
@@ -294,7 +296,7 @@ private fun ConsentOptions(
                     Text(
                         text = "Privacy Policy",
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = GoogleSansWeight.medium
                     )
                      Text(
                         text = "I have read and agree to the Privacy Policy",
@@ -337,7 +339,7 @@ private fun ToggleCard(
             Checkbox(checked = checked, onCheckedChange = null)
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = GoogleSansWeight.medium)
                 Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -370,7 +372,7 @@ private fun ConsentActions(
 @Composable
 private fun DataPoint(title: String, desc: String) {
     Column {
-        Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.bold, color = MaterialTheme.colorScheme.primary)
         Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

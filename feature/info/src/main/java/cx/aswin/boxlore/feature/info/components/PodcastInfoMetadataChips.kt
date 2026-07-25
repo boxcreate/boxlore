@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -296,7 +298,7 @@ internal fun CompactPersonChip(
             Text(
                 text = displayText,
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -324,7 +326,7 @@ internal fun RssFeedChip() {
             Text(
                 text = "RSS",
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 color = MaterialTheme.colorScheme.primary,
             )
         }
@@ -351,7 +353,7 @@ internal fun UpdateFrequencyChip(frequencyData: Pair<String, ImageVector>) {
             Text(
                 text = frequencyData.first,
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 color = MaterialTheme.colorScheme.primary,
             )
         }
@@ -379,7 +381,7 @@ internal fun GenreChip(genre: String) {
                 text = genre,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
             )
         }
     }
@@ -407,7 +409,7 @@ internal fun PlayTrailerChip(onClick: () -> Unit) {
                 text = "Play Trailer",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
             )
         }
     }
@@ -434,7 +436,7 @@ internal fun MediumChip(medium: String) {
                 text = medium.replaceFirstChar { c -> c.uppercaseChar() },
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
             )
         }
     }
@@ -465,7 +467,7 @@ internal fun FundingChip(
                 text = fundingMessage ?: "Support",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
             )
         }
     }

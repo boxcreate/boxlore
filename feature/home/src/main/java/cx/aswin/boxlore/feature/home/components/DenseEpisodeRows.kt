@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -237,7 +239,7 @@ private fun RowScope.DenseEpisodeDetails(
             text = episode.title,
             style =
                 MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     fontSize = 13.sp,
                     lineHeight = 16.sp,
                 ),
@@ -305,7 +307,7 @@ private fun DenseNewEpisodeBadge() {
             text = "NEW",
             style =
                 MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = GoogleSansWeight.bold,
                     fontSize = 8.sp,
                     letterSpacing = 0.5.sp,
                 ),
@@ -345,7 +347,7 @@ private fun DenseEpisodeDuration(
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             },
-        fontWeight = if (rowState.isInProgress) FontWeight.Bold else FontWeight.Normal,
+        fontWeight = if (rowState.isInProgress) GoogleSansWeight.bold else FontWeight.Normal,
     )
 }
 

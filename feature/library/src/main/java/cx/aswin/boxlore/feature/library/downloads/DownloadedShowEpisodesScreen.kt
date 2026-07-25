@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.downloads
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -206,7 +208,7 @@ fun DownloadedShowEpisodesScreen(
                         Text(
                             text = "${selectedEpisodeIds.size} Selected",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = {
@@ -237,7 +239,7 @@ fun DownloadedShowEpisodesScreen(
                         Text(
                             text = podcastTitle,
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
@@ -293,7 +295,7 @@ fun DownloadedShowEpisodesScreen(
                                     Text(
                                         text = podcastTitle,
                                         style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = GoogleSansWeight.bold,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -336,7 +338,7 @@ fun DownloadedShowEpisodesScreen(
                                             Text(
                                                 text = "Play All",
                                                 style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = GoogleSansWeight.bold,
                                                 color = MaterialTheme.colorScheme.onPrimary
                                             )
                                         }
@@ -365,7 +367,7 @@ fun DownloadedShowEpisodesScreen(
                                             Text(
                                                 text = "Delete All",
                                                 style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = GoogleSansWeight.bold,
                                                 color = MaterialTheme.colorScheme.error
                                             )
                                         }
@@ -520,7 +522,7 @@ fun DownloadedShowEpisodesScreen(
                                                 text = download.episodeTitle,
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
-                                                fontWeight = FontWeight.SemiBold,
+                                                fontWeight = GoogleSansWeight.semiBold,
                                                 style = MaterialTheme.typography.bodyMedium
                                             )
                                             val relativeDate = formatRelativeDate(download.publishedDate)
@@ -655,7 +657,7 @@ fun DownloadedShowEpisodesScreen(
                         viewModel.removeDownload(episode.episodeId)
                         swipeToDeleteEpisode = null
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = GoogleSansWeight.bold)
                     }
                 },
                 dismissButton = {
@@ -681,7 +683,7 @@ fun DownloadedShowEpisodesScreen(
                         isSelectionMode = false
                         deleteConfirmSelectedDialog = false
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = GoogleSansWeight.bold)
                     }
                 },
                 dismissButton = {
@@ -703,7 +705,7 @@ fun DownloadedShowEpisodesScreen(
                         viewModel.removeMultipleDownloads(showEpisodes.map { it.episodeId })
                         deleteConfirmShowDialog = false
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = GoogleSansWeight.bold)
                     }
                 },
                 dismissButton = {

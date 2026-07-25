@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -68,7 +70,7 @@ internal fun DateHeader(
         Text(
             text = text,
             style = MaterialTheme.typography.titleSmall.copy(
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.primary
             )
         )
@@ -143,7 +145,7 @@ internal fun SubscriptionListRow(
                 Text(
                     text = podcast.title,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         fontSize = 14.sp
                     ),
                     maxLines = 1,
@@ -210,7 +212,7 @@ internal fun LatestEpisodeRow(
             Text(
                 text = episode.title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -243,7 +245,7 @@ internal fun LatestEpisodeRow(
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isInProgress) MaterialTheme.colorScheme.primary
                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        fontWeight = if (isInProgress) FontWeight.Medium else FontWeight.Normal
+                        fontWeight = if (isInProgress) GoogleSansWeight.medium else FontWeight.Normal
                     )
                 }
             }

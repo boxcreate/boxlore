@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.history
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -44,7 +46,7 @@ internal fun HistoryEmptyState(
         Text(
             text = stringResource(R.string.history_empty_title),
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(

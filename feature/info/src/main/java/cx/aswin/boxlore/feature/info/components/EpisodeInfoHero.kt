@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -149,7 +151,7 @@ internal fun EpisodeInfoHero(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(Icons.Rounded.Videocam, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Video", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                            Text("Video", style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.bold)
                         }
                     }
                 }
@@ -160,7 +162,7 @@ internal fun EpisodeInfoHero(
             text = episode.title,
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Black,
+            fontWeight = GoogleSansWeight.extraBold,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 24.dp),
         )
@@ -176,7 +178,7 @@ internal fun EpisodeInfoHero(
                 text = podcastTitle,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -251,7 +253,7 @@ private fun EpisodeMetadataChipsRow(episode: Episode) {
                         text = item.label,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                     )
                 }
             }

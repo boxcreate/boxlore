@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.surveys.internal.ui
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,7 +27,7 @@ internal fun QuestionHeader(question: PostHogDisplaySurveyQuestion) {
         Text(
             text = question.question,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
             color = appearance.questionTextColor,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

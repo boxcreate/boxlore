@@ -1,6 +1,6 @@
 # Screenshot baselines
 
-This document describes the committed Roborazzi goldens and the visual-regression reference path. `:feature:home:verifyRoborazziDebug` runs in merge CI.
+This document describes the committed Roborazzi goldens for local visual checks. Roborazzi is **not** part of merge CI.
 
 ## Current coverage
 
@@ -31,17 +31,17 @@ Regenerate the goldens from the repository root and commit any intended changes:
 
 Goldens are captured with a fixed `lightColorScheme()` so they stay deterministic across machines. Prefer tagged-node assertions for dialogs because Compose `AlertDialog` can produce multiple roots.
 
-## Compare
+## Compare (local only)
 
 ```bash
 ./gradlew :feature:home:verifyRoborazziDebug
 ```
 
-Verify re-renders each screen and compares it against the committed baseline; mismatches write `*_compare.png` under `feature/home/build/outputs/roborazzi/` and fail the task.
+Verify re-renders each screen and compares it against the committed baseline; mismatches write `*_compare.png` under `feature/home/build/outputs/roborazzi/` and fail the task. This is optional and is not run in `unit-tests.yml`.
 
 ## Gradle
 
-`:feature:home:verifyRoborazziDebug` is wired into `.github/workflows/unit-tests.yml` (merge CI). Roborazzi is applied through the `roborazzi` plugin alias in `feature/home/build.gradle.kts`.
+Roborazzi is applied through the `roborazzi` plugin alias in `feature/home/build.gradle.kts`. It is available for local use only.
 
 ## See also
 

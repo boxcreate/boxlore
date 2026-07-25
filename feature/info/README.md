@@ -11,6 +11,7 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 - `InfoViewModelAssembler` for podcast and episode ViewModel factories.
 - `InfoListeningProgressItem` and supporting components/sections for detail UI.
 - Logic helpers under `logic/` and component-level formatters used by tests.
+- Detail UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 - `EpisodeInfoSeekLogic` builds the progress-save payload when seeking an episode that is not the current player item.
 
 ## Internal structure

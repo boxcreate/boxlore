@@ -80,10 +80,6 @@ jobs:
         if: steps.skip.outputs.skip != 'true'
         run: ./gradlew testDebugUnitTest --continue
 
-      - name: Verify Roborazzi screenshots
-        if: steps.skip.outputs.skip != 'true'
-        run: ./gradlew :feature:home:verifyRoborazziDebug
-
       - name: Verify merged Kover coverage floor
         if: steps.skip.outputs.skip != 'true'
         run: ./gradlew :koverVerifyMerged

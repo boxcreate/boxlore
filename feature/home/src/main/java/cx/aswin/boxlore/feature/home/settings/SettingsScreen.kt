@@ -98,7 +98,7 @@ data class AppearanceSettings(
             isDynamicColorEnabled = true,
             currentThemeBrand = "violet",
             currentSurfaceStyle = "standard",
-            currentFontRoundness = "soft",
+            currentFontRoundness = "round",
         ),
     val actions: AppearanceActions = AppearanceActions({}, {}, {}, {}, {}),
 )
@@ -383,6 +383,10 @@ private fun AppearanceActions.trackedForAnalytics(): AppearanceActions =
         onSetFontRoundness = {
             AnalyticsHelper.trackSettingsInteraction("font_roundness_changed", it)
             onSetFontRoundness(it)
+        },
+        onSetNavigationStyle = {
+            AnalyticsHelper.trackSettingsInteraction("navigation_style_changed", it)
+            onSetNavigationStyle(it)
         },
     )
 

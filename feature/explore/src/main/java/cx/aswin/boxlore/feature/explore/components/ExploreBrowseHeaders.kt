@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,7 +94,7 @@ internal fun ExploreHeroCard(
                         Text(
                             text = podcast.genre.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
@@ -133,7 +135,7 @@ internal fun ExploreHeroCard(
                 Text(
                     text = podcast.title,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
@@ -220,7 +222,7 @@ internal fun ExploreSectionHeader(
                     Text(
                         text = regionLabel,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = GoogleSansWeight.semiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Icon(

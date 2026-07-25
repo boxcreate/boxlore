@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -68,7 +70,7 @@ internal fun AboutSettingsPage(
                     Text(
                         text = "Powered by Podcast Index",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = GoogleSansWeight.semiBold,
                         textAlign = TextAlign.Center,
                     )
                     Text(
@@ -166,7 +168,7 @@ private fun SpecRow(
             text = value,
             modifier = Modifier.weight(0.65f),
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
+            fontWeight = GoogleSansWeight.medium,
             fontFamily = if (monospace) FontFamily.Monospace else null,
             textAlign = TextAlign.End,
             maxLines = 2,

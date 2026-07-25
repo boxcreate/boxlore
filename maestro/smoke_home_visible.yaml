@@ -11,8 +11,11 @@ appId: cx.aswin.boxlore
     timeout: 20000
 - assertVisible:
     id: "home_settings_button"
-# Bottom navigation labels are always present on the home shell (strict).
+# Floating navigation retains stable pill labels and the Lore accessibility name (strict).
 - assertVisible:
     text: "Home"
 - assertVisible:
+    text: "Explore"
+- assertVisible:
     text: "Library"
+- assertVisible: "Lore"

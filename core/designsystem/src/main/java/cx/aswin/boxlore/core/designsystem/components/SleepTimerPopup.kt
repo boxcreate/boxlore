@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -191,7 +193,7 @@ private fun SleepTimerConfirmation(palette: SleepTimerPopupPalette) {
         Text(
             text = "Sleep timer set. Good night!",
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = palette.onIsland
         )
     }
@@ -257,7 +259,7 @@ private fun SleepTimerPopupHeader(
                 Text(
                     text = "Late night listening?",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = palette.onIsland
                 )
                 Spacer(modifier = Modifier.height(3.dp))
@@ -345,7 +347,7 @@ private fun SleepTimerOptionChip(
         Text(
             text = label,
             style = textStyle,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             color = palette.onIsland,
             maxLines = 1
         )

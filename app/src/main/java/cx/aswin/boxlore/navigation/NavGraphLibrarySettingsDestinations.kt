@@ -85,6 +85,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             currentThemeBrand = settingsState.themeBrand,
                             currentSurfaceStyle = settingsState.surfaceStyle,
                             currentFontRoundness = settingsState.fontRoundness,
+                            currentNavigationStyle = settingsState.navigationStyle,
                         ),
                     actions =
                         cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
@@ -93,6 +94,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             onSetThemeBrand = { brand -> scope.launch { userPrefs.setThemeBrand(brand) } },
                             onSetSurfaceStyle = { style -> scope.launch { userPrefs.setSurfaceStyle(style) } },
                             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
+                            onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
                         ),
                 ),
             playbackSettings =

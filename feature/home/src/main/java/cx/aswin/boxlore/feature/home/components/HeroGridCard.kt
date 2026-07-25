@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -262,7 +264,7 @@ private fun GridCell(
             Text(
                 text = primaryText,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = Color.White,
                 maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -274,7 +276,7 @@ private fun GridCell(
                 Text(
                     text = podcast.title,
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                    fontWeight = GoogleSansWeight.medium,
                     color = Color.White.copy(alpha = 0.8f),
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

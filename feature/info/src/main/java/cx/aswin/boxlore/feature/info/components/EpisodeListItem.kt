@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -134,7 +136,7 @@ fun EpisodeListItem(
                         ) {
                             Text(
                                 "UP NEXT",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             )
@@ -177,7 +179,7 @@ fun EpisodeListItem(
                                 text = seLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                             )
                             Text(
                                 text = "•",
@@ -219,7 +221,7 @@ fun EpisodeListItem(
                                 Text(
                                     text = episode.episodeType!!.replaceFirstChar { it.uppercase() },
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     color =
                                         if (episode.episodeType == "trailer") {
                                             MaterialTheme.colorScheme.onTertiaryContainer
@@ -253,7 +255,7 @@ fun EpisodeListItem(
                     Text(
                         text = episode.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         lineHeight = 20.sp,

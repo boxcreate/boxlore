@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,7 +73,7 @@ fun UpNextCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Up next",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                         color = colorScheme.onSurface
                     )
                     Text(
@@ -153,7 +155,7 @@ private fun QueuePreviewRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = episode.title.replace("+", " "),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = GoogleSansWeight.semiBold),
                 color = colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -201,7 +203,7 @@ private fun QueuePreviewRow(
                 ) {
                     Text(
                         text = queuePosition.toString(),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold)
                     )
                 }
             }

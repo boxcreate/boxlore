@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.basicMarquee
@@ -70,7 +72,7 @@ fun ExpressivePlayButton(
                 Text(
                     text = getPlayButtonDisplayText(state),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     maxLines = 1,
                     softWrap = false,
                     modifier = Modifier

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.content.pm.PackageManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -33,11 +35,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -165,6 +170,7 @@ fun HomeRoute(
     onNavigateToDebug: () -> Unit = {},
     onImportClick: () -> Unit = {},
     onAiOnboardingClick: () -> Unit = {},
+    onInitialContentReady: () -> Unit = {},
     onBriefingClick: (String) -> Unit = {},
     navController: NavController? = null,
     modifier: Modifier = Modifier,
@@ -207,6 +213,15 @@ fun HomeRoute(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    var hasReportedInitialContentReady by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading && !hasReportedInitialContentReady) {
+            withFrameNanos {}
+            withFrameNanos {}
+            hasReportedInitialContentReady = true
+            onInitialContentReady()
+        }
+    }
     val isPlaying by remember(viewModel) {
         viewModel.playerState.map { it.isPlaying }.distinctUntilChanged()
     }.collectAsState(initial = false)
@@ -599,7 +614,7 @@ fun HomeImportBanner(
                         text = "it's a bit quiet in here...",
                         style =
                             MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             ),
                     )
@@ -641,7 +656,7 @@ fun HomeImportBanner(
                                 text = "Find shows with AI",
                                 style =
                                     MaterialTheme.typography.labelLarge.copy(
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = GoogleSansWeight.bold,
                                     ),
                             )
                         }
@@ -677,7 +692,7 @@ fun HomeImportBanner(
                                     text = "Search",
                                     style =
                                         MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = GoogleSansWeight.bold,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         ),
                                 )
@@ -709,7 +724,7 @@ fun HomeImportBanner(
                                     text = "Import",
                                     style =
                                         MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = GoogleSansWeight.bold,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         ),
                                 )

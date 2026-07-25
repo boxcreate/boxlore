@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.ui.announcement
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -116,7 +118,7 @@ fun FeatureAnnouncementOverlay(
                 Text(
                     text = "Android Auto",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(12.dp))
@@ -140,7 +142,7 @@ fun FeatureAnnouncementOverlay(
                     Text(
                         text = "Continue",
                         style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                         ),
                     )
                 }

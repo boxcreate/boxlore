@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -44,7 +46,7 @@ internal fun GenrePickerScreen(
                         text = "Can we get to know you better?",
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                     )
                 },
                 navigationIcon = {
@@ -95,7 +97,7 @@ internal fun GenrePickerScreen(
                                 "Continue (${selectedGenres.size} selected)"
                             },
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                         )
                     }
                 }
@@ -182,7 +184,7 @@ private fun GenreChip(
             Text(
                 genre.label,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -234,7 +236,7 @@ internal fun SubGenrePickerScreen(
                 title = {
                     Text(
                         text = "Dive a bit deeper",
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                     )
                 },
                 navigationIcon = {
@@ -278,7 +280,7 @@ internal fun SubGenrePickerScreen(
                         Text(
                             text = "Continue",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                         )
                     }
                 }
@@ -316,7 +318,7 @@ internal fun SubGenrePickerScreen(
                         Text(
                             text = parentGenre,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
@@ -391,7 +393,7 @@ private fun SubGenreChip(
             Text(
                 label,
                 style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -432,7 +434,7 @@ internal fun ActivityPickerScreen(
                 title = {
                     Text(
                         text = "When do you listen?",
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                     )
                 },
                 navigationIcon = {
@@ -477,7 +479,7 @@ internal fun ActivityPickerScreen(
                         Text(
                             text = if (selectedActivities.isEmpty()) "Select at least 1" else "Continue (${selectedActivities.size} selected)",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                         )
                     }
                 }
@@ -568,7 +570,7 @@ internal fun ActivityPickerScreen(
                             Text(
                                 text = item.label,
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f),
                             )
@@ -586,7 +588,7 @@ internal fun ActivityPickerScreen(
                                     text = "Target Genres (tap to toggle):",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = GoogleSansWeight.semiBold,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -649,7 +651,7 @@ internal fun ActivityPickerScreen(
                                                 Text(
                                                     text = genre,
                                                     style = MaterialTheme.typography.bodySmall,
-                                                    fontWeight = if (isGenreAssigned) FontWeight.Bold else FontWeight.Normal,
+                                                    fontWeight = if (isGenreAssigned) GoogleSansWeight.bold else FontWeight.Normal,
                                                 )
                                             }
                                         }
@@ -694,7 +696,7 @@ internal fun LengthPickerScreen(
                 title = {
                     Text(
                         text = "Preferred episode length",
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                     )
                 },
                 navigationIcon = {
@@ -739,7 +741,7 @@ internal fun LengthPickerScreen(
                         Text(
                             text = if (selectedLengths.isEmpty()) "Select at least 1" else "Generate My Feed",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                         )
                     }
                 }
@@ -831,7 +833,7 @@ internal fun LengthPickerScreen(
                                 Text(
                                     text = item.label,
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
@@ -854,7 +856,7 @@ internal fun LengthPickerScreen(
                                     text = "Target Genres (tap to toggle):",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = GoogleSansWeight.semiBold,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -917,7 +919,7 @@ internal fun LengthPickerScreen(
                                                 Text(
                                                     text = genre,
                                                     style = MaterialTheme.typography.bodySmall,
-                                                    fontWeight = if (isGenreAssigned) FontWeight.Bold else FontWeight.Normal,
+                                                    fontWeight = if (isGenreAssigned) GoogleSansWeight.bold else FontWeight.Normal,
                                                 )
                                             }
                                         }
