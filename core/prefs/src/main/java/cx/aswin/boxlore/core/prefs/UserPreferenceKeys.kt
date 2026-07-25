@@ -25,6 +25,8 @@ internal object Keys {
     val HIDE_COMPLETED_IN_SHOW_DETAILS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_show_details")
     val HIDE_COMPLETED_IN_HOME = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_home")
     val HIDE_COMPLETED_IN_SUBS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_subs")
+    val RESTART_FORGOTTEN_EPISODES =
+        androidx.datastore.preferences.core.booleanPreferencesKey("restart_forgotten_episodes")
     val HAS_DISMISSED_HOME_IMPORT_BANNER = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_home_import_banner")
     val BRIEFING_DISMISSED_DATE = stringPreferencesKey("briefing_dismissed_date")
     val BRIEFING_DISMISSED_FOREVER = androidx.datastore.preferences.core.booleanPreferencesKey("briefing_dismissed_forever")

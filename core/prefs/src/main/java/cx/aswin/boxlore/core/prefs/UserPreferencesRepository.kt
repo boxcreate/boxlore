@@ -870,6 +870,24 @@ class UserPreferencesRepository(
         }
     }
 
+    /**
+     * When true (default), implicit plays (queue / mixtape / Smart Queue / casual play) soft-expire
+     * mid-episode seek after 7 days without playing. Explicit resume surfaces always seek.
+     */
+    val restartForgottenEpisodesStream: Flow<Boolean> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                preferences[Keys.RESTART_FORGOTTEN_EPISODES] ?: true
+            }.distinctUntilChanged()
+
+    suspend fun setRestartForgottenEpisodes(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.RESTART_FORGOTTEN_EPISODES] = enabled
+        }
+    }
+
     val overriddenRecPodcastIdStream: Flow<String?> =
         dataStore.data
             .catch { exception ->

@@ -172,6 +172,7 @@ class HomeViewModel(
     // intentionally NOT rebuilt on history/playback ticks (too churny), only when a show is
     // subscribed/unsubscribed so new shows appear promptly.
     internal var stableMixtapeSubSignature: Set<String>? = null
+    internal var stableMixtapeStaleRestartEnabled: Boolean? = null
 
     // Subscription IDs we've already eagerly warmed episodes for (once per session).
     private val eagerlyLoadedSubIds =

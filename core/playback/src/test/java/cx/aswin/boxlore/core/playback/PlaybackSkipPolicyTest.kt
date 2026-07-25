@@ -49,6 +49,128 @@ class PlaybackSkipPolicyTest {
     }
 
     @Test
+    fun resumeIntentMapsHeroResumeAndHistoryAsExplicit() {
+        assertEquals(
+            PlaybackSkipPolicy.ResumeIntent.EXPLICIT,
+            PlaybackSkipPolicy.resumeIntentFromEntryPoint("home_hero_resume_grid"),
+        )
+        assertEquals(
+            PlaybackSkipPolicy.ResumeIntent.EXPLICIT,
+            PlaybackSkipPolicy.resumeIntentFromEntryPoint("home_hero_resume"),
+        )
+        assertEquals(
+            PlaybackSkipPolicy.ResumeIntent.EXPLICIT,
+            PlaybackSkipPolicy.resumeIntentFromEntryPoint("library_history"),
+        )
+        assertEquals(
+            PlaybackSkipPolicy.ResumeIntent.IMPLICIT,
+            PlaybackSkipPolicy.resumeIntentFromEntryPoint("home_mixtape"),
+        )
+        assertEquals(
+            PlaybackSkipPolicy.ResumeIntent.IMPLICIT,
+            PlaybackSkipPolicy.resumeIntentFromEntryPoint("smart_queue"),
+        )
+        assertEquals(
+            PlaybackSkipPolicy.ResumeIntent.IMPLICIT,
+            PlaybackSkipPolicy.resumeIntentFromEntryPoint(null),
+        )
+    }
+
+    @Test
+    fun explicitIntentAlwaysResumesEvenWhenStaleAndFlagOn() {
+        val now = 1_000_000_000_000L
+        val result =
+            PlaybackSkipPolicy.resolveInitialPosition(
+                explicitPositionMs = null,
+                savedProgressMs = 45_000L,
+                isCompleted = false,
+                skipBeginningMs = 30_000L,
+                resumeIntent = PlaybackSkipPolicy.ResumeIntent.EXPLICIT,
+                lastPlayedAtMs = now - PlaybackSkipPolicy.STALE_RESUME_MS - 1L,
+                staleRestartEnabled = true,
+                nowMs = now,
+            )
+
+        assertEquals(45_000L, result.positionMs)
+        assertEquals(PlaybackSkipPolicy.InitialPositionReason.RESUME, result.reason)
+    }
+
+    @Test
+    fun implicitWarmResumesWhenFlagOn() {
+        val now = 1_000_000_000_000L
+        val result =
+            PlaybackSkipPolicy.resolveInitialPosition(
+                explicitPositionMs = null,
+                savedProgressMs = 45_000L,
+                isCompleted = false,
+                skipBeginningMs = 30_000L,
+                resumeIntent = PlaybackSkipPolicy.ResumeIntent.IMPLICIT,
+                lastPlayedAtMs = now - 2L * 24L * 60L * 60L * 1_000L,
+                staleRestartEnabled = true,
+                nowMs = now,
+            )
+
+        assertEquals(45_000L, result.positionMs)
+        assertEquals(PlaybackSkipPolicy.InitialPositionReason.RESUME, result.reason)
+    }
+
+    @Test
+    fun implicitStaleRestartsWhenFlagOn() {
+        val now = 1_000_000_000_000L
+        val result =
+            PlaybackSkipPolicy.resolveInitialPosition(
+                explicitPositionMs = null,
+                savedProgressMs = 45_000L,
+                isCompleted = false,
+                skipBeginningMs = 30_000L,
+                resumeIntent = PlaybackSkipPolicy.ResumeIntent.IMPLICIT,
+                lastPlayedAtMs = now - PlaybackSkipPolicy.STALE_RESUME_MS - 1L,
+                staleRestartEnabled = true,
+                nowMs = now,
+            )
+
+        assertEquals(30_000L, result.positionMs)
+        assertEquals(PlaybackSkipPolicy.InitialPositionReason.SKIP_BEGINNING, result.reason)
+    }
+
+    @Test
+    fun implicitStaleStillResumesWhenFlagOff() {
+        val now = 1_000_000_000_000L
+        val result =
+            PlaybackSkipPolicy.resolveInitialPosition(
+                explicitPositionMs = null,
+                savedProgressMs = 45_000L,
+                isCompleted = false,
+                skipBeginningMs = 30_000L,
+                resumeIntent = PlaybackSkipPolicy.ResumeIntent.IMPLICIT,
+                lastPlayedAtMs = now - PlaybackSkipPolicy.STALE_RESUME_MS - 1L,
+                staleRestartEnabled = false,
+                nowMs = now,
+            )
+
+        assertEquals(45_000L, result.positionMs)
+        assertEquals(PlaybackSkipPolicy.InitialPositionReason.RESUME, result.reason)
+    }
+
+    @Test
+    fun missingLastPlayedAtIsStaleForImplicitWhenFlagOn() {
+        val result =
+            PlaybackSkipPolicy.resolveInitialPosition(
+                explicitPositionMs = null,
+                savedProgressMs = 45_000L,
+                isCompleted = false,
+                skipBeginningMs = 0L,
+                resumeIntent = PlaybackSkipPolicy.ResumeIntent.IMPLICIT,
+                lastPlayedAtMs = null,
+                staleRestartEnabled = true,
+                nowMs = 1_000_000_000_000L,
+            )
+
+        assertEquals(0L, result.positionMs)
+        assertEquals(PlaybackSkipPolicy.InitialPositionReason.START, result.reason)
+    }
+
+    @Test
     fun nullablePodcastOverridesFallBackIndependently() {
         val result =
             PlaybackSkipPolicy.resolveEffectiveTrim(

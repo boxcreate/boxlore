@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,19 +34,37 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 
+/**
+ * Layout density for discovery poster cards.
+ * Title-only posters reserve a fixed foot ([Rail]: 2 lines, [Grid]: 3) and vertically
+ * center shorter titles so rows stay equal height.
+ */
+enum class FeedMediaCardDensity {
+    Rail,
+    Grid,
+}
+
 @Composable
 fun PodcastCard(
     podcast: Podcast,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showGenreChip: Boolean = false,
+    showSubtitle: Boolean = true,
+    density: FeedMediaCardDensity = FeedMediaCardDensity.Grid,
 ) {
     FeedMediaCard(
         imageUrl = podcast.imageUrl,
         title = podcast.title.replace("+", " "),
-        subtitle = podcast.artist.replace("+", " "),
+        subtitle = if (showSubtitle) podcast.artist.replace("+", " ") else null,
         onClick = onClick,
         modifier = modifier,
+        titleMaxLines =
+            when {
+                showSubtitle -> 2
+                density == FeedMediaCardDensity.Rail -> 2
+                else -> 3
+            },
         imageBadge = {
             if (showGenreChip && podcast.genre.isNotEmpty()) {
                 Surface(
@@ -99,15 +115,20 @@ fun PodcastCard(
 }
 
 @Composable
+@Suppress("LongParameterList")
 fun FeedMediaCard(
     imageUrl: String,
     title: String,
-    subtitle: String,
+    subtitle: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    titleMaxLines: Int = 2,
     imageBadge: @Composable (BoxScope.() -> Unit)? = null,
     imageOverlay: @Composable (BoxScope.() -> Unit)? = null,
 ) {
+    val lines = titleMaxLines.coerceAtLeast(1)
+    val showSubtitle = !subtitle.isNullOrBlank()
+
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -141,26 +162,45 @@ fun FeedMediaCard(
                 }
             }
 
-            Column(
-                modifier =
-                    Modifier
-                        .padding(10.dp)
-                        .heightIn(min = 58.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 13.sp, lineHeight = 17.sp),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (!showSubtitle) {
+                // Equal-height posters: reserve [lines] title lines; vertically center shorter titles.
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(HomeFeedSpacing.railTextFootHeight(lines) + HomeFeedSpacing.CardTextPadding * 2)
+                            .padding(HomeFeedSpacing.CardTextPadding),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp, lineHeight = 18.sp),
+                        maxLines = lines,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            } else {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(HomeFeedSpacing.CardTextPadding),
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp, lineHeight = 18.sp),
+                        maxLines = lines,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

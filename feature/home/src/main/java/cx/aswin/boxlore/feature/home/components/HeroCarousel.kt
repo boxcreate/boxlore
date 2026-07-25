@@ -67,21 +67,16 @@ fun HeroCarousel(
             HeroGridCard(
                 items = item.gridItems,
                 title = "JUMP BACK IN",
-                onPlayClick = { podcast ->
+                mode = HeroGridMode.Resume,
+                onCellClick = { podcast ->
                     val bundle =
                         android.os.Bundle().apply {
                             putString("entry_point", "home_hero_resume_grid")
                             putInt("ep_carousel_position", i)
                             putString("ep_layout_type", "grid_card")
-                            putBoolean("ep_is_subscribed", true) // Assuming RESUME grid items are subscribed
+                            putBoolean("ep_is_subscribed", true)
                         }
                     onPlayClick(podcast, bundle)
-                },
-                onDetailsClick = { podcast ->
-                    // For grid items, we want Episode Details.
-                    // We need to pass this action up.
-                    // Let's assume onDetailsClick passed to HeroCarousel handles this.
-                    onDetailsClick(podcast)
                 },
                 currentPlayingPodcastId = currentPlayingPodcastId,
                 isPlaying = isPlaying,
@@ -91,20 +86,8 @@ fun HeroCarousel(
             HeroGridCard(
                 items = item.gridItems,
                 title = "NEW EPISODES",
-                onPlayClick = { podcast ->
-                    val bundle =
-                        android.os.Bundle().apply {
-                            putString("entry_point", "home_hero_new_episodes_grid")
-                            putInt("ep_carousel_position", i)
-                            putString("ep_layout_type", "grid_card")
-                            putBoolean("ep_is_subscribed", true)
-                        }
-                    onPlayClick(podcast, bundle)
-                },
-                onDetailsClick = { podcast ->
-                    // Same details logic
-                    onDetailsClick(podcast)
-                },
+                mode = HeroGridMode.NewEpisodes,
+                onCellClick = onDetailsClick,
                 currentPlayingPodcastId = currentPlayingPodcastId,
                 isPlaying = isPlaying,
                 modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),

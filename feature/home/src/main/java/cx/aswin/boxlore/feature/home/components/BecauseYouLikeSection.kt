@@ -123,13 +123,15 @@ fun BecauseYouLikeSection(
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = 0.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
                 ) {
                     items(suggestedPodcasts.list, key = { it.id }) { suggestedPodcast ->
                         PodcastCard(
                             podcast = suggestedPodcast,
                             onClick = { onPodcastClick(suggestedPodcast) },
-                            modifier = Modifier.width(140.dp),
+                            showSubtitle = false,
+                            density = FeedMediaCardDensity.Rail,
+                            modifier = Modifier.width(HomeFeedSpacing.RailCardWidth),
                         )
                     }
                 }
@@ -148,7 +150,7 @@ fun BecauseYouLikeSection(
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = 0.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
                 ) {
                     items(recommendations.list, key = { it.id }) { episode ->
                         val parentPodcast =
@@ -166,7 +168,8 @@ fun BecauseYouLikeSection(
                             podcast = parentPodcast,
                             episode = episode,
                             onClick = { onEpisodeClick(episode, parentPodcast) },
-                            modifier = Modifier.width(140.dp),
+                            showSubtitle = false,
+                            modifier = Modifier.width(HomeFeedSpacing.RailCardWidth),
                         )
                     }
                 }

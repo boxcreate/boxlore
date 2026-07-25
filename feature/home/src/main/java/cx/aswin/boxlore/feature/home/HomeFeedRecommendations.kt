@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -25,7 +23,10 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.content.ContentDaypart
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.feature.home.components.BecauseYouLikeSection
+import cx.aswin.boxlore.feature.home.components.FeedMediaCardDensity
+import cx.aswin.boxlore.feature.home.components.EqualHeightPosterGrid
 import cx.aswin.boxlore.feature.home.components.GridSkeletonItem
+import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 import cx.aswin.boxlore.feature.home.components.HomeTopLevelSectionHeader
 import cx.aswin.boxlore.feature.home.components.PodcastCard
 import cx.aswin.boxlore.feature.home.components.forYouItems
@@ -129,8 +130,12 @@ internal fun LazyStaggeredGridScope.discoverFeedItems(
         discoverPodcastItems(derivedState, feedState, callbacks)
         discoverViewMoreItem(feedState, callbacks)
     } else {
-        items(6, key = { "discover_skel_$it" }, contentType = { "discover_skel" }) {
-            GridSkeletonItem()
+        item(span = StaggeredGridItemSpan.FullLine, key = "discover_skel", contentType = "discover_skel") {
+            EqualHeightPosterGrid {
+                repeat(HomeFeedSpacing.ExploreGridCap) {
+                    GridSkeletonItem()
+                }
+            }
         }
     }
 }
@@ -154,16 +159,25 @@ private fun LazyStaggeredGridScope.discoverPodcastItems(
     feedState: PodcastFeedUiState,
     callbacks: HomeFeedCallbacks,
 ) {
-    itemsIndexed(
-        derivedState.discoverItems,
-        key = { _, podcast -> "discover_${podcast.id}" },
-        contentType = { _, _ -> "discover_card" },
-    ) { index, podcast ->
-        PodcastCard(
-            podcast = podcast,
-            showGenreChip = derivedState.discoverGenreChip,
-            onClick = { callbacks.onPodcastClick(podcast, "home_discover_grid", feedState.selectedCategory, index) },
-        )
+    item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid", contentType = "discover_grid") {
+        EqualHeightPosterGrid {
+            derivedState.discoverItems.forEachIndexed { index, podcast ->
+                PodcastCard(
+                    podcast = podcast,
+                    showGenreChip = false,
+                    showSubtitle = false,
+                    density = FeedMediaCardDensity.Grid,
+                    onClick = {
+                        callbacks.onPodcastClick(
+                            podcast,
+                            "home_discover_grid",
+                            feedState.selectedCategory,
+                            index,
+                        )
+                    },
+                )
+            }
+        }
     }
 }
 

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material.icons.rounded.Replay
+import androidx.compose.material.icons.rounded.Update
 import androidx.compose.runtime.Composable
 import cx.aswin.boxlore.feature.home.settings.components.SettingsChoiceRow
 import cx.aswin.boxlore.feature.home.settings.components.SettingsDivider
@@ -28,6 +29,7 @@ data class PlaybackUiState(
     val hideCompletedInHome: Boolean,
     val hideCompletedInSubs: Boolean,
     val hideCompletedInShowDetails: Boolean,
+    val restartForgottenEpisodes: Boolean = true,
 )
 
 /** Callbacks for [PlaybackSettingsPage], grouped to keep the page's parameter count small. */
@@ -40,6 +42,7 @@ data class PlaybackActions(
     val onSetHideCompletedInHome: (Boolean) -> Unit,
     val onSetHideCompletedInSubs: (Boolean) -> Unit,
     val onSetHideCompletedInShowDetails: (Boolean) -> Unit,
+    val onSetRestartForgottenEpisodes: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -134,6 +137,20 @@ internal fun PlaybackSettingsPage(
                 supportingText = "Mark the current episode complete first",
                 selected = state.skipBehavior == "mark_completed_skip",
                 onClick = { actions.onSetSkipBehavior("mark_completed_skip") },
+            )
+        }
+
+        SettingsGroup(
+            title = "Resume",
+            footer =
+                "When on, queue and mixtape start from the beginning if you haven’t played an episode in 7 days. Jump Back In and History always resume where you left off.",
+        ) {
+            SettingsSwitchRow(
+                title = "Restart forgotten episodes",
+                supportingText = "Queue and mixtape after 7 idle days",
+                checked = state.restartForgottenEpisodes,
+                onCheckedChange = actions.onSetRestartForgottenEpisodes,
+                icon = Icons.Rounded.Update,
             )
         }
 

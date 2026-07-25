@@ -189,7 +189,13 @@ class SmartQueueEngineTest {
     private fun engine(
         sources: FakeSources,
         skipMemory: QueueSkipMemory? = null,
-    ) = DefaultSmartQueueEngine(sources = sources, skipMemory = skipMemory, nowMs = { now })
+        staleRestartEnabled: Boolean = true,
+    ) = DefaultSmartQueueEngine(
+        sources = sources,
+        skipMemory = skipMemory,
+        nowMs = { now },
+        staleRestartEnabled = { staleRestartEnabled },
+    )
 
     private fun skipMemory(): QueueSkipMemory {
         var raw: String? = null
@@ -400,6 +406,59 @@ class SmartQueueEngineTest {
             val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
             assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_RESUME })
+            assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_RESUME_STALE })
+        }
+
+    @Test
+    fun `resume pick older than 7 days is stamped resume_stale when soft-expire is on`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = listOf(episode(1))
+            sources.resumeCandidates =
+                listOf(
+                    resumeEntry(
+                        "301",
+                        "pod2",
+                        progressMs = 50_000,
+                        lastPlayedAt = now - 8L * 24 * 60 * 60 * 1000,
+                    ),
+                )
+
+            val batch = engine(sources, staleRestartEnabled = true)
+                .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+            val resumes = batch.filter {
+                it.source == SmartQueueEngine.SOURCE_RESUME ||
+                    it.source == SmartQueueEngine.SOURCE_RESUME_STALE
+            }
+            assertEquals(1, resumes.size)
+            assertEquals(SmartQueueEngine.SOURCE_RESUME_STALE, resumes.first().source)
+        }
+
+    @Test
+    fun `resume pick older than 7 days stays resume when soft-expire is off`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = listOf(episode(1))
+            sources.resumeCandidates =
+                listOf(
+                    resumeEntry(
+                        "302",
+                        "pod2",
+                        progressMs = 50_000,
+                        lastPlayedAt = now - 8L * 24 * 60 * 60 * 1000,
+                    ),
+                )
+
+            val batch = engine(sources, staleRestartEnabled = false)
+                .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+            val resumes = batch.filter {
+                it.source == SmartQueueEngine.SOURCE_RESUME ||
+                    it.source == SmartQueueEngine.SOURCE_RESUME_STALE
+            }
+            assertEquals(1, resumes.size)
+            assertEquals(SmartQueueEngine.SOURCE_RESUME, resumes.first().source)
         }
 
     // ── Tier 2: scored subscriptions ────────────────────────────────────────

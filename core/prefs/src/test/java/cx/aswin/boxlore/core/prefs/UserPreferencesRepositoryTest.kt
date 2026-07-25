@@ -454,6 +454,16 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun restartForgottenEpisodesDefaultsOnAndPersists() =
+        runTest {
+            assertTrue(repository.restartForgottenEpisodesStream.first())
+            repository.setRestartForgottenEpisodes(false)
+            assertFalse(repository.restartForgottenEpisodesStream.first())
+            repository.setRestartForgottenEpisodes(true)
+            assertTrue(repository.restartForgottenEpisodesStream.first())
+        }
+
+    @Test
     fun overriddenRecPodcastIdSetAndClear() =
         runTest {
             assertNull(repository.overriddenRecPodcastIdStream.first())

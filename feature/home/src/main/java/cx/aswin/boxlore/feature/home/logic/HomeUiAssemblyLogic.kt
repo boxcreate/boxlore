@@ -1,11 +1,12 @@
 package cx.aswin.boxlore.feature.home.logic
 
-import cx.aswin.boxlore.core.playback.MixtapeEngine
-import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.MixtapeEngine
+import cx.aswin.boxlore.core.playback.PlaybackSession
+import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.feature.home.HomeEditorialRow
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -15,7 +16,23 @@ internal data class HomeMixtapeCache(
     val unplayedCount: Int,
     val episodes: List<Episode>,
     val subSignature: Set<String>,
+    val staleRestartEnabled: Boolean = true,
 )
+
+internal fun homeMixtapeCacheOrNull(
+    podcasts: List<Podcast>?,
+    unplayedCount: Int?,
+    episodes: List<Episode>?,
+    subSignature: Set<String>?,
+    staleRestartEnabled: Boolean?,
+): HomeMixtapeCache? =
+    HomeMixtapeCache(
+        podcasts = podcasts ?: return null,
+        unplayedCount = unplayedCount ?: return null,
+        episodes = episodes ?: return null,
+        subSignature = subSignature ?: return null,
+        staleRestartEnabled = staleRestartEnabled ?: return null,
+    )
 
 internal data class HomeUiAssemblyResult(
     val heroItems: List<SmartHeroItem>,
@@ -26,6 +43,7 @@ internal data class HomeUiAssemblyResult(
     val discoverPodcasts: List<Podcast>,
     val recommendations: List<Episode>,
     val episodePlaybackState: Map<String, Pair<EpisodeStatus, Float>>,
+    val softExpireProgressEpisodeIds: Set<String>,
     val showImportBanner: Boolean,
     val briefing: Briefing?,
     val briefingChapters: List<cx.aswin.boxlore.core.model.Chapter>,
@@ -41,7 +59,7 @@ internal data class HomeUiAssemblyResult(
  * Ranking/mixtape builders are injected so this stays free of Android ViewModel deps.
  */
 internal object HomeUiAssemblyLogic {
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     suspend fun assemble(
         trendingList: List<Podcast>,
         rankedRecommendations: List<Episode>,
@@ -62,6 +80,8 @@ internal object HomeUiAssemblyLogic {
         rawBriefingChapters: List<cx.aswin.boxlore.core.model.Chapter>,
         briefingDismissedDate: String,
         briefingDismissedForever: Boolean,
+        staleRestartEnabled: Boolean = true,
+        nowMs: Long = System.currentTimeMillis(),
     ): HomeUiAssemblyResult {
         val completedCount = allHistory.count { it.isCompleted }
         val catchUp =
@@ -82,6 +102,7 @@ internal object HomeUiAssemblyLogic {
         val currentSubIds = subs.map { it.id }.toSet()
         val mixtapeCache =
             if (previousMixtape != null &&
+                previousMixtape.staleRestartEnabled == staleRestartEnabled &&
                 !HomeShowsOrderLogic.shouldInvalidateMixtapeCache(
                     previousMixtape.subSignature,
                     currentSubIds,
@@ -113,6 +134,7 @@ internal object HomeUiAssemblyLogic {
                     unplayedCount = mixtapeCount,
                     episodes = mixtapeEpisodes,
                     subSignature = currentSubIds,
+                    staleRestartEnabled = staleRestartEnabled,
                 )
         }
 
@@ -138,6 +160,18 @@ internal object HomeUiAssemblyLogic {
                 completedEpisodeIds = completedEpisodeIds,
             )
 
+        val softExpireProgressEpisodeIds =
+            if (staleRestartEnabled) {
+                allHistory
+                    .asSequence()
+                    .filter { !it.isCompleted && it.progressMs > 0L }
+                    .filter { PlaybackSkipPolicy.isStaleLastPlayed(it.lastPlayedAt, nowMs) }
+                    .map { it.episodeId }
+                    .toSet()
+            } else {
+                emptySet()
+            }
+
         val showBriefing =
             HomePlaybackStateLogic.shouldShowBriefing(
                 rawBriefing = rawBriefing,
@@ -156,6 +190,7 @@ internal object HomeUiAssemblyLogic {
             discoverPodcasts = discover,
             recommendations = rankedRecommendations,
             episodePlaybackState = episodePlaybackState,
+            softExpireProgressEpisodeIds = softExpireProgressEpisodeIds,
             showImportBanner = sortedSubs.isEmpty() && !hasDismissedImportBanner,
             briefing = if (showBriefing) rawBriefing else null,
             briefingChapters = if (showBriefing) rawBriefingChapters else emptyList(),

@@ -18,11 +18,13 @@ private const val OUTRO_REARM_HYSTERESIS_MS = 1_000L
 private const val EFFECTIVE_END_WATCHDOG_MS = 1_250L
 private const val TRUE_END_SEEK_MARGIN_MS = 250L
 
+@Suppress("LongParameterList")
 internal class PlaybackIntroOutroController(
     private val scope: CoroutineScope,
     private val database: BoxLoreDatabase,
     private val globalSkipBeginningMs: () -> Long,
     private val globalSkipEndingMs: () -> Long,
+    private val staleRestartEnabled: () -> Boolean,
     private val lifecycleEpisodeId: (MediaItem?) -> String?,
     private val findPodcastIdForEpisode: suspend (String) -> String?,
     private val onActiveDurationResolved: (episodeId: String, durationMs: Long) -> Unit,
@@ -310,12 +312,17 @@ internal class PlaybackIntroOutroController(
 
     private fun resolveActiveIntroTarget(history: ListeningHistoryEntity?) {
         val explicitStartMs = activationInitialPositionMs.takeIf { it > 0L }
+        val entryPointKey =
+            PlaybackMediaIdPolicy.parseEntryPointString(activeLifecycleMediaItem?.mediaMetadata?.extras)
         val initialPosition =
             PlaybackSkipPolicy.resolveInitialPosition(
                 explicitPositionMs = explicitStartMs,
                 savedProgressMs = history?.progressMs ?: 0L,
                 isCompleted = history?.isCompleted == true,
                 skipBeginningMs = effectiveSkipBeginningMs,
+                resumeIntent = PlaybackSkipPolicy.resumeIntentFromEntryPoint(entryPointKey),
+                lastPlayedAtMs = history?.lastPlayedAt,
+                staleRestartEnabled = staleRestartEnabled(),
             )
         pendingIntroTargetMs =
             when (initialPosition.reason) {

@@ -23,6 +23,7 @@ data class HomeDataWrapper(
     val isTrendingLoaded: Boolean = false,
     val isRecommendationsLoaded: Boolean = false,
     val hasDismissedImportBanner: Boolean = false,
+    val staleRestartEnabled: Boolean = true,
     val briefing: Briefing? = null,
     val briefingChapters: List<cx.aswin.boxlore.core.model.Chapter> = emptyList(),
     val briefingDismissedDate: String = "",
@@ -50,6 +51,7 @@ internal data class HomeRecsSlice(
     val isTrendingLoaded: Boolean,
     val isRecommendationsLoaded: Boolean,
     val hasDismissedImportBanner: Boolean,
+    val staleRestartEnabled: Boolean = true,
 )
 
 internal data class HomeBriefingSlice(

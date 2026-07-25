@@ -14,6 +14,7 @@ import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.logic.HomeMixtapeCache
+import cx.aswin.boxlore.feature.home.logic.homeMixtapeCacheOrNull
 import cx.aswin.boxlore.feature.home.logic.buildHomeEditorialRows
 import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
 import cx.aswin.boxlore.feature.home.logic.HomeUiAssemblyLogic
@@ -224,19 +225,24 @@ internal fun HomeViewModel.loadData() {
                     }
                 val recsSlice =
                     combine(
-                        _recommendations,
-                        playbackRepository.completedEpisodeIds,
-                        _isTrendingLoaded,
-                        _isRecommendationsLoaded,
-                        userPrefs.hasDismissedHomeImportBannerStream,
-                    ) { recommendations, completedEpisodeIds, isTrendingLoaded, isRecommendationsLoaded, hasDismissedImportBanner ->
-                        HomeRecsSlice(
-                            recommendations,
-                            completedEpisodeIds,
-                            isTrendingLoaded,
-                            isRecommendationsLoaded,
-                            hasDismissedImportBanner,
-                        )
+                        combine(
+                            _recommendations,
+                            playbackRepository.completedEpisodeIds,
+                            _isTrendingLoaded,
+                            _isRecommendationsLoaded,
+                            userPrefs.hasDismissedHomeImportBannerStream,
+                        ) { recommendations, completedEpisodeIds, isTrendingLoaded, isRecommendationsLoaded, hasDismissedImportBanner ->
+                            HomeRecsSlice(
+                                recommendations,
+                                completedEpisodeIds,
+                                isTrendingLoaded,
+                                isRecommendationsLoaded,
+                                hasDismissedImportBanner,
+                            )
+                        },
+                        userPrefs.restartForgottenEpisodesStream,
+                    ) { slice, staleRestartEnabled ->
+                        slice.copy(staleRestartEnabled = staleRestartEnabled)
                     }
                 val briefingSlice =
                     combine(
@@ -282,6 +288,7 @@ internal fun HomeViewModel.loadData() {
                             isTrendingLoaded = recs.isTrendingLoaded,
                             isRecommendationsLoaded = recs.isRecommendationsLoaded,
                             hasDismissedImportBanner = recs.hasDismissedImportBanner,
+                            staleRestartEnabled = recs.staleRestartEnabled,
                             briefing = briefing.briefing,
                             briefingChapters = briefing.briefingChapters,
                             briefingDismissedDate = briefing.briefingDismissedDate,
@@ -411,21 +418,15 @@ internal fun HomeViewModel.loadData() {
                             }
 
                         val previousMixtape =
-                            if (stableMixtapePodcasts != null &&
-                                stableMixtapeCount != null &&
-                                stableCurrentUnplayedEpisodes != null &&
-                                stableMixtapeSubSignature != null
-                            ) {
-                                HomeMixtapeCache(
-                                    podcasts = stableMixtapePodcasts!!,
-                                    unplayedCount = stableMixtapeCount!!,
-                                    episodes = stableCurrentUnplayedEpisodes!!,
-                                    subSignature = stableMixtapeSubSignature!!,
-                                )
-                            } else {
-                                null
-                            }
+                            homeMixtapeCacheOrNull(
+                                podcasts = stableMixtapePodcasts,
+                                unplayedCount = stableMixtapeCount,
+                                episodes = stableCurrentUnplayedEpisodes,
+                                subSignature = stableMixtapeSubSignature,
+                                staleRestartEnabled = stableMixtapeStaleRestartEnabled,
+                            )
 
+                        val staleRestartEnabled = wrapper.staleRestartEnabled
                         val assembled =
                             HomeUiAssemblyLogic.assemble(
                                 trendingList = trendingList,
@@ -452,6 +453,7 @@ internal fun HomeViewModel.loadData() {
                                                 scorer = adaptiveScorer,
                                                 surface = RankingSurface.HOME,
                                             ),
+                                        staleRestartEnabled = staleRestartEnabled,
                                     )
                                 },
                                 isTrendingLoaded = wrapper.isTrendingLoaded,
@@ -460,6 +462,7 @@ internal fun HomeViewModel.loadData() {
                                 rawBriefingChapters = wrapper.briefingChapters,
                                 briefingDismissedDate = wrapper.briefingDismissedDate,
                                 briefingDismissedForever = wrapper.briefingDismissedForever,
+                                staleRestartEnabled = staleRestartEnabled,
                             )
 
                         stablePodcastOrder = assembled.stablePodcastOrder
@@ -468,6 +471,7 @@ internal fun HomeViewModel.loadData() {
                             stableMixtapeCount = cache.unplayedCount
                             stableCurrentUnplayedEpisodes = cache.episodes
                             stableMixtapeSubSignature = cache.subSignature
+                            stableMixtapeStaleRestartEnabled = cache.staleRestartEnabled
                             currentUnplayedEpisodes = cache.episodes
                         }
 
@@ -501,6 +505,7 @@ internal fun HomeViewModel.loadData() {
                                 isSelectedPodcastLoading = _isSelectedPodcastLoading.value,
                                 isSelectedRssRefreshing = _isSelectedRssRefreshing.value,
                                 episodePlaybackState = assembled.episodePlaybackState,
+                                softExpireProgressEpisodeIds = assembled.softExpireProgressEpisodeIds,
                                 showImportBanner = assembled.showImportBanner,
                                 briefing = assembled.briefing,
                                 briefingChapters = assembled.briefingChapters,

@@ -404,6 +404,7 @@ private fun HomeScreenFeedContent(
             PodcastFeedPlayback(
                 player = playback,
                 episodePlaybackState = StablePlaybackStateMap(uiState.episodePlaybackState),
+                softExpireProgressEpisodeIds = uiState.softExpireProgressEpisodeIds,
             ),
         callbacks = callbacks,
         layout = PodcastFeedLayout(gridState = gridState),

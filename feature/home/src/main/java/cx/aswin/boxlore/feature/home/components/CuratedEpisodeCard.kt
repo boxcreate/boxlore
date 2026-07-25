@@ -11,8 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.model.Episode
@@ -24,6 +22,7 @@ fun CuratedEpisodeCard(
     episode: Episode,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showSubtitle: Boolean = true,
 ) {
     val isNew =
         episode.publishedDate > 0L &&
@@ -32,9 +31,10 @@ fun CuratedEpisodeCard(
     FeedMediaCard(
         imageUrl = (episode.imageUrl ?: "").ifEmpty { podcast.imageUrl },
         title = episode.title,
-        subtitle = podcast.title,
+        subtitle = if (showSubtitle) podcast.title else null,
         onClick = onClick,
         modifier = modifier,
+        titleMaxLines = 3,
         imageBadge = {
             if (isNew) {
                 Box(
@@ -55,31 +55,5 @@ fun CuratedEpisodeCard(
                 }
             }
         },
-        imageOverlay = {
-            if (episode.duration > 0) {
-                Box(
-                    modifier =
-                        Modifier
-                            .padding(6.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(Color.Black.copy(alpha = 0.6f))
-                            .align(Alignment.BottomEnd),
-                ) {
-                    Text(
-                        text = formatDuration(episode.duration),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = GoogleSansWeight.medium,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
-            }
-        },
     )
-}
-
-private fun formatDuration(seconds: Int): String {
-    if (seconds <= 0) return ""
-    val m = seconds / 60
-    return "${m}m"
 }

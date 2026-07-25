@@ -13,6 +13,7 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - `PlaybackQueueCoordinator` emits `queue_modified` remove on remove; `undoQueueRemoval` emits a compensating `add` (`source=undo`) so undone removals do not permanently skew analytics.
 - `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic.
 - `PlaybackMediaIdPolicy`, `PlaybackArtworkResolver`, and `PlaybackSkipPolicy` define session IDs, artwork, and skip behavior.
+- `PlaybackSkipPolicy` also owns intent-aware stale resume: when Settings → Playback → **Restart forgotten episodes** is on (default), implicit plays (queue / mixtape / Smart Queue / casual) soft-expire mid-episode seek after 7 days without `lastPlayedAt`; Jump Back In (`home_hero_resume*`) and History (`library_history`) always seek. Progress is never wiped — seek policy only. Mixtape/SQ still *select* unfinished episodes within the 30-day suggestion band; chrome follows soft-expire (mixtape hides progress / “Xm left”; Smart Queue stamps `resume_stale` → queue label “Starting over”).
 - `PlaybackControlSync` keeps UI playback speed / seek sizes aligned with Media3 when a session is cleared or a new queue starts, and sanitizes user-requested speeds before apply/persist.
 - `HistoryRecommendationLogic`, `AutoVoiceSearchLogic`, `SmartQueueRefillPolicy`, `MixtapeResumePolicy`, `NightWindowLogic`, and `ListeningHistoryUpsertLogic` are JVM-testable playback helpers.
 - `AutoArtworkFetchLogic` and `AutoCollageFreshnessLogic` encode Android Auto artwork fetch / collage cache policy for hermetic tests.
@@ -87,7 +88,7 @@ Files under `core/data/service` are compatibility stubs for old service class na
 ## Testing notes
 
 - Unit tests live under `core/playback/src/test`.
-- Existing coverage includes skip policy, media ID policy, artwork resolution, control sync (speed/seek preserve on clear), history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue, playback session mapping, Auto artwork fetch/content-type policy, collage freshness signatures, and Auto artwork source-store durability.
+- Existing coverage includes skip policy (including stale-resume intent × flag × freshness), media ID policy, artwork resolution, control sync (speed/seek preserve on clear), history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue, playback session mapping, Auto artwork fetch/content-type policy, collage freshness signatures, and Auto artwork source-store durability.
 - Service-level tests must install shared dependency holders before exercising service code.
 
 ```bash

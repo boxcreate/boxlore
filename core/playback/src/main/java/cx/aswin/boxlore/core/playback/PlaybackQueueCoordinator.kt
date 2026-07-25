@@ -35,6 +35,7 @@ data class RemovedQueueItem(
 /**
  * Queue play / mutate / reconcile APIs for [cx.aswin.boxlore.core.playback.PlaybackRepository].
  */
+@Suppress("LongParameterList")
 internal class PlaybackQueueCoordinator(
     private val scope: CoroutineScope,
     private val playerStateFlow: MutableStateFlow<PlayerState>,
@@ -45,7 +46,7 @@ internal class PlaybackQueueCoordinator(
     private val prefs: SharedPreferences,
     private val playerDismissedKey: String,
     private val queueMaxSize: Int,
-    private val checkSavedProgress: suspend (String?, Long?, PlaybackEntryPoint) -> Pair<Long, Boolean>,
+    private val checkSavedProgress: suspend (String?, Long?, PlaybackEntryPoint, android.os.Bundle?) -> Pair<Long, Boolean>,
     private val onPlaybackStarted: () -> Unit,
     private val storePendingEntryPoint: (android.os.Bundle?) -> Unit,
     private val saveCurrentState: suspend (updateLastPlayedAt: Boolean) -> Unit,
@@ -253,7 +254,7 @@ internal class PlaybackQueueCoordinator(
             val mediaItems = buildMediaItems(uniqueEpisodes, podcast, entryPointContext)
 
             val startEpisodeId = uniqueEpisodes.getOrNull(uniqueStartIndex)?.id
-            val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint)
+            val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint, entryPointContext)
 
             val currentEp = uniqueEpisodes.getOrNull(uniqueStartIndex)
             if (currentEp != null) {

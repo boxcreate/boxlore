@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.playback
 import android.util.Log
 import androidx.media3.common.MediaItem
 import cx.aswin.boxlore.core.playback.PlayerState
-import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
@@ -19,8 +18,8 @@ internal class PlaybackTransportHelper(
     private val scope: CoroutineScope,
     private val playerStateFlow: MutableStateFlow<PlayerState>,
     private val mediaHandle: PlaybackMediaControllerHandle,
-    private val listeningHistoryDao: ListeningHistoryDao,
     private val storePendingEntryPoint: (android.os.Bundle?) -> Unit,
+    private val resolveInitialSeekMs: suspend (episodeId: String, entryPointKey: String?) -> Long,
     private val playQueue: suspend (
         episodes: List<Episode>,
         podcast: Podcast,
@@ -162,16 +161,14 @@ internal class PlaybackTransportHelper(
         controller: androidx.media3.session.MediaController,
         targetEpisodeId: String,
         mediaIndex: Int,
+        entryPointKey: String?,
     ) {
         scope.launch {
-            val saved = listeningHistoryDao.getHistoryItem(targetEpisodeId)
-            val savedPosMs =
-                if (saved != null && !saved.isCompleted && saved.progressMs > 2000) {
-                    android.util.Log.d("PlaybackRepo", "skipToEpisode: Restoring saved position ${saved.progressMs}ms for $targetEpisodeId")
-                    saved.progressMs
-                } else {
-                    0L
-                }
+            val savedPosMs = resolveInitialSeekMs(targetEpisodeId, entryPointKey)
+            android.util.Log.d(
+                "PlaybackRepo",
+                "skipToEpisode: Restoring position ${savedPosMs}ms for $targetEpisodeId (entry=$entryPointKey)",
+            )
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                 controller.seekTo(mediaIndex, savedPosMs)
                 controller.play()
@@ -219,7 +216,12 @@ internal class PlaybackTransportHelper(
 
                     cx.aswin.boxlore.core.analytics.AnalyticsHelper
                         .setSeekSource("transition")
-                    restorePositionAndSeek(controller, targetEpisode.id, i)
+                    restorePositionAndSeek(
+                        controller,
+                        targetEpisode.id,
+                        i,
+                        PlaybackMediaIdPolicy.parseEntryPointString(entryPointContext),
+                    )
                     return
                 }
             }

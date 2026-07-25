@@ -38,6 +38,11 @@ interface SmartQueueEngine {
     companion object {
         const val SOURCE_SAME_PODCAST = "same_podcast"
         const val SOURCE_RESUME = "resume"
+        /**
+         * Resume-band pick that will cold-start when Restart forgotten episodes is on
+         * (`lastPlayedAt` older than [PlaybackSkipPolicy.STALE_RESUME_MS]).
+         */
+        const val SOURCE_RESUME_STALE = "resume_stale"
         const val SOURCE_SUBSCRIPTION = "subscription"
         /** Legacy persisted rows; new refills use [SOURCE_PERSONALIZED_REC] or [SOURCE_SIMILAR_EPISODE]. */
         const val SOURCE_SERVER_REC = "server_rec"
@@ -53,6 +58,7 @@ interface SmartQueueEngine {
          */
         val DISCOVERY_REFILL_SOURCES: Set<String> = setOf(
             SOURCE_RESUME,
+            SOURCE_RESUME_STALE,
             SOURCE_SUBSCRIPTION,
             SOURCE_SERVER_REC,
             SOURCE_PERSONALIZED_REC,
@@ -111,6 +117,7 @@ class DefaultSmartQueueEngine(
     private val skipMemory: QueueSkipMemory? = null,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val adaptiveScorer: AdaptiveCandidateScorer? = null,
+    private val staleRestartEnabled: () -> Boolean = { true },
 ) : SmartQueueEngine {
 
     companion object {
@@ -437,7 +444,16 @@ class DefaultSmartQueueEngine(
                     artist = "",
                     imageUrl = entity.podcastImageUrl ?: entity.episodeImageUrl ?: ""
                 )
-                QueueEntry(episodeItem, pod, SmartQueueEngine.SOURCE_RESUME)
+                val softExpire =
+                    staleRestartEnabled() &&
+                        PlaybackSkipPolicy.isStaleLastPlayed(entity.lastPlayedAt, nowMs())
+                val source =
+                    if (softExpire) {
+                        SmartQueueEngine.SOURCE_RESUME_STALE
+                    } else {
+                        SmartQueueEngine.SOURCE_RESUME
+                    }
+                QueueEntry(episodeItem, pod, source)
             }
             .filter { it.episode.id != 0L }
             .toList()
@@ -805,7 +821,9 @@ class DefaultSmartQueueEngine(
     )
 
     private fun String.toCandidateSource(): CandidateSource = when (this) {
-        SmartQueueEngine.SOURCE_RESUME -> CandidateSource.LOCAL_HISTORY
+        SmartQueueEngine.SOURCE_RESUME,
+        SmartQueueEngine.SOURCE_RESUME_STALE,
+        -> CandidateSource.LOCAL_HISTORY
         SmartQueueEngine.SOURCE_SUBSCRIPTION,
         SmartQueueEngine.SOURCE_SAME_PODCAST,
         -> CandidateSource.SUBSCRIPTION

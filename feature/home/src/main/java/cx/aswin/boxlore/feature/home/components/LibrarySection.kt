@@ -84,6 +84,7 @@ import cx.aswin.boxlore.feature.home.StablePodcastList
 val LocalLastSeenEpisodes = androidx.compose.runtime.compositionLocalOf<Map<String, String>> { emptyMap() }
 
 @Composable
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 fun YourShowsSection(
     subscribedPodcasts: StablePodcastList,
     latestEpisodes: StablePodcastList, // Enriched with latest episodes
@@ -92,6 +93,7 @@ fun YourShowsSection(
     isSelectedPodcastLoading: Boolean,
     isSelectedRssRefreshing: Boolean,
     episodePlaybackState: StablePlaybackStateMap,
+    softExpireProgressEpisodeIds: Set<String> = emptySet(),
     currentPlayingEpisodeId: String? = null,
     isPlaying: Boolean = false,
     onPodcastSelected: (String?) -> Unit,
@@ -604,6 +606,7 @@ fun YourShowsSection(
                                     val ep = podcast.latestEpisode
                                     if (ep != null) {
                                         val state = episodePlaybackState.map[ep.id]
+                                        val softExpire = softExpireProgressEpisodeIds.contains(ep.id)
                                         MixtapeEpisodeCard(
                                             episode = ep,
                                             podcast = podcast,
@@ -615,8 +618,13 @@ fun YourShowsSection(
                                                     cx.aswin.boxlore.core.model.PlaybackEntryPoint.HOME_MIXTAPE,
                                                 )
                                             },
-                                            overrideStatus = state?.first,
-                                            overrideProgress = state?.second,
+                                            overrideStatus =
+                                                if (softExpire) {
+                                                    cx.aswin.boxlore.core.model.EpisodeStatus.UNPLAYED
+                                                } else {
+                                                    state?.first
+                                                },
+                                            overrideProgress = if (softExpire) 0f else state?.second,
                                             currentPlayingEpisodeId = currentPlayingEpisodeId,
                                             isPlaying = isPlaying,
                                             isDownloaded = downloadedEpisodeIds.contains(ep.id),

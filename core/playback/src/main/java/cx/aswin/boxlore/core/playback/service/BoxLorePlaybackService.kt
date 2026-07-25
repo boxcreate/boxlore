@@ -93,6 +93,7 @@ open class BoxLorePlaybackService :
             sources = smartQueueSources,
             skipMemory = queueSkipMemory,
             adaptiveScorer = adaptiveCandidateScorer,
+            staleRestartEnabled = { cachedRestartForgottenEpisodes },
         )
     }
     override val queueRepository by lazy {
@@ -123,6 +124,8 @@ open class BoxLorePlaybackService :
     @Volatile private var cachedSeekBackwardMs = PlaybackSkipPolicy.DEFAULT_SEEK_BACKWARD_MS
 
     @Volatile private var cachedSeekForwardMs = PlaybackSkipPolicy.DEFAULT_SEEK_FORWARD_MS
+
+    @Volatile private var cachedRestartForgottenEpisodes = true
 
     // Breaks circular lazy init between telemetry ↔ intro/outro controllers.
     private var introOutroControllerRef: PlaybackIntroOutroController? = null
@@ -157,6 +160,7 @@ open class BoxLorePlaybackService :
             database = database,
             globalSkipBeginningMs = { cachedSkipBeginningMs },
             globalSkipEndingMs = { cachedSkipEndingMs },
+            staleRestartEnabled = { cachedRestartForgottenEpisodes },
             lifecycleEpisodeId = ::lifecycleEpisodeId,
             findPodcastIdForEpisode = ::findPodcastIdForEpisode,
             onActiveDurationResolved = { episodeId, durationMs ->
@@ -235,6 +239,11 @@ open class BoxLorePlaybackService :
             userPreferencesRepository.seekForwardMsStream.collectLatest { value ->
                 cachedSeekForwardMs = PlaybackSkipPolicy.sanitizeSeekForward(value)
                 updateSeekCommandButtons()
+            }
+        }
+        serviceScope.launch {
+            userPreferencesRepository.restartForgottenEpisodesStream.collectLatest { enabled ->
+                cachedRestartForgottenEpisodes = enabled
             }
         }
 

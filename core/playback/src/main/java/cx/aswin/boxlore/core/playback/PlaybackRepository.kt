@@ -217,8 +217,8 @@ class PlaybackRepository internal constructor(
             prefs = prefs,
             playerDismissedKey = KEY_PLAYER_DISMISSED,
             queueMaxSize = QUEUE_MAX_SIZE,
-            checkSavedProgress = { startEpisodeId, initialPositionMs, entryPoint ->
-                checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint)
+            checkSavedProgress = { startEpisodeId, initialPositionMs, entryPoint, sourceContext ->
+                checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint, sourceContext)
             },
             onPlaybackStarted = { sleepController.onPlaybackStarted() },
             storePendingEntryPoint = ::storePendingEntryPoint,
@@ -231,8 +231,18 @@ class PlaybackRepository internal constructor(
             scope = repositoryScope,
             playerStateFlow = playerStateFlow,
             mediaHandle = mediaHandle,
-            listeningHistoryDao = listeningHistoryDao,
             storePendingEntryPoint = ::storePendingEntryPoint,
+            resolveInitialSeekMs = { episodeId, entryPointKey ->
+                checkSavedProgress(
+                    startEpisodeId = episodeId,
+                    initialPositionMs = null,
+                    entryPoint = PlaybackEntryPoint.GENERIC,
+                    sourceContext =
+                        entryPointKey?.let { key ->
+                            android.os.Bundle().apply { putString("entry_point", key) }
+                        },
+                ).first
+            },
             playQueue = { episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext ->
                 queueCoordinator.playQueue(
                     episodes,
@@ -509,16 +519,19 @@ class PlaybackRepository internal constructor(
         startEpisodeId: String?,
         initialPositionMs: Long?,
         entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
+        sourceContext: android.os.Bundle? = null,
     ): Pair<Long, Boolean> {
         var initialLikeState = false
         var savedProgressMs = 0L
         var isCompleted = false
+        var lastPlayedAtMs: Long? = null
         var resetRequested = false
         if (startEpisodeId != null) {
             val saved = listeningHistoryDao.getHistoryItem(startEpisodeId)
             if (saved != null) {
                 savedProgressMs = saved.progressMs
                 isCompleted = saved.isCompleted
+                lastPlayedAtMs = saved.lastPlayedAt
                 resetRequested =
                     shouldResetPlaybackForMixtape(
                         saved.progressMs,
@@ -528,6 +541,10 @@ class PlaybackRepository internal constructor(
                 initialLikeState = saved.isLiked
             }
         }
+        val entryPointKey =
+            PlaybackMediaIdPolicy.parseEntryPointString(sourceContext)
+                ?: entryPoint.takeIf { it != PlaybackEntryPoint.GENERIC }?.name?.lowercase()
+        val staleRestartEnabled = userPreferencesRepository.restartForgottenEpisodesStream.first()
         val initialPosition =
             PlaybackSkipPolicy.resolveInitialPosition(
                 explicitPositionMs = initialPositionMs,
@@ -535,6 +552,9 @@ class PlaybackRepository internal constructor(
                 isCompleted = isCompleted,
                 skipBeginningMs = PlaybackSkipPolicy.DEFAULT_SKIP_BEGINNING_MS,
                 resetRequested = resetRequested,
+                resumeIntent = PlaybackSkipPolicy.resumeIntentFromEntryPoint(entryPointKey),
+                lastPlayedAtMs = lastPlayedAtMs,
+                staleRestartEnabled = staleRestartEnabled,
             )
         return Pair(initialPosition.positionMs, initialLikeState)
     }
