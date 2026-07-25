@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.12] - 2026-07-25
+
 ### Added
 - Floating bottom navigation chrome (3‑tab pill + Lore FAB) with default navigation_style set to floating (classic selectable in Settings → Appearance → Navigation); Round lettering preset added with lighter GoogleSansWeight scale (Soft and Crisp retained); HTTPS‑only App Links for aswin.cx share endpoints with autoVerify and updated assetlinks.json (Play signing SHA‑256). ([#949](https://github.com/boxcreate/boxlore/pull/949)) <!-- impact:user-impact-high -->
 - Intent‑aware soft‑expire for implicit playback via UserPreferencesRepository.restartForgottenEpisodesStream and PlaybackSkipPolicy logic to restart episodes after 7 days without lastPlayedAt; Home discovery layout overhaul using EqualHeightPosterGrid and updated card components (FeedMediaCard, PodcastCard, CuratedEpisodeCard) to provide equal‑height title‑only posters across rails and grids. ([#950](https://github.com/boxcreate/boxlore/pull/950)) <!-- impact:user-impact-high -->
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Roborazzi verification task (:feature:home:verifyRoborazziDebug) removed from CI unit‑tests workflow, rendering goldens local‑optional. ([#949](https://github.com/boxcreate/boxlore/pull/949)) <!-- impact:user-impact-high -->
 - Legacy Google Sans TTF assets removed. ([#948](https://github.com/boxcreate/boxlore/pull/948)) <!-- impact:user-impact-medium -->
+
 ## [v0.0.11] - 2026-07-22
 
 ### Added
