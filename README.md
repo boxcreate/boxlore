@@ -8,7 +8,7 @@
 
 <br/>
 
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.11.apk">
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.12.apk">
   <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
 &nbsp;&nbsp;
@@ -53,38 +53,27 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <!-- upcoming-changes:start -->
 <div align="center">
 
-<details open>
+<details>
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
-<b>🆕 New features:</b>
-<ul align="left">
-<li>A floating bottom bar with three tabs and a Lore button now appears; you can switch to classic style in Settings → Appearance → Navigation, and the mini‑player was resized to avoid overlap. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
-<li>Episodes you haven’t played in 7 days will automatically restart from the beginning, the queue labels them “Starting over”, and you can toggle this in Settings → Playback → Resume. <a href="https://github.com/boxcreate/boxlore/pull/950"><img src="https://img.shields.io/badge/PR-950-6750A4?style=flat-square" alt="PR #950" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>The For You page now loads recommendations instantly, using a new cache so fresh installs no longer show a blank state. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
-<li>New lettering styles (Crisp, Soft, Round) and a variable Google Sans Flex font let you customize text appearance, and theme changes are now faster thanks to caching. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
-</ul>
+<p align="left">
+New features and improvements for the next release are currently in development.
+</p>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
 
 <br/>
 
 <details open>
-<summary><b>🎉 What's New (v0.0.11) - 2026-07-22</b></summary>
+<summary><b>🎉 What's New (v0.0.12) - 2026-07-25</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Your listening history now shows session summaries, a calendar view, and stats. <a href="https://github.com/boxcreate/boxlore/pull/932"><img src="https://img.shields.io/badge/PR-932-6750A4?style=flat-square" alt="PR #932" height="18"/></a></li>
-<li>Home displays up to three curated editorial rows each daypart, giving fresh picks. <a href="https://github.com/boxcreate/boxlore/pull/942"><img src="https://img.shields.io/badge/PR-942-6750A4?style=flat-square" alt="PR #942" height="18"/></a></li>
+<li>Episodes you left idle for 7 days now automatically restart from the beginning, marked as "Starting over", with a new toggle in Settings to control this. <a href="https://github.com/boxcreate/boxlore/pull/950"><img src="https://img.shields.io/badge/PR-950-6750A4?style=flat-square" alt="PR #950" height="18"/></a></li>
+<li>A new floating bottom navigation bar with three tabs and a Lore button replaces the old menu, and the mini-player is repositioned to stay clear. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Playback speed and seek position are remembered after you clear or restart the app. <a href="https://github.com/boxcreate/boxlore/pull/933"><img src="https://img.shields.io/badge/PR-933-6750A4?style=flat-square" alt="PR #933" height="18"/></a></li>
-</ul>
-<b>🐛 Fixes:</b>
-<ul align="left">
-<li>When you reopen the app, playback resumes correctly and mini‑player stays in sync. <a href="https://github.com/boxcreate/boxlore/pull/904"><img src="https://img.shields.io/badge/PR-904-6750A4?style=flat-square" alt="PR #904" height="18"/></a></li>
-<li>Android Auto now always shows the correct episode artwork without blanks. <a href="https://github.com/boxcreate/boxlore/pull/939"><img src="https://img.shields.io/badge/PR-939-6750A4?style=flat-square" alt="PR #939" height="18"/></a></li>
+<li>The "For You" home feed now loads recommendations from a local cache, so new installs show content instead of an empty screen. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
+<li>A new variable Google Sans Flex font adds roundness presets (Crisp, Soft, Round) and speeds up theme changes across the app. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
@@ -268,7 +257,7 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
 <a id="install--build"></a>
 
 <div align="center">
-  <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.11.apk">
+  <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.12.apk">
     <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
   </a>
   &nbsp;&nbsp;
