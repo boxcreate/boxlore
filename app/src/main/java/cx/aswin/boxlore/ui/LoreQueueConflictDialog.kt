@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.ui
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -53,7 +55,7 @@ fun LoreQueueConflictDialog(
             Text(
                 text = "Start a Lore queue?",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
             )
         },
         text = {

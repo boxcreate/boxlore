@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -82,7 +84,7 @@ fun BecauseYouLikeSection(
                             text = "BECAUSE YOU LIKE",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             letterSpacing = 0.5.sp,
                         )
                     }
@@ -90,7 +92,7 @@ fun BecauseYouLikeSection(
                     Text(
                         text = podcast.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -193,7 +195,7 @@ private fun BecauseYouLikeSectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -107,7 +109,7 @@ internal fun SeekDurationIcon(
             color = tint,
             fontSize = numberSize,
             lineHeight = numberSize,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
         )
     }
 }

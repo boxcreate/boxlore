@@ -122,6 +122,7 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
                 onboardingViewModel.startOnboarding("home_import_banner")
                 navController.navigate("onboarding")
             },
+            onInitialContentReady = w.session.onInitialHomeContentReady,
             onBriefingClick = { region ->
                 navController.navigate("briefing?region=$region")
             },

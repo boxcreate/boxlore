@@ -8,9 +8,11 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 
 - `BriefingScreen` is the route-level composable used by `:app`.
 - Section headers in briefing UI use `rememberSectionHeaderFontFamily()` from `:core:designsystem` so lettering roundness follows Appearance settings.
+- Briefing emphasis uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 - `BriefingViewModel` exposes briefing state and actions using injected catalog, playback, and queue dependencies.
 - `BriefingUiState` models screen state.
 - `BriefingIdentity` contains pure identity helpers for tests and UI mapping.
+- `BriefingPlaybackLogic` resolves whether a briefing interaction pauses, resumes, starts, or seeks; choosing another story seeks directly instead of pausing.
 - `BriefingStoriesPager` and `BriefingStoryComponents` provide extracted story-presentation pieces.
 
 ## Internal structure
@@ -21,6 +23,7 @@ src/main/java/cx/aswin/boxlore/feature/briefing/
   BriefingScreen.kt
   BriefingStoriesPager.kt
   BriefingStoryComponents.kt
+  BriefingPlaybackLogic.kt
   BriefingUiState.kt
   BriefingViewModel.kt
 ```
@@ -47,7 +50,7 @@ src/main/java/cx/aswin/boxlore/feature/briefing/
 
 - Unit tests live under `feature/briefing/src/test`.
 - `BriefingIdentityTest` covers region aliases and briefing identity helpers.
-- Manual smoke should verify briefing launch, story paging, and play/resume through the shared playback graph.
+- Manual smoke should verify briefing launch, story paging, accurate duration metadata once available, and switching stories without interrupting playback.
 
 ```bash
 ./gradlew :feature:briefing:testDebugUnitTest

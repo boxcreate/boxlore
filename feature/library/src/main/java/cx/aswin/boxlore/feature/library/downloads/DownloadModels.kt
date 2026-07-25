@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.downloads
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -140,7 +142,7 @@ internal fun PodcastListShowCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

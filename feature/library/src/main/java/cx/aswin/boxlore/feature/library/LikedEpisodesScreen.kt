@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -50,8 +52,8 @@ fun LikedEpisodesScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
+        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
         fraction = scrollBehavior.state.collapsedFraction,
     )
 

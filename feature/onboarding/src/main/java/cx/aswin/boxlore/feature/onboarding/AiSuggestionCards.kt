@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -183,14 +185,14 @@ private fun HeroPodcastBadges(categoryName: String) {
             text = "AI TOP PICK",
             background = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            fontWeight = FontWeight.Black,
+            fontWeight = GoogleSansWeight.extraBold,
             letterSpacing = 1.sp,
         )
         PodcastBadge(
             text = categoryName.uppercase(),
             background = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             letterSpacing = 0.5.sp,
         )
     }
@@ -228,7 +230,7 @@ private fun PodcastTitleAndArtist(podcast: Podcast) {
         text = podcast.title,
         style =
             MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = GoogleSansWeight.bold,
                 lineHeight = 20.sp,
             ),
         maxLines = 2,
@@ -276,7 +278,7 @@ internal fun ExpandablePodcastDescription(
             style =
                 MaterialTheme.typography.labelSmall.copy(
                     fontSize = style.readMoreFontSize,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.primary,
                 ),
             modifier = Modifier.padding(top = style.readMoreTopPadding),
@@ -333,7 +335,7 @@ internal fun PodcastSubscriptionButton(
         Text(
             text = buttonStyle.text,
             color = buttonStyle.contentColor,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             style = MaterialTheme.typography.labelLarge,
         )
     }

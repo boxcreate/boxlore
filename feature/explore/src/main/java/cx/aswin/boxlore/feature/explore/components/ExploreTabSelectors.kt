@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -116,7 +118,7 @@ fun ExploreTabSelectorFab(
                         Text(
                             text = "For You",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = forYouContentColor
                         )
                     }
@@ -152,7 +154,7 @@ fun ExploreTabSelectorFab(
                         Text(
                             text = "Top",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = topContentColor
                         )
                     }
@@ -234,7 +236,7 @@ fun SearchTabSelector(
                         Text(
                             text = "Shows",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = showsContentColor
                         )
                     }
@@ -269,7 +271,7 @@ fun SearchTabSelector(
                             Text(
                                 text = "Episodes",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = episodesContentColor
                             )
                         }

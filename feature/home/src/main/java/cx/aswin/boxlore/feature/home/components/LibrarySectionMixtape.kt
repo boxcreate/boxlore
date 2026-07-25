@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -237,7 +239,7 @@ internal fun MixtapeEpisodeCard(
                         style =
                             MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                             ),
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
@@ -248,7 +250,7 @@ internal fun MixtapeEpisodeCard(
                         text = episode.title,
                         style =
                             MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 fontSize = 12.5.sp,
                                 lineHeight = 15.sp,
                             ),
@@ -279,7 +281,7 @@ internal fun MixtapeEpisodeCard(
                                     text = "NEW",
                                     style =
                                         MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.ExtraBold,
+                                            fontWeight = GoogleSansWeight.bold,
                                             fontSize = 7.sp,
                                             letterSpacing = 0.5.sp,
                                         ),
@@ -296,7 +298,7 @@ internal fun MixtapeEpisodeCard(
                                 style =
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize = 9.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = GoogleSansWeight.medium,
                                     ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                             )
@@ -323,7 +325,7 @@ internal fun MixtapeEpisodeCard(
                                 style =
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = GoogleSansWeight.bold,
                                     ),
                                 color =
                                     if (isInProgress) {

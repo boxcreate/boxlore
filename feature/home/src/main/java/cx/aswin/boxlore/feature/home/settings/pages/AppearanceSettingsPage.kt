@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,12 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
+import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.theme.BrandSeeds
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
@@ -52,6 +56,7 @@ data class AppearanceUiState(
     val currentThemeBrand: String,
     val currentSurfaceStyle: String,
     val currentFontRoundness: String = FontRoundness.DEFAULT_KEY,
+    val currentNavigationStyle: String = NavigationStyle.Floating.key,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -61,6 +66,7 @@ data class AppearanceActions(
     val onSetThemeBrand: (String) -> Unit,
     val onSetSurfaceStyle: (String) -> Unit,
     val onSetFontRoundness: (String) -> Unit = {},
+    val onSetNavigationStyle: (String) -> Unit = {},
 )
 
 @Composable
@@ -105,12 +111,37 @@ internal fun AppearanceSettingsPage(
             onSetFontRoundness = actions.onSetFontRoundness,
         )
 
+        NavigationStyleSection(
+            currentNavigationStyle = state.currentNavigationStyle,
+            onSetNavigationStyle = actions.onSetNavigationStyle,
+        )
+
         ColorsSection(
             isDynamicColorEnabled = state.isDynamicColorEnabled,
             onToggleDynamicColor = actions.onToggleDynamicColor,
             currentThemeBrand = state.currentThemeBrand,
             onSetThemeBrand = actions.onSetThemeBrand,
         )
+    }
+}
+
+@Composable
+private fun NavigationStyleSection(
+    currentNavigationStyle: String,
+    onSetNavigationStyle: (String) -> Unit,
+) {
+    val selectedStyle = NavigationStyle.fromKey(currentNavigationStyle)
+    SettingsGroup(
+        title = "Navigation",
+        footer = "Choose the floating pill or a classic Material bottom bar.",
+    ) {
+        SettingsContent {
+            ConnectedOptionSelector(
+                options = NavigationStyle.entries.map { it.key to it.label },
+                selected = selectedStyle.key,
+                onSelect = onSetNavigationStyle,
+            )
+        }
     }
 }
 
@@ -171,7 +202,7 @@ private fun ForcedModeBadge(mode: ThemeMode) {
             Text(
                 text = "Locked to ${mode.label.lowercase()}",
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
             )
         }
     }
@@ -208,8 +239,11 @@ private fun LetteringSection(
     var previewExpanded by remember { mutableStateOf(false) }
     val selectedKey = FontRoundness.sanitizeKey(currentFontRoundness)
     val axis = remember(selectedKey) { FontRoundness.axisValue(selectedKey) }
-    val bodyFamily = remember(axis) { buildGoogleSansFamily(axis) }
-    val headerFamily = remember(axis) { buildSectionHeaderFontFamily(axis) }
+    val context = LocalContext.current
+    val titleFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 600) }
+    val bodyFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 400) }
+    val captionFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 500) }
+    val headerFamily = remember(context, axis) { buildSectionHeaderFontFamily(context, axis) }
 
     SettingsGroup(
         title = "Lettering",
@@ -230,7 +264,9 @@ private fun LetteringSection(
             )
             AnimatedVisibility(visible = previewExpanded) {
                 LetteringPreviewSamples(
+                    titleFamily = titleFamily,
                     bodyFamily = bodyFamily,
+                    captionFamily = captionFamily,
                     headerFamily = headerFamily,
                 )
             }
@@ -288,7 +324,9 @@ private fun LetteringPreviewToggle(
 
 @Composable
 private fun LetteringPreviewSamples(
+    titleFamily: FontFamily,
     bodyFamily: FontFamily,
+    captionFamily: FontFamily,
     headerFamily: FontFamily,
 ) {
     Column(
@@ -302,15 +340,15 @@ private fun LetteringPreviewSamples(
             label = "Section",
             sample = "Your morning stack",
             fontFamily = headerFamily,
-            fontWeight = FontWeight.ExtraBold,
+            fontWeight = FontWeight.Normal,
             fontSizeSp = 22f,
             lineHeightSp = 26f,
         )
         LetteringPreviewLine(
             label = "Title",
             sample = "The Daily Briefing",
-            fontFamily = bodyFamily,
-            fontWeight = FontWeight.SemiBold,
+            fontFamily = titleFamily,
+            fontWeight = FontWeight.Normal,
             fontSizeSp = 18f,
             lineHeightSp = 22f,
         )
@@ -325,8 +363,8 @@ private fun LetteringPreviewSamples(
         LetteringPreviewLine(
             label = "Caption",
             sample = "Updated just now · 24 min",
-            fontFamily = bodyFamily,
-            fontWeight = FontWeight.Medium,
+            fontFamily = captionFamily,
+            fontWeight = FontWeight.Normal,
             fontSizeSp = 12f,
             lineHeightSp = 16f,
         )

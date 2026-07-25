@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -93,7 +95,7 @@ fun ExplorePodcastCard(
                             text = podcast.genre.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -180,7 +182,7 @@ fun ExploreVibeCard(
             Text(
                 text = vibe.second,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = contentColor,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -250,7 +252,7 @@ fun ExploreVibeChip(
             Text(
                 text = vibe.second,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = contentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -322,7 +324,7 @@ fun ExploreEpisodeHeroCard(
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         letterSpacing = 0.5.sp
                     )
                 )
@@ -341,7 +343,7 @@ fun ExploreEpisodeHeroCard(
                 style = MaterialTheme.typography.labelMedium.copy(
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     letterSpacing = 0.4.sp
                 ),
                 maxLines = 1,
@@ -352,7 +354,7 @@ fun ExploreEpisodeHeroCard(
                 text = episode.title,
                 style = MaterialTheme.typography.titleMedium.copy(
                     color = Color.White,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = GoogleSansWeight.bold,
                     fontSize = 16.sp,
                     lineHeight = 20.sp
                 ),
@@ -371,7 +373,7 @@ fun ExploreEpisodeHeroCard(
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = GoogleSansWeight.medium
                         )
                     )
                 }
@@ -388,7 +390,7 @@ fun ExploreEpisodeHeroCard(
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = GoogleSansWeight.medium
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -440,7 +442,7 @@ fun ExploreEpisodeBentoCard(
                         Text(
                             text = "${episode.duration / 60}m",
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = GoogleSansWeight.medium,
                             color = Color.White,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
@@ -454,7 +456,7 @@ fun ExploreEpisodeBentoCard(
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontSize = 14.sp,
                         lineHeight = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = GoogleSansWeight.bold
                     ),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -465,7 +467,7 @@ fun ExploreEpisodeBentoCard(
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = GoogleSansWeight.medium
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

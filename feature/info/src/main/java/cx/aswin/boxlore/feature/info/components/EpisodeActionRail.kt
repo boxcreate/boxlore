@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
@@ -245,7 +247,7 @@ private fun MarkPlayedCoachmark(
             Text(
                 text = "Tip: tap the check to mark this episode complete",
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
             )
         }
@@ -305,7 +307,7 @@ internal fun CompactEpisodeActionRail(
                     text = state.title,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),

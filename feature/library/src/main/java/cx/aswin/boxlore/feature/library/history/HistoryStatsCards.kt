@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.history
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,7 +92,7 @@ fun ListeningTimeCard(
                 Text(
                     text = stringResource(R.string.history_time_title),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -107,7 +109,7 @@ fun ListeningTimeCard(
                                 fontSize = valueSp,
                                 lineHeight = valueSp * 1.05f,
                             ),
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.End,
@@ -188,7 +190,7 @@ private fun TimeMetaChip(
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Medium,
+            fontWeight = GoogleSansWeight.medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

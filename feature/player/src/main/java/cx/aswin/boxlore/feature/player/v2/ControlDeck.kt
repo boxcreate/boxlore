@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.SizeTransform
@@ -99,7 +101,7 @@ fun PrimaryControls(
     var interactionToken by remember { mutableIntStateOf(0) }
     LaunchedEffect(interactionToken) {
         if (interactionToken > 0) {
-            delay(110)
+            delay(280)
             latchedIndex = null
         }
     }
@@ -107,7 +109,7 @@ fun PrimaryControls(
     val baseWeights = remember { listOf(1f, 1.18f, 1f) }
     val softGroupSpring = spring<Float>(
         dampingRatio = 0.78f,
-        stiffness = 65f
+        stiffness = 200f,
     )
     val replayWeight by animateFloatAsState(
         targetControlWeight(0, activeIndex, baseWeights),
@@ -519,7 +521,7 @@ fun SpeedSheet(
             Text(
                 text = "Playback speed",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = GoogleSansWeight.bold
             )
             Spacer(Modifier.height(16.dp))
             val speeds = listOf(0.5f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
@@ -538,7 +540,7 @@ fun SpeedSheet(
                         Text(
                             text = formatSpeedLabel(speed),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                             color = if (selected) colorScheme.onPrimary else colorScheme.onSurface
                         )
                     }
@@ -574,7 +576,7 @@ fun SleepSheet(
             Text(
                 text = "Sleep timer",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = GoogleSansWeight.bold
             )
             Spacer(Modifier.height(16.dp))
             val options = listOf(
@@ -601,7 +603,7 @@ fun SleepSheet(
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = GoogleSansWeight.semiBold,
                             color = if (selected) colorScheme.onPrimary else colorScheme.onSurface
                         )
                     }

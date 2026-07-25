@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.Manifest
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -601,7 +603,7 @@ fun PodcastInfoScreen(
                 Text(
                     text = state.podcast.title,
                     fontSize = titleFontSize,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
@@ -712,12 +714,12 @@ fun PodcastInfoScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = if (isTargetOngoing) "Resume: " else "Jump to: ",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.medium),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                                 )
                                 Text(
                                     text = targetJumpEpisode?.title ?: "",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     maxLines = 1,
                                     modifier =

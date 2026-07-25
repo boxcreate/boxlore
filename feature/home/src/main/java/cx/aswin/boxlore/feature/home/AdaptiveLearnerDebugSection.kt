@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -131,7 +133,7 @@ internal fun AdaptiveLearnerDebugSection(
                     text = {
                         Text(
                             text = pane.label,
-                            fontWeight = if (paneIndex == index) FontWeight.Bold else FontWeight.Medium,
+                            fontWeight = if (paneIndex == index) GoogleSansWeight.bold else GoogleSansWeight.medium,
                         )
                     },
                 )
@@ -216,7 +218,7 @@ private fun LearnerHeader(
                 Icon(Icons.Rounded.AutoAwesome, null, tint = stageColor, modifier = Modifier.size(22.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("Learning engine", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Learning engine", style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.bold)
                 Text(
                     text = "$stage · ${discovery?.updateCount ?: 0} outcomes · Discovery blend ${(
                         ((discovery?.learnedBlend ?: 0.0) * 100)
@@ -265,7 +267,7 @@ private fun LogToggleCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Signal logging", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("Signal logging", style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
                 Text(
                     text =
                         if (enabled) {
@@ -385,7 +387,7 @@ private fun counterPill(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("$value", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text("$value", style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.bold)
             Text(
                 label,
                 style = MaterialTheme.typography.labelSmall,
@@ -426,7 +428,7 @@ private fun EventRow(
                     Text(
                         text = event.title,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = GoogleSansWeight.semiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
@@ -540,7 +542,7 @@ private fun AffinityRow(
         Text(
             text = signed(affinity),
             style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
             color = if (affinity >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             modifier = Modifier.width(44.dp),
         )
@@ -659,7 +661,7 @@ private fun ObjectiveRow(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(prettyLabel(obj.objective.name), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(prettyLabel(obj.objective.name), style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.bold)
                 Text(
                     text = "$stage · ${obj.updateCount}",
                     style = MaterialTheme.typography.labelSmall,
@@ -705,7 +707,7 @@ private fun FeatureWeightRow(
         Text(
             text = signed(weight.weight),
             style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
             color = if (weight.weight >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             modifier = Modifier.width(52.dp),
         )
@@ -732,7 +734,7 @@ private fun SectionCard(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.bold)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             content()
@@ -759,7 +761,7 @@ private fun InfoCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(Icons.Rounded.Science, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
             Text(
                 body,
                 style = MaterialTheme.typography.bodySmall,

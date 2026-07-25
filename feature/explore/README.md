@@ -7,7 +7,8 @@ Owns Explore discovery and the Learn tab presentation: browse/search discovery, 
 ## Public API
 
 - `ExploreScreen` and `ExploreViewModel` for the Explore route.
-- Explore hero/browse headers use `rememberSectionHeaderFontFamily()` from `:core:designsystem` for section titles tied to Appearance lettering roundness.
+- Explore hero/browse headers use `rememberSectionHeaderFontFamily()` from `:core:designsystem` for section titles tied to Appearance lettering roundness; Explore and Learn use centralized Google Sans Flex weight tokens.
+- Explore list and selector-FAB clearance uses designsystem’s shared navigation-style / mini-player padding contract so controls remain above either app chrome.
 - `LearnScreen` and `LearnViewModel` for the Learn route (curiosity cards, queue/play actions).
 - `LearnHistoryScreen` and `LearnHistoryViewModel` for Learn history.
 - `LearnCuriosityHistoryStore` for Learn history persistence through prefs APIs.

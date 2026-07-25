@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,7 +52,7 @@ internal fun ExploreEmptyState() {
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "No Podcasts Found",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
@@ -90,7 +92,7 @@ internal fun ExploreEpisodesSearchEmptyState() {
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "No Episodes Found",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
@@ -130,7 +132,7 @@ internal fun ExploreEpisodesSearchIdleState() {
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Search by Concept",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
@@ -173,7 +175,7 @@ fun ExploreRecommendationsEmptyState(
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Your Taste Profile is Growing",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )

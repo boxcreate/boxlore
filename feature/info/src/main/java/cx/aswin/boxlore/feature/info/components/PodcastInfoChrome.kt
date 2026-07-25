@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -187,7 +189,7 @@ internal fun ToolbarWarningBanner(
                         Text(
                             text = toolbarWarningTitle(warning),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                     }
@@ -231,7 +233,7 @@ internal fun ToolbarWarningBanner(
                         ) {
                             Text(
                                 text = actionText,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 style = MaterialTheme.typography.labelLarge,
                             )
                         }
@@ -486,7 +488,7 @@ internal fun MarkAllEpisodesDialog(
             Text(
                 text = if (markAsPlayed) "Mark all as played?" else "Mark all as unplayed?",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )

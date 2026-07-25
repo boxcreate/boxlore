@@ -210,7 +210,7 @@ class BriefingViewModel(
                 podcastTitle = dummyPodcast.title,
                 podcastImageUrl = dummyPodcast.imageUrl,
                 podcastArtist = dummyPodcast.artist,
-                duration = 180,
+                duration = 0,
                 publishedDate = publishedDate,
                 transcriptUrl = briefing.transcriptUrl
                     ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
@@ -226,19 +226,23 @@ class BriefingViewModel(
         val state = _uiState.value
         if (state is BriefingUiState.Success) {
             val briefingEpisodeId = getBriefingEpisodeId(briefing)
-            val isCurrentBriefing = playbackRepository.playerState.value.currentEpisode?.id == briefingEpisodeId
-            
-            if (isCurrentBriefing) {
-                if (playbackRepository.playerState.value.isPlaying) {
-                    playbackRepository.pause()
-                } else {
-                    if (initialPositionMs != null) {
-                        playbackRepository.seekTo(initialPositionMs)
-                    }
-                    playbackRepository.resume()
+            val playerState = playbackRepository.playerState.value
+            when (
+                val action = resolveBriefingPlaybackAction(
+                    isCurrentBriefing = playerState.currentEpisode?.id == briefingEpisodeId,
+                    isPlaying = playerState.isPlaying,
+                    requestedPositionMs = initialPositionMs,
+                )
+            ) {
+                is BriefingPlaybackAction.StartBriefing ->
+                    playBriefing(briefing, action.initialPositionMs)
+
+                BriefingPlaybackAction.Pause -> playbackRepository.pause()
+                BriefingPlaybackAction.Resume -> playbackRepository.resume()
+                is BriefingPlaybackAction.SeekToStory -> {
+                    playbackRepository.seekTo(action.positionMs)
+                    if (action.resumeAfterSeek) playbackRepository.resume()
                 }
-            } else {
-                playBriefing(briefing, initialPositionMs)
             }
         }
     }

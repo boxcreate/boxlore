@@ -11,7 +11,7 @@ object FontRoundness {
     const val SOFT = FontRoundnessAxis.SOFT
     const val ROUND = FontRoundnessAxis.ROUND
 
-    const val DEFAULT_KEY = SOFT
+    const val DEFAULT_KEY = ROUND
 
     // Literals keep these compile-time constants (Axis ints live in :core:prefs).
     const val AXIS_CRISP = 0f
@@ -37,6 +37,6 @@ object FontRoundness {
 }
 
 /**
- * Default Flex roundness (Soft / ROND 50). Prefer [FontRoundness.axisValue] when a pref is available.
+ * Default Flex roundness (Round / ROND 100). Prefer [FontRoundness.axisValue] when a pref is available.
  */
-const val GoogleSansFlexRoundness = FontRoundness.AXIS_SOFT
+const val GoogleSansFlexRoundness = FontRoundness.AXIS_ROUND

@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -87,7 +89,7 @@ internal fun PlayerTopBar(
             Text(
                 text = if (isShowingTip) "↓ Swipe down to minimize" else "Now Playing",
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
                 color = if (isShowingTip) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurface.copy(alpha = 0.7f),
             )
         }

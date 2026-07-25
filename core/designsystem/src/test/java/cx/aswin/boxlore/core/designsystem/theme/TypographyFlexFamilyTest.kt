@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.designsystem.theme
 
+import androidx.compose.ui.text.font.FontWeight
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -9,10 +10,10 @@ import org.junit.jupiter.api.Test
  */
 class TypographyFlexFamilyTest {
     @Test
-    fun `google sans flex soft default is moderate`() {
-        assertEquals(50f, GoogleSansFlexRoundness)
-        assertEquals(50f, FontRoundness.AXIS_SOFT)
-        assertEquals(FontRoundness.SOFT, FontRoundness.DEFAULT_KEY)
+    fun `google sans flex round default is full ROND`() {
+        assertEquals(100f, GoogleSansFlexRoundness)
+        assertEquals(100f, FontRoundness.AXIS_ROUND)
+        assertEquals(FontRoundness.ROUND, FontRoundness.DEFAULT_KEY)
     }
 
     @Test
@@ -20,7 +21,16 @@ class TypographyFlexFamilyTest {
         assertEquals(0f, FontRoundness.axisValue("crisp"))
         assertEquals(50f, FontRoundness.axisValue("soft"))
         assertEquals(100f, FontRoundness.axisValue("round"))
-        assertEquals(50f, FontRoundness.axisValue("unknown"))
+        assertEquals(100f, FontRoundness.axisValue("unknown"))
         assertEquals("crisp", FontRoundness.sanitizeKey("CRISP"))
+    }
+
+    @Test
+    fun `google sans weight scale stays intentionally light`() {
+        assertEquals(FontWeight.Normal, GoogleSansWeight.regular)
+        assertEquals(FontWeight.Normal, GoogleSansWeight.medium)
+        assertEquals(FontWeight.Medium, GoogleSansWeight.semiBold)
+        assertEquals(FontWeight.SemiBold, GoogleSansWeight.bold)
+        assertEquals(FontWeight.SemiBold, GoogleSansWeight.extraBold)
     }
 }

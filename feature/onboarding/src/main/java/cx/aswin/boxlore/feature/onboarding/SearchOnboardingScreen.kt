@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -184,7 +186,7 @@ internal fun OnboardingSearchScreen(
                             Text(
                                 text = category.label,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = GoogleSansWeight.semiBold,
                             )
                         }
                     }
@@ -214,7 +216,7 @@ internal fun OnboardingSearchScreen(
                     Text(
                         text = sectionTitle,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp),
                     )
 
@@ -268,7 +270,7 @@ internal fun OnboardingSearchScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "No Podcasts Found",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                         )
@@ -319,7 +321,7 @@ internal fun OnboardingSearchScreen(
                     Text(
                         text = "Selected Shows (${subscribedIds.size})",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -392,7 +394,7 @@ internal fun OnboardingSearchScreen(
                                 "Done (${subscribedIds.size} selected)"
                             },
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                         )
                     }
                 }
@@ -475,7 +477,7 @@ private fun PopularPodcastGridItem(
         Text(
             text = podcast.title,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp),
@@ -524,7 +526,7 @@ private fun SearchResultRow(
             Text(
                 podcast.title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )

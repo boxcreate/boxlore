@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -92,7 +94,7 @@ internal fun PrivacySettingsPage(
                     Text(
                         text = "And again: never sold, never for ads. boxlore will never have ads.",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = GoogleSansWeight.medium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -269,7 +271,7 @@ private fun PromiseCard() {
                     Text(
                         text = "Our promise",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                     )
                     Text(
                         text = "From the people building boxlore",
@@ -294,7 +296,7 @@ private fun PromiseCard() {
                 Text(
                     text = "What that means for your data",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                 )
                 PromisePillRow(
                     pills =
@@ -336,7 +338,7 @@ private fun PromisePillRow(pills: List<String>) {
                     text = label,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                 )
             }
         }
@@ -384,7 +386,7 @@ private fun PrivacyField(
             text = label,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
         )
         Text(
             text = body,
@@ -419,7 +421,7 @@ private fun ExampleCallout(text: String) {
                 Text(
                     text = "Example from real usage",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                 )
                 Text(
                     text = text,
@@ -509,7 +511,7 @@ private fun AnalyticsCardHeader(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = GoogleSansWeight.semiBold,
             )
             Text(
                 text = body,

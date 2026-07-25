@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -200,7 +202,7 @@ internal fun StatusRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = valueColor)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = GoogleSansWeight.semiBold, color = valueColor)
     }
 }
 
@@ -216,7 +218,7 @@ internal fun SleepTestingSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Skip sleep-window restriction", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("Skip sleep-window restriction", style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
                 Text(
                     "Show the prompt on every playback, any time of day",
                     style = MaterialTheme.typography.bodySmall,

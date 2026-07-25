@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -47,8 +49,8 @@ fun AutoDownloadSettingsScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
+        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
         fraction = scrollBehavior.state.collapsedFraction,
     )
 
@@ -115,7 +117,7 @@ fun AutoDownloadSettingsScreen(
                             Text(
                                 text = "How Auto-Download Works",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
@@ -161,7 +163,7 @@ fun AutoDownloadSettingsScreen(
                                     Text(
                                         text = "To turn on for a show: Open any Podcast details page and tap the Cloud Download icon.",
                                         style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.SemiBold,
+                                        fontWeight = GoogleSansWeight.semiBold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
@@ -190,7 +192,7 @@ fun AutoDownloadSettingsScreen(
                         Text(
                             text = "Download on Wi-Fi Only",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = GoogleSansWeight.semiBold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -224,7 +226,7 @@ fun AutoDownloadSettingsScreen(
                     Text(
                         text = "Max Episodes per Podcast",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = GoogleSansWeight.semiBold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -279,7 +281,7 @@ fun AutoDownloadSettingsScreen(
                         Text(
                             text = "Auto-Delete when Completed",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = GoogleSansWeight.semiBold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(

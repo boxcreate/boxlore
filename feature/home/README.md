@@ -6,13 +6,13 @@ Owns Home feed presentation, Settings screens, RSS-add UI, and local debug surfa
 
 ## Public API
 
-- `HomeRoute`, `HomeScreen`, `HomeFeed`, `HomeViewModel`, and `HomeViewModelAssembler` for the Home route.
+- `HomeRoute`, `HomeScreen`, `HomeFeed`, `HomeViewModel`, and `HomeViewModelAssembler` for the Home route. `HomeRoute` reports after its initial loaded feed has committed two frames so the app shell can begin nonessential launch animation without competing with first-paint work.
 - The discovery area below the daypart greeting presents three editorial rows from the
   catalog’s existing curated provider endpoint. Provider IDs remain internal; listener copy
   uses concise editorial titles and never exposes backend terminology.
-- `settings.SettingsScreen`, `SettingsViewModel`, and `SettingsViewModelAssembler` for Settings. Appearance includes Theme (System / Light / Dark connected toggle), Background, **Lettering** (Crisp / Soft / Round connected toggle, same chip language as content region, plus an expandable sample preview), and Colors.
+- `settings.SettingsScreen`, `SettingsViewModel`, and `SettingsViewModelAssembler` for Settings. Appearance includes Theme (System / Light / Dark connected toggle), Background, **Lettering** (Crisp / Soft / Round connected toggle, same chip language as content region, plus an expandable sample preview), Navigation (Floating / Classic), and Colors.
 - `DebugScreen` and `DebugViewModel` for local learner and runtime diagnostics.
-- Extracted Home UI pieces such as `LibrarySectionRows`, `LibrarySection`, and section/card components.
+- Extracted Home UI pieces such as `LibrarySectionRows`, `LibrarySection`, and section/card components. Their Google Sans Flex emphasis uses shared centralized weight tokens.
 - Pure logic helpers under `logic/` for Home assembly, discovery, hero ordering, selection, playback-state mapping, serial episodes, and affinity behavior.
 
 ## Internal structure
@@ -54,7 +54,7 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:network`, `:core:designsystem`, `:core:analytics`, `:core:ranking`, and `:core:rss`.
-- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3, Coil, Kotlin serialization, Roborazzi for local visual capture tests, Turbine, and Mockito.
+- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3, Coil, Kotlin serialization, optional Roborazzi for local visual capture, Turbine, and Mockito.
 - Reverse-edge rule: feature modules must not depend on other feature modules. ViewModels and assemblers must not directly depend on `BoxLoreDatabase`.
 
 ## Threading / lifecycle
@@ -79,16 +79,16 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 - Unit tests live under `feature/home/src/test`.
 - Existing coverage includes Settings ViewModel tests, Home listening-history formatting,
   discovery greeting, editorial-row selection and de-duplication, and pure Home logic helpers.
-- Roborazzi goldens for settings dialogs are verified in merge CI (`:feature:home:verifyRoborazziDebug`).
+- Optional Roborazzi goldens for settings dialogs (local only; not CI-gated).
 
 ```bash
 ./gradlew :feature:home:testDebugUnitTest
-./gradlew :feature:home:verifyRoborazziDebug
+./gradlew :feature:home:recordRoborazziDebug   # optional
 ```
 
 ## CI relevance
 
-- `unit-tests.yml` runs Home JVM tests, Roborazzi verify, and includes the module in merged coverage verification.
+- `unit-tests.yml` runs Home JVM tests and includes the module in merged coverage verification.
 - `scripts/ci/check-feature-no-boxlore-database.sh` guards direct database usage in feature ViewModels and assemblers.
 
 ## See also

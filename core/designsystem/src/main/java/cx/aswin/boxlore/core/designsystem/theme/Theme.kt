@@ -27,7 +27,7 @@ val LocalSurfaceStyle = staticCompositionLocalOf { SurfaceStyles.CLASSIC_DYNAMIC
 
 /**
  * CompositionLocal providing Google Sans Flex ROND axis (0–100).
- * Provided by [BoxLoreTheme]; default Soft (50).
+ * Provided by [BoxLoreTheme]; default Round (100).
  */
 val LocalFontRoundness = staticCompositionLocalOf { GoogleSansFlexRoundness }
 
@@ -87,6 +87,7 @@ fun BoxLoreTheme(
 ) {
     // Determine effective darkTheme
     val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
+    val context = LocalContext.current
 
     // Determine effective dynamicColor. All themes support dynamic accent coloring if enabled.
     val effectiveDynamicColor = dynamicColor
@@ -94,7 +95,6 @@ fun BoxLoreTheme(
     val colorScheme =
         when {
             effectiveDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val context = LocalContext.current
                 val baseScheme =
                     if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
                 // Apply surface style overrides to dynamic colors
@@ -106,7 +106,7 @@ fun BoxLoreTheme(
             }
         }
 
-    val typography = remember(fontRoundness) { buildBoxLoreTypography(fontRoundness) }
+    val typography = remember(context, fontRoundness) { buildBoxLoreTypography(context, fontRoundness) }
 
     val view = LocalView.current
     if (!view.isInEditMode) {

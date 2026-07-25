@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.downloads
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,8 +79,8 @@ fun DownloadedEpisodesScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
+        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
         fraction = scrollBehavior.state.collapsedFraction,
     )
 
@@ -157,7 +159,7 @@ fun DownloadedEpisodesScreen(
                             Text(
                                 text = "${selectedPodcastIds.size} Selected",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                             )
                         },
                         navigationIcon = {
@@ -260,7 +262,7 @@ fun DownloadedEpisodesScreen(
                                 Text(
                                     text = "Offline Mode",
                                     style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = GoogleSansWeight.bold
                                 )
                                 Text(
                                     text = "No internet connection. Playing downloaded episodes.",

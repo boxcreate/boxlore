@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -112,7 +114,7 @@ internal fun AiChatInputPanel(
                         Text(
                             text = "Temporary Hiccup",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
@@ -137,7 +139,7 @@ internal fun AiChatInputPanel(
                         ) {
                             Icon(Icons.Rounded.Refresh, null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Retry Curation", fontWeight = FontWeight.Bold)
+                            Text("Retry Curation", fontWeight = GoogleSansWeight.bold)
                         }
 
                         OutlinedButton(
@@ -149,7 +151,7 @@ internal fun AiChatInputPanel(
                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                         ) {
-                            Text("Choose Topics Manually", fontWeight = FontWeight.Bold)
+                            Text("Choose Topics Manually", fontWeight = GoogleSansWeight.bold)
                         }
                     }
                 }
@@ -227,7 +229,7 @@ internal fun AiChatInputPanel(
                             text = "AI SYNTHESIS COMPLETE",
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     letterSpacing = 1.2.sp,
                                 ),
                             color = primaryColor,
@@ -268,7 +270,7 @@ internal fun AiChatInputPanel(
                         Text(
                             text = "Reveal My Suggestions",
                             style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
@@ -324,7 +326,7 @@ internal fun AiChatInputPanel(
                             text = "INFO SYNTHESIS READY",
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     letterSpacing = 1.2.sp,
                                 ),
                             color = primaryColor,
@@ -365,7 +367,7 @@ internal fun AiChatInputPanel(
                         Text(
                             text = "Build My Feed",
                             style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
@@ -442,7 +444,7 @@ internal fun AiChatInputPanel(
                                     Text(
                                         text = "Search for \u201C$suggestion\u201D",
                                         style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = GoogleSansWeight.bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
@@ -493,7 +495,7 @@ internal fun AiChatInputPanel(
                                     style =
                                         MaterialTheme.typography.bodySmall.copy(
                                             fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = GoogleSansWeight.bold,
                                         ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 )
@@ -516,7 +518,7 @@ internal fun AiChatInputPanel(
                                     Text(
                                         text = "Build my feed now",
                                         style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = GoogleSansWeight.bold,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
                                 }

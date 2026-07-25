@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -218,7 +220,7 @@ fun YourShowsSection(
                     style =
                         MaterialTheme.typography.headlineSmall.copy(
                             fontFamily = rememberSectionHeaderFontFamily(),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Normal,
                         ),
                     letterSpacing = (-0.5).sp,
                 )
@@ -238,7 +240,7 @@ fun YourShowsSection(
                             text = "Filtered",
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     letterSpacing = 0.5.sp,
                                 ),
                             color = MaterialTheme.colorScheme.primary,
@@ -569,7 +571,7 @@ fun YourShowsSection(
                                             style =
                                                 MaterialTheme.typography.labelLarge.copy(
                                                     fontFamily = rememberSectionHeaderFontFamily(),
-                                                    fontWeight = FontWeight.Bold,
+                                                    fontWeight = FontWeight.Normal,
                                                     letterSpacing = 0.2.sp,
                                                 ),
                                             maxLines = 1,
@@ -643,7 +645,7 @@ fun YourShowsSection(
                             Column {
                                 Text(
                                     text = "You're all caught up",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
@@ -706,7 +708,7 @@ fun YourShowsSection(
                                                 text = selectedPodcast.title,
                                                 style =
                                                     MaterialTheme.typography.titleMedium.copy(
-                                                        fontWeight = FontWeight.ExtraBold,
+                                                        fontWeight = GoogleSansWeight.bold,
                                                         letterSpacing = (-0.4).sp,
                                                         fontSize = 17.sp,
                                                     ),
@@ -744,7 +746,7 @@ fun YourShowsSection(
                                             style =
                                                 MaterialTheme.typography.bodySmall.copy(
                                                     fontSize = 11.5.sp,
-                                                    fontWeight = FontWeight.Medium,
+                                                    fontWeight = GoogleSansWeight.medium,
                                                 ),
                                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                                             maxLines = 1,
@@ -879,7 +881,7 @@ fun YourShowsSection(
                                                 text = "See All Episodes",
                                                 style =
                                                     MaterialTheme.typography.labelMedium.copy(
-                                                        fontWeight = FontWeight.Bold,
+                                                        fontWeight = GoogleSansWeight.bold,
                                                         letterSpacing = 0.1.sp,
                                                     ),
                                                 color = MaterialTheme.colorScheme.primary,

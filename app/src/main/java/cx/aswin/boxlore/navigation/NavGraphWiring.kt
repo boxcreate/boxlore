@@ -16,7 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import cx.aswin.boxlore.BoxLoreApplication
-import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHeight
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
@@ -110,6 +110,7 @@ data class NavSettingsState(
     val themeBrand: String,
     val surfaceStyle: String,
     val fontRoundness: String,
+    val navigationStyle: String,
     val skipBehavior: String,
     val skipBeginningMs: Long,
     val skipEndingMs: Long,
@@ -134,6 +135,7 @@ data class NavOpmlCallbacks(
 data class NavHostSession(
     val onboardingCompleted: Boolean,
     val onOnboardingCompleted: () -> Unit,
+    val onInitialHomeContentReady: () -> Unit,
     val onboardingViewModel: cx.aswin.boxlore.feature.onboarding.OnboardingViewModel,
     val hasDeepLink: Boolean,
     val currentEpisode: Episode?,
@@ -183,9 +185,9 @@ internal class NavGraphWiring(
 internal fun getRouteIndex(route: String?): Int {
     if (route == null) return 0
     if (route == "home") return 0
-    if (route.startsWith("learn")) return 1
-    if (route.startsWith("explore")) return 2
-    if (route == "library" || route.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS)) return 3
+    if (route.startsWith("explore")) return 1
+    if (route == "library" || route.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS)) return 2
+    if (route.startsWith("learn")) return 3
     if (route.startsWith("podcast/")) return 10
     if (route.startsWith("episode/")) return 11
     if (route.startsWith("briefing")) return 11
@@ -346,12 +348,9 @@ internal fun entryPointBundle(
     }
 }
 
+@androidx.compose.runtime.Composable
 internal fun miniPlayerBottomPadding(isPlayerVisible: Boolean): androidx.compose.ui.unit.Dp =
-    if (isPlayerVisible) {
-        AppNavigationBarHeight + 64.dp + 2.dp
-    } else {
-        AppNavigationBarHeight
-    }
+    appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerVisible)
 
 internal fun shouldRequestNotificationPermission(
     showFeatureDialog: Boolean,

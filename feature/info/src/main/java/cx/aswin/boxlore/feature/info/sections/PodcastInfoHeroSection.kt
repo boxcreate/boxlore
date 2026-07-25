@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info.sections
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -73,7 +75,7 @@ internal fun PodcastInfoHeroSection(
             text = state.podcast.title,
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
@@ -84,7 +86,7 @@ internal fun PodcastInfoHeroSection(
             text = state.podcast.artist,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium,
+            fontWeight = GoogleSansWeight.medium,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
         )

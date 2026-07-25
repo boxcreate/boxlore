@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
@@ -17,12 +19,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -48,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -75,10 +78,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
-
-val MiniPlayerHeight = 72.dp
-
 data class MiniPlayerContent(
     val episode: Episode,
     val podcastTitle: String,
@@ -263,7 +262,7 @@ private fun MiniDismissConfirmation(
                 Text(
                     "Dismiss",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
@@ -281,12 +280,7 @@ private fun MiniPlayerCard(
     haptics: HapticFeedback,
     dismissThreshold: Float
 ) {
-    val shape = RoundedCornerShape(
-        topStart = 26.dp,
-        topEnd = 26.dp,
-        bottomStart = 14.dp,
-        bottomEnd = 14.dp
-    )
+    val shape = RoundedCornerShape(32.dp)
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -327,8 +321,8 @@ private fun MiniPlayerRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(MiniPlayerHeight)
-            .padding(start = 8.dp, end = 10.dp, top = 8.dp, bottom = 9.dp),
+            .fillMaxHeight()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         MiniPlayerArtwork(content, colorScheme)
@@ -340,10 +334,11 @@ private fun MiniPlayerRow(
             isLoading = content.isLoading,
             colorScheme = colorScheme,
             actions = actions,
-            seekDurations = cx.aswin.boxlore.feature.player.SeekControlDurations(
-                backwardSeconds = content.seekBackwardSeconds,
-                forwardSeconds = content.seekForwardSeconds,
-            ),
+            seekDurations =
+                cx.aswin.boxlore.feature.player.SeekControlDurations(
+                    backwardSeconds = content.seekBackwardSeconds,
+                    forwardSeconds = content.seekForwardSeconds,
+                ),
         )
     }
 }
@@ -353,15 +348,8 @@ private fun MiniPlayerArtwork(content: MiniPlayerContent, colorScheme: ColorSche
     val imageUrl = content.episode.imageUrl?.takeIf { it.isNotBlank() } ?: content.podcastImageUrl
     Box(
         modifier = Modifier
-            .size(52.dp)
-            .clip(
-                AbsoluteSmoothCornerShape(
-                    cornerRadiusTL = 16.dp, smoothnessAsPercentTL = 60,
-                    cornerRadiusTR = 16.dp, smoothnessAsPercentTR = 60,
-                    cornerRadiusBL = 16.dp, smoothnessAsPercentBL = 60,
-                    cornerRadiusBR = 16.dp, smoothnessAsPercentBR = 60
-                )
-            )
+            .size(48.dp)
+            .clip(CircleShape)
             .background(colorScheme.surfaceVariant)
     ) {
         OptimizedImage(
@@ -387,7 +375,7 @@ private fun MiniPlayerMetadata(
             text = content.episode.title.replace("+", " "),
             style = MaterialTheme.typography.titleSmall.copy(
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 letterSpacing = (-0.15).sp
             ),
             color = colorScheme.onPrimaryContainer,
@@ -468,7 +456,7 @@ private fun SwipeDismissTip(
             Text(
                 text = "← Swipe to dismiss →",
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 modifier = Modifier
                     .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
@@ -486,45 +474,24 @@ private fun MiniTransportButtons(
     actions: MiniPlayerActions,
     seekDurations: cx.aswin.boxlore.feature.player.SeekControlDurations,
 ) {
-    val playShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 14.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 14.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 14.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 14.dp, smoothnessAsPercentBR = 60
-    )
-
     Row(
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         MiniSeekButton(
             seconds = seekDurations.backwardSeconds,
             forward = false,
-            contentDescription =
-                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                    seekDurations.backwardSeconds,
-                    forward = false,
-                ),
             isLoading = isLoading,
             colorScheme = colorScheme,
-            shape = RoundedCornerShape(13.dp),
-            onClick = actions.onReplay
+            onClick = actions.onReplay,
         )
-
-        MiniPlayButton(isPlaying, isLoading, colorScheme, playShape, actions.onPlayPause)
-
+        MiniPlayButton(isPlaying, isLoading, colorScheme, actions.onPlayPause)
         MiniSeekButton(
             seconds = seekDurations.forwardSeconds,
             forward = true,
-            contentDescription =
-                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                    seekDurations.forwardSeconds,
-                    forward = true,
-                ),
             isLoading = isLoading,
             colorScheme = colorScheme,
-            shape = RoundedCornerShape(13.dp),
-            onClick = actions.onForward
+            onClick = actions.onForward,
         )
     }
 }
@@ -534,17 +501,16 @@ private fun MiniPlayButton(
     isPlaying: Boolean,
     isLoading: Boolean,
     colorScheme: ColorScheme,
-    shape: Shape,
     onClick: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
     Box(
         modifier = Modifier
             .size(44.dp)
-            .clip(shape)
+            .clip(CircleShape)
             .background(colorScheme.primary)
             .expressiveClickable(
-                shape = shape,
+                shape = CircleShape,
                 indication = ripple(bounded = false),
                 enabled = !isLoading
             ) {
@@ -595,34 +561,37 @@ private fun MiniPlayButtonContent(
 private fun MiniSeekButton(
     seconds: Int,
     forward: Boolean,
-    contentDescription: String,
     isLoading: Boolean,
     colorScheme: ColorScheme,
-    shape: Shape,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     Box(
-        modifier = Modifier
-            .size(38.dp)
-            .clip(shape)
-            .background(colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
-            .expressiveClickable(
-                shape = shape,
-                indication = ripple(bounded = false),
-                enabled = !isLoading
-            ) {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
-            },
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
+                .expressiveClickable(
+                    shape = CircleShape,
+                    indication = ripple(bounded = true),
+                    enabled = !isLoading,
+                ) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
+        contentAlignment = Alignment.Center,
     ) {
         cx.aswin.boxlore.feature.player.SeekDurationIcon(
             seconds = seconds,
             forward = forward,
-            contentDescription = contentDescription,
+            contentDescription =
+                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
+                    seconds,
+                    forward,
+                ),
             tint = colorScheme.onPrimaryContainer.copy(alpha = if (isLoading) 0.45f else 0.82f),
-            modifier = Modifier.size(21.dp)
+            modifier = Modifier.size(18.dp),
         )
     }
 }

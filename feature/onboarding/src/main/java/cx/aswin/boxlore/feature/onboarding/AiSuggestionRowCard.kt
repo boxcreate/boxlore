@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -154,7 +156,7 @@ private fun SuggestedPodcastGenre(genre: String) {
             style =
                 MaterialTheme.typography.labelSmall.copy(
                     fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     letterSpacing = 0.5.sp,
                 ),
             color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -172,7 +174,7 @@ private fun SuggestedPodcastTitleAndArtist(
         text = podcast.title,
         style =
             MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 lineHeight = 18.sp,
             ),
         maxLines = 2,

@@ -82,4 +82,11 @@ class BriefingStoryTextTest {
         assertTrue(briefingStoryParagraphs("").isEmpty())
         assertTrue(briefingStoryParagraphs("\n\n   \n\n").isEmpty())
     }
+
+    @Test
+    fun `formats known briefing durations without a fixed fallback`() {
+        assertEquals("4 min listen", formatBriefingListenDuration(229_000L))
+        assertEquals("1 min listen", formatBriefingListenDuration(1L))
+        assertEquals(null, formatBriefingListenDuration(0L))
+    }
 }

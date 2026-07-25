@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.settings.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -102,7 +104,7 @@ internal fun SettingsCategoryCard(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontFamily = rememberSectionHeaderFontFamily(),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Normal,
                     color = contentColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -148,7 +150,7 @@ internal fun SettingsGroup(
                 text = title,
                 modifier = Modifier.padding(start = 8.dp),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.primary,
             )
         }
@@ -283,7 +285,7 @@ internal fun SettingsDurationSliderRow(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = GoogleSansWeight.medium,
                 )
                 Text(
                     text = valueLabel,
@@ -419,7 +421,7 @@ internal fun SettingsChoiceRow(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    fontWeight = if (selected) GoogleSansWeight.semiBold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

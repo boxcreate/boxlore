@@ -11,6 +11,8 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`.
 - `SmartDownloadsSettingsScreen` and `AutoDownloadSettingsScreen`.
 - `PlayAllFab` and library UI helpers.
+- History list bottom spacing uses designsystem’s shared navigation-style / mini-player padding contract.
+- Library UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 
 ## Internal structure
 
@@ -74,7 +76,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## CI relevance
 
 - `unit-tests.yml` runs Library JVM tests with the project suite.
-- Downloads settings visual coverage is in `:feature:home` Roborazzi goldens.
+- Downloads settings visual baselines live under `screenshots/baselines/` (optional local Roborazzi; not CI-gated).
 
 ## See also
 

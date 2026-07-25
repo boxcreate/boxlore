@@ -18,16 +18,16 @@ object FontRoundnessAxis {
     fun sanitizeKey(key: String?): String {
         val normalized = key?.trim()?.lowercase()
         return when (normalized) {
-            CRISP, ROUND -> normalized
-            else -> SOFT
+            CRISP, SOFT -> normalized
+            else -> ROUND
         }
     }
 
     fun axisValue(key: String?): Int =
         when (sanitizeKey(key)) {
             CRISP -> AXIS_CRISP
-            ROUND -> AXIS_ROUND
-            else -> AXIS_SOFT
+            SOFT -> AXIS_SOFT
+            else -> AXIS_ROUND
         }
 
     fun cachedAxisValue(context: Context): Int {

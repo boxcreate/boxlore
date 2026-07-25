@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -76,7 +78,7 @@ fun InlineTranscriptHero(
             Text(
                 text = "Transcript",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 modifier = Modifier.weight(1f)
             )
             FilledTonalIconButton(onClick = actions.onFullscreen) {

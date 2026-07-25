@@ -172,8 +172,8 @@ class UserPreferencesRepositoryTest {
             assertEquals("crisp", repository.cachedFontRoundness)
 
             repository.setFontRoundness("unknown")
-            assertEquals("soft", repository.fontRoundnessStream.first())
-            assertEquals("soft", repository.cachedFontRoundness)
+            assertEquals("round", repository.fontRoundnessStream.first())
+            assertEquals("round", repository.cachedFontRoundness)
         }
 
     @Test
@@ -181,7 +181,7 @@ class UserPreferencesRepositoryTest {
         assertEquals("system", repository.cachedThemeConfig)
         assertEquals("classic_dynamic", repository.cachedSurfaceStyle)
         assertEquals("violet", repository.cachedThemeBrand)
-        assertEquals("soft", repository.cachedFontRoundness)
+        assertEquals("round", repository.cachedFontRoundness)
         assertFalse(repository.cachedUseDynamicColor)
     }
 

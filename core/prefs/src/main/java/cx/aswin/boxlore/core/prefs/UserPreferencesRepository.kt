@@ -18,6 +18,9 @@ val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataS
 
 private const val LAST_SEEN_EPISODE_ID_PREFIX = "last_seen_episode_id_"
 
+internal fun sanitizeNavigationStyle(value: String?): String =
+    if (value?.trim()?.lowercase() == "classic") "classic" else "floating"
+
 class UserPreferencesRepository(
     context: Context,
 ) {
@@ -35,9 +38,12 @@ class UserPreferencesRepository(
     val cachedSurfaceStyle: String
         get() = syncPrefs.getString("surface_style", null) ?: "classic_dynamic"
 
-    /** Lettering roundness preset key: `crisp` | `soft` (default) | `round`. */
+    /** Lettering roundness preset key: `crisp` | `soft` | `round` (default). */
     val cachedFontRoundness: String
         get() = FontRoundnessAxis.sanitizeKey(syncPrefs.getString(FontRoundnessAxis.PREF_KEY, null))
+
+    val cachedNavigationStyle: String
+        get() = sanitizeNavigationStyle(syncPrefs.getString("navigation_style", null))
 
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
@@ -284,6 +290,25 @@ class UserPreferencesRepository(
         syncPrefs.edit().putString(FontRoundnessAxis.PREF_KEY, sanitized).apply()
         dataStore.edit { preferences ->
             preferences[Keys.FONT_ROUNDNESS] = sanitized
+        }
+    }
+
+    /** Navigation presentation key: `floating` (default) or `classic`. */
+    val navigationStyleStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                val navigationStyle = sanitizeNavigationStyle(preferences[Keys.NAVIGATION_STYLE])
+                syncPrefs.edit().putString("navigation_style", navigationStyle).apply()
+                navigationStyle
+            }.distinctUntilChanged()
+
+    suspend fun setNavigationStyle(navigationStyle: String) {
+        val sanitized = sanitizeNavigationStyle(navigationStyle)
+        syncPrefs.edit().putString("navigation_style", sanitized).apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.NAVIGATION_STYLE] = sanitized
         }
     }
 

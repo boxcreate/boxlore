@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -205,7 +207,7 @@ internal fun AiChatOnboardingScreen(
                         ) {
                             Text(
                                 text = "AI Feed Assistant",
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = GoogleSansWeight.bold,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                         }
@@ -227,7 +229,7 @@ internal fun AiChatOnboardingScreen(
                             Text(
                                 text = "Search",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -263,7 +265,7 @@ internal fun AiChatOnboardingScreen(
                             Text(
                                 text = "Curate Your Feed",
                                 style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Spacer(modifier = Modifier.height(4.dp))

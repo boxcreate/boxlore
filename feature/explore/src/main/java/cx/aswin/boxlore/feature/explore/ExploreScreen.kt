@@ -111,10 +111,10 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
-import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHeight
-import cx.aswin.boxlore.core.designsystem.component.AppMiniPlayerHeight
-import cx.aswin.boxlore.core.designsystem.component.AppMiniPlayerNavGap
 import cx.aswin.boxlore.core.designsystem.component.ExploreTabSelectorFabHeight
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 
 import cx.aswin.boxlore.core.model.Episode
@@ -252,11 +252,13 @@ fun ExploreContent(
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
     val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottomChromeHeight = if (isPlayerVisible) {
-        AppNavigationBarHeight + AppMiniPlayerHeight + AppMiniPlayerNavGap + systemNavBarHeight
-    } else {
-        AppNavigationBarHeight + systemNavBarHeight
-    }
+    val bottomChromeHeight =
+        appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerVisible) +
+            if (navigationStyleUsesExternalSystemNavigationInset(LocalNavigationStyle.current)) {
+                systemNavBarHeight
+            } else {
+                0.dp
+            }
     // Clearance above navbar/mini-player for the tab FAB.
     val tabFabBottomPadding = bottomChromeHeight + 16.dp
     // Extra FAB height so list content can scroll fully past the overlay.

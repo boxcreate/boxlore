@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.ui.announcement
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Arrangement
@@ -185,7 +187,7 @@ private fun AnnouncementCategoryChip(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                 )
             },
             leadingIcon = {
@@ -253,9 +255,9 @@ private fun ColumnScope.AnnouncementScrollBody(
             style = MaterialTheme.typography.headlineSmall,
             fontWeight =
                 if (style.layout == AnnouncementLayout.Tip) {
-                    FontWeight.Medium
+                    GoogleSansWeight.medium
                 } else {
-                    FontWeight.SemiBold
+                    GoogleSansWeight.semiBold
                 },
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -315,7 +317,7 @@ private fun AnnouncementBodyBlockRow(
                 Text(
                     text = "•",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     color = bulletColor,
                     modifier = Modifier.padding(start = 4.dp, end = 10.dp),
                 )
@@ -384,7 +386,7 @@ private fun AnnouncementActions(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = GoogleSansWeight.semiBold,
                 )
             }
         }

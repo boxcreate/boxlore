@@ -12,7 +12,7 @@ Do **not** use sentence-case titles without a type prefix (e.g. avoid `Polish th
 
 ## Merge gate (required before merge)
 
-Unit tests, detekt, ktlint, Roborazzi, and the Kover coverage gate run on **every PR push** (a new commit cancels the previous in-progress unit run; plus optional Actions → Run workflow). There is **no merge queue**.
+Unit tests, detekt, ktlint, and the Kover coverage gate run on **every PR push** (a new commit cancels the previous in-progress unit run; plus optional Actions → Run workflow). There is **no merge queue**.
 
 Master is protected by a branch ruleset. Required checks before merge:
 

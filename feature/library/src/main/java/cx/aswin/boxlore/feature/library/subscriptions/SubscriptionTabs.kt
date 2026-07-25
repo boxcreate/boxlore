@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -124,7 +126,7 @@ internal fun RowScope.TabItemContent(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = if (isSelected) GoogleSansWeight.bold else GoogleSansWeight.medium,
                 color = textColor
             )
             if (badgeCount != null && badgeCount > 0) {

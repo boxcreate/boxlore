@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -71,7 +73,7 @@ fun QueueSheetContent(
             Text(
                 text = "Up Next",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 color = colorScheme.onSurface
             )
             
@@ -192,7 +194,7 @@ fun QueueItemRow(
             Text(
                 text = episode.title.replace("+", " "),
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = GoogleSansWeight.medium,
                 color = colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

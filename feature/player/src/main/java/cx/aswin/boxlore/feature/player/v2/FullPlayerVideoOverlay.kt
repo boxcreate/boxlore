@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -237,7 +239,7 @@ internal fun VideoHudTopBar(
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = episodeTitle.replace("+", " "),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -368,12 +370,12 @@ internal fun VideoProgressControls(
         ) {
             Text(
                 text = formatTime(displayedPosition),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
                 color = Color.White
             )
             Text(
                 text = "-" + formatTime((content.durationMs - displayedPosition).coerceAtLeast(0)),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
                 color = Color.White
             )
         }

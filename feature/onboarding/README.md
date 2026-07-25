@@ -7,7 +7,7 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 ## Public API
 
 - `OnboardingScreen` and `OnboardingViewModel` for the flow shell.
-- Onboarding hero titles use `rememberCondensedGoogleSansFamily()` from `:core:designsystem` so condensed Google Sans Flex follows Appearance lettering roundness.
+- Onboarding hero titles use `rememberCondensedGoogleSansFamily()` from `:core:designsystem` so condensed Google Sans Flex follows Appearance lettering roundness; AI onboarding uses centralized Google Sans Flex weight tokens.
 - `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`.
 - `AiSuggestionCards`, AI onboarding components, option icons, chat input, and chat message list logic.
 - Pure helpers including `OnboardingGenreLimits`, `OnboardingSearchBackStep`, and `OnboardingCurriculumLogic`.

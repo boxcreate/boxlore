@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -69,8 +71,8 @@ fun SmartDownloadsSettingsScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
+        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
         fraction = scrollBehavior.state.collapsedFraction,
     )
 
@@ -153,7 +155,7 @@ fun SmartDownloadsSettingsScreen(
                                 Text(
                                     text = "Enable Smart Downloads",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = GoogleSansWeight.bold
                                 )
                                 IconButton(
                                     onClick = { showExplanation = !showExplanation },
@@ -237,7 +239,7 @@ fun SmartDownloadsSettingsScreen(
                             Text(
                                 text = "Max Auto-Downloaded Episodes",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -279,7 +281,7 @@ fun SmartDownloadsSettingsScreen(
                             Text(
                                 text = "Storage Limit",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -503,7 +505,7 @@ fun SmartDownloadsSettingsScreen(
                             Text(
                                 text = "Auto-delete played episodes",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = GoogleSansWeight.bold
                             )
                         }
 
@@ -577,7 +579,7 @@ fun SmartDownloadsSettingsScreen(
                             Text(
                                 text = "Background Downloads",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = GoogleSansWeight.bold
                             )
                         }
 
@@ -600,7 +602,7 @@ fun SmartDownloadsSettingsScreen(
                                     text = "Allowed",
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
                             }
@@ -623,7 +625,7 @@ fun SmartDownloadsSettingsScreen(
                                 Text(
                                     text = "Allow",
                                     style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = GoogleSansWeight.bold
                                 )
                             }
                         }

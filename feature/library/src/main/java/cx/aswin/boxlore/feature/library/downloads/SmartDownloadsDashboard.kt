@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.downloads
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -184,7 +186,7 @@ fun SmartDownloadsDashboardCard(
                     Text(
                         text = "Enable Smart Downloads",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
@@ -258,7 +260,7 @@ fun SmartDownloadsDashboardCard(
                         Text(
                             text = "Smart Downloads",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = GoogleSansWeight.bold
                         )
                         Text(
                             text = if (isExpanded) {
@@ -272,7 +274,7 @@ fun SmartDownloadsDashboardCard(
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
-                            fontWeight = if (!isExpanded && (smartDownloadingCount > 0 || isSyncing)) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (!isExpanded && (smartDownloadingCount > 0 || isSyncing)) GoogleSansWeight.bold else FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -329,7 +331,7 @@ fun SmartDownloadsDashboardCard(
                         Text(
                             text = statusText,
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = if (smartDownloadingCount > 0 || isSyncing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(2.dp))
@@ -372,7 +374,7 @@ fun SmartDownloadsDashboardCard(
                         Text(
                             text = if (isSyncing) "Syncing" else "Sync Now",
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = GoogleSansWeight.bold
                         )
                     }
                 }
@@ -397,7 +399,7 @@ fun SmartDownloadsDashboardCard(
                             text = if (smartDownloadingCount > 0) "$smartDownloadingCount episode(s) downloading in background" else "Syncing with cloud endpoints...",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = GoogleSansWeight.medium
                         )
                     }
                 }
@@ -427,7 +429,7 @@ fun SmartDownloadsDashboardCard(
                             Text(
                                 text = "${(countProgress * 100).toInt()}%",
                                 style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -458,7 +460,7 @@ fun SmartDownloadsDashboardCard(
                                 Text(
                                     text = "${(storageProgress * 100).toInt()}%",
                                     style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
                             }
@@ -485,7 +487,7 @@ fun SmartDownloadsDashboardCard(
                             Text(
                                 text = "$smartDownloadedSizeMb MB (Unlimited)",
                                 style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = GoogleSansWeight.bold
                             )
                         }
                     }

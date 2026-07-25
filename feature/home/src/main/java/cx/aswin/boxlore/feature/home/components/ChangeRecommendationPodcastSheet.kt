@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,7 +47,7 @@ fun ChangeRecommendationPodcastSheet(
             Text(
                 text = "Personalize Recommendations",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
 
@@ -91,7 +93,7 @@ fun ChangeRecommendationPodcastSheet(
                             Text(
                                 text = "Auto-detect (Reset to default)",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = GoogleSansWeight.semiBold,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
@@ -133,7 +135,7 @@ fun ChangeRecommendationPodcastSheet(
                             Text(
                                 text = podcast.title,
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = GoogleSansWeight.medium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )

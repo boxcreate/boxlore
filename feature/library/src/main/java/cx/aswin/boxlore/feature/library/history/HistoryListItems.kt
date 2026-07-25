@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library.history
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -102,7 +104,7 @@ fun DateHeaderRow(
         Text(
             text = dateText,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
         )
     }
 }
@@ -163,7 +165,7 @@ fun HistoryTimelineItem(
                     text = item.episodeTitle,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = GoogleSansWeight.medium,
                 )
             },
             supportingContent = {

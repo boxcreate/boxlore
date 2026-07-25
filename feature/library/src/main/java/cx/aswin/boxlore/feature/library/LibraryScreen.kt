@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -134,8 +136,8 @@ fun LibraryContent(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
+        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
         fraction = scrollBehavior.state.collapsedFraction,
     )
 
@@ -325,7 +327,7 @@ fun LibraryMenuCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = GoogleSansWeight.bold,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
@@ -414,7 +416,7 @@ fun ExpressiveSolarSystemEmptyState(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = GoogleSansWeight.bold,
             textAlign = TextAlign.Center
         )
         
@@ -446,7 +448,7 @@ fun ExpressiveSolarSystemEmptyState(
                     text = actionText, 
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = GoogleSansWeight.bold
                 )
             }
         }
@@ -520,7 +522,7 @@ fun LibraryPodcastCard(
                 Text(
                     text = podcast.title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = GoogleSansWeight.bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface

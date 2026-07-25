@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import android.text.Html
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -73,7 +75,7 @@ fun CrossPromotionCard(
                     text = "FEATURED SHOW",
                     style =
                         MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             letterSpacing = 0.5.sp,
                         ),
                     color = primaryColor,
@@ -126,7 +128,7 @@ fun CrossPromotionCard(
                         text = podcast.title,
                         style =
                             MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 fontSize = 15.sp,
                             ),
                         maxLines = 1,

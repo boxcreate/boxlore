@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -396,7 +398,7 @@ private fun WelcomeScreen(
                     Text(
                         text = "Welcome to",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = GoogleSansWeight.bold,
                         fontFamily = condensedFamily,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -452,7 +454,7 @@ private fun WelcomeScreen(
                                 Text(
                                     text = "Build my personalized feed.",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = GoogleSansWeight.bold,
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
@@ -500,7 +502,7 @@ private fun WelcomeScreen(
                             Text(
                                 text = "AI",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Black,
+                                fontWeight = GoogleSansWeight.extraBold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 fontSize = 9.sp,
                             )
@@ -554,7 +556,7 @@ private fun WelcomeScreen(
                             Text(
                                 text = "I know my shows",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 textAlign = TextAlign.Center,
                             )
                         }
@@ -592,7 +594,7 @@ private fun WelcomeScreen(
                             Text(
                                 text = "Import library",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = GoogleSansWeight.bold,
                                 textAlign = TextAlign.Center,
                             )
                         }
@@ -620,7 +622,7 @@ private fun WelcomeScreen(
                         Text(
                             text = "Skip Setup",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = GoogleSansWeight.bold,
                             color = Color(0xFF888888),
                         )
                         Spacer(modifier = Modifier.width(4.dp))

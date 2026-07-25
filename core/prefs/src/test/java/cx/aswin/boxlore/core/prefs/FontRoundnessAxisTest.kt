@@ -5,18 +5,19 @@ import org.junit.jupiter.api.Test
 
 class FontRoundnessAxisTest {
     @Test
-    fun sanitizeKey_normalizesAndDefaultsToSoft() {
-        assertEquals(FontRoundnessAxis.SOFT, FontRoundnessAxis.sanitizeKey(null))
-        assertEquals(FontRoundnessAxis.SOFT, FontRoundnessAxis.sanitizeKey("unknown"))
+    fun sanitizeKeyDefaultsToRound() {
+        assertEquals(FontRoundnessAxis.ROUND, FontRoundnessAxis.sanitizeKey(null))
+        assertEquals(FontRoundnessAxis.ROUND, FontRoundnessAxis.sanitizeKey("unknown"))
         assertEquals(FontRoundnessAxis.CRISP, FontRoundnessAxis.sanitizeKey(" CRISP "))
+        assertEquals(FontRoundnessAxis.SOFT, FontRoundnessAxis.sanitizeKey("soft"))
         assertEquals(FontRoundnessAxis.ROUND, FontRoundnessAxis.sanitizeKey("round"))
     }
 
     @Test
-    fun axisValue_mapsPresetsToRondAxis() {
+    fun axisValueMapsPresets() {
         assertEquals(FontRoundnessAxis.AXIS_CRISP, FontRoundnessAxis.axisValue("crisp"))
         assertEquals(FontRoundnessAxis.AXIS_SOFT, FontRoundnessAxis.axisValue("soft"))
         assertEquals(FontRoundnessAxis.AXIS_ROUND, FontRoundnessAxis.axisValue("round"))
-        assertEquals(FontRoundnessAxis.AXIS_SOFT, FontRoundnessAxis.axisValue("invalid"))
+        assertEquals(FontRoundnessAxis.AXIS_ROUND, FontRoundnessAxis.axisValue("invalid"))
     }
 }

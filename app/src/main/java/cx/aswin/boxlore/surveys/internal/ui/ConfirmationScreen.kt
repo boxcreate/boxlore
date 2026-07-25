@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.surveys.internal.ui
 
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -51,7 +53,7 @@ internal fun ConfirmationScreen(onClose: () -> Unit) {
         Text(
             text = appearance.thankYouMessageHeader,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = GoogleSansWeight.semiBold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
