@@ -55,10 +55,14 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 
 <details open>
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
+<b>🆕 New features:</b>
+<ul align="left">
+<li>A floating bottom navigation bar with three tabs and a Lore button appears, and the mini‑player is reshaped for better spacing. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
+<li>Choose new lettering styles (Crisp, Soft, Round) with a variable Google Sans font that updates instantly across the app. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
+</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Explore For You now loads recommendations faster and never shows a blank screen on new installs. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
-<li>New flexible font lets you choose crisp, soft, or round lettering, and the app remembers your choice instantly. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
+<li>Your ‘For You’ feed loads faster and never shows a blank screen, thanks to a new recommendation cache. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
