@@ -593,7 +593,7 @@ fun BriefingContent(
             val regions = listOf(
                 "in" to "India",
                 "us" to "US",
-                "uk" to "UK",
+                "gb" to "UK",
                 "global" to "Global"
             )
             Row(
@@ -604,7 +604,8 @@ fun BriefingContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 regions.forEach { (code, label) ->
-                    val isSelected = currentRegion == code
+                    val isSelected = currentRegion == code ||
+                        (code == "gb" && currentRegion.equals("uk", ignoreCase = true))
                     FilterChip(
                         modifier = Modifier.weight(1f),
                         selected = isSelected,

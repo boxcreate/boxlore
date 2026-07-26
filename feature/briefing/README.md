@@ -14,6 +14,7 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
   `playback_*` can attribute Brief listening without changing `daily_briefing_action`.
 - `BriefingUiState` models screen state.
 - `BriefingIdentity` contains pure identity helpers for tests and UI mapping.
+- Briefing markets: `us`, `in`, `gb`, `global` (ISO `gb` for the UK; legacy API path `/uk` still aliases to `gb` on the Worker).
 - `BriefingPlaybackLogic` resolves whether a briefing interaction pauses, resumes, starts, or seeks; choosing another story seeks directly instead of pausing.
 - `BriefingStoriesPager` and `BriefingStoryComponents` provide extracted story-presentation pieces.
 

@@ -12,7 +12,7 @@ fun mapRegionForBriefing(region: String): String {
     return when (region.lowercase().trim()) {
         "us" -> "us"
         "in", "ind" -> "in"
-        "uk", "gb" -> "uk"
+        "uk", "gb" -> "gb"
         else -> "global"
     }
 }

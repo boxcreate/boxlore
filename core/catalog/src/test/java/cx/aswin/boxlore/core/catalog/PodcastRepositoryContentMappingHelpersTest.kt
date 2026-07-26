@@ -14,8 +14,8 @@ class PodcastRepositoryContentMappingHelpersTest {
     fun mapRegionForBriefingCanonicalisesAliases() {
         assertEquals("us", mapRegionForBriefing("US"))
         assertEquals("in", mapRegionForBriefing("ind"))
-        assertEquals("uk", mapRegionForBriefing("gb"))
-        assertEquals("uk", mapRegionForBriefing(" uk "))
+        assertEquals("gb", mapRegionForBriefing("gb"))
+        assertEquals("gb", mapRegionForBriefing(" uk "))
         assertEquals("global", mapRegionForBriefing("fr"))
     }
 

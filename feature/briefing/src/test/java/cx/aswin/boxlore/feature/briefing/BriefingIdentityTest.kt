@@ -28,6 +28,7 @@ class BriefingIdentityTest {
         assertEquals(R.drawable.daily_briefing_usa, BriefingIdentity.coverDrawableRes("USA"))
         assertEquals(R.drawable.daily_briefing_india, BriefingIdentity.coverDrawableRes("in"))
         assertEquals(R.drawable.daily_briefing_uk, BriefingIdentity.coverDrawableRes("gb"))
+        assertEquals(R.drawable.daily_briefing_uk, BriefingIdentity.coverDrawableRes("uk"))
         assertEquals(R.drawable.daily_briefing_global, BriefingIdentity.coverDrawableRes("eu"))
     }
 }

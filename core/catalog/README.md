@@ -7,6 +7,7 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 ## Public API
 
 - `PodcastRepository` coordinates Podcast Index calls, recommendation endpoints, content sections, and RSS delegation.
+- `mapRegionForBriefing` maps content regions to briefing markets (`us` / `in` / `gb` / `global`; legacy `uk` → `gb`).
 - `SubscriptionRepository`, `ChapterRepository`, and `TranscriptRepository` expose catalog-adjacent data operations.
 - `content.ContentOrchestrator`, `GroupedContentSectionProvider`, `ContentContextEngine`, and related content contracts assemble personalized Home and discovery sections.
 - `backup.LibraryBackupManager` imports and exports library data, OPML, listening history, and ranking backup payloads.

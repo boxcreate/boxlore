@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.ChapterRepository
+import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
@@ -28,7 +29,7 @@ class BriefingViewModel(
     initialRegion: String? = null
 ) : AndroidViewModel(application) {
 
-    private val _selectedRegion = MutableStateFlow(initialRegion ?: "in")
+    private val _selectedRegion = MutableStateFlow(mapRegionForBriefing(initialRegion ?: "in"))
     val selectedRegion: StateFlow<String> = _selectedRegion.asStateFlow()
 
     private val _briefingState = MutableStateFlow<Briefing?>(null)
@@ -125,7 +126,7 @@ class BriefingViewModel(
     }
 
     fun selectRegion(region: String) {
-        _selectedRegion.value = region
+        _selectedRegion.value = mapRegionForBriefing(region)
     }
 
     fun loadBriefing(region: String) {
@@ -134,7 +135,7 @@ class BriefingViewModel(
             _error.value = null
             _briefingChapters.value = emptyList()
             _savedSession.value = null
-            val result = podcastRepository.getBriefingMetadata(region)
+            val result = podcastRepository.getBriefingMetadata(mapRegionForBriefing(region))
             if (result != null) {
                 _briefingState.value = result
                 
