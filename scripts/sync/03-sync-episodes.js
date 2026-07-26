@@ -4,12 +4,11 @@
 /**
  * Stage 3: Sync latest-episode metadata for chart shows from the PI API.
  *
- * - Candidate list (id, latest_ep_id, categories, medium) is cached in the
- *   git state file and re-queried from Turso only after a charts refresh or
- *   when older than 20h - the other runs cost near-zero Turso reads.
- * - Staleness gating: News shows re-checked after 8h, others after 24h.
- * - Latest-episode-unchanged shows cost 0 Turso writes (state-only update).
- * - New episodes write latest_ep_* + qdrant_vectorized=0 (feeds stage 4).
+ * - Candidate list cached in sync state; re-queried after charts refresh or 20h.
+ * - Staleness: News 8h · core countries 24h · relaxed (secondary) countries 48h
+ *   (±10% jitter). Show on both core+relaxed → 24h. News always 8h.
+ * - Fetches max=per-show cap (us/gb 50, else 20) once; items[0] updates Turso;
+ *   full items[] written to PI handoff for stage 4 (no second PI call same run).
  */
 
 const log = require('./lib/log');
@@ -18,19 +17,25 @@ const pi = require('./lib/podcast-index');
 const state = require('./lib/state');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
+const handoff = require('./lib/pi-handoff');
+const { loadCapsByPodcastId } = require('./lib/episode-caps');
+const staleness = require('./lib/staleness');
 
 const CANDIDATE_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
 const CONCURRENCY = 5;
 
-/** Refresh candidate cache from Turso and seed state records. */
 async function refreshCandidates(st) {
     log.info('[CANDIDATES] Refreshing candidate list from Turso');
+    // Keyset-page podcasts on charts; keep per-show country CSV for core/relaxed staleness.
     const pendingRows = await turso.fetchAllPaged({
         pageSize: cfg.TURSO_PAGE_SIZE,
         rowId: (r) => Number(r[0]),
         buildPage: (after, limit) => ({
             sql: `
-                SELECT p.id, p.latest_ep_id, p.categories, p.medium
+                SELECT p.id, p.latest_ep_id, p.categories, p.medium,
+                       (SELECT GROUP_CONCAT(DISTINCT lower(c.country))
+                        FROM charts c
+                        WHERE CAST(c.itunes_id AS INTEGER) = p.itunes_id)
                 FROM podcasts p
                 WHERE p.itunes_id IN (
                     SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL
@@ -43,21 +48,60 @@ async function refreshCandidates(st) {
         }),
     });
     const ids = [];
-    for (const [id, latestEpId, categories, medium] of pendingRows) {
+    let newsCount = 0;
+    let relaxedCount = 0;
+    for (const [id, latestEpId, categories, medium, countryCsv] of pendingRows) {
         const podId = String(id);
         ids.push(podId);
         const rec = st.shows[podId] || {};
-        // Seed from DB only when state doesn't know these yet (state is the
-        // authority afterwards, since this pipeline is the only writer).
         if (rec.e === undefined && latestEpId) rec.e = String(latestEpId);
-        // Compact flag: store n:1 for News shows instead of the category string
-        if ((categories || '').includes('News')) rec.n = 1; else delete rec.n;
+        if ((categories || '').includes('News')) {
+            rec.n = 1;
+            newsCount++;
+        } else {
+            delete rec.n;
+        }
+        staleness.applyCountryCheckFlag(rec, countryCsv);
+        if (rec.x === 1) relaxedCount++;
         if (rec.m === undefined && medium) rec.m = medium;
         st.shows[podId] = rec;
     }
     st.candidateIds = ids;
     st.candidatesRefreshedAt = Date.now();
-    log.info(`[CANDIDATES] ${log.fmt(ids.length)} chart shows cached`);
+    const coreRegular = ids.length - newsCount - relaxedCount;
+    log.info(
+        `[CANDIDATES] ${log.fmt(ids.length)} chart shows cached · ` +
+        `news=${log.fmt(newsCount)} · core(non-news)=${log.fmt(coreRegular)} · ` +
+        `relaxed-only(48h)=${log.fmt(relaxedCount)}`,
+    );
+}
+
+/** Country → how many of `ids` chart there (for sync-plan log). */
+async function countDueByCountry(ids) {
+    const out = {};
+    if (!ids.length) return out;
+    const countries = cfg.ALL_COUNTRIES;
+    const cPh = countries.map(() => '?').join(',');
+    const CHUNK = 400;
+    for (let i = 0; i < ids.length; i += CHUNK) {
+        const slice = ids.slice(i, i + CHUNK);
+        const idPh = slice.map(() => '?').join(',');
+        const res = await turso.execute(
+            `
+            SELECT lower(c.country), COUNT(DISTINCT p.id)
+            FROM podcasts p
+            INNER JOIN charts c ON CAST(c.itunes_id AS INTEGER) = p.itunes_id
+            WHERE c.country IN (${cPh}) AND p.id IN (${idPh})
+            GROUP BY lower(c.country)
+            `,
+            [...countries, ...slice.map(String)],
+        );
+        for (const [country, n] of turso.rows(res)) {
+            const k = String(country || '?');
+            out[k] = (out[k] || 0) + Number(n || 0);
+        }
+    }
+    return out;
 }
 
 async function main() {
@@ -67,60 +111,84 @@ async function main() {
     await turso.healthCheck();
 
     const st = state.load();
+    handoff.clear();
+
+    const policy = staleness.policySummary();
 
     log.banner('Stage 3 · Sync Episodes', {
-        'Staleness tiers': 'News 8h · Regular 24h (±10% jitter)',
+        'Staleness tiers': policy.label,
+        'Core countries (24h)': policy.coreCountries.join(',') || '(none)',
+        'Relaxed countries (48h)': policy.relaxedCountries.join(',') || '(none)',
         'Per-run check cap': log.fmt(cfg.MAX_CHECKS_PER_RUN),
+        'Episode fetch max': `us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT}`,
+        'Handoff file': handoff.handoffPath(),
         'Concurrency': String(CONCURRENCY),
     });
 
-    // --- Candidate cache: refresh only when stale or after charts refresh ---
     const cacheAge = Date.now() - (st.candidatesRefreshedAt || 0);
     const chartsNewerThanCache = (st.chartsRefreshedAt || 0) > (st.candidatesRefreshedAt || 0);
-    if (!st.candidateIds || chartsNewerThanCache || cacheAge > CANDIDATE_CACHE_MAX_AGE_MS) {
+    let needRefresh = !st.candidateIds || chartsNewerThanCache || cacheAge > CANDIDATE_CACHE_MAX_AGE_MS;
+    if (!needRefresh && st.candidateIds && cfg.RELAXED_CHECK_COUNTRIES.length > 0) {
+        let missingX = 0;
+        for (const id of st.candidateIds) {
+            const rec = st.shows[id];
+            if (rec && rec.x === undefined && rec.n !== 1) missingX++;
+        }
+        // One-shot: apply relaxed(48h) tags without waiting for charts / 20h cache expiry
+        if (missingX > Math.max(50, st.candidateIds.length * 0.05)) {
+            log.info(
+                `[CANDIDATES] Refreshing to apply relaxed(48h) tags ` +
+                `(${log.fmt(missingX)} non-news shows untagged)`,
+            );
+            needRefresh = true;
+        }
+    }
+    if (needRefresh) {
         await refreshCandidates(st);
     } else {
         log.info(`[CANDIDATES] Using cached list (${log.fmt(st.candidateIds.length)} shows, age ${Math.round(cacheAge / 3600000)}h) - 0 Turso reads`);
     }
 
-    // --- Staleness gating ---
-    // Deterministic per-show jitter (+/-STALENESS_JITTER) spreads check times
-    // so the fleet doesn't re-synchronize into one giant wave per day.
-    const jitterFactor = (id) => {
-        let h = 0;
-        for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-        return 1 + ((h % 1000) / 1000 - 0.5) * 2 * cfg.STALENESS_JITTER;
-    };
-
-    const now = Date.now();
-    let neverChecked = 0, staleNews = 0, staleRegular = 0;
-    const allDue = st.candidateIds.filter(id => {
-        const rec = st.shows[id] || {};
-        if (!rec.c) { neverChecked++; return true; }
-        const isNews = rec.n === 1;
-        const threshold = (isNews ? cfg.NEWS_STALE_MS : cfg.REGULAR_STALE_MS) * jitterFactor(id);
-        if (now - rec.c >= threshold) {
-            if (isNews) staleNews++; else staleRegular++;
-            return true;
-        }
-        return false;
-    });
-    // Oldest checks first, then cap per run: deferred shows lead the queue
-    // next run, so backlogs self-distribute across the 5 daily runs.
-    allDue.sort((a, b) => (st.shows[a]?.c || 0) - (st.shows[b]?.c || 0));
+    const plan = staleness.planDue(st.candidateIds, st.shows);
+    const { allDue, neverChecked, staleNews, staleCore, staleRelaxed,
+        poolNews, poolCore, poolRelaxed } = plan;
     const due = allDue.slice(0, cfg.MAX_CHECKS_PER_RUN);
     const deferred = allDue.length - due.length;
 
+    const caps = await loadCapsByPodcastId(due);
+    let dueByCountry = {};
+    try {
+        dueByCountry = await countDueByCountry(due);
+    } catch (e) {
+        log.warn(`[CANDIDATES] due-by-country breakdown skipped: ${e.message}`);
+    }
+
     log.group('Sync plan');
-    log.info(`Chart shows:        ${log.fmt(st.candidateIds.length)}`);
+    log.info(`Check policy:       ${policy.label}`);
+    log.info(
+        `Chart shows:        ${log.fmt(st.candidateIds.length)} ` +
+        `(pool news=${log.fmt(poolNews)} · core=${log.fmt(poolCore)} · relaxed=${log.fmt(poolRelaxed)})`,
+    );
     log.info(`Due for check:      ${log.fmt(allDue.length)}`);
-    log.info(`Checking this run:  ${log.fmt(due.length)} (cap ${log.fmt(cfg.MAX_CHECKS_PER_RUN)}, ${log.fmt(deferred)} deferred to next run)`);
-    log.info(`- never checked:    ${log.fmt(neverChecked)}`);
-    log.info(`- stale news (8h):  ${log.fmt(staleNews)}`);
-    log.info(`- stale other (24h):${log.fmt(staleRegular)}`);
+    log.info(
+        `Checking this run:  ${log.fmt(due.length)} ` +
+        `(cap ${log.fmt(cfg.MAX_CHECKS_PER_RUN)}, ${log.fmt(deferred)} deferred to next run)`,
+    );
+    log.info(`- never checked:           ${log.fmt(neverChecked)}`);
+    log.info(`- stale news (${policy.news}):         ${log.fmt(staleNews)}`);
+    log.info(`- stale core (${policy.core}):         ${log.fmt(staleCore)}`);
+    log.info(`- stale relaxed (${policy.relaxed}):     ${log.fmt(staleRelaxed)}`);
+    if (Object.keys(dueByCountry).length) {
+        const parts = Object.entries(dueByCountry)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([c, n]) => {
+                const cadence = policy.coreCountries.includes(c) ? '24h' : '48h';
+                return `${c}=${log.fmt(n)}(${cadence})`;
+            });
+        log.info(`Due by country (this run): ${parts.join(' · ')}`);
+    }
     log.endGroup();
 
-    // --- Process ---
     let updated = 0, unchanged = 0, empty = 0, errors = 0;
     const prog = log.progress(due.length, 'episode-sync', 5);
 
@@ -128,31 +196,33 @@ async function main() {
         const batch = due.slice(i, i + CONCURRENCY);
         await Promise.all(batch.map(async (podId) => {
             const rec = st.shows[podId] || {};
+            const maxEps = caps.get(podId) || cfg.EPISODE_CAP_DEFAULT;
             try {
-                const episodes = await pi.episodesByFeedId(podId, 1);
-                if (episodes.length === 0) {
+                // Fast path: most shows are unchanged — probe latest only (max=1).
+                // Full cap fetch + handoff only when the tip episode changed.
+                const tip = await pi.episodesByFeedId(podId, 1);
+                if (tip.length === 0) {
                     empty++;
                     state.recordCheck(st, podId);
                     return;
                 }
-                const latest = episodes[0];
-
-                if (rec.e && String(latest.id) === String(rec.e)) {
+                const latestTip = tip[0];
+                if (rec.e && String(latestTip.id) === String(rec.e)) {
                     unchanged++;
                     state.recordCheck(st, podId);
                     return;
                 }
 
-                // New/changed episode: resolve medium if unknown, then write.
-                let medium = rec.m;
-                if (!medium) {
-                    try {
-                        const feed = await pi.podcastByFeedId(podId);
-                        medium = feed?.medium || 'podcast';
-                    } catch {
-                        medium = 'podcast';
-                    }
+                // New/changed: pull full cap once for Turso + stage-4 handoff
+                let episodes = tip;
+                if (maxEps > 1) {
+                    episodes = await pi.episodesByFeedId(podId, maxEps);
+                    if (episodes.length === 0) episodes = tip;
                 }
+                handoff.put(podId, episodes);
+                const latest = episodes[0] || latestTip;
+                // Prefer cached medium from import/prior sync; never spend a PI call on it.
+                const medium = rec.m || 'podcast';
 
                 await turso.execute(`
                     UPDATE podcasts SET
@@ -185,31 +255,37 @@ async function main() {
             } catch (e) {
                 errors++;
                 log.warn(`Show ${podId}: ${e.message}`);
-                // No recordCheck on error -> retried next run
             }
         }));
         for (let k = 0; k < batch.length; k++) prog.tick(`new ${updated} / same ${unchanged}`);
         turso.flushStats();
-        state.save(st);
+        // sync_cache is ~1.5MB — do not rewrite every 5-show batch
+        if ((i / CONCURRENCY) % 20 === 0) state.save(st);
     }
 
     state.save(st);
+    await handoff.flush();
     const stats = turso.getStats();
     log.costFooter('Stage 3 · Sync Episodes', {
         reads: stats.reads,
         writes: stats.writes,
         apiCalls: pi.getApiCallCount(),
-        detail: `${log.fmt(due.length)} checked (${log.fmt(deferred)} deferred) · ${updated} new · ${unchanged} unchanged · ${empty} empty · ${errors} errors`,
+        detail:
+            `${log.fmt(due.length)} checked (${log.fmt(deferred)} deferred) · ` +
+            `${updated} new · ${unchanged} unchanged · ${empty} empty · ${errors} errors · ` +
+            `tiers news/${policy.news} core/${policy.core} relaxed/${policy.relaxed} · ` +
+            `handoff ${handoff.handoffPath()}`,
     });
     log.summaryTable('Stage 3: Sync Episodes', [{
         stage: 'sync-episodes',
         reads: stats.reads,
         writes: stats.writes,
         apiCalls: pi.getApiCallCount(),
-        detail: `${due.length} checked (${deferred} deferred): ${updated} new, ${unchanged} unchanged, ${empty} empty, ${errors} errors`,
+        detail:
+            `${due.length} checked (${deferred} deferred): ${updated} new, ${unchanged} unchanged, ` +
+            `${empty} empty, ${errors} errors · due news=${staleNews} core=${staleCore} relaxed=${staleRelaxed}`,
     }]);
 
-    // Fail loudly when the API is systematically failing (not on scattered errors)
     if (due.length > 20 && errors > due.length / 2) {
         log.error(`More than half of episode checks failed (${errors}/${due.length})`);
         process.exit(1);

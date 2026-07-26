@@ -221,7 +221,7 @@ async function main() {
         log.error(`Final Qdrant flush failed: ${e.message}`);
     }
 
-    const backlog = Math.max(0, totalPending - alreadyIndexed.length - embedded);
+    const backlog = toEmbed.length - budgeted.length;
     const stats = turso.getStats();
     log.costFooter('Stage 5 · Vectorize Shows', {
         reads: stats.reads,

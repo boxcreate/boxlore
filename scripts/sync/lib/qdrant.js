@@ -165,26 +165,12 @@ async function existingIds(collection, ids) {
 /**
  * Upsert points with wait=true: the call returns only after the write is
  * durable, so callers can safely mark work as complete afterwards.
- * Scrubs leftover "[object Object]" strings from payloads (optional fields);
- * stages should already have skipped points with corrupt critical fields.
  */
 async function upsert(collection, points) {
     if (points.length === 0) return;
-    const { scrubCorruptStrings, payloadLooksCorrupt } = require('./scalars');
-    const cleaned = points.map((p) => ({
-        ...p,
-        payload: p?.payload ? scrubCorruptStrings(p.payload) : p?.payload,
-    }));
-    for (const p of cleaned) {
-        if (payloadLooksCorrupt(p.payload)) {
-            throw new Error(
-                `qdrant://${collection}/${p?.id}: payload still corrupt after scrub`,
-            );
-        }
-    }
     await request(`/collections/${collection}/points?wait=true`, {
         method: 'PUT',
-        body: JSON.stringify({ points: cleaned }),
+        body: JSON.stringify({ points }),
     });
 }
 

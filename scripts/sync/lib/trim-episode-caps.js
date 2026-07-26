@@ -1,14 +1,17 @@
 'use strict';
 
 /**
- * Enforce EPISODES_PER_SHOW across the episodes collection: for every
+ * Enforce per-show episode caps across the episodes collection: for every
  * podcast_id, keep only the newest N points (by published_date) and delete
- * the rest. Shared by the daily cleanup job and one-off remediation.
+ * the rest. N = max country cap for that show (us/gb 50, else 20).
+ * Shared by the daily cleanup job and one-off remediation.
  */
 
 const log = require('./log');
 const qdrant = require('./qdrant');
+const turso = require('./turso');
 const cfg = require('./config');
+const { loadCapsByPodcastId } = require('./episode-caps');
 
 const DELETE_CHUNK = 500;
 
@@ -18,9 +21,8 @@ const DELETE_CHUNK = 500;
  */
 async function trimEpisodeCaps(opts = {}) {
     const dryRun = Boolean(opts.dryRun);
-    const cap = cfg.EPISODES_PER_SHOW;
 
-    log.group(`Trim episode caps (max ${cap}/show)`);
+    log.group(`Trim episode caps (us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT})`);
 
     let allPoints;
     try {
@@ -55,9 +57,19 @@ async function trimEpisodeCaps(opts = {}) {
     }
     log.info(`Distinct shows: ${log.fmt(byShow.size)} (${unknownPodcastId} points without podcast_id)`);
 
+    let caps = new Map();
+    try {
+        turso.assertEnv();
+        caps = await loadCapsByPodcastId([...byShow.keys()]);
+        log.info(`Loaded caps for ${log.fmt(caps.size)} chart shows`);
+    } catch (e) {
+        log.warn(`Cap lookup failed (${e.message}) — using default ${cfg.EPISODE_CAP_DEFAULT}`);
+    }
+
     const trimDeleteIds = [];
     let trimmedShows = 0;
-    for (const points of byShow.values()) {
+    for (const [podId, points] of byShow.entries()) {
+        const cap = caps.get(podId) || cfg.EPISODE_CAP_DEFAULT;
         if (points.length <= cap) continue;
         points.sort((a, b) => b.date - a.date);
         const excess = points.slice(cap);

@@ -5,10 +5,13 @@
  * Stage 1: Refresh the Turso charts table from iTunes RSS for all configured
  * countries. Runs on the 00:00 UTC schedule (or manual dispatch) only.
  *
- * - One full charts-table read, diffed in memory (no per-category SELECTs).
+ * - Existing chart rows loaded per country×category page (full-table SELECT
+ *   exceeds sqld response size once many storefronts are populated).
  * - iTunes requests are spaced (600ms) with a polite User-Agent, retried up
- *   to 5× with exponential backoff on 403/429, network errors, and empty feeds
- *   (Apple often returns HTTP 200 + 0 entries when throttling GHA IPs).
+ *   to 5× with exponential backoff on 403/429 (honors Retry-After), network
+ *   errors, and empty feeds (Apple often returns HTTP 200 + 0 entries when
+ *   throttling). Consecutive soft-fails trip a circuit: pause 60s every 5,
+ *   abort after 15.
  * - Only changed rows are written, in batched transactions.
  */
 
@@ -20,6 +23,27 @@ const cfg = require('./lib/config');
 const ITUNES_SPACING_MS = 600;
 const ITUNES_RETRIES = 5;
 const ITUNES_USER_AGENT = 'BoxLore/1.0 (github.com/boxcreate/boxlore; podcast-chart-sync)';
+/** After this many consecutive soft-fails, pause hard before continuing. */
+const ITUNES_CIRCUIT_CONSECUTIVE = 5;
+const ITUNES_CIRCUIT_PAUSE_MS = 60_000;
+/** Abort the stage after this many consecutive soft-fails (protect Apple + remaining budget). */
+const ITUNES_CIRCUIT_ABORT_AFTER = 15;
+
+function parseRetryAfterMs(headerVal, fallbackMs) {
+    const floor = Math.max(0, Number(fallbackMs) || 0);
+    if (headerVal == null || headerVal === '') return Math.max(floor, 2000);
+    const s = String(headerVal).trim();
+    const asInt = Number(s);
+    if (Number.isFinite(asInt) && asInt >= 0) {
+        return Math.min(Math.max(asInt * 1000, floor), 120_000);
+    }
+    const when = Date.parse(s);
+    if (Number.isFinite(when)) {
+        const ms = when - Date.now();
+        if (ms > 0) return Math.min(Math.max(ms, floor), 120_000);
+    }
+    return Math.max(floor, 2000);
+}
 
 async function fetchItunesChart(country, category) {
     const genreParam = category === 'all' ? '' : `/genre=${cfg.GENRE_MAP[category]}`;
@@ -31,7 +55,8 @@ async function fetchItunesChart(country, category) {
                 headers: { 'User-Agent': ITUNES_USER_AGENT },
             });
             if (res.status === 403 || res.status === 429) {
-                const backoff = 2000 * Math.pow(2, attempt - 1);
+                const exp = 2000 * Math.pow(2, attempt - 1);
+                const backoff = parseRetryAfterMs(res.headers.get('retry-after'), exp);
                 log.warn(`iTunes ${res.status} for ${country}/${category}; backing off ${backoff}ms (attempt ${attempt}/${ITUNES_RETRIES})`);
                 await new Promise(r => setTimeout(r, backoff));
                 continue;
@@ -112,30 +137,27 @@ async function main() {
         ...(FORCE ? { 'Mode': '--force (skip-if-fresh bypassed)' } : {}),
     });
 
-    // --- Read charts in pages (sqld HTTP response size) ---
+    // --- Read charts in pages (full-table SELECT trips sqld RESPONSE_TOO_LARGE) ---
     log.group('Read existing charts');
-    const existingRows = await turso.fetchAllPaged({
-        pageSize: cfg.TURSO_PAGE_SIZE,
-        rowId: (r) => Number(r[0]),
-        buildPage: (after, limit) => ({
-            sql: `
-                SELECT rowid, country, category, itunes_id, name, artist, image_url, rank
-                FROM charts
-                WHERE rowid > ?
-                ORDER BY rowid ASC
-                LIMIT ?
-            `,
-            args: [after == null ? 0 : after, limit],
-        }),
-    });
     const existing = new Map();
-    for (const [, country, category, itunesId, name, artist, imageUrl, rank] of existingRows) {
-        existing.set(rowKey(country, category, String(itunesId)), {
-            name: name || '', artist: artist || '', imageUrl: imageUrl || '',
-            rank: parseInt(rank, 10),
-        });
+    for (const country of cfg.ALL_COUNTRIES) {
+        for (const category of cfg.CATEGORIES) {
+            const pageRes = await turso.execute(
+                `SELECT country, category, itunes_id, name, artist, image_url, rank
+                 FROM charts WHERE country = ? AND category = ?`,
+                [country, category],
+            );
+            for (const [c, cat, itunesId, name, artist, imageUrl, rank] of turso.rows(pageRes)) {
+                existing.set(rowKey(c, cat, String(itunesId)), {
+                    name: name || '',
+                    artist: artist || '',
+                    imageUrl: imageUrl || '',
+                    rank: parseInt(rank, 10),
+                });
+            }
+        }
     }
-    log.info(`Existing chart rows: ${log.fmt(existing.size)}`);
+    log.info(`Existing chart rows: ${log.fmt(existing.size)} (paged by country×category)`);
     log.endGroup();
 
     // --- Fetch all charts, spaced ---
@@ -143,9 +165,12 @@ async function main() {
     let deletes = 0;
     let unchanged = 0;
     let failedPairs = 0;
+    let consecutiveSoftFails = 0;
+    let circuitAborted = false;
     const totalPairs = cfg.ALL_COUNTRIES.length * cfg.CATEGORIES.length;
     const prog = log.progress(totalPairs, 'charts');
 
+    outer:
     for (const country of cfg.ALL_COUNTRIES) {
         log.group(`Country: ${country.toUpperCase()}`);
         for (const category of cfg.CATEGORIES) {
@@ -156,16 +181,48 @@ async function main() {
             } catch (e) {
                 log.warn(`SKIPPING ${country}/${category} entirely (fetch failed: ${e.message}) - no upserts, no deletes`);
                 failedPairs++;
+                consecutiveSoftFails++;
                 prog.tick();
+                if (consecutiveSoftFails % ITUNES_CIRCUIT_CONSECUTIVE === 0) {
+                    log.warn(
+                        `iTunes throttle circuit: ${consecutiveSoftFails} consecutive soft-fails — pausing ${ITUNES_CIRCUIT_PAUSE_MS / 1000}s`,
+                    );
+                    await new Promise(r => setTimeout(r, ITUNES_CIRCUIT_PAUSE_MS));
+                }
+                if (consecutiveSoftFails >= ITUNES_CIRCUIT_ABORT_AFTER) {
+                    log.error(
+                        `iTunes circuit open after ${consecutiveSoftFails} consecutive failures — aborting remaining chart fetches`,
+                    );
+                    circuitAborted = true;
+                    log.endGroup();
+                    break outer;
+                }
                 continue;
             }
             if (podcasts.length === 0) {
                 // Empty response is suspicious (charts are never empty); treat like a failure.
                 log.warn(`SKIPPING ${country}/${category}: iTunes returned 0 entries`);
                 failedPairs++;
+                consecutiveSoftFails++;
                 prog.tick();
+                if (consecutiveSoftFails % ITUNES_CIRCUIT_CONSECUTIVE === 0) {
+                    log.warn(
+                        `iTunes throttle circuit: ${consecutiveSoftFails} consecutive soft-fails — pausing ${ITUNES_CIRCUIT_PAUSE_MS / 1000}s`,
+                    );
+                    await new Promise(r => setTimeout(r, ITUNES_CIRCUIT_PAUSE_MS));
+                }
+                if (consecutiveSoftFails >= ITUNES_CIRCUIT_ABORT_AFTER) {
+                    log.error(
+                        `iTunes circuit open after ${consecutiveSoftFails} consecutive failures — aborting remaining chart fetches`,
+                    );
+                    circuitAborted = true;
+                    log.endGroup();
+                    break outer;
+                }
                 continue;
             }
+
+            consecutiveSoftFails = 0;
 
             const statements = [];
             const activeIds = [];
@@ -213,8 +270,12 @@ async function main() {
         log.endGroup();
     }
 
-    if (failedPairs > totalPairs / 2) {
-        log.error(`More than half of chart fetches failed (${failedPairs}/${totalPairs}) - failing run`);
+    if (circuitAborted || failedPairs > totalPairs / 2) {
+        log.error(
+            circuitAborted
+                ? `iTunes circuit aborted charts (${failedPairs} failed pairs so far / ${totalPairs}) - failing run`
+                : `More than half of chart fetches failed (${failedPairs}/${totalPairs}) - failing run`,
+        );
         process.exit(1);
     }
 

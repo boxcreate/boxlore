@@ -12,7 +12,9 @@
  *   "shows": {
  *     "<podId>": {
  *       "c": <lastCheckedMs>, "e": "<latestEpId>", "m": "<medium>",
- *       "n": 1 (present only for News shows), "s": <lastSeenInChartsMs>
+ *       "n": 1 (present only for News shows),
+ *       "x": 1 (present only when show is on relaxed-check countries only — 48h),
+ *       "s": <lastSeenInChartsMs>
  *     }
  *   }
  * }

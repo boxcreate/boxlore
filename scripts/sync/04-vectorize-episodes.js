@@ -7,10 +7,10 @@
  *
  * Bounded by MAX_EMBEDDINGS_PER_RUN (a budget of new vectors, NOT a show
  * count): incremental shows (1-2 new eps) always flow through; leftover
- * budget drains cold-start/backlog shows (up to EPISODES_PER_SHOW each),
- * oldest-first. Prune-before-insert keeps every show at strictly the latest
- * EPISODES_PER_SHOW points. Upserts use wait=true so qdrant_vectorized=1 is
- * only set after vectors are durable.
+ * budget drains cold-start/backlog shows (up to per-show cap each),
+ * oldest-first. Prefers PI handoff from stage 3 (same-run); falls back to
+ * PI fetch. Prune-before-insert keeps every show at its country cap.
+ * Upserts use wait=true so qdrant_vectorized=1 is only set after vectors are durable.
  */
 
 const log = require('./lib/log');
@@ -20,6 +20,8 @@ const pi = require('./lib/podcast-index');
 const embedder = require('./lib/embedder');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
+const handoff = require('./lib/pi-handoff');
+const { loadCapsByPodcastId } = require('./lib/episode-caps');
 const scalars = require('./lib/scalars');
 
 const UPSERT_BATCH = 100;
@@ -78,10 +80,13 @@ async function main() {
         if (a.last_ep_sync != null && b.last_ep_sync == null) return 1;
         return (a.last_ep_sync || 0) - (b.last_ep_sync || 0);
     });
+    const caps = await loadCapsByPodcastId(pending.map((p) => p.id));
     log.banner('Stage 4 · Vectorize Episodes', {
         'Pending shows': log.fmt(pending.length),
         'Embedding budget': log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN),
-        'Episodes per show': String(cfg.EPISODES_PER_SHOW),
+        'Caps': `us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT}`,
+        'Embed provider': cfg.EMBED_PROVIDER,
+        'Handoff': handoff.handoffPath(),
         'Collection': cfg.EPISODES_COLLECTION,
     });
     if (pending.length === 0) {
@@ -96,6 +101,8 @@ async function main() {
     let embedded = 0;
     let showsCompleted = 0;
     let showsSkippedExisting = 0;
+    let handoffHits = 0;
+    let piFetches = 0;
     let errors = 0;
     let processedCount = 0;
 
@@ -140,15 +147,21 @@ async function main() {
             break;
         }
         processedCount++;
+        const showCap = caps.get(pod.id) || cfg.EPISODE_CAP_DEFAULT;
 
-        let episodes;
-        try {
-            episodes = await pi.episodesByFeedId(pod.id, cfg.EPISODES_PER_SHOW);
-        } catch (e) {
-            errors++;
-            log.warn(`Show ${pod.id} (${pod.title.substring(0, 40)}): episode fetch failed: ${e.message}`);
-            reportBacklogIfDue();
-            continue;
+        let episodes = handoff.take(pod.id);
+        if (episodes) {
+            handoffHits++;
+        } else {
+            try {
+                episodes = await pi.episodesByFeedId(pod.id, showCap);
+                piFetches++;
+            } catch (e) {
+                errors++;
+                log.warn(`Show ${pod.id} (${pod.title.substring(0, 40)}): episode fetch failed: ${e.message}`);
+                reportBacklogIfDue();
+                continue;
+            }
         }
 
         if (episodes.length === 0) {
@@ -158,14 +171,13 @@ async function main() {
             continue;
         }
 
-        const eps = episodes.slice(0, cfg.EPISODES_PER_SHOW).map(ep => ({
+        const eps = episodes.slice(0, showCap).map(ep => ({
             raw: ep,
             uuid: qdrant.stableUUID(ep.id),
         }));
         const uuids = eps.map(e => e.uuid);
 
-        // Prune BEFORE insert: hard-cap this show to the latest EPISODES_PER_SHOW
-        // set (wait=true). Skip the show if prune fails so we never grow past the cap.
+        // Prune BEFORE insert: hard-cap this show to its country cap (wait=true).
         try {
             await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, {
                 must: [{ key: 'podcast_id', match: { value: parseInt(pod.id, 10) || 0 } }],
@@ -297,14 +309,14 @@ async function main() {
         reads: stats.reads,
         writes: stats.writes,
         apiCalls: pi.getApiCallCount(),
-        detail: `${log.fmt(embedded)}/${log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN)} budget used · ${showsCompleted} shows done · ${log.fmt(showsSkippedExisting)} already existed · backlog ${log.fmt(backlog)} · ${errors} errors`,
+        detail: `${log.fmt(embedded)}/${log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN)} budget · ${showsCompleted} shows · handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors`,
     });
     log.summaryTable('Stage 4: Vectorize Episodes', [{
         stage: 'vectorize-episodes',
         reads: stats.reads,
         writes: stats.writes,
         apiCalls: pi.getApiCallCount(),
-        detail: `${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN} budget used, ${showsCompleted} shows done, backlog ${backlog}, ${errors} errors`,
+        detail: `${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN} budget, ${showsCompleted} shows, handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors`,
     }]);
 
     if (processedCount > 20 && errors > processedCount) {

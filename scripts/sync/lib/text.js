@@ -43,14 +43,8 @@ const BOILERPLATE_PATTERNS = [
  * in dirty source data.
  */
 function safeTruncate(raw, maxLen) {
-    if (raw == null) return '';
-    if (typeof raw === 'object') return '';
-    if (typeof raw !== 'string' && typeof raw !== 'number' && typeof raw !== 'boolean') {
-        return '';
-    }
-    const s = String(raw);
-    if (!s || /\[object Object\]/i.test(s)) return '';
-    return s.substring(0, maxLen).toWellFormed();
+    if (!raw || typeof raw !== 'string') return '';
+    return raw.substring(0, maxLen).toWellFormed();
 }
 
 /**

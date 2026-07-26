@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@libsql/client": "^0.17.4",
     "@xenova/transformers": "^2.17.2",
     "firebase-admin": "^12.1.0"
@@ -14,6 +15,8 @@
     "test:sync-pi-unavailable": "node --test sync/lib/pi-unavailable.test.js",
     "test:sync-scalars": "node --test sync/lib/scalars.test.js",
     "test:sync-turso-page": "node --test sync/lib/turso-page.test.js",
-    "test:sync": "node --test sync/lib/csv.test.js sync/lib/pi-unavailable.test.js sync/lib/scalars.test.js sync/lib/turso-page.test.js"
+    "test:sync": "node --test sync/lib/csv.test.js sync/lib/pi-unavailable.test.js sync/lib/scalars.test.js sync/lib/turso-page.test.js sync/lib/episode-caps.test.js sync/lib/staleness.test.js",
+    "test:sync-episode-caps": "node --test sync/lib/episode-caps.test.js",
+    "test:sync-staleness": "node --test sync/lib/staleness.test.js"
   }
 }
