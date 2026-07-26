@@ -55,7 +55,7 @@ module.exports = {
     EPISODES_COLLECTION: 'episodes',
     PODCASTS_COLLECTION: 'podcasts',
     VECTOR_DIM: 1024,
-    EPISODES_PER_SHOW: 30,          // strict: latest 30 episodes per show
+    EPISODES_PER_SHOW: 20,          // strict: latest 20 episodes per show (disk-safe)
     // Per-run embedding budget (NOT a show cap). Incremental updates cost ~1
     // embedding per show; cold-start shows cost up to EPISODES_PER_SHOW.
     MAX_EMBEDDINGS_PER_RUN: parseInt(process.env.MAX_EMBEDDINGS_PER_RUN || '6000', 10),

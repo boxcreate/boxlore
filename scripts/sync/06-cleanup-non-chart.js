@@ -3,7 +3,8 @@
 
 /**
  * Stage 6 (20:00 run only): Delete shows that have been absent from ALL
- * country charts for CLEANUP_GRACE_DAYS consecutive days.
+ * country charts for CLEANUP_GRACE_DAYS consecutive days, then hard-trim
+ * every remaining show in Qdrant to EPISODES_PER_SHOW (latest by date).
  *
  * Grace period prevents delete/re-vectorize thrash: a show dipping out of
  * the top 200 for a day keeps its Turso row and Qdrant vectors; only
@@ -20,6 +21,7 @@ const turso = require('./lib/turso');
 const qdrant = require('./lib/qdrant');
 const state = require('./lib/state');
 const cfg = require('./lib/config');
+const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
 
 const QDRANT_CHUNK = 500;
 const DELETE_CHUNK = 200;
@@ -92,11 +94,15 @@ async function main() {
     if (toDelete.length === 0) {
         state.save(st);
         log.info('Nothing past the grace period - done');
+        const trim = await trimEpisodeCaps();
+        log.info(
+            `Episode cap trim: ${log.fmt(trim.trimmedShows)} shows · ${log.fmt(trim.deletedPoints)} points removed`
+        );
         log.summaryTable('Stage 6: Cleanup', [{
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
             writes: turso.getStats().writes,
-            detail: `0 deleted, ${inGrace} in grace`,
+            detail: `0 deleted, ${inGrace} in grace, cap-trim ${trim.deletedPoints} pts`,
         }]);
         return;
     }
@@ -162,17 +168,22 @@ async function main() {
     state.save(st);
     log.info(`State pruned: ${pruned} dead entries removed`);
 
+    const trim = await trimEpisodeCaps();
+    log.info(
+        `Episode cap trim: ${log.fmt(trim.trimmedShows)} shows · ${log.fmt(trim.deletedPoints)} points removed`
+    );
+
     const stats = turso.getStats();
     log.costFooter('Stage 6 · Cleanup', {
         reads: stats.reads,
         writes: stats.writes,
-        detail: `${log.fmt(toDelete.length)} shows deleted · ${log.fmt(inGrace)} in grace · ${pruned} state entries pruned`,
+        detail: `${log.fmt(toDelete.length)} shows deleted · ${log.fmt(inGrace)} in grace · ${pruned} state entries pruned · cap-trim ${trim.deletedPoints} pts`,
     });
     log.summaryTable('Stage 6: Cleanup', [{
         stage: 'cleanup-non-chart',
         reads: stats.reads,
         writes: stats.writes,
-        detail: `${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state entries pruned`,
+        detail: `${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state entries pruned, cap-trim ${trim.deletedPoints} pts`,
     }]);
 }
 

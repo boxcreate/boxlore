@@ -40,7 +40,7 @@ jobs:
   sync:
     if: github.event_name == 'schedule' || inputs.job == 'sync'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 210
     steps:
       - name: Generate boxlore pusher token
         id: app-token
@@ -190,7 +190,7 @@ jobs:
     if: github.event.schedule == '0 20 * * *'
     needs: sync
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Generate boxlore pusher token
         id: app-token

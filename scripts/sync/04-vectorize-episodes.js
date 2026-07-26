@@ -148,14 +148,18 @@ async function main() {
         }));
         const uuids = eps.map(e => e.uuid);
 
-        // Prune BEFORE insert: drop any points for this show outside its latest set.
+        // Prune BEFORE insert: hard-cap this show to the latest EPISODES_PER_SHOW
+        // set (wait=true). Skip the show if prune fails so we never grow past the cap.
         try {
             await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, {
                 must: [{ key: 'podcast_id', match: { value: parseInt(pod.id, 10) || 0 } }],
                 must_not: [{ has_id: uuids }],
-            });
+            }, true);
         } catch (e) {
-            log.warn(`Prune failed for show ${pod.id}: ${e.message}`);
+            errors++;
+            log.warn(`Prune failed for show ${pod.id} (${pod.title.substring(0, 40)}): ${e.message} - skipping upsert`);
+            reportBacklogIfDue();
+            continue;
         }
 
         const existing = await qdrant.existingIds(cfg.EPISODES_COLLECTION, uuids);
