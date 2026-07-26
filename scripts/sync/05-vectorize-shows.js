@@ -14,6 +14,7 @@ const qdrant = require('./lib/qdrant');
 const embedder = require('./lib/embedder');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
+const scalars = require('./lib/scalars');
 
 const UPSERT_BATCH = 100;
 
@@ -114,29 +115,64 @@ async function main() {
 
     const runProg = log.budgetProgress(budgeted.length, 'shows', 50);
     for (const { pod, uuid } of budgeted) {
+        const title = scalars.asScalarString(pod.title, '');
+        const feedUrl = scalars.asScalarString(pod.feed_url, '');
+        if (!title || !feedUrl || !scalars.asPositiveInt(pod.id, 0)) {
+            errors++;
+            log.warn(
+                `Skip show ${pod.id}: critical fields corrupt/missing ` +
+                `(title=${JSON.stringify(pod.title)} feed=${JSON.stringify(pod.feed_url)})`,
+            );
+            continue;
+        }
+        const scrubbedPod = {
+            ...pod,
+            title,
+            author: scalars.asScalarString(pod.author, ''),
+            description: scalars.asScalarString(pod.description, ''),
+            categories: scalars.asScalarString(pod.categories, ''),
+            language: scalars.asScalarString(pod.language, 'en') || 'en',
+            image_url: scalars.asScalarString(pod.image_url, ''),
+            feed_url: feedUrl,
+            website_url: scalars.asScalarString(pod.website_url, ''),
+        };
         try {
-            const vector = await embedder.embed(text.podcastEmbedText(pod));
+            const vector = await embedder.embed(text.podcastEmbedText(scrubbedPod));
+            const prepared = scalars.prepareShowPayload({
+                id: scalars.asPositiveInt(pod.id, 0),
+                title: text.safeTruncate(title),
+                author: text.safeTruncate(scrubbedPod.author),
+                description: text.safeTruncate(
+                    scrubbedPod.description,
+                    cfg.PAYLOAD_DESCRIPTION_MAX,
+                ),
+                image_url: scrubbedPod.image_url,
+                categories: scrubbedPod.categories,
+                language: scrubbedPod.language,
+                feed_url: feedUrl,
+                website_url: scrubbedPod.website_url,
+            });
+            if (!prepared.ok) {
+                errors++;
+                log.warn(`Skip show payload ${pod.id}: ${prepared.reason}`);
+                continue;
+            }
+            if (prepared.scrubbed.length) {
+                log.warn(
+                    `Scrubbed optional show fields for ${pod.id}: ${prepared.scrubbed.join(',')}`,
+                );
+            }
             pointsQueue.push({
                 id: uuid,
                 vector,
-                payload: {
-                    id: parseInt(pod.id, 10) || 0,
-                    title: text.safeTruncate(pod.title),
-                    author: text.safeTruncate(pod.author),
-                    description: text.safeTruncate(pod.description, cfg.PAYLOAD_DESCRIPTION_MAX),
-                    image_url: pod.image_url,
-                    categories: pod.categories,
-                    language: pod.language,
-                    feed_url: pod.feed_url,
-                    website_url: pod.website_url,
-                },
+                payload: prepared.payload,
             });
             flagQueue.push(pod.id);
             embedded++;
             runProg.tick();
         } catch (e) {
             errors++;
-            log.warn(`Show embedding failed for "${pod.title.substring(0, 40)}" (${pod.id}): ${e.message}`);
+            log.warn(`Show embedding failed for "${title.substring(0, 40)}" (${pod.id}): ${e.message}`);
         }
 
         if (pointsQueue.length >= UPSERT_BATCH) {

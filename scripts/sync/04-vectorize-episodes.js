@@ -20,6 +20,7 @@ const pi = require('./lib/podcast-index');
 const embedder = require('./lib/embedder');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
+const scalars = require('./lib/scalars');
 
 const UPSERT_BATCH = 100;
 
@@ -177,34 +178,70 @@ async function main() {
         const showPoints = [];
         for (const item of toEmbed) {
             const ep = item.raw;
-            const cleaned = text.cleanDescription(ep.description || '');
-            const embedText = text.episodeEmbedText({ title: ep.title, cleanedDescription: cleaned }, pod);
+            const epTitle = scalars.asScalarString(ep.title, '');
+            const audioUrl = scalars.asScalarString(ep.enclosureUrl, '');
+            if (!epTitle || !audioUrl || !scalars.asPositiveInt(ep.id, 0)) {
+                errors++;
+                log.warn(
+                    `Skip ep on show ${pod.id}: critical tip fields corrupt/missing ` +
+                    `(title=${JSON.stringify(ep.title)} id=${JSON.stringify(ep.id)})`,
+                );
+                continue;
+            }
+            const cleaned = text.cleanDescription(
+                typeof ep.description === 'string' ? ep.description : '',
+            );
+            const embedText = text.episodeEmbedText(
+                { title: epTitle, cleanedDescription: cleaned },
+                {
+                    title: scalars.asScalarString(pod.title, 'Unknown Show'),
+                    categories: scalars.asScalarString(pod.categories, ''),
+                    author: scalars.asScalarString(pod.author, ''),
+                },
+            );
             try {
                 const vector = await embedder.embed(embedText);
+                const prepared = scalars.prepareEpisodePayload({
+                    id: scalars.asPositiveInt(ep.id, 0),
+                    title: text.safeTruncate(epTitle),
+                    description: text.safeTruncate(
+                        typeof ep.description === 'string' ? ep.description : '',
+                        cfg.PAYLOAD_DESCRIPTION_MAX,
+                    ),
+                    podcast_id: scalars.asPositiveInt(pod.id, 0),
+                    podcast_title: text.safeTruncate(pod.title),
+                    podcast_author: text.safeTruncate(pod.author),
+                    podcast_image_url: scalars.asScalarString(pod.image_url, ''),
+                    podcast_categories: scalars.asScalarString(pod.categories, ''),
+                    language: scalars.asScalarString(pod.language, 'en') || 'en',
+                    audio_url: audioUrl,
+                    image_url: scalars.asScalarString(
+                        ep.image || ep.feedImage || pod.image_url,
+                        '',
+                    ),
+                    published_date: scalars.asNonNegInt(ep.datePublished, 0),
+                    duration: scalars.asNonNegInt(ep.duration, 0),
+                });
+                if (!prepared.ok) {
+                    errors++;
+                    log.warn(`Skip ep payload show ${pod.id}: ${prepared.reason}`);
+                    continue;
+                }
+                if (prepared.scrubbed.length) {
+                    log.warn(
+                        `Scrubbed optional ep fields for show ${pod.id}: ${prepared.scrubbed.join(',')}`,
+                    );
+                }
                 showPoints.push({
                     id: item.uuid,
                     vector,
-                    payload: {
-                        id: parseInt(ep.id, 10) || 0,
-                        title: text.safeTruncate(ep.title || ''),
-                        description: text.safeTruncate(ep.description, cfg.PAYLOAD_DESCRIPTION_MAX),
-                        podcast_id: parseInt(pod.id, 10) || 0,
-                        podcast_title: text.safeTruncate(pod.title),
-                        podcast_author: text.safeTruncate(pod.author),
-                        podcast_image_url: pod.image_url,
-                        podcast_categories: pod.categories,
-                        language: pod.language,
-                        audio_url: ep.enclosureUrl || '',
-                        image_url: ep.image || ep.feedImage || pod.image_url || '',
-                        published_date: ep.datePublished || 0,
-                        duration: ep.duration || 0,
-                    },
+                    payload: prepared.payload,
                 });
                 runProg.tick();
             } catch (e) {
                 errors++;
                 showFailed = true;
-                log.warn(`Embedding failed for "${(ep.title || '').substring(0, 40)}" (show ${pod.id}): ${e.message}`);
+                log.warn(`Embedding failed for "${epTitle.substring(0, 40)}" (show ${pod.id}): ${e.message}`);
             }
         }
 
