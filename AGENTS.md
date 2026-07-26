@@ -5,6 +5,7 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
 ## Non-negotiables
 
 - Read [`ARCHITECTURE.md`](ARCHITECTURE.md) + the touched module `README.md` before editing; **ARCHITECTURE wins** on conflicts.
+- Before editing `scripts/sync/` (catalog pipeline): read [`scripts/README.md`](scripts/README.md) **and** the **Catalog sync** section below. Sync **does not** run on GitHub Actions — only on the Netcup VPS. A `git push` alone does **not** update the live runner.
 - No feature→feature deps/imports; no PostHog in features (use `:core:analytics`); no Hilt/Koin/MockK.
 - Never break identity/storage contracts (`applicationId`, DataStore `user_preferences`, Room names, `rss:` IDs, single `PlaybackRepository`, smart-queue refill ownership). See ARCHITECTURE identity table.
 - Update the touched module README in the same change (template: [`docs/MODULE_README_TEMPLATE.md`](docs/MODULE_README_TEMPLATE.md)).
@@ -36,9 +37,53 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
 | :--- | :--- |
 | Module graph, DI, identity | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Unit / Kover / Konsist / CI | [`docs/TESTING.md`](docs/TESTING.md) |
+| Catalog sync pipeline (VPS, not GHA) | [`scripts/README.md`](scripts/README.md) |
 | Always-on agent rules | [`.cursor/rules/`](.cursor/rules/) |
 | PR body / merge checklist | [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) |
 | Impact labels + merge gate | [`.cursor/rules/pr-impact-labels.mdc`](.cursor/rules/pr-impact-labels.mdc) |
+
+## Catalog sync (VPS — not GitHub Actions)
+
+**Hard stop before editing `scripts/sync/`.** Full detail: [`scripts/README.md`](scripts/README.md).
+
+### Sync does not run on GitHub
+
+- The old GHA workflow **`sync-pi-data` is sunset / removed**.
+- There is **no** GitHub cron for charts, PI import, episode sync, or vectorization.
+- Do **not** re-add a GitHub sync workflow unless the user explicitly asks.
+- Do **not** assume `git push` to `master` updates the live pipeline by itself.
+
+### Sync runs on the Netcup VPS
+
+| What | Where |
+| :--- | :--- |
+| Live runner root | `/opt/boxlore-sync/` |
+| **Code the cron executes** | `/opt/boxlore-sync/repo/scripts/sync/` (`run-sync.sh` → `cd $REPO`) |
+| Orchestrator | `/opt/boxlore-sync/run-sync.sh` (systemd timers; panel install from `netcup-panel`) |
+| Secrets / budgets | `/opt/boxlore-sync/.env` (never commit) |
+| Run logs | `/opt/boxlore-sync/logs/runs/` |
+| Local Turso / Qdrant | `/opt/boxlore-stack` |
+
+**Deploy rule:** after changing `scripts/sync/` or `scripts/package.json`, **redeploy into `/opt/boxlore-sync/repo`** (rsync/pull) or the live job keeps old code. GitHub is deploy source of truth; **`repo` is the runner**. Ignore `/opt/boxlore-sync/boxlore-src` for cron — only `repo` matters.
+
+### Tagged files
+
+| Path | Role |
+| :--- | :--- |
+| `scripts/sync/lib/config.js` | Countries, tiers, check cadence, embed provider, budgets |
+| `scripts/sync/01-…` … `07-…` | Staged pipeline |
+| `scripts/sync/lib/turso.js` + `turso-page.js` | Page large SELECTs (`RESPONSE_TOO_LARGE`) |
+| `scripts/sync/lib/staleness.js` / `episode-caps.js` | Core vs relaxed checks; per-storefront caps |
+| `scripts/sync/lib/embedder.js` / `scalars.js` | `bge` vs `qwen`; scrub non-scalars |
+| `scripts/package.json` | Sync Node deps + `npm run test:sync` |
+
+### Checklist
+
+1. Read [`scripts/README.md`](scripts/README.md) + current `config.js` country list.
+2. Run `npm run test:sync` from `scripts/` when touching sync lib logic.
+3. Keep large Turso reads on `fetchAllPaged` / country×category pages.
+4. When asked to ship: commit/push **and** deploy to `/opt/boxlore-sync/repo`, then verify on the VPS.
+5. Never commit sync `.env` / PI / Turso / Telegram secrets.
 
 ## Large refactors / P1 batches (hard stop)
 
