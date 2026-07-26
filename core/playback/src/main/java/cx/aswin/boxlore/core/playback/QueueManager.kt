@@ -24,11 +24,7 @@ class QueueManager(
      * "episode_info_screen", "home_hero_new_episodes_grid") instead of collapsing to GENERIC.
      */
     private fun resolveEntryPoint(entryPointContext: android.os.Bundle?): PlaybackEntryPoint =
-        when (entryPointContext?.getString("entry_point")) {
-            "home_mixtape" -> PlaybackEntryPoint.HOME_MIXTAPE
-            "learn" -> PlaybackEntryPoint.LEARN
-            else -> PlaybackEntryPoint.GENERIC
-        }
+        PlaybackEntryPointResolve.fromSourceContext(entryPointContext)
 
     fun playEpisode(
         episode: EpisodeItem,

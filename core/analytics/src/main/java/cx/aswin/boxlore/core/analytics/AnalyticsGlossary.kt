@@ -150,6 +150,9 @@ object AnalyticsGlossary {
             "generic" to "unknown",
             "home_mixtape" to "home_mixtape",
             "learn" to "learn",
+            // Lore history used entryPoint=learn_history; keep on learn (no new glossary value).
+            "learn_history" to "learn",
+            "briefing" to "briefing",
             "session_restore" to "session_restore",
             "smart_queue" to "smart_queue",
             "player_up_next" to "player_up_next",

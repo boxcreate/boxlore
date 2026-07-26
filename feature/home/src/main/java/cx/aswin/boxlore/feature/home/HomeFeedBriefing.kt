@@ -80,7 +80,9 @@ private fun playDailyBriefingFromFeed(
     callbacks.onPlayEpisode(
         dailyBriefingEpisode(briefing, briefingId, localCoverUrl),
         dailyBriefingPodcast(briefing, localCoverUrl),
-        PlaybackEntryPoint.GENERIC,
+        // Glossary entry_point=briefing (via enum → sourceContext). Do not use GENERIC —
+        // that normalizes to unknown and breaks Brief playback attribution.
+        PlaybackEntryPoint.BRIEFING,
     )
 }
 

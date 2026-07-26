@@ -13,6 +13,7 @@ Owns Home feed presentation, Settings screens, RSS-add UI, and local debug surfa
 - `DebugScreen` and `DebugViewModel` for local learner and runtime diagnostics.
 - Extracted Home UI pieces such as `LibrarySectionRows`, `LibrarySection`, and section/card components. Their Google Sans Flex emphasis uses shared centralized weight tokens.
 - Pure logic helpers under `logic/` for Home assembly, discovery, hero ordering, selection, playback-state mapping, serial episodes, and affinity behavior.
+- Home Brief play uses `PlaybackEntryPoint.BRIEFING` so `playback_*` gets glossary `entry_point=briefing` (interactions stay on existing `daily_briefing_action`).
 
 ## Internal structure
 

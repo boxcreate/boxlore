@@ -232,7 +232,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
                         "${encode(episode.imageUrl)}/" +
                         "${encode(episode.audioUrl)}/" +
                         "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
-                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn_history"
+                        "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
                 navController.navigate(route)
             },
         )

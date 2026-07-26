@@ -8,6 +8,8 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 
 - Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.
 - `PlaybackEntryPoint`, `ShareTarget`, and `ShareLinkBuilder`.
+- `PlaybackEntryPoint` coarse values: `GENERIC`, `HOME_MIXTAPE`, `LEARN`, `BRIEFING`
+  (Brief audio play synthesizes glossary `entry_point=briefing` for `playback_*`).
 - `AutoTranscriptState`.
 - `PodcastGenres` and `RankingAggregateTelemetry`.
 - Cross-promotion model types.

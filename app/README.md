@@ -19,7 +19,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 - `LegacyWorkerFactory` maps legacy worker class names to current worker implementations for WorkManager continuity.
 - `MainActivity` hosts theme, edge-to-edge setup, app update hooks, surveys, OPML import state, the selected floating or classic navigation presentation, and the player overlay.
 - `BoxLoreNavHost` owns app route registration and delegates screen bodies to feature modules; stack-slide transitions follow the visible Home → Explore → Library → Lore order, and Home’s first committed content frame unlocks the floating Lore launch animation.
-- Tab destinations in `NavGraphTabDestinations` wire Home / Explore / Learn / Library / player entry points to feature screens.
+- Tab destinations in `NavGraphTabDestinations` wire Home / Explore / Learn / Library / player entry points to feature screens. Lore history deep-links use `entryPoint=learn` (canonical glossary; legacy `learn_history` still normalizes to `learn`).
 - Home receives the shared catalog and ranking instances it actively uses; endpoint-backed
   editorial rows are loaded inside `:feature:home` through that catalog instance.
 

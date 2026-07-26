@@ -218,7 +218,17 @@ class BriefingViewModel(
                     ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
             )
 
-            queueManager.playEpisode(dummyEpisode, dummyPodcast, initialPositionMs = initialPositionMs)
+            queueManager.playEpisode(
+                dummyEpisode,
+                dummyPodcast,
+                initialPositionMs = initialPositionMs,
+                // Glossary canonical entry_point — keeps playback_* attributable without
+                // renaming daily_briefing_action (dashboards already use that event).
+                entryPointContext =
+                    android.os.Bundle().apply {
+                        putString("entry_point", "briefing")
+                    },
+            )
         }
     }
 

@@ -23,6 +23,8 @@ Launch enrichment (subscription bucket, onboarding status) goes on **person prop
 
 `home_hero_resume`, `home_hero_jump_back_in`, `home_hero_new_episodes`, `home_hero_spotlight`, `home_mixtape`, `home_adaptive_*`, `home_because_you_like`, `home_discover_grid`, `home_recommendations`, `briefing`, `explore_for_you`, `explore_trending`, `explore_category`, `explore_search_shows`, `explore_search_episodes`, `learn`, `podcast_detail`, `episode_detail`, `queue`, `downloads`, `history`, `liked`, `notification`, `deep_link`, `share`, `install_referrer`, `android_auto`, `android_auto_continue`, `android_auto_queue`, `android_auto_new_episodes`, `android_auto_mixtape`, `android_auto_downloads`, `android_auto_liked`, `android_auto_history`, `android_auto_discover`, `android_auto_voice`, `android_auto_play_all`, `mini_player`, `session_restore`, `player_up_next`, `smart_queue`, `onboarding_suggestion`, `unknown`
 
+Aliases (normalized in app; do not add as new enum values): `learn_history` → `learn`. Brief audio play tags `briefing` on `playback_*` (interactions remain on `daily_briefing_action`).
+
 ### surface
 
 `home`, `explore`, `learn`, `library_hub`, `library_subscriptions`, `library_liked`, `library_downloads`, `library_history`, `podcast_detail`, `episode_detail`, `player_full`, `player_mini`, `queue_sheet`, `settings`, `onboarding`, `briefing`, `android_auto`, `system_notification`, `share_sheet`

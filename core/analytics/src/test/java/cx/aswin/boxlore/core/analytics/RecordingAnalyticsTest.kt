@@ -271,6 +271,8 @@ class AnalyticsRawTextAndEntryPointTest {
         assertEquals("unknown", AnalyticsGlossary.normalizeEntryPoint(null))
         assertEquals("unknown", AnalyticsGlossary.normalizeEntryPoint("generic"))
         assertEquals("learn", AnalyticsGlossary.normalizeEntryPoint("learn"))
+        assertEquals("learn", AnalyticsGlossary.normalizeEntryPoint("learn_history"))
+        assertEquals("briefing", AnalyticsGlossary.normalizeEntryPoint("briefing"))
         assertEquals("android_auto_discover", AnalyticsGlossary.normalizeEntryPoint("android_auto_drive_picks"))
     }
 

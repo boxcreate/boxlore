@@ -10,6 +10,8 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 - Section headers in briefing UI use `rememberSectionHeaderFontFamily()` from `:core:designsystem` so lettering roundness follows Appearance settings.
 - Briefing emphasis uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 - `BriefingViewModel` exposes briefing state and actions using injected catalog, playback, and queue dependencies.
+- Briefing audio start tags `entry_point=briefing` on the play source bundle (glossary value) so
+  `playback_*` can attribute Brief listening without changing `daily_briefing_action`.
 - `BriefingUiState` models screen state.
 - `BriefingIdentity` contains pure identity helpers for tests and UI mapping.
 - `BriefingPlaybackLogic` resolves whether a briefing interaction pauses, resumes, starts, or seeks; choosing another story seeks directly instead of pausing.
