@@ -19,9 +19,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.Newspaper
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.SentimentVerySatisfied
+import androidx.compose.material.icons.rounded.SportsBaseball
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Videocam
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +41,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -220,46 +233,86 @@ fun CuratedVibeHeader(title: String) {
     }
 }
 
+/**
+ * For You "vibe catcher" chip — deliberately not a [PillFilterChip].
+ * Soft squircle, always chromatic container, mood icon. Genres stay compact
+ * stadium pills; these read as mood invitations.
+ */
 @Composable
 fun ExploreVibeChip(
     vibe: Pair<String, String>,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val hash = vibe.first.hashCode()
-    val containerColor = when (hash % 3) {
+    val tone = remember(vibe.first) { kotlin.math.abs(vibe.first.hashCode()) % 3 }
+    val containerColor = when (tone) {
         0 -> MaterialTheme.colorScheme.primaryContainer
         1 -> MaterialTheme.colorScheme.secondaryContainer
         else -> MaterialTheme.colorScheme.tertiaryContainer
     }
-    val contentColor = when (hash % 3) {
+    val contentColor = when (tone) {
         0 -> MaterialTheme.colorScheme.onPrimaryContainer
         1 -> MaterialTheme.colorScheme.onSecondaryContainer
         else -> MaterialTheme.colorScheme.onTertiaryContainer
     }
+    val shape = RoundedCornerShape(18.dp)
+    val icon = remember(vibe.first) { vibeCatcherIcon(vibe.first) }
 
     Surface(
-        shape = MaterialTheme.shapes.medium,
+        onClick = onClick,
+        modifier = modifier.height(40.dp),
+        shape = shape,
         color = containerColor,
-        modifier = modifier
-            .height(44.dp)
-            .expressiveClickable(onClick = onClick)
+        contentColor = contentColor,
+        border = BorderStroke(1.dp, contentColor.copy(alpha = 0.18f)),
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 10.dp, end = 14.dp),
         ) {
+            Surface(
+                shape = CircleShape,
+                color = contentColor.copy(alpha = 0.14f),
+                contentColor = contentColor,
+                modifier = Modifier.size(26.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = vibe.second,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = GoogleSansWeight.bold,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = GoogleSansWeight.semiBold,
                 color = contentColor,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
+
+private fun vibeCatcherIcon(vibeId: String): androidx.compose.ui.graphics.vector.ImageVector =
+    when (vibeId) {
+        "morning_news" -> Icons.Rounded.Newspaper
+        "morning_motivation" -> Icons.Rounded.Bolt
+        "business_insider" -> Icons.Rounded.Work
+        "science_explainer" -> Icons.Rounded.Science
+        "tech_culture" -> Icons.Rounded.Computer
+        "creative_focus" -> Icons.Rounded.Palette
+        "comedy_gold" -> Icons.Rounded.SentimentVerySatisfied
+        "tv_film_buff" -> Icons.Rounded.Movie
+        "sports_fan" -> Icons.Rounded.SportsBaseball
+        "true_crime_sleep" -> Icons.Rounded.Fingerprint
+        "history_buff" -> Icons.Rounded.AccountBalance
+        "mystery_thriller" -> Icons.Rounded.Visibility
+        else -> Icons.Rounded.AutoAwesome
+    }
 
 @Composable
 fun ExploreEpisodeHeroCard(

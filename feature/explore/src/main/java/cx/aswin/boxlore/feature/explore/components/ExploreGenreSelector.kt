@@ -6,17 +6,17 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
+import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Computer
-import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Movie
@@ -26,15 +26,12 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Science
-import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SentimentVerySatisfied
 import androidx.compose.material.icons.rounded.SportsBaseball
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Weekend
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -46,20 +43,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 
-// Data Handling (Synced with GenreSelector.kt and OnboardingScreen.kt)
+// Synced with GenreSelector.kt / onboarding search icons.
 internal data class ExploreGenreItem(val label: String, val value: String, val icon: ImageVector)
 
 internal val EXPLORE_GENRES = listOf(
     ExploreGenreItem("News", "News", Icons.Rounded.Newspaper),
     ExploreGenreItem("Tech", "Technology", Icons.Rounded.Computer),
     ExploreGenreItem("Business", "Business", Icons.Rounded.Work),
-    ExploreGenreItem("Comedy", "Comedy", Icons.Rounded.EmojiEvents),
-    ExploreGenreItem("True Crime", "True Crime", Icons.Rounded.Search),
+    ExploreGenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied),
+    ExploreGenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint),
     ExploreGenreItem("Sports", "Sports", Icons.Rounded.SportsBaseball),
     ExploreGenreItem("Health", "Health", Icons.Rounded.FavoriteBorder),
     ExploreGenreItem("History", "History", Icons.Rounded.AccountBalance),
@@ -73,27 +69,25 @@ internal val EXPLORE_GENRES = listOf(
     ExploreGenreItem("Religion", "Religion & Spirituality", Icons.Rounded.Star),
     ExploreGenreItem("Family", "Kids & Family", Icons.Rounded.Face),
     ExploreGenreItem("Leisure", "Leisure", Icons.Rounded.Weekend),
-    ExploreGenreItem("Govt", "Government", Icons.Rounded.Gavel)
+    ExploreGenreItem("Govt", "Government", Icons.Rounded.Gavel),
 )
 
 /**
- * Expandable Genre Cloud for Explore
+ * Expandable genre row for Explore (onboarding-style pills + More sheet).
  */
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun ExploreGenreSelector(
     selectedCategory: String,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
 ) {
     var showSheet by remember { mutableStateOf(false) }
 
-    // Dynamic list construction
     val displayGenres = remember(selectedCategory) {
         val topGenres = EXPLORE_GENRES.take(5)
         if (selectedCategory != "All") {
             val selectedGenre = EXPLORE_GENRES.find { it.value == selectedCategory }
             if (selectedGenre != null) {
-                // Selected + (Top 5 - Selected)
                 listOf(selectedGenre) + (topGenres - selectedGenre)
             } else {
                 topGenres
@@ -104,133 +98,87 @@ internal fun ExploreGenreSelector(
     }
 
     val listState = rememberLazyListState()
-    
+
     LaunchedEffect(selectedCategory) {
         listState.animateScrollToItem(0)
     }
 
-    // Top horizontal list (Subset)
     LazyRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp),
+        modifier = Modifier.fillMaxWidth(),
         state = listState,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // 1. "All" (Always first)
         item {
-            FilterChip(
+            PillFilterChip(
+                label = "All",
                 selected = selectedCategory == "All",
                 onClick = { onCategorySelected("All") },
-                label = { Text("All", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selectedCategory == "All")
+                icon = Icons.Rounded.Apps,
             )
         }
 
-        // 2. Dynamic Subset
         items(displayGenres, key = { it.value }) { genre ->
-            FilterChip(
+            PillFilterChip(
+                label = genre.label,
                 selected = selectedCategory == genre.value,
                 onClick = { onCategorySelected(genre.value) },
-                label = { Text(genre.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selectedCategory == genre.value)
+                icon = genre.icon,
             )
         }
 
-        // 3. Expand Button
         item {
-            FilterChip(
+            PillFilterChip(
+                label = "More",
                 selected = showSheet,
                 onClick = { showSheet = true },
-                label = { Text("More Genres") },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.KeyboardArrowDown,
-                        contentDescription = "Expand",
-                        modifier = Modifier.size(18.dp)
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = false,
-                    borderColor = Color.Transparent
-                )
+                trailingIcon = Icons.Rounded.KeyboardArrowDown,
             )
-        }    }
+        }
+    }
 
-    // Full Genre Sheet
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 48.dp) // Nav bar padding
+                    .padding(bottom = 48.dp),
             ) {
                 Text(
                     text = "Browse Genres",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 16.dp),
                 )
 
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    // "All" in sheet
-                    FilterChip(
+                    PillFilterChip(
+                        label = "All",
                         selected = selectedCategory == "All",
-                        onClick = { 
+                        onClick = {
                             onCategorySelected("All")
-                            showSheet = false 
+                            showSheet = false
                         },
-                        label = { Text("All") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                             enabled = true,
-                             selected = selectedCategory == "All",
-                             borderColor = Color.Transparent
-                        )
+                        icon = Icons.Rounded.Apps,
                     )
 
                     EXPLORE_GENRES.forEach { genre ->
-                        val isSelected = selectedCategory == genre.value
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { 
+                        PillFilterChip(
+                            label = genre.label,
+                            selected = selectedCategory == genre.value,
+                            onClick = {
                                 onCategorySelected(genre.value)
-                                showSheet = false 
+                                showSheet = false
                             },
-                            label = { Text(genre.label) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                 enabled = true,
-                                 selected = isSelected,
-                                 borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-                            )
+                            icon = genre.icon,
                         )
                     }
                 }

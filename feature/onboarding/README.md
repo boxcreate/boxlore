@@ -9,7 +9,7 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 - `OnboardingScreen` and `OnboardingViewModel` for the flow shell.
 - Welcome step uses a cinematic podcast-cover marquee (`CinematicBackgroundGrid`): motion runs on `graphicsLayer` (foreground chrome recomposes separately), cover Image count is capped to tiled loops, and animation starts after two frames so the first paint does not hitch.
 - Onboarding hero titles use `rememberCondensedGoogleSansFamily()` from `:core:designsystem` so condensed Google Sans Flex follows Appearance lettering roundness; AI onboarding uses centralized Google Sans Flex weight tokens.
-- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`.
+- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`. Search genre chips use shared `PillFilterChip` from `:core:designsystem`.
 - `AiSuggestionCards`, AI onboarding components, option icons, chat input, and chat message list logic.
 - Pure helpers including `OnboardingGenreLimits`, `OnboardingSearchBackStep`, and `OnboardingCurriculumLogic`.
 

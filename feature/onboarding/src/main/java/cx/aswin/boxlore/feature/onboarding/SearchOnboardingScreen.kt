@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -149,47 +150,12 @@ internal fun OnboardingSearchScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 items(SEARCH_CATEGORIES) { category ->
-                    val isSelected = selectedSearchGenre == category.categoryValue
-                    val containerColor =
-                        if (isSelected) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                        }
-                    val contentColor =
-                        if (isSelected) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-
-                    Surface(
-                        shape =
-                            androidx.compose.foundation.shape
-                                .RoundedCornerShape(percent = 50),
-                        color = containerColor,
-                        contentColor = contentColor,
-                        modifier =
-                            Modifier
-                                .clickable { onGenreSelect(category.categoryValue) },
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        ) {
-                            Icon(
-                                imageVector = category.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = category.label,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = GoogleSansWeight.semiBold,
-                            )
-                        }
-                    }
+                    PillFilterChip(
+                        label = category.label,
+                        selected = selectedSearchGenre == category.categoryValue,
+                        onClick = { onGenreSelect(category.categoryValue) },
+                        icon = category.icon,
+                    )
                 }
             }
         }

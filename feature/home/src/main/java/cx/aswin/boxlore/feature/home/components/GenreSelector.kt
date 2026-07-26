@@ -1,34 +1,67 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.AccountBalance
+import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Face
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Gavel
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Newspaper
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.School
+import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.SentimentVerySatisfied
+import androidx.compose.material.icons.rounded.SportsBaseball
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Weekend
+import androidx.compose.material.icons.rounded.Whatshot
+import androidx.compose.material.icons.rounded.Work
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun GenreSelector(
-    selectedCategory: String?, // Null = For You
+    selectedCategory: String?, // Null = Top
     onCategorySelected: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showSheet by remember { mutableStateOf(false) }
 
-    // Dynamic list construction
     val displayGenres =
         remember(selectedCategory) {
             val topGenres = GENRES.take(5)
             if (selectedCategory != null) {
                 val selectedGenre = GENRES.find { it.value == selectedCategory }
                 if (selectedGenre != null) {
-                    // "Top" + Selected + (Top 5 - Selected)
                     listOf(selectedGenre) + (topGenres - selectedGenre)
                 } else {
                     topGenres
@@ -44,7 +77,6 @@ fun GenreSelector(
         scrollState.animateScrollTo(0)
     }
 
-    // Top horizontal list (Subset) - Optimized by replacing LazyRow with scrollable Row for small static list
     Row(
         modifier =
             modifier
@@ -52,42 +84,30 @@ fun GenreSelector(
                 .horizontalScroll(scrollState),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // 1. "Top" (Always first)
-        GenreChip(
+        PillFilterChip(
             label = "Top",
-            isSelected = selectedCategory == null,
+            selected = selectedCategory == null,
             onClick = { onCategorySelected(null) },
+            icon = Icons.Rounded.Whatshot,
         )
 
-        // 2. Dynamic List (Selected + Top Genres)
         displayGenres.forEach { genre ->
-            GenreChip(
+            PillFilterChip(
                 label = genre.label,
-                isSelected = selectedCategory == genre.value,
+                selected = selectedCategory == genre.value,
                 onClick = { onCategorySelected(genre.value) },
+                icon = genre.icon,
             )
         }
 
-        // 3. "More" Button
-        FilterChip(
+        PillFilterChip(
+            label = "More",
             selected = false,
             onClick = { showSheet = true },
-            label = { Text("More...") },
-            colors =
-                FilterChipDefaults.filterChipColors(
-                    containerColor = Color.Transparent,
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            border =
-                FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = false,
-                    borderColor = MaterialTheme.colorScheme.outlineVariant,
-                ),
+            trailingIcon = Icons.Rounded.KeyboardArrowDown,
         )
     }
 
-    // Full Genre Sheet
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
@@ -99,7 +119,7 @@ fun GenreSelector(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp)
-                        .padding(bottom = 48.dp), // Nav bar padding
+                        .padding(bottom = 48.dp),
             ) {
                 Text(
                     text = "Browse Genres",
@@ -113,24 +133,25 @@ fun GenreSelector(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    // "Top" in sheet
-                    GenreChip(
+                    PillFilterChip(
                         label = "Top",
-                        isSelected = selectedCategory == null,
+                        selected = selectedCategory == null,
                         onClick = {
                             onCategorySelected(null)
                             showSheet = false
                         },
+                        icon = Icons.Rounded.Whatshot,
                     )
 
                     GENRES.forEach { genre ->
-                        GenreChip(
+                        PillFilterChip(
                             label = genre.label,
-                            isSelected = selectedCategory == genre.value,
+                            selected = selectedCategory == genre.value,
                             onClick = {
                                 onCategorySelected(genre.value)
                                 showSheet = false
                             },
+                            icon = genre.icon,
                         )
                     }
                 }
@@ -139,35 +160,7 @@ fun GenreSelector(
     }
 }
 
-@Composable
-private fun GenreChip(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-) {
-    FilterChip(
-        selected = isSelected,
-        onClick = onClick,
-        label = { Text(label) },
-        colors =
-            FilterChipDefaults.filterChipColors(
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                containerColor = Color.Transparent,
-                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-        border =
-            FilterChipDefaults.filterChipBorder(
-                enabled = true,
-                selected = isSelected,
-                borderColor = MaterialTheme.colorScheme.outlineVariant,
-                selectedBorderColor = MaterialTheme.colorScheme.primary,
-            ),
-    )
-}
-
-// Data Handling (Copied from OnboardingScreen to avoid dependency issues for now)
-// TODO: Move to core:model
+// Synced with ExploreGenreSelector / onboarding search icons. TODO: Move to core:model
 private data class GenreItem(
     val label: String,
     val value: String,
@@ -179,8 +172,8 @@ private val GENRES =
         GenreItem("News", "News", Icons.Rounded.Newspaper),
         GenreItem("Tech", "Technology", Icons.Rounded.Computer),
         GenreItem("Business", "Business", Icons.Rounded.Work),
-        GenreItem("Comedy", "Comedy", Icons.Rounded.EmojiEvents),
-        GenreItem("True Crime", "True Crime", Icons.Rounded.Search),
+        GenreItem("Comedy", "Comedy", Icons.Rounded.SentimentVerySatisfied),
+        GenreItem("True Crime", "True Crime", Icons.Rounded.Fingerprint),
         GenreItem("Sports", "Sports", Icons.Rounded.SportsBaseball),
         GenreItem("Health", "Health", Icons.Rounded.FavoriteBorder),
         GenreItem("History", "History", Icons.Rounded.AccountBalance),
