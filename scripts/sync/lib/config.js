@@ -60,6 +60,10 @@ module.exports = {
     // embedding per show; cold-start shows cost up to EPISODES_PER_SHOW.
     MAX_EMBEDDINGS_PER_RUN: parseInt(process.env.MAX_EMBEDDINGS_PER_RUN || '6000', 10),
     PAYLOAD_DESCRIPTION_MAX: 1000,  // cap description text stored in Qdrant payloads
+    // HTTP SELECT page size (sqld RESPONSE_TOO_LARGE guard). Override via TURSO_PAGE_SIZE.
+    TURSO_PAGE_SIZE: Math.max(50, parseInt(process.env.TURSO_PAGE_SIZE || '300', 10) || 300),
+    // Extra pending rows to pull beyond the embed budget (already-in-Qdrant flag flips).
+    SHOW_VEC_FETCH_SLACK: parseInt(process.env.SHOW_VEC_FETCH_SLACK || '500', 10),
 
     // --- Episode sync staleness tiers ---
     NEWS_STALE_MS: 8 * 60 * 60 * 1000,

@@ -74,14 +74,39 @@ async function main() {
         process.exit(1);
     }
 
-    // --- Compute chart membership + grace clock ---
-    const chartSetRes = await turso.execute(
-        'SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL'
-    );
-    const chartItunesIds = new Set(turso.rows(chartSetRes).map(r => String(r[0])));
+    // --- Compute chart membership + grace clock (paged) ---
+    const chartIdRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => String(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT DISTINCT itunes_id
+                FROM charts
+                WHERE itunes_id IS NOT NULL
+                  AND itunes_id > ?
+                ORDER BY itunes_id ASC
+                LIMIT ?
+            `,
+            args: [after == null ? '' : after, limit],
+        }),
+    });
+    const chartItunesIds = new Set(chartIdRows.map(r => String(r[0])));
 
-    const podsRes = await turso.execute('SELECT id, itunes_id, title FROM podcasts');
-    const allPods = turso.rows(podsRes).map(r => ({
+    const podRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => Number(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT id, itunes_id, title
+                FROM podcasts
+                WHERE id > ?
+                ORDER BY id ASC
+                LIMIT ?
+            `,
+            args: [after == null ? 0 : after, limit],
+        }),
+    });
+    const allPods = podRows.map(r => ({
         id: String(r[0]),
         itunesId: r[1] !== null ? String(r[1]) : null,
         title: r[2] || 'Unknown',

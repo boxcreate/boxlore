@@ -112,13 +112,24 @@ async function main() {
         ...(FORCE ? { 'Mode': '--force (skip-if-fresh bypassed)' } : {}),
     });
 
-    // --- Read the entire charts table once and index it ---
+    // --- Read charts in pages (sqld HTTP response size) ---
     log.group('Read existing charts');
-    const existingRes = await turso.execute(
-        'SELECT country, category, itunes_id, name, artist, image_url, rank FROM charts'
-    );
+    const existingRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => Number(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT rowid, country, category, itunes_id, name, artist, image_url, rank
+                FROM charts
+                WHERE rowid > ?
+                ORDER BY rowid ASC
+                LIMIT ?
+            `,
+            args: [after == null ? 0 : after, limit],
+        }),
+    });
     const existing = new Map();
-    for (const [country, category, itunesId, name, artist, imageUrl, rank] of turso.rows(existingRes)) {
+    for (const [, country, category, itunesId, name, artist, imageUrl, rank] of existingRows) {
         existing.set(rowKey(country, category, String(itunesId)), {
             name: name || '', artist: artist || '', imageUrl: imageUrl || '',
             rank: parseInt(rank, 10),

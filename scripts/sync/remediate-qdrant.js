@@ -144,12 +144,24 @@ async function main() {
     // ---------------------------------------------------------------
     log.group('Step 2: Load chart shows from Turso');
     await turso.healthCheck();
-    const chartShowRes = await turso.execute(`
-        SELECT DISTINCT p.id
-        FROM podcasts p
-        WHERE p.itunes_id IN (SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL)
-    `);
-    const chartShowIds = new Set(turso.rows(chartShowRes).map(r => String(r[0])));
+    const chartShowRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => Number(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT p.id
+                FROM podcasts p
+                WHERE p.itunes_id IN (
+                    SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL
+                )
+                  AND p.id > ?
+                ORDER BY p.id ASC
+                LIMIT ?
+            `,
+            args: [after == null ? 0 : after, limit],
+        }),
+    });
+    const chartShowIds = new Set(chartShowRows.map(r => String(r[0])));
     log.info(`Chart shows in Turso: ${log.fmt(chartShowIds.size)}`);
     if (chartShowIds.size < cfg.CLEANUP_SAFETY_MIN_CHARTS) {
         log.error(`Safety abort: only ${chartShowIds.size} chart shows found (< ${cfg.CLEANUP_SAFETY_MIN_CHARTS}). Charts table may be broken.`);
@@ -230,12 +242,24 @@ async function main() {
 
     // ---------------------------------------------------------------
     log.group('Step 6: Cross-check qdrant_vectorized flags');
-    const flaggedRes = await turso.execute(`
-        SELECT p.id FROM podcasts p
-        WHERE p.qdrant_vectorized = 1
-          AND p.itunes_id IN (SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL)
-    `);
-    const flaggedIds = turso.rows(flaggedRes).map(r => String(r[0]));
+    const flaggedRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => Number(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT p.id FROM podcasts p
+                WHERE p.qdrant_vectorized = 1
+                  AND p.itunes_id IN (
+                      SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL
+                  )
+                  AND p.id > ?
+                ORDER BY p.id ASC
+                LIMIT ?
+            `,
+            args: [after == null ? 0 : after, limit],
+        }),
+    });
+    const flaggedIds = flaggedRows.map(r => String(r[0]));
     const holes = flaggedIds.filter(id => !byShow.has(id) || byShow.get(id).length === 0);
     log.info(`Shows flagged vectorized=1 with ZERO points in Qdrant (holes): ${log.fmt(holes.length)}`);
 

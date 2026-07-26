@@ -25,13 +25,25 @@ const CONCURRENCY = 5;
 /** Refresh candidate cache from Turso and seed state records. */
 async function refreshCandidates(st) {
     log.info('[CANDIDATES] Refreshing candidate list from Turso');
-    const res = await turso.execute(`
-        SELECT p.id, p.latest_ep_id, p.categories, p.medium
-        FROM podcasts p
-        WHERE p.itunes_id IN (SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL)
-    `);
+    const pendingRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => Number(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT p.id, p.latest_ep_id, p.categories, p.medium
+                FROM podcasts p
+                WHERE p.itunes_id IN (
+                    SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL
+                )
+                  AND p.id > ?
+                ORDER BY p.id ASC
+                LIMIT ?
+            `,
+            args: [after == null ? 0 : after, limit],
+        }),
+    });
     const ids = [];
-    for (const [id, latestEpId, categories, medium] of turso.rows(res)) {
+    for (const [id, latestEpId, categories, medium] of pendingRows) {
         const podId = String(id);
         ids.push(podId);
         const rec = st.shows[podId] || {};

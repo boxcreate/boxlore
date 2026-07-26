@@ -10,9 +10,12 @@
 const fs = require('fs');
 const log = require('./log');
 const { RUN_STATS_FILE } = require('./config');
+const { fetchAllPaged: fetchAllPagedImpl } = require('./turso-page');
 
 const TURSO_URL = process.env.TURSO_URL?.replace('libsql://', 'https://');
 const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
+/** Default page size for HTTP SELECT pagination (keeps sqld under RESPONSE_TOO_LARGE). */
+const PAGE_SIZE = Math.max(50, parseInt(process.env.TURSO_PAGE_SIZE || '300', 10) || 300);
 
 const MAX_RETRIES = 5;
 const INITIAL_DELAY_MS = 1000;
@@ -177,7 +180,23 @@ async function healthCheck() {
     }
 }
 
+/**
+ * Keyset-paginated SELECT. See turso-page.js.
+ * @param {object} opts
+ * @param {(afterId: number|string|null, limit: number) => { sql: string, args?: any[] }} opts.buildPage
+ * @param {(row: any[]) => number|string} opts.rowId
+ * @param {number} [opts.pageSize]
+ * @param {number} [opts.maxRows]
+ */
+async function fetchAllPaged(opts) {
+    return fetchAllPagedImpl(
+        { execute, rows },
+        { pageSize: PAGE_SIZE, ...opts },
+    );
+}
+
 module.exports = {
     assertEnv, beginStep, getStats, flushStats,
     execute, batch, transaction, rows, scalar, healthCheck,
+    fetchAllPaged, PAGE_SIZE,
 };

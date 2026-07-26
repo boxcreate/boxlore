@@ -61,15 +61,39 @@ function loadDenylist() {
 
 /** Missing chart itunes ids (string-normalized set difference), minus denylist. */
 async function computeMissing({ denylistDoc } = {}) {
-    const chartsRes = await turso.execute(
-        'SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL'
-    );
-    const chartIds = turso.rows(chartsRes).map(r => String(r[0])).filter(Boolean);
+    const chartIdRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => String(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT DISTINCT itunes_id
+                FROM charts
+                WHERE itunes_id IS NOT NULL
+                  AND itunes_id > ?
+                ORDER BY itunes_id ASC
+                LIMIT ?
+            `,
+            args: [after == null ? '' : after, limit],
+        }),
+    });
+    const chartIds = chartIdRows.map(r => String(r[0])).filter(Boolean);
 
-    const podsRes = await turso.execute(
-        'SELECT DISTINCT itunes_id FROM podcasts WHERE itunes_id IS NOT NULL'
-    );
-    const existing = new Set(turso.rows(podsRes).map(r => String(r[0])));
+    const podIdRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => String(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT DISTINCT itunes_id
+                FROM podcasts
+                WHERE itunes_id IS NOT NULL
+                  AND CAST(itunes_id AS TEXT) > ?
+                ORDER BY CAST(itunes_id AS TEXT) ASC
+                LIMIT ?
+            `,
+            args: [after == null ? '' : after, limit],
+        }),
+    });
+    const existing = new Set(podIdRows.map(r => String(r[0])));
 
     const blocked = piUnavailable.activeIdSet(denylistDoc || loadDenylist());
     const missingRaw = chartIds.filter(id => !existing.has(id));

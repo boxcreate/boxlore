@@ -43,26 +43,41 @@ async function main() {
         return;
     }
 
-    // --- Pending shows (oldest flagged first) ---
+    // --- Pending shows (paged); oldest last_ep_sync first after fetch ---
     const countryPlaceholders = cfg.FULL_TIER_COUNTRIES.map(() => '?').join(',');
-    const res = await turso.execute(`
-        SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language
-        FROM podcasts p
-        WHERE p.qdrant_vectorized = 0
-          AND p.itunes_id IN (
-              SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
-          )
-        ORDER BY (p.last_ep_sync IS NULL) DESC, p.last_ep_sync ASC
-    `, cfg.FULL_TIER_COUNTRIES);
+    const pendingRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        rowId: (r) => Number(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language, p.last_ep_sync
+                FROM podcasts p
+                WHERE p.qdrant_vectorized = 0
+                  AND p.itunes_id IN (
+                      SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
+                  )
+                  AND p.id > ?
+                ORDER BY p.id ASC
+                LIMIT ?
+            `,
+            args: [...cfg.FULL_TIER_COUNTRIES, after == null ? 0 : after, limit],
+        }),
+    });
 
-    const pending = turso.rows(res).map(r => ({
+    const pending = pendingRows.map(r => ({
         id: String(r[0]),
         title: r[1] || 'Unknown Show',
         categories: r[2] || 'Podcast',
         author: r[3] || '',
         image_url: r[4] || '',
         language: r[5] || 'en',
+        last_ep_sync: r[6] == null ? null : Number(r[6]),
     }));
+    pending.sort((a, b) => {
+        if (a.last_ep_sync == null && b.last_ep_sync != null) return -1;
+        if (a.last_ep_sync != null && b.last_ep_sync == null) return 1;
+        return (a.last_ep_sync || 0) - (b.last_ep_sync || 0);
+    });
     log.banner('Stage 4 · Vectorize Episodes', {
         'Pending shows': log.fmt(pending.length),
         'Embedding budget': log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN),

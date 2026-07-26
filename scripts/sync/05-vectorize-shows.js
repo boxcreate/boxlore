@@ -37,17 +37,41 @@ async function main() {
     }
 
     const countryPlaceholders = cfg.FULL_TIER_COUNTRIES.map(() => '?').join(',');
-    const res = await turso.execute(`
-        SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language,
-               p.description, p.feed_url, p.website_url
+    const countRes = await turso.execute(`
+        SELECT COUNT(*)
         FROM podcasts p
         WHERE p.qdrant_podcast_vectorized = 0
           AND p.itunes_id IN (
               SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
           )
     `, cfg.FULL_TIER_COUNTRIES);
+    const totalPending = parseInt(turso.scalar(countRes), 10) || 0;
 
-    const pending = turso.rows(res).map(r => ({
+    // Cap fetch: embed budget + slack for already-indexed flag flips. Wide columns
+    // (description) must never be pulled unbounded over HTTP.
+    const fetchCap = cfg.MAX_EMBEDDINGS_PER_RUN + cfg.SHOW_VEC_FETCH_SLACK;
+    const pendingRows = await turso.fetchAllPaged({
+        pageSize: cfg.TURSO_PAGE_SIZE,
+        maxRows: fetchCap,
+        rowId: (r) => Number(r[0]),
+        buildPage: (after, limit) => ({
+            sql: `
+                SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language,
+                       p.description, p.feed_url, p.website_url
+                FROM podcasts p
+                WHERE p.qdrant_podcast_vectorized = 0
+                  AND p.itunes_id IN (
+                      SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
+                  )
+                  AND p.id > ?
+                ORDER BY p.id ASC
+                LIMIT ?
+            `,
+            args: [...cfg.FULL_TIER_COUNTRIES, after == null ? 0 : after, limit],
+        }),
+    });
+
+    const pending = pendingRows.map(r => ({
         id: String(r[0]),
         title: r[1] || 'Unknown Show',
         categories: r[2] || 'Podcast',
@@ -59,7 +83,8 @@ async function main() {
         website_url: r[8] || '',
     }));
     log.banner('Stage 5 · Vectorize Shows', {
-        'Pending shows': log.fmt(pending.length),
+        'Pending shows (total)': log.fmt(totalPending),
+        'Fetched this run': log.fmt(pending.length),
         'Embedding budget': log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN),
         'Collection': cfg.PODCASTS_COLLECTION,
     });
@@ -196,7 +221,7 @@ async function main() {
         log.error(`Final Qdrant flush failed: ${e.message}`);
     }
 
-    const backlog = toEmbed.length - budgeted.length;
+    const backlog = Math.max(0, totalPending - alreadyIndexed.length - embedded);
     const stats = turso.getStats();
     log.costFooter('Stage 5 · Vectorize Shows', {
         reads: stats.reads,
