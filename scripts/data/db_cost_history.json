@@ -836,5 +836,24 @@
     "runs": 3
    }
   }
+ },
+ "2026-07-26": {
+  "global": {
+   "refresh-charts": {
+    "reads": 81392,
+    "writes": 56907,
+    "runs": 1
+   },
+   "import-podcasts": {
+    "reads": 35843,
+    "writes": 4385,
+    "runs": 1
+   },
+   "sync-episodes": {
+    "reads": 49888,
+    "writes": 2562,
+    "runs": 1
+   }
+  }
  }
 }
