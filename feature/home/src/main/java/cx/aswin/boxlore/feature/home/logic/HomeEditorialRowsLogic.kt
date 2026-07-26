@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.home.logic
 
 import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import cx.aswin.boxlore.core.catalog.content.CuratedMood
+import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.HomeEditorialIcon
 import cx.aswin.boxlore.feature.home.HomeEditorialRow
@@ -13,92 +15,7 @@ internal data class HomeEditorialRowDefinition(
 )
 
 internal fun editorialRowDefinitionsFor(daypart: ContentDaypart): List<HomeEditorialRowDefinition> =
-    when (daypart) {
-        ContentDaypart.MORNING ->
-            listOf(
-                HomeEditorialRowDefinition(
-                    providerId = "morning_news",
-                    title = "What's happening",
-                    subtitle = "The stories shaping today",
-                    icon = HomeEditorialIcon.HEADLINES,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "morning_motivation",
-                    title = "A brighter start",
-                    subtitle = "Ideas and stories with a little lift",
-                    icon = HomeEditorialIcon.UPLIFTING,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "business_insider",
-                    title = "Business in focus",
-                    subtitle = "Markets, technology, and the people moving them",
-                    icon = HomeEditorialIcon.BUSINESS,
-                ),
-            )
-        ContentDaypart.AFTERNOON ->
-            listOf(
-                HomeEditorialRowDefinition(
-                    providerId = "science_explainer",
-                    title = "Worth knowing",
-                    subtitle = "Clear answers to curious questions",
-                    icon = HomeEditorialIcon.SCIENCE,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "tech_culture",
-                    title = "Tech right now",
-                    subtitle = "The ideas changing how we live and work",
-                    icon = HomeEditorialIcon.TECHNOLOGY,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "creative_focus",
-                    title = "Creative spark",
-                    subtitle = "Fresh perspectives from art and design",
-                    icon = HomeEditorialIcon.CREATIVITY,
-                ),
-            )
-        ContentDaypart.EVENING ->
-            listOf(
-                HomeEditorialRowDefinition(
-                    providerId = "comedy_gold",
-                    title = "A good laugh",
-                    subtitle = "Comedy and conversation for winding down",
-                    icon = HomeEditorialIcon.COMEDY,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "tv_film_buff",
-                    title = "On screen",
-                    subtitle = "Film, television, and culture worth talking about",
-                    icon = HomeEditorialIcon.SCREEN,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "sports_fan",
-                    title = "Game time",
-                    subtitle = "Stories and analysis from across sport",
-                    icon = HomeEditorialIcon.SPORTS,
-                ),
-            )
-        ContentDaypart.LATE_NIGHT ->
-            listOf(
-                HomeEditorialRowDefinition(
-                    providerId = "true_crime_sleep",
-                    title = "True crime after dark",
-                    subtitle = "Investigations that keep you listening",
-                    icon = HomeEditorialIcon.TRUE_CRIME,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "history_buff",
-                    title = "Stories from history",
-                    subtitle = "The past, told like it happened yesterday",
-                    icon = HomeEditorialIcon.HISTORY,
-                ),
-                HomeEditorialRowDefinition(
-                    providerId = "mystery_thriller",
-                    title = "Mystery & suspense",
-                    subtitle = "Twists, tension, and stories for the night",
-                    icon = HomeEditorialIcon.MYSTERY,
-                ),
-            )
-    }
+    CuratedMoods.forDaypart(daypart).map { it.toHomeDefinition() }
 
 internal fun buildHomeEditorialRows(
     daypart: ContentDaypart,
@@ -139,3 +56,28 @@ internal fun buildHomeEditorialRows(
         }
     }
 }
+
+private fun CuratedMood.toHomeDefinition(): HomeEditorialRowDefinition =
+    HomeEditorialRowDefinition(
+        providerId = id,
+        title = title,
+        subtitle = subtitle,
+        icon = homeEditorialIconForMood(id),
+    )
+
+private fun homeEditorialIconForMood(moodId: String): HomeEditorialIcon =
+    when (moodId) {
+        "morning_news" -> HomeEditorialIcon.HEADLINES
+        "morning_motivation" -> HomeEditorialIcon.UPLIFTING
+        "business_insider" -> HomeEditorialIcon.BUSINESS
+        "science_explainer" -> HomeEditorialIcon.SCIENCE
+        "tech_culture" -> HomeEditorialIcon.TECHNOLOGY
+        "creative_focus" -> HomeEditorialIcon.CREATIVITY
+        "comedy_gold" -> HomeEditorialIcon.COMEDY
+        "tv_film_buff" -> HomeEditorialIcon.SCREEN
+        "sports_fan" -> HomeEditorialIcon.SPORTS
+        "true_crime_sleep" -> HomeEditorialIcon.TRUE_CRIME
+        "history_buff" -> HomeEditorialIcon.HISTORY
+        "mystery_thriller" -> HomeEditorialIcon.MYSTERY
+        else -> HomeEditorialIcon.HEADLINES
+    }

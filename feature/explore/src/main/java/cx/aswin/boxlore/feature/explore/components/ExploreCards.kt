@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -53,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -165,42 +168,73 @@ fun ExplorePodcastCard(
 fun ExploreVibeCard(
     vibe: Pair<String, String>,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    // Determine dynamic colors based on string hash for variety
-    val hash = vibe.first.hashCode()
-    val containerColor = when (hash % 3) {
+    val tone = remember(vibe.first) { kotlin.math.abs(vibe.first.hashCode()) % 3 }
+    val containerColor = when (tone) {
         0 -> MaterialTheme.colorScheme.primaryContainer
         1 -> MaterialTheme.colorScheme.secondaryContainer
         else -> MaterialTheme.colorScheme.tertiaryContainer
     }
-    val contentColor = when (hash % 3) {
+    val contentColor = when (tone) {
         0 -> MaterialTheme.colorScheme.onPrimaryContainer
         1 -> MaterialTheme.colorScheme.onSecondaryContainer
         else -> MaterialTheme.colorScheme.onTertiaryContainer
     }
+    val mood = remember(vibe.first) { CuratedMoods.all.find { it.id == vibe.first } }
+    val icon = remember(vibe.first) { moodIconForId(vibe.first) }
 
     Surface(
-        shape = MaterialTheme.shapes.large,
-        color = containerColor,
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(100.dp)
-            .expressiveClickable(onClick = onClick)
+            .height(108.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = containerColor,
+        contentColor = contentColor,
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(16.dp)
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = vibe.second,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = GoogleSansWeight.bold,
-                color = contentColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = contentColor.copy(alpha = 0.14f),
+                contentColor = contentColor,
+                modifier = Modifier.size(32.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Column {
+                Text(
+                    text = vibe.second,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = GoogleSansWeight.semiBold,
+                    color = contentColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val subtitle = mood?.subtitle
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = contentColor.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
@@ -222,7 +256,7 @@ fun CuratedVibeHeader(title: String) {
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = "Curated: $title",
+            text = title,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontFamily = rememberSectionHeaderFontFamily()
             ),
@@ -234,9 +268,30 @@ fun CuratedVibeHeader(title: String) {
 }
 
 /**
- * For You "vibe catcher" chip — deliberately not a [PillFilterChip].
- * Soft squircle, always chromatic container, mood icon. Genres stay compact
- * stadium pills; these read as mood invitations.
+ * Horizontal For You vibe catchers — lives in the sticky header (same slot as genres).
+ */
+@Composable
+fun ExploreVibeChipRow(
+    vibes: List<Pair<String, String>>,
+    onVibeSelected: (id: String, name: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(vibes, key = { it.first }) { vibe ->
+            ExploreVibeChip(
+                vibe = vibe,
+                onClick = { onVibeSelected(vibe.first, vibe.second) },
+            )
+        }
+    }
+}
+
+/**
+ * For You "vibe catcher" — soft rounded capsule with tint + per-vibe icon.
+ * Not a genre [PillFilterChip]: no stadium filter look, always chromatic.
  */
 @Composable
 fun ExploreVibeChip(
@@ -246,48 +301,38 @@ fun ExploreVibeChip(
 ) {
     val tone = remember(vibe.first) { kotlin.math.abs(vibe.first.hashCode()) % 3 }
     val containerColor = when (tone) {
-        0 -> MaterialTheme.colorScheme.primaryContainer
-        1 -> MaterialTheme.colorScheme.secondaryContainer
-        else -> MaterialTheme.colorScheme.tertiaryContainer
+        0 -> MaterialTheme.colorScheme.secondaryContainer
+        1 -> MaterialTheme.colorScheme.tertiaryContainer
+        else -> MaterialTheme.colorScheme.primaryContainer
     }
     val contentColor = when (tone) {
-        0 -> MaterialTheme.colorScheme.onPrimaryContainer
-        1 -> MaterialTheme.colorScheme.onSecondaryContainer
-        else -> MaterialTheme.colorScheme.onTertiaryContainer
+        0 -> MaterialTheme.colorScheme.onSecondaryContainer
+        1 -> MaterialTheme.colorScheme.onTertiaryContainer
+        else -> MaterialTheme.colorScheme.onPrimaryContainer
     }
-    val shape = RoundedCornerShape(18.dp)
     val icon = remember(vibe.first) { vibeCatcherIcon(vibe.first) }
 
     Surface(
         onClick = onClick,
-        modifier = modifier.height(40.dp),
-        shape = shape,
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
         color = containerColor,
         contentColor = contentColor,
-        border = BorderStroke(1.dp, contentColor.copy(alpha = 0.18f)),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 10.dp, end = 14.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            Surface(
-                shape = CircleShape,
-                color = contentColor.copy(alpha = 0.14f),
-                contentColor = contentColor,
-                modifier = Modifier.size(26.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(15.dp),
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = contentColor,
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = vibe.second,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = GoogleSansWeight.semiBold,
                 color = contentColor,
                 maxLines = 1,
@@ -298,7 +343,11 @@ fun ExploreVibeChip(
 }
 
 private fun vibeCatcherIcon(vibeId: String): androidx.compose.ui.graphics.vector.ImageVector =
-    when (vibeId) {
+    moodIconForId(vibeId)
+
+/** Per-mood icon for For You chips and the mood results header. */
+internal fun moodIconForId(moodId: String): androidx.compose.ui.graphics.vector.ImageVector =
+    when (moodId) {
         "morning_news" -> Icons.Rounded.Newspaper
         "morning_motivation" -> Icons.Rounded.Bolt
         "business_insider" -> Icons.Rounded.Work

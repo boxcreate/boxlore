@@ -10,6 +10,7 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 - `mapRegionForBriefing` maps content regions to briefing markets (`us` / `in` / `gb` / `global`; legacy `uk` → `gb`).
 - `SubscriptionRepository`, `ChapterRepository`, and `TranscriptRepository` expose catalog-adjacent data operations.
 - `content.ContentOrchestrator`, `GroupedContentSectionProvider`, `ContentContextEngine`, and related content contracts assemble personalized Home and discovery sections.
+- `content.CuratedMoods` is the shared catalog of curated-mood IDs/titles used by Home daypart rails and Explore For You chips (`getCuratedVibe`).
 - `backup.LibraryBackupManager` imports and exports library data, OPML, listening history, and ranking backup payloads.
 - `SharedAppDependencies` and `SharedAppDependenciesHolder` expose application-scoped instances to workers and services.
 - `InstallReferrerManager` parses Play Install Referrer deep links and exposes optional `onInstallReferrerResolved` (channel + raw referrer). `:app` wires that callback into analytics; catalog must not depend on `:core:analytics`.

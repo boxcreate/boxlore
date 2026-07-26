@@ -7,6 +7,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.playback.PlaybackIntroOutroController
 import cx.aswin.boxlore.core.playback.PlaybackProgressCoordinator
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
@@ -25,7 +26,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private const val LEARN_PREFIX = AutoBrowseContract.LEARN_PREFIX
-private const val GENRE_TV_FILM = AutoBrowseContract.GENRE_TV_FILM
 
 open class BoxLorePlaybackService :
     MediaLibraryService(),
@@ -775,32 +775,7 @@ open class BoxLorePlaybackService :
         }
 
     override fun getTimeBasedGenres(hour: Int): List<Pair<String, String>> =
-        when (hour) {
-            in 5..11 ->
-                listOf(
-                    "morning_news" to "Top News",
-                    "morning_motivation" to "Daily Motivation",
-                    "business_insider" to "Business & Tech",
-                )
-            in 12..16 ->
-                listOf(
-                    "science_explainer" to "Science & Discovery",
-                    "tech_culture" to "Tech & Gadgets",
-                    "creative_focus" to "Creative Focus",
-                )
-            in 17..22 ->
-                listOf(
-                    "comedy_gold" to "Comedy Gold",
-                    "tv_film_buff" to GENRE_TV_FILM,
-                    "sports_fan" to "Sports Highlights",
-                )
-            else ->
-                listOf(
-                    "true_crime_sleep" to "True Crime & Chill",
-                    "history_buff" to "History",
-                    "mystery_thriller" to "Mystery & Thrillers",
-                )
-        }
+        CuratedMoods.forDaypart(CuratedMoods.daypartForHour(hour)).map { it.id to it.title }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 

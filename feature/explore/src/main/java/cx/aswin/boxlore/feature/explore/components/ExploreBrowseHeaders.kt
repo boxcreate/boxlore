@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.explore.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Videocam
@@ -34,13 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
 
 /**
@@ -236,35 +236,114 @@ internal fun ExploreSectionHeader(
         }
     }
 }
+
+/**
+ * Shared Explore browse header: 44dp icon tile + title (+ optional subtitle).
+ * Scrolls with the grid (not sticky). Matched top/bottom breathing room for mood + search idle.
+ */
+@Composable
+internal fun ExploreIconTitleHeader(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    containerColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.secondaryContainer,
+    contentColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSecondaryContainer,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = containerColor,
+            contentColor = contentColor,
+            modifier = Modifier.size(44.dp),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = rememberSectionHeaderFontFamily(),
+                        fontWeight = GoogleSansWeight.semiBold,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Results header when a For You mood chip is active.
+ */
+@Composable
+internal fun ExploreMoodResultsHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    val mood = remember(title) { CuratedMoods.all.find { it.title == title } }
+    val icon = remember(mood?.id) { moodIconForId(mood?.id.orEmpty()) }
+    ExploreIconTitleHeader(
+        title = title,
+        subtitle = mood?.subtitle,
+        icon = icon,
+        modifier = modifier,
+    )
+}
+
+/**
+ * Search idle header above the mood suggestion blocks.
+ */
+@Composable
+internal fun ExploreSuggestedMoodsHeader(modifier: Modifier = Modifier) {
+    ExploreIconTitleHeader(
+        title = "Suggested for you",
+        subtitle = "Pick a mood to browse curated shows",
+        icon = Icons.Rounded.AutoAwesome,
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+    )
+}
+
 /**
  * Dedicated Material 3 Search Header
  */
 @Composable
 internal fun ExploreSearchHeader() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Search,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Search Results",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = rememberSectionHeaderFontFamily()
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
+    ExploreIconTitleHeader(
+        title = "Search results",
+        icon = Icons.Rounded.Search,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    )
 }
 

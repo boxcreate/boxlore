@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.explore.logic
 
+import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -7,34 +8,9 @@ import cx.aswin.boxlore.core.model.Podcast
  * Pure Explore browse helpers extracted from [cx.aswin.boxlore.feature.explore.ExploreViewModel].
  */
 object ExploreBrowseLogic {
-    fun vibesForHour(hourOfDay: Int): List<Pair<String, String>> {
-        val morning = listOf(
-            "morning_news" to "Top News",
-            "morning_motivation" to "Daily Motivation",
-            "business_insider" to "Business & Tech",
-        )
-        val afternoon = listOf(
-            "science_explainer" to "Science & Discovery",
-            "tech_culture" to "Tech & Gadgets",
-            "creative_focus" to "Creative Focus",
-        )
-        val evening = listOf(
-            "comedy_gold" to "Comedy Gold",
-            "tv_film_buff" to "TV & Film",
-            "sports_fan" to "Sports Highlights",
-        )
-        val lateNight = listOf(
-            "true_crime_sleep" to "True Crime & Chill",
-            "history_buff" to "History",
-            "mystery_thriller" to "Mystery & Thrillers",
-        )
-        return when (hourOfDay) {
-            in 5..11 -> morning + afternoon + evening + lateNight
-            in 12..16 -> afternoon + evening + lateNight + morning
-            in 17..22 -> evening + lateNight + morning + afternoon
-            else -> lateNight + morning + afternoon + evening
-        }
-    }
+    /** Mood chips for For You — same catalog as Home daypart rails, time-sorted. */
+    fun vibesForHour(hourOfDay: Int): List<Pair<String, String>> =
+        CuratedMoods.forHourOfDay(hourOfDay).map { it.id to it.title }
 
     fun filterPodcastsBySubstring(query: String, podcasts: Collection<Podcast>): List<Podcast> {
         val trimmed = query.trim()

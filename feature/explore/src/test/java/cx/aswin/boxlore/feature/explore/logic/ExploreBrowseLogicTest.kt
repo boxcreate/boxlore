@@ -7,14 +7,16 @@ import org.junit.jupiter.api.Test
 
 class ExploreBrowseLogicTest {
     @Test
-    fun `morning hour puts news vibes first`() {
+    fun `morning hour puts news moods first with home titles`() {
         val vibes = ExploreBrowseLogic.vibesForHour(8)
         assertEquals("morning_news", vibes.first().first)
+        assertEquals("What's happening", vibes.first().second)
     }
 
     @Test
-    fun `late night hour puts crime vibes first`() {
+    fun `late night hour puts crime moods first`() {
         assertEquals("true_crime_sleep", ExploreBrowseLogic.vibesForHour(1).first().first)
+        assertEquals("True crime after dark", ExploreBrowseLogic.vibesForHour(1).first().second)
     }
 
     @Test

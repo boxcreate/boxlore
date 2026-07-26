@@ -10,7 +10,7 @@ Owns Explore discovery and the Learn tab presentation: browse/search discovery, 
 - Explore hero/browse headers use `rememberSectionHeaderFontFamily()` from `:core:designsystem` for section titles tied to Appearance lettering roundness; Explore and Learn use centralized Google Sans Flex weight tokens.
 - Explore list and selector-FAB clearance uses designsystem’s shared navigation-style / mini-player padding contract so controls remain above either app chrome.
 - Trending genre row (`ExploreGenreSelector`) uses shared `PillFilterChip` icon+label pills (same language as onboarding search) with All + top genres + **More** opening the existing Browse Genres bottom sheet.
-- For You vibe row (`ExploreVibeChip`) uses soft squircle “vibe catcher” chips — chromatic containers, circular mood icon badge, light border — deliberately distinct from genre stadium pills.
+- For You mood row (`ExploreVibeChipRow`) sits in the same sticky header slot as genres (matched 8dp spacing). Soft 12dp capsules with per-mood icons + chromatic fill — distinct from stadium genre pills. Titles come from shared `CuratedMoods` (same as Home daypart rails). Mood results and search idle “Suggested for you” titles share scrollable `ExploreIconTitleHeader` (12dp top / 8dp bottom); suggestion blocks are left-aligned icon + title cards.
 - `LearnScreen` and `LearnViewModel` for the Learn route (curiosity cards, queue/play actions).
 - `LearnHistoryScreen` and `LearnHistoryViewModel` for Learn history.
 - `LearnCuriosityHistoryStore` for Learn history persistence through prefs APIs.

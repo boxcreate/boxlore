@@ -126,12 +126,14 @@ import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchEmptySta
 import cx.aswin.boxlore.feature.explore.components.ExploreEpisodesSearchIdleState
 import cx.aswin.boxlore.feature.explore.components.ExploreGenreSelector
 import cx.aswin.boxlore.feature.explore.components.ExploreHeroCard
+import cx.aswin.boxlore.feature.explore.components.ExploreMoodResultsHeader
 import cx.aswin.boxlore.feature.explore.components.ExplorePodcastCard
 import cx.aswin.boxlore.feature.explore.components.ExploreRecommendationsEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreSectionHeader
+import cx.aswin.boxlore.feature.explore.components.ExploreSuggestedMoodsHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreTabSelectorFab
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
-import cx.aswin.boxlore.feature.explore.components.ExploreVibeChip
+import cx.aswin.boxlore.feature.explore.components.ExploreVibeChipRow
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
 
 /**
@@ -354,9 +356,22 @@ fun ExploreContent(
                     onCategorySelected = onCategorySelected
                 )
             }
-            
-            // Bottom spacing (always visible - prevents cut-off look)
-            Spacer(modifier = Modifier.height(4.dp))
+
+            // Vibe catchers (For You) — same sticky header slot / spacing as genres
+            if (!isSearchModeActive && state.selectedTab == 1 && state.suggestedVibes.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                ExploreVibeChipRow(
+                    vibes = state.suggestedVibes,
+                    onVibeSelected = { id, name ->
+                        searchActive = false
+                        focusManager.clearFocus()
+                        onVibeSelected(id, name)
+                    },
+                )
+            }
+
+            // Bottom spacing under sticky chrome (search / genres / mood chips)
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         // SCROLLABLE CONTENT: Grid
@@ -397,11 +412,11 @@ fun ExploreContent(
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = 4.dp,
+                top = 0.dp,
                 bottom = listBottomPadding
             ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalItemSpacing = 16.dp,
+            verticalItemSpacing = 12.dp,
             modifier = Modifier.weight(1f)
         ) {
             if (isSearchModeActive) {
@@ -505,8 +520,11 @@ fun ExploreContent(
                     // SearchTab.SHOWS
                     if (state.searchQuery.isEmpty() && state.currentVibe == null) {
                         if (state.suggestedVibes.isNotEmpty()) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                ExploreSectionHeader(title = "Suggested for You")
+                            item(
+                                key = "suggested_moods_header",
+                                span = StaggeredGridItemSpan.FullLine,
+                            ) {
+                                ExploreSuggestedMoodsHeader()
                             }
                             items(distinctVibes, key = { "vibe_${it.first}" }) { vibe ->
                                 ExploreVibeCard(vibe = vibe, onClick = { 
@@ -517,6 +535,16 @@ fun ExploreContent(
                             }
                         }
                     } else {
+                        val vibeTitle = state.currentVibe
+                        if (vibeTitle != null) {
+                            item(
+                                key = "mood_results_header",
+                                span = StaggeredGridItemSpan.FullLine,
+                            ) {
+                                ExploreMoodResultsHeader(title = vibeTitle)
+                            }
+                        }
+
                         val showContent = displayList.isNotEmpty()
                         val showSkeletons = state.isLoading && displayList.isEmpty()
                         val showEmptyState = !state.isLoading && displayList.isEmpty()
@@ -538,11 +566,6 @@ fun ExploreContent(
                                 ExploreEmptyState()
                             }
                         } else if (showContent) {
-                            if (state.currentVibe != null) {
-                                item(span = StaggeredGridItemSpan.FullLine) {
-                                    ExploreSectionHeader(title = "Vibe: ${state.currentVibe}")
-                                }
-                            }
                             val showGenreChip = state.currentCategory == "All" && state.currentVibe == null
                             itemsIndexed(gridItems, key = { _, it -> "grid_${it.id}" }) { index, podcast ->
                                 val cardHeight = 160.dp
@@ -572,31 +595,7 @@ fun ExploreContent(
                 }
             } else {
                 // Not searching: standard tab content
-                // 1. Curated Vibes Row (For You tab only, when not searching/prompting)
-                if (state.selectedTab == 1) {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(bottom = 8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                items(state.suggestedVibes) { vibe ->
-                                    ExploreVibeChip(
-                                        vibe = vibe,
-                                        onClick = {
-                                            searchActive = false
-                                            focusManager.clearFocus()
-                                            onVibeSelected(vibe.first, vibe.second)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 2. Unified Section Header (Only visible on Trending or active Vibe)
+                // 1. Unified Section Header (Only visible on Trending)
                 if (state.selectedTab == 0) {
                     item(span = StaggeredGridItemSpan.FullLine) {
                         val headerTitle = if (state.currentCategory == "All") {
