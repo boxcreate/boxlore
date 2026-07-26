@@ -35,6 +35,7 @@ A second tree `/opt/boxlore-sync/boxlore-src` may exist as a snapshot — **cron
 | [`scripts/sync/lib/staleness.js`](sync/lib/staleness.js) | Core vs relaxed episode-check windows |
 | [`scripts/sync/lib/episode-caps.js`](sync/lib/episode-caps.js) | Per-storefront episode vector caps |
 | [`scripts/sync/lib/embedder.js`](sync/lib/embedder.js) | `bge` (default) vs `qwen` on VPS |
+| [`scripts/sync/lib/podcast-index.js`](sync/lib/podcast-index.js) | PI API client — Retry-After / global cooldown failsafes |
 | [`scripts/sync/lib/scalars.js`](sync/lib/scalars.js) | Scrub non-scalars before Qdrant/Turso writes |
 | [`scripts/package.json`](package.json) | Sync Node deps + `npm run test:sync` |
 

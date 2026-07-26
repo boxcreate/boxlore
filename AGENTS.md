@@ -74,7 +74,7 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
 | `scripts/sync/01-…` … `07-…` | Staged pipeline |
 | `scripts/sync/lib/turso.js` + `turso-page.js` | Page large SELECTs (`RESPONSE_TOO_LARGE`) |
 | `scripts/sync/lib/staleness.js` / `episode-caps.js` | Core vs relaxed checks; per-storefront caps |
-| `scripts/sync/lib/embedder.js` / `scalars.js` | `bge` vs `qwen`; scrub non-scalars |
+| `scripts/sync/lib/embedder.js` / `scalars.js` / `podcast-index.js` | `bge` vs `qwen`; scrub non-scalars; PI rate-limit failsafes |
 | `scripts/package.json` | Sync Node deps + `npm run test:sync` |
 
 ### Checklist

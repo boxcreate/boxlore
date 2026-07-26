@@ -15,8 +15,9 @@
     "test:sync-pi-unavailable": "node --test sync/lib/pi-unavailable.test.js",
     "test:sync-scalars": "node --test sync/lib/scalars.test.js",
     "test:sync-turso-page": "node --test sync/lib/turso-page.test.js",
-    "test:sync": "node --test sync/lib/csv.test.js sync/lib/pi-unavailable.test.js sync/lib/scalars.test.js sync/lib/turso-page.test.js sync/lib/episode-caps.test.js sync/lib/staleness.test.js",
+    "test:sync": "node --test sync/lib/csv.test.js sync/lib/pi-unavailable.test.js sync/lib/scalars.test.js sync/lib/turso-page.test.js sync/lib/episode-caps.test.js sync/lib/staleness.test.js sync/lib/podcast-index.test.js",
     "test:sync-episode-caps": "node --test sync/lib/episode-caps.test.js",
-    "test:sync-staleness": "node --test sync/lib/staleness.test.js"
+    "test:sync-staleness": "node --test sync/lib/staleness.test.js",
+    "test:sync-podcast-index": "node --test sync/lib/podcast-index.test.js"
   }
 }

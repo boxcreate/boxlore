@@ -5,6 +5,12 @@
  * (~3 req/s) and exponential backoff on 403/429/5xx, transient network errors,
  * and API-level failures (status=false). All pipeline PI calls go through
  * here so total API pressure is bounded regardless of stage.
+ *
+ * Failsafes:
+ * - Process-local ~3 rps spacing
+ * - Retries with exponential backoff
+ * - Honor Retry-After on 429/403 when present
+ * - Global cool-down after 429/403 so concurrent stage workers slow together
  */
 
 const crypto = require('crypto');
@@ -17,6 +23,9 @@ const API_BASE = 'https://api.podcastindex.org/api/1.0';
 const RATE_LIMIT_RPS = 3.0;
 const MAX_RETRIES = 5;
 const INITIAL_BACKOFF_MS = 2000;
+/** Extra global pause after 429/403 so the whole process backs off, not one request. */
+const COOLDOWN_FLOOR_MS = 10_000;
+const COOLDOWN_CAP_MS = 120_000;
 
 let apiCallCount = 0;
 let nextSlotAt = 0;
@@ -44,11 +53,44 @@ function authHeaders() {
 }
 
 function isTransientHttp(status) {
-    return status === 403 || status === 429 || status === 502 || status === 503 || status === 504;
+    return (
+        status === 403
+        || status === 429
+        || status === 500
+        || status === 502
+        || status === 503
+        || status === 504
+    );
 }
 
 function isTransientNetwork(message) {
-    return /fetch failed|socket|timeout|UND_ERR|ECONNRESET|ETIMEDOUT/.test(message);
+    return /fetch failed|socket|timeout|UND_ERR|ECONNRESET|ETIMEDOUT|EAI_AGAIN|ENOTFOUND/.test(
+        String(message || ''),
+    );
+}
+
+/**
+ * Parse Retry-After header (seconds or HTTP-date) into a delay ms.
+ * Always at least `fallbackMs`, capped at COOLDOWN_CAP_MS.
+ */
+function parseRetryAfterMs(headerVal, fallbackMs) {
+    const floor = Math.max(0, Number(fallbackMs) || 0);
+    if (headerVal == null || headerVal === '') {
+        return Math.min(Math.max(floor, COOLDOWN_FLOOR_MS), COOLDOWN_CAP_MS);
+    }
+    const s = String(headerVal).trim();
+    const asInt = Number(s);
+    if (Number.isFinite(asInt) && asInt >= 0) {
+        return Math.min(Math.max(asInt * 1000, floor, COOLDOWN_FLOOR_MS), COOLDOWN_CAP_MS);
+    }
+    const when = Date.parse(s);
+    if (Number.isFinite(when)) {
+        const ms = when - Date.now();
+        if (ms > 0) {
+            return Math.min(Math.max(ms, floor, COOLDOWN_FLOOR_MS), COOLDOWN_CAP_MS);
+        }
+    }
+    return Math.min(Math.max(floor, COOLDOWN_FLOOR_MS), COOLDOWN_CAP_MS);
 }
 
 /** Global rate limiter: serializes request start times at RATE_LIMIT_RPS. */
@@ -62,9 +104,13 @@ async function acquireSlot() {
     }
 }
 
-async function backoff(attempt, path, reason) {
-    const delay = INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
+async function backoff(attempt, path, reason, delayMs) {
+    const delay = delayMs != null
+        ? delayMs
+        : INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
     log.warn(`PI API ${reason} on ${path}; backing off ${delay}ms (attempt ${attempt}/${MAX_RETRIES})`);
+    // Push the token bucket forward so other waiters also slow down.
+    nextSlotAt = Math.max(nextSlotAt, Date.now() + delay);
     await new Promise(r => setTimeout(r, delay));
 }
 
@@ -76,7 +122,11 @@ async function apiGet(path) {
             const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() });
             if (isTransientHttp(res.status)) {
                 if (attempt < MAX_RETRIES) {
-                    await backoff(attempt, path, `HTTP ${res.status}`);
+                    const exp = INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
+                    const delay = (res.status === 429 || res.status === 403)
+                        ? parseRetryAfterMs(res.headers.get('retry-after'), exp)
+                        : exp;
+                    await backoff(attempt, path, `HTTP ${res.status}`, delay);
                     continue;
                 }
                 throw new Error(`PI API error: ${res.status}`);
@@ -143,6 +193,15 @@ async function podcastByItunesId(itunesId) {
 }
 
 module.exports = {
-    assertEnv, getApiCallCount,
-    episodesByFeedId, podcastByFeedId, podcastByItunesId,
+    assertEnv,
+    getApiCallCount,
+    episodesByFeedId,
+    podcastByFeedId,
+    podcastByItunesId,
+    // Exported for unit tests / ops tooling
+    isTransientHttp,
+    isTransientNetwork,
+    parseRetryAfterMs,
+    RATE_LIMIT_RPS,
+    MAX_RETRIES,
 };
