@@ -11,6 +11,13 @@
  * sustained absence triggers deletion. Last-seen timestamps live in the git
  * state file (shows[id].s) - zero Turso cost.
  *
+ * Reliability:
+ * - Qdrant deletes use wait=true before Turso rows are removed.
+ * - Only shows whose Qdrant chunk succeeded are deleted from Turso (no
+ *   all-or-nothing abort that leaves grace clocks stuck).
+ * - Episode-cap trim is best-effort: failure is logged but does not roll
+ *   back a successful non-chart cleanup.
+ *
  * FTS safety: the podcasts_ad delete trigger does a full FTS-content scan
  * PER ROW, so we drop it, bulk-delete, clean FTS orphans in one scan, and
  * recreate it.
@@ -26,12 +33,30 @@ const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
 const QDRANT_CHUNK = 500;
 const DELETE_CHUNK = 200;
 
+async function runCapTrim() {
+    try {
+        const trim = await trimEpisodeCaps();
+        log.info(
+            `Episode cap trim: ${log.fmt(trim.trimmedShows)} shows · ${log.fmt(trim.deletedPoints)} points removed`
+        );
+        return trim;
+    } catch (e) {
+        log.error(`Episode cap trim failed (non-fatal): ${e.message}`);
+        return { showsScanned: 0, trimmedShows: 0, deletedPoints: 0, failed: true };
+    }
+}
+
 async function main() {
     turso.assertEnv();
     qdrant.assertEnv();
     turso.beginStep('cleanup-non-chart');
     await turso.healthCheck();
-    await qdrant.ensurePayloadIndex(cfg.EPISODES_COLLECTION, 'podcast_id', 'integer');
+
+    try {
+        await qdrant.ensurePayloadIndex(cfg.EPISODES_COLLECTION, 'podcast_id', 'integer');
+    } catch (e) {
+        log.warn(`Could not ensure episodes podcast_id index: ${e.message}`);
+    }
 
     log.banner('Stage 6 · Cleanup Non-chart Shows', {
         'Grace period': `${cfg.CLEANUP_GRACE_DAYS} days`,
@@ -91,25 +116,26 @@ async function main() {
     log.info(`Past grace - deleting:    ${log.fmt(toDelete.length)}`);
     log.endGroup();
 
+    // Persist grace clocks even when nothing is deleted yet.
+    state.save(st);
+
     if (toDelete.length === 0) {
-        state.save(st);
         log.info('Nothing past the grace period - done');
-        const trim = await trimEpisodeCaps();
-        log.info(
-            `Episode cap trim: ${log.fmt(trim.trimmedShows)} shows · ${log.fmt(trim.deletedPoints)} points removed`
-        );
+        const trim = await runCapTrim();
         log.summaryTable('Stage 6: Cleanup', [{
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
             writes: turso.getStats().writes,
-            detail: `0 deleted, ${inGrace} in grace, cap-trim ${trim.deletedPoints} pts`,
+            detail: `0 deleted, ${inGrace} in grace, cap-trim ${trim.deletedPoints} pts${trim.failed ? ' (trim failed)' : ''}`,
         }]);
+        if (trim.failed) process.exitCode = 1;
         return;
     }
 
-    // --- Qdrant deletion first (needs the id list) ---
+    // --- Qdrant deletion first (wait=true); only successful chunks go to Turso ---
     log.group('Qdrant vector deletion');
-    let qdrantFailed = false;
+    const qdrantOk = [];
+    let qdrantFailedChunks = 0;
     for (let i = 0; i < toDelete.length; i += QDRANT_CHUNK) {
         const chunk = toDelete.slice(i, i + QDRANT_CHUNK);
         const intIds = chunk.map(p => parseInt(p.id, 10)).filter(n => !isNaN(n));
@@ -117,27 +143,44 @@ async function main() {
         try {
             await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, {
                 must: [{ key: 'podcast_id', match: { any: intIds } }],
-            });
-            await qdrant.deleteByIds(cfg.PODCASTS_COLLECTION, uuids);
+            }, true);
+            await qdrant.deleteByIds(cfg.PODCASTS_COLLECTION, uuids, true);
+            qdrantOk.push(...chunk);
             log.info(`Deleted vectors for shows ${i + 1}-${Math.min(i + QDRANT_CHUNK, toDelete.length)} of ${toDelete.length}`);
         } catch (e) {
+            qdrantFailedChunks++;
             log.error(`Qdrant deletion failed for chunk at ${i}: ${e.message}`);
-            qdrantFailed = true;
         }
     }
+    log.info(`Qdrant OK: ${log.fmt(qdrantOk.length)} · failed chunks: ${qdrantFailedChunks}`);
     log.endGroup();
 
-    if (qdrantFailed) {
-        throw new Error('Aborting Turso cleanup because one or more Qdrant vector deletions failed');
+    if (qdrantOk.length === 0) {
+        log.error('No Qdrant deletions succeeded - skipping Turso deletes (will retry next run)');
+        const trim = await runCapTrim();
+        log.summaryTable('Stage 6: Cleanup', [{
+            stage: 'cleanup-non-chart',
+            reads: turso.getStats().reads,
+            writes: turso.getStats().writes,
+            detail: `0 turso deleted (${toDelete.length} pending qdrant), cap-trim ${trim.deletedPoints} pts`,
+        }]);
+        process.exitCode = 1;
+        return;
     }
 
-    // --- Turso deletion with trigger workaround ---
+    if (qdrantOk.length < toDelete.length) {
+        log.warn(
+            `Partial Qdrant success: Turso-deleting ${qdrantOk.length}/${toDelete.length} shows; remainder stays for next run`
+        );
+    }
+
+    // --- Turso deletion with trigger workaround (only Qdrant-confirmed ids) ---
     log.group('Turso deletion');
     try {
         log.info('Dropping podcasts_ad trigger (prevents per-row FTS scans)');
         await turso.execute('DROP TRIGGER IF EXISTS podcasts_ad');
 
-        const ids = toDelete.map(p => p.id);
+        const ids = qdrantOk.map(p => p.id);
         for (let i = 0; i < ids.length; i += DELETE_CHUNK) {
             const chunk = ids.slice(i, i + DELETE_CHUNK);
             const placeholders = chunk.map(() => '?').join(',');
@@ -158,8 +201,8 @@ async function main() {
     }
     log.endGroup();
 
-    // --- Prune state for deleted shows ---
-    const deletedIds = new Set(toDelete.map(p => p.id));
+    // --- Prune state for Turso-deleted shows only ---
+    const deletedIds = new Set(qdrantOk.map(p => p.id));
     const keepIds = allPods.filter(p => !deletedIds.has(p.id)).map(p => p.id);
     const pruned = state.pruneShows(st, keepIds);
     if (st.candidateIds) {
@@ -168,23 +211,22 @@ async function main() {
     state.save(st);
     log.info(`State pruned: ${pruned} dead entries removed`);
 
-    const trim = await trimEpisodeCaps();
-    log.info(
-        `Episode cap trim: ${log.fmt(trim.trimmedShows)} shows · ${log.fmt(trim.deletedPoints)} points removed`
-    );
+    const trim = await runCapTrim();
 
     const stats = turso.getStats();
     log.costFooter('Stage 6 · Cleanup', {
         reads: stats.reads,
         writes: stats.writes,
-        detail: `${log.fmt(toDelete.length)} shows deleted · ${log.fmt(inGrace)} in grace · ${pruned} state entries pruned · cap-trim ${trim.deletedPoints} pts`,
+        detail: `${log.fmt(qdrantOk.length)}/${log.fmt(toDelete.length)} shows deleted · ${log.fmt(inGrace)} in grace · ${pruned} state · cap-trim ${trim.deletedPoints} pts`,
     });
     log.summaryTable('Stage 6: Cleanup', [{
         stage: 'cleanup-non-chart',
         reads: stats.reads,
         writes: stats.writes,
-        detail: `${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state entries pruned, cap-trim ${trim.deletedPoints} pts`,
+        detail: `${qdrantOk.length}/${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state pruned, cap-trim ${trim.deletedPoints} pts${trim.failed || qdrantFailedChunks ? ' (partial/errors)' : ''}`,
     }]);
+
+    if (trim.failed || qdrantFailedChunks > 0) process.exitCode = 1;
 }
 
 main()

@@ -21,14 +21,25 @@ async function trimEpisodeCaps(opts = {}) {
     const cap = cfg.EPISODES_PER_SHOW;
 
     log.group(`Trim episode caps (max ${cap}/show)`);
-    const scanStart = Date.now();
-    const allPoints = await qdrant.scrollAll(
-        cfg.EPISODES_COLLECTION,
-        null,
-        ['podcast_id', 'published_date'],
-        1000
-    );
-    log.info(`Scanned ${log.fmt(allPoints.length)} points in ${log.duration(Date.now() - scanStart)}`);
+
+    let allPoints;
+    try {
+        const scanStart = Date.now();
+        allPoints = await qdrant.scrollAll(
+            cfg.EPISODES_COLLECTION,
+            null,
+            ['podcast_id', 'published_date'],
+            1000
+        );
+        log.info(`Scanned ${log.fmt(allPoints.length)} points in ${log.duration(Date.now() - scanStart)}`);
+    } catch (e) {
+        if (/404|not found|doesn't exist|does not exist/i.test(e.message)) {
+            log.warn(`Episodes collection missing - nothing to trim: ${e.message}`);
+            log.endGroup();
+            return { showsScanned: 0, trimmedShows: 0, deletedPoints: 0 };
+        }
+        throw e;
+    }
 
     const byShow = new Map();
     let unknownPodcastId = 0;

@@ -187,7 +187,9 @@ jobs:
         run: rm -f *.db *.tgz *.csv missing_itunes_ids.txt
 
   cleanup-non-chart:
-    if: github.event.schedule == '0 20 * * *'
+    # Run after the 20:00 sync even if sync failed/cancelled/timed out.
+    # (Previously needs:sync alone skipped cleanup whenever sync was cancelled.)
+    if: ${{ always() && github.event.schedule == '0 20 * * *' }}
     needs: sync
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -224,12 +226,14 @@ jobs:
 
       - name: Refresh boxlore pusher token for push
         id: app-token-push
+        if: always()
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.BOXLORE_PUSHER_APP_ID }}
           private-key: ${{ secrets.BOXLORE_PUSHER_PRIVATE_KEY }}
 
       - name: Commit pipeline state
+        if: always()
         env:
           GH_TOKEN: ${{ steps.app-token-push.outputs.token }}
         run: |
