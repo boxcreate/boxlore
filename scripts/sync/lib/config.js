@@ -77,6 +77,10 @@ module.exports = {
     // dump; otherwise fetch individually from the PI API.
     DUMP_THRESHOLD: 300,
     API_IMPORT_CAP: 200,
+    // Chart iTunes IDs confirmed missing from PI (dump and/or API). Excluded
+    // from need_dump / API import until TTL so we do not re-download the dump
+    // forever for Apple-only / dead IDs. Recheck after TTL in case PI catches up.
+    PI_UNAVAILABLE_TTL_MS: 30 * 24 * 60 * 60 * 1000,
 
     // --- Cleanup ---
     CLEANUP_GRACE_DAYS: 7,          // only delete shows absent from charts this long
@@ -84,6 +88,7 @@ module.exports = {
 
     // --- State / files ---
     STATE_FILE: 'scripts/data/sync_cache.json',
+    PI_UNAVAILABLE_FILE: 'scripts/data/pi_unavailable_itunes_ids.json',
     HISTORY_FILE: 'scripts/data/db_cost_history.json',
     REPORT_FILE: 'scripts/data/db_cost_report.md',
     RUN_STATS_FILE: '/tmp/db_run_stats.json',

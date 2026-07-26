@@ -164,7 +164,8 @@ jobs:
           done
           rm -f "${RUNNER_TEMP}"/git-credentials-*.config 2>/dev/null || true
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-          git add scripts/data/sync_cache.json scripts/data/db_cost_history.json scripts/data/db_cost_report.md
+          git add scripts/data/sync_cache.json scripts/data/pi_unavailable_itunes_ids.json \
+            scripts/data/db_cost_history.json scripts/data/db_cost_report.md
           if git diff --cached --quiet; then
             echo "No state changes to commit"
             exit 0

@@ -10,6 +10,8 @@
   },
   "scripts": {
     "reset-sync": "node scratch/run-reset-now.js",
-    "test:sync-csv": "node --test sync/lib/csv.test.js"
+    "test:sync-csv": "node --test sync/lib/csv.test.js",
+    "test:sync-pi-unavailable": "node --test sync/lib/pi-unavailable.test.js",
+    "test:sync": "node --test sync/lib/csv.test.js sync/lib/pi-unavailable.test.js"
   }
 }

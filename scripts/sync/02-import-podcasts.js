@@ -6,11 +6,13 @@
  *
  * Modes:
  *   --precheck  Compute missing chart shows (union across all countries),
- *               write missing_itunes_ids.txt for the dump-export step, and
+ *               exclude PI-unavailable denylist (TTL), write
+ *               missing_itunes_ids.txt for the dump-export step, and
  *               set GHA outputs need_dump / missing_count.
  *   --import    If podcasts_export.csv exists (dump path), bulk-import it;
- *               otherwise fetch missing shows individually from the PI API
- *               (capped). Fixed column whitelist - NO auto-ALTER.
+ *               denylist dump-misses, then try PI API (capped) for them.
+ *               Without CSV, fetch missing shows from the PI API (capped).
+ *               Fixed column whitelist - NO auto-ALTER.
  */
 
 const fs = require('fs');
@@ -19,6 +21,7 @@ const turso = require('./lib/turso');
 const pi = require('./lib/podcast-index');
 const state = require('./lib/state');
 const cfg = require('./lib/config');
+const piUnavailable = require('./lib/pi-unavailable');
 const { parseCSVLine, parseCSVRecords } = require('./lib/csv');
 
 const MISSING_IDS_FILE = 'missing_itunes_ids.txt';
@@ -46,8 +49,18 @@ function sortCategories(rawCats) {
         .join(', ');
 }
 
-/** Missing chart itunes ids (string-normalized set difference). */
-async function computeMissing() {
+function loadDenylist() {
+    const doc = piUnavailable.load();
+    const pruned = piUnavailable.pruneExpired(doc);
+    if (pruned > 0) {
+        log.info(`PI-unavailable denylist: pruned ${log.fmt(pruned)} expired entr(y/ies)`);
+        piUnavailable.save(doc);
+    }
+    return doc;
+}
+
+/** Missing chart itunes ids (string-normalized set difference), minus denylist. */
+async function computeMissing({ denylistDoc } = {}) {
     const chartsRes = await turso.execute(
         'SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL'
     );
@@ -58,14 +71,32 @@ async function computeMissing() {
     );
     const existing = new Set(turso.rows(podsRes).map(r => String(r[0])));
 
-    const missing = chartIds.filter(id => !existing.has(id));
-    return { chartIds, missing };
+    const blocked = piUnavailable.activeIdSet(denylistDoc || loadDenylist());
+    const missingRaw = chartIds.filter(id => !existing.has(id));
+    const missing = missingRaw.filter(id => !blocked.has(id));
+    return {
+        chartIds,
+        missing,
+        missingRawCount: missingRaw.length,
+        denylistSuppressed: missingRaw.length - missing.length,
+    };
+}
+
+function readMissingIdsFile() {
+    if (!fs.existsSync(MISSING_IDS_FILE)) return [];
+    return fs.readFileSync(MISSING_IDS_FILE, 'utf-8')
+        .split(/\r?\n/)
+        .map(s => s.trim())
+        .filter(Boolean);
 }
 
 async function precheck() {
-    const { chartIds, missing } = await computeMissing();
+    const denylistDoc = loadDenylist();
+    const { chartIds, missing, missingRawCount, denylistSuppressed } = await computeMissing({ denylistDoc });
     log.info(`Chart shows (union all countries): ${log.fmt(chartIds.length)}`);
-    log.info(`Missing from podcasts table:       ${log.fmt(missing.length)}`);
+    log.info(`Missing from podcasts table:       ${log.fmt(missingRawCount)}`);
+    log.info(`Suppressed by PI-unavailable list: ${log.fmt(denylistSuppressed)}`);
+    log.info(`Actionable missing (after denylist): ${log.fmt(missing.length)}`);
 
     const needDump = missing.length > cfg.DUMP_THRESHOLD;
     fs.writeFileSync(MISSING_IDS_FILE, missing.join('\n') + (missing.length ? '\n' : ''));
@@ -84,7 +115,7 @@ async function importFromCSV() {
     const records = parseCSVRecords(content);
     if (records.length < 2) {
         log.info('CSV contains no data rows - nothing to import');
-        return { count: 0, ids: [] };
+        return { count: 0, ids: [], itunesIds: new Set() };
     }
 
     const headers = parseCSVLine(records[0]);
@@ -95,6 +126,7 @@ async function importFromCSV() {
     }
 
     const idIdx = headers.indexOf('id');
+    const itunesIdx = headers.indexOf('itunes_id');
     const catIdx = headers.indexOf('categories');
     const dataRecords = records.slice(1);
     log.info(`Importing ${log.fmt(dataRecords.length)} rows from ${CSV_FILE}`);
@@ -103,6 +135,7 @@ async function importFromCSV() {
     let imported = 0;
     let skipped = 0;
     const ids = [];
+    const itunesIds = new Set();
     const placeholders = headers.map(() => '?').join(',');
     const insertSql = `INSERT OR IGNORE INTO podcasts (${headers.join(',')}, qdrant_vectorized, qdrant_podcast_vectorized)
                       VALUES (${placeholders}, 0, 0)`;
@@ -123,6 +156,7 @@ async function importFromCSV() {
                 continue;
             }
             if (idIdx !== -1 && values[idIdx]) ids.push(String(values[idIdx]));
+            if (itunesIdx !== -1 && values[itunesIdx]) itunesIds.add(String(values[itunesIdx]));
             if (catIdx !== -1 && values[catIdx]) {
                 values[catIdx] = sortCategories(values[catIdx]);
             }
@@ -137,28 +171,42 @@ async function importFromCSV() {
     if (skipped > 0) {
         log.warn(`Skipped ${log.fmt(skipped)} malformed CSV row(s); imported ${log.fmt(imported)}`);
     }
-    return { count: imported, ids };
+    return { count: imported, ids, itunesIds };
 }
 
-async function importFromAPI() {
+/**
+ * @param {string[]|null} itunesIds  If set, import these; else actionable missing from Turso.
+ * @returns {{ count: number, ids: string[], foundItunesIds: string[], notFoundIds: string[] }}
+ */
+async function importFromAPI(itunesIds = null) {
     pi.assertEnv();
-    const { missing } = await computeMissing();
+    let missing;
+    if (itunesIds) {
+        missing = itunesIds.map(String).filter(Boolean);
+    } else {
+        const computed = await computeMissing();
+        missing = computed.missing;
+        if (computed.denylistSuppressed > 0) {
+            log.info(`Skipping ${log.fmt(computed.denylistSuppressed)} denylisted iTunes ID(s)`);
+        }
+    }
     if (missing.length === 0) {
         log.info('All chart shows already present - nothing to import');
-        return { count: 0, ids: [] };
+        return { count: 0, ids: [], foundItunesIds: [], notFoundIds: [] };
     }
 
     const toImport = missing.slice(0, cfg.API_IMPORT_CAP);
     if (missing.length > cfg.API_IMPORT_CAP) {
-        log.warn(`${missing.length} shows missing; importing first ${cfg.API_IMPORT_CAP} via API (rest handled by next dump run)`);
+        log.warn(`${missing.length} shows missing; importing first ${cfg.API_IMPORT_CAP} via API (rest handled by denylist / next run)`);
     }
     log.info(`Fetching ${toImport.length} shows from the PI API`);
 
     const cols = cfg.PODCAST_IMPORT_COLUMNS;
     const placeholders = cols.map(() => '?').join(',');
     let imported = 0;
-    let notFound = 0;
     const ids = [];
+    const foundItunesIds = [];
+    const notFoundIds = [];
     const statements = [];
     const prog = log.progress(toImport.length, 'api-import');
 
@@ -170,9 +218,13 @@ async function importFromAPI() {
             log.warn(`PI lookup failed for itunes_id=${itunesId}: ${e.message}`);
         }
         prog.tick();
-        if (!feed) { notFound++; continue; }
+        if (!feed) {
+            notFoundIds.push(String(itunesId));
+            continue;
+        }
 
         ids.push(String(feed.id));
+        foundItunesIds.push(String(itunesId));
         const categoriesStr = feed.categories
             ? sortCategories(Object.values(feed.categories).join(', '))
             : '';
@@ -204,8 +256,47 @@ async function importFromAPI() {
     }
     if (statements.length > 0) await turso.batch(statements);
 
-    log.info(`API import done: ${imported} imported, ${notFound} not found on PI`);
-    return { count: imported, ids };
+    log.info(`API import done: ${imported} imported, ${notFoundIds.length} not found on PI`);
+    return { count: imported, ids, foundItunesIds, notFoundIds };
+}
+
+/**
+ * Dump-misses: denylist so need_dump stops thrashing, then try API (capped).
+ * API hits remove from denylist; confirmed misses upgrade reason to api_not_found.
+ */
+async function handleDumpUnmatched(unmatched) {
+    if (unmatched.length === 0) return { count: 0, ids: [] };
+
+    const doc = loadDenylist();
+    const added = piUnavailable.add(doc, unmatched, 'not_in_dump');
+    log.info(
+        `Denylisted ${log.fmt(unmatched.length)} dump-miss iTunes ID(s) `
+        + `(${log.fmt(added)} new) — will not count toward need_dump until TTL`
+    );
+
+    const apiResult = await importFromAPI(unmatched);
+    if (apiResult.foundItunesIds.length > 0) {
+        piUnavailable.remove(doc, apiResult.foundItunesIds);
+        log.info(`Removed ${log.fmt(apiResult.foundItunesIds.length)} denylist entr(y/ies) after API hit`);
+    }
+    if (apiResult.notFoundIds.length > 0) {
+        piUnavailable.add(doc, apiResult.notFoundIds, 'api_not_found');
+    }
+    // Over-cap dump-misses stay as not_in_dump (already added above).
+    piUnavailable.save(doc);
+    log.info(`PI-unavailable denylist size: ${log.fmt(Object.keys(doc.ids).length)}`);
+    return { count: apiResult.count, ids: apiResult.ids };
+}
+
+function applyApiNotFoundDenylist(notFoundIds) {
+    if (notFoundIds.length === 0) return;
+    const doc = loadDenylist();
+    const added = piUnavailable.add(doc, notFoundIds, 'api_not_found');
+    piUnavailable.save(doc);
+    log.info(
+        `Denylisted ${log.fmt(notFoundIds.length)} API-not-found iTunes ID(s) `
+        + `(${log.fmt(added)} new); denylist size ${log.fmt(Object.keys(doc.ids).length)}`
+    );
 }
 
 /**
@@ -250,6 +341,7 @@ async function main() {
     if (process.argv.includes('--precheck')) {
         log.banner('Stage 2a · Pre-check Missing Shows', {
             'Dump threshold': String(cfg.DUMP_THRESHOLD),
+            'Denylist TTL days': String(Math.round(cfg.PI_UNAVAILABLE_TTL_MS / (24 * 60 * 60 * 1000))),
         });
         await precheck();
         return;
@@ -266,6 +358,20 @@ async function main() {
         imported = result.count;
         importedIds = result.ids;
         log.endGroup();
+
+        const requested = readMissingIdsFile();
+        const unmatched = requested.filter(id => !result.itunesIds.has(String(id)));
+        if (unmatched.length > 0) {
+            log.group('Dump-miss follow-up (denylist + API)');
+            log.info(
+                `${log.fmt(unmatched.length)} of ${log.fmt(requested.length)} requested `
+                + 'iTunes ID(s) were not in the dump export'
+            );
+            const follow = await handleDumpUnmatched(unmatched);
+            imported += follow.count;
+            importedIds = importedIds.concat(follow.ids);
+            log.endGroup();
+        }
     } else {
         mode = 'api';
         log.banner('Stage 2 · Import Podcasts', {
@@ -276,6 +382,7 @@ async function main() {
         const result = await importFromAPI();
         imported = result.count;
         importedIds = result.ids;
+        applyApiNotFoundDenylist(result.notFoundIds);
         log.endGroup();
     }
 
