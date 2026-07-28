@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Multi-storefront discovery: 11 chart countries (USA, India, UK, France, Germany, Netherlands, Singapore, Spain, Brazil, Russia, Indonesia) with Settings/onboarding region and language pickers (English locked, max 4 languages; recommended set seeds on region change). ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
-- Shared discovery poster cards and refreshed Home, Explore, search, and onboarding suggestion UI (taste-lane chips, equal-height posters, vibe headers, Designed for you grid). ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+- Multi-storefront discovery across 11 chart countries with region and language pickers (English locked, up to 4 languages) and shared discovery poster cards plus refreshed Home, Explore, search, and onboarding UI (taste‑lane chips, equal‑height posters, vibe headers, “Designed for you” grid) ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+- Explore For You tab renders CuratedEpisodeCard with showSubtitle=false in staggered grid, replacing ExploreEpisodeBentoCard for body items ([#954](https://github.com/boxcreate/boxlore/pull/954)) <!-- impact:user-impact-low -->
 ### Changed
-- Recommendations use a larger candidate pool with Qwen3 embeddings on the catalog/v3 discovery path; retired the live content/sections/v1 client. ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+- Recommendations now use a larger candidate pool powered by Qwen3 embeddings on the catalog/v3 discovery path; retired live content/sections/v1 client ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+- Module README updated to document new card style and layout for the For You bento ([#954](https://github.com/boxcreate/boxlore/pull/954)) <!-- impact:user-impact-low -->
 ## [v0.0.12] - 2026-07-25
 
 ### Added

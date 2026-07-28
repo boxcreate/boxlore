@@ -57,13 +57,11 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Charts and recommendations now span 11 countries — USA, India, and the UK plus France, Germany, Netherlands, Singapore, Spain, Brazil, Russia, and Indonesia — with languages that fit each market. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
-<li>New content region and language pickers in Settings and onboarding (English stays on, up to four languages) so charts and personalized picks follow where you listen. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
+<li>Explore music from 11 countries, pick your region or language, and enjoy refreshed home and explore screens with better recommendations. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Richer recommendations from a larger candidate pool, powered by the updated Qwen embedding model on the discovery backend. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
-<li>Home, Explore, and search suggestions share refreshed poster cards, mood/vibe browsing, and a clearer “Designed for you” onboarding grid. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
+<li>The ‘Explore For You’ tab now shows a cleaner card layout, making episode browsing smoother. <a href="https://github.com/boxcreate/boxlore/pull/954"><img src="https://img.shields.io/badge/PR-954-6750A4?style=flat-square" alt="PR #954" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
