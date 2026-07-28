@@ -15,12 +15,38 @@ const embedder = require('./lib/embedder');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
 const scalars = require('./lib/scalars');
+const {
+    loadCountriesByItunesId,
+    itunesInCountries,
+} = require('./lib/chart-countries');
 
 const UPSERT_BATCH = 100;
 
 async function ensureIndexes() {
     await turso.execute(`CREATE INDEX IF NOT EXISTS idx_podcasts_pending_show_vec
                          ON podcasts(qdrant_podcast_vectorized) WHERE qdrant_podcast_vectorized = 0`);
+}
+
+/** Wide columns only for a bounded id list (keeps HTTP payloads small). */
+async function fetchShowRowsByIds(ids) {
+    const out = [];
+    const chunkSize = cfg.TURSO_PAGE_SIZE;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const ph = chunk.map(() => '?').join(',');
+        const res = await turso.execute(
+            `
+            SELECT id, title, categories, author, image_url, language,
+                   description, feed_url, website_url
+            FROM podcasts
+            WHERE id IN (${ph})
+            `,
+            chunk,
+        );
+        out.push(...turso.rows(res));
+    }
+    const byId = new Map(out.map((r) => [String(r[0]), r]));
+    return ids.map((id) => byId.get(String(id))).filter(Boolean);
 }
 
 async function main() {
@@ -36,40 +62,36 @@ async function main() {
         return;
     }
 
-    const countryPlaceholders = cfg.FULL_TIER_COUNTRIES.map(() => '?').join(',');
-    const countRes = await turso.execute(`
-        SELECT COUNT(*)
-        FROM podcasts p
-        WHERE p.qdrant_podcast_vectorized = 0
-          AND p.itunes_id IN (
-              SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
-          )
-    `, cfg.FULL_TIER_COUNTRIES);
-    const totalPending = parseInt(turso.scalar(countRes), 10) || 0;
+    // Pre-agg charts once; narrow pending scan by flag+id; filter membership in JS.
+    // Avoid CAST(charts.itunes_id AS INTEGER) IN-subqueries (re-run per page).
+    const countriesByItunes = await loadCountriesByItunesId(turso);
+    const fullTier = new Set(cfg.FULL_TIER_COUNTRIES.map((c) => c.toLowerCase()));
 
-    // Cap fetch: embed budget + slack for already-indexed flag flips. Wide columns
-    // (description) must never be pulled unbounded over HTTP.
-    const fetchCap = cfg.MAX_EMBEDDINGS_PER_RUN + cfg.SHOW_VEC_FETCH_SLACK;
-    const pendingRows = await turso.fetchAllPaged({
+    const narrowRows = await turso.fetchAllPaged({
         pageSize: cfg.TURSO_PAGE_SIZE,
-        maxRows: fetchCap,
         rowId: (r) => Number(r[0]),
         buildPage: (after, limit) => ({
             sql: `
-                SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language,
-                       p.description, p.feed_url, p.website_url
+                SELECT p.id, p.itunes_id
                 FROM podcasts p
                 WHERE p.qdrant_podcast_vectorized = 0
-                  AND p.itunes_id IN (
-                      SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
-                  )
                   AND p.id > ?
                 ORDER BY p.id ASC
                 LIMIT ?
             `,
-            args: [...cfg.FULL_TIER_COUNTRIES, after == null ? 0 : after, limit],
+            args: [after == null ? 0 : after, limit],
         }),
     });
+    const chartPendingIds = narrowRows
+        .filter((r) => itunesInCountries(countriesByItunes, r[1], fullTier))
+        .map((r) => String(r[0]));
+    const totalPending = chartPendingIds.length;
+
+    // Cap fetch: embed budget + slack for already-indexed flag flips. Wide columns
+    // (description) must never be pulled unbounded over HTTP.
+    const fetchCap = cfg.MAX_EMBEDDINGS_PER_RUN + cfg.SHOW_VEC_FETCH_SLACK;
+    const fetchIds = chartPendingIds.slice(0, fetchCap);
+    const pendingRows = await fetchShowRowsByIds(fetchIds);
 
     const pending = pendingRows.map(r => ({
         id: String(r[0]),

@@ -5,6 +5,8 @@ const assert = require('node:assert/strict');
 const {
     CHARTS_MATCH_PODCAST,
     mergePodcastRowsWithCountries,
+    itunesInCountries,
+    countriesForItunes,
 } = require('./chart-countries');
 
 describe('chart-countries', () => {
@@ -41,6 +43,21 @@ describe('chart-countries', () => {
                 countryCsv: 'de',
             },
         ]);
+    });
+
+    it('filters itunes ids by country allowlist', () => {
+        const map = new Map([
+            ['111', 'us,gb'],
+            ['222', 'de'],
+            ['333', 'in,fr'],
+        ]);
+        assert.equal(itunesInCountries(map, 111, ['us', 'in']), true);
+        assert.equal(itunesInCountries(map, '222', ['us', 'in']), false);
+        assert.equal(itunesInCountries(map, 333, ['us', 'in']), true);
+        assert.equal(itunesInCountries(map, 999, ['us']), false);
+        assert.equal(itunesInCountries(map, 222, null), true); // any chart country
+        assert.deepEqual(countriesForItunes(map, 111, ['gb', 'de']), ['gb']);
+        assert.deepEqual(countriesForItunes(map, '333', ['in', 'us']), ['in']);
     });
 
     it('documents empty-string cursor hazard (mapArgType → SQL NULL)', () => {

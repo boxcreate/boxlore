@@ -21,7 +21,11 @@ const embedder = require('./lib/embedder');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
 const handoff = require('./lib/pi-handoff');
-const { loadCapsByPodcastId } = require('./lib/episode-caps');
+const { capsFromCountriesByItunes } = require('./lib/episode-caps');
+const {
+    loadCountriesByItunesId,
+    itunesInCountries,
+} = require('./lib/chart-countries');
 const scalars = require('./lib/scalars');
 
 const UPSERT_BATCH = 100;
@@ -45,42 +49,46 @@ async function main() {
         return;
     }
 
-    // --- Pending shows (paged); oldest last_ep_sync first after fetch ---
-    const countryPlaceholders = cfg.FULL_TIER_COUNTRIES.map(() => '?').join(',');
+    // --- Pending shows (paged); chart membership in JS (no CAST on charts) ---
+    // Pre-agg charts once; page pending flags by id (partial index). Never use
+    // CAST(charts.itunes_id AS INTEGER) IN-subqueries — they re-scan charts every page.
+    const countriesByItunes = await loadCountriesByItunesId(turso);
+    const fullTier = new Set(cfg.FULL_TIER_COUNTRIES.map((c) => c.toLowerCase()));
     const pendingRows = await turso.fetchAllPaged({
         pageSize: cfg.TURSO_PAGE_SIZE,
         rowId: (r) => Number(r[0]),
         buildPage: (after, limit) => ({
             sql: `
-                SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language, p.last_ep_sync
+                SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language,
+                       p.last_ep_sync, p.itunes_id
                 FROM podcasts p
                 WHERE p.qdrant_vectorized = 0
-                  AND p.itunes_id IN (
-                      SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE country IN (${countryPlaceholders})
-                  )
                   AND p.id > ?
                 ORDER BY p.id ASC
                 LIMIT ?
             `,
-            args: [...cfg.FULL_TIER_COUNTRIES, after == null ? 0 : after, limit],
+            args: [after == null ? 0 : after, limit],
         }),
     });
 
-    const pending = pendingRows.map(r => ({
-        id: String(r[0]),
-        title: r[1] || 'Unknown Show',
-        categories: r[2] || 'Podcast',
-        author: r[3] || '',
-        image_url: r[4] || '',
-        language: r[5] || 'en',
-        last_ep_sync: r[6] == null ? null : Number(r[6]),
-    }));
+    const pending = pendingRows
+        .filter((r) => itunesInCountries(countriesByItunes, r[7], fullTier))
+        .map((r) => ({
+            id: String(r[0]),
+            title: r[1] || 'Unknown Show',
+            categories: r[2] || 'Podcast',
+            author: r[3] || '',
+            image_url: r[4] || '',
+            language: r[5] || 'en',
+            last_ep_sync: r[6] == null ? null : Number(r[6]),
+            itunes_id: r[7],
+        }));
     pending.sort((a, b) => {
         if (a.last_ep_sync == null && b.last_ep_sync != null) return -1;
         if (a.last_ep_sync != null && b.last_ep_sync == null) return 1;
         return (a.last_ep_sync || 0) - (b.last_ep_sync || 0);
     });
-    const caps = await loadCapsByPodcastId(pending.map((p) => p.id));
+    const caps = capsFromCountriesByItunes(pending, countriesByItunes, fullTier);
     log.banner('Stage 4 · Vectorize Episodes', {
         'Pending shows': log.fmt(pending.length),
         'Embedding budget': log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN),

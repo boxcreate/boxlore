@@ -33,6 +33,7 @@ const log = require('./lib/log');
 const turso = require('./lib/turso');
 const qdrant = require('./lib/qdrant');
 const cfg = require('./lib/config');
+const { loadCountriesByItunesId } = require('./lib/chart-countries');
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const SKIP_QUANTIZATION = process.argv.includes('--skip-quantization');
@@ -144,16 +145,17 @@ async function main() {
     // ---------------------------------------------------------------
     log.group('Step 2: Load chart shows from Turso');
     await turso.healthCheck();
+    // Pre-agg charts once; page podcasts by id; membership in JS.
+    // Never CAST(charts.itunes_id AS INTEGER) in IN-subqueries.
+    const countriesByItunes = await loadCountriesByItunesId(turso);
     const chartShowRows = await turso.fetchAllPaged({
         pageSize: cfg.TURSO_PAGE_SIZE,
         rowId: (r) => Number(r[0]),
         buildPage: (after, limit) => ({
             sql: `
-                SELECT p.id
+                SELECT p.id, p.itunes_id
                 FROM podcasts p
-                WHERE p.itunes_id IN (
-                    SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL
-                )
+                WHERE p.itunes_id IS NOT NULL
                   AND p.id > ?
                 ORDER BY p.id ASC
                 LIMIT ?
@@ -161,7 +163,11 @@ async function main() {
             args: [after == null ? 0 : after, limit],
         }),
     });
-    const chartShowIds = new Set(chartShowRows.map(r => String(r[0])));
+    const chartShowIds = new Set(
+        chartShowRows
+            .filter((r) => countriesByItunes.has(String(r[1])))
+            .map((r) => String(r[0])),
+    );
     log.info(`Chart shows in Turso: ${log.fmt(chartShowIds.size)}`);
     if (chartShowIds.size < cfg.CLEANUP_SAFETY_MIN_CHARTS) {
         log.error(`Safety abort: only ${chartShowIds.size} chart shows found (< ${cfg.CLEANUP_SAFETY_MIN_CHARTS}). Charts table may be broken.`);
@@ -247,11 +253,8 @@ async function main() {
         rowId: (r) => Number(r[0]),
         buildPage: (after, limit) => ({
             sql: `
-                SELECT p.id FROM podcasts p
+                SELECT p.id, p.itunes_id FROM podcasts p
                 WHERE p.qdrant_vectorized = 1
-                  AND p.itunes_id IN (
-                      SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL
-                  )
                   AND p.id > ?
                 ORDER BY p.id ASC
                 LIMIT ?
@@ -259,7 +262,9 @@ async function main() {
             args: [after == null ? 0 : after, limit],
         }),
     });
-    const flaggedIds = flaggedRows.map(r => String(r[0]));
+    const flaggedIds = flaggedRows
+        .filter((r) => countriesByItunes.has(String(r[1])))
+        .map((r) => String(r[0]));
     const holes = flaggedIds.filter(id => !byShow.has(id) || byShow.get(id).length === 0);
     log.info(`Shows flagged vectorized=1 with ZERO points in Qdrant (holes): ${log.fmt(holes.length)}`);
 

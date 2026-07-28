@@ -52,6 +52,62 @@ async function loadCountriesByItunesId(turso) {
 }
 
 /**
+ * @param {Iterable<string>|Set<string>|null|undefined} allowCountries
+ * @returns {Set<string>|null} lowercased allowlist, or null = any chart country
+ */
+function toCountryAllowSet(allowCountries) {
+    if (allowCountries == null) return null;
+    if (allowCountries instanceof Set) {
+        if (allowCountries.size === 0) return null;
+        const out = new Set();
+        for (const c of allowCountries) out.add(String(c).toLowerCase());
+        return out;
+    }
+    const out = new Set();
+    for (const c of allowCountries) out.add(String(c).toLowerCase());
+    return out.size ? out : null;
+}
+
+/**
+ * True when itunes_id appears on charts (optionally restricted to allowlist).
+ * @param {Map<string, string>} countriesByItunes
+ * @param {string|number|null|undefined} itunesId
+ * @param {Iterable<string>|Set<string>|null|undefined} [allowCountries]
+ */
+function itunesInCountries(countriesByItunes, itunesId, allowCountries) {
+    if (itunesId == null || itunesId === '') return false;
+    const csv = countriesByItunes.get(String(itunesId));
+    if (csv === undefined) return false;
+    const allow = toCountryAllowSet(allowCountries);
+    if (!allow) return true;
+    return String(csv)
+        .split(',')
+        .some((c) => allow.has(c.trim().toLowerCase()));
+}
+
+/**
+ * Chart countries for an itunes_id, optionally intersected with allowlist.
+ * @param {Map<string, string>} countriesByItunes
+ * @param {string|number|null|undefined} itunesId
+ * @param {Iterable<string>|Set<string>|null|undefined} [allowCountries]
+ * @returns {string[]}
+ */
+function countriesForItunes(countriesByItunes, itunesId, allowCountries) {
+    if (itunesId == null || itunesId === '') return [];
+    const csv = countriesByItunes.get(String(itunesId));
+    if (csv === undefined || csv === '') return [];
+    const allow = toCountryAllowSet(allowCountries);
+    const out = [];
+    for (const part of String(csv).split(',')) {
+        const c = part.trim().toLowerCase();
+        if (!c) continue;
+        if (allow && !allow.has(c)) continue;
+        out.push(c);
+    }
+    return out;
+}
+
+/**
  * Keep podcast rows that appear on charts; attach country CSV.
  * @param {Array<[any, any, any, any, any]>} podcastRows
  *   [id, latest_ep_id, categories, medium, itunes_id]
@@ -79,5 +135,7 @@ function mergePodcastRowsWithCountries(podcastRows, countriesByItunes) {
 module.exports = {
     CHARTS_MATCH_PODCAST,
     loadCountriesByItunesId,
+    itunesInCountries,
+    countriesForItunes,
     mergePodcastRowsWithCountries,
 };

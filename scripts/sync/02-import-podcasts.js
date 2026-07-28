@@ -78,22 +78,27 @@ async function computeMissing({ denylistDoc } = {}) {
     });
     const chartIds = chartIdRows.map(r => String(r[0])).filter(Boolean);
 
+    // Page by id — never CAST(itunes_id AS TEXT) in WHERE/ORDER (that re-scans
+    // ~most of idx_podcasts_itunes_id per page). Normalize to string in JS so
+    // keys match charts.itunes_id TEXT.
     const podIdRows = await turso.fetchAllPaged({
         pageSize: cfg.TURSO_PAGE_SIZE,
-        rowId: (r) => String(r[0]),
+        rowId: (r) => Number(r[0]),
         buildPage: (after, limit) => ({
             sql: `
-                SELECT DISTINCT itunes_id
+                SELECT id, itunes_id
                 FROM podcasts
                 WHERE itunes_id IS NOT NULL
-                  AND CAST(itunes_id AS TEXT) > ?
-                ORDER BY CAST(itunes_id AS TEXT) ASC
+                  AND id > ?
+                ORDER BY id ASC
                 LIMIT ?
             `,
-            args: [after == null ? '' : after, limit],
+            args: [after == null ? 0 : after, limit],
         }),
     });
-    const existing = new Set(podIdRows.map(r => String(r[0])));
+    const existing = new Set(
+        podIdRows.map((r) => String(r[1])).filter((id) => id && id !== 'null'),
+    );
 
     const blocked = piUnavailable.activeIdSet(denylistDoc || loadDenylist());
     const missingRaw = chartIds.filter(id => !existing.has(id));
