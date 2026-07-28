@@ -13,6 +13,7 @@ import androidx.media3.exoplayer.offline.DownloadService
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
@@ -154,7 +155,7 @@ class DownloadRepository(
         val downloadRequest =
             DownloadRequest
                 .Builder(episode.id, android.net.Uri.parse(episode.audioUrl))
-                .setCustomCacheKey(episode.id)
+                .setCustomCacheKey(EpisodeMediaCacheKey.of(episode.id, episode.audioUrl))
                 .setData(
                     // Serialize needed metadata to restore if app killed
                     // Ideally use Proto or JSON. For now, we trust DB has details.

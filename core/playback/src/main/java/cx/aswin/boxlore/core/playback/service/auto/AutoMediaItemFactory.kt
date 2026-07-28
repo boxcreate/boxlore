@@ -10,6 +10,7 @@ import androidx.media3.session.MediaConstants
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
 
 internal data class AutoPlayableSpec(
     val mediaId: String,
@@ -144,7 +145,8 @@ internal object AutoMediaItemFactory {
                 groupTitle = groupTitle,
                 progress = progress,
                 isCompleted = history.isCompleted,
-                customCacheKey = history.episodeId,
+                customCacheKey =
+                    EpisodeMediaCacheKey.of(history.episodeId, history.episodeAudioUrl),
             ),
         )
     }
@@ -170,7 +172,7 @@ internal object AutoMediaItemFactory {
                 source = source,
                 groupTitle = groupTitle,
                 isDownloaded = isDownloaded,
-                customCacheKey = episode.id,
+                customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
             ),
         )
 
@@ -192,7 +194,7 @@ internal object AutoMediaItemFactory {
                 source = AutoBrowseContract.SOURCE_DOWNLOADS,
                 groupTitle = groupTitle,
                 isDownloaded = true,
-                customCacheKey = download.episodeId,
+                customCacheKey = EpisodeMediaCacheKey.of(download.episodeId, uri),
             ),
         )
 

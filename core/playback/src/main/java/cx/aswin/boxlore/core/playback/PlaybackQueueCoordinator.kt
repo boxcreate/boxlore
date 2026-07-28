@@ -204,8 +204,9 @@ internal class PlaybackQueueCoordinator(
                 .setUri(episode.audioUrl)
                 .setMediaMetadata(metadata)
                 .setMediaId(mediaId)
-                .setCustomCacheKey(episode.id)
-                .build()
+                .setCustomCacheKey(
+                    PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                ).build()
         }
     }
 
@@ -347,7 +348,9 @@ internal class PlaybackQueueCoordinator(
                     .setUri(episode.audioUrl)
                     .setMediaMetadata(metadata)
                     .setMediaId(mediaId)
-                    .setCustomCacheKey(episode.id) // Match DownloadRequest custom key
+                    .setCustomCacheKey(
+                        PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                    ) // Match DownloadRequest custom key
                     .build()
 
             controller.addMediaItem(mediaItem)
@@ -406,7 +409,9 @@ internal class PlaybackQueueCoordinator(
                     .setUri(episode.audioUrl)
                     .setMediaMetadata(metadata)
                     .setMediaId(episode.id)
-                    .setCustomCacheKey(episode.id) // Match DownloadRequest custom key
+                    .setCustomCacheKey(
+                        PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                    ) // Match DownloadRequest custom key
                     .build()
 
             // Insert at index 1 (after current playing item)
@@ -594,8 +599,9 @@ internal class PlaybackQueueCoordinator(
                 .setUri(episode.audioUrl)
                 .setMediaMetadata(metadata)
                 .setMediaId(mediaId)
-                .setCustomCacheKey(episode.id)
-                .build()
+                .setCustomCacheKey(
+                    PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                ).build()
 
         val insertMediaIndex =
             removed.mediaIndex

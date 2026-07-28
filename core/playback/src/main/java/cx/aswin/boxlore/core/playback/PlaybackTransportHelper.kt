@@ -90,8 +90,9 @@ internal class PlaybackTransportHelper(
                                 .setUri(episode.audioUrl)
                                 .setMediaMetadata(metadata)
                                 .setMediaId(episode.id)
-                                .setCustomCacheKey(episode.id)
-                                .build()
+                                .setCustomCacheKey(
+                                    PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                                ).build()
                         }
 
                     controller.setMediaItems(mediaItems, startIndex, savedPosition.coerceAtLeast(0L))
@@ -120,8 +121,12 @@ internal class PlaybackTransportHelper(
                             .setUri(currentEpisode.audioUrl)
                             .setMediaMetadata(metadata)
                             .setMediaId(currentEpisode.id)
-                            .setCustomCacheKey(currentEpisode.id)
-                            .build()
+                            .setCustomCacheKey(
+                                PlaybackMediaIdPolicy.customCacheKey(
+                                    currentEpisode.id,
+                                    currentEpisode.audioUrl,
+                                ),
+                            ).build()
 
                     controller.setMediaItem(mediaItem, savedPosition.coerceAtLeast(0L))
                     controller.prepare()

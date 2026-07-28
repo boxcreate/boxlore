@@ -2,8 +2,9 @@ package cx.aswin.boxlore.core.playback.service.auto
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.database.toScorable
+import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
+import cx.aswin.boxlore.core.ranking.RankingObjective
 import kotlinx.coroutines.flow.first
 
 /**
@@ -804,7 +805,7 @@ internal class AutoBrowseTreeBuilder(
                             }
                         },
                     isCompleted = history?.isCompleted == true,
-                    customCacheKey = episode.id,
+                    customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
                 ),
             )
         }

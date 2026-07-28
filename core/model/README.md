@@ -7,6 +7,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 ## Public API
 
 - Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.
+- `EpisodeMediaCacheKey`: Media3 `customCacheKey` helper — briefing keys append audio URL `v=` so same-day regenerations bust the local audio cache.
 - `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping.
 - `ContentLanguageSelection`: pure language-chip toggle rules (English lock, max languages, BCP47 normalization) for settings/onboarding pickers.
 - `PlaybackEntryPoint`, `ShareTarget`, and `ShareLinkBuilder`.
@@ -25,6 +26,7 @@ src/main/java/cx/aswin/boxlore/core/model/
   Chapter.kt
   CrossPromotion.kt
   Episode.kt
+  EpisodeMediaCacheKey.kt
   Podcast.kt
   PodcastGenres.kt
   RankingAggregateTelemetry.kt

@@ -41,4 +41,19 @@ class PlaybackMediaIdPolicyTest {
         assertTrue(PlaybackMediaIdPolicy.isLearnEntryPoint(PlaybackEntryPoint.LEARN))
         assertFalse(PlaybackMediaIdPolicy.isLearnEntryPoint(PlaybackEntryPoint.GENERIC))
     }
+
+    @Test
+    fun `customCacheKey appends briefing audio version`() {
+        assertEquals(
+            "briefing_in_2026-07-28_602f1072",
+            PlaybackMediaIdPolicy.customCacheKey(
+                "briefing_in_2026-07-28",
+                "https://api.aswin.cx/briefings/audio/in?d=2026-07-28&v=602f1072",
+            ),
+        )
+        assertEquals(
+            "ep-1",
+            PlaybackMediaIdPolicy.customCacheKey("ep-1", "https://cdn.example/a.mp3?v=x"),
+        )
+    }
 }

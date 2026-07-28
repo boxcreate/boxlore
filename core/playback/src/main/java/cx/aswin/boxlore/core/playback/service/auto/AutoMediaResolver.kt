@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback.service.auto
 
 import androidx.media3.common.MediaItem
+import cx.aswin.boxlore.core.playback.PlaybackMediaIdPolicy
 
 /**
  * Resolves Auto browse MediaItems and domain episodes into playable URIs.
@@ -18,8 +19,9 @@ internal class AutoMediaResolver(
             return item
                 .buildUpon()
                 .setUri(uri)
-                .setCustomCacheKey(episodeId)
-                .build()
+                .setCustomCacheKey(
+                    PlaybackMediaIdPolicy.customCacheKey(episodeId, uri.toString()),
+                ).build()
         }
 
         val download = host.database.downloadedEpisodeDao().getDownload(episodeId)
@@ -42,8 +44,9 @@ internal class AutoMediaResolver(
                 .Builder()
                 .setMediaId(item.mediaId)
                 .setUri(resolvedAudioUrl)
-                .setCustomCacheKey(episodeId)
-                .setMediaMetadata(
+                .setCustomCacheKey(
+                    PlaybackMediaIdPolicy.customCacheKey(episodeId, resolvedAudioUrl),
+                ).setMediaMetadata(
                     item.mediaMetadata
                         .buildUpon()
                         .setTitle(historyItem?.episodeTitle ?: queueItem?.title)
@@ -84,8 +87,9 @@ internal class AutoMediaResolver(
                 .Builder()
                 .setMediaId(item.mediaId)
                 .setUri(episode.audioUrl)
-                .setCustomCacheKey(episodeId)
-                .setMediaMetadata(
+                .setCustomCacheKey(
+                    PlaybackMediaIdPolicy.customCacheKey(episodeId, episode.audioUrl),
+                ).setMediaMetadata(
                     item.mediaMetadata
                         .buildUpon()
                         .setTitle(episode.title)

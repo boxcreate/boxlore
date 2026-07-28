@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
 import android.os.Bundle
-import cx.aswin.boxlore.core.playback.QueueMath
+import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 
 /**
@@ -16,6 +16,11 @@ object PlaybackMediaIdPolicy {
         useLearnPrefix: Boolean,
     ): String = if (useLearnPrefix) "${QueueMath.LEARN_PREFIX}$episodeId" else episodeId
 
+    /** Media3 customCacheKey — briefing keys include audio `v=` so same-day regen busts cache. */
+    fun customCacheKey(
+        episodeId: String,
+        audioUrl: String?,
+    ): String = EpisodeMediaCacheKey.of(episodeId, audioUrl)
     fun isLearnEntryPoint(entryPoint: String?): Boolean = entryPoint == "learn"
 
     fun isLearnEntryPoint(entryPoint: PlaybackEntryPoint): Boolean = entryPoint == PlaybackEntryPoint.LEARN
