@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added multi‑storefront region‑aware discovery: 11 storefront allowlists, region/language selection UI (up to 4 languages, English locked), Qwen3 embeddings backend with expanded candidate pool replacing content/sections/v1, shared poster cards and refreshed UI components (taste‑lane chips, equal‑height posters, vibe headers) across Home/Explore/search, and centralized ContentRegions & language helpers in :core:model ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+### Changed
+- Changed discovery service to use catalog/v3 path and retire content/sections/v1 endpoint ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
 ## [v0.0.12] - 2026-07-25
 
 ### Added
