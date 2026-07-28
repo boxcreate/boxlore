@@ -340,6 +340,9 @@ private fun WelcomeScreen(
                         easing = LinearEasing,
                     ),
             )
+        }
+        launch {
+            delay((WelcomeEntranceMs * 0.72f).toLong())
             chromeInteractive = true
         }
         launch {

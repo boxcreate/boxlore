@@ -279,6 +279,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
             )
         }
         viewModelScope.launch {
+            val region = ContentRegions.canonicalize(currentState.currentRegion)
             try {
                 val startTime = System.currentTimeMillis()
                 val hasSlow =
@@ -349,11 +350,8 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                                         request =
                                             OnboardingCurriculumRequest(
                                                 queries = queries,
-                                                country = currentState.currentRegion,
-                                                languages =
-                                                    ContentRegions.recommendedLanguages(
-                                                        currentState.currentRegion,
-                                                    ),
+                                                country = region,
+                                                languages = ContentRegions.recommendedLanguages(region),
                                             ),
                                     ).execute()
                             }
@@ -412,7 +410,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                     val trending =
                         withContext(Dispatchers.IO) {
                             podcastRepository.getTrendingPodcasts(
-                                country = currentState.currentRegion,
+                                country = region,
                                 limit = 10,
                             )
                         }

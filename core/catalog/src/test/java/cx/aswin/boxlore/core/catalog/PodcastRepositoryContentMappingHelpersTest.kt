@@ -90,6 +90,34 @@ class PodcastRepositoryContentMappingHelpersTest {
     }
 
     @Test
+    fun resolveContentLanguagesForQuery_nullAndEmptyListMatch() {
+        assertEquals(
+            listOf("en", "hi"),
+            resolveContentLanguagesForQuery(null, "in"),
+        )
+        assertEquals(
+            listOf("en", "hi"),
+            resolveContentLanguagesForQuery(emptyList(), "in"),
+        )
+    }
+
+    @Test
+    fun resolveContentLanguagesForQuery_unmappedCountryDefaultsToUsRecommended() {
+        assertEquals(
+            listOf("en"),
+            resolveContentLanguagesForQuery(null, "zz"),
+        )
+    }
+
+    @Test
+    fun resolveContentLanguagesForQuery_deduplicatesMixedCase() {
+        assertEquals(
+            listOf("en", "fr", "pt"),
+            resolveContentLanguagesForQuery(listOf("EN", " fr ", "pt-BR", "FR"), "fr"),
+        )
+    }
+
+    @Test
     fun stringToContentRefreshPolicy() {
         assertEquals(ContentRefreshPolicy.SESSION, "session".toContentRefreshPolicy())
         assertEquals(ContentRefreshPolicy.MANUAL, "manual".toContentRefreshPolicy())

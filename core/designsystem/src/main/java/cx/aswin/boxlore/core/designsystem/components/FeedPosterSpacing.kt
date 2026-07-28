@@ -8,7 +8,7 @@ object FeedPosterSpacing {
     val GridGap = 16.dp
     val CardTextPadding = 12.dp
 
-    /** 18sp line height reserved per title line in equal-height poster feet. */
+    /** 18dp line height reserved per title line in equal-height poster feet. */
     val TitleLineHeight = 18.dp
 
     fun textFootHeight(titleMaxLines: Int): Dp =

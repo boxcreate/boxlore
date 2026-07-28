@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.ContentLanguageSelection
 import cx.aswin.boxlore.core.model.ContentRegion
 import cx.aswin.boxlore.core.model.ContentRegions
 
@@ -192,7 +193,7 @@ fun ContentLanguageChipRow(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                color = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ) {
                 Text(
@@ -361,7 +362,7 @@ private fun RegionPickerOptionRow(
             )
             RadioButton(
                 selected = selected,
-                onClick = { onSelect(region.code) },
+                onClick = null,
             )
         }
     }
@@ -427,16 +428,11 @@ private fun LanguageChipSection(
                     locked = isEnglish,
                     enabled = isEnglish || canSelectMore,
                     onClick = {
-                        if (isEnglish) return@LanguagePreferenceChip
-                        val next =
-                            if (isSelected) {
-                                selected.filter { it != code }
-                            } else if (selected.size >= ContentRegions.MAX_LANGUAGES) {
-                                selected
-                            } else {
-                                selected + code
-                            }
-                        onLanguagesChange(ContentRegions.normalizeLanguages(next, country))
+                        ContentLanguageSelection.applyToggle(
+                            selectedLanguages = selected,
+                            languageCode = code,
+                            country = country,
+                        )?.let(onLanguagesChange)
                     },
                 )
             }

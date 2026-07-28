@@ -75,7 +75,7 @@ internal fun OnboardingViewModel.selectSearchGenre(genreValue: String?) {
     _uiState.update { it.copy(selectedSearchGenre = genreValue, isPopularLoading = true) }
     viewModelScope.launch {
         try {
-            val region = _uiState.value.currentRegion
+            val region = ContentRegions.canonicalize(_uiState.value.currentRegion)
             val trending =
                 withContext(Dispatchers.IO) {
                     podcastRepository.getTrendingPodcasts(
@@ -308,6 +308,7 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
                     subscriptionRepository.subscribe(podcast)
                 }
 
+                val region = ContentRegions.canonicalize(currentState.currentRegion)
                 val request =
                     OnboardingSimilarShowsRequest(
                         shows =
@@ -317,9 +318,8 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
                                     description = it.description ?: "",
                                 )
                             },
-                        country = currentState.currentRegion,
-                        languages =
-                            ContentRegions.recommendedLanguages(currentState.currentRegion),
+                        country = region,
+                        languages = ContentRegions.recommendedLanguages(region),
                     )
 
                 val response =
@@ -412,6 +412,7 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
         }
         viewModelScope.launch {
             try {
+                val region = ContentRegions.canonicalize(_uiState.value.currentRegion)
                 val request =
                     OnboardingSimilarShowsRequest(
                         shows =
@@ -421,9 +422,8 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
                                     description = it.description ?: "",
                                 )
                             },
-                        country = _uiState.value.currentRegion,
-                        languages =
-                            ContentRegions.recommendedLanguages(_uiState.value.currentRegion),
+                        country = region,
+                        languages = ContentRegions.recommendedLanguages(region),
                     )
 
                 val response =

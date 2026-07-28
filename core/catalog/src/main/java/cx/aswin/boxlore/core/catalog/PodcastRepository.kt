@@ -543,6 +543,8 @@ class PodcastRepository(
                 } else {
                     emptyList()
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("PodcastRepository", "Error getting similar episodes", e)
                 emptyList()

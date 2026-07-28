@@ -50,6 +50,36 @@ class OnboardingSuggestionsLanesTest {
     }
 
     @Test
+    fun `blank curriculum title falls back to For you`() {
+        val lanes =
+            OnboardingSuggestionsLanes.build(
+                curriculumRows =
+                    listOf(
+                        OnboardingCurriculumRowDto(rowTitle = "   ", podcasts = emptyList()),
+                    ),
+                chartsPodcasts = emptyList(),
+            )
+        assertEquals("For you", lanes.single().title)
+    }
+
+    @Test
+    fun `unmatched curriculum title uses default purpose`() {
+        val purpose = OnboardingSuggestionsLanes.purposeForCurriculumTitle("Quantum knitting hour")
+        assertEquals("A themed set based on what you told us.", purpose)
+    }
+
+    @Test
+    fun `chartsPurpose without genres uses regional default`() {
+        val lanes =
+            OnboardingSuggestionsLanes.build(
+                curriculumRows = emptyList(),
+                chartsPodcasts = listOf(samplePodcast("c1")),
+                selectedGenres = emptySet(),
+            )
+        assertEquals("Charting shows in your region right now.", lanes.single().purpose)
+    }
+
+    @Test
     fun `clampIndex respects bounds`() {
         assertEquals(0, OnboardingSuggestionsLanes.clampIndex(-1, 3))
         assertEquals(2, OnboardingSuggestionsLanes.clampIndex(99, 3))

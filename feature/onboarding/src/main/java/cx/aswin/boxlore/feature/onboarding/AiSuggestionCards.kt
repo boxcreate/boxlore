@@ -41,6 +41,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,6 +100,10 @@ internal fun SuggestionSelectCard(
             modifier
                 .fillMaxWidth()
                 .testTag(SuggestedPodcastTestTags.GRID_CARD)
+                .semantics(mergeDescendants = true) {
+                    selected = isSubscribed
+                    role = Role.Checkbox
+                }
                 .expressiveClickable(shape = MaterialTheme.shapes.large) {
                     onToggleSubscription(podcast.id)
                 },
@@ -158,12 +166,12 @@ private fun SuggestionCardArtwork(
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(2.dp)
-                    .size(36.dp),
+                    .size(48.dp),
         ) {
             Surface(
                 shape = CircleShape,
                 color = Color.Black.copy(alpha = 0.45f),
+                modifier = Modifier.size(36.dp),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Info,

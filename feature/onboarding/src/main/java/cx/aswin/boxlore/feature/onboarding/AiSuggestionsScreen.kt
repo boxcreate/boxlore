@@ -84,8 +84,9 @@ internal fun AiSuggestionsScreen(
     onFinish: () -> Unit,
 ) {
     val isLoading =
-        (uiState.isLoadingPodcasts && uiState.aiCurriculumRows.isEmpty()) ||
-            (uiState.aiCurriculumRows.isEmpty() && uiState.genreChartsPodcasts.isEmpty() && uiState.onboardingError == null)
+        uiState.isLoadingPodcasts &&
+            uiState.aiCurriculumRows.isEmpty() &&
+            uiState.genreChartsPodcasts.isEmpty()
     val isError =
         uiState.onboardingError != null &&
             uiState.aiCurriculumRows.isEmpty() &&
@@ -214,11 +215,12 @@ internal fun AiSuggestionsScreen(
                                     } else {
                                         val allSelected =
                                             lane.podcasts.isNotEmpty() &&
-                                                lane.podcasts.all { p -> p.id in uiState.subscribedPodcastIds }
-                                        lane.podcasts.forEach { p ->
-                                            val selected = p.id in uiState.subscribedPodcastIds
-                                            if (allSelected && selected) onToggleSubscription(p.id)
-                                            if (!allSelected && !selected) onToggleSubscription(p.id)
+                                                lane.podcasts.all { it.id in uiState.subscribedPodcastIds }
+                                        lane.podcasts.forEach { podcast ->
+                                            val isSelected = podcast.id in uiState.subscribedPodcastIds
+                                            if (allSelected == isSelected) {
+                                                onToggleSubscription(podcast.id)
+                                            }
                                         }
                                     }
                                 },
