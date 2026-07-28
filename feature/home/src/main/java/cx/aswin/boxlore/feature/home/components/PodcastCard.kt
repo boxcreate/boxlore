@@ -42,7 +42,7 @@ fun PodcastCard(
                 density == FeedMediaCardDensity.Rail -> 2
                 else -> 3
             },
-        imageBadge = {
+        imageChrome = {
             if (showGenreChip && podcast.genre.isNotEmpty()) {
                 Surface(
                     shape = MaterialTheme.shapes.small,
@@ -63,8 +63,6 @@ fun PodcastCard(
                     )
                 }
             }
-        },
-        imageOverlay = {
             if (podcast.medium == "video" || podcast.latestEpisode?.enclosureType?.startsWith("video/") == true) {
                 Surface(
                     shape = androidx.compose.foundation.shape.CircleShape,

@@ -35,7 +35,6 @@ enum class FeedMediaCardDensity {
 }
 
 @Composable
-@Suppress("LongParameterList")
 fun FeedMediaCard(
     imageUrl: String,
     title: String,
@@ -43,8 +42,7 @@ fun FeedMediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     titleMaxLines: Int = 2,
-    imageBadge: @Composable (BoxScope.() -> Unit)? = null,
-    imageOverlay: @Composable (BoxScope.() -> Unit)? = null,
+    imageChrome: @Composable (BoxScope.() -> Unit)? = null,
 ) {
     val lines = titleMaxLines.coerceAtLeast(1)
     val showSubtitle = !subtitle.isNullOrBlank()
@@ -73,12 +71,8 @@ fun FeedMediaCard(
                             .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
                 )
 
-                if (imageBadge != null) {
-                    imageBadge()
-                }
-
-                if (imageOverlay != null) {
-                    imageOverlay()
+                if (imageChrome != null) {
+                    imageChrome()
                 }
             }
 

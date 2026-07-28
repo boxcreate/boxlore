@@ -37,7 +37,7 @@ fun CuratedEpisodeCard(
         onClick = onClick,
         modifier = modifier,
         titleMaxLines = 3,
-        imageBadge = {
+        imageChrome = {
             if (isNew) {
                 Box(
                     modifier =

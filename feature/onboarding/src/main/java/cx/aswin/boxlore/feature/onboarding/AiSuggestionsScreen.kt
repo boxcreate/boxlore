@@ -331,17 +331,14 @@ private fun SuggestionsLaneChip(
     icon: ImageVector,
     onClick: () -> Unit,
 ) {
-    val container =
+    val scheme = MaterialTheme.colorScheme
+    val container = if (selected) scheme.primaryContainer else scheme.surfaceContainerHigh
+    val content = if (selected) scheme.onPrimaryContainer else scheme.onSurface
+    val border =
         if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
+            BorderStroke(1.5.dp, scheme.primary)
         } else {
-            MaterialTheme.colorScheme.surfaceContainerHigh
-        }
-    val content =
-        if (selected) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurface
+            BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.45f))
         }
 
     Surface(
@@ -349,15 +346,7 @@ private fun SuggestionsLaneChip(
         shape = RoundedCornerShape(18.dp),
         color = container,
         contentColor = content,
-        border =
-            if (selected) {
-                BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
-            } else {
-                BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
-                )
-            },
+        border = border,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
@@ -368,7 +357,7 @@ private fun SuggestionsLaneChip(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = if (selected) MaterialTheme.colorScheme.primary else content,
+                tint = if (selected) scheme.primary else content,
             )
             Text(
                 text = title,
@@ -377,30 +366,29 @@ private fun SuggestionsLaneChip(
                 maxLines = 1,
             )
             if (selectedCount > 0) {
-                Surface(
-                    shape = CircleShape,
-                    color =
-                        if (selected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        },
-                    contentColor =
-                        if (selected) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        },
-                ) {
-                    Text(
-                        text = selectedCount.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = GoogleSansWeight.bold,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-                    )
-                }
+                SuggestionsLaneCountBadge(selected = selected, count = selectedCount)
             }
         }
+    }
+}
+
+@Composable
+private fun SuggestionsLaneCountBadge(
+    selected: Boolean,
+    count: Int,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        shape = CircleShape,
+        color = if (selected) scheme.primary else scheme.secondaryContainer,
+        contentColor = if (selected) scheme.onPrimary else scheme.onSecondaryContainer,
+    ) {
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = GoogleSansWeight.bold,
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+        )
     }
 }
 
@@ -488,26 +476,7 @@ private fun SuggestionsFinishBar(
                     .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
-            val cta =
-                if (uiState.reachedSuggestionsViaSearchFlow) {
-                    val recommendedIds =
-                        uiState.aiCurriculumRows
-                            .flatMap { it.podcasts }
-                            .map { it.id.toString() }
-                            .toSet()
-                    val selectedRecommendationsCount = uiState.subscribedPodcastIds.count { it in recommendedIds }
-                    if (selectedRecommendationsCount > 0) {
-                        "Subscribe & start · +$selectedRecommendationsCount recommended"
-                    } else {
-                        "Start without subscribing"
-                    }
-                } else {
-                    if (selectedCount > 0) {
-                        "Subscribe & start · $selectedCount"
-                    } else {
-                        "Start without subscribing"
-                    }
-                }
+            val cta = suggestionsFinishCtaLabel(uiState, selectedCount)
 
             FilledTonalButton(
                 onClick = onFinish,
@@ -542,6 +511,30 @@ private fun SuggestionsFinishBar(
                 }
             }
         }
+    }
+}
+
+internal fun suggestionsFinishCtaLabel(
+    uiState: OnboardingUiState,
+    selectedCount: Int,
+): String {
+    if (!uiState.reachedSuggestionsViaSearchFlow) {
+        return if (selectedCount > 0) {
+            "Subscribe & start · $selectedCount"
+        } else {
+            "Start without subscribing"
+        }
+    }
+    val recommendedIds =
+        uiState.aiCurriculumRows
+            .flatMap { it.podcasts }
+            .map { it.id.toString() }
+            .toSet()
+    val selectedRecommendationsCount = uiState.subscribedPodcastIds.count { it in recommendedIds }
+    return if (selectedRecommendationsCount > 0) {
+        "Subscribe & start · +$selectedRecommendationsCount recommended"
+    } else {
+        "Start without subscribing"
     }
 }
 

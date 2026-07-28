@@ -329,6 +329,9 @@ private fun RegionPickerOptionRow(
         region.recommendedLanguages
             .mapNotNull { ContentRegions.LANGUAGE_LABELS[it] }
             .joinToString(" · ")
+    val scheme = MaterialTheme.colorScheme
+    val containerColor = if (selected) scheme.primaryContainer else scheme.surfaceContainerHigh
+    val contentColor = if (selected) scheme.onPrimaryContainer else scheme.onSurface
     Surface(
         modifier =
             Modifier
@@ -339,18 +342,8 @@ private fun RegionPickerOptionRow(
                     role = Role.RadioButton,
                 ),
         shape = MaterialTheme.shapes.large,
-        color =
-            if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            },
-        contentColor =
-            if (selected) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
+        color = containerColor,
+        contentColor = contentColor,
     ) {
         Row(
             modifier =
@@ -360,33 +353,44 @@ private fun RegionPickerOptionRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = region.label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight =
-                        if (selected) {
-                            GoogleSansWeight.semiBold
-                        } else {
-                            GoogleSansWeight.medium
-                        },
-                )
-                if (recommended.isNotEmpty()) {
-                    Text(
-                        text = "Suggested: $recommended",
-                        style = MaterialTheme.typography.bodySmall,
-                        color =
-                            if (selected) {
-                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    )
-                }
-            }
+            RegionPickerOptionCopy(
+                label = region.label,
+                recommended = recommended,
+                selected = selected,
+                modifier = Modifier.weight(1f),
+            )
             RadioButton(
                 selected = selected,
                 onClick = { onSelect(region.code) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegionPickerOptionCopy(
+    label: String,
+    recommended: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (selected) GoogleSansWeight.semiBold else GoogleSansWeight.medium,
+        )
+        if (recommended.isNotEmpty()) {
+            val suggestedColor =
+                if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            Text(
+                text = "Suggested: $recommended",
+                style = MaterialTheme.typography.bodySmall,
+                color = suggestedColor,
             )
         }
     }
