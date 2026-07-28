@@ -14,7 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.feature.home.components.CuratedEpisodeCard
+import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.feature.home.components.HomeChildHeaderTone
 import cx.aswin.boxlore.feature.home.components.HomeChildSectionHeader
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing

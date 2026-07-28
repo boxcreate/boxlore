@@ -278,6 +278,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
             )
         }
         viewModelScope.launch {
+            val locale = discoveryLocaleForRegion(currentState.currentRegion)
             try {
                 val startTime = System.currentTimeMillis()
                 val hasSlow =
@@ -348,7 +349,8 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                                         request =
                                             OnboardingCurriculumRequest(
                                                 queries = queries,
-                                                country = currentState.currentRegion,
+                                                country = locale.country,
+                                                languages = locale.languages,
                                             ),
                                     ).execute()
                             }
@@ -407,7 +409,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                     val trending =
                         withContext(Dispatchers.IO) {
                             podcastRepository.getTrendingPodcasts(
-                                country = currentState.currentRegion,
+                                country = locale.country,
                                 limit = 10,
                             )
                         }

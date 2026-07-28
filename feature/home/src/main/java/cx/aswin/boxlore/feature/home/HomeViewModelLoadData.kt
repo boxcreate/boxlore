@@ -60,6 +60,7 @@ internal fun HomeViewModel.fetchPersonalizedRecommendations(region: String) {
                     country = region,
                     subscribedPodcastIds = subscribedIds,
                     subscribedGenres = subscribedGenres,
+                    languages = userPrefs.contentLanguagesStream.first(),
                 )
             android.util.Log.d("HomeViewModel", "Fetched recommendations size: ${recs.size}")
             val distinctRecs =
@@ -89,11 +90,12 @@ internal fun HomeViewModel.loadData() {
         // --- BASE DATA FLOW (Restarts when Region or dismissal changes) ---
         combine(
             userPrefs.regionStream,
+            userPrefs.contentLanguagesStream,
             clockContextFlow.map { clock -> clock.daypart }.distinctUntilChanged(),
-        ) { region, daypart ->
-            region to daypart
+        ) { region, languages, daypart ->
+            Triple(region, languages, daypart)
         }.distinctUntilChanged()
-            .collectLatest { (region, daypart) ->
+            .collectLatest { (region, languages, daypart) ->
                 if (cachedRegion != region) {
                     cachedRegion = region
                     cachedForYouTrending = emptyList()
@@ -122,6 +124,7 @@ internal fun HomeViewModel.loadData() {
                             podcastRepository.getCuratedVibes(
                                 vibeIds = definitions.map { it.providerId },
                                 country = region,
+                                languages = languages,
                             )
                         _editorialRows.value =
                             buildHomeEditorialRows(
@@ -188,6 +191,7 @@ internal fun HomeViewModel.loadData() {
                                 interests = interests,
                                 subscribedPodcastIds = subscribedIds,
                                 subscribedGenres = subscribedGenres,
+                                languages = languages,
                             )
 
                         val distinctRecs =

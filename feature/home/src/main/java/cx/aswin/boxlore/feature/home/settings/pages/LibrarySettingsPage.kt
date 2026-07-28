@@ -31,7 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
+import cx.aswin.boxlore.core.designsystem.components.ContentRegionLanguagePicker
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.home.settings.components.SettingsDivider
@@ -53,7 +53,9 @@ data class LibraryBackupActions(
 @Composable
 internal fun LibrarySettingsPage(
     currentRegion: String,
+    contentLanguages: List<String>,
     onSetRegion: (String) -> Unit,
+    onSetContentLanguages: (List<String>) -> Unit,
     onAddRssClick: () -> Unit,
     backupActions: LibraryBackupActions,
     onBack: () -> Unit,
@@ -66,13 +68,18 @@ internal fun LibrarySettingsPage(
         onBack = onBack,
         onUnconsumedTap = if (isCountryFaqExpanded) collapseCountryFaq else null,
     ) {
-        SettingsGroup(title = "Content region") {
+        SettingsGroup(title = "Discovery") {
             SettingsContent {
-                RegionSegmentedSelector(
+                ContentRegionLanguagePicker(
                     activeRegion = currentRegion,
+                    selectedLanguages = contentLanguages,
                     onSwitchRegion = {
                         collapseCountryFaq()
                         onSetRegion(it)
+                    },
+                    onLanguagesChange = {
+                        collapseCountryFaq()
+                        onSetContentLanguages(it)
                     },
                 )
             }
@@ -219,16 +226,19 @@ private fun CountryNotListedFaq(
                     "Smart recommendations still work: The recommendation engine will still suggest the closest matches based on your listening habits, irrespective of your country selection.",
                 )
                 FaqParagraph(
-                    "What you'll miss (for now): Country selection primarily fine-tunes your charts and local language filters. For example, selecting France prioritizes French + English content, while selecting India prioritizes Hindi + English.",
+                    "What country changes: Charts and regional ranking. Changing country also resets your language picks to a recommended set for that market.",
+                )
+                FaqParagraph(
+                    "Languages are separate: Use the language chips in this section to fine-tune For You and vibes (English stays on; pick up to three more). Charts stay country-based and are not hard-filtered by language.",
                 )
                 Text(
-                    text = "Want your country added next?",
+                    text = "Want another country or language?",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = GoogleSansWeight.semiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 FaqParagraph(
-                    "Help us prioritize your region! Please submit a country or language support request via our Feedback module or GitHub.",
+                    "Tell us via Feedback or GitHub — we expand coverage based on demand.",
                 )
             }
         }

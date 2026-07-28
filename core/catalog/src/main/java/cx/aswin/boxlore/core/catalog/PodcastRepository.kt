@@ -2,12 +2,6 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
-import cx.aswin.boxlore.core.catalog.content.ContentContext
-import cx.aswin.boxlore.core.catalog.content.GroupedContentSections
-import cx.aswin.boxlore.core.catalog.content.buildContentSignalProfile
-import cx.aswin.boxlore.core.catalog.content.contentSectionsCacheKey
-import cx.aswin.boxlore.core.catalog.content.contentSectionsProfileFingerprint
-import cx.aswin.boxlore.core.catalog.content.toGroupedContentSections
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.Briefing
@@ -20,9 +14,6 @@ import kotlinx.coroutines.withContext
 import com.google.gson.Gson
 
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
-import cx.aswin.boxlore.core.network.model.ContentSectionRecentSeedDto
-import cx.aswin.boxlore.core.network.model.ContentSectionSeedFallbackDto
-import cx.aswin.boxlore.core.network.model.ContentSectionsV1Request
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
@@ -87,10 +78,6 @@ class PodcastRepository(
         "content_catalog_cache",
         android.content.Context.MODE_PRIVATE,
     )
-    internal val contentSectionsPreferences = context.applicationContext.getSharedPreferences(
-        "content_sections_cache",
-        android.content.Context.MODE_PRIVATE,
-    )
 
     suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0): List<Podcast> = withContext(Dispatchers.IO) {
         // Fallback or non-streaming implementation
@@ -106,9 +93,22 @@ class PodcastRepository(
         }
     }
 
-    suspend fun getCuratedPodcasts(vibeId: String, country: String? = null): List<Podcast> = withContext(Dispatchers.IO) {
+    suspend fun getCuratedPodcasts(
+        vibeId: String,
+        country: String? = null,
+        languages: List<String>? = null,
+    ): List<Podcast> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getCuratedVibe(publicKey, vibeId, country).execute()
+            val resolvedCountry = country?.let { cx.aswin.boxlore.core.model.ContentRegions.canonicalize(it) }
+            val queryLanguages =
+                resolveContentLanguagesForQuery(languages, resolvedCountry ?: "us")
+                    .joinToString(",")
+            val response = api.getCuratedVibe(
+                publicKey,
+                vibeId,
+                resolvedCountry,
+                queryLanguages,
+            ).execute()
             if (response.isSuccessful && response.body() != null) {
                 mapFeedsToPodcasts(response.body()!!.feeds)
             } else {
@@ -405,180 +405,13 @@ class PodcastRepository(
     }
 
 
-    suspend fun getPersonalizedContentSections(
-        contentContext: ContentContext,
-        catalog: ContentCatalogSnapshot,
-        inputs: PersonalizedContentSectionInputs,
-        preferCache: Boolean = false,
-    ): GroupedContentSections? = withContext(ioDispatcher) {
-        val expectedCatalogVersion = catalog.catalogVersion.toIntOrNull() ?: return@withContext null
-        val country = contentContext.region.lowercase().takeIf { it.length in 2..3 } ?: "us"
-        val surface = contentContext.surface.toContentSectionsSurface() ?: return@withContext null
-        val (podcastIndexHistory, podcastIndexSubscriptionIds) =
-            filterToPodcastIndexScope(inputs.history, inputs.subscribedPodcastIds)
-        val subscribedIds = podcastIndexSubscriptionIds.toBoundedPositiveIds()
-        val subscribedPodcastIdStrings = subscribedIds.map(Long::toString).toSet()
-        val seenPodcastIdStrings = (
-            subscribedPodcastIdStrings +
-                podcastIndexHistory.mapNotNull { it.podcastId?.toLongOrNull()?.toString() }
-            ).toSet()
-        val historyByEpisodeId = podcastIndexHistory
-            .mapNotNull { item -> item.episodeId?.toLongOrNull()?.let { it to item } }
-            .toMap()
-        val recentSeeds = buildRecommendationSeeds(
-            history = podcastIndexHistory,
-            subscribedPodcastIds = podcastIndexSubscriptionIds,
-            maximumSeeds = MAX_CONTENT_SECTION_SEEDS,
-        ).map { seed ->
-            val historyItem = historyByEpisodeId[seed.id]
-            ContentSectionRecentSeedDto(
-                kind = seed.kind,
-                id = seed.id,
-                weight = seed.weight,
-                fallback = seed.fallback?.let { fallback ->
-                    ContentSectionSeedFallbackDto(
-                        episodeTitle = fallback.episodeTitle,
-                        podcastTitle = fallback.podcastTitle,
-                        podcastId = historyItem?.podcastId?.toLongOrNull()?.takeIf { it > 0L },
-                        genre = fallback.genre,
-                        description = fallback.description,
-                    )
-                },
-            )
-        }
-        val boundedInterests = (inputs.interests + inputs.searchTopics + inputs.subscribedGenres)
-            .asSequence()
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .map { it.take(MAX_CONTENT_SECTION_INTEREST_LENGTH) }
-            .distinctBy(String::lowercase)
-            .take(MAX_CONTENT_SECTION_INTERESTS)
-            .toList()
-        val signalProfile = buildContentSignalProfile(
-            explicitInterests = inputs.interests + inputs.searchTopics,
-            subscribedGenres = inputs.subscribedGenres,
-            recentHistory = podcastIndexHistory,
-            subscribedPodcastIds = subscribedPodcastIdStrings,
-            learnedGenreAffinities = inputs.learnedGenreAffinities,
-        )
-        val recentSectionIds = inputs.recentSectionIds.asSequence()
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .filter { it.length <= MAX_CONTENT_SECTION_ID_LENGTH }
-            .distinct()
-            .take(MAX_RECENT_CONTENT_SECTION_IDS)
-            .toList()
-        val localClock = java.time.ZonedDateTime.now()
-        val localDate = localClock.toLocalDate().toString()
-        val timezoneOffsetMinutes = (localClock.offset.totalSeconds / 60)
-            .coerceIn(MIN_TIMEZONE_OFFSET_MINUTES, MAX_TIMEZONE_OFFSET_MINUTES)
-        val request = ContentSectionsV1Request(
-            contractVersion = 1,
-            surface = surface,
-            localMinuteOfDay = contentContext.localMinuteOfDay,
-            // The backend owns six overlapping dayparts; deliberately omit the broad Android hint.
-            daypart = null,
-            country = country,
-            languages = inputs.languages.toBoundedLanguageCodes(),
-            recentSeeds = recentSeeds,
-            interests = boundedInterests,
-            subscribedPodcastIds = subscribedIds,
-            excludedPodcastIds = inputs.excludedPodcastIds.toBoundedPositiveIds(),
-            excludedEpisodeIds = (
-                inputs.excludedEpisodeIds.mapNotNull(String::toLongOrNull) +
-                    podcastIndexHistory.mapNotNull { it.episodeId?.toLongOrNull() }
-                ).asSequence()
-                .filter { it > 0L }
-                .distinct()
-                .take(MAX_CONTENT_SECTION_EXCLUSIONS)
-                .toList(),
-            candidateBudget = CONTENT_SECTION_CANDIDATE_BUDGET,
-            tasteSignals = signalProfile.tasteSignals,
-            recentSectionIds = recentSectionIds,
-            durationPreference = signalProfile.durationPreference,
-            historyMaturity = signalProfile.historyMaturity,
-            noveltyPreference = signalProfile.noveltyPreference,
-            localDate = localDate,
-            timezoneOffsetMinutes = timezoneOffsetMinutes,
-        )
-        val profileFingerprint = contentSectionsProfileFingerprint(request)
-        val cacheKey = contentSectionsCacheKey(
-            catalogVersion = expectedCatalogVersion,
-            country = country,
-            surface = surface,
-            localMinuteOfDay = contentContext.localMinuteOfDay,
-            localDate = localDate,
-            profileFingerprint = profileFingerprint,
-        )
-        val cached = readCachedContentSections(
-            cacheKey = cacheKey,
-            catalog = catalog,
-            seenPodcastIds = seenPodcastIdStrings,
-            subscribedPodcastIds = subscribedPodcastIdStrings,
-        ) ?: readStaleCachedContentSections(
-            slot = ContentSectionsSlotKey(
-                catalogVersion = expectedCatalogVersion,
-                country = country,
-                surface = surface,
-                localMinuteOfDay = contentContext.localMinuteOfDay,
-                localDate = localDate,
-            ),
-            catalog = catalog,
-            seenPodcastIds = seenPodcastIdStrings,
-            subscribedPodcastIds = subscribedPodcastIdStrings,
-        )
-        if (preferCache || !contentContext.isOnline) return@withContext cached
-        try {
-            val body = api.getContentSectionsV1(
-                publicKey = publicKey,
-                deviceUuid = getOrCreateDeviceUuid(),
-                request = request,
-            )
-            val mapped = body.toGroupedContentSections(
-                catalog = catalog,
-                seenPodcastIds = seenPodcastIdStrings,
-                subscribedPodcastIds = subscribedPodcastIdStrings,
-            )
-            if (mapped != null) {
-                val payload = Gson().toJson(body)
-                val responseKey = contentSectionsCacheKey(
-                    catalogVersion = requireNotNull(body.catalogVersion),
-                    country = country,
-                    surface = surface,
-                    resolvedDaypart = requireNotNull(body.resolvedDaypart),
-                    localDate = localDate,
-                    profileFingerprint = profileFingerprint,
-                )
-                persistContentSectionsCache(
-                    activeKey = responseKey,
-                    aliasKey = cacheKey.takeIf { it != responseKey },
-                    payload = payload,
-                )
-            }
-            mapped ?: cached
-        } catch (error: kotlinx.coroutines.CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            val validationDetails = (error as? retrofit2.HttpException)
-                ?.response()
-                ?.errorBody()
-                ?.string()
-            android.util.Log.w(
-                "PodcastRepository",
-                "Grouped content sections refresh failed" +
-                    validationDetails?.let { ": $it" }.orEmpty(),
-                error,
-            )
-            cached
-        }
-    }
-
     suspend fun getPersonalizedRecommendations(
         history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
         interests: List<String> = emptyList(),
         country: String? = null,
         subscribedPodcastIds: List<String> = emptyList(),
-        subscribedGenres: List<String> = emptyList()
+        subscribedGenres: List<String> = emptyList(),
+        languages: List<String>? = null,
     ): List<Episode> = withContext(Dispatchers.IO) {
         val (podcastIndexHistory, podcastIndexSubscriptionIds) =
             filterToPodcastIndexScope(history, subscribedPodcastIds)
@@ -586,8 +419,12 @@ class PodcastRepository(
             // Nothing Podcast Index-scoped to base recommendations on — skip the network call.
             return@withContext emptyList()
         }
+        val resolvedCountry = country?.let { cx.aswin.boxlore.core.model.ContentRegions.canonicalize(it) } ?: "us"
+        val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
         val cacheKey = buildString {
-            append(country ?: "")
+            append(resolvedCountry)
+            append("|")
+            append(queryLanguages.joinToString(","))
             append("|")
             append(interests.sorted().joinToString(","))
             append("|")
@@ -611,8 +448,9 @@ class PodcastRepository(
                 fetchRecommendationV2(
                     history = podcastIndexHistory,
                     interests = interests,
-                    country = country,
+                    country = resolvedCountry,
                     subscribedPodcastIds = podcastIndexSubscriptionIds,
+                    languages = queryLanguages,
                 )
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
@@ -623,7 +461,7 @@ class PodcastRepository(
             val results = v2Results ?: fetchLegacyRecommendations(
                 history = podcastIndexHistory,
                 interests = interests,
-                country = country,
+                country = resolvedCountry,
                 subscribedPodcastIds = podcastIndexSubscriptionIds,
                 subscribedGenres = subscribedGenres,
             )
@@ -675,41 +513,43 @@ class PodcastRepository(
         }
     }
 
-    suspend fun getSimilarEpisodes(
-        episodeId: String,
-        podcastId: String,
-        title: String,
-        description: String,
-        podcastTitle: String,
-        categories: String = "",
-        author: String = "",
-        limit: Int = 10,
-        country: String? = null
-    ): List<Episode> = withContext(Dispatchers.IO) {
-        try {
-            val request = cx.aswin.boxlore.core.network.model.SimilarEpisodesRequest(
-                id = episodeId.takeUnless { it.toLongOrNull()?.let { value -> value < 0L } == true }
-                    ?: "0",
-                podcastId = podcastId.takeUnless { it.startsWith("rss:") } ?: "0",
-                title = title,
-                description = description,
-                podcastTitle = podcastTitle,
-                categories = categories,
-                author = author,
-                limit = limit,
-                country = country
-            )
-            val response = api.getSimilarEpisodes(publicKey, request).execute()
-            if (response.isSuccessful && response.body() != null) {
-                response.body()!!.items.mapNotNull { mapToEpisode(it) }
-            } else {
+    suspend fun getSimilarEpisodes(query: SimilarEpisodesQuery): List<Episode> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resolvedCountry =
+                    query.country?.let { cx.aswin.boxlore.core.model.ContentRegions.canonicalize(it) }
+                        ?: "us"
+                val queryLanguages =
+                    resolveContentLanguagesForQuery(query.languages, resolvedCountry)
+                val request =
+                    cx.aswin.boxlore.core.network.model.SimilarEpisodesRequest(
+                        id =
+                            query.episodeId.takeUnless {
+                                it.toLongOrNull()?.let { value -> value < 0L } == true
+                            } ?: "0",
+                        podcastId = query.podcastId.takeUnless { it.startsWith("rss:") } ?: "0",
+                        title = query.title,
+                        description = query.description,
+                        podcastTitle = query.podcastTitle,
+                        categories = query.categories,
+                        author = query.author,
+                        limit = query.limit,
+                        country = resolvedCountry,
+                        languages = queryLanguages,
+                    )
+                val response = api.getSimilarEpisodes(publicKey, request).execute()
+                if (response.isSuccessful && response.body() != null) {
+                    response.body()!!.items.mapNotNull { mapToEpisode(it) }
+                } else {
+                    emptyList()
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("PodcastRepository", "Error getting similar episodes", e)
                 emptyList()
             }
-        } catch (e: Exception) {
-            android.util.Log.e("PodcastRepository", "Error getting similar episodes", e)
-            emptyList()
         }
-    }
 
     suspend fun submitFeedback(
         category: String,
@@ -810,9 +650,12 @@ class PodcastRepository(
         history: List<cx.aswin.boxlore.core.network.model.HistoryItem> = emptyList(),
         interests: List<String> = emptyList(),
         subscribedPodcastIds: List<String> = emptyList(),
-        subscribedGenres: List<String> = emptyList()
+        subscribedGenres: List<String> = emptyList(),
+        languages: List<String>? = null,
     ): HomeBootstrapData = withContext(Dispatchers.IO) {
         try {
+            val resolvedCountry = cx.aswin.boxlore.core.model.ContentRegions.canonicalize(country)
+            val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
             val (podcastIndexHistory, podcastIndexSubscriptionIds) =
                 filterToPodcastIndexScope(history, subscribedPodcastIds)
             val recsReq = if (
@@ -823,7 +666,7 @@ class PodcastRepository(
                 cx.aswin.boxlore.core.network.model.RecommendationsRequest(
                     history = podcastIndexHistory,
                     interests = interests,
-                    country = country,
+                    country = resolvedCountry,
                     subscribedPodcastIds = podcastIndexSubscriptionIds,
                     subscribedGenres = subscribedGenres
                 )
@@ -832,10 +675,11 @@ class PodcastRepository(
             }
 
             val request = cx.aswin.boxlore.core.network.model.BootstrapRequest(
-                country = country,
+                country = resolvedCountry,
                 vibeIds = vibeIds,
                 deviceUuid = getOrCreateDeviceUuid(),
-                recommendationsRequest = recsReq
+                recommendationsRequest = recsReq,
+                languages = queryLanguages,
             )
 
             val response = api.getHomeBootstrap(publicKey, getOrCreateDeviceUuid(), request).execute()
@@ -852,8 +696,8 @@ class PodcastRepository(
                 var briefing = body.briefing
                 var briefingChapters = body.briefingChapters
                 if (briefing == null) {
-                    val mappedRegion = mapRegionForBriefing(country)
-                    android.util.Log.d("PodcastRepository", "HomeBootstrapData briefing was null for country $country, attempting fallback fetch with mapped region $mappedRegion")
+                    val mappedRegion = mapRegionForBriefing(resolvedCountry)
+                    android.util.Log.d("PodcastRepository", "HomeBootstrapData briefing was null for country $resolvedCountry, attempting fallback fetch with mapped region $mappedRegion")
                     val fallbackBriefing = getBriefingMetadata(mappedRegion)
                     if (fallbackBriefing != null) {
                         briefing = fallbackBriefing
@@ -887,12 +731,18 @@ class PodcastRepository(
         }
     }
 
-    suspend fun getCuratedVibes(vibeIds: List<String>, country: String): Map<String, List<Podcast>> = withContext(Dispatchers.IO) {
+    suspend fun getCuratedVibes(
+        vibeIds: List<String>,
+        country: String,
+        languages: List<String>? = null,
+    ): Map<String, List<Podcast>> = withContext(Dispatchers.IO) {
+        val resolvedCountry = cx.aswin.boxlore.core.model.ContentRegions.canonicalize(country)
+        val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry).joinToString(",")
         val result = java.util.concurrent.ConcurrentHashMap<String, List<Podcast>>()
         vibeIds.map { vibeId ->
             async {
                 try {
-                    val resp = api.getCuratedVibe(publicKey, vibeId, country).execute()
+                    val resp = api.getCuratedVibe(publicKey, vibeId, resolvedCountry, queryLanguages).execute()
                     if (resp.isSuccessful && resp.body() != null) {
                         val pods = resp.body()!!.feeds.map { mapToPodcast(it) }
                         result[vibeId] = pods

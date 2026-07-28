@@ -179,6 +179,7 @@ class SmartDownloadManager(
                 val subscribedIds = subs.map { it.podcastId }
                 val subscribedGenres = subs.mapNotNull { it.genre }.distinct()
                 val region = userPrefs.regionStream.first().takeIf { it.isNotBlank() } ?: "us"
+                val languages = userPrefs.contentLanguagesStream.first()
 
                 val recs =
                     podcastRepository.getPersonalizedRecommendations(
@@ -186,6 +187,7 @@ class SmartDownloadManager(
                         country = region,
                         subscribedPodcastIds = subscribedIds,
                         subscribedGenres = subscribedGenres,
+                        languages = languages,
                     )
 
                 val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()

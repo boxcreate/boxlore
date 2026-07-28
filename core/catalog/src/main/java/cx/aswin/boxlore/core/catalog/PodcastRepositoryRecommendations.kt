@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Episode
 
 import cx.aswin.boxlore.core.catalog.BuildConfig
@@ -9,13 +10,15 @@ internal fun PodcastRepository.fetchRecommendationV2(
     interests: List<String>,
     country: String?,
     subscribedPodcastIds: List<String>,
+    languages: List<String>,
 ): List<Episode>? {
     val seeds = buildRecommendationSeeds(history, subscribedPodcastIds)
     val boundedInterests = interests.map(String::trim).filter(String::isNotEmpty).distinct().take(12)
     if (seeds.isEmpty() && boundedInterests.isEmpty()) return null
+    val resolvedCountry = ContentRegions.canonicalize(country ?: "us")
     val request = cx.aswin.boxlore.core.network.model.RecommendationsV2Request(
-        country = country?.lowercase()?.takeIf { it.length in 2..3 } ?: "us",
-        languages = listOf("en"),
+        country = resolvedCountry,
+        languages = languages,
         seeds = seeds,
         interests = boundedInterests,
         subscribedPodcastIds = subscribedPodcastIds.mapNotNull(String::toLongOrNull)

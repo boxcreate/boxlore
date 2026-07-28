@@ -41,16 +41,25 @@ class PodcastRepositoryContentMappingHelpersTest {
 
     @Test
     fun toBoundedLanguageCodesNormalisesAndDefaults() {
-        assertEquals(listOf("en", "fr", "pt-br"), listOf("EN", " fr ", "pt-BR").toBoundedLanguageCodes())
+        assertEquals(listOf("en", "fr", "pt"), listOf("EN", " fr ", "pt-BR").toBoundedLanguageCodes())
         assertEquals(listOf("en"), listOf("123", "!!").toBoundedLanguageCodes())
         assertEquals(listOf("en"), emptyList<String>().toBoundedLanguageCodes())
     }
 
     @Test
-    fun rankingSurfaceToContentSectionsSurface() {
-        assertEquals("home", RankingSurface.HOME.toContentSectionsSurface())
-        assertEquals("explore", RankingSurface.EXPLORE.toContentSectionsSurface())
-        assertEquals("auto", RankingSurface.ANDROID_AUTO.toContentSectionsSurface())
+    fun resolveContentLanguagesForQueryExpandsIndonesian() {
+        assertEquals(
+            listOf("en", "id", "in"),
+            resolveContentLanguagesForQuery(listOf("id"), "id"),
+        )
+        assertEquals(
+            listOf("en", "zh"),
+            resolveContentLanguagesForQuery(listOf("zh"), "sg"),
+        )
+        assertEquals(
+            listOf("en", "hi"),
+            resolveContentLanguagesForQuery(null, "in"),
+        )
     }
 
     @Test
@@ -78,6 +87,34 @@ class PodcastRepositoryContentMappingHelpersTest {
         assertEquals(ContentLayout.COMPACT_LIST, "compact_list".toContentLayout())
         assertEquals(ContentLayout.PROTECTED_CARD, "protected_card".toContentLayout())
         assertNull("masonry".toContentLayout())
+    }
+
+    @Test
+    fun resolveContentLanguagesForQuery_nullAndEmptyListMatch() {
+        assertEquals(
+            listOf("en", "hi"),
+            resolveContentLanguagesForQuery(null, "in"),
+        )
+        assertEquals(
+            listOf("en", "hi"),
+            resolveContentLanguagesForQuery(emptyList(), "in"),
+        )
+    }
+
+    @Test
+    fun resolveContentLanguagesForQuery_unmappedCountryDefaultsToUsRecommended() {
+        assertEquals(
+            listOf("en"),
+            resolveContentLanguagesForQuery(null, "zz"),
+        )
+    }
+
+    @Test
+    fun resolveContentLanguagesForQuery_deduplicatesMixedCase() {
+        assertEquals(
+            listOf("en", "fr", "pt"),
+            resolveContentLanguagesForQuery(listOf("EN", " fr ", "pt-BR", "FR"), "fr"),
+        )
     }
 
     @Test

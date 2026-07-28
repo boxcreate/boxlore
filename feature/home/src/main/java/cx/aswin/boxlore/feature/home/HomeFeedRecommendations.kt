@@ -21,10 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import cx.aswin.boxlore.core.designsystem.components.EqualHeightPosterGrid
+import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.feature.home.components.BecauseYouLikeSection
-import cx.aswin.boxlore.feature.home.components.FeedMediaCardDensity
-import cx.aswin.boxlore.feature.home.components.EqualHeightPosterGrid
 import cx.aswin.boxlore.feature.home.components.GridSkeletonItem
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 import cx.aswin.boxlore.feature.home.components.HomeTopLevelSectionHeader

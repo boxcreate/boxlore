@@ -52,7 +52,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridS
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
@@ -599,7 +598,7 @@ fun ExploreContent(
                 if (state.selectedTab == 0) {
                     item(span = StaggeredGridItemSpan.FullLine) {
                         val headerTitle = if (state.currentCategory == "All") {
-                            "Featured Podcasts"
+                            "Top charts"
                         } else {
                             "Top in ${state.currentCategory}"
                         }
@@ -612,7 +611,7 @@ fun ExploreContent(
                 }
 
                 if (state.selectedTab == 1) {
-                    // For You Tab Content (Episodes Curation)
+                    // For You — same hero + equal-height poster grid as Home “Based on Your Taste”
                     val recs = state.recommendations
                     val showContent = recs.isNotEmpty()
                     val showSkeletons = state.isRecommendationsLoading && recs.isEmpty()
@@ -634,7 +633,6 @@ fun ExploreContent(
                             ExploreRecommendationsEmptyState()
                         }
                     } else if (showContent) {
-                        // Hero card
                         item(span = StaggeredGridItemSpan.FullLine) {
                             val heroEp = recs[0]
                             val parentPodcast = Podcast(
@@ -661,7 +659,6 @@ fun ExploreContent(
                             )
                         }
 
-                        // Staggered grid items
                         itemsIndexed(recs.drop(1), key = { _, it -> "rec_${it.id}" }) { index, episode ->
                             val parentPodcast = Podcast(
                                 id = episode.podcastId ?: "",

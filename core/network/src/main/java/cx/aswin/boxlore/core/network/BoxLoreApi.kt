@@ -24,8 +24,6 @@ import cx.aswin.boxlore.core.network.model.OnboardingSelectedShowDto
 import cx.aswin.boxlore.core.network.model.BootstrapRequest
 import cx.aswin.boxlore.core.network.model.BootstrapResponse
 import cx.aswin.boxlore.core.network.model.ContentCatalogResponse
-import cx.aswin.boxlore.core.network.model.ContentSectionsV1Request
-import cx.aswin.boxlore.core.network.model.ContentSectionsV1Response
 import cx.aswin.boxlore.core.network.model.RecommendationsV2Request
 import cx.aswin.boxlore.core.network.model.RecommendationsV2Response
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
@@ -140,7 +138,8 @@ interface BoxLoreApi {
     fun getCuratedVibe(
         @Header("X-App-Key") publicKey: String,
         @Query("id") vibeId: String,
-        @Query("country") country: String? = null
+        @Query("country") country: String? = null,
+        @Query("languages") languages: String? = null,
     ): retrofit2.Call<TrendingResponse> // Reusing TrendingResponse structure (feeds list)
 
     @POST("recommendations")
@@ -162,13 +161,6 @@ interface BoxLoreApi {
         @Header("X-App-Key") publicKey: String,
         @Header("If-None-Match") etag: String? = null,
     ): retrofit2.Call<ContentCatalogResponse>
-
-    @POST("content/sections/v1")
-    suspend fun getContentSectionsV1(
-        @Header("X-App-Key") publicKey: String,
-        @Header("X-Device-UUID") deviceUuid: String,
-        @Body request: ContentSectionsV1Request,
-    ): ContentSectionsV1Response
 
     @POST("recommendations/because-you-like")
     fun getBecauseYouLikeRecommendations(

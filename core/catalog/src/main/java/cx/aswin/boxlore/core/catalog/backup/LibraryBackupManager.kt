@@ -20,6 +20,7 @@ import cx.aswin.boxlore.core.catalog.BuildConfig
 
 data class GlobalPreferencesBackup(
     val region: String? = null,
+    val contentLanguages: List<String>? = null,
     val themeConfig: String? = null,
     val themeBrand: String? = null,
     val surfaceStyle: String? = null,
@@ -83,6 +84,7 @@ class LibraryBackupManager(
         val globalPrefs = if (userPrefs != null) {
             GlobalPreferencesBackup(
                 region = userPrefs.regionStream.first(),
+                contentLanguages = userPrefs.contentLanguagesStream.first(),
                 themeConfig = userPrefs.themeConfigStream.first(),
                 themeBrand = userPrefs.themeBrandStream.first(),
                 surfaceStyle = userPrefs.surfaceStyleStream.first(),
@@ -162,6 +164,8 @@ class LibraryBackupManager(
             backup.globalPreferences?.let { prefs ->
                 userPrefs?.let { up ->
                     prefs.region?.let { up.setRegion(it) }
+                    // Restore languages after region so setRegion's recommended reset does not wipe them.
+                    prefs.contentLanguages?.let { up.setContentLanguages(it) }
                     prefs.themeConfig?.let { up.setThemeConfig(it) }
                     prefs.themeBrand?.let { up.setThemeBrand(it) }
                     prefs.surfaceStyle?.let { up.setSurfaceStyle(it) }

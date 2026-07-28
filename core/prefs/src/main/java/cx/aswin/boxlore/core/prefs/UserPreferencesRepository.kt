@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import cx.aswin.boxlore.core.model.ContentRegions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -51,14 +52,7 @@ class UserPreferencesRepository(
     val cachedUseDynamicColor: Boolean
         get() = syncPrefs.getBoolean("use_dynamic_color", false)
 
-    private fun normalizeRegionCode(region: String): String {
-        val normalized = region.trim().lowercase()
-        return when (normalized) {
-            "ind" -> "in"
-            "uk" -> "gb"
-            else -> normalized
-        }
-    }
+    private fun normalizeRegionCode(region: String): String = ContentRegions.canonicalize(region)
 
     val regionStream: Flow<String> =
         dataStore.data
@@ -78,21 +72,42 @@ class UserPreferencesRepository(
                             .getDefault()
                             .country
                             .lowercase()
-                    // "fr" is intentional here even though France isn't a supported region value —
-                    // it still routes French locales into the region nudge/picker flow.
-                    if (localeCountry in setOf("in", "gb", "uk", "fr")) {
-                        normalizeRegionCode(localeCountry)
-                    } else {
-                        "us"
-                    }
+                    ContentRegions.localeDefaultRegion(localeCountry)
                 }
+            }.distinctUntilChanged()
+
+    val contentLanguagesStream: Flow<List<String>> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }.map { preferences ->
+                val region = preferences[Keys.REGION]?.let { normalizeRegionCode(it) }
+                    ?: ContentRegions.localeDefaultRegion(
+                        java.util.Locale.getDefault().country.lowercase(),
+                    )
+                val stored = ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES])
+                ContentRegions.normalizeLanguages(stored, region)
             }.distinctUntilChanged()
 
     suspend fun setRegion(region: String) {
         val normalized = normalizeRegionCode(region)
+        val recommended = ContentRegions.recommendedLanguages(normalized)
         dataStore.edit { preferences ->
             preferences[Keys.REGION] = normalized
+            preferences[Keys.CONTENT_LANGUAGES] = ContentRegions.encodeLanguages(recommended)
             preferences[Keys.HAS_DISMISSED_REGION_NUDGE] = true
+        }
+    }
+
+    suspend fun setContentLanguages(languages: List<String>) {
+        val region = regionStream.first()
+        val normalized = ContentRegions.normalizeLanguages(languages, region)
+        dataStore.edit { preferences ->
+            preferences[Keys.CONTENT_LANGUAGES] = ContentRegions.encodeLanguages(normalized)
         }
     }
 

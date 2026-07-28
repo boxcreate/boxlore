@@ -163,13 +163,23 @@ class DefaultSmartQueueSources(
         country: String?,
         subscribedPodcastIds: List<String>,
         subscribedGenres: List<String>
-    ): List<Episode> = podcastRepository.getPersonalizedRecommendations(
-        history = history,
-        interests = interests,
-        country = country,
-        subscribedPodcastIds = subscribedPodcastIds,
-        subscribedGenres = subscribedGenres
-    )
+    ): List<Episode> {
+        val languages = try {
+            userPreferencesRepository.contentLanguagesStream.first()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+        return podcastRepository.getPersonalizedRecommendations(
+            history = history,
+            interests = interests,
+            country = country,
+            subscribedPodcastIds = subscribedPodcastIds,
+            subscribedGenres = subscribedGenres,
+            languages = languages,
+        )
+    }
 
     override suspend fun getSimilarEpisodes(
         episodeId: String,
@@ -178,14 +188,26 @@ class DefaultSmartQueueSources(
         description: String,
         podcastTitle: String,
         country: String?
-    ): List<Episode> = podcastRepository.getSimilarEpisodes(
-        episodeId = episodeId,
-        podcastId = podcastId,
-        title = title,
-        description = description,
-        podcastTitle = podcastTitle,
-        country = country
-    )
+    ): List<Episode> {
+        val languages = try {
+            userPreferencesRepository.contentLanguagesStream.first()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+        return podcastRepository.getSimilarEpisodes(
+            cx.aswin.boxlore.core.catalog.SimilarEpisodesQuery(
+                episodeId = episodeId,
+                podcastId = podcastId,
+                title = title,
+                description = description,
+                podcastTitle = podcastTitle,
+                country = country,
+                languages = languages,
+            ),
+        )
+    }
 
     override suspend fun getTrendingPodcasts(country: String, category: String?): List<Podcast> =
         podcastRepository.getTrendingPodcasts(country = country, category = category)

@@ -35,6 +35,7 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
         _uiState.update { it.copy(isLoadingPodcasts = true, onboardingError = null) }
         viewModelScope.launch {
             try {
+                val locale = discoveryLocaleForRegion(currentState.currentRegion)
                 // 1. Fetch charts podcasts in parallel
                 val chartsDeferred =
                     async(Dispatchers.IO) {
@@ -45,7 +46,7 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                             try {
                                 val trending =
                                     podcastRepository.getTrendingPodcasts(
-                                        country = currentState.currentRegion,
+                                        country = locale.country,
                                         category = genre,
                                         limit = perGenreLimit,
                                     )
@@ -79,7 +80,8 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                                 subGenres = currentState.selectedSubGenres.toList(),
                                 activity = formattedActivities,
                                 length = formattedLengths,
-                                country = currentState.currentRegion,
+                                country = locale.country,
+                                languages = locale.languages,
                             )
                         val response =
                             podcastRepository.api

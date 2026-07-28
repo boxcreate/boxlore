@@ -105,6 +105,7 @@ internal fun resolveBottomNavTabFromBackStack(
 /** Read-only snapshot of user-preference values needed by the settings route. */
 data class NavSettingsState(
     val currentRegion: String,
+    val contentLanguages: List<String>,
     val themeConfig: String,
     val useDynamicColor: Boolean,
     val themeBrand: String,

@@ -2,16 +2,16 @@
 
 ## Purpose
 
-Owns catalog orchestration: Podcast Index access through `PodcastRepository`, subscriptions, chapters, transcripts, personalized content sections, cross-promotion, consent helpers, install-referrer handling, backup and restore, and shared dependency bridges used by workers and services. It does not own playback, download workers, Compose UI, Room schemas, RSS internals, or ranking model storage.
+Owns catalog orchestration: Podcast Index access through `PodcastRepository`, subscriptions, chapters, transcripts, content catalog (v3), cross-promotion, consent helpers, install-referrer handling, backup and restore, and shared dependency bridges used by workers and services. It does not own playback, download workers, Compose UI, Room schemas, RSS internals, or ranking model storage.
 
 ## Public API
 
-- `PodcastRepository` coordinates Podcast Index calls, recommendation endpoints, content sections, and RSS delegation.
-- `mapRegionForBriefing` maps content regions to briefing markets (`us` / `in` / `gb` / `global`; legacy `uk` → `gb`).
+- `PodcastRepository` coordinates Podcast Index calls, recommendation endpoints, curated vibes, home bootstrap, similar episodes via `SimilarEpisodesQuery` (with content languages), content catalog/v3, and RSS delegation.
+- `mapRegionForBriefing` maps content regions to briefing markets (`us` / `in` / `gb` / `global`; legacy `uk` → `gb`) via `ContentRegions.briefingMarket`.
 - `SubscriptionRepository`, `ChapterRepository`, and `TranscriptRepository` expose catalog-adjacent data operations.
-- `content.ContentOrchestrator`, `GroupedContentSectionProvider`, `ContentContextEngine`, and related content contracts assemble personalized Home and discovery sections.
+- `content.ContentOrchestrator`, `ServerGroupedSectionProvider`, `ContentContextEngine`, and related content contracts assemble discovery slates from catalog/v3 (no live `content/sections/v1` client).
 - `content.CuratedMoods` is the shared catalog of curated-mood IDs/titles used by Home daypart rails and Explore For You chips (`getCuratedVibe`).
-- `backup.LibraryBackupManager` imports and exports library data, OPML, listening history, and ranking backup payloads.
+- `backup.LibraryBackupManager` imports and exports library data, OPML, listening history, ranking backup payloads, and global prefs including `contentLanguages`.
 - `SharedAppDependencies` and `SharedAppDependenciesHolder` expose application-scoped instances to workers and services.
 - `InstallReferrerManager` parses Play Install Referrer deep links and exposes optional `onInstallReferrerResolved` (channel + raw referrer). `:app` wires that callback into analytics; catalog must not depend on `:core:analytics`.
 - `RoomLocalCatalog` implements `LocalCatalogPort`; `RoomEpisodeOfflineLookup` implements `EpisodeOfflineLookupPort`.

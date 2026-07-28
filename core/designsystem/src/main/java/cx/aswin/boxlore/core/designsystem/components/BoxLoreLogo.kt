@@ -6,26 +6,29 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /**
- * Reusable BOXCAST logo rendering the vector drawable path data converted from the SVG.
+ * Reusable boxlore wordmark from the vector drawable.
+ *
+ * @param height Visual height of the mark; width follows the logo aspect ratio.
  */
 @Composable
 fun BoxLoreLogo(
     modifier: Modifier = Modifier,
-    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
-    fontSize: TextUnit = 24.sp // Kept for backward compatibility
+    textColor: Color = MaterialTheme.colorScheme.primary,
+    height: Dp = 20.dp,
 ) {
     Icon(
         painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_logo),
-        contentDescription = "BOXLORE",
+        contentDescription = "boxlore",
         tint = textColor,
-        modifier = modifier
-            .height(20.dp)
-            .aspectRatio(805f / 110f)
+        modifier =
+            modifier
+                .height(height)
+                .aspectRatio(805f / 110f),
     )
 }

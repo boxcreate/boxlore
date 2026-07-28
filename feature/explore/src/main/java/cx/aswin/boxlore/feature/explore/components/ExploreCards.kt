@@ -471,7 +471,7 @@ fun ExploreEpisodeHeroCard(
                 if (episode.duration > 0) {
                     val minutes = episode.duration / 60
                     Text(
-                        text = "${minutes} min read/listen",
+                        text = "$minutes min listen",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 10.sp,
