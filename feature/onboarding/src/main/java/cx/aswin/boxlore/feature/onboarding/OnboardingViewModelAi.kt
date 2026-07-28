@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.onboarding
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRequest
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
@@ -279,7 +278,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
             )
         }
         viewModelScope.launch {
-            val region = ContentRegions.canonicalize(currentState.currentRegion)
+            val locale = discoveryLocaleForRegion(currentState.currentRegion)
             try {
                 val startTime = System.currentTimeMillis()
                 val hasSlow =
@@ -350,8 +349,8 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                                         request =
                                             OnboardingCurriculumRequest(
                                                 queries = queries,
-                                                country = region,
-                                                languages = ContentRegions.recommendedLanguages(region),
+                                                country = locale.country,
+                                                languages = locale.languages,
                                             ),
                                     ).execute()
                             }
@@ -410,7 +409,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                     val trending =
                         withContext(Dispatchers.IO) {
                             podcastRepository.getTrendingPodcasts(
-                                country = region,
+                                country = locale.country,
                                 limit = 10,
                             )
                         }

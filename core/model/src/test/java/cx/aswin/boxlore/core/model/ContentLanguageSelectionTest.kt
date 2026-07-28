@@ -86,4 +86,15 @@ class ContentLanguageSelectionTest {
         assertEquals(listOf("en", "ru"), result)
         assertTrue(ContentRegions.isOffMarketLanguage("ru", "in"))
     }
+
+    @Test
+    fun applyToggle_rejectsInvalidLanguageCode() {
+        assertNull(
+            ContentLanguageSelection.applyToggle(
+                selectedLanguages = listOf("en"),
+                languageCode = "xx",
+                country = "us",
+            ),
+        )
+    }
 }

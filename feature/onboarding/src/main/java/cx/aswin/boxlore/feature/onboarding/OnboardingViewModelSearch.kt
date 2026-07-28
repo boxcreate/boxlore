@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.onboarding
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingSelectedShowDto
 import cx.aswin.boxlore.core.network.model.OnboardingSimilarShowsRequest
@@ -75,11 +74,11 @@ internal fun OnboardingViewModel.selectSearchGenre(genreValue: String?) {
     _uiState.update { it.copy(selectedSearchGenre = genreValue, isPopularLoading = true) }
     viewModelScope.launch {
         try {
-            val region = ContentRegions.canonicalize(_uiState.value.currentRegion)
+            val locale = discoveryLocaleForRegion(_uiState.value.currentRegion)
             val trending =
                 withContext(Dispatchers.IO) {
                     podcastRepository.getTrendingPodcasts(
-                        country = region,
+                        country = locale.country,
                         category = genreValue,
                         limit = 20,
                     )
@@ -308,7 +307,7 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
                     subscriptionRepository.subscribe(podcast)
                 }
 
-                val region = ContentRegions.canonicalize(currentState.currentRegion)
+                val locale = discoveryLocaleForRegion(currentState.currentRegion)
                 val request =
                     OnboardingSimilarShowsRequest(
                         shows =
@@ -318,8 +317,8 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
                                     description = it.description ?: "",
                                 )
                             },
-                        country = region,
-                        languages = ContentRegions.recommendedLanguages(region),
+                        country = locale.country,
+                        languages = locale.languages,
                     )
 
                 val response =
@@ -412,7 +411,7 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
         }
         viewModelScope.launch {
             try {
-                val region = ContentRegions.canonicalize(_uiState.value.currentRegion)
+                val locale = discoveryLocaleForRegion(_uiState.value.currentRegion)
                 val request =
                     OnboardingSimilarShowsRequest(
                         shows =
@@ -422,8 +421,8 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
                                     description = it.description ?: "",
                                 )
                             },
-                        country = region,
-                        languages = ContentRegions.recommendedLanguages(region),
+                        country = locale.country,
+                        languages = locale.languages,
                     )
 
                 val response =

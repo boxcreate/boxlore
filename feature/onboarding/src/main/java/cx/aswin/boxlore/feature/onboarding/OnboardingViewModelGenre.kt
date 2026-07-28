@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.onboarding
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
@@ -36,7 +35,7 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
         _uiState.update { it.copy(isLoadingPodcasts = true, onboardingError = null) }
         viewModelScope.launch {
             try {
-                val region = ContentRegions.canonicalize(currentState.currentRegion)
+                val locale = discoveryLocaleForRegion(currentState.currentRegion)
                 // 1. Fetch charts podcasts in parallel
                 val chartsDeferred =
                     async(Dispatchers.IO) {
@@ -47,7 +46,7 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                             try {
                                 val trending =
                                     podcastRepository.getTrendingPodcasts(
-                                        country = region,
+                                        country = locale.country,
                                         category = genre,
                                         limit = perGenreLimit,
                                     )
@@ -81,8 +80,8 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                                 subGenres = currentState.selectedSubGenres.toList(),
                                 activity = formattedActivities,
                                 length = formattedLengths,
-                                country = region,
-                                languages = ContentRegions.recommendedLanguages(region),
+                                country = locale.country,
+                                languages = locale.languages,
                             )
                         val response =
                             podcastRepository.api
