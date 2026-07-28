@@ -69,10 +69,12 @@ data class LibraryBackupWriters(
     val onImportOpml: (Uri) -> Unit = {},
 )
 
-/** Content-region selector state/action, surfaced from the Library settings sub-page. */
+/** Content-region + language prefs, surfaced from the Library settings sub-page. */
 data class RegionSettings(
     val currentRegion: String = "us",
+    val contentLanguages: List<String> = listOf("en"),
     val onSetRegion: (String) -> Unit = {},
+    val onSetContentLanguages: (List<String>) -> Unit = {},
 )
 
 /** RSS + ranking ports needed by [SettingsViewModel] (keeps [SettingsScreen] ≤7 params). */
@@ -131,7 +133,9 @@ fun SettingsScreen(
     downloadsNavigation: DownloadsNavigation = DownloadsNavigation(),
 ) {
     val currentRegion = regionSettings.currentRegion
+    val contentLanguages = regionSettings.contentLanguages
     val onSetRegion = regionSettings.onSetRegion
+    val onSetContentLanguages = regionSettings.onSetContentLanguages
     val onBack = config.onBack
     val onResetAnalytics = config.onResetAnalytics
     val appInstanceId = config.appInstanceId
@@ -218,9 +222,17 @@ fun SettingsScreen(
             ProfileSettingsDestination.Library ->
                 LibrarySettingsPage(
                     currentRegion = currentRegion,
+                    contentLanguages = contentLanguages,
                     onSetRegion = {
                         AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
                         onSetRegion(it)
+                    },
+                    onSetContentLanguages = {
+                        AnalyticsHelper.trackSettingsInteraction(
+                            "content_languages_changed",
+                            it.joinToString(","),
+                        )
+                        onSetContentLanguages(it)
                     },
                     onAddRssClick = { settingsViewModel.openAddRssDialog() },
                     backupActions =

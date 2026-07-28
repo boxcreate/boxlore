@@ -17,7 +17,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 - `SharedAppDependenciesHolder` and `DownloadsDependenciesHolder` are installed from the application so workers and Media3 services reuse the same graph.
 - `DownloadServiceLauncherHolder` is installed with `MediaDownloadService::class.java` so `:core:downloads` can launch the foreground download service without depending on `:core:playback`.
 - `LegacyWorkerFactory` maps legacy worker class names to current worker implementations for WorkManager continuity.
-- `MainActivity` hosts theme, edge-to-edge setup, app update hooks, surveys, OPML import state, the selected floating or classic navigation presentation, and the player overlay.
+- `MainActivity` hosts theme, edge-to-edge setup, app update hooks, surveys, OPML import state (full-screen `OpmlImportDialog` so onboarding welcome never shows through), the selected floating or classic navigation presentation, and the player overlay.
 - `BoxLoreNavHost` owns app route registration and delegates screen bodies to feature modules; stack-slide transitions follow the visible Home → Explore → Library → Lore order, and Home’s first committed content frame unlocks the floating Lore launch animation.
 - Tab destinations in `NavGraphTabDestinations` wire Home / Explore / Learn / Library / player entry points to feature screens. Lore history deep-links use `entryPoint=learn` (canonical glossary; legacy `learn_history` still normalizes to `learn`).
 - Home receives the shared catalog and ranking instances it actively uses; endpoint-backed

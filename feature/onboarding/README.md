@@ -7,11 +7,12 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 ## Public API
 
 - `OnboardingScreen` and `OnboardingViewModel` for the flow shell.
-- Welcome step uses a cinematic podcast-cover marquee (`CinematicBackgroundGrid`): motion runs on `graphicsLayer` (foreground chrome recomposes separately), cover Image count is capped to tiled loops, and animation starts after two frames so the first paint does not hitch.
+- Welcome step uses a cinematic podcast-cover marquee (`CinematicBackgroundGrid`): ~2.4s entrance with draw-phase-only chrome motion (`graphicsLayer`), static bottom scrim (no logo halo plate), modest cover glide that hands off into continuous drift (~700ms in — no pause), then logo/CTA cascade. Welcome chrome: wordmark + “Podcasts, done right.”; soft primary CTA with integrated AI cue; quieter tonal secondary actions.
 - Onboarding hero titles use `rememberCondensedGoogleSansFamily()` from `:core:designsystem` so condensed Google Sans Flex follows Appearance lettering roundness; AI onboarding uses centralized Google Sans Flex weight tokens.
-- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`. Search genre chips use shared `PillFilterChip` from `:core:designsystem`.
+- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`. Search genre chips use shared `PillFilterChip` from `:core:designsystem`. AI suggestions use the shared 11-country `RegionSegmentedSelector` (persisted via `UserPreferencesRepository.setRegion`, which also seeds recommended content languages). Curriculum / genre-synth / similar-shows requests send `ContentRegions.recommendedLanguages(currentRegion)` (no onboarding language picker); the proxy expands and `startsWith`-filters podcast languages.
+- Suggestions (“Designed for you”) is a **single screen**: one compact headline, a single-row scrollable taste-lane chip strip (full titles, no ellipsis; per-lane selection badges), a one-line purpose + Select all toolbar, and a 2-column select grid. Descriptions open in a Material bottom sheet. Finish CTA stays pinned. Shared by genre, AI, search, and OPML flows.
 - `AiSuggestionCards`, AI onboarding components, option icons, chat input, and chat message list logic.
-- Pure helpers including `OnboardingGenreLimits`, `OnboardingSearchBackStep`, and `OnboardingCurriculumLogic`.
+- Pure helpers including `OnboardingGenreLimits`, `OnboardingSearchBackStep`, `OnboardingCurriculumLogic`, and `OnboardingSuggestionsLanes`.
 
 ## Internal structure
 
@@ -31,6 +32,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   OnboardingGenreLimits.kt
   OnboardingScreen.kt
   OnboardingSearchBackStep.kt
+  OnboardingSuggestionsLanes.kt
   OnboardingUiModels.kt
   OnboardingViewModel.kt
   OnboardingViewModelAi.kt
@@ -38,7 +40,6 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   OnboardingViewModelSearch.kt
   SearchOnboardingScreen.kt
 ```
-
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:catalog`, `:core:designsystem`, `:core:network`, and `:core:analytics`.

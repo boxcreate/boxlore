@@ -7,6 +7,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 ## Public API
 
 - Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.
+- `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping.
 - `PlaybackEntryPoint`, `ShareTarget`, and `ShareLinkBuilder`.
 - `PlaybackEntryPoint` coarse values: `GENERIC`, `HOME_MIXTAPE`, `LEARN`, `BRIEFING`
   (Brief audio play synthesizes glossary `entry_point=briefing` for `playback_*`).

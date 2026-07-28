@@ -687,6 +687,10 @@ internal class AutoBrowseTreeBuilder(
             host.podcastRepository.getCuratedPodcasts(
                 vibeId,
                 region,
+                languages =
+                    kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+                        host.userPreferencesRepository.contentLanguagesStream.first()
+                    },
             )
         android.util.Log.d(
             "AutoBrowse",

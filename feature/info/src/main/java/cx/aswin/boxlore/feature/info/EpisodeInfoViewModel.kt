@@ -426,17 +426,21 @@ class EpisodeInfoViewModel(
                 val author = podcast?.artist ?: ""
 
                 val region = userPrefs.regionStream.first().takeIf { it.isNotBlank() } ?: "us"
+                val languages = userPrefs.contentLanguagesStream.first()
                 val similarEps =
                     podcastRepository.getSimilarEpisodes(
-                        episodeId = episodeId,
-                        podcastId = podcastId,
-                        title = episodeTitle,
-                        description = episodeDescription,
-                        podcastTitle = podcastTitle,
-                        categories = categories,
-                        author = author,
-                        limit = 10,
-                        country = region,
+                        cx.aswin.boxlore.core.catalog.SimilarEpisodesQuery(
+                            episodeId = episodeId,
+                            podcastId = podcastId,
+                            title = episodeTitle,
+                            description = episodeDescription,
+                            podcastTitle = podcastTitle,
+                            categories = categories,
+                            author = author,
+                            limit = 10,
+                            country = region,
+                            languages = languages,
+                        ),
                     )
 
                 android.util.Log.d("EpisodeInfo", "Fetched ${similarEps.size} similar episodes")

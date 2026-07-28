@@ -1,6 +1,4 @@
-package cx.aswin.boxlore.feature.home.components
-
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+package cx.aswin.boxlore.core.designsystem.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,9 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
+/**
+ * Square artwork + title-only foot used by Home “Based on Your Taste” and Explore For You.
+ */
 @Composable
 fun CuratedEpisodeCard(
     podcast: Podcast,

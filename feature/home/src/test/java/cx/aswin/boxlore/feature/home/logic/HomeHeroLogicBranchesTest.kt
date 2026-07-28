@@ -119,7 +119,9 @@ class HomeHeroLogicBranchesTest {
         assertEquals("#1 IN UK", HomeHeroLogic.spotlightLabel(0, "gb", "News"))
         assertEquals("#1 IN UK", HomeHeroLogic.spotlightLabel(0, "uk", ""))
         assertEquals("#1 IN FRANCE", HomeHeroLogic.spotlightLabel(0, "fr", ""))
-        assertEquals("#1 IN US", HomeHeroLogic.spotlightLabel(0, "de", ""))
+        assertEquals("#1 IN GERMANY", HomeHeroLogic.spotlightLabel(0, "de", ""))
+        assertEquals("#1 IN SINGAPORE", HomeHeroLogic.spotlightLabel(0, "sg", ""))
+        assertEquals("#1 IN INDONESIA", HomeHeroLogic.spotlightLabel(0, "id", ""))
     }
 
     @Test

@@ -8,13 +8,20 @@ import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.catalog.BuildConfig
 
-fun mapRegionForBriefing(region: String): String {
-    return when (region.lowercase().trim()) {
-        "us" -> "us"
-        "in", "ind" -> "in"
-        "uk", "gb" -> "gb"
-        else -> "global"
-    }
+fun mapRegionForBriefing(region: String): String =
+    cx.aswin.boxlore.core.model.ContentRegions.briefingMarket(region)
+
+/** Normalize + expand prefs languages for discovery query params / recs bodies. */
+internal fun resolveContentLanguagesForQuery(
+    languages: List<String>?,
+    country: String,
+): List<String> {
+    val normalized =
+        cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(
+            languages.orEmpty(),
+            country,
+        )
+    return cx.aswin.boxlore.core.model.ContentRegions.expandLanguagesForQuery(normalized)
 }
 
 data class SearchResult(
@@ -25,19 +32,6 @@ data class SearchResult(
 internal data class PodcastIndexScopedInputs(
     val history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
     val subscriptionIds: List<String>,
-)
-
-data class PersonalizedContentSectionInputs(
-    val history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
-    val interests: List<String> = emptyList(),
-    val searchTopics: List<String> = emptyList(),
-    val subscribedPodcastIds: List<String> = emptyList(),
-    val subscribedGenres: List<String> = emptyList(),
-    val learnedGenreAffinities: Map<String, Double> = emptyMap(),
-    val recentSectionIds: List<String> = emptyList(),
-    val excludedPodcastIds: List<String> = emptyList(),
-    val excludedEpisodeIds: List<String> = emptyList(),
-    val languages: List<String> = listOf("en"),
 )
 
 internal val semanticMarkupPattern = Regex("<[^>]+>")
@@ -66,20 +60,7 @@ internal fun List<String>.toBoundedPositiveIds(
 }
 
 internal fun List<String>.toBoundedLanguageCodes(): List<String> {
-    return asSequence()
-        .map { it.trim().lowercase() }
-        .filter { it.matches(Regex("^[a-z]{2,3}(?:-[a-z]{2})?$")) }
-        .distinct()
-        .take(4)
-        .toList()
-        .ifEmpty { listOf("en") }
-}
-
-internal fun RankingSurface.toContentSectionsSurface(): String? = when (this) {
-    RankingSurface.HOME -> "home"
-    RankingSurface.EXPLORE -> "explore"
-    RankingSurface.ANDROID_AUTO -> "auto"
-    else -> null
+    return cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(this, "us")
 }
 
 internal fun cx.aswin.boxlore.core.network.model.ContentCatalogResponse.toContentCatalogSnapshot(

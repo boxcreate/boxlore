@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.home.components
+package cx.aswin.boxlore.core.designsystem.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,11 +14,11 @@ import kotlin.math.max
  * Does not stretch cells — pair with [FeedMediaCard] fixed 3-line feet for alignment.
  */
 @Composable
-internal fun EqualHeightPosterGrid(
+fun EqualHeightPosterGrid(
     modifier: Modifier = Modifier,
     columns: Int = 2,
-    horizontalSpacing: Dp = HomeFeedSpacing.GridGap,
-    verticalSpacing: Dp = HomeFeedSpacing.GridGap,
+    horizontalSpacing: Dp = FeedPosterSpacing.GridGap,
+    verticalSpacing: Dp = FeedPosterSpacing.GridGap,
     content: @Composable () -> Unit,
 ) {
     val colCount = columns.coerceAtLeast(1)
@@ -82,7 +82,7 @@ internal fun EqualHeightPosterGrid(
 }
 
 /** Total height of a packed [columns]-wide grid given measured item heights and vertical gap. */
-internal fun equalHeightPosterGridExtent(
+fun equalHeightPosterGridExtent(
     itemHeights: List<Int>,
     columns: Int,
     verticalGap: Int,

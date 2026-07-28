@@ -13,6 +13,7 @@ class RegionAliasHelpersTest {
         assertEquals("in", canonicalRegionCode(" IN "))
         assertEquals("us", canonicalRegionCode("us"))
         assertEquals("fr", canonicalRegionCode("fr"))
+        assertEquals("de", canonicalRegionCode("de"))
         assertNull(canonicalRegionCode("zz"))
     }
 
@@ -21,6 +22,7 @@ class RegionAliasHelpersTest {
         assertEquals("UK", regionDisplayLabel("uk"))
         assertEquals("India", regionDisplayLabel("ind"))
         assertEquals("USA", regionDisplayLabel("us"))
+        assertEquals("Germany", regionDisplayLabel("de"))
         assertEquals("USA", regionDisplayLabel("not-a-region"))
     }
 }

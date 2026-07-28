@@ -182,17 +182,32 @@ internal object HomeHeroLogic {
         genre: String,
     ): String =
         when {
-            spotlightAddedCount == 0 ->
-                when (region.lowercase()) {
-                    "in" -> "#1 IN INDIA"
-                    "gb", "uk" -> "#1 IN UK"
-                    "fr" -> "#1 IN FRANCE"
-                    else -> "#1 IN US"
-                }
+            spotlightAddedCount == 0 -> "#1 IN ${marketLabelForRegion(region)}"
             genre.isNotEmpty() && !genre.equals("Podcast", ignoreCase = true) ->
                 "TRENDING IN ${genre.uppercase()}"
             else -> "TRENDING"
         }
+
+    private fun marketLabelForRegion(region: String): String =
+        REGION_MARKET_LABELS[region.lowercase().trim()] ?: "US"
+
+    private val REGION_MARKET_LABELS =
+        mapOf(
+            "us" to "US",
+            "usa" to "US",
+            "in" to "INDIA",
+            "ind" to "INDIA",
+            "gb" to "UK",
+            "uk" to "UK",
+            "fr" to "FRANCE",
+            "de" to "GERMANY",
+            "nl" to "NETHERLANDS",
+            "sg" to "SINGAPORE",
+            "es" to "SPAIN",
+            "br" to "BRAZIL",
+            "ru" to "RUSSIA",
+            "id" to "INDONESIA",
+        )
 
     fun displayPodcastForSpotlight(pod: Podcast): Podcast {
         val epUrl = pod.latestEpisode?.imageUrl

@@ -7,7 +7,7 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 ## Public API
 
 - `PodcastInfoScreen` and `PodcastInfoViewModel`.
-- `EpisodeInfoScreen` and `EpisodeInfoViewModel`.
+- `EpisodeInfoScreen` and `EpisodeInfoViewModel` (similar episodes use prefs `content_languages` + region).
 - `InfoViewModelAssembler` for podcast and episode ViewModel factories.
 - `InfoListeningProgressItem` and supporting components/sections for detail UI.
 - Logic helpers under `logic/` and component-level formatters used by tests.

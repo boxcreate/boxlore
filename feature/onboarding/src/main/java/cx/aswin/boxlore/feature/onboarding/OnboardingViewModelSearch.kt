@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.onboarding
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingSelectedShowDto
 import cx.aswin.boxlore.core.network.model.OnboardingSimilarShowsRequest
@@ -317,6 +318,8 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
                                 )
                             },
                         country = currentState.currentRegion,
+                        languages =
+                            ContentRegions.recommendedLanguages(currentState.currentRegion),
                     )
 
                 val response =
@@ -419,6 +422,8 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
                                 )
                             },
                         country = _uiState.value.currentRegion,
+                        languages =
+                            ContentRegions.recommendedLanguages(_uiState.value.currentRegion),
                     )
 
                 val response =

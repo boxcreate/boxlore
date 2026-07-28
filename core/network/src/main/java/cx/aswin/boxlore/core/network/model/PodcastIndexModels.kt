@@ -442,5 +442,6 @@ data class SimilarEpisodesRequest(
     val categories: String = "",
     val author: String = "",
     val limit: Int = 10,
-    val country: String? = null
+    val country: String? = null,
+    val languages: List<String> = emptyList(),
 )

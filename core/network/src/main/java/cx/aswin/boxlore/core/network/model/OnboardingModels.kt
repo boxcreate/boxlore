@@ -44,7 +44,9 @@ data class OnboardingQuery(
 @Serializable
 data class OnboardingCurriculumRequest(
     @SerialName("queries") val queries: List<OnboardingQuery>,
-    @SerialName("country") val country: String? = null
+    @SerialName("country") val country: String? = null,
+    /** Chip codes; proxy expands (e.g. id→id+in) and defaults from country when omitted. */
+    @SerialName("languages") val languages: List<String> = emptyList(),
 )
 
 @Serializable
@@ -120,6 +122,7 @@ data class OnboardingGenreSynthRequest(
     @SerialName("activity") val activity: String,
     @SerialName("length") val length: String,
     @SerialName("country") val country: String? = null,
+    @SerialName("languages") val languages: List<String> = emptyList(),
     @SerialName("skipGemini") val skipGemini: Boolean = false
 )
 
@@ -132,6 +135,7 @@ data class OnboardingSelectedShowDto(
 @Serializable
 data class OnboardingSimilarShowsRequest(
     @SerialName("shows") val shows: List<OnboardingSelectedShowDto>,
-    @SerialName("country") val country: String? = null
+    @SerialName("country") val country: String? = null,
+    @SerialName("languages") val languages: List<String> = emptyList(),
 )
 

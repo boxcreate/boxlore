@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
+import cx.aswin.boxlore.core.designsystem.components.EqualHeightPosterGrid
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
@@ -268,7 +270,7 @@ private fun ForYouHeroCard(
                 if (episode.duration > 0) {
                     val minutes = episode.duration / 60
                     Text(
-                        text = "$minutes min read/listen",
+                        text = "$minutes min listen",
                         style =
                             MaterialTheme.typography.bodySmall.copy(
                                 color = Color.White.copy(alpha = 0.6f),

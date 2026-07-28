@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.onboarding
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
@@ -80,6 +81,8 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                                 activity = formattedActivities,
                                 length = formattedLengths,
                                 country = currentState.currentRegion,
+                                languages =
+                                    ContentRegions.recommendedLanguages(currentState.currentRegion),
                             )
                         val response =
                             podcastRepository.api

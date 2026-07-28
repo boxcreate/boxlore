@@ -424,7 +424,13 @@ class ExploreViewModel(
         myJob = viewModelScope.launch {
             try {
                 // Uses same curated endpoint as HomeScreen!
-                val results = podcastRepository.getCuratedPodcasts(vibeId)
+                val region = userPrefs.regionStream.first()
+                val languages = userPrefs.contentLanguagesStream.first()
+                val results = podcastRepository.getCuratedPodcasts(
+                    vibeId = vibeId,
+                    country = region,
+                    languages = languages,
+                )
                 if (searchJob == myJob) {
                     _searchResults.value = results
                     results.forEach { _seenPodcasts[it.id] = it }
@@ -718,10 +724,11 @@ class ExploreViewModel(
                     .distinct()
 
                 val region = userPrefs.regionStream.first()
+                val languages = userPrefs.contentLanguagesStream.first()
 
                 android.util.Log.d(
                     "ExploreViewModel",
-                    "Refreshing shared bootstrap recommendations; history=${history.size}, interests=$interests, region=$region, subscribed=${subscribedIds.size}",
+                    "Refreshing shared bootstrap recommendations; history=${history.size}, interests=$interests, region=$region, langs=$languages, subscribed=${subscribedIds.size}",
                 )
                 // Same catalog path as Home For You — includes popular-in-region when taste seeds are empty.
                 val bootstrapData = podcastRepository.getHomeBootstrapData(
@@ -731,6 +738,7 @@ class ExploreViewModel(
                     interests = interests,
                     subscribedPodcastIds = subscribedIds,
                     subscribedGenres = subscribedGenres,
+                    languages = languages,
                 )
                 val distinctRecs = ExploreSharedRecommendationsLogic.distinctRecommendations(
                     bootstrapData.recommendations,

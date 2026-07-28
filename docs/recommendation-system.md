@@ -297,7 +297,7 @@ Facet types: `SHOW`, `GENRE`, `SOURCE`, `DURATION_BUCKET`, `TIME_CONTEXT`, `INTE
 - Genre keys are **canonicalized** (`PodcastGenres`); placeholder `"Podcast"` is ignored.
 - Migration (`pruneNonCanonicalGenreFacets`) **merges** alias evidence into canonical keys before deleting aliases.
 
-Facets are features for the bandit **and** bounded genre affinities for `content/sections/v1`.
+Facets are features for the bandit (genre affinities feed discovery ranking).
 
 ---
 
@@ -370,10 +370,11 @@ flowchart TB
     SLATE --> CACHE["Session slate cache"]
 ```
 
-This engine and its API/cache contracts remain available for compatibility and future
-grouped-section surfaces, but the current Home route does not construct or invoke it.
+This engine remains available for catalog-driven ungrouped composition and optional
+`ServerGroupedSectionProvider` injectors. Current Home/Explore do **not** call a live
+`content/sections/v1` client (that route was removed).
 
-1. Grouped responses can still be mapped by `PodcastRepository.getPersonalizedContentSections`.
+1. Callers may inject pre-grouped sections via `ServerGroupedSectionProvider`.
 2. Eligible callers can rank items inside each section and compose with
    `preserveSectionOrder = true`.
 3. `SharedExposureBudget` prevents the same episode/show dominating every section.
@@ -414,33 +415,18 @@ The API is documented **by path and payload shape only**. How it retrieves or ra
 
 | Path | Role |
 |------|------|
-| `GET /curated/vibe` | **Home daypart editorial rows** (three internal provider IDs per daypart) |
-| `POST /content/sections/v1` | Retained grouped-section contract; not called by current Home |
-| `GET /content/catalog/v3` | Retained intent / catalog metadata |
-| `POST /recommendations/v2` | Preferred seed-based candidate lists |
+| `GET /curated/vibe` | **Home daypart editorial rows** + Explore vibes (`country` + optional `languages`) |
+| `GET /content/catalog/v3` | Intent / catalog metadata for retained orchestrator |
+| `POST /recommendations/v2` | Preferred seed-based candidate lists (`languages` from prefs) |
 | `POST /recommendations` | Legacy v1 fallback (fuller history payload) |
 | `POST /recommendations/because-you-like` | Home “Because you like” |
-| `POST /episodes/similar` | Queue / episode-info neighbors |
-| `POST` / `GET /home/bootstrap` | Cold-start briefing + trending (+ optional recs) |
+| `POST /episodes/similar` | Episode-info / queue neighbors (`country` + optional `languages`; oversample + `startsWith`) |
+| `POST` / `GET /home/bootstrap` | Cold-start briefing + trending (+ optional recs; forwards `languages`) |
 | `GET /curated/curiosity-v3` | Learn / Lore deck |
 | `GET /search/semantic` | Explore natural-language search |
 | `GET /trending` | Charts / Discover / queue tiers |
 
 **Auth (client view):** app key on requests; optional App Check JWT when enforced; device UUID scopes per-device caches; app version for analytics slicing.
-
-## Retained grouped sections — `POST /content/sections/v1`
-
-**Request (high level):** surface (`home`), local date / timezone offset / minute-of-day, country, languages, recent seeds, interests, subscribed / excluded IDs, taste signal summaries, duration preference, history maturity, novelty preference, recent section IDs, candidate budget, contract version.
-
-**Response (high level):** `contractVersion`, `catalogVersion`, `resolvedDaypart`, `algorithmVersion`, `isFallback`, `sections[]` each with intent metadata + candidate items (scores/metadata for client priors).
-
-**Eligible caller duties after response**
-
-1. Reject / drop disk cache if `algorithmVersion` ≠ expected pin.
-2. Map → `GroupedContentSections`.
-3. Re-rank with `DISCOVERY` / intent objective.
-4. Persist one active cache entry per daypart slot (+ latest pointer) when that caller uses
-   the grouped-section cache.
 
 ## Recommendations v2 vs legacy v1
 
@@ -573,10 +559,11 @@ Telemetry buckets (`cold_start` / `learning` / `adaptive`) are derived similarly
 | Facets | `BayesianPreferenceFacet`, `PodcastGenres` |
 | Rewards | `RankingReward`, `RankingFeedbackRepository` |
 | Home editorial rows | `HomeEditorialRowsLogic`, `HomeViewModel`, `HomeFeedEditorialRows` |
-| Retained grouped sections | `ContentOrchestrator`, `SlateComposer`, `GroupedContentSectionProvider` |
-| Retained sections cache | `ContentSectionsCachePolicy`, `PodcastRepository` helpers |
+| Content orchestrator | `ContentOrchestrator`, `SlateComposer`, `ServerGroupedSectionProvider` |
+| Content catalog | `GET /content/catalog/v3`, `PodcastRepository.getContentCatalog` |
+| Languages / regions | `ContentRegions`, `UserPreferencesRepository.contentLanguagesStream` |
 | Mixtape / Queue | `MixtapeEngine`, `SmartQueueEngine` |
-| API boundary | `BoxLoreApi`, `ContentSectionsV1Request` / `Response` |
+| API boundary | `BoxLoreApi`, recommendation / vibe / bootstrap DTOs |
 
 ---
 
@@ -584,7 +571,7 @@ Telemetry buckets (`cold_start` / `learning` / `adaptive`) are derived similarly
 
 1. Daypart → “Good Morning” greeting and three morning provider IDs.
 2. Home shows a matching three-panel skeleton while the requests run.
-3. `GET curated/vibe` runs for each provider ID with the current region.
+3. `GET curated/vibe` runs for each provider ID with the current region and content languages.
 4. Client preserves API order, requires playable episodes, removes cross-row duplicates, and
    caps each row.
 5. User opens item #2; curated tap analytics uses the internal provider ID.

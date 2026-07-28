@@ -2,33 +2,75 @@ package cx.aswin.boxlore.feature.onboarding
 
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.Grain
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxlore.core.network.model.toPodcast
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
+import cx.aswin.boxlore.core.model.Podcast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,209 +83,80 @@ internal fun AiSuggestionsScreen(
     onRetry: () -> Unit,
     onFinish: () -> Unit,
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
-
     val isLoading =
         (uiState.isLoadingPodcasts && uiState.aiCurriculumRows.isEmpty()) ||
             (uiState.aiCurriculumRows.isEmpty() && uiState.genreChartsPodcasts.isEmpty() && uiState.onboardingError == null)
-    val isError = uiState.onboardingError != null && uiState.aiCurriculumRows.isEmpty() && uiState.genreChartsPodcasts.isEmpty()
+    val isError =
+        uiState.onboardingError != null &&
+            uiState.aiCurriculumRows.isEmpty() &&
+            uiState.genreChartsPodcasts.isEmpty()
 
-    val listState = rememberLazyListState()
-    val showTopBarTitle by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex > 0 || (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset > 50)
-        }
-    }
-
-    val hasCharts = uiState.genreChartsPodcasts.isNotEmpty()
-    var selectedCategoryIndex by remember(hasCharts) { mutableIntStateOf(if (hasCharts && uiState.aiCurriculumRows.isNotEmpty()) 1 else 0) }
-
-    val activeRow =
-        if (hasCharts) {
-            uiState.aiCurriculumRows.getOrNull(selectedCategoryIndex - 1)
-        } else {
-            uiState.aiCurriculumRows.getOrNull(selectedCategoryIndex)
+    val lanes =
+        remember(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres) {
+            OnboardingSuggestionsLanes.build(
+                curriculumRows = uiState.aiCurriculumRows,
+                chartsPodcasts = uiState.genreChartsPodcasts,
+                selectedGenres = uiState.selectedGenres,
+            )
         }
 
-    val heroPodcasts =
-        remember(uiState.aiCurriculumRows) {
-            uiState.aiCurriculumRows
-                .take(4)
-                .mapNotNull { row ->
-                    row.podcasts.firstOrNull()?.toPodcast()?.let { podcast ->
-                        podcast to row.rowTitle
-                    }
-                }
-        }
+    var selectedLaneIndex by rememberSaveable(lanes.map { it.id }) { mutableIntStateOf(0) }
+    val safeIndex = OnboardingSuggestionsLanes.clampIndex(selectedLaneIndex, lanes.size)
+    val activeLane = lanes.getOrNull(safeIndex)
 
-    val tabsCount = uiState.aiCurriculumRows.size + (if (hasCharts) 1 else 0)
+    var detailPodcast by remember { mutableStateOf<Podcast?>(null) }
+    val selectedCount = uiState.subscribedPodcastIds.size
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(350.dp)
-                    .background(
-                        androidx.compose.ui.graphics.Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    primaryColor.copy(alpha = 0.08f),
-                                    secondaryColor.copy(alpha = 0.03f),
-                                    Color.Transparent,
-                                ),
-                            center =
-                                androidx.compose.ui.geometry
-                                    .Offset(x = 1000f, y = -100f),
-                            radius = 1200f,
-                        ),
-                    ),
-        )
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        androidx.compose.ui.graphics.Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    tertiaryColor.copy(alpha = 0.05f),
-                                    primaryColor.copy(alpha = 0.02f),
-                                    Color.Transparent,
-                                ),
-                            center =
-                                androidx.compose.ui.geometry
-                                    .Offset(x = -200f, y = 1800f),
-                            radius = 1200f,
-                        ),
-                    ),
-        )
-
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = Color.Transparent,
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = showTopBarTitle && !isLoading && !isError,
-                            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 2 },
-                            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 },
-                        ) {
-                            Text(
-                                text = "Your Curations",
-                                fontWeight = GoogleSansWeight.bold,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .padding(start = 8.dp)
-                                    .size(40.dp)
-                                    .expressiveClickable(shape = androidx.compose.foundation.shape.CircleShape) {
-                                        onBack()
-                                    },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
-                        }
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                        ),
-                )
-            },
-            bottomBar = {
-                if (!isLoading && !isError) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.background,
-                        tonalElevation = 8.dp,
-                        modifier = Modifier.fillMaxWidth(),
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Designed for you",
+                        fontWeight = GoogleSansWeight.bold,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                },
+                navigationIcon = {
+                    Box(
+                        modifier =
+                            Modifier
+                                .padding(start = 8.dp)
+                                .size(40.dp)
+                                .expressiveClickable(shape = CircleShape) { onBack() },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .navigationBarsPadding()
-                                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                        ) {
-                            val buttonColor = MaterialTheme.colorScheme.primary
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp)
-                                        .background(
-                                            color = if (uiState.isCompleting) buttonColor.copy(alpha = 0.5f) else buttonColor,
-                                            shape = RoundedCornerShape(28.dp),
-                                        ).then(
-                                            if (!uiState.isCompleting) {
-                                                Modifier.expressiveClickable(shape = RoundedCornerShape(28.dp)) { onFinish() }
-                                            } else {
-                                                Modifier
-                                            },
-                                        ),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                            ) {
-                                if (uiState.isCompleting) {
-                                    CircularProgressIndicator(
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                } else {
-                                    val text =
-                                        if (uiState.reachedSuggestionsViaSearchFlow) {
-                                            val recommendedIds =
-                                                uiState.aiCurriculumRows
-                                                    .flatMap { it.podcasts }
-                                                    .map { it.id.toString() }
-                                                    .toSet()
-                                            val selectedRecommendationsCount = uiState.subscribedPodcastIds.count { it in recommendedIds }
-                                            if (selectedRecommendationsCount > 0) {
-                                                "Subscribe & Start (+$selectedRecommendationsCount recommended)"
-                                            } else {
-                                                "Start without subscribing"
-                                            }
-                                        } else {
-                                            if (uiState.subscribedPodcastIds.isNotEmpty()) {
-                                                "Subscribe & Start (${uiState.subscribedPodcastIds.size})"
-                                            } else {
-                                                "Start without subscribing"
-                                            }
-                                        }
-                                    Text(
-                                        text = text,
-                                        fontWeight = GoogleSansWeight.bold,
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
-                        }
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
-                }
-            },
-        ) { innerPadding ->
-            if (isLoading) {
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
+            )
+        },
+        bottomBar = {
+            if (!isLoading && !isError) {
+                SuggestionsFinishBar(
+                    uiState = uiState,
+                    selectedCount = selectedCount,
+                    isCompleting = uiState.isCompleting,
+                    onFinish = onFinish,
+                )
+            }
+        },
+    ) { innerPadding ->
+        when {
+            isLoading -> SuggestionsLoadingState(uiState = uiState, modifier = Modifier.padding(innerPadding))
+            isError ->
+                SuggestionsErrorState(
+                    message = requireNotNull(uiState.onboardingError),
+                    onRetry = onRetry,
+                    modifier = Modifier.padding(innerPadding),
+                )
+            activeLane == null ->
                 Box(
                     modifier =
                         Modifier
@@ -251,446 +164,467 @@ internal fun AiSuggestionsScreen(
                             .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        BoxLoreLoader.Expressive(size = 80.dp)
-                        Text(
-                            text =
-                                when {
-                                    uiState.reachedSuggestionsViaOpmlFlow -> {
-                                        "Your OPML shows are subscribed!\nGathering new shows inspired by your library..."
-                                    }
-                                    uiState.reachedSuggestionsViaSearchFlow -> {
-                                        "Subscribed to ${uiState.selectedPodcasts.size} shows!\nFinding similar shows you might love..."
-                                    }
-                                    else -> {
-                                        "Synthesizing your feed..."
+                    Text(
+                        text = "No suggestions yet. Try again.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            else -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SuggestionsIntroHeader()
+                    }
+
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SuggestionsLaneChipRow(
+                            lanes = lanes,
+                            selectedIndex = safeIndex,
+                            subscribedIds = uiState.subscribedPodcastIds,
+                            onSelect = { selectedLaneIndex = it },
+                        )
+                    }
+
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        AnimatedContent(
+                            targetState = activeLane.id,
+                            transitionSpec = { fadeIn() togetherWith fadeOut() },
+                            label = "laneHeader",
+                        ) {
+                            val lane = lanes.firstOrNull { l -> l.id == it } ?: activeLane
+                            SuggestionsActiveLaneHeader(
+                                lane = lane,
+                                selectedInLane =
+                                    OnboardingSuggestionsLanes.selectedCountInLane(
+                                        lane,
+                                        uiState.subscribedPodcastIds,
+                                    ),
+                                onToggleAll = {
+                                    if (!lane.isCharts) {
+                                        onToggleRowSubscriptions(lane.title)
+                                    } else {
+                                        val allSelected =
+                                            lane.podcasts.isNotEmpty() &&
+                                                lane.podcasts.all { p -> p.id in uiState.subscribedPodcastIds }
+                                        lane.podcasts.forEach { p ->
+                                            val selected = p.id in uiState.subscribedPodcastIds
+                                            if (allSelected && selected) onToggleSubscription(p.id)
+                                            if (!allSelected && !selected) onToggleSubscription(p.id)
+                                        }
                                     }
                                 },
-                            style =
-                                MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = GoogleSansWeight.bold,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            } else if (isError) {
-                val onboardingError = requireNotNull(uiState.onboardingError)
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.CloudOff,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(64.dp),
-                        )
-                        Text(
-                            text = onboardingError,
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Button(
-                            onClick = onRetry,
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                ),
-                        ) {
-                            Icon(Icons.Rounded.Refresh, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Retry")
-                        }
-                    }
-                }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                    contentPadding = PaddingValues(top = 10.dp, bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    item {
-                        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
-                            Text(
-                                text = "Designed for You",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = GoogleSansWeight.bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Based on your preferences, we curated a custom podcast catalog to get you started.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
 
-                    if (heroPodcasts.isNotEmpty()) {
-                        item {
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                contentPadding = PaddingValues(horizontal = 24.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                items(heroPodcasts.size) { index ->
-                                    val (hero, category) = heroPodcasts[index]
-                                    val isSubscribed = hero.id in uiState.subscribedPodcastIds
-                                    HeroPodcastCard(
-                                        podcast = hero,
-                                        categoryName = category,
-                                        isSubscribed = isSubscribed,
-                                        onToggleSubscription = onToggleSubscription,
-                                        modifier = Modifier.width(312.dp),
-                                    )
+                    if (activeLane.isCharts) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            RegionSegmentedSelector(
+                                activeRegion = uiState.currentRegion,
+                                onSwitchRegion = onRegionChange,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+                        if (uiState.isLoadingPodcasts) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .height(120.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    BoxLoreLoader.Expressive(size = 48.dp)
                                 }
                             }
                         }
                     }
 
-                    if (uiState.aiCurriculumRows.isNotEmpty()) {
-                        item {
-                            Column(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                            ) {
-                                Text(
-                                    text = "Curated Collections",
-                                    style =
-                                        MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = GoogleSansWeight.bold,
-                                            fontSize = 18.sp,
-                                        ),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 12.dp),
+                    if (!activeLane.isCharts || !uiState.isLoadingPodcasts) {
+                        if (activeLane.podcasts.isEmpty()) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                SuggestionsEmptyLane()
+                            }
+                        } else {
+                            items(activeLane.podcasts, key = { it.id }) { podcast ->
+                                SuggestionSelectCard(
+                                    podcast = podcast,
+                                    isSubscribed = podcast.id in uiState.subscribedPodcastIds,
+                                    onToggleSubscription = onToggleSubscription,
+                                    onOpenDetails = { detailPodcast = it },
                                 )
-
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 24.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    items(tabsCount) { index ->
-                                        val isSelected = index == selectedCategoryIndex
-                                        val isChartsTab = hasCharts && index == 0
-
-                                        val title =
-                                            if (isChartsTab) {
-                                                "Top Hits"
-                                            } else {
-                                                val rowIdx = if (hasCharts) index - 1 else index
-                                                uiState.aiCurriculumRows[rowIdx].rowTitle
-                                            }
-
-                                        val containerColor =
-                                            if (isSelected) {
-                                                MaterialTheme.colorScheme.primaryContainer
-                                            } else {
-                                                MaterialTheme.colorScheme.surfaceVariant
-                                                    .copy(
-                                                        alpha = 0.2f,
-                                                    ).compositeOver(MaterialTheme.colorScheme.surface)
-                                            }
-
-                                        val contentColor =
-                                            if (isSelected) {
-                                                MaterialTheme.colorScheme.onPrimaryContainer
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurface
-                                            }
-
-                                        val iconColor =
-                                            if (isSelected) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            }
-
-                                        Box(
-                                            modifier =
-                                                Modifier
-                                                    .clip(RoundedCornerShape(24.dp))
-                                                    .background(containerColor)
-                                                    .border(
-                                                        width = if (isSelected) 2.dp else 1.dp,
-                                                        color =
-                                                            if (isSelected) {
-                                                                MaterialTheme.colorScheme.primary
-                                                            } else {
-                                                                MaterialTheme.colorScheme.outlineVariant
-                                                                    .copy(
-                                                                        alpha = 0.3f,
-                                                                    )
-                                                            },
-                                                        shape = RoundedCornerShape(24.dp),
-                                                    ).clickable {
-                                                        selectedCategoryIndex = index
-                                                    }.padding(horizontal = 16.dp, vertical = 10.dp),
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            ) {
-                                                Icon(
-                                                    imageVector =
-                                                        if (isChartsTab) {
-                                                            Icons.AutoMirrored.Rounded.TrendingUp
-                                                        } else {
-                                                            val iconIndex = if (hasCharts) index - 1 else index
-                                                            when (iconIndex % 4) {
-                                                                0 -> Icons.Rounded.AutoAwesome
-                                                                1 -> Icons.Rounded.Star
-                                                                2 -> Icons.Rounded.Bookmark
-                                                                else -> Icons.Rounded.Grain
-                                                            }
-                                                        },
-                                                    contentDescription = null,
-                                                    tint = iconColor,
-                                                    modifier = Modifier.size(16.dp),
-                                                )
-                                                Text(
-                                                    text = title,
-                                                    color = contentColor,
-                                                    style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = GoogleSansWeight.bold,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        val isChartsTab = hasCharts && selectedCategoryIndex == 0
-
-                        if (isChartsTab) {
-                            item {
-                                Column(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 24.dp)
-                                            .padding(top = 16.dp, bottom = 8.dp),
-                                ) {
-                                    Text(
-                                        text = "Top Hits in ${uiState.selectedGenres.joinToString(", ")}",
-                                        style =
-                                            MaterialTheme.typography.titleMedium.copy(
-                                                fontWeight = GoogleSansWeight.bold,
-                                                fontSize = 18.sp,
-                                            ),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(bottom = 8.dp),
-                                    )
-
-                                    // Region Segmented Control
-                                    Row(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                                .padding(4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    ) {
-                                        val regions =
-                                            listOf(
-                                                "us" to "USA",
-                                                "in" to "India",
-                                                "gb" to "UK",
-                                                "fr" to "France",
-                                            )
-                                        regions.forEach { (code, label) ->
-                                            val isSelected =
-                                                when (code) {
-                                                    "gb" -> uiState.currentRegion == "gb" || uiState.currentRegion == "uk"
-                                                    "in" -> uiState.currentRegion == "in" || uiState.currentRegion == "ind"
-                                                    else -> uiState.currentRegion == code
-                                                }
-                                            Box(
-                                                modifier =
-                                                    Modifier
-                                                        .weight(1f)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(
-                                                            if (isSelected) {
-                                                                MaterialTheme.colorScheme.primaryContainer
-                                                            } else {
-                                                                Color.Transparent
-                                                            },
-                                                        ).clickable { onRegionChange(code) }
-                                                        .padding(vertical = 10.dp),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Text(
-                                                    text = label,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = if (isSelected) GoogleSansWeight.bold else FontWeight.Normal,
-                                                    color =
-                                                        if (isSelected) {
-                                                            MaterialTheme.colorScheme.onPrimaryContainer
-                                                        } else {
-                                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                                        },
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (uiState.isLoadingPodcasts) {
-                                item {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        BoxLoreLoader.Expressive(size = 48.dp)
-                                    }
-                                }
-                            } else if (uiState.genreChartsPodcasts.isNotEmpty()) {
-                                items(uiState.genreChartsPodcasts) { podcast ->
-                                    val isSubscribed = podcast.id in uiState.subscribedPodcastIds
-                                    SuggestedPodcastRowItem(
-                                        podcast = podcast,
-                                        isSubscribed = isSubscribed,
-                                        onToggleSubscription = onToggleSubscription,
-                                        modifier = Modifier.padding(horizontal = 24.dp),
-                                    )
-                                }
-                            } else {
-                                item {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 24.dp)
-                                                .height(100.dp)
-                                                .background(
-                                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                                    RoundedCornerShape(12.dp),
-                                                ),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            text = "No trending podcasts found.",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            }
-                        } else if (activeRow != null) {
-                            item {
-                                Row(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 24.dp)
-                                            .padding(top = 8.dp, bottom = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = "${activeRow.podcasts.size} Recommendations",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                    val allSelected =
-                                        remember(activeRow.podcasts, uiState.subscribedPodcastIds) {
-                                            activeRow.podcasts.isNotEmpty() &&
-                                                activeRow.podcasts.all { it.id.toString() in uiState.subscribedPodcastIds }
-                                        }
-
-                                    Row(
-                                        modifier =
-                                            Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .expressiveClickable {
-                                                    onToggleRowSubscriptions(activeRow.rowTitle)
-                                                }.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Icon(
-                                            imageVector = if (allSelected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
-                                            contentDescription = null,
-                                            tint = if (allSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(16.dp),
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = if (allSelected) "Deselect Group" else "Select Group",
-                                            color = if (allSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = GoogleSansWeight.bold,
-                                        )
-                                    }
-                                }
-                            }
-
-                            if (activeRow.podcasts.isNotEmpty()) {
-                                items(activeRow.podcasts) { podcastDto ->
-                                    val podcast = podcastDto.toPodcast()
-                                    val isSubscribed = podcast.id in uiState.subscribedPodcastIds
-                                    SuggestedPodcastRowItem(
-                                        podcast = podcast,
-                                        isSubscribed = isSubscribed,
-                                        onToggleSubscription = onToggleSubscription,
-                                        modifier = Modifier.padding(horizontal = 24.dp),
-                                    )
-                                }
-                            } else {
-                                item {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 24.dp)
-                                                .height(100.dp)
-                                                .background(
-                                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                                    RoundedCornerShape(12.dp),
-                                                ),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            text = "No suggestions found in this category.",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    detailPodcast?.let { podcast ->
+        SuggestionPodcastDetailSheet(
+            podcast = podcast,
+            isSubscribed = podcast.id in uiState.subscribedPodcastIds,
+            onDismiss = { detailPodcast = null },
+            onToggleSubscription = onToggleSubscription,
+        )
+    }
+}
+
+@Composable
+private fun SuggestionsIntroHeader() {
+    Text(
+        text = "Pick a few shows to start",
+        style =
+            MaterialTheme.typography.titleLarge.copy(
+                fontFamily = rememberSectionHeaderFontFamily(),
+            ),
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 2.dp),
+    )
+}
+
+@Composable
+private fun SuggestionsLaneChipRow(
+    lanes: List<OnboardingSuggestionsLane>,
+    selectedIndex: Int,
+    subscribedIds: Set<String>,
+    onSelect: (Int) -> Unit,
+) {
+    // Single horizontal row — long titles truncate instead of stacking into a tall chip wall.
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+    ) {
+        itemsIndexed(lanes, key = { _, lane -> lane.id }) { index, lane ->
+            val selected = index == selectedIndex
+            val count = OnboardingSuggestionsLanes.selectedCountInLane(lane, subscribedIds)
+            SuggestionsLaneChip(
+                title = lane.title,
+                selected = selected,
+                selectedCount = count,
+                icon = laneIcon(lane, index),
+                onClick = { onSelect(index) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuggestionsLaneChip(
+    title: String,
+    selected: Boolean,
+    selectedCount: Int,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
+    val container =
+        if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        }
+    val content =
+        if (selected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = container,
+        contentColor = content,
+        border =
+            if (selected) {
+                BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+            } else {
+                BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                )
+            },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = if (selected) MaterialTheme.colorScheme.primary else content,
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = GoogleSansWeight.semiBold,
+                maxLines = 1,
+            )
+            if (selectedCount > 0) {
+                Surface(
+                    shape = CircleShape,
+                    color =
+                        if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
+                    contentColor =
+                        if (selected) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        },
+                ) {
+                    Text(
+                        text = selectedCount.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.bold,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionsActiveLaneHeader(
+    lane: OnboardingSuggestionsLane,
+    selectedInLane: Int,
+    onToggleAll: () -> Unit,
+) {
+    val allSelected = lane.podcasts.isNotEmpty() && selectedInLane == lane.podcasts.size
+    // Compact toolbar: purpose + Select all only (title already on the active chip).
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+                .padding(bottom = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = lane.purpose,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(
+            onClick = onToggleAll,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        ) {
+            Icon(
+                imageVector = if (allSelected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = if (allSelected) "Clear" else "Select all",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = GoogleSansWeight.semiBold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuggestionsEmptyLane() {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = "Nothing in this lane right now.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuggestionsFinishBar(
+    uiState: OnboardingUiState,
+    selectedCount: Int,
+    isCompleting: Boolean,
+    onFinish: () -> Unit,
+) {
+    Surface(
+        tonalElevation = 3.dp,
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+        ) {
+            val cta =
+                if (uiState.reachedSuggestionsViaSearchFlow) {
+                    val recommendedIds =
+                        uiState.aiCurriculumRows
+                            .flatMap { it.podcasts }
+                            .map { it.id.toString() }
+                            .toSet()
+                    val selectedRecommendationsCount = uiState.subscribedPodcastIds.count { it in recommendedIds }
+                    if (selectedRecommendationsCount > 0) {
+                        "Subscribe & start · +$selectedRecommendationsCount recommended"
+                    } else {
+                        "Start without subscribing"
+                    }
+                } else {
+                    if (selectedCount > 0) {
+                        "Subscribe & start · $selectedCount"
+                    } else {
+                        "Start without subscribing"
+                    }
+                }
+
+            FilledTonalButton(
+                onClick = onFinish,
+                enabled = !isCompleting,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors =
+                    ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+            ) {
+                if (isCompleting) {
+                    BoxLoreLoader.Expressive(size = 28.dp)
+                } else {
+                    Text(
+                        text = cta,
+                        fontWeight = GoogleSansWeight.bold,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionsLoadingState(
+    uiState: OnboardingUiState,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(24.dp),
+        ) {
+            BoxLoreLoader.Expressive(size = 80.dp)
+            Text(
+                text =
+                    when {
+                        uiState.reachedSuggestionsViaOpmlFlow ->
+                            "Your OPML shows are subscribed!\nGathering new shows inspired by your library…"
+                        uiState.reachedSuggestionsViaSearchFlow ->
+                            "Subscribed to ${uiState.selectedPodcasts.size} shows!\nFinding similar shows you might love…"
+                        else -> "Synthesizing your feed…"
+                    },
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = GoogleSansWeight.bold,
+                        textAlign = TextAlign.Center,
+                    ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuggestionsErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.CloudOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(64.dp),
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(onClick = onRetry) {
+                Icon(Icons.Rounded.Refresh, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Retry")
+            }
+        }
+    }
+}
+
+private fun laneIcon(
+    lane: OnboardingSuggestionsLane,
+    index: Int,
+): ImageVector {
+    if (lane.isCharts) return Icons.AutoMirrored.Rounded.TrendingUp
+    return when (index % 4) {
+        0 -> Icons.Rounded.AutoAwesome
+        1 -> Icons.Rounded.Star
+        2 -> Icons.Rounded.Bookmark
+        else -> Icons.Rounded.Grain
     }
 }

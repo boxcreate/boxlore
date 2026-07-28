@@ -1,7 +1,7 @@
-package cx.aswin.boxlore.feature.home.components
+package cx.aswin.boxlore.core.designsystem.components
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 class EqualHeightPosterGridTest {
     @Test

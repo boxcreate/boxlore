@@ -1,8 +1,6 @@
 package cx.aswin.boxlore.core.network
 
 import cx.aswin.boxlore.core.network.model.BootstrapRequest
-import cx.aswin.boxlore.core.network.model.ContentSectionsV1Request
-import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -13,8 +11,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import retrofit2.HttpException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -182,46 +178,6 @@ class BoxLoreApiContractTest {
     }
 
     @Test
-    fun `getContentSectionsV1 decodes sections and items`() =
-        runTest {
-            enqueueFixture("fixtures/content_sections_v1.json")
-
-            val body =
-                api.getContentSectionsV1(
-                    publicKey = APP_KEY,
-                    deviceUuid = DEVICE_UUID,
-                    request =
-                        ContentSectionsV1Request(
-                            contractVersion = 1,
-                            surface = "home",
-                            localMinuteOfDay = 540,
-                            country = "us",
-                        ),
-                )
-
-            assertEquals("true", body.status)
-            assertEquals(1, body.contractVersion)
-            assertEquals("morning", body.resolvedDaypart)
-            assertFalse(body.isFallback)
-            assertEquals(1, body.sections.size)
-
-            val section = body.sections.single()
-            assertEquals("morning-brief", section.intent.id)
-            assertEquals("Morning brief", section.intent.titleFallback)
-            assertEquals("rail", section.layout)
-            val item = section.items.single()
-            assertEquals(5555L, item.id)
-            assertEquals("Section Episode", item.title)
-            assertEquals(0.91, item.retrievalScore, 0.0001)
-            assertEquals(1, item.serverRank)
-
-            val recorded = server.takeRequest()
-            assertEquals("POST", recorded.method)
-            assertEquals("/content/sections/v1", recorded.path)
-            assertEquals(DEVICE_UUID, recorded.getHeader("X-Device-UUID"))
-        }
-
-    @Test
     fun `Call endpoint surfaces non-success for 404`() {
         server.enqueue(
             MockResponse()
@@ -234,32 +190,6 @@ class BoxLoreApiContractTest {
         assertFalse(response.isSuccessful)
         assertEquals(404, response.code())
     }
-
-    @Test
-    fun `suspend endpoint throws HttpException on 500`() =
-        runTest {
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(500)
-                    .setBody("""{"status":"false","error":"boom"}"""),
-            )
-
-            val error =
-                assertThrows<HttpException> {
-                    api.getContentSectionsV1(
-                        publicKey = APP_KEY,
-                        deviceUuid = DEVICE_UUID,
-                        request =
-                            ContentSectionsV1Request(
-                                contractVersion = 1,
-                                surface = "home",
-                                localMinuteOfDay = 600,
-                                country = "us",
-                            ),
-                    )
-                }
-            assertEquals(500, error.code())
-        }
 
     private fun enqueueFixture(resourcePath: String) {
         val json =

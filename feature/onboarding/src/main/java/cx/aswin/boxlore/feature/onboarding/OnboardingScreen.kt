@@ -28,8 +28,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberCondensedGoogleSansFamily
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // Genre data matching GenreSelector.kt
@@ -288,13 +290,28 @@ fun OnboardingScreen(
     }
 }
 
-/** One marquee loop: 6×(110dp card + 12dp gap) including the gap before the next loop. */
+/** One marquee loop: 6 cards; start-to-start distance includes the gap after each card. */
 private const val CoverLoopCount = 6
 private const val CoverCardDp = 110
 private const val CoverGapDp = 12
+/** Distance from card[i] to card[i+CoverLoopCount] under spacedBy (6 cards + 6 gaps). */
 private const val CoverLoopPeriodDp = CoverLoopCount * (CoverCardDp + CoverGapDp) // 732
-/** Enough tiled loops for entrance offsets (~2400dp) without ~480 Image nodes. */
-private const val CoverLoopRepeats = 8
+/** Enough tiled loops for offsets without decoding a wall of Images. */
+private const val CoverLoopRepeats = 7
+/** Keep row translation ≤ this so the left edge never exposes empty space. */
+private const val CoverMaxTranslationDp = -48f
+/** Subtle entrance glide — large travel reads as janky “loading”. */
+private const val WelcomeCarouselTravelDp = 120f
+
+/**
+ * Welcome first-impression clock.
+ * Covers ease into a continuous drift (no mid-sequence pause). Chrome rises on draw-phase
+ * layers only so the tree doesn’t recompose every frame.
+ */
+private const val WelcomeEntranceMs = 2400
+/** Drift begins during cover settle so velocity never hits zero. */
+private const val WelcomeDriftDelayMs = 700L
+private const val WelcomeDriftPeriodMs = 40000
 
 @Composable
 private fun WelcomeScreen(
@@ -306,9 +323,12 @@ private fun WelcomeScreen(
     val condensedFamily = rememberCondensedGoogleSansFamily()
     val entranceProgress = remember { Animatable(0f) }
     val driftProgress = remember { Animatable(0f) }
+    // Buttons stay inert until entrance completes — avoids per-frame enabled recomposition.
+    var chromeInteractive by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // Let the first cover frames compose/decode before motion — avoids start hitch.
+        // Decode/layout a couple frames before motion — kills the cold-start hitch.
+        withFrameNanos { }
         withFrameNanos { }
         withFrameNanos { }
         launch {
@@ -316,19 +336,21 @@ private fun WelcomeScreen(
                 targetValue = 1f,
                 animationSpec =
                     tween(
-                        durationMillis = 4800,
+                        durationMillis = WelcomeEntranceMs,
                         easing = LinearEasing,
                     ),
             )
+            chromeInteractive = true
         }
         launch {
+            delay(WelcomeDriftDelayMs)
             driftProgress.animateTo(
                 targetValue = 1f,
                 animationSpec =
                     infiniteRepeatable(
                         animation =
                             tween(
-                                durationMillis = 25000, // 732dp loop ≈ 29dp/s
+                                durationMillis = WelcomeDriftPeriodMs,
                                 easing = LinearEasing,
                             ),
                         repeatMode = RepeatMode.Restart,
@@ -338,7 +360,7 @@ private fun WelcomeScreen(
     }
 
     // Grid is a sibling of inset-padded chrome so status-bar/nav inset settle doesn't jitter covers,
-    // and so foreground recomposition (logo/CTAs) doesn't rebuild hundreds of Images each frame.
+    // and so foreground recomposition doesn't rebuild hundreds of Images each frame.
     Box(
         modifier =
             Modifier
@@ -356,11 +378,15 @@ private fun WelcomeScreen(
         ) { innerPadding ->
             WelcomeForeground(
                 entranceProgress = entranceProgress,
+                chromeInteractive = chromeInteractive,
                 condensedFamily = condensedFamily,
-                onHelpMeFind = onHelpMeFind,
-                onSearch = onSearch,
-                onSkip = onSkip,
-                onImportClick = onImportClick,
+                actions =
+                    WelcomeActions(
+                        onHelpMeFind = onHelpMeFind,
+                        onSearch = onSearch,
+                        onSkip = onSkip,
+                        onImportClick = onImportClick,
+                    ),
                 modifier =
                     Modifier
                         .fillMaxSize()
@@ -370,25 +396,28 @@ private fun WelcomeScreen(
     }
 }
 
+private data class WelcomeActions(
+    val onHelpMeFind: () -> Unit,
+    val onSearch: () -> Unit,
+    val onSkip: () -> Unit,
+    val onImportClick: () -> Unit,
+)
+
 @Composable
 @Suppress("LongMethod")
 private fun WelcomeForeground(
     entranceProgress: Animatable<Float, AnimationVector1D>,
+    chromeInteractive: Boolean,
     condensedFamily: FontFamily,
-    onHelpMeFind: () -> Unit,
-    onSearch: () -> Unit,
-    onSkip: () -> Unit,
-    onImportClick: () -> Unit,
+    actions: WelcomeActions,
     modifier: Modifier = Modifier,
 ) {
+    // IMPORTANT: never read entranceProgress.value in composition — that recomposes this whole
+    // tree every frame and feels like a janky loading page. All motion is graphicsLayer-only.
     Box(modifier = modifier) {
-        val logoProgress = ((entranceProgress.value - 0.20f) / 0.55f).coerceIn(0f, 1f)
-        val logoEase = FastOutSlowInEasing.transform(logoProgress)
-
         val scrimColor = MaterialTheme.colorScheme.surface
-        val scrimEdge = 0.68f - (logoEase * 0.23f)
-        val scrimMid = 0.76f - (logoEase * 0.24f)
-        val scrimFull = 0.81f - (logoEase * 0.24f)
+        // Static scrim — becomes solid over the last row’s bottom edge (covers stay
+        // natural height; we hide the “end of carousel” with opacity, not stretch).
         Box(
             modifier =
                 Modifier
@@ -398,10 +427,11 @@ private fun WelcomeForeground(
                             colorStops =
                                 arrayOf(
                                     0.0f to scrimColor.copy(alpha = 0.0f),
-                                    (scrimEdge - 0.15f).coerceAtLeast(0f) to scrimColor.copy(alpha = 0.0f),
-                                    scrimEdge to scrimColor.copy(alpha = 0.5f),
-                                    scrimMid to scrimColor.copy(alpha = 0.9f),
-                                    scrimFull to scrimColor,
+                                    0.20f to scrimColor.copy(alpha = 0.0f),
+                                    0.34f to scrimColor.copy(alpha = 0.55f),
+                                    0.46f to scrimColor.copy(alpha = 0.88f),
+                                    0.56f to scrimColor.copy(alpha = 0.98f),
+                                    0.64f to scrimColor,
                                     1.0f to scrimColor,
                                 ),
                         ),
@@ -418,261 +448,284 @@ private fun WelcomeForeground(
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            val logoScale = 1.3f - (logoEase * 0.3f)
-            val logoOffsetY = (1f - logoEase) * 150f
             Column(
-                modifier =
-                    Modifier
-                        .graphicsLayer {
-                            scaleX = logoScale
-                            scaleY = logoScale
-                            translationY = logoOffsetY * density
-                        },
                 horizontalAlignment = Alignment.CenterHorizontally,
+                modifier =
+                    Modifier.graphicsLayer {
+                        applyWelcomeReveal(
+                            progress = entranceProgress.value,
+                            start = 0.28f,
+                            end = 0.58f,
+                            riseDp = 12f,
+                        )
+                    },
             ) {
-                Text(
-                    text = "Welcome to",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = GoogleSansWeight.bold,
-                    fontFamily = condensedFamily,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo(
+                BoxLoreLogo(
                     textColor = MaterialTheme.colorScheme.primary,
+                    height = 38.dp,
+                )
+                Text(
+                    text = "Podcasts, done right.",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = GoogleSansWeight.medium,
+                    fontFamily = condensedFamily,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 14.dp),
                 )
             }
 
+            // Extra air between brand lockup and CTAs — less crowded.
             Spacer(modifier = Modifier.height(32.dp))
 
-            val btn1RawProgress = ((entranceProgress.value - 0.45f) / 0.30f).coerceIn(0f, 1f)
-            val btn2RawProgress = ((entranceProgress.value - 0.53f) / 0.30f).coerceIn(0f, 1f)
-            val btn3RawProgress = ((entranceProgress.value - 0.61f) / 0.30f).coerceIn(0f, 1f)
-
-            val btn1Alpha = FastOutSlowInEasing.transform(btn1RawProgress)
-            val btn2Alpha = FastOutSlowInEasing.transform(btn2RawProgress)
-            val btn3Alpha = FastOutSlowInEasing.transform(btn3RawProgress)
-
-                // Primary CTA
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        shape = RoundedCornerShape(percent = 50),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(76.dp)
-                                .graphicsLayer {
-                                    alpha = btn1Alpha
-                                    translationY = (1f - btn1Alpha) * 20.dp.toPx()
-                                }.expressiveClickable(
-                                    enabled = btn1Alpha > 0.95f,
-                                    shape = RoundedCornerShape(percent = 50),
-                                    onClick = onHelpMeFind,
-                                ),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 10.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.Center,
-                            ) {
-                                Text(
-                                    text = "Build my personalized feed.",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = GoogleSansWeight.bold,
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "We'll find you perfect shows based on what you love",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Rounded.ChevronRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
+            // Primary CTA — soft card, AI cue integrated (no floating badge).
+            val primaryShape = RoundedCornerShape(28.dp)
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = primaryShape,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            applyWelcomeReveal(
+                                progress = entranceProgress.value,
+                                start = 0.42f,
+                                end = 0.72f,
+                                riseDp = 10f,
                             )
-                        }
-                    }
-
-                    // Floating AI Badge sitting on the button border
-                    Box(
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = (-24).dp, y = (-6).dp)
-                                .graphicsLayer {
-                                    alpha = btn1Alpha
-                                    translationY = (1f - btn1Alpha) * 20.dp.toPx()
-                                }.background(
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    shape = RoundedCornerShape(percent = 50),
-                                ).border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(percent = 50),
-                                ).padding(horizontal = 8.dp, vertical = 3.dp),
+                        }.expressiveClickable(
+                            enabled = chromeInteractive,
+                            shape = primaryShape,
+                            onClick = actions.onHelpMeFind,
+                        ),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 22.dp, end = 16.dp, top = 18.dp, bottom = 18.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.AutoAwesome,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                                modifier = Modifier.size(14.dp),
                             )
                             Text(
-                                text = "AI",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = GoogleSansWeight.extraBold,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                fontSize = 9.sp,
+                                text = "Personalized with AI",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = GoogleSansWeight.medium,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                                letterSpacing = 0.2.sp,
+                            )
+                        }
+                        Text(
+                            text = "Build my personalized feed",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = GoogleSansWeight.bold,
+                        )
+                        Text(
+                            text = "We'll find shows that match what you love",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f),
+                        )
+                    }
+                    Surface(
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = RoundedCornerShape(percent = 50),
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp),
                             )
                         }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-                // Secondary row
-                Row(
+            // Secondary row — quieter tonal pills
+            val secondaryShape = RoundedCornerShape(22.dp)
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
+                        .graphicsLayer {
+                            applyWelcomeReveal(
+                                progress = entranceProgress.value,
+                                start = 0.52f,
+                                end = 0.80f,
+                                riseDp = 8f,
+                            )
+                        },
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    shape = secondaryShape,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min)
-                            .graphicsLayer {
-                                alpha = btn2Alpha
-                                translationY = (1f - btn2Alpha) * 20.dp.toPx()
-                            },
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        shape = RoundedCornerShape(percent = 50),
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .heightIn(min = 50.dp)
-                                .expressiveClickable(
-                                    enabled = btn2Alpha > 0.95f,
-                                    shape = RoundedCornerShape(percent = 50),
-                                    onClick = onSearch,
-                                ),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "I know my shows",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = GoogleSansWeight.bold,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        shape = RoundedCornerShape(percent = 50),
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .heightIn(min = 50.dp)
-                                .expressiveClickable(
-                                    enabled = btn2Alpha > 0.95f,
-                                    shape = RoundedCornerShape(percent = 50),
-                                    onClick = onImportClick,
-                                ),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Upload,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Import library",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = GoogleSansWeight.bold,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Skip
-                Box(
-                    modifier =
-                        Modifier
-                            .graphicsLayer {
-                                alpha = btn3Alpha
-                            }.expressiveClickable(
-                                enabled = btn3Alpha > 0.95f,
-                                shape = RoundedCornerShape(percent = 50),
-                                onClick = onSkip,
-                            ).padding(horizontal = 16.dp, vertical = 8.dp),
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .heightIn(min = 54.dp)
+                            .expressiveClickable(
+                                enabled = chromeInteractive,
+                                shape = secondaryShape,
+                                onClick = actions.onSearch,
+                            ),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
                     ) {
-                        Text(
-                            text = "Skip Setup",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = GoogleSansWeight.bold,
-                            color = Color(0xFF888888),
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                            imageVector = Icons.Rounded.Search,
                             contentDescription = null,
-                            tint = Color(0xFF888888),
-                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "I know my shows",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = GoogleSansWeight.semiBold,
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(36.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    shape = secondaryShape,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .heightIn(min = 54.dp)
+                            .expressiveClickable(
+                                enabled = chromeInteractive,
+                                shape = secondaryShape,
+                                onClick = actions.onImportClick,
+                            ),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Upload,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Import library",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = GoogleSansWeight.semiBold,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Skip — quiet text action
+            val skipMuted = MaterialTheme.colorScheme.onSurfaceVariant
+            Box(
+                modifier =
+                    Modifier
+                        .graphicsLayer {
+                            applyWelcomeReveal(
+                                progress = entranceProgress.value,
+                                start = 0.62f,
+                                end = 0.90f,
+                                riseDp = 6f,
+                            )
+                        }.expressiveClickable(
+                            enabled = chromeInteractive,
+                            shape = RoundedCornerShape(percent = 50),
+                            onClick = actions.onSkip,
+                        ).padding(horizontal = 16.dp, vertical = 10.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = "Skip setup",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = GoogleSansWeight.medium,
+                        color = skipMuted,
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        tint = skipMuted,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
         }
+    }
 }
+
+/** Maps global entrance progress into a 0→1 eased segment. */
+private fun welcomeSegmentEase(
+    progress: Float,
+    start: Float,
+    end: Float,
+): Float {
+    val t = ((progress - start) / (end - start)).coerceIn(0f, 1f)
+    return WelcomeChromeDecelerate.transform(t)
+}
+
+/** Fade + short rise for chrome — draw-phase only via [applyWelcomeReveal]. */
+private fun androidx.compose.ui.graphics.GraphicsLayerScope.applyWelcomeReveal(
+    progress: Float,
+    start: Float,
+    end: Float,
+    riseDp: Float,
+) {
+    val ease = welcomeSegmentEase(progress, start, end)
+    alpha = ease
+    translationY = (1f - ease) * riseDp * density
+}
+
+/** Soft decelerate for chrome reveals. */
+private val WelcomeChromeDecelerate = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1.0f)
+
+/** Carousel entrance — gentle ease-out glide. */
+private val WelcomeCarouselSettle = CubicBezierEasing(0.33f, 0.0f, 0.2f, 1.0f)
 
 @Composable
 private fun CinematicBackgroundGrid(
@@ -696,10 +749,20 @@ private fun CinematicBackgroundGrid(
     val row3Covers = remember(allCovers) { allCovers.filterIndexed { idx, _ -> idx % 4 == 2 } }
     val row4Covers = remember(allCovers) { allCovers.filterIndexed { idx, _ -> idx % 4 == 3 } }
 
-    val smoothBurstEasing = remember { CubicBezierEasing(0.25f, 0.1f, 0.25f, 1.0f) }
+    val coverFadeStart = 0f
+    val coverFadeEnd = 0.40f
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    val local =
+                        ((entranceProgress.value - coverFadeStart) / (coverFadeEnd - coverFadeStart))
+                            .coerceIn(0f, 1f)
+                    val coverFade = WelcomeChromeDecelerate.transform(local)
+                    alpha = 0.55f + coverFade * 0.45f
+                },
         verticalArrangement = Arrangement.spacedBy(CoverGapDp.dp, Alignment.Top),
     ) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -707,33 +770,33 @@ private fun CinematicBackgroundGrid(
             covers = row1Covers,
             entranceProgress = entranceProgress,
             driftProgress = driftProgress,
-            baseOffsetDp = -2200f,
+            baseOffsetDp = -(CoverLoopPeriodDp + WelcomeCarouselTravelDp + 400f),
             direction = 1f,
-            entranceEasing = smoothBurstEasing,
+            rowDelay = 0f,
         )
         ScrollingRow(
             covers = row2Covers,
             entranceProgress = entranceProgress,
             driftProgress = driftProgress,
-            baseOffsetDp = -100f,
+            baseOffsetDp = -(CoverLoopPeriodDp * 0.55f),
             direction = -1f,
-            entranceEasing = smoothBurstEasing,
+            rowDelay = 0.04f,
         )
         ScrollingRow(
             covers = row3Covers,
             entranceProgress = entranceProgress,
             driftProgress = driftProgress,
-            baseOffsetDp = -2400f,
+            baseOffsetDp = -(CoverLoopPeriodDp + WelcomeCarouselTravelDp + 480f),
             direction = 1f,
-            entranceEasing = smoothBurstEasing,
+            rowDelay = 0.08f,
         )
         ScrollingRow(
             covers = row4Covers,
             entranceProgress = entranceProgress,
             driftProgress = driftProgress,
-            baseOffsetDp = -300f,
+            baseOffsetDp = -(CoverLoopPeriodDp * 0.7f),
             direction = -1f,
-            entranceEasing = smoothBurstEasing,
+            rowDelay = 0.12f,
         )
     }
 }
@@ -745,7 +808,7 @@ private fun ScrollingRow(
     driftProgress: Animatable<Float, AnimationVector1D>,
     baseOffsetDp: Float,
     direction: Float,
-    entranceEasing: Easing,
+    rowDelay: Float,
 ) {
     val loopCovers =
         remember(covers) {
@@ -766,12 +829,17 @@ private fun ScrollingRow(
                 .fillMaxWidth()
                 .wrapContentWidth(unbounded = true, align = Alignment.Start)
                 .graphicsLayer {
-                    val scrollProgress = (entranceProgress.value / 0.75f).coerceIn(0f, 1f)
-                    val scrollEase = entranceEasing.transform(scrollProgress)
+                    // Ease into rest while drift is already running — continuous marquee, no pause.
+                    val local =
+                        ((entranceProgress.value - rowDelay) / 0.45f).coerceIn(0f, 1f)
+                    val scrollEase = WelcomeCarouselSettle.transform(local)
+                    val period = CoverLoopPeriodDp.toFloat()
                     val translationDp =
-                        baseOffsetDp +
-                            direction * (600f * scrollEase) +
-                            direction * (CoverLoopPeriodDp.toFloat() * driftProgress.value)
+                        (
+                            baseOffsetDp +
+                                direction * (WelcomeCarouselTravelDp * scrollEase) +
+                                direction * (period * driftProgress.value)
+                        ).coerceAtMost(CoverMaxTranslationDp)
                     translationX = translationDp.dp.toPx()
                 },
         horizontalArrangement = Arrangement.spacedBy(CoverGapDp.dp),

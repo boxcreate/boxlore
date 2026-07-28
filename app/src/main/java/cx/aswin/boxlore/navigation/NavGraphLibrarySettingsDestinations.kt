@@ -74,7 +74,11 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
             regionSettings =
                 cx.aswin.boxlore.feature.home.settings.RegionSettings(
                     currentRegion = settingsState.currentRegion,
+                    contentLanguages = settingsState.contentLanguages,
                     onSetRegion = { region -> scope.launch { userPrefs.setRegion(region) } },
+                    onSetContentLanguages = { languages ->
+                        scope.launch { userPrefs.setContentLanguages(languages) }
+                    },
                 ),
             appearanceSettings =
                 cx.aswin.boxlore.feature.home.settings.AppearanceSettings(
