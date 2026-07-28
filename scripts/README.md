@@ -44,6 +44,7 @@ A second tree `/opt/boxlore-sync/boxlore-src` may exist as a snapshot — **cron
 1. Read this README + current [`sync/lib/config.js`](sync/lib/config.js) country list.
 2. Prefer hermetic tests under `scripts/sync/lib/*.test.js` (`npm run test:sync` from `scripts/`).
 3. Keep large Turso reads on `fetchAllPaged` / country×category pages — do not reintroduce unbounded wide SELECTs.
+3b. **Never** join charts with `CAST(c.itunes_id AS INTEGER)` (charts column is TEXT). That disables the index and can turn Stage 3 candidate refresh into billions of `rows_read`. Use `c.itunes_id = CAST(p.itunes_id AS TEXT)` or [`sync/lib/chart-countries.js`](sync/lib/chart-countries.js).
 4. After commit/push (when asked): **deploy to `/opt/boxlore-sync/repo`** and confirm the runner sees the new countries/flags (`node -e '…require config…'` on the VPS).
 5. Never commit `.env`, PI keys, Turso tokens, or Telegram secrets.
 

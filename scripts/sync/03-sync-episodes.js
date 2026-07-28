@@ -5,6 +5,8 @@
  * Stage 3: Sync latest-episode metadata for chart shows from the PI API.
  *
  * - Candidate list cached in sync state; re-queried after charts refresh or 20h.
+ *   Countries come from a one-shot charts pre-agg (see lib/chart-countries.js),
+ *   not a per-podcast correlated subquery.
  * - Staleness: News 8h · core countries 24h · relaxed (secondary) countries 48h
  *   (±10% jitter). Show on both core+relaxed → 24h. News always 8h.
  * - Fetches max=per-show cap (us/gb 50, else 20) once; items[0] updates Turso;
@@ -19,6 +21,11 @@ const text = require('./lib/text');
 const cfg = require('./lib/config');
 const handoff = require('./lib/pi-handoff');
 const { loadCapsByPodcastId } = require('./lib/episode-caps');
+const {
+    CHARTS_MATCH_PODCAST,
+    loadCountriesByItunesId,
+    mergePodcastRowsWithCountries,
+} = require('./lib/chart-countries');
 const staleness = require('./lib/staleness');
 
 const CANDIDATE_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
@@ -26,20 +33,17 @@ const CONCURRENCY = 5;
 
 async function refreshCandidates(st) {
     log.info('[CANDIDATES] Refreshing candidate list from Turso');
-    // Keyset-page podcasts on charts; keep per-show country CSV for core/relaxed staleness.
-    const pendingRows = await turso.fetchAllPaged({
+    // Pre-aggregate charts once (~one linear scan). Never use a correlated
+    // CAST(c.itunes_id AS INTEGER) subquery — that was multi-billion rows_read.
+    const countriesByItunes = await loadCountriesByItunesId(turso);
+    const podcastRows = await turso.fetchAllPaged({
         pageSize: cfg.TURSO_PAGE_SIZE,
         rowId: (r) => Number(r[0]),
         buildPage: (after, limit) => ({
             sql: `
-                SELECT p.id, p.latest_ep_id, p.categories, p.medium,
-                       (SELECT GROUP_CONCAT(DISTINCT lower(c.country))
-                        FROM charts c
-                        WHERE CAST(c.itunes_id AS INTEGER) = p.itunes_id)
+                SELECT p.id, p.latest_ep_id, p.categories, p.medium, p.itunes_id
                 FROM podcasts p
-                WHERE p.itunes_id IN (
-                    SELECT DISTINCT CAST(itunes_id AS INTEGER) FROM charts WHERE itunes_id IS NOT NULL
-                )
+                WHERE p.itunes_id IS NOT NULL
                   AND p.id > ?
                 ORDER BY p.id ASC
                 LIMIT ?
@@ -47,11 +51,11 @@ async function refreshCandidates(st) {
             args: [after == null ? 0 : after, limit],
         }),
     });
+    const chartShows = mergePodcastRowsWithCountries(podcastRows, countriesByItunes);
     const ids = [];
     let newsCount = 0;
     let relaxedCount = 0;
-    for (const [id, latestEpId, categories, medium, countryCsv] of pendingRows) {
-        const podId = String(id);
+    for (const { id: podId, latestEpId, categories, medium, countryCsv } of chartShows) {
         ids.push(podId);
         const rec = st.shows[podId] || {};
         if (rec.e === undefined && latestEpId) rec.e = String(latestEpId);
@@ -90,7 +94,7 @@ async function countDueByCountry(ids) {
             `
             SELECT lower(c.country), COUNT(DISTINCT p.id)
             FROM podcasts p
-            INNER JOIN charts c ON CAST(c.itunes_id AS INTEGER) = p.itunes_id
+            INNER JOIN charts c ON ${CHARTS_MATCH_PODCAST}
             WHERE c.country IN (${cPh}) AND p.id IN (${idPh})
             GROUP BY lower(c.country)
             `,

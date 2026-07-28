@@ -102,11 +102,16 @@ function budgetProgress(budget, label, interval = 50) {
     function print(force = false) {
         if (!force && done < budget && done - lastPrinted < milestone) return;
         lastPrinted = done;
-        const pct = budget > 0 ? Math.floor((done / budget) * 100) : 100;
+        // Clamp: with tiny budgets a single show can embed past the cap before
+        // the outer loop breaks; unclamped pct made '▱'.repeat(10 - filled) throw
+        // "Invalid count value: -N" and fail the whole stage.
+        const pct = budget > 0
+            ? Math.min(100, Math.floor((done / budget) * 100))
+            : 100;
         const elapsed = (Date.now() - start) / 1000;
         const rate = done / Math.max(elapsed, 0.001);
         const etaSec = done < budget ? Math.round((budget - done) / Math.max(rate, 0.001)) : 0;
-        const filled = Math.round(pct / 10);
+        const filled = Math.max(0, Math.min(10, Math.round(pct / 10)));
         const bar = '▰'.repeat(filled) + '▱'.repeat(10 - filled);
         const etaStr = etaSec >= 60 ? duration(etaSec * 1000) : `${etaSec}s`;
         info(`[RUN]     ${bar} ${fmt(done)}/${fmt(budget)} ${label} · ${rate.toFixed(1)}/s · ETA ${etaStr}`);

@@ -204,6 +204,7 @@ async function main() {
         let showFailed = false;
         const showPoints = [];
         for (const item of toEmbed) {
+            if (budget - showPoints.length <= 0) break;
             const ep = item.raw;
             const epTitle = scalars.asScalarString(ep.title, '');
             const audioUrl = scalars.asScalarString(ep.enclosureUrl, '');

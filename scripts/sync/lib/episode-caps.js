@@ -6,6 +6,7 @@
 
 const turso = require('./turso');
 const cfg = require('./config');
+const { CHARTS_MATCH_PODCAST } = require('./chart-countries');
 
 /**
  * @param {string[]} [podcastIds] optional filter; omit for all chart shows in full-tier countries
@@ -14,10 +15,12 @@ const cfg = require('./config');
 async function loadCapsByPodcastId(podcastIds) {
     const countries = cfg.FULL_TIER_COUNTRIES;
     const ph = countries.map(() => '?').join(',');
+    // Join on CAST(p.itunes_id AS TEXT) — charts.itunes_id is TEXT; casting the
+    // charts column to INTEGER forces a full charts scan per join.
     let sql = `
         SELECT CAST(p.id AS TEXT), GROUP_CONCAT(DISTINCT c.country)
         FROM podcasts p
-        INNER JOIN charts c ON CAST(c.itunes_id AS INTEGER) = p.itunes_id
+        INNER JOIN charts c ON ${CHARTS_MATCH_PODCAST}
         WHERE c.country IN (${ph})
     `;
     const args = [...countries];
