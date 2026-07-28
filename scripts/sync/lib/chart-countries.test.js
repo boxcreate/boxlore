@@ -4,6 +4,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
     CHARTS_MATCH_PODCAST,
+    CHARTS_ITUNES_FIRST_CURSOR,
     mergePodcastRowsWithCountries,
     itunesInCountries,
     countriesForItunes,
@@ -63,7 +64,8 @@ describe('chart-countries', () => {
     it('documents empty-string cursor hazard (mapArgType → SQL NULL)', () => {
         // Regression note: first-page cursor must not be '' — turso.mapArgType
         // coerces '' to null and `itunes_id > NULL` returns zero rows.
-        assert.notEqual('!', '');
-        assert.ok('1000199274' > '!');
+        assert.equal(CHARTS_ITUNES_FIRST_CURSOR, '!');
+        assert.notEqual(CHARTS_ITUNES_FIRST_CURSOR, '');
+        assert.ok('1000199274' > CHARTS_ITUNES_FIRST_CURSOR);
     });
 });

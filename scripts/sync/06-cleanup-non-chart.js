@@ -29,6 +29,7 @@ const qdrant = require('./lib/qdrant');
 const state = require('./lib/state');
 const cfg = require('./lib/config');
 const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
+const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
 
 const QDRANT_CHUNK = 500;
 const DELETE_CHUNK = 200;
@@ -87,7 +88,7 @@ async function main() {
                 ORDER BY itunes_id ASC
                 LIMIT ?
             `,
-            args: [after == null ? '' : after, limit],
+            args: [after == null ? CHARTS_ITUNES_FIRST_CURSOR : after, limit],
         }),
     });
     const chartItunesIds = new Set(chartIdRows.map(r => String(r[0])));

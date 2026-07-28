@@ -22,11 +22,15 @@ const CHARTS_MATCH_PODCAST = 'c.itunes_id = CAST(p.itunes_id AS TEXT)';
  * @param {{ fetchAllPaged: Function }} turso
  * @returns {Promise<Map<string, string>>}
  */
+/**
+ * First-page keyset for charts.itunes_id (TEXT).
+ * turso.mapArgType turns '' into SQL NULL, and `itunes_id > NULL` matches nothing —
+ * that made Stage 2 report 0 chart shows. Digit itunes ids sort after '!'.
+ */
+const CHARTS_ITUNES_FIRST_CURSOR = '!';
+
 async function loadCountriesByItunesId(turso) {
     const pageSize = cfg.TURSO_PAGE_SIZE;
-    // mapArgType turns '' into SQL NULL, and `itunes_id > NULL` matches nothing.
-    // Chart itunes_ids are digit strings; '!' sorts before '0' so the first page is complete.
-    const FIRST = '!';
     const rows = await turso.fetchAllPaged({
         pageSize,
         rowId: (r) => String(r[0]),
@@ -40,7 +44,10 @@ async function loadCountriesByItunesId(turso) {
                 ORDER BY itunes_id ASC
                 LIMIT ?
             `,
-            args: [after == null ? FIRST : String(after), limit],
+            args: [
+                after == null ? CHARTS_ITUNES_FIRST_CURSOR : String(after),
+                limit,
+            ],
         }),
     });
     const map = new Map();
@@ -134,6 +141,7 @@ function mergePodcastRowsWithCountries(podcastRows, countriesByItunes) {
 
 module.exports = {
     CHARTS_MATCH_PODCAST,
+    CHARTS_ITUNES_FIRST_CURSOR,
     loadCountriesByItunesId,
     itunesInCountries,
     countriesForItunes,

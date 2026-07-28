@@ -23,6 +23,7 @@ const state = require('./lib/state');
 const cfg = require('./lib/config');
 const piUnavailable = require('./lib/pi-unavailable');
 const { parseCSVLine, parseCSVRecords } = require('./lib/csv');
+const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
 
 const MISSING_IDS_FILE = 'missing_itunes_ids.txt';
 const CSV_FILE = 'podcasts_export.csv';
@@ -73,7 +74,7 @@ async function computeMissing({ denylistDoc } = {}) {
                 ORDER BY itunes_id ASC
                 LIMIT ?
             `,
-            args: [after == null ? '' : after, limit],
+            args: [after == null ? CHARTS_ITUNES_FIRST_CURSOR : after, limit],
         }),
     });
     const chartIds = chartIdRows.map(r => String(r[0])).filter(Boolean);
