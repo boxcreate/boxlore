@@ -106,6 +106,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import cx.aswin.boxlore.core.designsystem.components.AnimatedShapesFallback
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
@@ -611,7 +612,7 @@ fun ExploreContent(
                 }
 
                 if (state.selectedTab == 1) {
-                    // For You — same hero + equal-height poster grid as Home “Based on Your Taste”
+                    // For You — staggered bento layout; title-only posters (no show name) like Home taste cards
                     val recs = state.recommendations
                     val showContent = recs.isNotEmpty()
                     val showSkeletons = state.isRecommendationsLoading && recs.isEmpty()
@@ -664,12 +665,16 @@ fun ExploreContent(
                                 id = episode.podcastId ?: "",
                                 title = episode.podcastTitle ?: "Podcast",
                                 artist = "",
-                                imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() } ?: "",
+                                imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() }
+                                    ?: episode.imageUrl?.takeIf { it.isNotBlank() }
+                                    ?: "",
                                 description = "",
                                 genre = episode.podcastGenre ?: "Podcast"
                             )
-                            ExploreEpisodeBentoCard(
+                            CuratedEpisodeCard(
+                                podcast = parentPodcast,
                                 episode = episode,
+                                showSubtitle = false,
                                 onClick = {
                                     cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreRecommendationCardTapped(
                                         episodeId = episode.id,
@@ -679,7 +684,7 @@ fun ExploreContent(
                                         positionIndex = index + 1
                                     )
                                     onEpisodeClick(episode, parentPodcast)
-                                }
+                                },
                             )
                         }
                     }
