@@ -9,14 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.13] - 2026-07-29
+
 ### Added
-- Multi-storefront discovery across 11 chart countries with region and language pickers (English locked, up to 4 languages) and shared discovery poster cards plus refreshed Home, Explore, search, and onboarding UI (taste‑lane chips, equal‑height posters, vibe headers, “Designed for you” grid) ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
-- Integrated Meili typeahead via GET /search/typeahead alongside legacy GET /search, returning results grouped as Matches and Also found; implemented 1000ms debounce for semantic search endpoint GET /search/semantic in Explore "By idea" flow with immediate loader ([#955](https://github.com/boxcreate/boxlore/pull/955)) <!-- impact:user-impact-high -->
-- Explore For You tab renders CuratedEpisodeCard with showSubtitle=false in staggered grid, replacing ExploreEpisodeBentoCard for body items ([#954](https://github.com/boxcreate/boxlore/pull/954)) <!-- impact:user-impact-low -->
+- An all‑new way to search shows and episodes: typo‑tolerant podcast search powered by Meilisearch, plus concept search for shows and episodes powered by Qdrant. Explore chips are **Find a show** and **By idea**, with typeahead results grouped as Matches and Also found. ([#955](https://github.com/boxcreate/boxlore/pull/955)) <!-- impact:user-impact-high -->
+- Discovery expands with new chart countries — France, Germany, Netherlands, Singapore, Spain, Brazil, Russia, and Indonesia — alongside a country picker and language filters, and stronger multilingual recommendations using Qwen3 embeddings. ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
 ### Changed
-- Recommendations now use a larger candidate pool powered by Qwen3 embeddings on the catalog/v3 discovery path; retired live content/sections/v1 client ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
-- Renamed Explore chips to "Find a show" and "By idea"; preserved existing searchPodcasts, GET /search, and GET /search/semantic for backward compatibility ([#955](https://github.com/boxcreate/boxlore/pull/955)) <!-- impact:user-impact-high -->
-- Module README updated to document new card style and layout for the For You bento ([#954](https://github.com/boxcreate/boxlore/pull/954)) <!-- impact:user-impact-low -->
+- Faster content delivery from backend optimizations so charts, search, and recommendations reach you sooner. ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+- NotebookLM‑style briefings are tighter and less sloppy — more aware of repetition, depth, and which stories matter. ([#949](https://github.com/boxcreate/boxlore/pull/949)) <!-- impact:user-impact-high -->
+- UI polish across startup, onboarding suggestions, Home and Explore search, and several other screens — including equal‑height discovery posters and Explore For You card layout. ([#954](https://github.com/boxcreate/boxlore/pull/954)) ([#952](https://github.com/boxcreate/boxlore/pull/952)) ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-medium -->
+
 ## [v0.0.12] - 2026-07-25
 
 ### Added
