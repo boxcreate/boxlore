@@ -255,7 +255,9 @@ fun ExploreVibeCard(
 
     Surface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(96.dp),
         shape = RoundedCornerShape(16.dp),
         color = containerColor,
         contentColor = contentColor,
@@ -263,9 +265,9 @@ fun ExploreVibeCard(
         Column(
             modifier =
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Surface(
                 shape = RoundedCornerShape(10.dp),

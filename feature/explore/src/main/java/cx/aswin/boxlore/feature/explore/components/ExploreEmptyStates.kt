@@ -1,26 +1,26 @@
 package cx.aswin.boxlore.feature.explore.components
 
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.SearchOff
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -118,74 +118,72 @@ private val CONCEPT_SEARCH_EXAMPLES =
     )
 
 /**
- * By concept idle: short guidance + tappable example phrases (fills the search field).
+ * By concept idle: section header aligned with Find-a-show idle, then a
+ * single structured list of example queries (not a free-floating chip cloud).
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ExploreEpisodesSearchIdleState(
     onExampleClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.Start,
+        modifier = modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = "Describe a topic or mood",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
-            color = MaterialTheme.colorScheme.onSurface,
+        ExploreIconTitleHeader(
+            title = "Search by concept",
+            subtitle = "Type a topic or mood — we’ll match shows and episodes.",
+            icon = Icons.Rounded.AutoAwesome,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "We’ll find matching shows and episodes. A short phrase works best.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Try one of these",
             style = MaterialTheme.typography.labelLarge,
             fontWeight = GoogleSansWeight.semiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 10.dp),
         )
-        Spacer(modifier = Modifier.height(10.dp))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            CONCEPT_SEARCH_EXAMPLES.forEach { example ->
-                SuggestionChip(
-                    onClick = { onExampleClick(example) },
-                    label = {
-                        Text(
-                            text = example,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                        )
-                    },
-                    icon = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                CONCEPT_SEARCH_EXAMPLES.forEachIndexed { index, example ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .expressiveClickable {
+                                    onExampleClick(example)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Icon(
                             imageVector = Icons.Rounded.AutoAwesome,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
                         )
-                    },
-                    colors =
-                        SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            labelColor = MaterialTheme.colorScheme.onSurface,
-                            iconContentColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    border =
-                        SuggestionChipDefaults.suggestionChipBorder(
-                            enabled = true,
-                            borderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = example,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = GoogleSansWeight.medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                        )
+                    }
+                    if (index < CONCEPT_SEARCH_EXAMPLES.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                    }
+                }
             }
         }
     }
