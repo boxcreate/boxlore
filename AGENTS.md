@@ -18,7 +18,7 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
   - If the PR review decision is **`CHANGES_REQUESTED`** (CodeRabbit or anyone with write access): **stop**. Do **not** dismiss the review, do **not** force-merge / queue merge. Tell the user the PR is blocked on requested changes and ask them to merge (or dismiss) manually.
 - SonarCloud: **0 new-code issues** on the PR (App quality gate). Fix Sonar findings; do not treat a missing Sonar ruleset requirement as permission to ignore them.
 - Never commit secrets (`local.properties`, `.env`, keystores, `google-services.json`).
-- Do **not** hand-edit `CHANGELOG.md` or README Upcoming — `changelog-on-merge` owns that.
+- Do **not** hand-edit `CHANGELOG.md` or README Upcoming / What's New regions (`<!-- release-upcoming:* -->` / `<!-- release-whats-new:* -->`) — `changelog-on-merge` owns those. Hand-edits are OK only for intentional release-note rewrites with matching script contracts.
 - **boxlore-only:** do not change other `boxcreate` repos or org-wide bot settings unless asked. Keep proxy/backend internals out of public Android PR text.
 - Product name in user-facing copy is **boxlore** (all lowercase), not “Boxlore” / “BoxLore”.
 - Cards / panels: solid Material 3 surfaces only — no glassmorphism / translucent card backgrounds.

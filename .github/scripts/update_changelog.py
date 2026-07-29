@@ -19,6 +19,19 @@ CHANGELOG_PATH = Path("CHANGELOG.md")
 README_PATH = Path("README.md")
 UPCOMING_CHANGES_START = "<!-- upcoming-changes:start -->"
 UPCOMING_CHANGES_END = "<!-- upcoming-changes:end -->"
+RELEASE_UPCOMING_START = "<!-- release-upcoming:start -->"
+RELEASE_UPCOMING_END = "<!-- release-upcoming:end -->"
+RELEASE_WHATS_NEW_START = "<!-- release-whats-new:start -->"
+RELEASE_WHATS_NEW_END = "<!-- release-whats-new:end -->"
+DOWNLOAD_APK_START = "<!-- download-apk:start -->"
+DOWNLOAD_APK_END = "<!-- download-apk:end -->"
+EMPTY_UPCOMING_TEXT = (
+    "New features and improvements for the next release are currently in development."
+)
+RELEASE_META_RE = re.compile(
+    r"<!--\s*release-meta:\s*version=(v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))"
+    r"\s+date=(\d{4}-\d{2}-\d{2})\s*-->"
+)
 README_AI_NOTICE = (
     '<p align="center">'
     "<sub><sub>"
@@ -948,11 +961,50 @@ def _bullet_to_html_list_item(bullet: str) -> str:
     return f"<li>{cleaned}</li>"
 
 
+def _extract_marked_region(content: str, start_marker: str, end_marker: str) -> str | None:
+    start = content.find(start_marker)
+    end = content.find(end_marker)
+    if start < 0 or end < 0 or end <= start:
+        return None
+    return content[start + len(start_marker) : end]
+
+
+def _replace_marked_region(
+    content: str,
+    start_marker: str,
+    end_marker: str,
+    new_inner: str,
+) -> str:
+    start = content.find(start_marker)
+    end = content.find(end_marker)
+    if start < 0 or end < 0 or end <= start:
+        raise ValueError(f"Missing markers {start_marker!r} … {end_marker!r}")
+    inner = new_inner.strip("\n")
+    replacement = f"{start_marker}\n{inner}\n{end_marker}"
+    return content[:start] + replacement + content[end + len(end_marker) :]
+
+
+def _parse_release_meta(whats_new_inner: str) -> tuple[str, str] | None:
+    match = RELEASE_META_RE.search(whats_new_inner)
+    if not match:
+        return None
+    return match.group(1), match.group(2)
+
+
+def _render_whats_new_inner(version_tag: str, release_date: str, body_html: str) -> str:
+    body = body_html.strip()
+    return (
+        f"<!-- release-meta: version={version_tag} date={release_date} -->\n"
+        f"{body}\n"
+        f"{README_AI_NOTICE}"
+    )
+
+
 def _render_readme_upcoming_body(groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
     if groups:
         visible = [g for g in groups if g.get("bullets")]
         if not visible:
-            return 'New features and improvements for the next release are currently in development.'
+            return EMPTY_UPCOMING_TEXT
 
         sections: list[str] = []
         for group in visible:
@@ -963,53 +1015,77 @@ def _render_readme_upcoming_body(groups: list[dict[str, list[str]]] | None = Non
                 f"<b>{emoji} {heading}:</b>\n<ul align=\"left\">\n{items}\n</ul>"
             )
         return "\n".join(sections)
-    elif bullets:
+    if bullets:
         items = "\n".join(_bullet_to_html_list_item(b) for b in bullets)
         return f'<ul align="left">\n{items}\n</ul>'
-    else:
-        return 'New features and improvements for the next release are currently in development.'
+    return EMPTY_UPCOMING_TEXT
 
 
-def _ensure_readme_ai_notice(block: str) -> str:
-    if "AI-generated summary; may contain mistakes." in block:
-        return block
-    return block.replace(
-        "</details>",
-        f"{README_AI_NOTICE}\n</details>",
-        1,
+def _format_upcoming_inner(body: str) -> str:
+    stripped = body.strip()
+    if not stripped:
+        stripped = EMPTY_UPCOMING_TEXT
+    if stripped == EMPTY_UPCOMING_TEXT or (
+        not stripped.startswith("<ul") and not stripped.startswith("<b>")
+    ):
+        return f"{stripped}\n{README_AI_NOTICE}"
+    return f"{stripped}\n{README_AI_NOTICE}"
+
+
+def _render_release_notes_shell(*, upcoming_inner: str, whats_new_inner: str | None) -> str:
+    upcoming = _format_upcoming_inner(upcoming_inner)
+    whats_new_block = ""
+    if whats_new_inner and whats_new_inner.strip():
+        meta = _parse_release_meta(whats_new_inner) or ("v0.0.0", "1970-01-01")
+        version_tag, release_date = meta
+        # Ensure AI notice once on published notes.
+        body = whats_new_inner.strip()
+        if "AI-generated summary; may contain mistakes." not in body:
+            body = f"{body.rstrip()}\n{README_AI_NOTICE}"
+        whats_new_block = (
+            f"\n\n### What's New · `{version_tag}` · {release_date}\n\n"
+            f"{RELEASE_WHATS_NEW_START}\n"
+            f"{body}\n"
+            f"{RELEASE_WHATS_NEW_END}\n"
+        )
+    return (
+        f"{UPCOMING_CHANGES_START}\n\n"
+        "## Release notes\n\n"
+        "### Upcoming\n\n"
+        f"{RELEASE_UPCOMING_START}\n"
+        f"{upcoming.strip()}\n"
+        f"{RELEASE_UPCOMING_END}\n"
+        f"{whats_new_block}\n"
+        f"{UPCOMING_CHANGES_END}"
     )
 
 
 def _render_readme_upcoming_block(content: str, groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
+    """Rewrite the Upcoming body; preserve the latest What's New region if present."""
     body = _render_readme_upcoming_body(groups=groups, bullets=bullets)
-
-    # Keep only the latest released What's New block. Older releases live in
-    # CHANGELOG.md — stacking history here made the README grow forever.
-    whats_new_blocks = re.findall(
-        r"(<details(?:\s+open)?>\s*<summary><b>🎉 What's New.*?</details>)",
+    existing_whats_new = _extract_marked_region(
         content,
-        flags=re.DOTALL
+        RELEASE_WHATS_NEW_START,
+        RELEASE_WHATS_NEW_END,
     )
-    whats_new_formatted = ""
-    if whats_new_blocks:
-        latest = _ensure_readme_ai_notice(whats_new_blocks[0])
-        whats_new_formatted = f"\n\n<br/>\n\n{latest}"
-
-    # If body is the plain text fallback, wrap it in <p align="left">
-    if not body.startswith("<ul") and not body.startswith("<b>"):
-        body = f'<p align="left">\n{body}\n</p>'
-
-    body = body + f"\n{README_AI_NOTICE}"
-
-    return (
-        f"{UPCOMING_CHANGES_START}\n"
-        '<div align="center">\n\n'
-        "<details open>\n"
-        '<summary><b>🔮 Upcoming in the Next Release</b></summary>\n'
-        f"{body}\n"
-        f"</details>{whats_new_formatted}\n\n"
-        "</div>\n"
-        f"{UPCOMING_CHANGES_END}"
+    # Legacy fallback: old <details> What's New while migrating.
+    if existing_whats_new is None:
+        legacy = re.search(
+            r"<details(?:\s+open)?>\s*"
+            r"<summary><b>🎉 What's New \((v[^)]+)\)\s*-\s*(\d{4}-\d{2}-\d{2})</b></summary>"
+            r"(.*?)</details>",
+            content,
+            flags=re.DOTALL,
+        )
+        if legacy:
+            existing_whats_new = _render_whats_new_inner(
+                legacy.group(1),
+                legacy.group(2),
+                legacy.group(3).strip(),
+            )
+    return _render_release_notes_shell(
+        upcoming_inner=body,
+        whats_new_inner=existing_whats_new,
     )
 
 
@@ -1022,7 +1098,11 @@ def _update_readme(content: str, groups: list[dict[str, list[str]]] | None = Non
     if pattern.search(content):
         updated = pattern.sub(block, content, count=1)
     else:
-        anchor = re.search(r"^(<!-- upcoming-changes:start -->|<h2 id=\"features\">)", content, flags=re.MULTILINE)
+        anchor = re.search(
+            r"^(<!-- upcoming-changes:start -->|## Search\b|<h2 id=\"features\">)",
+            content,
+            flags=re.MULTILINE,
+        )
         if not anchor:
             raise ValueError(
                 "Could not find Upcoming Changes markers or insertion anchor in README.md"
@@ -1032,6 +1112,12 @@ def _update_readme(content: str, groups: list[dict[str, list[str]]] | None = Non
     if not updated.endswith("\n"):
         updated += "\n"
     return updated
+
+
+def _ensure_readme_ai_notice(block: str) -> str:
+    if "AI-generated summary; may contain mistakes." in block:
+        return block
+    return f"{block.rstrip()}\n{README_AI_NOTICE}"
 
 
 def _update_changelog(

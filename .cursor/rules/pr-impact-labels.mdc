@@ -59,7 +59,7 @@ Agent / maintainer flow:
 
 **Bot bypass:** **boxlore-master-pusher** (GitHub App 4340323) and organization admins bypass the ruleset so scheduled workflows can push chore commits to `master` directly. Never remove that Integration bypass.
 
-Do **not** hand-edit `CHANGELOG.md` or README Upcoming before merge — changelog-on-merge owns that (labels help prioritize README / notifications).
+Do **not** hand-edit `CHANGELOG.md` or README Upcoming / What's New marker regions before merge — changelog-on-merge owns those (labels help prioritize README / notifications).
 
 ## PR title (required)
 

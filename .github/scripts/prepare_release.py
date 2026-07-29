@@ -35,6 +35,12 @@ CHANGELOG_VERSION_RE = re.compile(
     re.MULTILINE,
 )
 README_VERSION_RE = re.compile(
+    r"<!--\s*release-meta:\s*version=v"
+    r"((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))"
+    r"\s+date=(\d{4}-\d{2}-\d{2})\s*-->"
+)
+# Legacy What's New <details> summaries (pre marker rewrite).
+README_VERSION_LEGACY_RE = re.compile(
     r"<summary><b>🎉 What's New \(v"
     r"((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))\)"
     r"\s*-\s*(\d{4}-\d{2}-\d{2})</b></summary>"
@@ -43,12 +49,8 @@ README_APK_URL_RE = re.compile(
     r"https://github\.com/[^/\"'\s]+/[^/\"'\s]+/"
     r"releases/latest/download/[^\"'\s]+\.apk"
 )
-UPCOMING_DETAILS_RE = re.compile(
-    r"<details(?:\s+open)?>\s*"
-    r"<summary><b>🔮 Upcoming in the Next Release</b></summary>"
-    r"(.*?)</details>",
-    re.DOTALL,
-)
+DOWNLOAD_APK_START = update_changelog.DOWNLOAD_APK_START
+DOWNLOAD_APK_END = update_changelog.DOWNLOAD_APK_END
 EXPECTED_FILES = {
     "CHANGELOG.md",
     "README.md",
@@ -133,7 +135,7 @@ def latest_changelog_version(content: str | None = None) -> str:
 
 def latest_readme_version(content: str | None = None) -> str:
     source = content if content is not None else require_file(README_PATH)
-    match = README_VERSION_RE.search(source)
+    match = README_VERSION_RE.search(source) or README_VERSION_LEGACY_RE.search(source)
     if not match:
         fail("README.md has no versioned What's New block")
     return match.group(1)
@@ -593,39 +595,47 @@ def promote_readme(content: str, target: AppVersion, release_date: str) -> str:
     if start < 0 or end < 0 or end <= start:
         fail("README.md is missing valid upcoming-changes markers")
     end += len(update_changelog.UPCOMING_CHANGES_END)
-    current_block = content[start:end]
 
-    upcoming = UPCOMING_DETAILS_RE.search(current_block)
-    if not upcoming:
-        fail("README.md is missing the Upcoming in the Next Release block")
-    release_body = upcoming.group(1).strip()
-    if "currently in development" in release_body:
+    upcoming_inner = update_changelog._extract_marked_region(
+        content,
+        update_changelog.RELEASE_UPCOMING_START,
+        update_changelog.RELEASE_UPCOMING_END,
+    )
+    if upcoming_inner is None:
+        # Legacy <details> Upcoming while migrating.
+        legacy = re.search(
+            r"<details(?:\s+open)?>\s*"
+            r"<summary><b>🔮 Upcoming in the Next Release</b></summary>"
+            r"(.*?)</details>",
+            content[start:end],
+            flags=re.DOTALL,
+        )
+        if not legacy:
+            fail("README.md is missing the Upcoming release notes region")
+        upcoming_inner = legacy.group(1)
+    release_body = upcoming_inner.strip()
+    # Strip AI notice / empty placeholder before promoting into What's New.
+    release_body = re.sub(
+        r'<p align="center">\s*<sub><sub>.*?AI-generated summary.*?</sub></sub>\s*</p>\s*',
+        "",
+        release_body,
+        flags=re.DOTALL,
+    ).strip()
+    if (
+        not release_body
+        or update_changelog.EMPTY_UPCOMING_TEXT in release_body
+        or "currently in development" in release_body.lower()
+    ):
         fail("README Upcoming section is empty")
 
-    # Drop older What's New blocks; CHANGELOG.md is the long-term history.
-    new_release = (
-        "<details open>\n"
-        f"<summary><b>🎉 What's New ({target.tag}) - {release_date}</b></summary>\n"
-        f"{release_body}\n"
-        "</details>"
+    whats_new_inner = update_changelog._render_whats_new_inner(
+        target.tag,
+        release_date,
+        release_body,
     )
-    empty_upcoming = (
-        "<details>\n"
-        "<summary><b>🔮 Upcoming in the Next Release</b></summary>\n"
-        '<p align="left">\n'
-        "New features and improvements for the next release are currently in development.\n"
-        "</p>\n"
-        f"{update_changelog.README_AI_NOTICE}\n"
-        "</details>"
-    )
-    replacement = (
-        f"{update_changelog.UPCOMING_CHANGES_START}\n"
-        '<div align="center">\n\n'
-        f"{empty_upcoming}\n\n"
-        "<br/>\n\n"
-        f"{new_release}\n\n"
-        "</div>\n"
-        f"{update_changelog.UPCOMING_CHANGES_END}"
+    replacement = update_changelog._render_release_notes_shell(
+        upcoming_inner=update_changelog.EMPTY_UPCOMING_TEXT,
+        whats_new_inner=whats_new_inner,
     )
     updated = content[:start] + replacement + content[end:]
     if latest_readme_version(updated) != target.name:
@@ -640,19 +650,43 @@ def release_apk_url(repository: str, version: AppVersion) -> str:
     )
 
 
+def _render_download_apk_inner(repository: str, target: AppVersion) -> str:
+    url = release_apk_url(repository, target)
+    return (
+        f'<a href="{url}">\n'
+        '  <img src="docs/images/card_github_v6.svg" height="72" '
+        'alt="Download boxlore podcast app APK on GitHub"/>\n'
+        "</a>"
+    )
+
+
 def update_readme_download_url(
     content: str,
     repository: str,
     target: AppVersion,
 ) -> str:
-    matches = list(README_APK_URL_RE.finditer(content))
-    if not matches:
-        fail("README.md must contain at least one GitHub latest-download APK URL")
-    updated = README_APK_URL_RE.sub(
-        release_apk_url(repository, target),
+    expected = release_apk_url(repository, target)
+    download_inner = update_changelog._extract_marked_region(
         content,
+        DOWNLOAD_APK_START,
+        DOWNLOAD_APK_END,
     )
-    if release_apk_url(repository, target) not in updated:
+    if download_inner is not None:
+        updated = update_changelog._replace_marked_region(
+            content,
+            DOWNLOAD_APK_START,
+            DOWNLOAD_APK_END,
+            _render_download_apk_inner(repository, target),
+        )
+    else:
+        matches = list(README_APK_URL_RE.finditer(content))
+        if not matches:
+            fail("README.md must contain at least one GitHub latest-download APK URL")
+        updated = README_APK_URL_RE.sub(expected, content)
+
+    # Keep any remaining latest-download URLs (hero duplicates) in sync.
+    updated = README_APK_URL_RE.sub(expected, updated)
+    if expected not in updated:
         fail("README APK download URL did not update to the release asset")
     return updated
 
@@ -987,27 +1021,30 @@ def shorten_notification_line(text: str, limit: int = 180) -> str:
 
 
 def notification_bullets(content: str, version: AppVersion) -> list[str]:
-    release_match = re.search(
-        r"<details(?:\s+open)?>\s*"
-        rf"<summary>.*?<b>🎉 What's New \({re.escape(version.tag)}\)"
-        r"\s*-\s*\d{4}-\d{2}-\d{2}</b></summary>"
-        r"(.*?)</details>",
+    release_body = update_changelog._extract_marked_region(
         content,
-        flags=re.DOTALL,
+        update_changelog.RELEASE_WHATS_NEW_START,
+        update_changelog.RELEASE_WHATS_NEW_END,
     )
-    if not release_match:
-        # Fallback for summaries without optional prefix content.
+    if release_body is not None:
+        meta = update_changelog._parse_release_meta(release_body)
+        if meta and meta[0] != version.tag:
+            fail(
+                f"README What's New is {meta[0]} but Gradle release is {version.tag}"
+            )
+    else:
+        # Legacy <details> What's New.
         release_match = re.search(
             r"<details(?:\s+open)?>\s*"
-            rf"<summary><b>🎉 What's New \({re.escape(version.tag)}\)"
+            rf"<summary>.*?<b>🎉 What's New \({re.escape(version.tag)}\)"
             r"\s*-\s*\d{4}-\d{2}-\d{2}</b></summary>"
             r"(.*?)</details>",
             content,
             flags=re.DOTALL,
         )
-    if not release_match:
-        fail(f"README.md has no What's New block for {version.tag}")
-    release_body = release_match.group(1)
+        if not release_match:
+            fail(f"README.md has no What's New block for {version.tag}")
+        release_body = release_match.group(1)
 
     candidates = [
         plain_text(item)

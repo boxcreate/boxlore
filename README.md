@@ -8,9 +8,11 @@
 
 <br/>
 
+<!-- download-apk:start -->
 <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.13.apk">
   <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
+<!-- download-apk:end -->
 &nbsp;&nbsp;
 <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
   <img src="docs/images/card_playstore_v6.svg" height="72" alt="Coming soon on Google Play"/>
@@ -26,6 +28,7 @@
 <br/><br/>
 
 **[About](#about)** ·
+**[Release notes](#release-notes)** ·
 **[Search](#search)** ·
 **[Features](#features)** ·
 **[Get started](#get-started)** ·
@@ -48,17 +51,21 @@ Most podcast apps call an open API, do word‑for‑word search, show Apple char
 The smart catalog covers popular chart podcasts and grows daily — not every show on earth yet. Outside that index, boxlore still works as a normal podcast client (subscribe, play, download, OPML).
 
 <!-- upcoming-changes:start -->
-<div align="center">
 
-<details open>
-<summary><b>🔮 Upcoming in the Next Release</b></summary>
+## Release notes
+
+<a id="release-notes"></a>
+
+### Upcoming
+
+<!-- release-upcoming:start -->
 New features and improvements for the next release are currently in development.
-</details>
+<!-- release-upcoming:end -->
 
-<br/>
+### What's New · `v0.0.13` · 2026-07-29
 
-<details open>
-<summary><b>🎉 What's New (v0.0.13) - 2026-07-29</b></summary>
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.13 date=2026-07-29 -->
 <b>🆕 New features:</b>
 <ul align="left">
 <li>An all‑new way to search shows and episodes: typo‑tolerant podcast search powered by <a href="https://github.com/meilisearch/meilisearch">Meilisearch</a>, plus concept search for shows and episodes powered by <a href="https://github.com/qdrant/qdrant">Qdrant</a>. <a href="https://github.com/boxcreate/boxlore/pull/955"><img src="https://img.shields.io/badge/PR-955-6750A4?style=flat-square" alt="PR #955" height="18"/></a></li>
@@ -70,9 +77,8 @@ New features and improvements for the next release are currently in development.
 <li>NotebookLM‑style briefings are tighter and less sloppy — more aware of repetition, depth, and which stories matter. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
 <li>UI polish across startup, onboarding suggestions, Home and Explore search, and several other screens. <a href="https://github.com/boxcreate/boxlore/pull/954"><img src="https://img.shields.io/badge/PR-954-6750A4?style=flat-square" alt="PR #954" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/952"><img src="https://img.shields.io/badge/PR-952-6750A4?style=flat-square" alt="PR #952" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
 </ul>
-</details>
+<!-- release-whats-new:end -->
 
-</div>
 <!-- upcoming-changes:end -->
 
 ## Search
@@ -166,11 +172,9 @@ Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
 
 <a id="install"></a>
 
+Use the **GitHub APK** button at the top of this page (latest release asset) or get it on Play:
+
 <div align="center">
-  <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.13.apk">
-    <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
-  </a>
-  &nbsp;&nbsp;
   <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
     <img src="docs/images/card_playstore_v6.svg" height="72" alt="Coming soon on Google Play"/>
   </a>
