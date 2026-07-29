@@ -487,6 +487,21 @@ fun ExploreContent(
                             }
 
                             if (eps.isNotEmpty()) {
+                                item(
+                                    key = "semantic_episodes_header",
+                                    span = StaggeredGridItemSpan.FullLine,
+                                ) {
+                                    Text(
+                                        text = "Episodes",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(
+                                            top = if (pods.isNotEmpty()) 8.dp else 0.dp,
+                                            bottom = 8.dp,
+                                        ),
+                                    )
+                                }
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     val heroEp = eps[0]
                                     val parentPodcast = Podcast(

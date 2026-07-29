@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -191,14 +192,17 @@ fun ExploreRelatedShowsRail(
         )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 4.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
             itemsIndexed(railItems, key = { _, it -> it.id }) { index, podcast ->
+                // Clickable without a clip shape — clipping the whole column was eating title glyphs
+                // at the bottom-left of the rounded bounds.
                 Column(
                     modifier =
                         Modifier
                             .width(104.dp)
-                            .expressiveClickable(shape = RoundedCornerShape(12.dp)) {
+                            .expressiveClickable {
                                 onPodcastClick(podcast, index)
                             },
                 ) {
@@ -214,7 +218,7 @@ fun ExploreRelatedShowsRail(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = podcast.title,
                         style = MaterialTheme.typography.labelMedium,
@@ -222,6 +226,7 @@ fun ExploreRelatedShowsRail(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 2.dp),
                     )
                 }
             }
