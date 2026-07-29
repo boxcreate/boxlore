@@ -108,6 +108,33 @@ class ReadmeReleaseMarkersTest(unittest.TestCase):
         assert inner is not None
         self.assertIn("boxlore-v0.0.13.apk", inner)
 
+    def test_skip_notify_expected_files_include_readme_url(self) -> None:
+        self.assertEqual(
+            pr.EXPECTED_FILES_SKIP_NOTIFY,
+            {"app/build.gradle.kts", "README.md"},
+        )
+        self.assertTrue(
+            pr._skip_notify_changed_files_ok({"app/build.gradle.kts", "README.md"})
+        )
+        self.assertTrue(pr._skip_notify_changed_files_ok({"app/build.gradle.kts"}))
+        self.assertFalse(
+            pr._skip_notify_changed_files_ok(
+                {"app/build.gradle.kts", "README.md", "CHANGELOG.md"}
+            )
+        )
+
+    def test_skip_notify_url_rewrite_preserves_whats_new(self) -> None:
+        whats = uc._render_whats_new_inner("v0.0.12", "2026-07-25", SAMPLE_WHATS_NEW_BODY)
+        upcoming = "Something cooking for next."
+        readme = _readme_with_notes(upcoming=upcoming, whats_new_inner=whats)
+        updated = pr.update_readme_download_url(
+            readme, "boxcreate/boxlore", pr.AppVersion("0.0.13", 13)
+        )
+        self.assertIn("boxlore-v0.0.13.apk", updated)
+        self.assertIn(upcoming, updated)
+        self.assertIn("release-meta: version=v0.0.12", updated)
+        self.assertNotIn("release-meta: version=v0.0.13", updated)
+
 
 if __name__ == "__main__":
     unittest.main()

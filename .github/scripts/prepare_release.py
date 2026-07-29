@@ -56,8 +56,14 @@ EXPECTED_FILES = {
     "README.md",
     "app/build.gradle.kts",
 }
-# Artifacts-only prepare: version bump only — no CHANGELOG/README promotion or notify.
+# Artifacts-only prepare: version bump + APK download URL; no CHANGELOG/README
+# promotion (Upcoming → What's New) and no in-app notify.
 EXPECTED_FILES_SKIP_NOTIFY = {
+    "app/build.gradle.kts",
+    "README.md",
+}
+# Pre-URL-rewrite skip_notify prepares only touched Gradle (keep publishable).
+EXPECTED_FILES_SKIP_NOTIFY_LEGACY = {
     "app/build.gradle.kts",
 }
 SKIP_NOTIFY_MARKER = "[skip notify]"
@@ -734,9 +740,13 @@ def prepare_release(args: argparse.Namespace) -> None:
     )
 
     if skip_notify:
-        # Version bump only — leave CHANGELOG / README / Upcoming untouched.
-        # Publish will skip announcement; send notify manually if needed.
-        pass
+        # Version bump + APK badge URL only — leave CHANGELOG / Upcoming / What's New
+        # untouched. Publish skips in-app announcement; notify manually if needed.
+        readme_original = require_file(README_PATH)
+        README_PATH.write_text(
+            update_readme_download_url(readme_original, repository, target),
+            encoding="utf-8",
+        )
     else:
         processed = reconcile_changelog(
             repository,
@@ -840,6 +850,14 @@ def expected_release_files(*, skip_notify: bool) -> set[str]:
     return EXPECTED_FILES_SKIP_NOTIFY if skip_notify else EXPECTED_FILES
 
 
+def _skip_notify_changed_files_ok(changed_files: set[str]) -> bool:
+    allowed = {
+        frozenset(EXPECTED_FILES_SKIP_NOTIFY),
+        frozenset(EXPECTED_FILES_SKIP_NOTIFY_LEGACY),
+    }
+    return frozenset(changed_files) in allowed
+
+
 def verify_release_diff(
     current: AppVersion,
     commit: str = "HEAD",
@@ -851,7 +869,14 @@ def verify_release_diff(
         skip_notify = commit_skips_notify(commit)
     expected = expected_release_files(skip_notify=skip_notify)
     changed_files = git_changed_files(parent, commit)
-    if changed_files != expected:
+    if skip_notify:
+        if not _skip_notify_changed_files_ok(changed_files):
+            fail(
+                f"Release commit {commit[:12]} changed {sorted(changed_files)}; "
+                f"expected {sorted(EXPECTED_FILES_SKIP_NOTIFY)} "
+                f"(or legacy {sorted(EXPECTED_FILES_SKIP_NOTIFY_LEGACY)})"
+            )
+    elif changed_files != expected:
         fail(
             f"Release commit {commit[:12]} changed {sorted(changed_files)}; "
             f"expected exactly {sorted(expected)}"
@@ -887,9 +912,26 @@ def verify_release_metadata(
     *,
     skip_notify: bool = False,
 ) -> None:
+    repository = os.environ.get(
+        "GITHUB_REPOSITORY",
+        update_changelog.DEFAULT_GITHUB_REPOSITORY,
+    ).strip()
+    expected_download_url = release_apk_url(repository, current)
+    readme = require_file(README_PATH)
+
     if skip_notify:
-        # Artifacts-only release: docs were intentionally left unchanged.
+        # What's New / CHANGELOG may lag; APK badge should still match Gradle when
+        # prepare rewrote it. Legacy gradle-only prepares may still lag the badge.
+        if expected_download_url in readme:
+            return
+        if README_APK_URL_RE.search(readme):
+            print(
+                "Warning: skip_notify release README APK badge does not match "
+                f"{current.apk_asset} (legacy prepare without URL rewrite?).",
+                file=sys.stderr,
+            )
         return
+
     changelog_version = latest_changelog_version()
     readme_version = latest_readme_version()
     if changelog_version != current.name or readme_version != current.name:
@@ -899,12 +941,7 @@ def verify_release_metadata(
         )
     if update_changelog._extract_unreleased_sections(require_file(CHANGELOG_PATH)):
         fail("Release commit still contains [Unreleased] entries")
-    repository = os.environ.get(
-        "GITHUB_REPOSITORY",
-        update_changelog.DEFAULT_GITHUB_REPOSITORY,
-    ).strip()
-    expected_download_url = release_apk_url(repository, current)
-    if expected_download_url not in require_file(README_PATH):
+    if expected_download_url not in readme:
         fail(f"README APK link must point to {current.apk_asset}")
 
 

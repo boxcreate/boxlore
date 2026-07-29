@@ -29,8 +29,9 @@ on:
           - major
       skip_notify:
         description: >-
-          Artifacts only — bump version / publish APK+AAB; skip CHANGELOG+README
-          promotion and in-app release notification (send manually later)
+          Artifacts only — bump version, rewrite README APK download URL, publish
+          APK+AAB; skip CHANGELOG / What's New promotion and in-app notification
+          (send manually later)
         required: true
         default: false
         type: boolean
@@ -207,11 +208,19 @@ jobs:
           import subprocess
 
           skip = os.environ.get("SKIP_NOTIFY", "").strip().lower() in {"1", "true", "yes"}
-          expected = {"app/build.gradle.kts"} if skip else {
-              "CHANGELOG.md",
-              "README.md",
-              "app/build.gradle.kts",
-          }
+          if skip:
+              expected_options = [
+                  {"app/build.gradle.kts", "README.md"},
+                  {"app/build.gradle.kts"},
+              ]
+          else:
+              expected_options = [
+                  {
+                      "CHANGELOG.md",
+                      "README.md",
+                      "app/build.gradle.kts",
+                  }
+              ]
           changed = {
               line
               for line in subprocess.check_output(
@@ -220,10 +229,10 @@ jobs:
               ).splitlines()
               if line
           }
-          if changed != expected:
+          if changed not in expected_options:
               raise SystemExit(
                   f"Unexpected release files: {sorted(changed)}; "
-                  f"expected: {sorted(expected)}"
+                  f"expected one of: {[sorted(x) for x in expected_options]}"
               )
           PY
 
@@ -238,7 +247,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           if [[ "$SKIP_NOTIFY" == "true" ]]; then
-            git add app/build.gradle.kts
+            git add app/build.gradle.kts README.md
             git commit -m "release: prepare ${TAG} [skip changelog] [skip notify]"
           else
             git add app/build.gradle.kts CHANGELOG.md README.md
@@ -272,18 +281,18 @@ jobs:
           - APK asset: \`${APK_ASSET}\`
           - AAB asset: \`${AAB_ASSET}\`
 
-          > **skip_notify:** CHANGELOG / README were not promoted and the in-app release
-          > notification will not be sent on publish. Send a manual notification via
+          > **skip_notify:** CHANGELOG / What's New were not promoted and the in-app
+          > release notification will not be sent on publish. The README APK download
+          > badge is updated to this release. Send a manual notification via
           > **Send boxlore Notification** after the GitHub Release exists if needed.
-          > README download badge may still point at the previous APK filename until a
-          > normal (non-skip) release updates it.
 
           ## On merge
           The protected release job rebuilds this merge commit and publishes signed APK/AAB only.
 
           ## Review checklist
           - [ ] Gradle version transition is correct
-          - [ ] Only \`app/build.gradle.kts\` changed
+          - [ ] README APK download URL points at \`${APK_ASSET}\`
+          - [ ] Only \`app/build.gradle.kts\` and README download URL changed
           EOF
           )"
           else
@@ -726,7 +735,6 @@ jobs:
             --latest
 
       - name: Verify README latest-download APK
-        if: steps.release.outputs.skip_notify != 'true'
         env:
           TAG: ${{ steps.release.outputs.tag }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
