@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Multi-storefront discovery across 11 chart countries with region and language pickers (English locked, up to 4 languages) and shared discovery poster cards plus refreshed Home, Explore, search, and onboarding UI (taste‑lane chips, equal‑height posters, vibe headers, “Designed for you” grid) ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+- Integrated Meili typeahead via GET /search/typeahead alongside legacy GET /search, returning results grouped as Matches and Also found; implemented 1000ms debounce for semantic search endpoint GET /search/semantic in Explore "By idea" flow with immediate loader ([#955](https://github.com/boxcreate/boxlore/pull/955)) <!-- impact:user-impact-high -->
 - Explore For You tab renders CuratedEpisodeCard with showSubtitle=false in staggered grid, replacing ExploreEpisodeBentoCard for body items ([#954](https://github.com/boxcreate/boxlore/pull/954)) <!-- impact:user-impact-low -->
 ### Changed
 - Recommendations now use a larger candidate pool powered by Qwen3 embeddings on the catalog/v3 discovery path; retired live content/sections/v1 client ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
+- Renamed Explore chips to "Find a show" and "By idea"; preserved existing searchPodcasts, GET /search, and GET /search/semantic for backward compatibility ([#955](https://github.com/boxcreate/boxlore/pull/955)) <!-- impact:user-impact-high -->
 - Module README updated to document new card style and layout for the For You bento ([#954](https://github.com/boxcreate/boxlore/pull/954)) <!-- impact:user-impact-low -->
 ## [v0.0.12] - 2026-07-25
 
