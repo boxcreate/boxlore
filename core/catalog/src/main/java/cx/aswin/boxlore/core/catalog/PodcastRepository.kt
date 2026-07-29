@@ -16,6 +16,7 @@ import com.google.gson.Gson
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
+import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
 import cx.aswin.boxlore.core.catalog.logic.mergeShowSearchResults
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
@@ -201,18 +202,35 @@ class PodcastRepository(
         )
     }
 
-    suspend fun searchEpisodesSemantic(query: String, country: String): List<Episode> = withContext(Dispatchers.IO) {
-        try {
-            val response = api.searchSemantic(publicKey, query, country).execute()
-            if (response.isSuccessful && response.body() != null) {
-                response.body()!!.items.mapNotNull { mapToEpisode(it) }
-            } else {
-                emptyList()
-            }
-        } catch (e: Exception) {
-            emptyList()
+    suspend fun searchEpisodesSemantic(query: String, country: String): List<Episode> =
+        withContext(Dispatchers.IO) {
+            searchSemanticGrouped(query, country).episodes
         }
-    }
+
+    /**
+     * Concept search: one CF embed on the proxy → Qdrant `podcasts` + `episodes`.
+     * [SemanticSearchGroupedResult.podcasts] may be empty on older Worker builds.
+     */
+    suspend fun searchSemanticGrouped(
+        query: String,
+        country: String,
+    ): SemanticSearchGroupedResult =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = api.searchSemantic(publicKey, query, country).execute()
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    SemanticSearchGroupedResult(
+                        podcasts = body.feeds.mapNotNull { mapSearchFeedToPodcast(it) },
+                        episodes = body.items.mapNotNull { mapToEpisode(it) },
+                    )
+                } else {
+                    SemanticSearchGroupedResult(emptyList(), emptyList())
+                }
+            } catch (_: Exception) {
+                SemanticSearchGroupedResult(emptyList(), emptyList())
+            }
+        }
 
     suspend fun searchEpisodes(feedId: String, query: String): List<Episode> = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {

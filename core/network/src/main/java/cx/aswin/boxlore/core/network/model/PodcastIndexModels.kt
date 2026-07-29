@@ -109,7 +109,11 @@ data class EpisodesResponse(
     val status: String,
     
     @SerialName("items")
-    val items: List<EpisodeItem> = emptyList()
+    val items: List<EpisodeItem> = emptyList(),
+
+    /** Additive podcast-vector hits from GET /search/semantic (ignored by older clients). */
+    @SerialName("feeds")
+    val feeds: List<SearchFeed> = emptyList(),
 )
 
 @Serializable

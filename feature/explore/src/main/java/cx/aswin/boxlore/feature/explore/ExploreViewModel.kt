@@ -60,6 +60,8 @@ sealed interface ExploreUiState {
         val isRecommendationsFallback: Boolean = true,
         val searchTab: SearchTab = SearchTab.SHOWS,
         val semanticSearchResults: List<Episode> = emptyList(),
+        /** Podcast-vector hits from the same semantic request (additive `feeds`). */
+        val semanticPodcastResults: List<Podcast> = emptyList(),
         val isSemanticLoading: Boolean = false,
         val hasPerformedSemanticSearch: Boolean = false,
         /** Hybrid `/search` hits not already in Meili typeahead. */
@@ -94,6 +96,7 @@ private data class ExploreRecsSlice(
 private data class ExploreSearchSlice(
     val searchTab: SearchTab,
     val semanticSearchResults: List<Episode>,
+    val semanticPodcastResults: List<Podcast>,
     val isSemanticLoading: Boolean,
     val hasPerformedSemanticSearch: Boolean,
     val alsoFoundResults: List<Podcast>,
@@ -128,6 +131,7 @@ class ExploreViewModel(
             isRecommendationsFallback = true,
             searchTab = SearchTab.SHOWS,
             semanticSearchResults = emptyList(),
+            semanticPodcastResults = emptyList(),
             isSemanticLoading = false,
             hasPerformedSemanticSearch = false,
             alsoFoundResults = emptyList(),
@@ -147,6 +151,7 @@ class ExploreViewModel(
     private val _isRecommendationsFallback = MutableStateFlow(true)
     private val _searchTab = MutableStateFlow(SearchTab.SHOWS)
     private val _semanticSearchResults = MutableStateFlow<List<Episode>>(emptyList())
+    private val _semanticPodcastResults = MutableStateFlow<List<Podcast>>(emptyList())
     private val _isSemanticLoading = MutableStateFlow(false)
     private val _hasPerformedSemanticSearch = MutableStateFlow(false)
     private val _alsoFoundResults = MutableStateFlow<List<Podcast>>(emptyList())
@@ -250,18 +255,28 @@ class ExploreViewModel(
                     slice.copy(isRecommendationsFallback = isFallback)
                 },
                 combine(
-                    _searchTab,
-                    _semanticSearchResults,
-                    _isSemanticLoading,
-                    _hasPerformedSemanticSearch,
-                    _alsoFoundResults,
-                ) { searchTab, semanticSearchResults, isSemanticLoading, hasPerformedSemanticSearch, alsoFound ->
+                    combine(
+                        _searchTab,
+                        _semanticSearchResults,
+                        _semanticPodcastResults,
+                    ) { searchTab, semanticSearchResults, semanticPodcastResults ->
+                        Triple(searchTab, semanticSearchResults, semanticPodcastResults)
+                    },
+                    combine(
+                        _isSemanticLoading,
+                        _hasPerformedSemanticSearch,
+                        _alsoFoundResults,
+                    ) { isSemanticLoading, hasPerformedSemanticSearch, alsoFound ->
+                        Triple(isSemanticLoading, hasPerformedSemanticSearch, alsoFound)
+                    },
+                ) { semantic, meta ->
                     ExploreSearchSlice(
-                        searchTab,
-                        semanticSearchResults,
-                        isSemanticLoading,
-                        hasPerformedSemanticSearch,
-                        alsoFound,
+                        searchTab = semantic.first,
+                        semanticSearchResults = semantic.second,
+                        semanticPodcastResults = semantic.third,
+                        isSemanticLoading = meta.first,
+                        hasPerformedSemanticSearch = meta.second,
+                        alsoFoundResults = meta.third,
                     )
                 },
             ) { recs, search -> recs to search }
@@ -286,6 +301,7 @@ class ExploreViewModel(
                     isRecommendationsFallback = recs.isRecommendationsFallback,
                     searchTab = search.searchTab,
                     semanticSearchResults = search.semanticSearchResults,
+                    semanticPodcastResults = search.semanticPodcastResults,
                     isSemanticLoading = search.isSemanticLoading,
                     hasPerformedSemanticSearch = search.hasPerformedSemanticSearch,
                     alsoFoundResults = search.alsoFoundResults,
@@ -398,6 +414,7 @@ class ExploreViewModel(
         if (trimmed.isEmpty()) {
             _localSubstringResults.value = emptyList()
             _semanticSearchResults.value = emptyList()
+            _semanticPodcastResults.value = emptyList()
             _alsoFoundResults.value = emptyList()
             _hasPerformedSemanticSearch.value = false
             _isSemanticLoading.value = false
@@ -405,7 +422,7 @@ class ExploreViewModel(
             _localSubstringResults.value =
                 ExploreBrowseLogic.filterPodcastsBySubstring(trimmed, _seenPodcasts.values)
 
-            // Episodes (by idea): show loader immediately while we wait out the high embed debounce
+            // Concept tab: show loader immediately while we wait out the high embed debounce
             if (_searchTab.value == SearchTab.EPISODES) {
                 _isSemanticLoading.value = true
                 _hasPerformedSemanticSearch.value = false
@@ -584,18 +601,22 @@ class ExploreViewModel(
         myJob = viewModelScope.launch {
             _isSemanticLoading.value = true
             _semanticSearchResults.value = emptyList()
+            _semanticPodcastResults.value = emptyList()
             _hasPerformedSemanticSearch.value = false
             try {
                 val region = userPrefs.regionStream.first()
-                val results = podcastRepository.searchEpisodesSemantic(query, region)
+                val grouped = podcastRepository.searchSemanticGrouped(query, region)
                 if (semanticSearchJob == myJob) {
-                    val ranked = rankEpisodesOrOriginal(results)
-                    _semanticSearchResults.value = ranked
+                    val rankedEps = rankEpisodesOrOriginal(grouped.episodes)
+                    val rankedPods = rankPodcastsOrOriginal(grouped.podcasts)
+                    _semanticSearchResults.value = rankedEps
+                    _semanticPodcastResults.value = rankedPods
+                    rankedPods.forEach { _seenPodcasts[it.id] = it }
                     _hasPerformedSemanticSearch.value = true
                     cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(
                         query,
-                        ranked.size,
-                        searchMode = "episode_semantic",
+                        rankedEps.size + rankedPods.size,
+                        searchMode = "concept_semantic",
                     )
                 }
             } catch (error: kotlinx.coroutines.CancellationException) {
@@ -603,6 +624,7 @@ class ExploreViewModel(
             } catch (_: Exception) {
                 if (semanticSearchJob == myJob) {
                     _semanticSearchResults.value = emptyList()
+                    _semanticPodcastResults.value = emptyList()
                     _hasPerformedSemanticSearch.value = true
                 }
             } finally {

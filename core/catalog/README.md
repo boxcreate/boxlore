@@ -7,7 +7,7 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 ## Public API
 
 - `PodcastRepository` coordinates Podcast Index calls, recommendation endpoints, curated vibes, home bootstrap, similar episodes (with content languages), content catalog/v3, and RSS delegation.
-- Show search: legacy `searchPodcasts` / `searchPodcastsWithCorrection` keep calling `GET /search` (hybrid). New clients use `searchPodcastsTypeahead` (`GET /search/typeahead` / Meili) and `searchPodcastsGrouped` (parallel typeahead + hybrid → Matches / Also found). Episode idea search stays `searchEpisodesSemantic` (`GET /search/semantic`, episodes only).
+- Show search: legacy `searchPodcasts` / `searchPodcastsWithCorrection` keep calling `GET /search` (hybrid). New clients use `searchPodcastsTypeahead` (`GET /search/typeahead` / Meili) and `searchPodcastsGrouped` (parallel typeahead + hybrid → Matches / Also found). Concept search uses `searchSemanticGrouped` / `searchEpisodesSemantic` (`GET /search/semantic`: one CF embed → Qdrant podcasts + episodes; additive `feeds` + legacy `items`).
 - `logic.mergeShowSearchResults` dedupes Meili vs hybrid by id / itunes / feed URL.
 - `mapRegionForBriefing` maps content regions to briefing markets (`us` / `in` / `gb` / `global`; legacy `uk` → `gb`) via `ContentRegions.briefingMarket`.
 - `SubscriptionRepository`, `ChapterRepository`, and `TranscriptRepository` expose catalog-adjacent data operations.
