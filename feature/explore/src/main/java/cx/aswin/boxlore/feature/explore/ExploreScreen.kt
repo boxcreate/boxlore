@@ -448,22 +448,25 @@ fun ExploreContent(
                         val showEmptyState =
                             !state.isSemanticLoading && state.hasPerformedSemanticSearch && !showContent
 
-                        if (showLoader && !showContent) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(80.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    BoxLoreLoader.Expressive(size = 80.dp)
+                        when {
+                            showLoader && !showContent -> {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(80.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        BoxLoreLoader.Expressive(size = 80.dp)
+                                    }
                                 }
                             }
-                        } else if (showEmptyState) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                ExploreEpisodesSearchEmptyState()
+                            showEmptyState -> {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    ExploreEpisodesSearchEmptyState()
+                                }
                             }
-                        } else if (showContent) {
+                            showContent -> {
                             if (pods.isNotEmpty()) {
                                 item(
                                     key = "semantic_related_shows_rail",
@@ -576,6 +579,7 @@ fun ExploreContent(
                                         BoxLoreLoader.Expressive(size = 48.dp)
                                     }
                                 }
+                            }
                             }
                         }
                     }
