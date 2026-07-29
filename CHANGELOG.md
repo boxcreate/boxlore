@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.0.13] - 2026-07-29
-
 ### Added
 - An all‑new way to search shows and episodes: typo‑tolerant podcast search powered by Meilisearch, plus concept search for shows and episodes powered by Qdrant. Explore chips are **Find a show** and **By idea**, with typeahead results grouped as Matches and Also found. ([#955](https://github.com/boxcreate/boxlore/pull/955)) <!-- impact:user-impact-high -->
 - Discovery expands with new chart countries — France, Germany, Netherlands, Singapore, Spain, Brazil, Russia, and Indonesia — alongside a country picker and language filters, and stronger multilingual recommendations using Qwen3 embeddings. ([#953](https://github.com/boxcreate/boxlore/pull/953)) <!-- impact:user-impact-high+backend-change -->
