@@ -27,6 +27,13 @@ on:
           - patch
           - minor
           - major
+      skip_notify:
+        description: >-
+          Artifacts only — bump version / publish APK+AAB; skip CHANGELOG+README
+          promotion and in-app release notification (send manually later)
+        required: true
+        default: false
+        type: boolean
       pr_number:
         description: Merged PR number for backfill-changelog
         required: false
@@ -177,20 +184,34 @@ jobs:
           GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
           BUMP: ${{ github.event.inputs.bump }}
           LATEST_TAG: ${{ steps.latest.outputs.tag }}
+          SKIP_NOTIFY: ${{ github.event.inputs.skip_notify }}
         run: |
           head_sha="$(git rev-parse HEAD)"
+          extra_args=()
+          if [[ "$SKIP_NOTIFY" == "true" ]]; then
+            extra_args+=(--skip-notify)
+          fi
           python3 .github/scripts/prepare_release.py prepare \
             --bump "$BUMP" \
             --latest-tag "$LATEST_TAG" \
-            --head-sha "$head_sha"
+            --head-sha "$head_sha" \
+            "${extra_args[@]}"
 
       - name: Validate release diff
+        env:
+          SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
         run: |
           git diff --check
           python3 - <<'PY'
+          import os
           import subprocess
 
-          expected = {"CHANGELOG.md", "README.md", "app/build.gradle.kts"}
+          skip = os.environ.get("SKIP_NOTIFY", "").strip().lower() in {"1", "true", "yes"}
+          expected = {"app/build.gradle.kts"} if skip else {
+              "CHANGELOG.md",
+              "README.md",
+              "app/build.gradle.kts",
+          }
           changed = {
               line
               for line in subprocess.check_output(
@@ -211,12 +232,18 @@ jobs:
         env:
           BRANCH: ${{ steps.release.outputs.branch }}
           TAG: ${{ steps.release.outputs.tag }}
+          SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add app/build.gradle.kts CHANGELOG.md README.md
-          git commit -m "release: prepare ${TAG} [skip changelog]"
+          if [[ "$SKIP_NOTIFY" == "true" ]]; then
+            git add app/build.gradle.kts
+            git commit -m "release: prepare ${TAG} [skip changelog] [skip notify]"
+          else
+            git add app/build.gradle.kts CHANGELOG.md README.md
+            git commit -m "release: prepare ${TAG} [skip changelog]"
+          fi
           git push --set-upstream origin "$BRANCH"
 
       - name: Open release PR
@@ -234,14 +261,34 @@ jobs:
           RECONCILED_PRS: ${{ steps.release.outputs.reconciled_pr_count }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
+          SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
         run: |
-          gh pr create \
-            --repo "$GITHUB_REPOSITORY" \
-            --base master \
-            --head "$BRANCH" \
-            --title "release: ${TAG} [skip changelog]" \
-            --label "no-user-impact" \
-            --body "$(cat <<EOF
+          if [[ "$SKIP_NOTIFY" == "true" ]]; then
+            title="release: ${TAG} [skip changelog] [skip notify]"
+            body="$(cat <<EOF
+          ## Release (artifacts only)
+          - Version: \`${CURRENT_VERSION} (${CURRENT_CODE}) → ${NEW_VERSION} (${NEW_CODE})\`
+          - Date: \`${RELEASE_DATE}\`
+          - APK asset: \`${APK_ASSET}\`
+          - AAB asset: \`${AAB_ASSET}\`
+
+          > **skip_notify:** CHANGELOG / README were not promoted and the in-app release
+          > notification will not be sent on publish. Send a manual notification via
+          > **Send boxlore Notification** after the GitHub Release exists if needed.
+          > README download badge may still point at the previous APK filename until a
+          > normal (non-skip) release updates it.
+
+          ## On merge
+          The protected release job rebuilds this merge commit and publishes signed APK/AAB only.
+
+          ## Review checklist
+          - [ ] Gradle version transition is correct
+          - [ ] Only \`app/build.gradle.kts\` changed
+          EOF
+          )"
+          else
+            title="release: ${TAG} [skip changelog]"
+            body="$(cat <<EOF
           ## Release
           - Version: \`${CURRENT_VERSION} (${CURRENT_CODE}) → ${NEW_VERSION} (${NEW_CODE})\`
           - Date: \`${RELEASE_DATE}\`
@@ -261,6 +308,14 @@ jobs:
           - [ ] Only Gradle, CHANGELOG, and README release files changed
           EOF
           )"
+          fi
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base master \
+            --head "$BRANCH" \
+            --title "$title" \
+            --label "no-user-impact" \
+            --body "$body"
 
       - name: Cleanup orphan release branch on failure
         if: failure() && steps.push_release.outcome == 'success'
@@ -288,6 +343,7 @@ jobs:
       pull-requests: read
     outputs:
       tag: ${{ steps.release.outputs.tag }}
+      skip_notify: ${{ steps.release.outputs.skip_notify }}
       notification_title: ${{ steps.notification.outputs.notification_title }}
       notification_body: ${{ steps.notification.outputs.notification_body }}
       notification_route: ${{ steps.notification.outputs.notification_route }}
@@ -324,6 +380,8 @@ jobs:
 
       - name: Verify merged release metadata
         id: release
+        env:
+          SKIP_NOTIFY: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_notify || '' }}
         run: python3 .github/scripts/prepare_release.py verify-merged
 
       - name: Validate existing tag and release state
@@ -606,6 +664,7 @@ jobs:
           TAG: ${{ steps.release.outputs.tag }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
+          SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
         run: |
           mkdir -p "$RUNNER_TEMP/release-assets"
           cp app/build/outputs/apk/release/app-release.apk \
@@ -616,11 +675,16 @@ jobs:
             cd "$RUNNER_TEMP/release-assets"
             sha256sum "$APK_ASSET" "$AAB_ASSET" > SHA256SUMS
           )
+          notes_args=(--output "$RUNNER_TEMP/release-notes.md")
+          if [[ "$SKIP_NOTIFY" == "true" ]]; then
+            notes_args+=(--skip-notify)
+          fi
           python3 .github/scripts/prepare_release.py notes \
-            --output "$RUNNER_TEMP/release-notes.md"
+            "${notes_args[@]}"
 
       - name: Prepare concise in-app announcement
         id: notification
+        if: steps.release.outputs.skip_notify != 'true'
         run: python3 .github/scripts/prepare_release.py notification
 
       - name: Create or repair GitHub Release
@@ -662,6 +726,7 @@ jobs:
             --latest
 
       - name: Verify README latest-download APK
+        if: steps.release.outputs.skip_notify != 'true'
         env:
           TAG: ${{ steps.release.outputs.tag }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
@@ -1095,7 +1160,9 @@ jobs:
 
   announce-release:
     needs: publish-release
-    if: needs.publish-release.result == 'success'
+    if: >-
+      needs.publish-release.result == 'success' &&
+      needs.publish-release.outputs.skip_notify != 'true'
     uses: ./.github/workflows/send-notification.yml
     with:
       title: ${{ needs.publish-release.outputs.notification_title }}

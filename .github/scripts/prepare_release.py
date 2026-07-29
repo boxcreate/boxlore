@@ -54,6 +54,11 @@ EXPECTED_FILES = {
     "README.md",
     "app/build.gradle.kts",
 }
+# Artifacts-only prepare: version bump only — no CHANGELOG/README promotion or notify.
+EXPECTED_FILES_SKIP_NOTIFY = {
+    "app/build.gradle.kts",
+}
+SKIP_NOTIFY_MARKER = "[skip notify]"
 GITHUB_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 GITHUB_MAX_RETRIES = 5
 
@@ -143,7 +148,19 @@ def unreleased_block(content: str) -> str:
     return content[header.end() : end]
 
 
-def validate_baseline(current: AppVersion, latest_tag: str) -> None:
+def _semver_tuple(version_name: str) -> tuple[int, int, int]:
+    match = SEMVER_RE.fullmatch(version_name)
+    if not match:
+        fail(f"Cannot compare non-semver version: {version_name}")
+    return int(match.group(1)), int(match.group(2)), int(match.group(3))
+
+
+def validate_baseline(
+    current: AppVersion,
+    latest_tag: str,
+    *,
+    skip_notify: bool = False,
+) -> None:
     expected_tag = current.tag
     if latest_tag != expected_tag:
         fail(
@@ -151,13 +168,34 @@ def validate_baseline(current: AppVersion, latest_tag: str) -> None:
             f"Gradle is {current.name} ({current.code}) but GitHub Latest is {latest_tag}"
         )
 
+    if skip_notify:
+        # Artifacts-only: docs may lag; only Gradle ↔ Latest tag must agree.
+        return
+
     changelog_version = latest_changelog_version()
     readme_version = latest_readme_version()
-    if changelog_version != current.name or readme_version != current.name:
-        fail(
-            "Version baseline mismatch: "
-            f"Gradle={current.name}, CHANGELOG={changelog_version}, README={readme_version}"
+    if changelog_version == current.name and readme_version == current.name:
+        return
+
+    # Allow CHANGELOG/README to lag after a prior [skip notify] release so the
+    # next normal prepare can still promote Unreleased into the bumped version.
+    if (
+        _semver_tuple(changelog_version) <= _semver_tuple(current.name)
+        and _semver_tuple(readme_version) <= _semver_tuple(current.name)
+        and changelog_version == readme_version
+    ):
+        print(
+            "Warning: CHANGELOG/README lag Gradle "
+            f"({changelog_version} < {current.name}); "
+            "continuing so prepare can promote Unreleased.",
+            file=sys.stderr,
         )
+        return
+
+    fail(
+        "Version baseline mismatch: "
+        f"Gradle={current.name}, CHANGELOG={changelog_version}, README={readme_version}"
+    )
 
 
 def github_request(
@@ -640,40 +678,50 @@ def write_outputs(values: dict[str, str | int]) -> None:
 def prepare_release(args: argparse.Namespace) -> None:
     repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
     token = os.environ.get("GITHUB_TOKEN", "").strip()
+    skip_notify = bool(getattr(args, "skip_notify", False))
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if not repository or not token or not api_key:
-        fail("GITHUB_REPOSITORY, GITHUB_TOKEN, and GROQ_API_KEY are required")
+    if not repository or not token:
+        fail("GITHUB_REPOSITORY and GITHUB_TOKEN are required")
+    if not skip_notify and not api_key:
+        fail("GROQ_API_KEY is required unless --skip-notify is set")
 
     current = read_app_version()
-    validate_baseline(current, args.latest_tag)
+    validate_baseline(current, args.latest_tag, skip_notify=skip_notify)
     target = bump_version(current, args.bump)
     assert_remote_target_is_free(repository, token, target)
 
-    processed = reconcile_changelog(
-        repository,
-        token,
-        api_key,
-        args.latest_tag,
-        args.head_sha,
-    )
     release_date = datetime.now(timezone.utc).date().isoformat()
+    processed: list[int] = []
 
     gradle_original = require_file(APP_GRADLE_PATH)
-    changelog_original = require_file(CHANGELOG_PATH)
-    readme_original = require_file(README_PATH)
     APP_GRADLE_PATH.write_text(
         replace_gradle_version(gradle_original, current, target),
         encoding="utf-8",
     )
-    CHANGELOG_PATH.write_text(
-        promote_changelog(changelog_original, target, release_date),
-        encoding="utf-8",
-    )
-    promoted_readme = promote_readme(readme_original, target, release_date)
-    README_PATH.write_text(
-        update_readme_download_url(promoted_readme, repository, target),
-        encoding="utf-8",
-    )
+
+    if skip_notify:
+        # Version bump only — leave CHANGELOG / README / Upcoming untouched.
+        # Publish will skip announcement; send notify manually if needed.
+        pass
+    else:
+        processed = reconcile_changelog(
+            repository,
+            token,
+            api_key,
+            args.latest_tag,
+            args.head_sha,
+        )
+        changelog_original = require_file(CHANGELOG_PATH)
+        readme_original = require_file(README_PATH)
+        CHANGELOG_PATH.write_text(
+            promote_changelog(changelog_original, target, release_date),
+            encoding="utf-8",
+        )
+        promoted_readme = promote_readme(readme_original, target, release_date)
+        README_PATH.write_text(
+            update_readme_download_url(promoted_readme, repository, target),
+            encoding="utf-8",
+        )
 
     write_outputs(
         {
@@ -687,6 +735,7 @@ def prepare_release(args: argparse.Namespace) -> None:
             "branch": f"release/{target.tag}",
             "release_date": release_date,
             "reconciled_pr_count": len(processed),
+            "skip_notify": "true" if skip_notify else "false",
         }
     )
 
@@ -738,13 +787,40 @@ def find_release_prepare_commit(version: AppVersion) -> str:
     return sha
 
 
-def verify_release_diff(current: AppVersion, commit: str = "HEAD") -> None:
+def commit_subject(commit: str) -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "log", "-1", "--format=%s", commit],
+            text=True,
+        ).strip()
+    except subprocess.CalledProcessError as exc:
+        fail(f"Could not read commit subject for {commit}: {exc}")
+    raise AssertionError("unreachable")
+
+
+def commit_skips_notify(commit: str = "HEAD") -> bool:
+    return SKIP_NOTIFY_MARKER in commit_subject(commit)
+
+
+def expected_release_files(*, skip_notify: bool) -> set[str]:
+    return EXPECTED_FILES_SKIP_NOTIFY if skip_notify else EXPECTED_FILES
+
+
+def verify_release_diff(
+    current: AppVersion,
+    commit: str = "HEAD",
+    *,
+    skip_notify: bool | None = None,
+) -> None:
     parent = f"{commit}^1"
+    if skip_notify is None:
+        skip_notify = commit_skips_notify(commit)
+    expected = expected_release_files(skip_notify=skip_notify)
     changed_files = git_changed_files(parent, commit)
-    if changed_files != EXPECTED_FILES:
+    if changed_files != expected:
         fail(
             f"Release commit {commit[:12]} changed {sorted(changed_files)}; "
-            f"expected exactly {sorted(EXPECTED_FILES)}"
+            f"expected exactly {sorted(expected)}"
         )
 
     previous = read_app_version(git_show(f"{parent}:app/build.gradle.kts"))
@@ -772,7 +848,14 @@ def verify_release_diff(current: AppVersion, commit: str = "HEAD") -> None:
         fail("Release merge changed app/build.gradle.kts beyond version fields")
 
 
-def verify_release_metadata(current: AppVersion) -> None:
+def verify_release_metadata(
+    current: AppVersion,
+    *,
+    skip_notify: bool = False,
+) -> None:
+    if skip_notify:
+        # Artifacts-only release: docs were intentionally left unchanged.
+        return
     changelog_version = latest_changelog_version()
     readme_version = latest_readme_version()
     if changelog_version != current.name or readme_version != current.name:
@@ -795,6 +878,7 @@ def write_release_verify_outputs(
     current: AppVersion,
     *,
     merge_sha: str,
+    skip_notify: bool = False,
 ) -> None:
     write_outputs(
         {
@@ -804,19 +888,30 @@ def write_release_verify_outputs(
             "apk_asset": current.apk_asset,
             "aab_asset": current.aab_asset,
             "merge_sha": merge_sha,
+            "skip_notify": "true" if skip_notify else "false",
         }
     )
 
 
 def verify_release(args: argparse.Namespace) -> None:
     current = read_app_version()
-    verify_release_diff(current)
-    verify_release_metadata(current)
+    skip_notify = commit_skips_notify("HEAD")
+    verify_release_diff(current, skip_notify=skip_notify)
+    verify_release_metadata(current, skip_notify=skip_notify)
     expected_branch = f"release/{current.tag}"
-    expected_title = f"release: {current.tag} [skip changelog]"
+    expected_title = (
+        f"release: {current.tag} [skip changelog] {SKIP_NOTIFY_MARKER}"
+        if skip_notify
+        else f"release: {current.tag} [skip changelog]"
+    )
     if args.branch != expected_branch:
         fail(f"Release branch must be {expected_branch}, got {args.branch}")
-    if args.title != expected_title:
+    title_ok = args.title == expected_title or (
+        skip_notify
+        and args.title.startswith(f"release: {current.tag} [skip changelog]")
+        and SKIP_NOTIFY_MARKER in args.title
+    )
+    if not title_ok:
         fail(f"Release PR title must be exactly: {expected_title}")
     write_release_verify_outputs(
         current,
@@ -824,11 +919,15 @@ def verify_release(args: argparse.Namespace) -> None:
             ["git", "rev-parse", "HEAD"],
             text=True,
         ).strip(),
+        skip_notify=skip_notify,
     )
 
 
 def write_release_notes(args: argparse.Namespace) -> None:
     current = read_app_version()
+    skip_notify = bool(getattr(args, "skip_notify", False)) or (
+        os.environ.get("SKIP_NOTIFY", "").strip().lower() in {"1", "true", "yes"}
+    )
     content = require_file(CHANGELOG_PATH)
     match = re.search(
         rf"^## \[{re.escape(current.tag)}\]\s*-\s*(\d{{4}}-\d{{2}}-\d{{2}})\s*$",
@@ -836,6 +935,16 @@ def write_release_notes(args: argparse.Namespace) -> None:
         flags=re.MULTILINE,
     )
     if not match:
+        if skip_notify:
+            output = Path(args.output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(
+                f"# boxlore {current.tag}\n\n"
+                "Artifacts-only release "
+                "(CHANGELOG / README promotion and in-app notify skipped).\n",
+                encoding="utf-8",
+            )
+            return
         fail(f"CHANGELOG.md has no section for {current.tag}")
     next_header = re.search(r"^## \[", content[match.end() :], flags=re.MULTILINE)
     end = match.end() + next_header.start() if next_header else len(content)
@@ -961,10 +1070,26 @@ def write_notification_outputs() -> None:
 def verify_merged_commit() -> None:
     current = read_app_version()
     merge_sha = find_release_prepare_commit(current)
-    verify_release_diff(current, commit=merge_sha)
-    verify_release_metadata(current)
-    print(f"Publishing release prepare commit {merge_sha}")
-    write_release_verify_outputs(current, merge_sha=merge_sha)
+    commit_skip = commit_skips_notify(merge_sha)
+    env_skip = os.environ.get("SKIP_NOTIFY", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    # Diff/docs checks follow how the release was prepared; announce can also be
+    # suppressed via workflow_dispatch even for a normal docs-promoting release.
+    verify_release_diff(current, commit=merge_sha, skip_notify=commit_skip)
+    verify_release_metadata(current, skip_notify=commit_skip)
+    skip_announce = commit_skip or env_skip
+    print(
+        f"Publishing release prepare commit {merge_sha}"
+        + (" (skip notify)" if skip_announce else "")
+    )
+    write_release_verify_outputs(
+        current,
+        merge_sha=merge_sha,
+        skip_notify=skip_announce,
+    )
 
 
 def _parse_release_tag(tag: str) -> AppVersion:
@@ -1075,6 +1200,14 @@ def main() -> None:
     )
     prepare_parser.add_argument("--latest-tag", required=True)
     prepare_parser.add_argument("--head-sha", required=True)
+    prepare_parser.add_argument(
+        "--skip-notify",
+        action="store_true",
+        help=(
+            "Artifacts-only prepare: bump Gradle version only; "
+            "skip CHANGELOG/README promotion and in-app notify on publish"
+        ),
+    )
 
     verify_parser = subparsers.add_parser(
         "verify",
@@ -1099,6 +1232,11 @@ def main() -> None:
         help="Extract release notes for the current Gradle version",
     )
     notes_parser.add_argument("--output", required=True)
+    notes_parser.add_argument(
+        "--skip-notify",
+        action="store_true",
+        help="Allow missing CHANGELOG section (artifacts-only release)",
+    )
 
     subparsers.add_parser(
         "notification",
