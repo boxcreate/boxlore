@@ -55,33 +55,24 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 
 <details open>
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
-<b>🆕 New features:</b>
-<ul align="left">
-<li>Explore charts from 11 countries, pick region/language, see refreshed home and explore screens, and get broader recommendation picks. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
-<li>Search is faster with instant suggestions, new “Find a show” and “By idea” tabs, and a 1‑second debounce for semantic search. <a href="https://github.com/boxcreate/boxlore/pull/955"><img src="https://img.shields.io/badge/PR-955-6750A4?style=flat-square" alt="PR #955" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>Home’s “For You” tab now shows a cleaner grid layout with larger episode cards. <a href="https://github.com/boxcreate/boxlore/pull/954"><img src="https://img.shields.io/badge/PR-954-6750A4?style=flat-square" alt="PR #954" height="18"/></a></li>
-</ul>
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+New features and improvements for the next release are currently in development.
 </details>
 
 <br/>
 
 <details open>
-<summary><b>🎉 What's New (v0.0.12) - 2026-07-25</b></summary>
+<summary><b>🎉 What's New (v0.0.13) - 2026-07-29</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Episodes you left idle for 7 days now automatically restart from the beginning, marked as "Starting over", with a new toggle in Settings to control this. <a href="https://github.com/boxcreate/boxlore/pull/950"><img src="https://img.shields.io/badge/PR-950-6750A4?style=flat-square" alt="PR #950" height="18"/></a></li>
-<li>A new floating bottom navigation bar with three tabs and a Lore button replaces the old menu, and the mini-player is repositioned to stay clear. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
+<li>An all‑new way to search shows and episodes: typo‑tolerant podcast search powered by <a href="https://github.com/meilisearch/meilisearch">Meilisearch</a>, plus concept search for shows and episodes powered by <a href="https://github.com/qdrant/qdrant">Qdrant</a>. <a href="https://github.com/boxcreate/boxlore/pull/955"><img src="https://img.shields.io/badge/PR-955-6750A4?style=flat-square" alt="PR #955" height="18"/></a></li>
+<li>Discovery expands with new chart countries — France, Germany, Netherlands, Singapore, Spain, Brazil, Russia, and Indonesia — alongside a new country picker and language filters, and stronger multilingual recommendations using <strong>Qwen3</strong> embeddings. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>The "For You" home feed now loads recommendations from a local cache, so new installs show content instead of an empty screen. <a href="https://github.com/boxcreate/boxlore/pull/947"><img src="https://img.shields.io/badge/PR-947-6750A4?style=flat-square" alt="PR #947" height="18"/></a></li>
-<li>A new variable Google Sans Flex font adds roundness presets (Crisp, Soft, Round) and speeds up theme changes across the app. <a href="https://github.com/boxcreate/boxlore/pull/948"><img src="https://img.shields.io/badge/PR-948-6750A4?style=flat-square" alt="PR #948" height="18"/></a></li>
+<li>Faster content delivery from backend optimizations so charts, search, and recommendations reach you sooner. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
+<li>NotebookLM‑style briefings are tighter and less sloppy — more aware of repetition, depth, and which stories matter. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
+<li>UI polish across startup, onboarding suggestions, Home and Explore search, and several other screens. <a href="https://github.com/boxcreate/boxlore/pull/954"><img src="https://img.shields.io/badge/PR-954-6750A4?style=flat-square" alt="PR #954" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/952"><img src="https://img.shields.io/badge/PR-952-6750A4?style=flat-square" alt="PR #952" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
 </ul>
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 </details>
 
 </div>
