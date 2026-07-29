@@ -129,6 +129,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreGenreSelector
 import cx.aswin.boxlore.feature.explore.components.ExploreHeroCard
 import cx.aswin.boxlore.feature.explore.components.ExploreMoodResultsHeader
 import cx.aswin.boxlore.feature.explore.components.ExplorePodcastCard
+import cx.aswin.boxlore.feature.explore.components.ExploreRelatedShowsRail
 import cx.aswin.boxlore.feature.explore.components.ExploreRecommendationsEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreSectionHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreSuggestedMoodsHeader
@@ -456,23 +457,12 @@ fun ExploreContent(
                         } else if (showContent) {
                             if (pods.isNotEmpty()) {
                                 item(
-                                    key = "semantic_shows_header",
+                                    key = "semantic_related_shows_rail",
                                     span = StaggeredGridItemSpan.FullLine,
                                 ) {
-                                    Text(
-                                        text = "Shows",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = GoogleSansWeight.bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(vertical = 4.dp),
-                                    )
-                                }
-                                itemsIndexed(pods, key = { _, it -> "semantic_pod_${it.id}" }) { index, podcast ->
-                                    ExplorePodcastCard(
-                                        podcast = podcast,
-                                        cardHeight = 160.dp,
-                                        showGenreChip = true,
-                                        onClick = {
+                                    ExploreRelatedShowsRail(
+                                        podcasts = pods,
+                                        onPodcastClick = { podcast, index ->
                                             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
                                                 surface = "explore",
                                                 resultType = "podcast",
@@ -482,27 +472,19 @@ fun ExploreContent(
                                                 searchQuery = state.searchQuery,
                                                 searchMode = "concept_semantic",
                                             )
-                                            onPodcastClick(podcast.id, "explore_search_concept", state.currentCategory, index)
+                                            onPodcastClick(
+                                                podcast.id,
+                                                "explore_search_concept",
+                                                state.currentCategory,
+                                                index,
+                                            )
                                         },
+                                        modifier = Modifier.padding(bottom = 8.dp),
                                     )
                                 }
                             }
 
                             if (eps.isNotEmpty()) {
-                                if (pods.isNotEmpty()) {
-                                    item(
-                                        key = "semantic_episodes_header",
-                                        span = StaggeredGridItemSpan.FullLine,
-                                    ) {
-                                        Text(
-                                            text = "Episodes",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = GoogleSansWeight.bold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-                                        )
-                                    }
-                                }
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     val heroEp = eps[0]
                                     val parentPodcast = Podcast(

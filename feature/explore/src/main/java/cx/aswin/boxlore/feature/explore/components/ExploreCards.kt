@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -159,6 +160,71 @@ fun ExplorePodcastCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+/** Cap for By-concept podcast-vector rail — keep episodes as the primary feed. */
+private const val RELATED_SHOWS_RAIL_MAX = 8
+
+/**
+ * Compact horizontal show strip for concept search: podcast hits above the fold
+ * without burying the episode hero / bento stream.
+ */
+@Composable
+fun ExploreRelatedShowsRail(
+    podcasts: List<Podcast>,
+    onPodcastClick: (podcast: Podcast, index: Int) -> Unit,
+    modifier: Modifier = Modifier,
+    title: String = "Related shows",
+) {
+    val railItems = remember(podcasts) { podcasts.take(RELATED_SHOWS_RAIL_MAX) }
+    if (railItems.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = GoogleSansWeight.bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            itemsIndexed(railItems, key = { _, it -> it.id }) { index, podcast ->
+                Column(
+                    modifier =
+                        Modifier
+                            .width(104.dp)
+                            .expressiveClickable(shape = RoundedCornerShape(12.dp)) {
+                                onPodcastClick(podcast, index)
+                            },
+                ) {
+                    OptimizedImage(
+                        url = podcast.imageUrl,
+                        proxyWidth = 220,
+                        contentDescription = podcast.title,
+                        contentScale = ContentScale.Crop,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = podcast.title,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = GoogleSansWeight.semiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
     }
