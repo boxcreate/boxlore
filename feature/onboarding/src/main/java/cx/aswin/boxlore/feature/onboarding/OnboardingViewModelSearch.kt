@@ -36,6 +36,7 @@ internal fun OnboardingViewModel.navigateToSearch() {
             currentStep = OnboardingStep.SEARCH,
             searchQuery = "",
             searchResults = emptyList(),
+            alsoFoundResults = emptyList(),
             selectedSearchGenre = null,
         )
     }
@@ -61,6 +62,7 @@ internal fun OnboardingViewModel.switchToSearchFromAi(prefillQuery: String? = nu
             currentStep = OnboardingStep.SEARCH,
             searchQuery = "",
             searchResults = emptyList(),
+            alsoFoundResults = emptyList(),
             selectedSearchGenre = null,
         )
     }
@@ -140,7 +142,14 @@ internal fun OnboardingViewModel.navigateBackFromSearch() {
             searchEntryPoint = searchEntryPoint,
             selectedGenres = state.selectedGenres,
         )
-    _uiState.update { it.copy(currentStep = backStep, searchQuery = "", searchResults = emptyList()) }
+    _uiState.update {
+        it.copy(
+            currentStep = backStep,
+            searchQuery = "",
+            searchResults = emptyList(),
+            alsoFoundResults = emptyList(),
+        )
+    }
 }
 
 internal fun OnboardingViewModel.isSearchFromAiChat(): Boolean = searchEntryPoint == "ai_onboarding"
@@ -155,6 +164,7 @@ internal fun OnboardingViewModel.returnToAiChatFromSearch() {
             currentStep = OnboardingStep.AI_ONBOARDING,
             searchQuery = "",
             searchResults = emptyList(),
+            alsoFoundResults = emptyList(),
         )
     }
 }
@@ -166,7 +176,13 @@ internal fun OnboardingViewModel.updateSearchQuery(query: String) {
     searchJob?.cancel()
     val cleaned = query.trim()
     if (cleaned.isEmpty()) {
-        _uiState.update { it.copy(searchResults = emptyList(), isSearching = false) }
+        _uiState.update {
+            it.copy(
+                searchResults = emptyList(),
+                alsoFoundResults = emptyList(),
+                isSearching = false,
+            )
+        }
         return
     }
 
@@ -179,7 +195,9 @@ internal fun OnboardingViewModel.updateSearchQuery(query: String) {
             }.sortedBy { it.title }
 
     if (localMatches.isNotEmpty()) {
-        _uiState.update { it.copy(searchResults = localMatches) }
+        _uiState.update {
+            it.copy(searchResults = localMatches, alsoFoundResults = emptyList())
+        }
     }
 
     searchJob =
@@ -188,31 +206,24 @@ internal fun OnboardingViewModel.updateSearchQuery(query: String) {
             if (localMatches.isEmpty()) {
                 _uiState.update { it.copy(isSearching = true) }
             }
-            delay(300) // Debounce (aligned with main explore search)
+            delay(300) // Debounce (aligned with Explore show typeahead)
 
             try {
-                val results = podcastRepository.searchPodcasts(cleaned)
-                results.forEach { seenPodcasts[it.id] = it }
+                val grouped = podcastRepository.searchPodcastsGrouped(cleaned)
+                grouped.all.forEach { seenPodcasts[it.id] = it }
 
-                // Combine remote results (priority) with local matches to prevent flickering
-                val seenIds = mutableSetOf<String>()
-                val combined = mutableListOf<Podcast>()
-                results.forEach {
-                    if (seenIds.add(it.id)) {
-                        combined.add(it)
-                    }
-                }
-                localMatches.forEach {
-                    if (seenIds.add(it.id)) {
-                        combined.add(it)
-                    }
+                val (catalog, alsoFound) = combineOnboardingShowSearch(grouped, localMatches)
+
+                _uiState.update {
+                    it.copy(
+                        searchResults = catalog,
+                        alsoFoundResults = alsoFound,
+                        isSearching = false,
+                    )
                 }
 
-                _uiState.update { it.copy(searchResults = combined, isSearching = false) }
-
-                // Analytics: Track search performed
                 searchesPerformedCount++
-                AnalyticsHelper.trackSearchPerformed(cleaned, results.size)
+                AnalyticsHelper.trackSearchPerformed(cleaned, catalog.size + alsoFound.size)
             } catch (e: Exception) {
                 Log.e("OnboardingViewModel", "Search error", e)
                 _uiState.update { it.copy(isSearching = false) }

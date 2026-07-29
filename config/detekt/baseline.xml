@@ -132,6 +132,8 @@
     <ID>ImplicitDefaultLocale:ShareManager.kt$ShareManager$String.format("%d:%02d:%02d", hours, minutes, seconds)</ID>
     <ID>LargeClass:AutoBrowseTreeBuilder.kt$AutoBrowseTreeBuilder</ID>
     <ID>LargeClass:BoxLorePlaybackService.kt$BoxLorePlaybackService : MediaLibraryServiceAutoBrowseLibraryHost</ID>
+    <ID>LargeClass:ExploreViewModel.kt$ExploreViewModel : AndroidViewModel</ID>
+    <ID>LargeClass:PlaybackQueueCoordinator.kt$PlaybackQueueCoordinator</ID>
     <ID>LargeClass:PlaybackRepository.kt$PlaybackRepository : ListeningHistoryBackupPort</ID>
     <ID>LargeClass:PodcastInfoViewModel.kt$PodcastInfoViewModel : AndroidViewModel</ID>
     <ID>LargeClass:PodcastRepository.kt$PodcastRepository : PodcastCatalogPort</ID>
@@ -311,6 +313,7 @@
     <ID>LoopWithTooManyJumpStatements:AdaptiveRankingRepository.kt$AdaptiveRankingRepository$for</ID>
     <ID>LoopWithTooManyJumpStatements:ArchitectureGuardTest.kt$ArchitectureGuardTest$for</ID>
     <ID>LoopWithTooManyJumpStatements:ChapterRepository.kt$ChapterRepository$for</ID>
+    <ID>LoopWithTooManyJumpStatements:EpisodeMediaCacheKey.kt$EpisodeMediaCacheKey$for</ID>
     <ID>LoopWithTooManyJumpStatements:LibraryBackupManager.kt$LibraryBackupManager$for</ID>
     <ID>LoopWithTooManyJumpStatements:PlaybackRepository.kt$PlaybackRepository$while</ID>
     <ID>LoopWithTooManyJumpStatements:RssFeedClient.kt$RssFeedClient$while</ID>

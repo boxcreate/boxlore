@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -55,7 +57,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -164,6 +165,75 @@ fun ExplorePodcastCard(
     }
 }
 
+/** Cap for By-concept podcast-vector rail — keep episodes as the primary feed. */
+private const val RELATED_SHOWS_RAIL_MAX = 8
+
+/**
+ * Compact horizontal show strip for concept search: podcast hits above the fold
+ * without burying the episode hero / bento stream.
+ */
+@Composable
+fun ExploreRelatedShowsRail(
+    podcasts: List<Podcast>,
+    onPodcastClick: (podcast: Podcast, index: Int) -> Unit,
+    modifier: Modifier = Modifier,
+    title: String = "Related shows",
+) {
+    val railItems = remember(podcasts) { podcasts.take(RELATED_SHOWS_RAIL_MAX) }
+    if (railItems.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = GoogleSansWeight.bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            itemsIndexed(railItems, key = { _, podcast -> podcast.id }) { index, podcast ->
+                // Clickable without a clip shape — clipping the whole column was eating title glyphs
+                // at the bottom-left of the rounded bounds.
+                Column(
+                    modifier =
+                        Modifier
+                            .width(104.dp)
+                            .expressiveClickable {
+                                onPodcastClick(podcast, index)
+                            },
+                ) {
+                    OptimizedImage(
+                        url = podcast.imageUrl,
+                        proxyWidth = 220,
+                        contentDescription = podcast.title,
+                        contentScale = ContentScale.Crop,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = podcast.title,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = GoogleSansWeight.semiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 2.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun ExploreVibeCard(
     vibe: Pair<String, String>,
@@ -181,14 +251,13 @@ fun ExploreVibeCard(
         1 -> MaterialTheme.colorScheme.onSecondaryContainer
         else -> MaterialTheme.colorScheme.onTertiaryContainer
     }
-    val mood = remember(vibe.first) { CuratedMoods.all.find { it.id == vibe.first } }
     val icon = remember(vibe.first) { moodIconForId(vibe.first) }
 
     Surface(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(108.dp),
+            .height(96.dp),
         shape = RoundedCornerShape(16.dp),
         color = containerColor,
         contentColor = contentColor,
@@ -214,27 +283,14 @@ fun ExploreVibeCard(
                     )
                 }
             }
-            Column {
-                Text(
-                    text = vibe.second,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = GoogleSansWeight.semiBold,
-                    color = contentColor,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtitle = mood?.subtitle
-                if (!subtitle.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = contentColor.copy(alpha = 0.8f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+            Text(
+                text = vibe.second,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = GoogleSansWeight.semiBold,
+                color = contentColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

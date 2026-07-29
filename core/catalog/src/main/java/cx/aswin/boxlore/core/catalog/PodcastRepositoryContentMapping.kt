@@ -29,6 +29,9 @@ data class SearchResult(
     val correctedQuery: String? = null
 )
 
+/** Meili catalog + hybrid “Also found” groups for progressive show search. */
+typealias GroupedShowSearch = cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
+
 internal data class PodcastIndexScopedInputs(
     val history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
     val subscriptionIds: List<String>,

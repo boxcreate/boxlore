@@ -15,6 +15,9 @@ import com.google.gson.Gson
 
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
 import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
+import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
+import cx.aswin.boxlore.core.catalog.logic.mergeShowSearchResults
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
@@ -128,27 +131,7 @@ class PodcastRepository(
             val response = api.search(publicKey, query).execute()
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                val podcasts = body.feeds.map { feed ->
-                    val podcastId = if (feed.id != 0L) {
-                        feed.id.toString()
-                    } else if (feed.itunesId != null && feed.itunesId != 0L) {
-                        "itunes:${feed.itunesId}"
-                    } else if (!feed.url.isNullOrEmpty()) {
-                        "url:${java.net.URLEncoder.encode(feed.url, "UTF-8")}"
-                    } else {
-                        "0"
-                    }
-                    Podcast(
-                        id = podcastId,
-                        title = feed.title,
-                        artist = feed.author ?: "Unknown",
-                        imageUrl = (feed.artwork ?: feed.image).toHttps(),
-                        description = feed.description,
-                        genre = resolvePrimaryGenre(feed.categories),
-                        medium = feed.medium,
-                        feedUrl = feed.url,
-                    )
-                }
+                val podcasts = body.feeds.mapNotNull { mapSearchFeedToPodcast(it) }
                 SearchResult(podcasts, null)
             } else {
                 SearchResult(emptyList())
@@ -162,18 +145,90 @@ class PodcastRepository(
         searchPodcastsWithCorrection(query).podcasts
     }
 
-    suspend fun searchEpisodesSemantic(query: String, country: String): List<Episode> = withContext(Dispatchers.IO) {
-        try {
-            val response = api.searchSemantic(publicKey, query, country).execute()
-            if (response.isSuccessful && response.body() != null) {
-                response.body()!!.items.mapNotNull { mapToEpisode(it) }
-            } else {
+    /** Meili typeahead only (additive endpoint). */
+    suspend fun searchPodcastsTypeahead(query: String, limit: Int = 20): List<Podcast> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = api.searchTypeahead(publicKey, query, limit).execute()
+                if (response.isSuccessful && response.body() != null) {
+                    response.body()!!.feeds.mapNotNull { mapSearchFeedToPodcast(it) }
+                } else {
+                    emptyList()
+                }
+            } catch (_: Exception) {
                 emptyList()
             }
-        } catch (e: Exception) {
-            emptyList()
         }
+
+    /**
+     * Progressive show search: Meili typeahead + hybrid `/search` in parallel,
+     * grouped as catalog vs also-found (coverage for Meili episode-count shrink).
+     * Legacy [searchPodcasts] remains for older call sites / voice.
+     */
+    suspend fun searchPodcastsGrouped(query: String): GroupedShowSearchResult =
+        withContext(Dispatchers.IO) {
+            val cleaned = query.trim()
+            if (cleaned.isEmpty()) {
+                return@withContext GroupedShowSearchResult(emptyList(), emptyList())
+            }
+            val typeaheadDeferred = async { searchPodcastsTypeahead(cleaned) }
+            val hybridDeferred = async { searchPodcastsWithCorrection(cleaned) }
+            val typeahead = typeaheadDeferred.await()
+            val hybrid = hybridDeferred.await()
+            mergeShowSearchResults(typeahead, hybrid.podcasts)
+        }
+
+    private fun mapSearchFeedToPodcast(feed: cx.aswin.boxlore.core.network.model.SearchFeed): Podcast? {
+        val podcastId = if (feed.id != 0L) {
+            feed.id.toString()
+        } else if (feed.itunesId != null && feed.itunesId != 0L) {
+            "itunes:${feed.itunesId}"
+        } else if (!feed.url.isNullOrEmpty()) {
+            "url:${java.net.URLEncoder.encode(feed.url, "UTF-8")}"
+        } else {
+            return null
+        }
+        return Podcast(
+            id = podcastId,
+            title = feed.title,
+            artist = feed.author ?: "Unknown",
+            imageUrl = (feed.artwork ?: feed.image).toHttps(),
+            description = feed.description,
+            genre = resolvePrimaryGenre(feed.categories),
+            medium = feed.medium,
+            feedUrl = feed.url,
+        )
     }
+
+    suspend fun searchEpisodesSemantic(query: String, country: String): List<Episode> =
+        withContext(Dispatchers.IO) {
+            searchSemanticGrouped(query, country).episodes
+        }
+
+    /**
+     * Concept search: one CF embed on the proxy → Qdrant `podcasts` + `episodes`.
+     * [SemanticSearchGroupedResult.podcasts] may be empty on older Worker builds.
+     */
+    suspend fun searchSemanticGrouped(
+        query: String,
+        country: String,
+    ): SemanticSearchGroupedResult =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = api.searchSemantic(publicKey, query, country).execute()
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    SemanticSearchGroupedResult(
+                        podcasts = body.feeds.mapNotNull { mapSearchFeedToPodcast(it) },
+                        episodes = body.items.mapNotNull { mapToEpisode(it) },
+                    )
+                } else {
+                    SemanticSearchGroupedResult(emptyList(), emptyList())
+                }
+            } catch (_: Exception) {
+                SemanticSearchGroupedResult(emptyList(), emptyList())
+            }
+        }
 
     suspend fun searchEpisodes(feedId: String, query: String): List<Episode> = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {

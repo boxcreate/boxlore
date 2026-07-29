@@ -1,0 +1,17 @@
+{
+  "status": "true",
+  "feeds": [
+    {
+      "id": 75075,
+      "title": "Reply All",
+      "author": "Gimlet",
+      "description": "A show about the internet",
+      "image": "https://example.com/replyall.jpg",
+      "artwork": "https://example.com/replyall-art.jpg",
+      "url": "https://feeds.example.com/replyall.xml",
+      "itunesId": 994802953,
+      "medium": "podcast",
+      "categories": { "27": "Technology" }
+    }
+  ]
+}

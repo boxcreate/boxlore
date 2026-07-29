@@ -108,6 +108,7 @@ import cx.aswin.boxlore.core.designsystem.components.AnimatedShapesFallback
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
@@ -128,6 +129,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreGenreSelector
 import cx.aswin.boxlore.feature.explore.components.ExploreHeroCard
 import cx.aswin.boxlore.feature.explore.components.ExploreMoodResultsHeader
 import cx.aswin.boxlore.feature.explore.components.ExplorePodcastCard
+import cx.aswin.boxlore.feature.explore.components.ExploreRelatedShowsRail
 import cx.aswin.boxlore.feature.explore.components.ExploreRecommendationsEmptyState
 import cx.aswin.boxlore.feature.explore.components.ExploreSectionHeader
 import cx.aswin.boxlore.feature.explore.components.ExploreSuggestedMoodsHeader
@@ -393,6 +395,13 @@ fun ExploreContent(
 
         val distinctVibes = remember(state.suggestedVibes) { state.suggestedVibes.distinctBy { it.first } }
 
+        val alsoFoundDistinct = remember(state.alsoFoundResults, displayList) {
+            val catalogIds = displayList.map { it.id }.toSet()
+            state.alsoFoundResults
+                .distinctBy { it.id }
+                .filter { it.id !in catalogIds }
+        }
+
         val rawGridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
         val gridItems = remember(rawGridItems) {
             rawGridItems.distinctBy { podcast ->
@@ -404,6 +413,10 @@ fun ExploreContent(
                     podcast.id
                 }
             }
+        }
+
+        val semanticPodcastsDistinct = remember(state.semanticPodcastResults) {
+            state.semanticPodcastResults.distinctBy { it.id }
         }
 
         LazyVerticalStaggeredGrid(
@@ -423,83 +436,136 @@ fun ExploreContent(
                 if (state.searchTab == SearchTab.EPISODES) {
                     if (state.searchQuery.isEmpty()) {
                         item(span = StaggeredGridItemSpan.FullLine) {
-                            ExploreEpisodesSearchIdleState()
+                            ExploreEpisodesSearchIdleState(
+                                onExampleClick = onSearchQueryChanged,
+                            )
                         }
                     } else {
                         val eps = state.semanticSearchResults
-                        val showContent = eps.isNotEmpty()
+                        val pods = semanticPodcastsDistinct
+                        val showContent = eps.isNotEmpty() || pods.isNotEmpty()
                         val showLoader = state.isSemanticLoading
-                        val showEmptyState = !state.isSemanticLoading && state.hasPerformedSemanticSearch && eps.isEmpty()
+                        val showEmptyState =
+                            !state.isSemanticLoading && state.hasPerformedSemanticSearch && !showContent
 
-                        if (showLoader && eps.isEmpty()) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(80.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    BoxLoreLoader.Expressive(size = 80.dp)
+                        when {
+                            showLoader && !showContent -> {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(80.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        BoxLoreLoader.Expressive(size = 80.dp)
+                                    }
                                 }
                             }
-                        } else if (showEmptyState) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                ExploreEpisodesSearchEmptyState()
+                            showEmptyState -> {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    ExploreEpisodesSearchEmptyState()
+                                }
                             }
-                        } else if (showContent) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                val heroEp = eps[0]
-                                val parentPodcast = Podcast(
-                                    id = heroEp.podcastId ?: "",
-                                    title = heroEp.podcastTitle ?: "Podcast",
-                                    artist = "",
-                                    imageUrl = heroEp.podcastImageUrl?.takeIf { it.isNotBlank() } ?: heroEp.imageUrl?.takeIf { it.isNotBlank() } ?: "",
-                                    description = "",
-                                    genre = heroEp.podcastGenre ?: "Podcast"
-                                )
-                                ExploreEpisodeHeroCard(
-                                    episode = heroEp,
-                                    isFallback = isRecommendationsFallback,
-                                    labelText = "FEATURED RESULT",
-                                    onClick = {
-                                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
-                                            surface = "explore",
-                                            resultType = "episode",
-                                            podcastId = parentPodcast.id,
-                                            episodeId = heroEp.id,
-                                            positionIndex = 0,
-                                            searchQuery = state.searchQuery,
-                                            searchMode = "episode_semantic",
-                                        )
-                                        onEpisodeClick(heroEp, parentPodcast)
-                                    }
-                                )
+                            showContent -> {
+                            if (pods.isNotEmpty()) {
+                                item(
+                                    key = "semantic_related_shows_rail",
+                                    span = StaggeredGridItemSpan.FullLine,
+                                ) {
+                                    ExploreRelatedShowsRail(
+                                        podcasts = pods,
+                                        onPodcastClick = { podcast, index ->
+                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
+                                                surface = "explore",
+                                                resultType = "podcast",
+                                                podcastId = podcast.id,
+                                                episodeId = null,
+                                                positionIndex = index,
+                                                searchQuery = state.searchQuery,
+                                                searchMode = "concept_semantic",
+                                            )
+                                            onPodcastClick(
+                                                podcast.id,
+                                                "explore_search_concept",
+                                                state.currentCategory,
+                                                index,
+                                            )
+                                        },
+                                        modifier = Modifier.padding(bottom = 8.dp),
+                                    )
+                                }
                             }
 
-                            itemsIndexed(eps.drop(1), key = { _, it -> "search_semantic_${it.id}" }) { index, episode ->
-                                val parentPodcast = Podcast(
-                                    id = episode.podcastId ?: "",
-                                    title = episode.podcastTitle ?: "Podcast",
-                                    artist = "",
-                                    imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() } ?: "",
-                                    description = "",
-                                    genre = episode.podcastGenre ?: "Podcast"
-                                )
-                                ExploreEpisodeBentoCard(
-                                    episode = episode,
-                                    onClick = {
-                                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
-                                            surface = "explore",
-                                            resultType = "episode",
-                                            podcastId = parentPodcast.id,
-                                            episodeId = episode.id,
-                                            positionIndex = index + 1,
-                                            searchQuery = state.searchQuery,
-                                            searchMode = "episode_semantic",
-                                        )
-                                        onEpisodeClick(episode, parentPodcast)
-                                    }
-                                )
+                            if (eps.isNotEmpty()) {
+                                item(
+                                    key = "semantic_episodes_header",
+                                    span = StaggeredGridItemSpan.FullLine,
+                                ) {
+                                    Text(
+                                        text = "Episodes",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(
+                                            top = if (pods.isNotEmpty()) 8.dp else 0.dp,
+                                            bottom = 8.dp,
+                                        ),
+                                    )
+                                }
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    val heroEp = eps[0]
+                                    val parentPodcast = Podcast(
+                                        id = heroEp.podcastId ?: "",
+                                        title = heroEp.podcastTitle ?: "Podcast",
+                                        artist = "",
+                                        imageUrl = heroEp.podcastImageUrl?.takeIf { it.isNotBlank() } ?: heroEp.imageUrl?.takeIf { it.isNotBlank() } ?: "",
+                                        description = "",
+                                        genre = heroEp.podcastGenre ?: "Podcast"
+                                    )
+                                    ExploreEpisodeHeroCard(
+                                        episode = heroEp,
+                                        isFallback = isRecommendationsFallback,
+                                        labelText = "FEATURED RESULT",
+                                        onClick = {
+                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
+                                                surface = "explore",
+                                                resultType = "episode",
+                                                podcastId = parentPodcast.id,
+                                                episodeId = heroEp.id,
+                                                positionIndex = 0,
+                                                searchQuery = state.searchQuery,
+                                                searchMode = "concept_semantic",
+                                            )
+                                            onEpisodeClick(heroEp, parentPodcast)
+                                        }
+                                    )
+                                }
+
+                                itemsIndexed(eps.drop(1), key = { _, episode -> "search_semantic_${episode.id}" }) { index, episode ->
+                                    val parentPodcast = Podcast(
+                                        id = episode.podcastId ?: "",
+                                        title = episode.podcastTitle ?: "Podcast",
+                                        artist = "",
+                                        imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() } ?: "",
+                                        description = "",
+                                        genre = episode.podcastGenre ?: "Podcast"
+                                    )
+                                    ExploreEpisodeBentoCard(
+                                        episode = episode,
+                                        onClick = {
+                                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSearchResultTapped(
+                                                surface = "explore",
+                                                resultType = "episode",
+                                                podcastId = parentPodcast.id,
+                                                episodeId = episode.id,
+                                                positionIndex = index + 1,
+                                                searchQuery = state.searchQuery,
+                                                searchMode = "concept_semantic",
+                                            )
+                                            onEpisodeClick(episode, parentPodcast)
+                                        }
+                                    )
+                                }
                             }
 
                             if (state.isSemanticLoading) {
@@ -513,6 +579,7 @@ fun ExploreContent(
                                         BoxLoreLoader.Expressive(size = 48.dp)
                                     }
                                 }
+                            }
                             }
                         }
                     }
@@ -545,9 +612,12 @@ fun ExploreContent(
                             }
                         }
 
-                        val showContent = displayList.isNotEmpty()
-                        val showSkeletons = state.isLoading && displayList.isEmpty()
-                        val showEmptyState = !state.isLoading && displayList.isEmpty()
+                        val alsoFound = alsoFoundDistinct
+                        val hasCatalog = displayList.isNotEmpty()
+                        val hasAlsoFound = alsoFound.isNotEmpty() && state.currentVibe == null
+                        val showContent = hasCatalog || hasAlsoFound
+                        val showSkeletons = state.isLoading && !showContent
+                        val showEmptyState = !state.isLoading && !showContent
 
                         if (showSkeletons) {
                             item(span = StaggeredGridItemSpan.FullLine) {
@@ -567,6 +637,20 @@ fun ExploreContent(
                             }
                         } else if (showContent) {
                             val showGenreChip = state.currentCategory == "All" && state.currentVibe == null
+                            if (hasCatalog && hasAlsoFound) {
+                                item(
+                                    key = "matches_header",
+                                    span = StaggeredGridItemSpan.FullLine,
+                                ) {
+                                    Text(
+                                        text = "Matches",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                    )
+                                }
+                            }
                             itemsIndexed(gridItems, key = { _, it -> "grid_${it.id}" }) { index, podcast ->
                                 val cardHeight = 160.dp
                                 val entryPointStr = if (state.currentVibe != null) "explore_vibe" else "explore_search"
@@ -576,6 +660,36 @@ fun ExploreContent(
                                     showGenreChip = showGenreChip,
                                     onClick = { onPodcastClick(podcast.id, entryPointStr, state.currentCategory, index) }
                                 )
+                            }
+
+                            if (hasAlsoFound) {
+                                item(
+                                    key = "also_found_header",
+                                    span = StaggeredGridItemSpan.FullLine,
+                                ) {
+                                    Text(
+                                        text = "Also found",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                                    )
+                                }
+                                itemsIndexed(alsoFound, key = { _, podcast -> "also_${podcast.id}" }) { index, podcast ->
+                                    ExplorePodcastCard(
+                                        podcast = podcast,
+                                        cardHeight = 160.dp,
+                                        showGenreChip = showGenreChip,
+                                        onClick = {
+                                            onPodcastClick(
+                                                podcast.id,
+                                                "explore_search_also_found",
+                                                state.currentCategory,
+                                                gridItems.size + index,
+                                            )
+                                        },
+                                    )
+                                }
                             }
                             
                             if (state.isLoading) {

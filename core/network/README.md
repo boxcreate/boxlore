@@ -6,7 +6,7 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 
 ## Public API
 
-- `BoxLoreApi` defines the Retrofit service surface.
+- `BoxLoreApi` defines the Retrofit service surface, including additive `GET search/typeahead` (Meili show typeahead). Legacy `GET search` is unchanged. `GET search/semantic` keeps episode `items` for older clients and may include additive podcast `feeds` (one CF embed → Qdrant `podcasts` + `episodes`).
 - `NetworkModule` creates OkHttp, Retrofit, and related network clients.
 - DTOs under `cx.aswin.boxlore.core.network.model`, including recommendation, bootstrap, content catalog/v3, history, sync, and request payload models. Onboarding curriculum / genre-synth / similar-shows requests accept optional `languages` (chip codes; proxy expands and defaults from country).
 - App Check, app version, public-key, and device-header hooks used by application wiring.

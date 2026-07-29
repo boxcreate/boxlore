@@ -50,9 +50,11 @@ val SEARCH_CATEGORIES =
     )
 
 @Composable
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 internal fun OnboardingSearchScreen(
     query: String,
     results: List<Podcast>,
+    alsoFoundResults: List<Podcast> = emptyList(),
     isSearching: Boolean,
     subscribedIds: Set<String>,
     selectedPodcasts: Map<String, Podcast>,
@@ -221,7 +223,7 @@ internal fun OnboardingSearchScreen(
                     }
                 }
             }
-            results.isEmpty() && !isSearching -> {
+            results.isEmpty() && alsoFoundResults.isEmpty() && !isSearching -> {
                 Box(
                     modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 24.dp),
                     contentAlignment = Alignment.Center,
@@ -252,17 +254,51 @@ internal fun OnboardingSearchScreen(
             }
             else -> {
                 val distinctResults = remember(results) { results.distinctBy { it.id } }
+                val distinctAlsoFound =
+                    remember(alsoFoundResults, distinctResults) {
+                        val catalogIds = distinctResults.map { it.id }.toSet()
+                        alsoFoundResults.distinctBy { it.id }.filter { it.id !in catalogIds }
+                    }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    if (distinctResults.isNotEmpty() && distinctAlsoFound.isNotEmpty()) {
+                        item(key = "matches_header") {
+                            Text(
+                                text = "Matches",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = GoogleSansWeight.bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
                     items(distinctResults, key = { it.id }) { podcast ->
                         SearchResultRow(
                             podcast = podcast,
                             isSubscribed = podcast.id in subscribedIds,
                             onSubscribe = { onSubscribe(podcast) },
                         )
+                    }
+                    if (distinctAlsoFound.isNotEmpty()) {
+                        item(key = "also_found_header") {
+                            Text(
+                                text = "Also found",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = GoogleSansWeight.bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+                            )
+                        }
+                        items(distinctAlsoFound, key = { "also_${it.id}" }) { podcast ->
+                            SearchResultRow(
+                                podcast = podcast,
+                                isSubscribed = podcast.id in subscribedIds,
+                                onSubscribe = { onSubscribe(podcast) },
+                            )
+                        }
                     }
                 }
             }

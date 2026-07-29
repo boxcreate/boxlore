@@ -11,8 +11,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -142,6 +144,76 @@ class PodcastRepositoryCatalogTest {
             assertTrue(data.trending.isEmpty())
             assertTrue(data.recommendations.isEmpty())
         }
+
+    @Test
+    fun `searchPodcastsGrouped merges typeahead catalog and hybrid also-found`() =
+        runTest(testDispatcher) {
+            server.dispatcher =
+                object : Dispatcher() {
+                    override fun dispatch(request: RecordedRequest): MockResponse {
+                        val path = request.path.orEmpty()
+                        return when {
+                            path.startsWith("/search/typeahead") ->
+                                fixtureBody("fixtures/search-typeahead.json")
+                            path.startsWith("/search") ->
+                                fixtureBody("fixtures/search.json")
+                            else -> MockResponse().setResponseCode(404)
+                        }
+                    }
+                }
+
+            val grouped = repository.searchPodcastsGrouped("serial")
+
+            assertEquals(listOf("745392"), grouped.catalog.map { it.id })
+            assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
+            assertEquals("Serial", grouped.catalog.single().title)
+            assertEquals("Reply All", grouped.alsoFound.single().title)
+        }
+
+    @Test
+    fun `searchPodcastsGrouped returns empty groups for blank query`() =
+        runTest(testDispatcher) {
+            val grouped = repository.searchPodcastsGrouped("   ")
+            assertTrue(grouped.catalog.isEmpty())
+            assertTrue(grouped.alsoFound.isEmpty())
+            assertEquals(0, server.requestCount)
+        }
+
+    @Test
+    fun `searchPodcastsGrouped keeps hybrid when typeahead fails`() =
+        runTest(testDispatcher) {
+            server.dispatcher =
+                object : Dispatcher() {
+                    override fun dispatch(request: RecordedRequest): MockResponse {
+                        val path = request.path.orEmpty()
+                        return when {
+                            path.startsWith("/search/typeahead") ->
+                                MockResponse()
+                                    .setResponseCode(500)
+                                    .setBody("""{"status":"false"}""")
+                            path.startsWith("/search") ->
+                                fixtureBody("fixtures/search.json")
+                            else -> MockResponse().setResponseCode(404)
+                        }
+                    }
+                }
+
+            val grouped = repository.searchPodcastsGrouped("reply")
+
+            assertTrue(grouped.catalog.isEmpty())
+            assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
+        }
+
+    private fun fixtureBody(resourcePath: String): MockResponse {
+        val json =
+            requireNotNull(javaClass.classLoader?.getResource(resourcePath)) {
+                "Missing test fixture: $resourcePath"
+            }.readText()
+        return MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody(json)
+    }
 
     private fun enqueueFixture(resourcePath: String) {
         val json =
