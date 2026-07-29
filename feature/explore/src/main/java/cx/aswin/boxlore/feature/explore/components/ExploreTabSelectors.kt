@@ -242,7 +242,7 @@ fun SearchTabSelector(
                         )
                     }
 
-                    // By idea → episode-only semantic (CF embed); high debounce in ViewModel
+                    // Find episodes → episode-only semantic (CF embed); high debounce in ViewModel
                     val isEpisodesSelected = selectedTab == SearchTab.EPISODES
                     val episodesContentColor by animateColorAsState(
                         targetValue = if (isEpisodesSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -270,7 +270,7 @@ fun SearchTabSelector(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "By idea",
+                                text = "Find episodes",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = GoogleSansWeight.bold,
                                 color = episodesContentColor
