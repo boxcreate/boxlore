@@ -4,11 +4,11 @@
 
 # boxlore
 
-**Free Android podcast app & player** — semantic search, offline downloads, no ads
+**Free Android podcast app** — search that works, personal picks, offline listening, no ads
 
 <br/>
 
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.12.apk">
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.13.apk">
   <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
 &nbsp;&nbsp;
@@ -28,28 +28,24 @@
 **[About](#about)** ·
 **[Search](#search)** ·
 **[Features](#features)** ·
-**[First launch](#first-launch)** ·
+**[Get started](#get-started)** ·
 **[Screenshots](#screenshots)** ·
-**[Install](#install--build)** ·
+**[Install](#install)** ·
 **[Developers](#for-developers)**
 
 <img src="docs/images/m3/divider.svg" width="820" alt=""/>
 
 </div>
 
-<p align="center">
-  <img src="docs/images/m3/header-about.svg" width="820" alt="About"/>
-</p>
+## About
 
 <a id="about"></a>
 
-Every podcast app I've used feels the same. They call an open API, do word-for-word search, let you subscribe, and show Apple charts. Misspell a show title and you get nothing. Ask for a *topic* and you get title matches that miss the point. None of them really recommend things or get personal.
+Most podcast apps call an open API, do word‑for‑word search, show Apple charts, and call it a day. Misspell a show name and you get nothing. Ask for a *topic* and you get title matches that miss the point.
 
-Spotify and Pocket Casts do personalize, but you're paying with ads or a subscription — and Spotify's podcast UI is rough.
+**boxlore** is built around that gap. Find a show when the spelling is messy, or find shows and episodes by *idea* when you only know the vibe — then listen with personalization, offline downloads, and a queue you can manage. Free, no ads, no paywall for the stuff that matters.
 
-**boxlore** is a free Android podcast player built around the search problem first: find a show by name even when the spelling is messy, or find shows and episodes by *idea* when you only know the vibe. From there it learns as you listen — personalized picks, discovery beyond typing a title, stream or download for offline, and a queue you can actually manage. No ads, no paywall for the stuff that matters.
-
-The smart layer runs on a catalog index that is rebuilt daily and covers popular chart podcasts — not every podcast on earth yet. It evolves every day and gets bigger. Search and recommendations work best within that catalog; everything else still works as a normal podcast client (subscribe, play, download, OPML import/export).
+The smart catalog covers popular chart podcasts and grows daily — not every show on earth yet. Outside that index, boxlore still works as a normal podcast client (subscribe, play, download, OPML).
 
 <!-- upcoming-changes:start -->
 <div align="center">
@@ -79,153 +75,49 @@ New features and improvements for the next release are currently in development.
 </div>
 <!-- upcoming-changes:end -->
 
-<p align="center">
-  <img src="docs/images/m3/header-search.svg" width="820" alt="Search"/>
-</p>
+## Search
 
 <a id="search"></a>
 
-Most podcast apps still treat search like a dictionary lookup. boxlore treats it as two jobs:
+Two jobs. Same Explore search bar (and onboarding when you already know your shows).
 
-<table>
-<tr>
-<td width="50%" valign="top">
-<h3>Find a show</h3>
-<p>Type a podcast name — typos and near-misses included — and get fast, typo‑tolerant matches powered by <a href="https://github.com/meilisearch/meilisearch">Meilisearch</a>. Primary hits land under <strong>Matches</strong>; coverage beyond the main catalog shows up under <strong>Also found</strong>.</p>
-</td>
-<td width="50%" valign="top">
-<h3>By idea</h3>
-<p>Describe a topic or mood instead of a title. Concept search (powered by <a href="https://github.com/qdrant/qdrant">Qdrant</a>) returns related shows and episodes by meaning — so <em>“stories about startup failure”</em> finds the conversation, not just titles that share the words.</p>
-</td>
-</tr>
-</table>
+| Find a show | By idea |
+| :--- | :--- |
+| Type a podcast name — typos welcome. Fast, typo‑tolerant lookup via [Meilisearch](https://github.com/meilisearch/meilisearch). Primary hits under **Matches**; extra coverage under **Also found**. | Describe a topic or mood. Concept search via [Qdrant](https://github.com/qdrant/qdrant) returns related shows and episodes by meaning — e.g. *“stories about startup failure”* finds the conversation, not just shared keywords. |
 
-<p>Both paths live in Explore (and show search during onboarding). The catalog behind them grows daily; outside that index, boxlore still behaves like a normal podcast client.</p>
-
-<p align="center">
-  <img src="docs/images/m3/header-features.svg" width="820" alt="What makes it different"/>
-</p>
+## Features
 
 <a id="features"></a>
 
-<table>
-<tr>
-<td align="center" width="50%" valign="top">
-<h3>Search that actually helps</h3>
-Find shows by name or by idea — see <a href="#search">Search</a>. Typo‑tolerant catalog lookup plus meaning‑based discovery for shows and episodes.
-</td>
-<td align="center" width="50%" valign="top">
-<h3>Personalization engine</h3>
-On-device learning that re-ranks Home rails, Explore, queue, and downloads as you listen — taste stays on your phone.<br/>
-Themed <strong>discovery rails</strong> under the daypart greeting, plus <strong>Because You Like</strong> and For You picks.<br/>
-<a href="docs/recommendation-system.md">Read more →</a>
-</td>
-</tr>
-<tr>
-<td align="center" width="50%" valign="top">
-<h3>Curiosity cards</h3>
-Swipe question cards on Learn that point you at episodes you'd never search for.<br/>
-Right to queue · left to dismiss · tap to play.
-</td>
-<td align="center" width="50%" valign="top">
-<h3>No ads, forever</h3>
-No banners, no sponsored inserts, no premium tier to unlock search or recommendations.
-</td>
-</tr>
-</table>
-
-<br/>
-
-<div align="center">
-<table>
-  <tr>
-    <td align="center">
-      <b>Home</b><br/><sub>For You &amp; your queue</sub><br/><br/>
-      <img src="docs/images/homescreen.png" width="200" alt="Home screen" style="border-radius: 16px;"/>
-    </td>
-    <td align="center">
-      <b>Semantic Search</b><br/><sub>Natural-language discovery</sub><br/><br/>
-      <img src="docs/images/semantic_search.png" width="200" alt="Semantic search" style="border-radius: 16px;"/>
-    </td>
-    <td align="center">
-      <b>Curiosity Cards</b><br/><sub>Swipe to discover</sub><br/><br/>
-      <img src="docs/images/curiosity_cards.png" width="200" alt="Curiosity cards" style="border-radius: 16px;"/>
-    </td>
-  </tr>
-</table>
-</div>
-
-<p align="center">
-  <img src="docs/images/m3/header-first-launch.svg" width="820" alt="First launch"/>
-</p>
-
-<a id="first-launch"></a>
-
-First launch gives you a few ways in — pick what fits how you already listen.
-
-<table>
-<tr>
-<td width="33%" valign="top">
-<h3>New to podcasts?</h3>
-<p><strong>AI onboarding</strong> is the default path. A short chat about your preferences — natural language or suggested options — turns into semantic search queries, matching shows from the index, and a personalized feed to subscribe to before you enter the app.</p>
-</td>
-<td width="33%" valign="top">
-<h3>Switching apps?</h3>
-<p>Import from Pocket Casts, Apple Podcasts, AntennaPod, or any app that exports <strong>OPML</strong>. Tap <strong>Import library</strong>, pick your file, and get similar-show recommendations based on what you brought over.</p>
-<p><sub>Export anytime via <strong>Profile → Backup & Restore</strong> (OPML or full JSON).</sub></p>
-</td>
-<td width="33%" valign="top">
-<h3>Know your shows?</h3>
-<p><strong>I know my shows</strong> opens search during setup — subscribe manually, grab similar-show suggestions if you want, or <strong>Skip Setup</strong> and explore on your own.</p>
-</td>
-</tr>
-</table>
-
-<p align="center">
-  <img src="docs/images/m3/header-more.svg" width="820" alt="More features"/>
-</p>
+| | |
+| :--- | :--- |
+| **Personalization** | On‑device learning re‑ranks Home, Explore, queue, and downloads as you listen. Taste stays on your phone. Daypart rails, **Because You Like**, and For You. [How it works →](docs/recommendation-system.md) |
+| **Curiosity cards** | Swipe question cards that point at episodes you’d never search for. Right to queue · left to dismiss · tap to play. |
+| **Listening** | Mixtape queue, mini/full player, speed, sleep timer, chapters, transcripts, video, Android Auto. |
+| **Library & offline** | Subs, downloads, history, likes. Launch offline → land on downloads. OPML / full JSON backup. |
+| **Daily briefing** | Optional region‑aware AI news audio with script, sources, and chapters. |
+| **No ads** | No banners, no sponsored inserts, no premium tier to unlock search or recommendations. |
 
 <details>
-<summary><b>Listening &amp; playback</b></summary>
-<br/>
+<summary><b>Smart automation (defaults off)</b></summary>
 
-**Mixtapes** — Your home queue: up to 15 episodes from subscriptions (in-progress + unplayed new drops), scored so you can press play and keep going.
-
-**Player** — Mini and full player, queue, 0.5×–1.5× speed, sleep timer, skip controls, synced transcripts, chapters, video podcasts, Android Auto.
-
-**Podcasting 2.0** — Native chapters and transcripts when publishers provide them; AI-generated fallback when they don't (beta, daily limit). Video in 16:9.
+- **Smart Downloads** — curated offline pool within limits you set
+- **Per‑podcast auto‑download** — new drops download automatically (notifications required)
+- **New episode notifications** — per‑podcast bell
 
 </details>
 
-<details>
-<summary><b>Library &amp; offline</b></summary>
-<br/>
+## Get started
 
-Subscriptions, downloads, history, and liked episodes in one place. Launch offline → land on your downloads.
+<a id="get-started"></a>
 
-**Profile → Backup & Restore:** OPML (any podcast app) or JSON (full boxlore backup — subs, history, likes, settings).
+| New to podcasts? | Switching apps? | Know your shows? |
+| :--- | :--- | :--- |
+| **AI onboarding** — short chat → matched shows from the catalog → subscribe before you enter. | **Import library** — OPML from Pocket Casts, Apple Podcasts, AntennaPod, or similar. Similar‑show suggestions after import. | **I know my shows** — search during setup, or **Skip Setup** and explore. |
 
-</details>
+Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
 
-<details>
-<summary><b>Smart automation</b></summary>
-<br/>
-
-**Daily briefing** — Optional region-specific AI news audio with script, sources, and chapter stories.
-
-**Smart Downloads** *(app-wide, off by default)* — Curated offline pool from subs, recommendations, and trending, within limits you set.
-
-**Auto-download** *(per podcast, off by default)* — New episode drops → downloads automatically (notifications required).
-
-**New episode notifications** — Per-podcast bell. Off by default.
-
-**Design** — Material 3 / Material You, shimmer skeletons, stable lists, smooth transitions, fast image loading.
-
-</details>
-
-<p align="center">
-  <img src="docs/images/m3/header-screenshots.svg" width="820" alt="Screenshots"/>
-</p>
+## Screenshots
 
 <a id="screenshots"></a>
 
@@ -241,18 +133,18 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
       <img src="docs/images/homescreen.png" width="180" alt="Home" style="border-radius: 14px;"/>
     </td>
     <td align="center" width="25%">
-      <b>Daily Briefing</b><br/><sub>AI news audio</sub><br/><br/>
-      <img src="docs/images/daily_brief.png" width="180" alt="Daily briefing" style="border-radius: 14px;"/>
+      <b>Search</b><br/><sub>Name or idea</sub><br/><br/>
+      <img src="docs/images/semantic_search.png" width="180" alt="Search" style="border-radius: 14px;"/>
     </td>
     <td align="center" width="25%">
-      <b>Curiosity Cards</b><br/><sub>Swipe to discover</sub><br/><br/>
-      <img src="docs/images/curiosity_cards.png" width="180" alt="Curiosity cards" style="border-radius: 14px;"/>
+      <b>Briefing</b><br/><sub>AI news audio</sub><br/><br/>
+      <img src="docs/images/daily_brief.png" width="180" alt="Daily briefing" style="border-radius: 14px;"/>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <b>Semantic Search</b><br/><sub>Meaning, not keywords</sub><br/><br/>
-      <img src="docs/images/semantic_search.png" width="180" alt="Semantic search" style="border-radius: 14px;"/>
+      <b>Curiosity</b><br/><sub>Swipe to discover</sub><br/><br/>
+      <img src="docs/images/curiosity_cards.png" width="180" alt="Curiosity cards" style="border-radius: 14px;"/>
     </td>
     <td align="center">
       <b>For You</b><br/><sub>Personalized picks</sub><br/><br/>
@@ -263,21 +155,19 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
       <img src="docs/images/library.png" width="180" alt="Library" style="border-radius: 14px;"/>
     </td>
     <td align="center">
-      <b>Player</b><br/><sub>Artwork-matched · expressive</sub><br/><br/>
+      <b>Player</b><br/><sub>Artwork‑matched</sub><br/><br/>
       <img src="docs/images/player.png" width="180" alt="Artwork-matched expressive podcast player" style="border-radius: 14px;"/>
     </td>
   </tr>
 </table>
 </div>
 
-<p align="center">
-  <img src="docs/images/m3/header-install-v2.svg" width="820" alt="Install and build"/>
-</p>
+## Install
 
-<a id="install--build"></a>
+<a id="install"></a>
 
 <div align="center">
-  <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.12.apk">
+  <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.13.apk">
     <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
   </a>
   &nbsp;&nbsp;
@@ -288,9 +178,7 @@ Subscriptions, downloads, history, and liked episodes in one place. Launch offli
 
 <br/>
 
-Enable *Install from unknown sources* in Android settings for sideloading.
-
-**Build from source**
+Enable *Install from unknown sources* for sideloading.
 
 ```bash
 git clone https://github.com/boxcreate/boxlore.git
@@ -301,69 +189,48 @@ cd boxlore
 
 **Requirements:** Android Studio Ladybug+ · Android SDK 35+ · JDK 17 · Kotlin 1.9+
 
-<p align="center">
-  <img src="docs/images/m3/header-developers.svg" width="820" alt="For developers"/>
-</p>
+## For developers
 
-<details id="for-developers">
-<summary><b>Codebase &amp; stack</b></summary>
-<br/>
+<a id="for-developers"></a>
 
-**Codebase structure**
+<details>
+<summary><b>Modules &amp; stack</b></summary>
 
 | Module | Role |
 |--------|------|
 | `:core:catalog` | Repositories, mappers |
 | `:core:designsystem` | Themes, shared composables |
 | `:core:model` | Domain models |
-| `:core:network` | Podcast Index + edge proxy |
-| `:feature:explore` | Search, For You, curiosity cards |
-| `:feature:home` | Mixtape, charts, briefing |
+| `:core:network` | Catalog API client |
+| `:feature:explore` | Search, For You, curiosity |
+| `:feature:home` | Mixtape, charts, briefing entry |
 | `:feature:player` | Playback UI |
-| `:feature:briefing` | Daily briefing screen |
+| `:feature:briefing` | Daily briefing |
 | `:feature:library` | Downloads, subs, history |
 | `:feature:info` | Podcast & episode detail |
-
-**Tech stack**
+| `:feature:onboarding` | First‑run paths |
 
 | Technology | Purpose |
 |-----------|---------|
-| **Kotlin** | 100% Kotlin codebase |
-| **Jetpack Compose** | UI with Material 3 |
-| **Coroutines & Flow** | Async and reactive state |
-| **Retrofit 2** | REST API client |
-| **Room** | Local database |
-| **ExoPlayer (Media3)** | Audio and video playback |
-| **Coil** | Image loading |
-| **Cloudflare Workers** | Edge proxy for search & recommendations |
-| **bge-m3** | Embeddings for semantic search (1024-dim) |
+| **Kotlin** · **Compose** · **Material 3** | App UI |
+| **Coroutines & Flow** | Async state |
+| **Retrofit** · **Room** · **Media3** · **Coil** | Network, DB, playback, images |
+| **[Meilisearch](https://github.com/meilisearch/meilisearch)** | Typo‑tolerant show search |
+| **[Qdrant](https://github.com/qdrant/qdrant)** · **Qwen3** | Concept search & multilingual recommendations |
 
-**Data sources**
-
-| Source | Data |
-|--------|------|
-| **Podcast Index API** | Catalog, keyword search |
-| **Apple Podcast Charts** | Daily trending (US, IN, GB, FR) |
+Agent notes: [`AGENTS.md`](AGENTS.md) · architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md) · testing: [`docs/TESTING.md`](docs/TESTING.md)
 
 </details>
 
-<p align="center">
-  <img src="docs/images/m3/header-contributing.svg" width="820" alt="Contributing"/>
-</p>
+## Contributing
 
-Contributions welcome.
+1. **Bugs** — [Issues](https://github.com/boxcreate/boxlore/issues)
+2. **Ideas** — [Discussions](https://github.com/boxcreate/boxlore/discussions)
+3. **PRs** — Fork, change, open a pull request
 
-1. **Report bugs** — [Open an issue](https://github.com/boxcreate/boxlore/issues) with steps to reproduce
-2. **Suggest features** — [Discussions](https://github.com/boxcreate/boxlore/discussions)
-3. **Submit PRs** — Fork, code, open a pull request
+## License
 
-Agent / maintainer notes: see [`AGENTS.md`](AGENTS.md).
-
-<p align="center">
-  <img src="docs/images/m3/header-license.svg" width="820" alt="License"/>
-</p>
-
-boxlore is source-available under the [PolyForm Strict License 1.0.0](LICENSE). You may read and use the code for noncommercial purposes; redistribution and derivative works are not permitted. See [LICENSE](LICENSE) for details.
+Source‑available under the [PolyForm Strict License 1.0.0](LICENSE). Noncommercial use of the code is allowed; redistribution and derivatives are not. See [LICENSE](LICENSE).
 
 ## Contributors
 
