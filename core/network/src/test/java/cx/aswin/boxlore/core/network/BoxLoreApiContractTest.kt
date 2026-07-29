@@ -178,6 +178,29 @@ class BoxLoreApiContractTest {
     }
 
     @Test
+    fun `searchTypeahead decodes feeds and query params`() {
+        enqueueFixture("fixtures/search-typeahead.json")
+
+        val response =
+            api
+                .searchTypeahead(publicKey = APP_KEY, query = "serial", limit = 15)
+                .execute()
+
+        assertTrue(response.isSuccessful)
+        val body = requireNotNull(response.body())
+        assertEquals("true", body.status)
+        val feed = body.feeds.single()
+        assertEquals(745392L, feed.id)
+        assertEquals("Serial", feed.title)
+        assertEquals(917918570L, feed.itunesId)
+
+        val recorded = server.takeRequest()
+        assertEquals("GET", recorded.method)
+        assertEquals("/search/typeahead?q=serial&limit=15", recorded.path)
+        assertEquals(APP_KEY, recorded.getHeader("X-App-Key"))
+    }
+
+    @Test
     fun `Call endpoint surfaces non-success for 404`() {
         server.enqueue(
             MockResponse()

@@ -50,6 +50,7 @@ val SEARCH_CATEGORIES =
     )
 
 @Composable
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 internal fun OnboardingSearchScreen(
     query: String,
     results: List<Podcast>,

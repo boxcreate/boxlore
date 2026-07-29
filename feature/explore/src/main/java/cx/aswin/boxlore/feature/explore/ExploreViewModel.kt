@@ -567,8 +567,9 @@ class ExploreViewModel(
             try {
                 val grouped = podcastRepository.searchPodcastsGrouped(query)
                 if (searchJob == myJob) {
-                    val rankedCatalog = rankPodcastsOrOriginal(grouped.catalog)
-                    val rankedAlso = rankPodcastsOrOriginal(grouped.alsoFound)
+                    val history = playbackRepository.getAllHistory().first()
+                    val rankedCatalog = rankPodcastsOrOriginal(grouped.catalog, history)
+                    val rankedAlso = rankPodcastsOrOriginal(grouped.alsoFound, history)
                     _searchResults.value = rankedCatalog
                     _alsoFoundResults.value = rankedAlso
                     grouped.all.forEach { _seenPodcasts[it.id] = it }
@@ -607,8 +608,9 @@ class ExploreViewModel(
                 val region = userPrefs.regionStream.first()
                 val grouped = podcastRepository.searchSemanticGrouped(query, region)
                 if (semanticSearchJob == myJob) {
-                    val rankedEps = rankEpisodesOrOriginal(grouped.episodes)
-                    val rankedPods = rankPodcastsOrOriginal(grouped.podcasts)
+                    val history = playbackRepository.getAllHistory().first()
+                    val rankedEps = rankEpisodesOrOriginal(grouped.episodes, history)
+                    val rankedPods = rankPodcastsOrOriginal(grouped.podcasts, history)
                     _semanticSearchResults.value = rankedEps
                     _semanticPodcastResults.value = rankedPods
                     rankedPods.forEach { _seenPodcasts[it.id] = it }
@@ -636,9 +638,12 @@ class ExploreViewModel(
         semanticSearchJob = myJob
     }
 
-    private suspend fun rankPodcastsOrOriginal(results: List<Podcast>): List<Podcast> {
+    private suspend fun rankPodcastsOrOriginal(
+        results: List<Podcast>,
+        history: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
+    ): List<Podcast> {
         return try {
-            rankPodcastSearchTies(results)
+            rankPodcastSearchTies(results, history)
         } catch (error: kotlinx.coroutines.CancellationException) {
             throw error
         } catch (_: Exception) {
@@ -646,9 +651,12 @@ class ExploreViewModel(
         }
     }
 
-    private suspend fun rankEpisodesOrOriginal(results: List<Episode>): List<Episode> {
+    private suspend fun rankEpisodesOrOriginal(
+        results: List<Episode>,
+        history: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
+    ): List<Episode> {
         return try {
-            rankEpisodeSearchTies(results)
+            rankEpisodeSearchTies(results, history)
         } catch (error: kotlinx.coroutines.CancellationException) {
             throw error
         } catch (_: Exception) {
@@ -656,8 +664,11 @@ class ExploreViewModel(
         }
     }
 
-    private suspend fun rankPodcastSearchTies(results: List<Podcast>): List<Podcast> {
-        val history = playbackRepository.getAllHistory().first()
+    private suspend fun rankPodcastSearchTies(
+        results: List<Podcast>,
+        historyOverride: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
+    ): List<Podcast> {
+        val history = historyOverride ?: playbackRepository.getAllHistory().first()
         return results.chunked(searchTieWindow).flatMap { window ->
             adaptiveScorer.rankPodcasts(
                 inputs = window.map { podcast ->
@@ -675,8 +686,11 @@ class ExploreViewModel(
         }
     }
 
-    private suspend fun rankEpisodeSearchTies(results: List<Episode>): List<Episode> {
-        val history = playbackRepository.getAllHistory().first()
+    private suspend fun rankEpisodeSearchTies(
+        results: List<Episode>,
+        historyOverride: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
+    ): List<Episode> {
+        val history = historyOverride ?: playbackRepository.getAllHistory().first()
         return results.chunked(searchTieWindow).flatMap { window ->
             val scores = adaptiveScorer.scoreEpisodes(
                 inputs = window.map { episode ->
@@ -703,13 +717,16 @@ class ExploreViewModel(
         if (_searchTab.value == tab) return
         _searchTab.value = tab
         val query = _searchQuery.value.trim()
-        if (tab == SearchTab.EPISODES && query.isNotEmpty()) {
-            _isSemanticLoading.value = true
-            if (_semanticSearchResults.value.isEmpty()) {
-                performSemanticSearch(query)
+        when {
+            tab == SearchTab.EPISODES && query.isNotEmpty() -> {
+                if (_semanticSearchResults.value.isEmpty() && _semanticPodcastResults.value.isEmpty()) {
+                    performSemanticSearch(query)
+                } else {
+                    // Already have results for this query — don't leave the loader stuck on.
+                    _isSemanticLoading.value = false
+                }
             }
-        } else if (tab == SearchTab.SHOWS && query.isNotEmpty()) {
-            performSearch(query)
+            tab == SearchTab.SHOWS && query.isNotEmpty() -> performSearch(query)
         }
     }
 

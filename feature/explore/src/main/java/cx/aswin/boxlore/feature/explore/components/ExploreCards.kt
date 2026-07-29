@@ -195,7 +195,7 @@ fun ExploreRelatedShowsRail(
             contentPadding = PaddingValues(bottom = 4.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            itemsIndexed(railItems, key = { _, it -> it.id }) { index, podcast ->
+            itemsIndexed(railItems, key = { _, podcast -> podcast.id }) { index, podcast ->
                 // Clickable without a clip shape — clipping the whole column was eating title glyphs
                 // at the bottom-left of the rounded bounds.
                 Column(

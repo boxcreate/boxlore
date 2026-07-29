@@ -212,17 +212,7 @@ internal fun OnboardingViewModel.updateSearchQuery(query: String) {
                 val grouped = podcastRepository.searchPodcastsGrouped(cleaned)
                 grouped.all.forEach { seenPodcasts[it.id] = it }
 
-                // Catalog (Meili) first; local matches fill gaps; also-found stays separate
-                val seenIds = mutableSetOf<String>()
-                val catalog = mutableListOf<Podcast>()
-                grouped.catalog.forEach {
-                    if (seenIds.add(it.id)) catalog.add(it)
-                }
-                localMatches.forEach {
-                    if (seenIds.add(it.id)) catalog.add(it)
-                }
-                val alsoFound =
-                    grouped.alsoFound.filter { seenIds.add(it.id) }
+                val (catalog, alsoFound) = combineOnboardingShowSearch(grouped, localMatches)
 
                 _uiState.update {
                     it.copy(

@@ -395,8 +395,11 @@ fun ExploreContent(
 
         val distinctVibes = remember(state.suggestedVibes) { state.suggestedVibes.distinctBy { it.first } }
 
-        val alsoFoundDistinct = remember(state.alsoFoundResults) {
-            state.alsoFoundResults.distinctBy { it.id }
+        val alsoFoundDistinct = remember(state.alsoFoundResults, displayList) {
+            val catalogIds = displayList.map { it.id }.toSet()
+            state.alsoFoundResults
+                .distinctBy { it.id }
+                .filter { it.id !in catalogIds }
         }
 
         val rawGridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
@@ -410,6 +413,10 @@ fun ExploreContent(
                     podcast.id
                 }
             }
+        }
+
+        val semanticPodcastsDistinct = remember(state.semanticPodcastResults) {
+            state.semanticPodcastResults.distinctBy { it.id }
         }
 
         LazyVerticalStaggeredGrid(
@@ -435,7 +442,7 @@ fun ExploreContent(
                         }
                     } else {
                         val eps = state.semanticSearchResults
-                        val pods = state.semanticPodcastResults
+                        val pods = semanticPodcastsDistinct
                         val showContent = eps.isNotEmpty() || pods.isNotEmpty()
                         val showLoader = state.isSemanticLoading
                         val showEmptyState =
@@ -531,7 +538,7 @@ fun ExploreContent(
                                     )
                                 }
 
-                                itemsIndexed(eps.drop(1), key = { _, it -> "search_semantic_${it.id}" }) { index, episode ->
+                                itemsIndexed(eps.drop(1), key = { _, episode -> "search_semantic_${episode.id}" }) { index, episode ->
                                     val parentPodcast = Podcast(
                                         id = episode.podcastId ?: "",
                                         title = episode.podcastTitle ?: "Podcast",
@@ -664,7 +671,7 @@ fun ExploreContent(
                                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                                     )
                                 }
-                                itemsIndexed(alsoFound, key = { _, it -> "also_${it.id}" }) { index, podcast ->
+                                itemsIndexed(alsoFound, key = { _, podcast -> "also_${podcast.id}" }) { index, podcast ->
                                     ExplorePodcastCard(
                                         podcast = podcast,
                                         cardHeight = 160.dp,

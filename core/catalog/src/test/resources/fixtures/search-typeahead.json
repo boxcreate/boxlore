@@ -1,0 +1,18 @@
+{
+  "status": "true",
+  "feeds": [
+    {
+      "id": 745392,
+      "title": "Serial",
+      "author": "NYT",
+      "description": "True crime",
+      "image": "https://example.com/serial.jpg",
+      "artwork": "https://example.com/serial-art.jpg",
+      "url": "https://feeds.example.com/serial.xml",
+      "itunesId": 917918570,
+      "medium": "podcast",
+      "categories": { "122": "True Crime" }
+    }
+  ],
+  "source": "meili"
+}

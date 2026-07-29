@@ -57,4 +57,43 @@ class ShowSearchMergeTest {
         val b = Podcast(id = "", title = "Foo", artist = "Bar", imageUrl = "")
         assertEquals(podcastIdentityKeys(a), podcastIdentityKeys(b))
     }
+
+    @Test
+    fun absorbsAlternateKeysFromSkippedDuplicates() {
+        // Meili hit with numeric id only; hybrid shares feed URL but also carries itunes: —
+        // absorbing keys on skip prevents a later itunes-only hit from reappearing.
+        val meili =
+            Podcast(
+                id = "100",
+                title = "Show",
+                artist = "Host",
+                imageUrl = "",
+                feedUrl = "https://feeds.example/show",
+            )
+        val hybridSameFeedWithItunes =
+            Podcast(
+                id = "itunes:55",
+                title = "Show",
+                artist = "Host",
+                imageUrl = "",
+                feedUrl = "https://feeds.example/show",
+            )
+        val laterItunesOnly =
+            Podcast(
+                id = "itunes:55",
+                title = "Show Dup",
+                artist = "Host",
+                imageUrl = "",
+            )
+
+        val merged =
+            mergeShowSearchResults(
+                typeahead = listOf(meili),
+                hybrid = listOf(hybridSameFeedWithItunes, laterItunesOnly),
+            )
+
+        assertEquals(1, merged.catalog.size)
+        assertTrue(merged.alsoFound.isEmpty())
+        assertEquals(1, merged.all.size)
+    }
 }

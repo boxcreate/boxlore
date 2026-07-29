@@ -175,9 +175,7 @@ class PodcastRepository(
             val hybridDeferred = async { searchPodcastsWithCorrection(cleaned) }
             val typeahead = typeaheadDeferred.await()
             val hybrid = hybridDeferred.await()
-            mergeShowSearchResults(typeahead, hybrid.podcasts).copy(
-                correctedQuery = hybrid.correctedQuery,
-            )
+            mergeShowSearchResults(typeahead, hybrid.podcasts)
         }
 
     private fun mapSearchFeedToPodcast(feed: cx.aswin.boxlore.core.network.model.SearchFeed): Podcast? {

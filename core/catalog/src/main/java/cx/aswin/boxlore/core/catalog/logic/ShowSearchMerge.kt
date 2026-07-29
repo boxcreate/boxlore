@@ -36,7 +36,11 @@ fun mergeShowSearchResults(
         podcast: Podcast,
     ) {
         val keys = podcastIdentityKeys(podcast)
-        if (keys.any { it in seenKeys }) return
+        if (keys.any { it in seenKeys }) {
+            // Still absorb alternate identity keys so chained collisions stay deduped.
+            seenKeys.addAll(keys)
+            return
+        }
         seenKeys.addAll(keys)
         target.add(podcast)
     }
