@@ -26,6 +26,7 @@
 <br/><br/>
 
 **[About](#about)** ·
+**[Search](#search)** ·
 **[Features](#features)** ·
 **[First launch](#first-launch)** ·
 **[Screenshots](#screenshots)** ·
@@ -42,13 +43,13 @@
 
 <a id="about"></a>
 
-Every podcast app I've used feels the same. They call an open API, do word-for-word search, let you subscribe, and show Apple charts. None of them really recommend things or get personal.
+Every podcast app I've used feels the same. They call an open API, do word-for-word search, let you subscribe, and show Apple charts. Misspell a show title and you get nothing. Ask for a *topic* and you get title matches that miss the point. None of them really recommend things or get personal.
 
 Spotify and Pocket Casts do personalize, but you're paying with ads or a subscription — and Spotify's podcast UI is rough.
 
-**boxlore** is a free Android podcast player that learns as you listen: natural-language search, personalized picks, podcast discovery beyond typing a show title, stream or download episodes for offline listening, and a queue you can actually manage. No ads, no paywall for the stuff that matters.
+**boxlore** is a free Android podcast player built around the search problem first: find a show by name even when the spelling is messy, or find shows and episodes by *idea* when you only know the vibe. From there it learns as you listen — personalized picks, discovery beyond typing a title, stream or download for offline, and a queue you can actually manage. No ads, no paywall for the stuff that matters.
 
-The smart layer runs on a search index that is rebuilt daily and covers popular chart podcasts — not every podcast on earth yet. It evolves every day and gets bigger. Recommendations and semantic search work best within that catalog; everything else still works as a normal podcast client (subscribe, play, download, OPML import/export).
+The smart layer runs on a catalog index that is rebuilt daily and covers popular chart podcasts — not every podcast on earth yet. It evolves every day and gets bigger. Search and recommendations work best within that catalog; everything else still works as a normal podcast client (subscribe, play, download, OPML import/export).
 
 <!-- upcoming-changes:start -->
 <div align="center">
@@ -79,6 +80,29 @@ New features and improvements for the next release are currently in development.
 <!-- upcoming-changes:end -->
 
 <p align="center">
+  <img src="docs/images/m3/header-search.svg" width="820" alt="Search"/>
+</p>
+
+<a id="search"></a>
+
+Most podcast apps still treat search like a dictionary lookup. boxlore treats it as two jobs:
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<h3>Find a show</h3>
+<p>Type a podcast name — typos and near-misses included — and get fast, typo‑tolerant matches powered by <a href="https://github.com/meilisearch/meilisearch">Meilisearch</a>. Primary hits land under <strong>Matches</strong>; coverage beyond the main catalog shows up under <strong>Also found</strong>.</p>
+</td>
+<td width="50%" valign="top">
+<h3>By idea</h3>
+<p>Describe a topic or mood instead of a title. Concept search (powered by <a href="https://github.com/qdrant/qdrant">Qdrant</a>) returns related shows and episodes by meaning — so <em>“stories about startup failure”</em> finds the conversation, not just titles that share the words.</p>
+</td>
+</tr>
+</table>
+
+<p>Both paths live in Explore (and show search during onboarding). The catalog behind them grows daily; outside that index, boxlore still behaves like a normal podcast client.</p>
+
+<p align="center">
   <img src="docs/images/m3/header-features.svg" width="820" alt="What makes it different"/>
 </p>
 
@@ -87,9 +111,8 @@ New features and improvements for the next release are currently in development.
 <table>
 <tr>
 <td align="center" width="50%" valign="top">
-<h3>Semantic search</h3>
-Search episodes by <em>meaning</em>, not exact keywords.<br/>
-<em>"stories about startup failure"</em> → relevant episodes, not title matches.
+<h3>Search that actually helps</h3>
+Find shows by name or by idea — see <a href="#search">Search</a>. Typo‑tolerant catalog lookup plus meaning‑based discovery for shows and episodes.
 </td>
 <td align="center" width="50%" valign="top">
 <h3>Personalization engine</h3>
