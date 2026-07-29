@@ -57,7 +57,7 @@ The smart layer runs on a search index that is rebuilt daily and covers popular 
 <summary><b>🔮 Upcoming in the Next Release</b></summary>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Explore music from 11 countries, pick your region or language, and enjoy refreshed home and explore screens with better recommendations. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
+<li>Explore content from 11 countries, pick your region or language, and enjoy refreshed home and explore screens with better recommendations. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
