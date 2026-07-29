@@ -78,6 +78,14 @@ interface BoxLoreApi {
         @Query("q") query: String
     ): retrofit2.Call<SearchResponse>
 
+    /** Meili show typeahead (additive). Older clients keep using [search]. */
+    @GET("search/typeahead")
+    fun searchTypeahead(
+        @Header("X-App-Key") publicKey: String,
+        @Query("q") query: String,
+        @Query("limit") limit: Int? = 20
+    ): retrofit2.Call<SearchResponse>
+
     @GET("search/semantic")
     fun searchSemantic(
         @Header("X-App-Key") publicKey: String,

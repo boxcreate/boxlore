@@ -170,10 +170,11 @@ fun SearchTabSelector(
     onTabSelected: (SearchTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val totalWidth = 240.dp
+    // Wider than legacy "Shows" / "Episodes" — intent education chips
+    val totalWidth = 288.dp
     val padding = 4.dp
     val spacing = 4.dp
-    val tabWidth = 114.dp
+    val tabWidth = 138.dp
     val tabHeight = 36.dp
 
     val targetOffset = if (selectedTab == SearchTab.EPISODES) tabWidth + spacing else 0.dp
@@ -217,7 +218,7 @@ fun SearchTabSelector(
                     horizontalArrangement = Arrangement.spacedBy(spacing),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // "Shows" Tab (index 0 / SearchTab.SHOWS)
+                    // Find a show (Meili typeahead + hybrid Also found)
                     val isShowsSelected = selectedTab == SearchTab.SHOWS
                     val showsContentColor by animateColorAsState(
                         targetValue = if (isShowsSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -234,14 +235,14 @@ fun SearchTabSelector(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Shows",
+                            text = "Find a show",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = GoogleSansWeight.bold,
                             color = showsContentColor
                         )
                     }
 
-                    // "Episodes (AI)" Tab (index 1 / SearchTab.EPISODES)
+                    // By idea → episode-only semantic (CF embed); high debounce in ViewModel
                     val isEpisodesSelected = selectedTab == SearchTab.EPISODES
                     val episodesContentColor by animateColorAsState(
                         targetValue = if (isEpisodesSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -269,7 +270,7 @@ fun SearchTabSelector(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Episodes",
+                                text = "By idea",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = GoogleSansWeight.bold,
                                 color = episodesContentColor

@@ -61,7 +61,9 @@ sealed interface ExploreUiState {
         val searchTab: SearchTab = SearchTab.SHOWS,
         val semanticSearchResults: List<Episode> = emptyList(),
         val isSemanticLoading: Boolean = false,
-        val hasPerformedSemanticSearch: Boolean = false
+        val hasPerformedSemanticSearch: Boolean = false,
+        /** Hybrid `/search` hits not already in Meili typeahead. */
+        val alsoFoundResults: List<Podcast> = emptyList(),
     ) : ExploreUiState
     data class Error(val message: String) : ExploreUiState
 }
@@ -94,6 +96,7 @@ private data class ExploreSearchSlice(
     val semanticSearchResults: List<Episode>,
     val isSemanticLoading: Boolean,
     val hasPerformedSemanticSearch: Boolean,
+    val alsoFoundResults: List<Podcast>,
 )
 
 class ExploreViewModel(
@@ -126,7 +129,8 @@ class ExploreViewModel(
             searchTab = SearchTab.SHOWS,
             semanticSearchResults = emptyList(),
             isSemanticLoading = false,
-            hasPerformedSemanticSearch = false
+            hasPerformedSemanticSearch = false,
+            alsoFoundResults = emptyList(),
         )
     )
     val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
@@ -145,12 +149,13 @@ class ExploreViewModel(
     private val _semanticSearchResults = MutableStateFlow<List<Episode>>(emptyList())
     private val _isSemanticLoading = MutableStateFlow(false)
     private val _hasPerformedSemanticSearch = MutableStateFlow(false)
+    private val _alsoFoundResults = MutableStateFlow<List<Podcast>>(emptyList())
 
     // Seen/cached podcasts for eager zero-latency substring client-side matching
     private val _seenPodcasts = java.util.concurrent.ConcurrentHashMap<String, Podcast>()
     private val _localSubstringResults = MutableStateFlow<List<Podcast>>(emptyList())
     
-    // Combine local substring matches and remote search results seamlessly
+    // Combine local substring matches and Meili/catalog remote results (also-found stays separate)
     private val _combinedSearchResults = combine(_localSubstringResults, _searchResults) { local, remote ->
         val seenIds = mutableSetOf<String>()
         val combined = mutableListOf<Podcast>()
@@ -249,8 +254,15 @@ class ExploreViewModel(
                     _semanticSearchResults,
                     _isSemanticLoading,
                     _hasPerformedSemanticSearch,
-                ) { searchTab, semanticSearchResults, isSemanticLoading, hasPerformedSemanticSearch ->
-                    ExploreSearchSlice(searchTab, semanticSearchResults, isSemanticLoading, hasPerformedSemanticSearch)
+                    _alsoFoundResults,
+                ) { searchTab, semanticSearchResults, isSemanticLoading, hasPerformedSemanticSearch, alsoFound ->
+                    ExploreSearchSlice(
+                        searchTab,
+                        semanticSearchResults,
+                        isSemanticLoading,
+                        hasPerformedSemanticSearch,
+                        alsoFound,
+                    )
                 },
             ) { recs, search -> recs to search }
 
@@ -276,6 +288,7 @@ class ExploreViewModel(
                     semanticSearchResults = search.semanticSearchResults,
                     isSemanticLoading = search.isSemanticLoading,
                     hasPerformedSemanticSearch = search.hasPerformedSemanticSearch,
+                    alsoFoundResults = search.alsoFoundResults,
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -340,7 +353,7 @@ class ExploreViewModel(
 
     @OptIn(FlowPreview::class)
     private fun startSearchObserver() {
-        // 1. Shows tab observer (300ms debounce)
+        // Show typeahead: short debounce (Meili is cheap)
         _searchQuery
             .debounce(300L)
             .distinctUntilChanged()
@@ -351,7 +364,7 @@ class ExploreViewModel(
             }
             .launchIn(viewModelScope)
 
-        // 2. Episodes tab observer (1000ms debounce)
+        // Episode semantic: long debounce before CF Workers AI embed — avoid partial queries
         _searchQuery
             .debounce(1000L)
             .distinctUntilChanged()
@@ -385,13 +398,14 @@ class ExploreViewModel(
         if (trimmed.isEmpty()) {
             _localSubstringResults.value = emptyList()
             _semanticSearchResults.value = emptyList()
+            _alsoFoundResults.value = emptyList()
             _hasPerformedSemanticSearch.value = false
             _isSemanticLoading.value = false
         } else {
             _localSubstringResults.value =
                 ExploreBrowseLogic.filterPodcastsBySubstring(trimmed, _seenPodcasts.values)
 
-            // If we are on EPISODES tab, set loading to true immediately because they just started typing!
+            // Episodes (by idea): show loader immediately while we wait out the high embed debounce
             if (_searchTab.value == SearchTab.EPISODES) {
                 _isSemanticLoading.value = true
                 _hasPerformedSemanticSearch.value = false
@@ -417,6 +431,7 @@ class ExploreViewModel(
         _currentVibe.value = vibeName
         _isLoading.value = true
         _searchResults.value = emptyList()
+        _alsoFoundResults.value = emptyList()
 
         searchJob?.cancel()
         
@@ -453,6 +468,7 @@ class ExploreViewModel(
         _currentVibe.value = null
         if (_searchQuery.value.isEmpty()) {
             _searchResults.value = emptyList()
+            _alsoFoundResults.value = emptyList()
             _localSubstringResults.value = emptyList()
         }
     }
@@ -529,19 +545,27 @@ class ExploreViewModel(
         var myJob: Job? = null
         myJob = viewModelScope.launch {
             _isLoading.value = true
-            _searchResults.value = emptyList() // Clear previous results to force Skeleton
+            _searchResults.value = emptyList()
+            _alsoFoundResults.value = emptyList()
             try {
-                val searchResult = podcastRepository.searchPodcastsWithCorrection(query)
+                val grouped = podcastRepository.searchPodcastsGrouped(query)
                 if (searchJob == myJob) {
-                    _searchResults.value = rankPodcastsOrOriginal(searchResult.podcasts)
-                    searchResult.podcasts.forEach { _seenPodcasts[it.id] = it }
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(query, searchResult.podcasts.size)
+                    val rankedCatalog = rankPodcastsOrOriginal(grouped.catalog)
+                    val rankedAlso = rankPodcastsOrOriginal(grouped.alsoFound)
+                    _searchResults.value = rankedCatalog
+                    _alsoFoundResults.value = rankedAlso
+                    grouped.all.forEach { _seenPodcasts[it.id] = it }
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreSearchPerformed(
+                        query,
+                        rankedCatalog.size + rankedAlso.size,
+                    )
                 }
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
             } catch (_: Exception) {
                 if (searchJob == myJob) {
                     _searchResults.value = emptyList()
+                    _alsoFoundResults.value = emptyList()
                 }
             } finally {
                 if (searchJob == myJob) {
@@ -657,8 +681,13 @@ class ExploreViewModel(
         if (_searchTab.value == tab) return
         _searchTab.value = tab
         val query = _searchQuery.value.trim()
-        if (tab == SearchTab.EPISODES && _semanticSearchResults.value.isEmpty() && query.isNotEmpty()) {
-            performSemanticSearch(query)
+        if (tab == SearchTab.EPISODES && query.isNotEmpty()) {
+            _isSemanticLoading.value = true
+            if (_semanticSearchResults.value.isEmpty()) {
+                performSemanticSearch(query)
+            }
+        } else if (tab == SearchTab.SHOWS && query.isNotEmpty()) {
+            performSearch(query)
         }
     }
 

@@ -108,6 +108,7 @@ import cx.aswin.boxlore.core.designsystem.components.AnimatedShapesFallback
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
@@ -393,6 +394,10 @@ fun ExploreContent(
 
         val distinctVibes = remember(state.suggestedVibes) { state.suggestedVibes.distinctBy { it.first } }
 
+        val alsoFoundDistinct = remember(state.alsoFoundResults) {
+            state.alsoFoundResults.distinctBy { it.id }
+        }
+
         val rawGridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
         val gridItems = remember(rawGridItems) {
             rawGridItems.distinctBy { podcast ->
@@ -545,9 +550,12 @@ fun ExploreContent(
                             }
                         }
 
-                        val showContent = displayList.isNotEmpty()
-                        val showSkeletons = state.isLoading && displayList.isEmpty()
-                        val showEmptyState = !state.isLoading && displayList.isEmpty()
+                        val alsoFound = alsoFoundDistinct
+                        val hasCatalog = displayList.isNotEmpty()
+                        val hasAlsoFound = alsoFound.isNotEmpty() && state.currentVibe == null
+                        val showContent = hasCatalog || hasAlsoFound
+                        val showSkeletons = state.isLoading && !showContent
+                        val showEmptyState = !state.isLoading && !showContent
 
                         if (showSkeletons) {
                             item(span = StaggeredGridItemSpan.FullLine) {
@@ -567,6 +575,20 @@ fun ExploreContent(
                             }
                         } else if (showContent) {
                             val showGenreChip = state.currentCategory == "All" && state.currentVibe == null
+                            if (hasCatalog && hasAlsoFound) {
+                                item(
+                                    key = "matches_header",
+                                    span = StaggeredGridItemSpan.FullLine,
+                                ) {
+                                    Text(
+                                        text = "Matches",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                    )
+                                }
+                            }
                             itemsIndexed(gridItems, key = { _, it -> "grid_${it.id}" }) { index, podcast ->
                                 val cardHeight = 160.dp
                                 val entryPointStr = if (state.currentVibe != null) "explore_vibe" else "explore_search"
@@ -576,6 +598,36 @@ fun ExploreContent(
                                     showGenreChip = showGenreChip,
                                     onClick = { onPodcastClick(podcast.id, entryPointStr, state.currentCategory, index) }
                                 )
+                            }
+
+                            if (hasAlsoFound) {
+                                item(
+                                    key = "also_found_header",
+                                    span = StaggeredGridItemSpan.FullLine,
+                                ) {
+                                    Text(
+                                        text = "Also found",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                                    )
+                                }
+                                itemsIndexed(alsoFound, key = { _, it -> "also_${it.id}" }) { index, podcast ->
+                                    ExplorePodcastCard(
+                                        podcast = podcast,
+                                        cardHeight = 160.dp,
+                                        showGenreChip = showGenreChip,
+                                        onClick = {
+                                            onPodcastClick(
+                                                podcast.id,
+                                                "explore_search_also_found",
+                                                state.currentCategory,
+                                                gridItems.size + index,
+                                            )
+                                        },
+                                    )
+                                }
                             }
                             
                             if (state.isLoading) {

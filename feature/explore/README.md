@@ -12,6 +12,7 @@ Owns Explore discovery and the Learn tab presentation: browse/search discovery, 
 - Trending genre row (`ExploreGenreSelector`) uses shared `PillFilterChip` icon+label pills (same language as onboarding search) with All + top genres + **More** opening the existing Browse Genres bottom sheet.
 - For You mood row (`ExploreVibeChipRow`) sits in the same sticky header slot as genres (matched 8dp spacing). Soft 12dp capsules with per-mood icons + chromatic fill — distinct from stadium genre pills. Titles come from shared `CuratedMoods` (same as Home daypart rails). Mood results and search idle “Suggested for you” titles share scrollable `ExploreIconTitleHeader` (12dp top / 8dp bottom); suggestion blocks are left-aligned icon + title cards.
 - Explore For You keeps a featured hero plus a staggered recommendation grid; body cards use shared `CuratedEpisodeCard` (square art, episode title only — no podcast/show name), matching Home “Based on Your Taste” card style without forcing equal-height rows.
+- Explore search chips: **Find a show** (Meili typeahead + hybrid **Also found**, 300ms debounce) and **By idea** (episode-only `GET /search/semantic`, 1000ms debounce before CF embed; loader shows while waiting so search still feels active).
 - `LearnScreen` and `LearnViewModel` for the Learn route (curiosity cards, queue/play actions).
 - `LearnHistoryScreen` and `LearnHistoryViewModel` for Learn history.
 - `LearnCuriosityHistoryStore` for Learn history persistence through prefs APIs.

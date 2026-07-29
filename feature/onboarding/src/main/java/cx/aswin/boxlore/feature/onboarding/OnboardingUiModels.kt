@@ -25,6 +25,8 @@ data class OnboardingUiState(
     val isLoadingPodcasts: Boolean = false,
     val searchQuery: String = "",
     val searchResults: List<Podcast> = emptyList(),
+    /** Hybrid `/search` hits not already in Meili typeahead (coverage for episode-count shrink). */
+    val alsoFoundResults: List<Podcast> = emptyList(),
     val isSearching: Boolean = false,
     val isCompleting: Boolean = false,
     val currentRegion: String = "us",

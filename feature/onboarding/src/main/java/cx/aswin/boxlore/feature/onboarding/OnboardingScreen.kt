@@ -227,6 +227,7 @@ fun OnboardingScreen(
                 OnboardingSearchScreen(
                     query = uiState.searchQuery,
                     results = uiState.searchResults,
+                    alsoFoundResults = uiState.alsoFoundResults,
                     isSearching = uiState.isSearching,
                     subscribedIds = uiState.subscribedPodcastIds,
                     selectedPodcasts = uiState.selectedPodcasts,
