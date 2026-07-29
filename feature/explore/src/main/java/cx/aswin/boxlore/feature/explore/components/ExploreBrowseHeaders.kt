@@ -326,7 +326,6 @@ internal fun ExploreMoodResultsHeader(
 internal fun ExploreSuggestedMoodsHeader(modifier: Modifier = Modifier) {
     ExploreIconTitleHeader(
         title = "Suggested for you",
-        subtitle = "Pick a mood to browse curated shows",
         icon = Icons.Rounded.AutoAwesome,
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.tertiaryContainer,

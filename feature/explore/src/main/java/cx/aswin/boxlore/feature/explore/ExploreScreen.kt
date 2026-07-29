@@ -429,7 +429,9 @@ fun ExploreContent(
                 if (state.searchTab == SearchTab.EPISODES) {
                     if (state.searchQuery.isEmpty()) {
                         item(span = StaggeredGridItemSpan.FullLine) {
-                            ExploreEpisodesSearchIdleState()
+                            ExploreEpisodesSearchIdleState(
+                                onExampleClick = onSearchQueryChanged,
+                            )
                         }
                     } else {
                         val eps = state.semanticSearchResults
