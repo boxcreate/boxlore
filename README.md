@@ -9,7 +9,7 @@
 <br/>
 
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.12.apk">
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.13.apk">
   <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
 <!-- download-apk:end -->
