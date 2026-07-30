@@ -48,7 +48,7 @@ Most podcast apps call an open API, do word‑for‑word search, show Apple char
 
 **boxlore** is built around both gaps. Find a show when the spelling is messy, or find shows and episodes by *idea* when you only know the vibe. Then the app gets personal as you listen: Home, Explore, queue, and downloads re‑rank on‑device from your taste and fetches content that actually matters to you from our vector db using semantic matching — daypart rails, **Because You Like**, and **For You** picks, plus curiosity cards when you want something you’d never search for. Taste stays on your phone. Stream or download for offline, manage a real queue, and skip the ads and paywalls for the stuff that matters.
 
-The smart catalog covers almost all the popular podcasts (~40k) and episodes (500k); still, not every show on earth yet, so it refreshes it catalogue everyday and keeps on growing. Outside that index, boxlore still works as a normal podcast client (subscribe, play, download, OPML).
+The smart catalog covers almost all the popular podcasts (~40k) and episodes (500k); still, not every show on earth yet, so it refreshes the catalogue everyday and keeps on growing. Outside that index, boxlore still works as a normal podcast client (subscribe, play, download, OPML).
 
 <!-- upcoming-changes:start -->
 
