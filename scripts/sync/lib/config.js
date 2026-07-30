@@ -112,7 +112,8 @@ module.exports = {
     PODCASTS_COLLECTION: 'podcasts',
     VECTOR_DIM: 1024,
     MAX_EMBEDDINGS_PER_RUN: parseInt(process.env.MAX_EMBEDDINGS_PER_RUN || '6000', 10),
-    PAYLOAD_DESCRIPTION_MAX: 1000,
+    /** null = store full cleaned/raw description in Qdrant payload (no 1000-char cut). */
+    PAYLOAD_DESCRIPTION_MAX: null,
     // HTTP SELECT page size (sqld RESPONSE_TOO_LARGE guard). Override via TURSO_PAGE_SIZE.
     TURSO_PAGE_SIZE: Math.max(50, parseInt(process.env.TURSO_PAGE_SIZE || '300', 10) || 300),
     // Extra pending rows to pull beyond the embed budget (already-in-Qdrant flag flips).

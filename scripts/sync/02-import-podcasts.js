@@ -268,7 +268,7 @@ async function importFromAPI(itunesIds = null) {
                 feed.itunesId || itunesId,
                 feed.title || 'Unknown Title',
                 feed.author || 'Unknown Author',
-                (feed.description || '').substring(0, 1000),
+                feed.description || '',
                 feed.image || feed.artwork || '',
                 feed.url || '',
                 feed.link || '',

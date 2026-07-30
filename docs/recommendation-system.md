@@ -423,7 +423,7 @@ The API is documented **by path and payload shape only**. How it retrieves or ra
 | `POST /episodes/similar` | Episode-info / queue neighbors (`country` + optional `languages`; oversample + `startsWith`) |
 | `POST` / `GET /home/bootstrap` | Cold-start briefing + trending (+ optional recs; forwards `languages`) |
 | `GET /curated/curiosity-v3` | Learn / Lore deck |
-| `GET /search/semantic` | Explore natural-language search |
+| `GET /search/semantic` | Explore natural-language search (`country` + optional `languages`; oversample + `startsWith`; conditional ≤2 eps/show) |
 | `GET /trending` | Charts / Discover / queue tiers |
 
 **Auth (client view):** app key on requests; optional App Check JWT when enforced; device UUID scopes per-device caches; app version for analytics slicing.
@@ -513,7 +513,10 @@ Negative rewards + SHOW facet drop → future Home/Queue priors and learned scor
 
 ### E — Explore semantic search
 
-API returns relevance-ordered hits → client lightly re-ranks inside tie windows with `DISCOVERY`.
+API oversamples Qdrant (no exact `language` match), keeps hits whose language starts with
+the resolved prefixes (so `en-us` matches `en`), applies a per-show episode cap only when
+≥3 distinct shows are in the pool, and returns relevance-ordered hits → client lightly
+re-ranks inside tie windows with `DISCOVERY`.
 
 ### F — Lore card swipe
 

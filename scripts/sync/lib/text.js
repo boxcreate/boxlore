@@ -44,14 +44,16 @@ const BOILERPLATE_PATTERNS = [
  */
 function safeTruncate(raw, maxLen) {
     if (!raw || typeof raw !== 'string') return '';
-    return raw.substring(0, maxLen).toWellFormed();
+    const well = raw.toWellFormed();
+    if (maxLen == null || !Number.isFinite(maxLen) || maxLen <= 0) return well;
+    return well.substring(0, maxLen).toWellFormed();
 }
 
 /**
  * Strip HTML, URLs, emails, handles, timestamps, sponsor blocks, and
- * boilerplate. Truncates to maxLen (default 1000).
+ * boilerplate. Pass maxLen to truncate; omit / null / ≤0 for uncapped.
  */
-function cleanDescription(raw, maxLen = 1000) {
+function cleanDescription(raw, maxLen = null) {
     if (!raw || typeof raw !== 'string') return '';
     let text = raw.replace(/<[^>]+>/g, ' ');
     text = text
@@ -73,7 +75,7 @@ function cleanDescription(raw, maxLen = 1000) {
     return safeTruncate(text.replace(/\s+/g, ' ').trim(), maxLen);
 }
 
-/** Text fed to the embedding model for an episode point. */
+/** Text fed to the embedding model for an episode point (uncapped length). */
 function episodeEmbedText(episode, podcast) {
     const parts = [
         `Episode: ${episode.title || ''}`,
@@ -82,10 +84,10 @@ function episodeEmbedText(episode, podcast) {
         podcast.categories ? `Genres: ${podcast.categories}` : null,
         podcast.author ? `Host: ${podcast.author}` : null,
     ].filter(Boolean);
-    return parts.join('. ').replace(/[\n\r]+/g, ' ').substring(0, 1000);
+    return parts.join('. ').replace(/[\n\r]+/g, ' ').toWellFormed();
 }
 
-/** Text fed to the embedding model for a show point. */
+/** Text fed to the embedding model for a show point (uncapped length). */
 function podcastEmbedText(podcast) {
     const cleaned = cleanDescription(podcast.description);
     const parts = [
@@ -95,7 +97,7 @@ function podcastEmbedText(podcast) {
         podcast.categories ? `Genres: ${podcast.categories}` : null,
         podcast.language ? `Language: ${podcast.language}` : null,
     ].filter(Boolean);
-    return parts.join('. ').replace(/[\n\r]+/g, ' ').substring(0, 1000);
+    return parts.join('. ').replace(/[\n\r]+/g, ' ').toWellFormed();
 }
 
 module.exports = { safeTruncate, cleanDescription, episodeEmbedText, podcastEmbedText };
