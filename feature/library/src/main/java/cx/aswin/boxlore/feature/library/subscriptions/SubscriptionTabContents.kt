@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.library.subscriptions
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -197,28 +198,13 @@ private fun LatestEpisodesList(
         allHistory,
         useSmartRank,
     ) {
-        value =
-            if (useSmartRank) {
-                scoreEpisodes(filteredEpisodePodcasts, allHistory)
-            } else {
-                emptyMap()
-            }
+        value = scoreLatestIfNeeded(useSmartRank, filteredEpisodePodcasts, allHistory, scoreEpisodes)
     }
     val displayPodcasts = remember(filteredEpisodePodcasts, useSmartRank, episodeScores) {
-        if (useSmartRank) {
-            filteredEpisodePodcasts.sortedByDescending {
-                episodeScores[it.latestEpisode?.id] ?: 0.0
-            }
-        } else {
-            filteredEpisodePodcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
-        }
+        sortLatestDisplayPodcasts(filteredEpisodePodcasts, useSmartRank, episodeScores)
     }
     val groupedEpisodes = remember(displayPodcasts, useSmartRank) {
-        if (useSmartRank) {
-            emptyMap()
-        } else {
-            displayPodcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate) }
-        }
+        groupLatestByDateHeader(displayPodcasts, useSmartRank)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -241,32 +227,85 @@ private fun LatestEpisodesList(
                             .padding(bottom = 8.dp),
                 )
             }
-            if (useSmartRank) {
-                items(items = displayPodcasts, key = { "${it.id}_latest_smart" }) { podcast ->
-                    LatestEpisodeListRow(podcast = podcast, actions = actions)
-                }
-            } else {
-                groupedEpisodes.forEach { (header, podcastsInGroup) ->
-                    stickyHeader { DateHeader(text = header) }
-                    items(items = podcastsInGroup, key = { "${it.id}_latest_chrono" }) { podcast ->
-                        LatestEpisodeListRow(podcast = podcast, actions = actions)
-                    }
-                }
-            }
-        }
-        if (displayPodcasts.isNotEmpty()) {
-            PlayAllFab(
-                isPlayerActive = isPlayerActive,
-                onClick = {
-                    val episodesToPlay = displayPodcasts.map { it.latestEpisode!! }
-                    val firstPodcast = displayPodcasts.firstOrNull()
-                    if (firstPodcast != null && actions.onPlayEpisodes != null) {
-                        actions.onPlayEpisodes.invoke(episodesToPlay, firstPodcast)
-                    }
-                },
+            latestEpisodeItems(
+                useSmartRank = useSmartRank,
+                displayPodcasts = displayPodcasts,
+                groupedEpisodes = groupedEpisodes,
+                actions = actions,
             )
         }
+        LatestPlayAllFab(
+            displayPodcasts = displayPodcasts,
+            isPlayerActive = isPlayerActive,
+            onPlayEpisodes = actions.onPlayEpisodes,
+        )
     }
+}
+
+private suspend fun scoreLatestIfNeeded(
+    useSmartRank: Boolean,
+    podcasts: List<Podcast>,
+    history: List<ListeningHistoryEntity>,
+    scoreEpisodes: suspend (List<Podcast>, List<ListeningHistoryEntity>) -> Map<String, Double>,
+): Map<String, Double> =
+    if (useSmartRank) scoreEpisodes(podcasts, history) else emptyMap()
+
+private fun sortLatestDisplayPodcasts(
+    podcasts: List<Podcast>,
+    useSmartRank: Boolean,
+    episodeScores: Map<String, Double>,
+): List<Podcast> =
+    if (useSmartRank) {
+        podcasts.sortedByDescending { episodeScores[it.latestEpisode?.id] ?: 0.0 }
+    } else {
+        podcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
+    }
+
+private fun groupLatestByDateHeader(
+    podcasts: List<Podcast>,
+    useSmartRank: Boolean,
+): Map<String, List<Podcast>> =
+    if (useSmartRank) {
+        emptyMap()
+    } else {
+        podcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate) }
+    }
+
+@OptIn(ExperimentalFoundationApi::class)
+private fun androidx.compose.foundation.lazy.LazyListScope.latestEpisodeItems(
+    useSmartRank: Boolean,
+    displayPodcasts: List<Podcast>,
+    groupedEpisodes: Map<String, List<Podcast>>,
+    actions: LatestTabActions,
+) {
+    if (useSmartRank) {
+        items(items = displayPodcasts, key = { "${it.id}_latest_smart" }) { podcast ->
+            LatestEpisodeListRow(podcast = podcast, actions = actions)
+        }
+        return
+    }
+    groupedEpisodes.forEach { (header, podcastsInGroup) ->
+        stickyHeader { DateHeader(text = header) }
+        items(items = podcastsInGroup, key = { "${it.id}_latest_chrono" }) { podcast ->
+            LatestEpisodeListRow(podcast = podcast, actions = actions)
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.LatestPlayAllFab(
+    displayPodcasts: List<Podcast>,
+    isPlayerActive: Boolean,
+    onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)?,
+) {
+    if (displayPodcasts.isEmpty() || onPlayEpisodes == null) return
+    val firstPodcast = displayPodcasts.firstOrNull() ?: return
+    PlayAllFab(
+        isPlayerActive = isPlayerActive,
+        onClick = {
+            onPlayEpisodes(displayPodcasts.map { it.latestEpisode!! }, firstPodcast)
+        },
+    )
 }
 
 @Composable

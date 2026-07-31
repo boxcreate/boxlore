@@ -62,11 +62,7 @@ fun OptimizedImage(
 ) {
     if (url.isNullOrBlank()) {
         Box(modifier = modifier) {
-            if (errorContent != null) {
-                errorContent()
-            } else {
-                AnimatedShapesFallback()
-            }
+            OptimizedImageFailureContent(errorContent)
         }
         return
     }
@@ -96,15 +92,12 @@ fun OptimizedImage(
     )
     val state = painter.state
 
-    if (state is AsyncImagePainter.State.Error) {
-        // Trigger fallback to raw URL outside of composition via LaunchedEffect
-        if (!hasTriedFallback && currentUrl == proxyUrl) {
-            LaunchedEffect(url) {
-                proxyFailedUrls.add(url)
-                hasTriedFallback = true
-                currentUrl = url
-                trackProxyFallback(url, proxyWidth)
-            }
+    if (state is AsyncImagePainter.State.Error && !hasTriedFallback && currentUrl == proxyUrl) {
+        LaunchedEffect(url) {
+            proxyFailedUrls.add(url)
+            hasTriedFallback = true
+            currentUrl = url
+            trackProxyFallback(url, proxyWidth)
         }
     }
 
@@ -116,35 +109,53 @@ fun OptimizedImage(
             colorFilter = colorFilter,
             modifier = Modifier.fillMaxSize()
         )
-        when {
-            state is AsyncImagePainter.State.Success -> {
-                // Rendered by Image, do nothing
-            }
-            state is AsyncImagePainter.State.Error && hasTriedFallback -> {
-                // Both proxy and raw URL failed. Render final fallback.
-                if (errorContent != null) {
-                    errorContent()
-                } else {
-                    AnimatedShapesFallback()
-                }
-            }
-            else -> {
-                // Loading, Empty, or proxy failed but we are falling back: Render lightweight solid placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Podcasts,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
-                        modifier = Modifier.size(64.dp)
-                    )
-                }
-            }
-        }
+        OptimizedImageOverlay(
+            state = state,
+            hasTriedFallback = hasTriedFallback,
+            errorContent = errorContent,
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.OptimizedImageFailureContent(
+    errorContent: (@Composable BoxScope.() -> Unit)?,
+) {
+    if (errorContent != null) {
+        errorContent()
+    } else {
+        AnimatedShapesFallback()
+    }
+}
+
+@Composable
+private fun BoxScope.OptimizedImageOverlay(
+    state: AsyncImagePainter.State,
+    hasTriedFallback: Boolean,
+    errorContent: (@Composable BoxScope.() -> Unit)?,
+) {
+    when {
+        state is AsyncImagePainter.State.Success -> Unit
+        state is AsyncImagePainter.State.Error && hasTriedFallback ->
+            OptimizedImageFailureContent(errorContent)
+        else -> OptimizedImageLoadingPlaceholder()
+    }
+}
+
+@Composable
+private fun OptimizedImageLoadingPlaceholder() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Podcasts,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+            modifier = Modifier.size(64.dp)
+        )
     }
 }
 
