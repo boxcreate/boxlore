@@ -98,4 +98,21 @@ class SubscriptionForegroundSyncTest {
             )
             assertEquals(listOf("a", "c"), saved)
         }
+
+    @Test
+    fun syncSubscribedLatestEpisodes_loadIdsFailureSkipsWork() =
+        runTest {
+            var syncCalls = 0
+            var saveCalls = 0
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { error("datastore down") },
+                syncChunk = {
+                    syncCalls++
+                    emptyMap()
+                },
+                saveLatest = { _, _ -> saveCalls++ },
+            )
+            assertEquals(0, syncCalls)
+            assertEquals(0, saveCalls)
+        }
 }

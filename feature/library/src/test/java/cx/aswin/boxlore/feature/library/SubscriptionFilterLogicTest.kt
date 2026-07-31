@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.library
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.library.subscriptions.episodeMetaDurationLabel
 import cx.aswin.boxlore.feature.library.subscriptions.extractDistinctGenres
 import cx.aswin.boxlore.feature.library.subscriptions.filterPodcastsByGenre
 import cx.aswin.boxlore.feature.library.subscriptions.formatRelativeUpdateLabel
@@ -100,7 +101,7 @@ class SubscriptionFilterLogicTest {
         val resolved =
             raw
                 .map { resolveSubscriptionGenreItem(it) }
-                .distinctBy { it.value.lowercase() }
+                .distinctBy { it.value.lowercase(java.util.Locale.ROOT) }
         assertEquals(2, resolved.size)
         assertEquals(setOf("Technology", "Society & Culture"), resolved.map { it.value }.toSet())
     }
@@ -146,5 +147,27 @@ class SubscriptionFilterLogicTest {
         assertEquals("Today", getChronologicalHeader(todaySeconds))
         assertEquals("Yesterday", getChronologicalHeader(yesterdaySeconds))
         assertEquals("Older", getChronologicalHeader(0L))
+    }
+
+    @Test
+    fun episodeMetaDurationLabel_formatsElapsedAndRemaining() {
+        val hourPlus =
+            Episode(
+                id = "e",
+                title = "T",
+                description = "",
+                audioUrl = "https://example.com/a.mp3",
+                imageUrl = null,
+                publishedDate = 1L,
+                duration = 3660,
+                podcastId = "p",
+            )
+        assertEquals("1h 1m", episodeMetaDurationLabel(hourPlus, isInProgress = false, progress = 0f))
+        assertEquals("45m", episodeMetaDurationLabel(hourPlus.copy(duration = 2700), isInProgress = false, progress = 0f))
+        assertEquals("1h 0m left", episodeMetaDurationLabel(hourPlus, isInProgress = true, progress = 0.5f))
+        assertEquals(
+            "15m left",
+            episodeMetaDurationLabel(hourPlus.copy(duration = 1800), isInProgress = true, progress = 0.5f),
+        )
     }
 }

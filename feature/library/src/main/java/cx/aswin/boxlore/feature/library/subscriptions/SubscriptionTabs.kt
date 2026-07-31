@@ -168,7 +168,7 @@ internal fun SubscriptionGenreChips(
     val genreItems = remember(distinctGenres) {
         distinctGenres
             .map { resolveSubscriptionGenreItem(it) }
-            .distinctBy { it.value.lowercase(Locale.getDefault()) }
+            .distinctBy { it.value.lowercase(Locale.ROOT) }
     }
 
     LazyRow(
