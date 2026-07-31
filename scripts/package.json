@@ -15,7 +15,7 @@
     "test:sync-pi-unavailable": "node --test sync/lib/pi-unavailable.test.js",
     "test:sync-scalars": "node --test sync/lib/scalars.test.js",
     "test:sync-turso-page": "node --test sync/lib/turso-page.test.js",
-    "test:sync": "node --test sync/lib/csv.test.js sync/lib/pi-unavailable.test.js sync/lib/scalars.test.js sync/lib/turso-page.test.js sync/lib/episode-caps.test.js sync/lib/staleness.test.js sync/lib/podcast-index.test.js sync/lib/chart-countries.test.js sync/lib/log.test.js sync/lib/text.test.js",
+    "test:sync": "node --test sync/lib/csv.test.js sync/lib/pi-unavailable.test.js sync/lib/scalars.test.js sync/lib/turso-page.test.js sync/lib/episode-caps.test.js sync/lib/staleness.test.js sync/lib/podcast-index.test.js sync/lib/chart-countries.test.js sync/lib/log.test.js sync/lib/text.test.js sync/lib/vectorize-lanes.test.js sync/lib/tip-queue.test.js sync/lib/import-missing.test.js",
     "test:sync-text": "node --test sync/lib/text.test.js",
     "test:sync-log": "node --test sync/lib/log.test.js",
     "test:sync-chart-countries": "node --test sync/lib/chart-countries.test.js",

@@ -80,4 +80,29 @@ function take(podcastId) {
     return map[key];
 }
 
-module.exports = { clear, load, put, take, flush, handoffPath };
+/** Drop same-run payload for deleted / completed shows (memory + next flush). */
+function remove(podcastId) {
+    const map = load();
+    const key = String(podcastId);
+    if (!Object.prototype.hasOwnProperty.call(map, key)) return;
+    delete map[key];
+    dirty = 1;
+}
+
+/**
+ * @param {Array<string|number>} podcastIds
+ */
+function removeMany(podcastIds) {
+    const map = load();
+    let changed = false;
+    for (const id of podcastIds || []) {
+        const key = String(id);
+        if (Object.prototype.hasOwnProperty.call(map, key)) {
+            delete map[key];
+            changed = true;
+        }
+    }
+    if (changed) dirty = 1;
+}
+
+module.exports = { clear, load, put, take, remove, removeMany, flush, handoffPath };

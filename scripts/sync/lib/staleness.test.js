@@ -46,6 +46,17 @@ test('thresholdMs uses 8h / 24h / 48h bases', () => {
     assert.ok(core > news);
 });
 
+test('jitter spreads core thresholds across ±STALENESS_JITTER', () => {
+    const { jitterFactor } = require('./staleness');
+    const factors = ['1', '2', '99', 'abc', 'feed-9', 'feed-42'].map(jitterFactor);
+    const lo = Math.min(...factors);
+    const hi = Math.max(...factors);
+    assert.ok(lo >= 1 - cfg.STALENESS_JITTER - 1e-9);
+    assert.ok(hi <= 1 + cfg.STALENESS_JITTER + 1e-9);
+    assert.ok(hi - lo > cfg.STALENESS_JITTER, 'ids should not all cluster at one extreme');
+    assert.equal(policySummary().jitterPct, Math.round(cfg.STALENESS_JITTER * 100));
+});
+
 test('applyCountryCheckFlag sets x only for relaxed-only', () => {
     const a = applyCountryCheckFlag({}, 'de');
     assert.equal(a.x, 1);

@@ -5,12 +5,15 @@
  * Stage 4: Generate episode embeddings for pending full-tier chart shows and
  * upsert to the Qdrant 'episodes' collection.
  *
- * Bounded by MAX_EMBEDDINGS_PER_RUN (a budget of new vectors, NOT a show
- * count): incremental shows (1-2 new eps) always flow through; leftover
- * budget drains cold-start/backlog shows (up to per-show cap each),
- * oldest-first. Prefers PI handoff from stage 3 (same-run); falls back to
- * PI fetch. Prune-before-insert keeps every show at its country cap.
- * Upserts use wait=true so qdrant_vectorized=1 is only set after vectors are durable.
+ * Drain order (tip-first):
+ *   1) Turso ep_vec_tip_queue IDs still on full-tier charts
+ *   2) Remaining ep=0 ∧ show=1 (incremental)
+ *   3) Cold both=0, oldest last_ep_sync first, leftover budget only
+ *
+ * Prefers PI handoff from stage 3 (same-run); falls back to PI fetch.
+ * Prune-before-insert keeps every show at its country cap.
+ * qdrant_vectorized=1 + tip-queue DELETE only when the show fully completes
+ * (not on mid-show budget break). Upserts use wait=true.
  */
 
 const log = require('./lib/log');
@@ -21,6 +24,12 @@ const embedder = require('./lib/embedder');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
 const handoff = require('./lib/pi-handoff');
+const tipQueue = require('./lib/tip-queue');
+const {
+    orderPendingForVectorize,
+    showVectorizeComplete,
+    laneForShow,
+} = require('./lib/vectorize-lanes');
 const { capsFromCountriesByItunes } = require('./lib/episode-caps');
 const {
     loadCountriesByItunesId,
@@ -42,6 +51,7 @@ async function main() {
     turso.beginStep('vectorize-episodes');
     await turso.healthCheck();
     await ensureIndexes();
+    await tipQueue.ensureTable(turso);
     await qdrant.ensureEpisodesCollection(cfg.VECTOR_DIM, cfg.EPISODES_COLLECTION);
 
     if (cfg.FULL_TIER_COUNTRIES.length === 0) {
@@ -50,8 +60,6 @@ async function main() {
     }
 
     // --- Pending shows (paged); chart membership in JS (no CAST on charts) ---
-    // Pre-agg charts once; page pending flags by id (partial index). Never use
-    // CAST(charts.itunes_id AS INTEGER) IN-subqueries — they re-scan charts every page.
     const countriesByItunes = await loadCountriesByItunesId(turso);
     const fullTier = new Set(cfg.FULL_TIER_COUNTRIES.map((c) => c.toLowerCase()));
     const pendingRows = await turso.fetchAllPaged({
@@ -60,7 +68,7 @@ async function main() {
         buildPage: (after, limit) => ({
             sql: `
                 SELECT p.id, p.title, p.categories, p.author, p.image_url, p.language,
-                       p.last_ep_sync, p.itunes_id
+                       p.last_ep_sync, p.itunes_id, p.qdrant_podcast_vectorized
                 FROM podcasts p
                 WHERE p.qdrant_vectorized = 0
                   AND p.id > ?
@@ -82,22 +90,40 @@ async function main() {
             language: r[5] || 'en',
             last_ep_sync: r[6] == null ? null : Number(r[6]),
             itunes_id: r[7],
+            qdrant_podcast_vectorized: Number(r[8]) || 0,
         }));
-    pending.sort((a, b) => {
-        if (a.last_ep_sync == null && b.last_ep_sync != null) return -1;
-        if (a.last_ep_sync != null && b.last_ep_sync == null) return 1;
-        return (a.last_ep_sync || 0) - (b.last_ep_sync || 0);
-    });
-    const caps = capsFromCountriesByItunes(pending, countriesByItunes, fullTier);
+
+    const tipQueueIds = await tipQueue.listIds(turso);
+    const {
+        ordered: drainOrder,
+        tipSet,
+        orphanTipIds,
+        tipCount,
+        incrementalCount,
+        coldCount,
+    } = orderPendingForVectorize(pending, tipQueueIds);
+
+    if (orphanTipIds.length > 0) {
+        await tipQueue.removeMany(turso, orphanTipIds);
+        handoff.removeMany(orphanTipIds);
+        log.info(
+            `Tip queue: dropped ${log.fmt(orphanTipIds.length)} off-chart / already-done id(s)`,
+        );
+    }
+
+    const caps = capsFromCountriesByItunes(drainOrder, countriesByItunes, fullTier);
     log.banner('Stage 4 · Vectorize Episodes', {
         'Pending shows': log.fmt(pending.length),
+        'Tip queue (on charts)': log.fmt(tipCount),
+        'Incremental (show=1)': log.fmt(incrementalCount),
+        'Cold (both=0)': log.fmt(coldCount),
         'Embedding budget': log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN),
         'Caps': `us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT}`,
         'Embed provider': cfg.EMBED_PROVIDER,
         'Handoff': handoff.handoffPath(),
         'Collection': cfg.EPISODES_COLLECTION,
     });
-    if (pending.length === 0) {
+    if (drainOrder.length === 0) {
         log.summaryTable('Stage 4: Vectorize Episodes', [{
             stage: 'vectorize-episodes', reads: turso.getStats().reads,
             writes: turso.getStats().writes, detail: 'queue empty',
@@ -107,29 +133,39 @@ async function main() {
 
     let budget = cfg.MAX_EMBEDDINGS_PER_RUN;
     let embedded = 0;
+    let embTip = 0;
+    let embCold = 0;
     let showsCompleted = 0;
-    let showsSkippedExisting = 0;
+    let showsFullySkipped = 0;
+    let partialShows = 0;
     let handoffHits = 0;
     let piFetches = 0;
     let errors = 0;
     let processedCount = 0;
 
-    // Points buffered for batch upsert; flag updates follow durable writes.
+    // Points buffered for batch upsert; flag + tip-queue clears follow durable writes.
     let pointsQueue = [];
-    let flagQueue = [];
+    /** @type {{ id: string, clearTip: boolean }[]} */
+    let completeQueue = [];
 
     async function flush() {
         if (pointsQueue.length > 0) {
             await qdrant.upsert(cfg.EPISODES_COLLECTION, pointsQueue);
             pointsQueue = [];
         }
-        if (flagQueue.length > 0) {
-            const placeholders = flagQueue.map(() => '?').join(',');
+        if (completeQueue.length > 0) {
+            const ids = completeQueue.map((c) => c.id);
+            const placeholders = ids.map(() => '?').join(',');
             await turso.execute(
                 `UPDATE podcasts SET qdrant_vectorized = 1 WHERE id IN (${placeholders})`,
-                flagQueue
+                ids,
             );
-            flagQueue = [];
+            const tipClear = completeQueue.filter((c) => c.clearTip).map((c) => c.id);
+            if (tipClear.length > 0) {
+                await tipQueue.removeMany(turso, tipClear);
+                handoff.removeMany(tipClear);
+            }
+            completeQueue = [];
         }
         turso.flushStats();
     }
@@ -140,22 +176,26 @@ async function main() {
         if (force || processedCount % 25 === 0) {
             log.backlogStatus({
                 scanned: processedCount,
-                pending: pending.length - processedCount,
+                pending: drainOrder.length - processedCount,
                 budgetLeft: Math.max(0, budget),
-                skipped: showsSkippedExisting,
+                skipped: showsFullySkipped,
             });
         }
     }
 
-    for (const pod of pending) {
+    for (const pod of drainOrder) {
         if (budget <= 0) {
             runProg.flush();
             reportBacklogIfDue(true);
-            log.info(`[BUDGET] Embedding budget exhausted (${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN}). Remaining backlog: ${pending.length - processedCount} shows`);
+            log.info(
+                `[BUDGET] Embedding budget exhausted (${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN}). ` +
+                `Remaining backlog: ${drainOrder.length - processedCount} shows`,
+            );
             break;
         }
         processedCount++;
         const showCap = caps.get(pod.id) || cfg.EPISODE_CAP_DEFAULT;
+        const lane = laneForShow(pod, tipSet);
 
         let episodes = handoff.take(pod.id);
         if (episodes) {
@@ -173,17 +213,17 @@ async function main() {
         }
 
         if (episodes.length === 0) {
-            flagQueue.push(pod.id);
+            completeQueue.push({ id: pod.id, clearTip: tipSet.has(pod.id) });
             showsCompleted++;
             reportBacklogIfDue();
             continue;
         }
 
-        const eps = episodes.slice(0, showCap).map(ep => ({
+        const eps = episodes.slice(0, showCap).map((ep) => ({
             raw: ep,
             uuid: qdrant.stableUUID(ep.id),
         }));
-        const uuids = eps.map(e => e.uuid);
+        const uuids = eps.map((e) => e.uuid);
 
         // Prune BEFORE insert: hard-cap this show to its country cap (wait=true).
         try {
@@ -199,25 +239,31 @@ async function main() {
         }
 
         const existing = await qdrant.existingIds(cfg.EPISODES_COLLECTION, uuids);
-        const toEmbed = eps.filter(e => !existing.has(e.uuid));
-        showsSkippedExisting += existing.size;
+        const toEmbed = eps.filter((e) => !existing.has(e.uuid));
 
         if (toEmbed.length === 0) {
-            flagQueue.push(pod.id);
+            completeQueue.push({ id: pod.id, clearTip: tipSet.has(pod.id) });
             showsCompleted++;
+            showsFullySkipped++;
             reportBacklogIfDue();
             continue;
         }
 
         let showFailed = false;
+        let budgetBroke = false;
+        let corruptSkipped = 0;
         const showPoints = [];
         for (const item of toEmbed) {
-            if (budget - showPoints.length <= 0) break;
+            if (budget - showPoints.length <= 0) {
+                budgetBroke = true;
+                break;
+            }
             const ep = item.raw;
             const epTitle = scalars.asScalarString(ep.title, '');
             const audioUrl = scalars.asScalarString(ep.enclosureUrl, '');
             if (!epTitle || !audioUrl || !scalars.asPositiveInt(ep.id, 0)) {
                 errors++;
+                corruptSkipped++;
                 log.warn(
                     `Skip ep on show ${pod.id}: critical tip fields corrupt/missing ` +
                     `(title=${JSON.stringify(ep.title)} id=${JSON.stringify(ep.id)})`,
@@ -260,6 +306,7 @@ async function main() {
                 });
                 if (!prepared.ok) {
                     errors++;
+                    corruptSkipped++;
                     log.warn(`Skip ep payload show ${pod.id}: ${prepared.reason}`);
                     continue;
                 }
@@ -283,21 +330,35 @@ async function main() {
 
         embedded += showPoints.length;
         budget -= showPoints.length;
+        if (lane === 'tip') embTip += showPoints.length;
+        else embCold += showPoints.length;
         pointsQueue.push(...showPoints);
-        if (!showFailed) {
-            flagQueue.push(pod.id);
+
+        const complete = showVectorizeComplete({
+            showFailed,
+            budgetBroke,
+            toEmbedCount: toEmbed.length,
+            embeddedCount: showPoints.length,
+            corruptSkipped,
+        });
+        if (complete) {
+            completeQueue.push({ id: pod.id, clearTip: tipSet.has(pod.id) });
             showsCompleted++;
+        } else if (budgetBroke || showPoints.length > 0) {
+            partialShows++;
         }
 
         if (pointsQueue.length >= UPSERT_BATCH) {
             try {
                 await flush();
             } catch (e) {
-                // Count in show units (matches processedCount in the fail guard).
-                errors += Math.max(flagQueue.length, 1);
-                log.error(`Qdrant upsert batch failed (${pointsQueue.length} points, ${flagQueue.length} shows): ${e.message}`);
+                errors += Math.max(completeQueue.length, 1);
+                log.error(
+                    `Qdrant upsert batch failed (${pointsQueue.length} points, ` +
+                    `${completeQueue.length} shows): ${e.message}`,
+                );
                 pointsQueue = [];
-                flagQueue = [];
+                completeQueue = [];
             }
         }
         reportBacklogIfDue();
@@ -308,24 +369,40 @@ async function main() {
     try {
         await flush();
     } catch (e) {
-        errors += Math.max(flagQueue.length, 1);
-        log.error(`Final Qdrant flush failed (${pointsQueue.length} points, ${flagQueue.length} shows): ${e.message}`);
+        errors += Math.max(completeQueue.length, 1);
+        log.error(
+            `Final Qdrant flush failed (${pointsQueue.length} points, ` +
+            `${completeQueue.length} shows): ${e.message}`,
+        );
     }
 
-    const backlog = pending.length - processedCount;
+    try {
+        await handoff.flush();
+    } catch {
+        // best-effort
+    }
+
+    const backlog = drainOrder.length - processedCount;
     const stats = turso.getStats();
     log.costFooter('Stage 4 · Vectorize Episodes', {
         reads: stats.reads,
         writes: stats.writes,
         apiCalls: pi.getApiCallCount(),
-        detail: `${log.fmt(embedded)}/${log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN)} budget · ${showsCompleted} shows · handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors`,
+        detail:
+            `${log.fmt(embedded)}/${log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN)} budget ` +
+            `(tip ${embTip} · cold ${embCold}) · ${showsCompleted} done · ` +
+            `${partialShows} partial · skip ${showsFullySkipped} · ` +
+            `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors`,
     });
     log.summaryTable('Stage 4: Vectorize Episodes', [{
         stage: 'vectorize-episodes',
         reads: stats.reads,
         writes: stats.writes,
         apiCalls: pi.getApiCallCount(),
-        detail: `${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN} budget, ${showsCompleted} shows, handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors`,
+        detail:
+            `${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN} budget tip=${embTip} cold=${embCold}, ` +
+            `${showsCompleted} done, partial ${partialShows}, skip ${showsFullySkipped}, ` +
+            `handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors`,
     }]);
 
     if (processedCount > 20 && errors > processedCount) {
@@ -336,7 +413,7 @@ async function main() {
 
 main()
     .then(() => turso.flushStats())
-    .catch(err => {
+    .catch((err) => {
         log.error(`vectorize-episodes failed: ${err.message}`);
         turso.flushStats();
         process.exit(1);

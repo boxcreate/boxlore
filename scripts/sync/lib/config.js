@@ -124,7 +124,13 @@ module.exports = {
     REGULAR_STALE_MS: 24 * 60 * 60 * 1000,
     RELAXED_STALE_MS: 48 * 60 * 60 * 1000,
     MAX_CHECKS_PER_RUN: parseInt(process.env.MAX_CHECKS_PER_RUN || '4000', 10),
-    STALENESS_JITTER: 0.10,
+    // Deterministic per-show spread so a synchronized check cohort does not all
+    // re-due in the same later run. ±25% → core 18–30h around the 24h base
+    // (enough to fan across the 5×/day schedule). Override via STALENESS_JITTER.
+    STALENESS_JITTER: Math.min(
+        0.5,
+        Math.max(0, parseFloat(process.env.STALENESS_JITTER || '0.25') || 0.25),
+    ),
 
     // --- Import ---
     DUMP_THRESHOLD: 300,

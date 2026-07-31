@@ -24,9 +24,15 @@ const cfg = require('./lib/config');
 const piUnavailable = require('./lib/pi-unavailable');
 const { parseCSVLine, parseCSVRecords } = require('./lib/csv');
 const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
+const {
+    existingItunesAmong,
+    reuseMissingIdsFile,
+} = require('./lib/import-missing');
 
 const MISSING_IDS_FILE = 'missing_itunes_ids.txt';
 const CSV_FILE = 'podcasts_export.csv';
+/** Precheck→import same-run reuse window for missing_itunes_ids.txt */
+const MISSING_FILE_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 const GENRE_PRIORITY = [
     'Technology', 'News', 'Business', 'Science', 'Sports', 'True Crime',
@@ -79,27 +85,8 @@ async function computeMissing({ denylistDoc } = {}) {
     });
     const chartIds = chartIdRows.map(r => String(r[0])).filter(Boolean);
 
-    // Page by id — never CAST(itunes_id AS TEXT) in WHERE/ORDER (that re-scans
-    // ~most of idx_podcasts_itunes_id per page). Normalize to string in JS so
-    // keys match charts.itunes_id TEXT.
-    const podIdRows = await turso.fetchAllPaged({
-        pageSize: cfg.TURSO_PAGE_SIZE,
-        rowId: (r) => Number(r[0]),
-        buildPage: (after, limit) => ({
-            sql: `
-                SELECT id, itunes_id
-                FROM podcasts
-                WHERE itunes_id IS NOT NULL
-                  AND id > ?
-                ORDER BY id ASC
-                LIMIT ?
-            `,
-            args: [after == null ? 0 : after, limit],
-        }),
-    });
-    const existing = new Set(
-        podIdRows.map((r) => String(r[1])).filter((id) => id && id !== 'null'),
-    );
+    // Chunked IN against chart ids — not a full podcasts table scan.
+    const existing = await existingItunesAmong(turso, chartIds);
 
     const blocked = piUnavailable.activeIdSet(denylistDoc || loadDenylist());
     const missingRaw = chartIds.filter(id => !existing.has(id));
@@ -118,6 +105,39 @@ function readMissingIdsFile() {
         .split(/\r?\n/)
         .map(s => s.trim())
         .filter(Boolean);
+}
+
+function missingFileMtimeMs() {
+    try {
+        return fs.statSync(MISSING_IDS_FILE).mtimeMs;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Prefer fresh precheck missing file; else compute from Turso.
+ * @returns {Promise<string[]>}
+ */
+async function resolveMissingForApiImport() {
+    const reused = reuseMissingIdsFile(readMissingIdsFile(), {
+        mtimeMs: missingFileMtimeMs(),
+        maxAgeMs: MISSING_FILE_MAX_AGE_MS,
+    });
+    if (reused) {
+        const blocked = piUnavailable.activeIdSet(loadDenylist());
+        const missing = reused.filter((id) => !blocked.has(id));
+        log.info(
+            `Reusing ${MISSING_IDS_FILE} (${log.fmt(reused.length)} ids` +
+            `${reused.length !== missing.length ? `, ${log.fmt(reused.length - missing.length)} denylisted` : ''})`,
+        );
+        return missing;
+    }
+    const computed = await computeMissing();
+    if (computed.denylistSuppressed > 0) {
+        log.info(`Skipping ${log.fmt(computed.denylistSuppressed)} denylisted iTunes ID(s)`);
+    }
+    return computed.missing;
 }
 
 async function precheck() {
@@ -214,11 +234,7 @@ async function importFromAPI(itunesIds = null) {
     if (itunesIds) {
         missing = itunesIds.map(String).filter(Boolean);
     } else {
-        const computed = await computeMissing();
-        missing = computed.missing;
-        if (computed.denylistSuppressed > 0) {
-            log.info(`Skipping ${log.fmt(computed.denylistSuppressed)} denylisted iTunes ID(s)`);
-        }
+        missing = await resolveMissingForApiImport();
     }
     if (missing.length === 0) {
         log.info('All chart shows already present - nothing to import');

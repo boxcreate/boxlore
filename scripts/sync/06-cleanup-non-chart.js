@@ -28,6 +28,8 @@ const turso = require('./lib/turso');
 const qdrant = require('./lib/qdrant');
 const state = require('./lib/state');
 const cfg = require('./lib/config');
+const tipQueue = require('./lib/tip-queue');
+const handoff = require('./lib/pi-handoff');
 const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
 const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
 
@@ -52,6 +54,7 @@ async function main() {
     qdrant.assertEnv();
     turso.beginStep('cleanup-non-chart');
     await turso.healthCheck();
+    await tipQueue.ensureTable(turso);
 
     try {
         await qdrant.ensurePayloadIndex(cfg.EPISODES_COLLECTION, 'podcast_id', 'integer');
@@ -213,6 +216,15 @@ async function main() {
             await turso.execute(`DELETE FROM podcasts WHERE id IN (${placeholders})`, chunk);
         }
         log.info(`Deleted ${log.fmt(ids.length)} podcast rows`);
+
+        log.info('Cleaning tip-queue + handoff for deleted shows');
+        await tipQueue.removeMany(turso, ids);
+        handoff.removeMany(ids);
+        try {
+            await handoff.flush();
+        } catch {
+            // best-effort
+        }
 
         log.info('Cleaning FTS orphans (single scan)');
         await turso.execute('DELETE FROM podcasts_fts WHERE podcast_id NOT IN (SELECT id FROM podcasts)');

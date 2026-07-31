@@ -44,11 +44,11 @@
 
 <a id="about"></a>
 
-Most podcast apps call an open API, do word‑for‑word search, show Apple charts, parse the RSS feed to play audio and call it a day. Misspell a show name and you get nothing. Ask for a *topic* and you get title matches that miss the point. And once you’re in, the home screen rarely feels like *yours* — same rails for everyone, little that learns from what you actually play.
+Most podcast apps call an open API, do word‑for‑word search, show Apple charts, and call it a day. Misspell a show name and you get nothing. Ask for a *topic* and you get title matches that miss the point. And once you’re in, the home screen rarely feels like *yours* — same rails for everyone, little that learns from what you actually play.
 
-**boxlore** is built around both gaps. Find a show when the spelling is messy, or find shows and episodes by *idea* when you only know the vibe. Then the app gets personal as you listen: Home, Explore, queue, and downloads re‑rank on‑device from your taste and fetches content that actually matters to you from our vector db using semantic matching — daypart rails, **Because You Like**, and **For You** picks, plus curiosity cards when you want something you’d never search for. Taste stays on your phone. Stream or download for offline, manage a real queue, and skip the ads and paywalls for the stuff that matters.
+**boxlore** is built around both gaps. Find a show when the spelling is messy, or find shows and episodes by *idea* when you only know the vibe. Then the app gets personal as you listen: Home, Explore, queue, and downloads re‑rank on‑device from your taste — daypart rails, **Because You Like**, and **For You** picks, plus curiosity cards when you want something you’d never search for. Taste stays on your phone. Stream or download for offline, manage a real queue, and skip the ads and paywalls for the stuff that matters.
 
-The smart catalog covers almost all the popular podcasts (~40k) and episodes (500k); still, not every show on earth yet, so it refreshes the catalogue everyday and keeps on growing. Outside that index, boxlore still works as a normal podcast client (subscribe, play, download, OPML).
+The smart catalog covers popular chart podcasts and grows daily — not every show on earth yet. Outside that index, boxlore still works as a normal podcast client (subscribe, play, download, OPML).
 
 <!-- upcoming-changes:start -->
 

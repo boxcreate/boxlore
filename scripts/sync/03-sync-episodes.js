@@ -8,7 +8,7 @@
  *   Countries come from a one-shot charts pre-agg (see lib/chart-countries.js),
  *   not a per-podcast correlated subquery.
  * - Staleness: News 8h · core countries 24h · relaxed (secondary) countries 48h
- *   (±10% jitter). Show on both core+relaxed → 24h. News always 8h.
+ *   (±25% jitter). Show on both core+relaxed → 24h. News always 8h.
  * - Fetches max=per-show cap (us/gb 50, else 20) once; items[0] updates Turso;
  *   full items[] written to PI handoff for stage 4 (no second PI call same run).
  */
@@ -20,6 +20,7 @@ const state = require('./lib/state');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
 const handoff = require('./lib/pi-handoff');
+const tipQueue = require('./lib/tip-queue');
 const { loadCapsByPodcastId } = require('./lib/episode-caps');
 const {
     CHARTS_MATCH_PODCAST,
@@ -115,7 +116,9 @@ async function main() {
     await turso.healthCheck();
 
     const st = state.load();
+    // Same-run episode payloads only — durable tip lane lives in Turso tip_queue.
     handoff.clear();
+    await tipQueue.ensureTable(turso);
 
     const policy = staleness.policySummary();
 
@@ -126,6 +129,7 @@ async function main() {
         'Per-run check cap': log.fmt(cfg.MAX_CHECKS_PER_RUN),
         'Episode fetch max': `us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT}`,
         'Handoff file': handoff.handoffPath(),
+        'Tip queue': tipQueue.TABLE,
         'Concurrency': String(CONCURRENCY),
     });
 
@@ -193,11 +197,12 @@ async function main() {
     }
     log.endGroup();
 
-    let updated = 0, unchanged = 0, empty = 0, errors = 0;
+    let updated = 0, unchanged = 0, empty = 0, errors = 0, tipReflags = 0;
     const prog = log.progress(due.length, 'episode-sync', 5);
 
     for (let i = 0; i < due.length; i += CONCURRENCY) {
         const batch = due.slice(i, i + CONCURRENCY);
+        let tipUpdatedThisBatch = false;
         await Promise.all(batch.map(async (podId) => {
             const rec = st.shows[podId] || {};
             const maxEps = caps.get(podId) || cfg.EPISODE_CAP_DEFAULT;
@@ -254,7 +259,10 @@ async function main() {
                     Date.now(),
                     podId,
                 ]);
+                await tipQueue.upsert(turso, podId, latest.id);
                 updated++;
+                tipReflags++;
+                tipUpdatedThisBatch = true;
                 state.recordCheck(st, podId, { latestEpId: latest.id }).m = medium;
             } catch (e) {
                 errors++;
@@ -263,8 +271,8 @@ async function main() {
         }));
         for (let k = 0; k < batch.length; k++) prog.tick(`new ${updated} / same ${unchanged}`);
         turso.flushStats();
-        // sync_cache is ~1.5MB — do not rewrite every 5-show batch
-        if ((i / CONCURRENCY) % 20 === 0) state.save(st);
+        // Persist tip ids soon after successful UPDATEs so a crash does not re-flag.
+        if (tipUpdatedThisBatch || (i / CONCURRENCY) % 20 === 0) state.save(st);
     }
 
     state.save(st);
@@ -276,7 +284,7 @@ async function main() {
         apiCalls: pi.getApiCallCount(),
         detail:
             `${log.fmt(due.length)} checked (${log.fmt(deferred)} deferred) · ` +
-            `${updated} new · ${unchanged} unchanged · ${empty} empty · ${errors} errors · ` +
+            `${updated} new · tip_reflags ${tipReflags} · ${unchanged} unchanged · ${empty} empty · ${errors} errors · ` +
             `tiers news/${policy.news} core/${policy.core} relaxed/${policy.relaxed} · ` +
             `handoff ${handoff.handoffPath()}`,
     });
@@ -286,7 +294,7 @@ async function main() {
         writes: stats.writes,
         apiCalls: pi.getApiCallCount(),
         detail:
-            `${due.length} checked (${deferred} deferred): ${updated} new, ${unchanged} unchanged, ` +
+            `${due.length} checked (${deferred} deferred): ${updated} new (tip_reflags=${tipReflags}), ${unchanged} unchanged, ` +
             `${empty} empty, ${errors} errors · due news=${staleNews} core=${staleCore} relaxed=${staleRelaxed}`,
     }]);
 
