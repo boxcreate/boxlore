@@ -242,7 +242,7 @@ private fun LatestEpisodesList(
     }
 }
 
-private suspend fun scoreLatestIfNeeded(
+internal suspend fun scoreLatestIfNeeded(
     useSmartRank: Boolean,
     podcasts: List<Podcast>,
     history: List<ListeningHistoryEntity>,
@@ -250,7 +250,7 @@ private suspend fun scoreLatestIfNeeded(
 ): Map<String, Double> =
     if (useSmartRank) scoreEpisodes(podcasts, history) else emptyMap()
 
-private fun sortLatestDisplayPodcasts(
+internal fun sortLatestDisplayPodcasts(
     podcasts: List<Podcast>,
     useSmartRank: Boolean,
     episodeScores: Map<String, Double>,
@@ -261,7 +261,7 @@ private fun sortLatestDisplayPodcasts(
         podcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
     }
 
-private fun groupLatestByDateHeader(
+internal fun groupLatestByDateHeader(
     podcasts: List<Podcast>,
     useSmartRank: Boolean,
 ): Map<String, List<Podcast>> =
