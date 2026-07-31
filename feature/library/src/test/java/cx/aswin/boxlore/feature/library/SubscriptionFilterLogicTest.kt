@@ -164,7 +164,10 @@ class SubscriptionFilterLogicTest {
             )
         assertEquals("1h 1m", episodeMetaDurationLabel(hourPlus, isInProgress = false, progress = 0f))
         assertEquals("45m", episodeMetaDurationLabel(hourPlus.copy(duration = 2700), isInProgress = false, progress = 0f))
-        assertEquals("1h 0m left", episodeMetaDurationLabel(hourPlus, isInProgress = true, progress = 0.5f))
+        assertEquals(
+            "1h 0m left",
+            episodeMetaDurationLabel(hourPlus.copy(duration = 7200), isInProgress = true, progress = 0.5f),
+        )
         assertEquals(
             "15m left",
             episodeMetaDurationLabel(hourPlus.copy(duration = 1800), isInProgress = true, progress = 0.5f),
