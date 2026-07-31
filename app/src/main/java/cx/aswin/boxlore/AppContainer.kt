@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -31,6 +32,9 @@ import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Application-scoped composition root for shared DB / repositories / managers.
@@ -56,6 +60,8 @@ class AppContainer(
 ) : SharedAppDependencies,
     DownloadsDependencies {
     private val appContext = context.applicationContext
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Process-scoped online/offline for NavHost offline UX. */
     val connectivityObserver: AndroidConnectivityObserver =
@@ -152,6 +158,14 @@ class AppContainer(
 
     override val subscriptionRepository: SubscriptionRepository by lazy {
         SubscriptionRepository(database.podcastDao())
+    }
+
+    override val subscriptionForegroundSync: SubscriptionForegroundSync by lazy {
+        SubscriptionForegroundSync.create(
+            podcastRepository = podcastRepository,
+            subscriptionRepository = subscriptionRepository,
+            scope = applicationScope,
+        )
     }
 
     override val userPreferencesRepository: UserPreferencesRepository =

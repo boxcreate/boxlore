@@ -57,6 +57,7 @@ data class AppearanceUiState(
     val currentSurfaceStyle: String,
     val currentFontRoundness: String = FontRoundness.DEFAULT_KEY,
     val currentNavigationStyle: String = NavigationStyle.Floating.key,
+    val currentOpenAppTo: String = "home",
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -67,6 +68,7 @@ data class AppearanceActions(
     val onSetSurfaceStyle: (String) -> Unit,
     val onSetFontRoundness: (String) -> Unit = {},
     val onSetNavigationStyle: (String) -> Unit = {},
+    val onSetOpenAppTo: (String) -> Unit = {},
 )
 
 @Composable
@@ -116,6 +118,11 @@ internal fun AppearanceSettingsPage(
             onSetNavigationStyle = actions.onSetNavigationStyle,
         )
 
+        OpenAppToSection(
+            currentOpenAppTo = state.currentOpenAppTo,
+            onSetOpenAppTo = actions.onSetOpenAppTo,
+        )
+
         ColorsSection(
             isDynamicColorEnabled = state.isDynamicColorEnabled,
             onToggleDynamicColor = actions.onToggleDynamicColor,
@@ -140,6 +147,30 @@ private fun NavigationStyleSection(
                 options = NavigationStyle.entries.map { it.key to it.label },
                 selected = selectedStyle.key,
                 onSelect = onSetNavigationStyle,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OpenAppToSection(
+    currentOpenAppTo: String,
+    onSetOpenAppTo: (String) -> Unit,
+) {
+    val selected = if (currentOpenAppTo == "subscriptions") "subscriptions" else "home"
+    SettingsGroup(
+        title = "Open app to",
+        footer = "Choose where boxlore opens after a cold start. Applies the next time you fully relaunch the app.",
+    ) {
+        SettingsContent {
+            ConnectedOptionSelector(
+                options =
+                    listOf(
+                        "home" to "Home",
+                        "subscriptions" to "Subscriptions",
+                    ),
+                selected = selected,
+                onSelect = onSetOpenAppTo,
             )
         }
     }

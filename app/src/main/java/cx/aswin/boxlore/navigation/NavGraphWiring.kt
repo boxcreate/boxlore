@@ -112,6 +112,7 @@ data class NavSettingsState(
     val surfaceStyle: String,
     val fontRoundness: String,
     val navigationStyle: String,
+    val openAppTo: String,
     val skipBehavior: String,
     val skipBeginningMs: Long,
     val skipEndingMs: Long,
@@ -140,6 +141,11 @@ data class NavHostSession(
     val onInitialHomeContentReady: () -> Unit,
     val onboardingViewModel: cx.aswin.boxlore.feature.onboarding.OnboardingViewModel,
     val hasDeepLink: Boolean,
+    /**
+     * True when cold start opened [NavRoutes.LIBRARY_SUBSCRIPTIONS] via the open-app-to pref.
+     * Cleared after Back navigates to Home.
+     */
+    val openedToSubscriptionsOnLaunch: androidx.compose.runtime.MutableState<Boolean>,
     val currentEpisode: Episode?,
     val miniPlayerPadding: androidx.compose.ui.unit.Dp,
     val showFeatureDialog: Boolean,

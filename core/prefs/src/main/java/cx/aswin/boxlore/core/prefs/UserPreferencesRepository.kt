@@ -22,6 +22,15 @@ private const val LAST_SEEN_EPISODE_ID_PREFIX = "last_seen_episode_id_"
 internal fun sanitizeNavigationStyle(value: String?): String =
     if (value?.trim()?.lowercase() == "classic") "classic" else "floating"
 
+/** Cold-start landing: `home` (default) or `subscriptions`. */
+object OpenAppTo {
+    const val HOME = "home"
+    const val SUBSCRIPTIONS = "subscriptions"
+}
+
+internal fun sanitizeOpenAppTo(value: String?): String =
+    if (value?.trim()?.lowercase() == OpenAppTo.SUBSCRIPTIONS) OpenAppTo.SUBSCRIPTIONS else OpenAppTo.HOME
+
 class UserPreferencesRepository(
     context: Context,
 ) {
@@ -45,6 +54,10 @@ class UserPreferencesRepository(
 
     val cachedNavigationStyle: String
         get() = sanitizeNavigationStyle(syncPrefs.getString("navigation_style", null))
+
+    /** Cold-start destination: `home` | `subscriptions` (default home). */
+    val cachedOpenAppTo: String
+        get() = sanitizeOpenAppTo(syncPrefs.getString("open_app_to", null))
 
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
@@ -324,6 +337,25 @@ class UserPreferencesRepository(
         syncPrefs.edit().putString("navigation_style", sanitized).apply()
         dataStore.edit { preferences ->
             preferences[Keys.NAVIGATION_STYLE] = sanitized
+        }
+    }
+
+    /** Cold-start landing: `home` (default) or `subscriptions`. Mirrored in theme fast-cache for launch. */
+    val openAppToStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                val openAppTo = sanitizeOpenAppTo(preferences[Keys.OPEN_APP_TO])
+                syncPrefs.edit().putString("open_app_to", openAppTo).apply()
+                openAppTo
+            }.distinctUntilChanged()
+
+    suspend fun setOpenAppTo(openAppTo: String) {
+        val sanitized = sanitizeOpenAppTo(openAppTo)
+        syncPrefs.edit().putString("open_app_to", sanitized).apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.OPEN_APP_TO] = sanitized
         }
     }
 

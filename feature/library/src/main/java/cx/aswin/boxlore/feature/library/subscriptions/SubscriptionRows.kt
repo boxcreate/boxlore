@@ -40,7 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +55,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 @Composable
 internal fun DateHeader(
@@ -70,8 +71,8 @@ internal fun DateHeader(
         Text(
             text = text,
             style = MaterialTheme.typography.titleSmall.copy(
-                fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = GoogleSansWeight.semiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         )
     }
@@ -80,24 +81,24 @@ internal fun DateHeader(
 internal fun getChronologicalHeader(timestampSeconds: Long): String {
     if (timestampSeconds == 0L) return "Older"
     val timestampMs = timestampSeconds * 1000L
-    
+
     val now = Calendar.getInstance()
     val time = Calendar.getInstance().apply { timeInMillis = timestampMs }
-    
+
     val nowDay = now.clone() as Calendar
     nowDay.set(Calendar.HOUR_OF_DAY, 0)
     nowDay.set(Calendar.MINUTE, 0)
     nowDay.set(Calendar.SECOND, 0)
     nowDay.set(Calendar.MILLISECOND, 0)
-    
+
     val timeDay = time.clone() as Calendar
     timeDay.set(Calendar.HOUR_OF_DAY, 0)
     timeDay.set(Calendar.MINUTE, 0)
     timeDay.set(Calendar.SECOND, 0)
     timeDay.set(Calendar.MILLISECOND, 0)
-    
+
     val diffDays = (nowDay.timeInMillis - timeDay.timeInMillis) / (24 * 60 * 60 * 1000L)
-    
+
     return when {
         diffDays == 0L -> "Today"
         diffDays == 1L -> "Yesterday"
@@ -110,17 +111,71 @@ internal fun getChronologicalHeader(timestampSeconds: Long): String {
     }
 }
 
+internal fun formatRelativeUpdateLabel(publishedSeconds: Long): String? {
+    if (publishedSeconds <= 0L) return null
+    val publishedMs = publishedSeconds * 1000L
+    val nowMs = System.currentTimeMillis()
+    if (publishedMs > nowMs) return "Updated just now"
+    val days = TimeUnit.MILLISECONDS.toDays(nowMs - publishedMs)
+    return when {
+        days == 0L -> "Updated today"
+        days == 1L -> "Updated yesterday"
+        days < 7L -> "Updated $days days ago"
+        days < 30L -> {
+            val weeks = days / 7
+            if (weeks == 1L) "Updated 1 week ago" else "Updated $weeks weeks ago"
+        }
+        else -> {
+            SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(publishedMs))
+                .let { "Updated $it" }
+        }
+    }
+}
+
+@Composable
+internal fun ArtworkTitleFallback(
+    title: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = GoogleSansWeight.semiBold
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(8.dp)
+        )
+    }
+}
+
 @Composable
 internal fun SubscriptionListRow(
     podcast: Podcast,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val lastSeen = cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes.current[podcast.id]
+    val hasRecentNew = remember(podcast.subscribedAt, podcast.latestEpisode?.id, podcast.latestEpisode?.publishedDate, lastSeen) {
+        podcast.isLatestEpisodeNew(lastSeen)
+    }
+    val updateLabel = remember(podcast.latestEpisode?.publishedDate) {
+        podcast.latestEpisode?.publishedDate?.let { formatRelativeUpdateLabel(it) }
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         OptimizedImage(
@@ -128,11 +183,14 @@ internal fun SubscriptionListRow(
             proxyWidth = 400,
             contentDescription = podcast.title,
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .size(64.dp)
+                .clip(RoundedCornerShape(10.dp)),
+            errorContent = {
+                ArtworkTitleFallback(title = podcast.title)
+            }
         )
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
         Column(
             modifier = Modifier.weight(1f),
@@ -144,14 +202,23 @@ internal fun SubscriptionListRow(
             ) {
                 Text(
                     text = podcast.title,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = GoogleSansWeight.bold,
-                        fontSize = 14.sp
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = GoogleSansWeight.semiBold
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
+                if (hasRecentNew) {
+                    Text(
+                        text = "NEW",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = GoogleSansWeight.bold,
+                            fontSize = 10.sp
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -161,6 +228,16 @@ internal fun SubscriptionListRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            if (updateLabel != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = updateLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(4.dp))
@@ -169,7 +246,7 @@ internal fun SubscriptionListRow(
             imageVector = Icons.Rounded.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(18.dp)
         )
     }
 }
@@ -186,15 +263,17 @@ internal fun LatestEpisodeRow(
     val progress = podcast.resumeProgress ?: 0f
     val isCompleted = status == EpisodeStatus.COMPLETED
     val isInProgress = status == EpisodeStatus.IN_PROGRESS
+    val relativePublished = remember(episode.publishedDate) {
+        formatRelativeUpdateLabel(episode.publishedDate)?.removePrefix("Updated ")
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Episode artwork with status overlay
         EpisodeRowArtwork(
             episode = episode,
             podcast = podcast,
@@ -216,19 +295,29 @@ internal fun LatestEpisodeRow(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = podcast.title,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Spacer(modifier = Modifier.height(2.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = podcast.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
+                if (relativePublished != null) {
+                    Text(
+                        text = relativePublished.replaceFirstChar {
+                            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1
+                    )
+                }
                 if (episode.duration > 0) {
                     val h = episode.duration / 3600
                     val m = (episode.duration % 3600) / 60
@@ -241,19 +330,18 @@ internal fun LatestEpisodeRow(
                         if (h > 0) "${h}h ${m}m" else "${m}m"
                     }
                     Text(
-                        text = "• $displayText",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = if (relativePublished != null) "· $displayText" else displayText,
+                        style = MaterialTheme.typography.labelSmall,
                         color = if (isInProgress) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        fontWeight = if (isInProgress) GoogleSansWeight.medium else FontWeight.Normal
+                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontWeight = if (isInProgress) GoogleSansWeight.medium else GoogleSansWeight.regular
                     )
                 }
             }
         }
 
-        // Play button
         if (onPlay != null) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             val interactionSource = remember { MutableInteractionSource() }
             val isPressed by interactionSource.collectIsPressedAsState()
@@ -274,7 +362,7 @@ internal fun LatestEpisodeRow(
                 shape = CircleShape,
                 color = btnColor,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clickable(
                         interactionSource = interactionSource,
                         indication = null,
@@ -286,7 +374,7 @@ internal fun LatestEpisodeRow(
                         imageVector = Icons.Rounded.PlayArrow,
                         contentDescription = "Play episode",
                         tint = iconColor,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -303,7 +391,7 @@ internal fun SubscriptionGridCard(
 ) {
     val latestEpisodeId = podcast.latestEpisode?.id
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
-    
+
     val hasRecentNew = remember(podcast.subscribedAt, latestEpisodeId, latestEpisodePubDate, lastSeenId) {
         podcast.isLatestEpisodeNew(lastSeenId)
     }
@@ -326,10 +414,12 @@ internal fun SubscriptionGridCard(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                     shape = RoundedCornerShape(12.dp)
-                )
+                ),
+            errorContent = {
+                ArtworkTitleFallback(title = podcast.title)
+            }
         )
 
-        // New episode "NEW" text chip indicator (overlapping the top right corner) with a slow shimmer effect
         if (hasRecentNew) {
             NewEpisodeBadge()
         }
@@ -344,7 +434,7 @@ internal fun EpisodeRowArtwork(
     isInProgress: Boolean,
     progress: Float
 ) {
-    Box(modifier = Modifier.size(64.dp)) {
+    Box(modifier = Modifier.size(72.dp)) {
         OptimizedImage(
             url = episode.imageUrl?.takeIf { it.isNotEmpty() }
                 ?: podcast.imageUrl.takeIf { it.isNotEmpty() }
@@ -353,8 +443,11 @@ internal fun EpisodeRowArtwork(
             contentDescription = episode.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .size(72.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            errorContent = {
+                ArtworkTitleFallback(title = podcast.title)
+            }
         )
 
         if (isCompleted) {
@@ -383,7 +476,7 @@ internal fun EpisodeRowArtwork(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(3.dp)
-                    .clip(RoundedCornerShape(bottomStart = 10.dp, bottomEnd = 10.dp)),
+                    .clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                 drawStopIndicator = {}
@@ -405,10 +498,14 @@ internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> {
 
 internal fun filterPodcastsByGenre(podcasts: List<Podcast>, selectedGenre: String): List<Podcast> {
     if (selectedGenre == "All") return podcasts
+    val resolved = resolveSubscriptionGenreItem(selectedGenre)
     return podcasts.filter { pod ->
         pod.genre.split(",")
             .map { it.trim() }
-            .any { it.equals(selectedGenre, ignoreCase = true) }
+            .any {
+                it.equals(selectedGenre, ignoreCase = true) ||
+                    it.equals(resolved.value, ignoreCase = true) ||
+                    it.equals(resolved.label, ignoreCase = true)
+            }
     }
 }
-

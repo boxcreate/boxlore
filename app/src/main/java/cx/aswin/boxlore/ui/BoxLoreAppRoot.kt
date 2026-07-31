@@ -70,9 +70,11 @@ import cx.aswin.boxlore.navigation.BoxLoreNavHost
 import cx.aswin.boxlore.navigation.NavHostActions
 import cx.aswin.boxlore.navigation.NavHostSession
 import cx.aswin.boxlore.navigation.NavOpmlCallbacks
+import cx.aswin.boxlore.navigation.NavRoutes
 import cx.aswin.boxlore.navigation.NavSettingsState
 import cx.aswin.boxlore.navigation.PushTargetRouteAllowlist
 import cx.aswin.boxlore.navigation.navigateBottomNavTab
+import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
 import cx.aswin.boxlore.navigation.resolveBottomNavTab
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
 import cx.aswin.boxlore.ui.announcement.FeatureAnnouncementOverlay
@@ -191,7 +193,13 @@ fun BoxLoreAppRoot(
     }
 
     val showBottomNav = !currentRoute.startsWith("player") && currentRoute != "onboarding"
-    val canGoBack = navController.previousBackStackEntry != null
+    val openedToSubscriptionsOnLaunch = remember { mutableStateOf(false) }
+    val canGoBack =
+        navController.previousBackStackEntry != null ||
+            (
+                openedToSubscriptionsOnLaunch.value &&
+                    currentRoute.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS)
+            )
 
     SideEffect { onPlaybackRepositoryReady(playbackRepository) }
 
@@ -272,6 +280,12 @@ fun BoxLoreAppRoot(
         }
     }
 
+    LaunchedEffect(onboardingCompleted) {
+        if (onboardingCompleted) {
+            container.subscriptionForegroundSync.ensureStarted()
+        }
+    }
+
     @Suppress("UNUSED_VARIABLE")
     val hasUserSetConsent by consentManager.hasUserSetConsent.collectAsState(initial = true)
 
@@ -306,6 +320,9 @@ fun BoxLoreAppRoot(
     )
     val navigationStyleKey by userPrefs.navigationStyleStream.collectAsState(
         initial = remember { userPrefs.cachedNavigationStyle },
+    )
+    val openAppToKey by userPrefs.openAppToStream.collectAsState(
+        initial = remember { userPrefs.cachedOpenAppTo },
     )
     val navigationStyle = remember(navigationStyleKey) { NavigationStyle.fromKey(navigationStyleKey) }
     val fontRoundness =
@@ -489,7 +506,17 @@ fun BoxLoreAppRoot(
                 Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
                     PredictiveBackWrapper(
                         enabled = canGoBack,
-                        onBack = { navController.popBackStack() },
+                        onBack = {
+                            if (
+                                openedToSubscriptionsOnLaunch.value &&
+                                currentRoute.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS)
+                            ) {
+                                openedToSubscriptionsOnLaunch.value = false
+                                navController.navigateHomeFromLaunchSubscriptions()
+                            } else {
+                                navController.popBackStack()
+                            }
+                        },
                     ) {
                         BoxLoreNavHost(
                             navController = navController,
@@ -501,6 +528,7 @@ fun BoxLoreAppRoot(
                                 onInitialHomeContentReady = { isInitialHomeContentReady = true },
                                     onboardingViewModel = onboardingViewModel,
                                     hasDeepLink = hasDeepLink,
+                                    openedToSubscriptionsOnLaunch = openedToSubscriptionsOnLaunch,
                                     currentEpisode = currentEpisode,
                                     miniPlayerPadding = miniPlayerPadding,
                                     showFeatureDialog = showFeatureDialog,
@@ -534,6 +562,7 @@ fun BoxLoreAppRoot(
                                     surfaceStyle = surfaceStyle,
                                     fontRoundness = fontRoundnessKey,
                                     navigationStyle = navigationStyleKey,
+                                    openAppTo = openAppToKey,
                                     skipBehavior = skipBehavior,
                                     skipBeginningMs = skipBeginningMs,
                                     skipEndingMs = skipEndingMs,

@@ -25,6 +25,7 @@ data class GlobalPreferencesBackup(
     val themeBrand: String? = null,
     val surfaceStyle: String? = null,
     val useDynamicColor: Boolean? = null,
+    val openAppTo: String? = null,
     val subscriptionSort: String? = null,
     val latestEpisodesSortUseSmart: Boolean? = null,
     val skipBehavior: String? = null,
@@ -89,6 +90,7 @@ class LibraryBackupManager(
                 themeBrand = userPrefs.themeBrandStream.first(),
                 surfaceStyle = userPrefs.surfaceStyleStream.first(),
                 useDynamicColor = userPrefs.useDynamicColorStream.first(),
+                openAppTo = userPrefs.openAppToStream.first(),
                 subscriptionSort = userPrefs.subscriptionSortStream.first(),
                 latestEpisodesSortUseSmart = userPrefs.latestEpisodesSortUseSmartStream.first(),
                 skipBehavior = userPrefs.skipBehaviorStream.first(),
@@ -170,6 +172,7 @@ class LibraryBackupManager(
                     prefs.themeBrand?.let { up.setThemeBrand(it) }
                     prefs.surfaceStyle?.let { up.setSurfaceStyle(it) }
                     prefs.useDynamicColor?.let { up.setUseDynamicColor(it) }
+                    prefs.openAppTo?.let { up.setOpenAppTo(it) }
                     prefs.subscriptionSort?.let { up.setSubscriptionSort(it) }
                     prefs.latestEpisodesSortUseSmart?.let { up.setLatestEpisodesSortUseSmart(it) }
                     prefs.skipBehavior?.let { up.setSkipBehavior(it) }

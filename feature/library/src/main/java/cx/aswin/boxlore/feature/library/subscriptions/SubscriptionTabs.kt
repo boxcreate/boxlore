@@ -24,9 +24,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Badge
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,9 +38,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 
 @Composable
@@ -53,7 +54,7 @@ internal fun ExpressiveTabSwitcher(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.Transparent)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(2.dp)
     ) {
         val tabWidth = maxWidth / tabs.size
@@ -65,8 +66,7 @@ internal fun ExpressiveTabSwitcher(
             ),
             label = "indicatorOffset"
         )
-        
-        // Bouncy Sliding Indicator (More compact)
+
         Surface(
             modifier = Modifier
                 .width(tabWidth)
@@ -75,8 +75,7 @@ internal fun ExpressiveTabSwitcher(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.primaryContainer
         ) {}
-        
-        // Tab Content
+
         Row(modifier = Modifier.fillMaxWidth()) {
             tabs.forEachIndexed { index, label ->
                 TabItemContent(
@@ -144,142 +143,155 @@ internal fun RowScope.TabItemContent(
     }
 }
 
-@Composable
-internal fun SubscriptionSortChips(
-    currentSort: SubscriptionSort,
-    onSortChange: (SubscriptionSort) -> Unit,
-    modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues()
-) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item {
-            FilterChip(
-                selected = currentSort == SubscriptionSort.SmartRank,
-                onClick = { onSortChange(SubscriptionSort.SmartRank) },
-                label = { Text("Smart Rank") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = currentSort == SubscriptionSort.SmartRank,
-                    borderColor = Color.Transparent,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-        item {
-            FilterChip(
-                selected = currentSort == SubscriptionSort.RecentlyUpdated,
-                onClick = { onSortChange(SubscriptionSort.RecentlyUpdated) },
-                label = { Text("Recently Updated") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = currentSort == SubscriptionSort.RecentlyUpdated,
-                    borderColor = Color.Transparent,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-        item {
-            FilterChip(
-                selected = currentSort == SubscriptionSort.Alphabetical,
-                onClick = { onSortChange(SubscriptionSort.Alphabetical) },
-                label = { Text("A-Z") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = currentSort == SubscriptionSort.Alphabetical,
-                    borderColor = Color.Transparent,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-        item {
-            FilterChip(
-                selected = currentSort == SubscriptionSort.MostListened,
-                onClick = { onSortChange(SubscriptionSort.MostListened) },
-                label = { Text("Most Listened") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = currentSort == SubscriptionSort.MostListened,
-                    borderColor = Color.Transparent,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-    }
+internal fun showsSortLabel(sort: SubscriptionSort): String = when (sort) {
+    SubscriptionSort.SmartRank -> "Smart"
+    SubscriptionSort.RecentlyUpdated -> "Updated"
+    SubscriptionSort.Alphabetical -> "A–Z"
+    SubscriptionSort.MostListened -> "Listened"
 }
 
+internal fun latestSortLabel(useSmartRank: Boolean): String =
+    if (useSmartRank) "Smart" else "Chronological"
+
+/**
+ * Explore-style genre pills only (icons + short labels). Sort / hide-played live in the top bar.
+ */
 @Composable
 internal fun SubscriptionGenreChips(
     selectedGenre: String,
     onGenreChange: (String) -> Unit,
     distinctGenres: List<String>,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues()
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
 ) {
+    val genreItems = remember(distinctGenres) {
+        distinctGenres.map { resolveSubscriptionGenreItem(it) }
+    }
+
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            FilterChip(
+            PillFilterChip(
+                label = "All",
                 selected = selectedGenre == "All",
                 onClick = { onGenreChange("All") },
-                label = { Text("All") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = selectedGenre == "All",
-                    borderColor = Color.Transparent,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                )
+                icon = AllGenreIcon,
             )
         }
-        items(distinctGenres) { genre ->
-            FilterChip(
-                selected = selectedGenre == genre,
-                onClick = { onGenreChange(genre) },
-                label = { Text(genre) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = selectedGenre == genre,
-                    borderColor = Color.Transparent,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                )
+        items(genreItems, key = { it.value }) { genre ->
+            PillFilterChip(
+                label = genre.label,
+                selected = selectedGenre.equals(genre.value, ignoreCase = true) ||
+                    selectedGenre.equals(genre.label, ignoreCase = true),
+                onClick = { onGenreChange(genre.value) },
+                icon = genre.icon,
             )
         }
     }
 }
 
+@Composable
+internal fun ShowsSortMenuItems(
+    currentSort: SubscriptionSort,
+    onSortChange: (SubscriptionSort) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ShowsSortOption(
+        label = "Smart Sort",
+        selected = currentSort == SubscriptionSort.SmartRank,
+        onClick = {
+            onSortChange(SubscriptionSort.SmartRank)
+            onDismiss()
+        }
+    )
+    ShowsSortOption(
+        label = "Recently Updated",
+        selected = currentSort == SubscriptionSort.RecentlyUpdated,
+        onClick = {
+            onSortChange(SubscriptionSort.RecentlyUpdated)
+            onDismiss()
+        }
+    )
+    ShowsSortOption(
+        label = "A-Z",
+        selected = currentSort == SubscriptionSort.Alphabetical,
+        onClick = {
+            onSortChange(SubscriptionSort.Alphabetical)
+            onDismiss()
+        }
+    )
+    ShowsSortOption(
+        label = "Most Listened",
+        selected = currentSort == SubscriptionSort.MostListened,
+        onClick = {
+            onSortChange(SubscriptionSort.MostListened)
+            onDismiss()
+        }
+    )
+}
+
+@Composable
+private fun ShowsSortOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = { Text(label) },
+        onClick = onClick,
+        trailingIcon = {
+            if (selected) {
+                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+            }
+        }
+    )
+}
+
+@Composable
+internal fun LatestSortMenuItems(
+    useSmartRank: Boolean,
+    onUseSmartRankChange: (Boolean) -> Unit,
+    hideCompleted: Boolean,
+    onHideCompletedChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    DropdownMenuItem(
+        text = { Text("Smart Sort") },
+        onClick = {
+            onUseSmartRankChange(true)
+            onDismiss()
+        },
+        trailingIcon = {
+            if (useSmartRank) {
+                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+            }
+        }
+    )
+    DropdownMenuItem(
+        text = { Text("Chronological") },
+        onClick = {
+            onUseSmartRankChange(false)
+            onDismiss()
+        },
+        trailingIcon = {
+            if (!useSmartRank) {
+                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+            }
+        }
+    )
+    DropdownMenuItem(
+        text = { Text("Hide played episodes") },
+        onClick = {
+            onHideCompletedChange(!hideCompleted)
+            onDismiss()
+        },
+        trailingIcon = {
+            if (hideCompleted) {
+                Icon(Icons.Rounded.Check, contentDescription = "Selected")
+            }
+        }
+    )
+}

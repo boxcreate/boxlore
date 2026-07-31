@@ -39,7 +39,20 @@ src/main/java/cx/aswin/boxlore/feature/library/
     HistoryStatsCards.kt          — period selector (`ConnectedOptionSelector`), listening-time hero card
     HistorySuccessList.kt         — success-state LazyColumn (stats + timeline)
     HistoryTopBar.kt              — collapsible top app bar + overflow menu
+  subscriptions/
+    SubscriptionTabs.kt           — Shows|New Episodes switcher; Explore-style genre pills with icons
+    SubscriptionGenreCatalog.kt   — genre label/icon map mirrored from Explore
+    SubscriptionTabContents.kt    — Shows grid/list + New Episodes catch-up list (Play All FAB)
+    SubscriptionRows.kt           — grid cards (title fallback on broken art), list/latest rows, date headers
 ```
+
+## Subscriptions UX contracts
+
+- Route: `library/subscriptions?tab={0|1}` (`0` = Shows, `1` = New Episodes).
+- Shows: image-only 3-column grid (default) or richer list; Explore-style `PillFilterChip` genres **with icons**; sort menu in the top bar (Smart / Recently Updated / A–Z / Most Listened); NEW badge unchanged; broken/missing art shows podcast title on the cover.
+- New Episodes: latest episode per show; same icon genre pills; Smart vs Chronological sort plus **Hide played episodes** checkbox in the Sort menu; denser play rows; quieter sticky date headers; Play All FAB.
+- Search stays in the top bar without removing the tab switcher. No glance/summary strip. Genre row is pills-only (sort/hide are not on that row).
+- Genre icon/label catalog in `subscriptions/SubscriptionGenreCatalog.kt` mirrors Explore (no feature→feature import).
 
 ## Dependencies
 
@@ -67,6 +80,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - History back navigation exposes `history_back` for TalkBack.
 - `HistoryFilterTest` covers history filtering behavior.
 - `SubscriptionSortTest` covers subscription ordering.
+- `SubscriptionFilterLogicTest` covers genre extract/filter, sort labels, and chronological header buckets.
 - Broader ViewModel coverage should use fakes for catalog, download, playback, and ranking dependencies.
 
 ```bash

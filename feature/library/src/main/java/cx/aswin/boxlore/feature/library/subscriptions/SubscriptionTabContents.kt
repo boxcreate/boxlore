@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,12 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
-import cx.aswin.boxlore.feature.library.PlayAllFab
-import java.util.Locale
-
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.library.PlayAllFab
 
 @Composable
 internal fun ShowsTabContent(
@@ -52,6 +50,18 @@ internal fun ShowsTabContent(
         val filteredPodcasts = remember(podcasts, selectedGenre) { filterPodcastsByGenre(podcasts, selectedGenre) }
         val distinctPodcasts = remember(filteredPodcasts) { filteredPodcasts.distinctBy { it.id } }
 
+        val genreChips: @Composable () -> Unit = {
+            SubscriptionGenreChips(
+                selectedGenre = selectedGenre,
+                onGenreChange = {
+                    selectedGenre = it
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "shows")
+                },
+                distinctGenres = distinctGenres,
+                contentPadding = PaddingValues(horizontal = if (isGridView) 0.dp else 16.dp)
+            )
+        }
+
         if (isGridView) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
@@ -66,14 +76,7 @@ internal fun ShowsTabContent(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
                     ) {
-                        SubscriptionGenreChips(
-                            selectedGenre = selectedGenre,
-                            onGenreChange = {
-                                selectedGenre = it
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "shows")
-                            },
-                            distinctGenres = distinctGenres
-                        )
+                        genreChips()
                     }
                 }
 
@@ -97,15 +100,7 @@ internal fun ShowsTabContent(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
                     ) {
-                        SubscriptionGenreChips(
-                            selectedGenre = selectedGenre,
-                            onGenreChange = {
-                                selectedGenre = it
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "shows")
-                            },
-                            distinctGenres = distinctGenres,
-                            contentPadding = PaddingValues(horizontal = 16.dp)
-                        )
+                        genreChips()
                     }
                 }
 
@@ -126,6 +121,7 @@ internal fun LatestTabContent(
     podcasts: List<Podcast>,
     allHistory: List<ListeningHistoryEntity>,
     useSmartRank: Boolean,
+    hideCompleted: Boolean,
     scoreEpisodes: suspend (
         List<Podcast>,
         List<ListeningHistoryEntity>,
@@ -136,11 +132,18 @@ internal fun LatestTabContent(
     onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)? = null,
     isPlayerActive: Boolean = false
 ) {
-    val episodePodcasts = remember(podcasts) {
+    val allWithLatest = remember(podcasts) {
         podcasts.filter { it.latestEpisode != null }
     }
+    val episodePodcasts = remember(allWithLatest, hideCompleted) {
+        if (hideCompleted) {
+            allWithLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED }
+        } else {
+            allWithLatest
+        }
+    }
 
-    if (episodePodcasts.isEmpty()) {
+    if (allWithLatest.isEmpty()) {
         ExpressiveSolarSystemEmptyState(
             title = "No New Episodes",
             description = "You're all caught up! Explore for more content.",
@@ -148,29 +151,12 @@ internal fun LatestTabContent(
             onExploreClick = onExploreClick
         )
     } else {
-        val distinctGenres = remember(episodePodcasts) {
-            episodePodcasts.flatMap { pod ->
-                pod.genre.split(",")
-                    .map { it.trim() }
-                    .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
-                    .map { genre ->
-                        genre.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-                    }
-            }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
-        }
+        val distinctGenres = remember(allWithLatest) { extractDistinctGenres(allWithLatest) }
 
-        var selectedGenre by remember { mutableStateOf("All") }
+        var selectedGenre by rememberSaveable { mutableStateOf("All") }
 
         val filteredEpisodePodcasts = remember(episodePodcasts, selectedGenre) {
-            if (selectedGenre == "All") {
-                episodePodcasts
-            } else {
-                episodePodcasts.filter { pod ->
-                    pod.genre.split(",")
-                        .map { it.trim() }
-                        .any { it.equals(selectedGenre, ignoreCase = true) }
-                }
-            }
+            filterPodcastsByGenre(episodePodcasts, selectedGenre)
         }
 
         val episodeScores by produceState<Map<String, Double>>(
@@ -217,7 +203,6 @@ internal fun LatestTabContent(
                             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "latest")
                         },
                         distinctGenres = distinctGenres,
-                        contentPadding = PaddingValues(horizontal = 16.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
@@ -271,4 +256,3 @@ internal fun LatestTabContent(
         }
     }
 }
-

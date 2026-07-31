@@ -11,6 +11,7 @@ internal object Keys {
     val SURFACE_STYLE = stringPreferencesKey("surface_style")
     val FONT_ROUNDNESS = stringPreferencesKey("font_roundness")
     val NAVIGATION_STYLE = stringPreferencesKey("navigation_style")
+    val OPEN_APP_TO = stringPreferencesKey("open_app_to")
     val HAS_DISMISSED_REGION_NUDGE = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_region_nudge")
     val HAS_DISMISSED_EXPLORE_REGION_NUDGE = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_explore_region_nudge")
     val WAS_INITIAL_REGION_MATCH = androidx.datastore.preferences.core.booleanPreferencesKey("was_initial_region_match")

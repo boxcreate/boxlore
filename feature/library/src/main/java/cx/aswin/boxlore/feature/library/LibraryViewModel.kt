@@ -139,6 +139,12 @@ class LibraryViewModel(
             initialValue = true
         )
 
+    fun setHideCompletedInSubs(hide: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setHideCompletedInSubs(hide)
+        }
+    }
+
     // Combine subscriptions, liked episodes, downloads, AND listening history
     // so we can enrich each podcast's latestEpisode with play status
     val uiState: StateFlow<LibraryUiState> = combine(

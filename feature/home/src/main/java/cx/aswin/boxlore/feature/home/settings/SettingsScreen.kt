@@ -401,6 +401,10 @@ private fun AppearanceActions.trackedForAnalytics(): AppearanceActions =
             AnalyticsHelper.trackSettingsInteraction("navigation_style_changed", it)
             onSetNavigationStyle(it)
         },
+        onSetOpenAppTo = {
+            AnalyticsHelper.trackSettingsInteraction("open_app_to_changed", it)
+            onSetOpenAppTo(it)
+        },
     )
 
 @Composable
