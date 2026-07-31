@@ -55,4 +55,47 @@ class SubscriptionForegroundSyncTest {
             runCurrent()
             assertEquals(1, runs)
         }
+
+    @Test
+    fun syncSubscribedLatestEpisodes_emptyIdsSkipsWork() =
+        runTest {
+            var syncCalls = 0
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { emptySet() },
+                syncChunk = {
+                    syncCalls++
+                    emptyMap()
+                },
+                saveLatest = { _, _ -> error("should not save") },
+                chunkSize = 2,
+            )
+            assertEquals(0, syncCalls)
+        }
+
+    @Test
+    fun syncSubscribedLatestEpisodes_chunksAndIsolatesFailures() =
+        runTest {
+            val saved = mutableListOf<String>()
+            val episode =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "e1",
+                    title = "T",
+                    description = "",
+                    audioUrl = "https://example.com/a.mp3",
+                    imageUrl = null,
+                    publishedDate = 1L,
+                    duration = 60,
+                    podcastId = "a",
+                )
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { setOf("a", "b", "c") },
+                syncChunk = { chunk ->
+                    if (chunk.contains("b")) error("boom")
+                    chunk.associateWith { episode.copy(id = "e_$it", podcastId = it) }
+                },
+                saveLatest = { id, _ -> saved += id },
+                chunkSize = 1,
+            )
+            assertEquals(listOf("a", "c"), saved)
+        }
 }

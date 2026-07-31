@@ -10,6 +10,7 @@ import cx.aswin.boxlore.feature.library.subscriptions.latestSortLabel
 import cx.aswin.boxlore.feature.library.subscriptions.resolveSubscriptionGenreItem
 import cx.aswin.boxlore.feature.library.subscriptions.showsSortLabel
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -94,6 +95,32 @@ class SubscriptionFilterLogicTest {
     }
 
     @Test
+    fun resolveSubscriptionGenreItems_dedupeCollidingLabelAndValue() {
+        val raw = listOf("Technology", "Tech", "Society & Culture", "Society")
+        val resolved =
+            raw
+                .map { resolveSubscriptionGenreItem(it) }
+                .distinctBy { it.value.lowercase() }
+        assertEquals(2, resolved.size)
+        assertEquals(setOf("Technology", "Society & Culture"), resolved.map { it.value }.toSet())
+    }
+
+    @Test
+    fun formatRelativeUpdateLabel_nullForMissing() {
+        assertNull(formatRelativeUpdateLabel(0L))
+        assertEquals("today", formatRelativeUpdateLabel(System.currentTimeMillis() / 1000L))
+    }
+
+    @Test
+    fun formatRelativeUpdateLabel_includesYearWhenOlderThanMonth() {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.YEAR, -1)
+        val label = formatRelativeUpdateLabel(cal.timeInMillis / 1000L)!!
+        assertTrue(label.contains(cal.get(Calendar.YEAR).toString()))
+        assertFalse(label.startsWith("Updated"))
+    }
+
+    @Test
     fun showsSortLabel_coversAllModes() {
         assertEquals("Smart", showsSortLabel(SubscriptionSort.SmartRank))
         assertEquals("Updated", showsSortLabel(SubscriptionSort.RecentlyUpdated))
@@ -119,11 +146,5 @@ class SubscriptionFilterLogicTest {
         assertEquals("Today", getChronologicalHeader(todaySeconds))
         assertEquals("Yesterday", getChronologicalHeader(yesterdaySeconds))
         assertEquals("Older", getChronologicalHeader(0L))
-    }
-
-    @Test
-    fun formatRelativeUpdateLabel_nullForMissing() {
-        assertNull(formatRelativeUpdateLabel(0L))
-        assertTrue(formatRelativeUpdateLabel(System.currentTimeMillis() / 1000L)!!.startsWith("Updated"))
     }
 }

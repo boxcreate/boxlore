@@ -268,6 +268,7 @@ internal fun androidx.navigation.NavGraphBuilder.addDebugDestination(w: NavGraph
     }
 }
 
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGraphWiring) {
     val navController = w.navController
     val container = w.container
@@ -415,11 +416,12 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
         cx.aswin.boxlore.feature.library.SubscriptionsScreen(
             viewModel = viewModel,
             onBack = {
-                if (w.session.openedToSubscriptionsOnLaunch.value) {
-                    w.session.openedToSubscriptionsOnLaunch.value = false
-                    navController.navigateHomeFromLaunchSubscriptions()
-                } else {
-                    navController.popBackStack()
+                when (resolveLaunchSubscriptionsBack(w.session.openedToSubscriptionsOnLaunch.value)) {
+                    LaunchSubscriptionsBackAction.NavigateHome -> {
+                        w.session.openedToSubscriptionsOnLaunch.value = false
+                        navController.navigateHomeFromLaunchSubscriptions()
+                    }
+                    LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
                 }
             },
             onPodcastClick = { podcastId ->

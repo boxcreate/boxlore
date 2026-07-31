@@ -58,6 +58,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.subscriptions.ExpressiveTabSwitcher
 import cx.aswin.boxlore.feature.library.subscriptions.LatestSortMenuItems
+import cx.aswin.boxlore.feature.library.subscriptions.LatestTabActions
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabContent
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsSortMenuItems
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabContent
@@ -229,6 +230,7 @@ fun SubscriptionsScreen(
                                 }
                             }
                             if (hasSubscribedPodcasts) {
+                                val success = checkNotNull(successState)
                                 Box {
                                     IconButton(onClick = { showSortMenu = true }) {
                                         Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort")
@@ -241,7 +243,7 @@ fun SubscriptionsScreen(
                                     ) {
                                         if (pagerState.currentPage == 0) {
                                             ShowsSortMenuItems(
-                                                currentSort = successState.currentSort,
+                                                currentSort = success.currentSort,
                                                 onSortChange = { sort ->
                                                     viewModel.setSubscriptionSort(sort)
                                                     val analyticsName = when (sort) {
@@ -342,14 +344,17 @@ fun SubscriptionsScreen(
                                     useSmartRank = useSmartRank,
                                     hideCompleted = hideCompletedInSubs,
                                     scoreEpisodes = viewModel::scoreLatestEpisodes,
-                                    onExploreClick = onExploreClick,
-                                    onEpisodeClick = { ep, pod, entry ->
-                                        viewModel.subEpisodesClickedCount++
-                                        onEpisodeClick?.invoke(ep, pod, entry)
-                                    },
-                                    onPlayEpisode = onPlayEpisode,
-                                    onPlayEpisodes = onPlayEpisodes,
-                                    isPlayerActive = isPlayerActive
+                                    actions =
+                                        LatestTabActions(
+                                            onExploreClick = onExploreClick,
+                                            onEpisodeClick = { ep, pod, entry ->
+                                                viewModel.subEpisodesClickedCount++
+                                                onEpisodeClick?.invoke(ep, pod, entry)
+                                            },
+                                            onPlayEpisode = onPlayEpisode,
+                                            onPlayEpisodes = onPlayEpisodes,
+                                        ),
+                                    isPlayerActive = isPlayerActive,
                                 )
                             }
                         }

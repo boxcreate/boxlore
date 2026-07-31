@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.feature.library.SubscriptionSort
+import java.util.Locale
 
 @Composable
 internal fun ExpressiveTabSwitcher(
@@ -165,7 +166,9 @@ internal fun SubscriptionGenreChips(
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
 ) {
     val genreItems = remember(distinctGenres) {
-        distinctGenres.map { resolveSubscriptionGenreItem(it) }
+        distinctGenres
+            .map { resolveSubscriptionGenreItem(it) }
+            .distinctBy { it.value.lowercase(Locale.getDefault()) }
     }
 
     LazyRow(

@@ -73,9 +73,11 @@ import cx.aswin.boxlore.navigation.NavOpmlCallbacks
 import cx.aswin.boxlore.navigation.NavRoutes
 import cx.aswin.boxlore.navigation.NavSettingsState
 import cx.aswin.boxlore.navigation.PushTargetRouteAllowlist
+import cx.aswin.boxlore.navigation.LaunchSubscriptionsBackAction
 import cx.aswin.boxlore.navigation.navigateBottomNavTab
 import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
 import cx.aswin.boxlore.navigation.resolveBottomNavTab
+import cx.aswin.boxlore.navigation.resolveLaunchSubscriptionsBack
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
 import cx.aswin.boxlore.ui.announcement.FeatureAnnouncementOverlay
 import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
@@ -507,14 +509,17 @@ fun BoxLoreAppRoot(
                     PredictiveBackWrapper(
                         enabled = canGoBack,
                         onBack = {
-                            if (
-                                openedToSubscriptionsOnLaunch.value &&
-                                currentRoute.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS)
+                            when (
+                                resolveLaunchSubscriptionsBack(
+                                    openedToSubscriptionsOnLaunch.value &&
+                                        currentRoute.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS),
+                                )
                             ) {
-                                openedToSubscriptionsOnLaunch.value = false
-                                navController.navigateHomeFromLaunchSubscriptions()
-                            } else {
-                                navController.popBackStack()
+                                LaunchSubscriptionsBackAction.NavigateHome -> {
+                                    openedToSubscriptionsOnLaunch.value = false
+                                    navController.navigateHomeFromLaunchSubscriptions()
+                                }
+                                LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
                             }
                         },
                     ) {

@@ -40,6 +40,7 @@ import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.isCustomThemeBrand
 import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
+import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.feature.home.settings.components.AccentSwatchGrid
 import cx.aswin.boxlore.feature.home.settings.components.SettingsChoiceRow
 import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
@@ -57,7 +58,7 @@ data class AppearanceUiState(
     val currentSurfaceStyle: String,
     val currentFontRoundness: String = FontRoundness.DEFAULT_KEY,
     val currentNavigationStyle: String = NavigationStyle.Floating.key,
-    val currentOpenAppTo: String = "home",
+    val currentOpenAppTo: String = OpenAppTo.HOME,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -157,7 +158,8 @@ private fun OpenAppToSection(
     currentOpenAppTo: String,
     onSetOpenAppTo: (String) -> Unit,
 ) {
-    val selected = if (currentOpenAppTo == "subscriptions") "subscriptions" else "home"
+    val selected =
+        if (currentOpenAppTo == OpenAppTo.SUBSCRIPTIONS) OpenAppTo.SUBSCRIPTIONS else OpenAppTo.HOME
     SettingsGroup(
         title = "Open app to",
         footer = "Choose where boxlore opens after a cold start. Applies the next time you fully relaunch the app.",
@@ -166,8 +168,8 @@ private fun OpenAppToSection(
             ConnectedOptionSelector(
                 options =
                     listOf(
-                        "home" to "Home",
-                        "subscriptions" to "Subscriptions",
+                        OpenAppTo.HOME to "Home",
+                        OpenAppTo.SUBSCRIPTIONS to "Subscriptions",
                     ),
                 selected = selected,
                 onSelect = onSetOpenAppTo,

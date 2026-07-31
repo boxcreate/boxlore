@@ -54,6 +54,7 @@ class BoxLoreApplication : Application(), Configuration.Provider {
             apiBaseUrl = BuildConfig.BOXLORE_API_BASE_URL,
             publicKey = BuildConfig.BOXLORE_PUBLIC_KEY,
             sharedUserPreferences = userPreferencesRepository,
+            applicationScope = applicationScope,
         )
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container

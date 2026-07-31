@@ -115,20 +115,34 @@ internal fun formatRelativeUpdateLabel(publishedSeconds: Long): String? {
     if (publishedSeconds <= 0L) return null
     val publishedMs = publishedSeconds * 1000L
     val nowMs = System.currentTimeMillis()
-    if (publishedMs > nowMs) return "Updated just now"
+    if (publishedMs > nowMs) return "just now"
     val days = TimeUnit.MILLISECONDS.toDays(nowMs - publishedMs)
     return when {
-        days == 0L -> "Updated today"
-        days == 1L -> "Updated yesterday"
-        days < 7L -> "Updated $days days ago"
+        days == 0L -> "today"
+        days == 1L -> "yesterday"
+        days < 7L -> "$days days ago"
         days < 30L -> {
             val weeks = days / 7
-            if (weeks == 1L) "Updated 1 week ago" else "Updated $weeks weeks ago"
+            if (weeks == 1L) "1 week ago" else "$weeks weeks ago"
         }
-        else -> {
-            SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(publishedMs))
-                .let { "Updated $it" }
-        }
+        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(publishedMs))
+    }
+}
+
+internal fun episodeMetaDurationLabel(
+    episode: Episode,
+    isInProgress: Boolean,
+    progress: Float,
+): String {
+    val h = episode.duration / 3600
+    val m = (episode.duration % 3600) / 60
+    return if (isInProgress && progress > 0f) {
+        val remaining = ((1f - progress) * episode.duration).toInt()
+        val rh = remaining / 3600
+        val rm = (remaining % 3600) / 60
+        if (rh > 0) "${rh}h ${rm}m left" else "${rm}m left"
+    } else {
+        if (h > 0) "${h}h ${m}m" else "${m}m"
     }
 }
 
@@ -168,7 +182,9 @@ internal fun SubscriptionListRow(
         podcast.isLatestEpisodeNew(lastSeen)
     }
     val updateLabel = remember(podcast.latestEpisode?.publishedDate) {
-        podcast.latestEpisode?.publishedDate?.let { formatRelativeUpdateLabel(it) }
+        podcast.latestEpisode?.publishedDate?.let { published ->
+            formatRelativeUpdateLabel(published)?.let { "Updated $it" }
+        }
     }
 
     Row(
@@ -264,7 +280,7 @@ internal fun LatestEpisodeRow(
     val isCompleted = status == EpisodeStatus.COMPLETED
     val isInProgress = status == EpisodeStatus.IN_PROGRESS
     val relativePublished = remember(episode.publishedDate) {
-        formatRelativeUpdateLabel(episode.publishedDate)?.removePrefix("Updated ")
+        formatRelativeUpdateLabel(episode.publishedDate)
     }
 
     Row(
@@ -319,16 +335,7 @@ internal fun LatestEpisodeRow(
                     )
                 }
                 if (episode.duration > 0) {
-                    val h = episode.duration / 3600
-                    val m = (episode.duration % 3600) / 60
-                    val displayText = if (isInProgress && progress > 0f) {
-                        val remaining = ((1f - progress) * episode.duration).toInt()
-                        val rh = remaining / 3600
-                        val rm = (remaining % 3600) / 60
-                        if (rh > 0) "${rh}h ${rm}m left" else "${rm}m left"
-                    } else {
-                        if (h > 0) "${h}h ${m}m" else "${m}m"
-                    }
+                    val displayText = episodeMetaDurationLabel(episode, isInProgress, progress)
                     Text(
                         text = if (relativePublished != null) "· $displayText" else displayText,
                         style = MaterialTheme.typography.labelSmall,
@@ -342,42 +349,55 @@ internal fun LatestEpisodeRow(
 
         if (onPlay != null) {
             Spacer(modifier = Modifier.width(10.dp))
+            LatestEpisodePlayButton(onPlay = onPlay)
+        }
+    }
+}
 
-            val interactionSource = remember { MutableInteractionSource() }
-            val isPressed by interactionSource.collectIsPressedAsState()
-            val btnColor by animateColorAsState(
-                targetValue = if (isPressed) MaterialTheme.colorScheme.primary
-                             else MaterialTheme.colorScheme.primaryContainer,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "btnColor"
-            )
-            val iconColor by animateColorAsState(
-                targetValue = if (isPressed) MaterialTheme.colorScheme.onPrimary
-                             else MaterialTheme.colorScheme.primary,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "iconColor"
-            )
+@Composable
+private fun LatestEpisodePlayButton(onPlay: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val btnColor by animateColorAsState(
+        targetValue =
+            if (isPressed) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.primaryContainer
+            },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "btnColor",
+    )
+    val iconColor by animateColorAsState(
+        targetValue =
+            if (isPressed) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "iconColor",
+    )
 
-            Surface(
-                shape = CircleShape,
-                color = btnColor,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onPlay
-                    )
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Rounded.PlayArrow,
-                        contentDescription = "Play episode",
-                        tint = iconColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
+    Surface(
+        shape = CircleShape,
+        color = btnColor,
+        modifier =
+            Modifier
+                .size(44.dp)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onPlay,
+                ),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = "Play episode",
+                tint = iconColor,
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }

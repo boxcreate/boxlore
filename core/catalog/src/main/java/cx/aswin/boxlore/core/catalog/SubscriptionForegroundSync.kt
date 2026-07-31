@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.catalog
 
 import android.util.Log
+import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -52,42 +53,56 @@ class SubscriptionForegroundSync(
                 initialDelayMs = initialDelayMs,
                 syncAction = {
                     syncSubscribedLatestEpisodes(
-                        podcastRepository = podcastRepository,
-                        subscriptionRepository = subscriptionRepository,
+                        loadIds = { subscriptionRepository.subscribedPodcastIds.first() },
+                        syncChunk = { ids -> podcastRepository.syncSubscriptions(ids) },
+                        saveLatest = { id, episode ->
+                            subscriptionRepository.updateLatestEpisode(id, episode)
+                        },
                         chunkSize = chunkSize,
                     )
                 },
             )
 
         /**
-         * Chunked sync body (also a test seam). Failures are per-chunk so one bad
-         * feed does not abort the rest.
+         * Chunked sync body (test seam). Failures are per-chunk so one bad feed
+         * does not abort the rest.
          */
         internal suspend fun syncSubscribedLatestEpisodes(
-            podcastRepository: PodcastRepository,
-            subscriptionRepository: SubscriptionRepository,
+            loadIds: suspend () -> Set<String>,
+            syncChunk: suspend (List<String>) -> Map<String, Episode>,
+            saveLatest: suspend (String, Episode) -> Unit,
             chunkSize: Int = DEFAULT_CHUNK_SIZE,
         ) {
-            try {
-                val currentSubs = subscriptionRepository.subscribedPodcastIds.first()
-                if (currentSubs.isEmpty()) return
-
-                val chunks = currentSubs.chunked(chunkSize)
-                Log.d(TAG, "Starting background sync for ${currentSubs.size} subs in ${chunks.size} chunks")
-                for (chunk in chunks) {
-                    try {
-                        val synced = podcastRepository.syncSubscriptions(chunk.toList())
-                        Log.d(TAG, "Successfully fetched chunk of ${chunk.size} subs, saving to DB...")
-                        for ((podId, episode) in synced) {
-                            subscriptionRepository.updateLatestEpisode(podId, episode)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Background sync chunk failed", e)
-                    }
+            val currentSubs =
+                try {
+                    loadIds()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Background sync failed totally", e)
+                    return
                 }
-                Log.d(TAG, "Finished background sync for all ${currentSubs.size} subs")
+            if (currentSubs.isEmpty()) return
+
+            val chunks = currentSubs.chunked(chunkSize)
+            Log.d(TAG, "Starting background sync for ${currentSubs.size} subs in ${chunks.size} chunks")
+            for (chunk in chunks) {
+                syncOneChunk(chunk, syncChunk, saveLatest)
+            }
+            Log.d(TAG, "Finished background sync for all ${currentSubs.size} subs")
+        }
+
+        private suspend fun syncOneChunk(
+            chunk: List<String>,
+            syncChunk: suspend (List<String>) -> Map<String, Episode>,
+            saveLatest: suspend (String, Episode) -> Unit,
+        ) {
+            try {
+                val synced = syncChunk(chunk)
+                Log.d(TAG, "Successfully fetched chunk of ${chunk.size} subs, saving to DB...")
+                for ((podId, episode) in synced) {
+                    saveLatest(podId, episode)
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "Background sync failed totally", e)
+                Log.e(TAG, "Background sync chunk failed", e)
             }
         }
     }

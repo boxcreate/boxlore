@@ -57,11 +57,13 @@ class AppContainer(
      * [UserPreferencesRepository] (theme cache / engagement) without a second DataStore client.
      */
     sharedUserPreferences: UserPreferencesRepository? = null,
+    /** Process-scoped scope from [BoxLoreApplication] for foreground subscription sync. */
+    applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : SharedAppDependencies,
     DownloadsDependencies {
     private val appContext = context.applicationContext
 
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val syncScope = applicationScope
 
     /** Process-scoped online/offline for NavHost offline UX. */
     val connectivityObserver: AndroidConnectivityObserver =
@@ -164,7 +166,7 @@ class AppContainer(
         SubscriptionForegroundSync.create(
             podcastRepository = podcastRepository,
             subscriptionRepository = subscriptionRepository,
-            scope = applicationScope,
+            scope = syncScope,
         )
     }
 
