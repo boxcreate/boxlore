@@ -41,7 +41,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.feature.library.SubscriptionSort
-import java.util.Locale
 
 @Composable
 internal fun ExpressiveTabSwitcher(
