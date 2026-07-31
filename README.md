@@ -54,13 +54,16 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 
 ## Release notes
 
-<a id="release-notes"></a>
-
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>Subscriptions now have genre chips, tighter rows, image‑first grid, sort/hide‑played options, and open first if you set it as start screen. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
+</ul>
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
+
 
 ### What's New · `v0.0.13` · 2026-07-29
 
@@ -77,6 +80,7 @@ New features and improvements for the next release are currently in development.
 <li>NotebookLM‑style briefings are tighter and less sloppy — more aware of repetition, depth, and which stories matter. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
 <li>UI polish across startup, onboarding suggestions, Home and Explore search, and several other screens. <a href="https://github.com/boxcreate/boxlore/pull/954"><img src="https://img.shields.io/badge/PR-954-6750A4?style=flat-square" alt="PR #954" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/952"><img src="https://img.shields.io/badge/PR-952-6750A4?style=flat-square" alt="PR #952" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
 </ul>
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-whats-new:end -->
 
 <!-- upcoming-changes:end -->
