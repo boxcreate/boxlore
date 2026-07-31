@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.designsystem.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -38,7 +39,7 @@ private val proxyFailedUrls = java.util.Collections.synchronizedSet(mutableSetOf
  * Loading Order:
  *   1. Try the wsrv.nl proxy (context-sized WebP) — fast, small, sharp.
  *   2. If the proxy errors (e.g. origin blocks wsrv.nl) → fall back to the raw URL.
- *   3. If the raw URL also errors → show [AnimatedShapesFallback].
+ *   3. If the raw URL also errors → show [errorContent] or [AnimatedShapesFallback].
  *
  * @param url The original, unproxied image URL.
  * @param proxyWidth The desired width in pixels for the wsrv.nl proxy.
@@ -47,6 +48,7 @@ private val proxyFailedUrls = java.util.Collections.synchronizedSet(mutableSetOf
  * @param modifier Modifier for the image.
  * @param contentScale How the image should be scaled inside its bounds.
  * @param colorFilter Optional color filter (e.g., grayscale).
+ * @param errorContent Optional replacement when the URL is blank or both proxy and raw fail.
  */
 @Composable
 fun OptimizedImage(
@@ -55,11 +57,12 @@ fun OptimizedImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    colorFilter: ColorFilter? = null
+    colorFilter: ColorFilter? = null,
+    errorContent: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     if (url.isNullOrBlank()) {
         Box(modifier = modifier) {
-            AnimatedShapesFallback()
+            OptimizedImageFailureContent(errorContent)
         }
         return
     }
@@ -89,15 +92,12 @@ fun OptimizedImage(
     )
     val state = painter.state
 
-    if (state is AsyncImagePainter.State.Error) {
-        // Trigger fallback to raw URL outside of composition via LaunchedEffect
-        if (!hasTriedFallback && currentUrl == proxyUrl) {
-            LaunchedEffect(url) {
-                proxyFailedUrls.add(url)
-                hasTriedFallback = true
-                currentUrl = url
-                trackProxyFallback(url, proxyWidth)
-            }
+    if (state is AsyncImagePainter.State.Error && !hasTriedFallback && currentUrl == proxyUrl) {
+        LaunchedEffect(url) {
+            proxyFailedUrls.add(url)
+            hasTriedFallback = true
+            currentUrl = url
+            trackProxyFallback(url, proxyWidth)
         }
     }
 
@@ -109,31 +109,53 @@ fun OptimizedImage(
             colorFilter = colorFilter,
             modifier = Modifier.fillMaxSize()
         )
-        when {
-            state is AsyncImagePainter.State.Success -> {
-                // Rendered by Image, do nothing
-            }
-            state is AsyncImagePainter.State.Error && hasTriedFallback -> {
-                // Both proxy and raw URL failed. Render final fallback.
-                AnimatedShapesFallback()
-            }
-            else -> {
-                // Loading, Empty, or proxy failed but we are falling back: Render lightweight solid placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Podcasts,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
-                        modifier = Modifier.size(64.dp)
-                    )
-                }
-            }
-        }
+        OptimizedImageOverlay(
+            state = state,
+            hasTriedFallback = hasTriedFallback,
+            errorContent = errorContent,
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.OptimizedImageFailureContent(
+    errorContent: (@Composable BoxScope.() -> Unit)?,
+) {
+    if (errorContent != null) {
+        errorContent()
+    } else {
+        AnimatedShapesFallback()
+    }
+}
+
+@Composable
+private fun BoxScope.OptimizedImageOverlay(
+    state: AsyncImagePainter.State,
+    hasTriedFallback: Boolean,
+    errorContent: (@Composable BoxScope.() -> Unit)?,
+) {
+    when {
+        state is AsyncImagePainter.State.Success -> Unit
+        state is AsyncImagePainter.State.Error && hasTriedFallback ->
+            OptimizedImageFailureContent(errorContent)
+        else -> OptimizedImageLoadingPlaceholder()
+    }
+}
+
+@Composable
+private fun OptimizedImageLoadingPlaceholder() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Podcasts,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+            modifier = Modifier.size(64.dp)
+        )
     }
 }
 

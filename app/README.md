@@ -19,6 +19,8 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 - `LegacyWorkerFactory` maps legacy worker class names to current worker implementations for WorkManager continuity.
 - `MainActivity` hosts theme, edge-to-edge setup, app update hooks, surveys, OPML import state (full-screen `OpmlImportDialog` so onboarding welcome never shows through), the selected floating or classic navigation presentation, and the player overlay.
 - `BoxLoreNavHost` owns app route registration and delegates screen bodies to feature modules; stack-slide transitions follow the visible Home → Explore → Library → Lore order, and Home’s first committed content frame unlocks the floating Lore launch animation.
+- Cold-start destination precedence (see `StartDestinationResolver`): incomplete onboarding → offline Downloads (no deep link) → Appearance **Open app to** Subscriptions (no deep link) → Home. Deep links and push `target_route` still win over Open app to. When cold start opens Subscriptions, `openedToSubscriptionsOnLaunch` makes Back navigate to Home (not Library hub); Library-tile entry still pops to Library.
+- Process-once latest-episode sync (`SubscriptionForegroundSync`) is started from `BoxLoreAppRoot` after onboarding so Subscriptions-first launches still refresh `/sync`.
 - Tab destinations in `NavGraphTabDestinations` wire Home / Explore / Learn / Library / player entry points to feature screens. Lore history deep-links use `entryPoint=learn` (canonical glossary; legacy `learn_history` still normalizes to `learn`).
 - Home receives the shared catalog and ranking instances it actively uses; endpoint-backed
   editorial rows are loaded inside `:feature:home` through that catalog instance.
@@ -37,6 +39,9 @@ src/main/java/cx/aswin/boxlore/
     NavGraphWiring.kt
     NavGraphTabDestinations.kt
     NavGraphLibrarySettingsDestinations.kt
+    LaunchSubscriptionsBack.kt
+    LaunchSubscriptionsBackDecision.kt
+    StartDestinationResolver.kt
     NavGraphPodcastEpisodeDestinations.kt
     PushTargetRouteAllowlist.kt
   connectivity/
@@ -79,7 +84,7 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 
 ## Testing notes
 
-- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids), library backup analytics error codes, and push-target route allowlisting.
+- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids), library backup analytics error codes, push-target route allowlisting, cold-start destination precedence (`StartDestinationResolverTest`), and launch-Subscriptions Back decisions (`LaunchSubscriptionsBackDecisionTest`).
 - Navigation and feature UI behavior are covered mainly in feature module tests and Maestro smoke flows.
 
 ```bash

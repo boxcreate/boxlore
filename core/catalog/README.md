@@ -11,6 +11,7 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 - `logic.mergeShowSearchResults` dedupes Meili vs hybrid by id / itunes / feed URL.
 - `mapRegionForBriefing` maps content regions to briefing markets (`us` / `in` / `gb` / `global`; legacy `uk` → `gb`) via `ContentRegions.briefingMarket`.
 - `SubscriptionRepository`, `ChapterRepository`, and `TranscriptRepository` expose catalog-adjacent data operations.
+- `SubscriptionForegroundSync` is the process-once foreground refresh of subscribed latest episodes (`syncSubscriptions` in chunks of 10, 2s UI settle delay). `:app` starts it after onboarding from `BoxLoreAppRoot` so cold starts that skip Home (open-app-to Subscriptions, offline Downloads) still refresh New Episodes; Home's ViewModel may call `ensureStarted` again (idempotent).
 - `content.ContentOrchestrator`, `ServerGroupedSectionProvider`, `ContentContextEngine`, and related content contracts assemble discovery slates from catalog/v3 (no live `content/sections/v1` client).
 - `content.CuratedMoods` is the shared catalog of curated-mood IDs/titles used by Home daypart rails and Explore For You chips (`getCuratedVibe`).
 - `backup.LibraryBackupManager` imports and exports library data, OPML, listening history, ranking backup payloads, and global prefs including `contentLanguages`.
@@ -36,6 +37,7 @@ src/main/java/cx/aswin/boxlore/core/catalog/
   ChapterRepository.kt
   TranscriptRepository.kt
   SharedAppDependencies.kt
+  SubscriptionForegroundSync.kt
   RoomLocalCatalog.kt
   RoomEpisodeOfflineLookup.kt
   EngagementPromptCoordinator.kt
@@ -73,7 +75,7 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 ## Testing notes
 
 - Unit tests live under `core/catalog/src/test`.
-- Existing coverage includes `PodcastRepositoryCatalogTest`, `ShowSearchMergeTest`, `InstallReferrerManager` channel derivation / attribution callback seams, content orchestration tests, content signal enrichment, grouped sections, recent section intent storage, cross-promotion detection, transcript behavior, and dependency-holder behavior.
+- Existing coverage includes `PodcastRepositoryCatalogTest`, `ShowSearchMergeTest`, `InstallReferrerManager` channel derivation / attribution callback seams, `SubscriptionForegroundSync` once-guard / delay, content orchestration tests, content signal enrichment, grouped sections, recent section intent storage, cross-promotion detection, transcript behavior, and dependency-holder behavior.
 - RSS ID and matcher tests live in `:core:rss`; smart-queue tests live in `:core:playback`.
 
 ```bash

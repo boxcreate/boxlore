@@ -31,6 +31,7 @@ interface SharedAppDependencies {
     val adaptiveRankingRepository: AdaptiveRankingRepository
     val rankingRuntimeControls: RankingRuntimeControls
     val historyRecommendationSource: HistoryRecommendationSource
+    val subscriptionForegroundSync: SubscriptionForegroundSync
 }
 
 /**

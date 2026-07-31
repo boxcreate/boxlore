@@ -32,7 +32,7 @@ internal fun SettingsHub(
         )
         SettingsCategoryCard(
             title = "Appearance",
-            description = "Theme, background, and accent colors",
+            description = "Theme and navigation settings",
             icon = Icons.Rounded.Palette,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,

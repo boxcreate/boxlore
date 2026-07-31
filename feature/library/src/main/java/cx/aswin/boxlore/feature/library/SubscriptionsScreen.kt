@@ -20,13 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.automirrored.rounded.ViewList
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,15 +51,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.subscriptions.ExpressiveTabSwitcher
+import cx.aswin.boxlore.feature.library.subscriptions.LatestSortMenuItems
+import cx.aswin.boxlore.feature.library.subscriptions.LatestTabActions
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabContent
+import cx.aswin.boxlore.feature.library.subscriptions.ShowsSortMenuItems
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabContent
 import kotlinx.coroutines.launch
 
@@ -89,14 +88,14 @@ fun SubscriptionsScreen(
     ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    
+
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var isGridView by rememberSaveable { mutableStateOf(true) }
     val useSmartRank by viewModel.useSmartRank.collectAsStateWithLifecycle()
     val hideCompletedInSubs by viewModel.hideCompletedInSubs.collectAsStateWithLifecycle()
     var showSortMenu by remember { mutableStateOf(false) }
-    
+
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
@@ -140,7 +139,7 @@ fun SubscriptionsScreen(
     LaunchedEffect(Unit) {
         val initialTabName = if (initialTab == 0) "shows" else "latest"
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsViewed(
-            sourceEntryPoint = "library_hub_card", // From main Library screen
+            sourceEntryPoint = "library_hub_card",
             initialTab = initialTabName
         )
     }
@@ -167,9 +166,9 @@ fun SubscriptionsScreen(
                     .fillMaxWidth()
                     .background(headerBgColor)
             ) {
-                if (isSearchActive) {
-                    TopAppBar(
-                        title = {
+                TopAppBar(
+                    title = {
+                        if (isSearchActive) {
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
@@ -185,45 +184,40 @@ fun SubscriptionsScreen(
                                 ),
                                 singleLine = true
                             )
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent
-                        ),
-                        navigationIcon = {
-                            IconButton(onClick = {
+                        } else {
+                            Text(
+                                text = "Subscriptions",
+                                fontWeight = GoogleSansWeight.bold
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent
+                    ),
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (isSearchActive) {
                                 isSearchActive = false
                                 searchQuery = ""
-                            }) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Close Search")
+                            } else {
+                                onBack()
                             }
-                        },
-                        actions = {
+                        }) {
+                            Icon(
+                                Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = if (isSearchActive) "Close Search" else "Back"
+                            )
+                        }
+                    },
+                    actions = {
+                        if (isSearchActive) {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
                                     Icon(Icons.Rounded.Clear, contentDescription = "Clear search")
                                 }
                             }
-                        }
-                    )
-                } else {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = "Subscriptions",
-                                fontWeight = GoogleSansWeight.bold
-                            )
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent
-                        ),
-                        navigationIcon = {
-                            IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                            }
-                        },
-                        actions = {
+                        } else {
                             if (pagerState.currentPage == 0 && hasSubscribedPodcasts) {
                                 IconButton(onClick = {
                                     isGridView = !isGridView
@@ -236,6 +230,7 @@ fun SubscriptionsScreen(
                                 }
                             }
                             if (hasSubscribedPodcasts) {
+                                val success = checkNotNull(successState)
                                 Box {
                                     IconButton(onClick = { showSortMenu = true }) {
                                         Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort")
@@ -247,85 +242,36 @@ fun SubscriptionsScreen(
                                         offset = DpOffset(x = (-12).dp, y = 4.dp)
                                     ) {
                                         if (pagerState.currentPage == 0) {
-                                            val currentSort = successState.currentSort
-                                            DropdownMenuItem(
-                                                text = { Text("Smart Sort") },
-                                                onClick = {
-                                                    viewModel.setSubscriptionSort(SubscriptionSort.SmartRank)
-                                                    showSortMenu = false
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged("smart_sort", "shows")
-                                                },
-                                                trailingIcon = {
-                                                    if (currentSort == SubscriptionSort.SmartRank) {
-                                                        Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                                            ShowsSortMenuItems(
+                                                currentSort = success.currentSort,
+                                                onSortChange = { sort ->
+                                                    viewModel.setSubscriptionSort(sort)
+                                                    val analyticsName = when (sort) {
+                                                        SubscriptionSort.SmartRank -> "smart_sort"
+                                                        SubscriptionSort.RecentlyUpdated -> "recently_updated"
+                                                        SubscriptionSort.Alphabetical -> "alphabetical"
+                                                        SubscriptionSort.MostListened -> "most_listened"
                                                     }
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Recently Updated") },
-                                                onClick = {
-                                                    viewModel.setSubscriptionSort(SubscriptionSort.RecentlyUpdated)
-                                                    showSortMenu = false
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged("recently_updated", "shows")
+                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
+                                                        analyticsName,
+                                                        "shows"
+                                                    )
                                                 },
-                                                trailingIcon = {
-                                                    if (currentSort == SubscriptionSort.RecentlyUpdated) {
-                                                        Icon(Icons.Rounded.Check, contentDescription = "Selected")
-                                                    }
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("A-Z") },
-                                                onClick = {
-                                                    viewModel.setSubscriptionSort(SubscriptionSort.Alphabetical)
-                                                    showSortMenu = false
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged("alphabetical", "shows")
-                                                },
-                                                trailingIcon = {
-                                                    if (currentSort == SubscriptionSort.Alphabetical) {
-                                                        Icon(Icons.Rounded.Check, contentDescription = "Selected")
-                                                    }
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Most Listened") },
-                                                onClick = {
-                                                    viewModel.setSubscriptionSort(SubscriptionSort.MostListened)
-                                                    showSortMenu = false
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged("most_listened", "shows")
-                                                },
-                                                trailingIcon = {
-                                                    if (currentSort == SubscriptionSort.MostListened) {
-                                                        Icon(Icons.Rounded.Check, contentDescription = "Selected")
-                                                    }
-                                                }
+                                                onDismiss = { showSortMenu = false }
                                             )
                                         } else {
-                                            DropdownMenuItem(
-                                                text = { Text("Smart Sort") },
-                                                onClick = {
-                                                    viewModel.setUseSmartRank(true)
-                                                    showSortMenu = false
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged("smart_sort", "latest")
+                                            LatestSortMenuItems(
+                                                useSmartRank = useSmartRank,
+                                                onUseSmartRankChange = { useSmart ->
+                                                    viewModel.setUseSmartRank(useSmart)
+                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
+                                                        if (useSmart) "smart_sort" else "chronological",
+                                                        "latest"
+                                                    )
                                                 },
-                                                trailingIcon = {
-                                                    if (useSmartRank) {
-                                                        Icon(Icons.Rounded.Check, contentDescription = "Selected")
-                                                    }
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Chronological") },
-                                                onClick = {
-                                                    viewModel.setUseSmartRank(false)
-                                                    showSortMenu = false
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged("chronological", "latest")
-                                                },
-                                                trailingIcon = {
-                                                    if (!useSmartRank) {
-                                                        Icon(Icons.Rounded.Check, contentDescription = "Selected")
-                                                    }
-                                                }
+                                                hideCompleted = hideCompletedInSubs,
+                                                onHideCompletedChange = viewModel::setHideCompletedInSubs,
+                                                onDismiss = { showSortMenu = false }
                                             )
                                         }
                                     }
@@ -334,12 +280,11 @@ fun SubscriptionsScreen(
                             IconButton(onClick = { isSearchActive = true }) {
                                 Icon(Icons.Rounded.Search, contentDescription = "Search")
                             }
-                        },
-                        scrollBehavior = scrollBehavior
-                    )
-                }
+                        }
+                    },
+                    scrollBehavior = scrollBehavior
+                )
 
-                // Expressive Tab Switcher
                 val latestCount = successState?.subscribedPodcasts?.count { it.latestEpisode != null } ?: 0
 
                 ExpressiveTabSwitcher(
@@ -351,7 +296,7 @@ fun SubscriptionsScreen(
                             pagerState.animateScrollToPage(index)
                         }
                     },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                 )
             }
         },
@@ -370,7 +315,8 @@ fun SubscriptionsScreen(
                     }
                 }
                 is LibraryUiState.Success -> {
-                    val allPodcasts = (uiState as LibraryUiState.Success).subscribedPodcasts
+                    val success = uiState as LibraryUiState.Success
+                    val allPodcasts = success.subscribedPodcasts
                     val podcasts = if (searchQuery.isBlank()) allPodcasts else {
                         allPodcasts.filter {
                             it.title.contains(searchQuery, ignoreCase = true) ||
@@ -392,24 +338,23 @@ fun SubscriptionsScreen(
                                 isGridView = isGridView
                             )
                             1 -> {
-                                val latestPodcasts = if (hideCompletedInSubs) {
-                                    podcasts.filter { it.episodeStatus != EpisodeStatus.COMPLETED }
-                                } else {
-                                    podcasts
-                                }
                                 LatestTabContent(
-                                    podcasts = latestPodcasts,
-                                    allHistory = (uiState as LibraryUiState.Success).allHistory,
+                                    podcasts = podcasts,
+                                    allHistory = success.allHistory,
                                     useSmartRank = useSmartRank,
+                                    hideCompleted = hideCompletedInSubs,
                                     scoreEpisodes = viewModel::scoreLatestEpisodes,
-                                    onExploreClick = onExploreClick,
-                                    onEpisodeClick = { ep, pod, entry ->
-                                        viewModel.subEpisodesClickedCount++
-                                        onEpisodeClick?.invoke(ep, pod, entry)
-                                    },
-                                    onPlayEpisode = onPlayEpisode,
-                                    onPlayEpisodes = onPlayEpisodes,
-                                    isPlayerActive = isPlayerActive
+                                    actions =
+                                        LatestTabActions(
+                                            onExploreClick = onExploreClick,
+                                            onEpisodeClick = { ep, pod, entry ->
+                                                viewModel.subEpisodesClickedCount++
+                                                onEpisodeClick?.invoke(ep, pod, entry)
+                                            },
+                                            onPlayEpisode = onPlayEpisode,
+                                            onPlayEpisodes = onPlayEpisodes,
+                                        ),
+                                    isPlayerActive = isPlayerActive,
                                 )
                             }
                         }

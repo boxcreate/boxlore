@@ -90,6 +90,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             currentSurfaceStyle = settingsState.surfaceStyle,
                             currentFontRoundness = settingsState.fontRoundness,
                             currentNavigationStyle = settingsState.navigationStyle,
+                            currentOpenAppTo = settingsState.openAppTo,
                         ),
                     actions =
                         cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
@@ -99,6 +100,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             onSetSurfaceStyle = { style -> scope.launch { userPrefs.setSurfaceStyle(style) } },
                             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
                             onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
+                            onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },
                         ),
                 ),
             playbackSettings =
@@ -266,6 +268,7 @@ internal fun androidx.navigation.NavGraphBuilder.addDebugDestination(w: NavGraph
     }
 }
 
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGraphWiring) {
     val navController = w.navController
     val container = w.container
@@ -412,7 +415,15 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             )
         cx.aswin.boxlore.feature.library.SubscriptionsScreen(
             viewModel = viewModel,
-            onBack = { navController.popBackStack() },
+            onBack = {
+                when (resolveLaunchSubscriptionsBack(w.session.openedToSubscriptionsOnLaunch.value)) {
+                    LaunchSubscriptionsBackAction.NavigateHome -> {
+                        w.session.openedToSubscriptionsOnLaunch.value = false
+                        navController.navigateHomeFromLaunchSubscriptions()
+                    }
+                    LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
+                }
+            },
             onPodcastClick = { podcastId ->
                 navController.navigate(
                     "podcast/${android.net.Uri.encode(podcastId)}?entryPoint=library_subscriptions",

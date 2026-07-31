@@ -177,11 +177,27 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun openAppToDefaultsToHomeAndMirrorsFastCache() =
+        runTest {
+            assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
+            assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
+
+            repository.setOpenAppTo(OpenAppTo.SUBSCRIPTIONS)
+            assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.openAppToStream.first())
+            assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.cachedOpenAppTo)
+
+            repository.setOpenAppTo("unsupported")
+            assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
+            assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
+        }
+
+    @Test
     fun cachedGettersReturnDefaultsBeforeAnyWrite() {
         assertEquals("system", repository.cachedThemeConfig)
         assertEquals("classic_dynamic", repository.cachedSurfaceStyle)
         assertEquals("violet", repository.cachedThemeBrand)
         assertEquals("round", repository.cachedFontRoundness)
+        assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
         assertFalse(repository.cachedUseDynamicColor)
     }
 

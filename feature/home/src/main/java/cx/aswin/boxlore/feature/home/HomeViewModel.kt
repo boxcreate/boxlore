@@ -13,6 +13,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.content.ContentContextEngine
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.model.Briefing
@@ -657,33 +658,9 @@ class HomeViewModel(
     }
 
     private fun startBackgroundSync() {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            // Wait slightly so the app completely loads up the UI before choking up network requests
-            kotlinx.coroutines.delay(2000L)
-
-            try {
-                // Get all subscribed podcast IDs from repository
-                val currentSubs = subscriptionRepository.subscribedPodcastIds.first()
-                if (currentSubs.isEmpty()) return@launch
-
-                val chunks = currentSubs.chunked(10) // Chunk by 10 per user request
-                android.util.Log.d("HomeViewModel", "Starting background sync for ${currentSubs.size} subs in ${chunks.size} chunks")
-                for (chunk in chunks) {
-                    try {
-                        val synced = podcastRepository.syncSubscriptions(chunk.toList())
-                        android.util.Log.d("HomeViewModel", "Successfully fetched chunk of ${chunk.size} subs, saving to DB...")
-                        for ((podId, episode) in synced) {
-                            subscriptionRepository.updateLatestEpisode(podId, episode)
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("HomeViewModel", "Background sync chunk failed", e)
-                    }
-                }
-                android.util.Log.d("HomeViewModel", "Finished background sync for all ${currentSubs.size} subs")
-            } catch (e: Exception) {
-                android.util.Log.e("HomeViewModel", "Background sync failed totally", e)
-            }
-        }
+        // Process-once sync shared with AppRoot so cold starts that skip Home
+        // (open-app-to Subscriptions, offline Downloads) still refresh latest episodes.
+        SharedAppDependenciesHolder.instance?.subscriptionForegroundSync?.ensureStarted()
     }
 
     fun dismissHomeImportBanner() {

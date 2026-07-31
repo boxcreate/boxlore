@@ -58,11 +58,17 @@ fun BoxLoreNavHost(
     val isOfflineOnLaunch = remember { !isOnline }
     val computedStartDestination =
         remember {
-            when {
-                !session.onboardingCompleted -> "onboarding"
-                isOfflineOnLaunch && !session.hasDeepLink -> NavRoutes.LIBRARY_DOWNLOADS
-                else -> "home"
+            val destination =
+                resolveStartDestination(
+                    onboardingCompleted = session.onboardingCompleted,
+                    isOfflineOnLaunch = isOfflineOnLaunch,
+                    hasDeepLink = session.hasDeepLink,
+                    openAppTo = application.container.userPreferencesRepository.cachedOpenAppTo,
+                )
+            if (destination == NavRoutes.LIBRARY_SUBSCRIPTIONS) {
+                session.openedToSubscriptionsOnLaunch.value = true
             }
+            destination
         }
 
     val wiring =

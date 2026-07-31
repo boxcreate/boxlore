@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.library.subscriptions
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,12 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
-import cx.aswin.boxlore.feature.library.PlayAllFab
-import java.util.Locale
-
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.library.PlayAllFab
 
 @Composable
 internal fun ShowsTabContent(
@@ -52,6 +51,18 @@ internal fun ShowsTabContent(
         val filteredPodcasts = remember(podcasts, selectedGenre) { filterPodcastsByGenre(podcasts, selectedGenre) }
         val distinctPodcasts = remember(filteredPodcasts) { filteredPodcasts.distinctBy { it.id } }
 
+        val genreChips: @Composable () -> Unit = {
+            SubscriptionGenreChips(
+                selectedGenre = selectedGenre,
+                onGenreChange = {
+                    selectedGenre = it
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "shows")
+                },
+                distinctGenres = distinctGenres,
+                contentPadding = PaddingValues(horizontal = if (isGridView) 0.dp else 16.dp)
+            )
+        }
+
         if (isGridView) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
@@ -66,14 +77,7 @@ internal fun ShowsTabContent(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
                     ) {
-                        SubscriptionGenreChips(
-                            selectedGenre = selectedGenre,
-                            onGenreChange = {
-                                selectedGenre = it
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "shows")
-                            },
-                            distinctGenres = distinctGenres
-                        )
+                        genreChips()
                     }
                 }
 
@@ -97,15 +101,7 @@ internal fun ShowsTabContent(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
                     ) {
-                        SubscriptionGenreChips(
-                            selectedGenre = selectedGenre,
-                            onGenreChange = {
-                                selectedGenre = it
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "shows")
-                            },
-                            distinctGenres = distinctGenres,
-                            contentPadding = PaddingValues(horizontal = 16.dp)
-                        )
+                        genreChips()
                     }
                 }
 
@@ -126,149 +122,207 @@ internal fun LatestTabContent(
     podcasts: List<Podcast>,
     allHistory: List<ListeningHistoryEntity>,
     useSmartRank: Boolean,
+    hideCompleted: Boolean,
     scoreEpisodes: suspend (
         List<Podcast>,
         List<ListeningHistoryEntity>,
     ) -> Map<String, Double>,
-    onExploreClick: () -> Unit,
-    onEpisodeClick: ((Episode, Podcast, String?) -> Unit)?,
-    onPlayEpisode: ((Episode, Podcast) -> Unit)?,
-    onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)? = null,
-    isPlayerActive: Boolean = false
+    actions: LatestTabActions,
+    isPlayerActive: Boolean = false,
 ) {
-    val episodePodcasts = remember(podcasts) {
-        podcasts.filter { it.latestEpisode != null }
+    val allWithLatest = remember(podcasts) { podcasts.filter { it.latestEpisode != null } }
+    val episodePodcasts = remember(allWithLatest, hideCompleted) {
+        if (hideCompleted) {
+            allWithLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED }
+        } else {
+            allWithLatest
+        }
     }
 
-    if (episodePodcasts.isEmpty()) {
-        ExpressiveSolarSystemEmptyState(
-            title = "No New Episodes",
-            description = "You're all caught up! Explore for more content.",
-            actionText = "Discover Shows",
-            onExploreClick = onExploreClick
-        )
-    } else {
-        val distinctGenres = remember(episodePodcasts) {
-            episodePodcasts.flatMap { pod ->
-                pod.genre.split(",")
-                    .map { it.trim() }
-                    .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
-                    .map { genre ->
-                        genre.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-                    }
-            }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
-        }
+    when {
+        allWithLatest.isEmpty() ->
+            ExpressiveSolarSystemEmptyState(
+                title = "No New Episodes",
+                description = "You're all caught up! Explore for more content.",
+                actionText = "Discover Shows",
+                onExploreClick = actions.onExploreClick,
+            )
+        episodePodcasts.isEmpty() ->
+            ExpressiveSolarSystemEmptyState(
+                title = "You're all caught up",
+                description = "Hidden played episodes are out of the way. Turn off Hide played in Sort to see them again.",
+                actionText = "Discover Shows",
+                onExploreClick = actions.onExploreClick,
+            )
+        else ->
+            LatestEpisodesList(
+                episodePodcasts = episodePodcasts,
+                allHistory = allHistory,
+                useSmartRank = useSmartRank,
+                scoreEpisodes = scoreEpisodes,
+                actions = actions,
+                isPlayerActive = isPlayerActive,
+            )
+    }
+}
 
-        var selectedGenre by remember { mutableStateOf("All") }
+/** Callbacks for [LatestTabContent], grouped to keep the composable parameter list small. */
+internal data class LatestTabActions(
+    val onExploreClick: () -> Unit,
+    val onEpisodeClick: ((Episode, Podcast, String?) -> Unit)?,
+    val onPlayEpisode: ((Episode, Podcast) -> Unit)?,
+    val onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)? = null,
+)
 
-        val filteredEpisodePodcasts = remember(episodePodcasts, selectedGenre) {
-            if (selectedGenre == "All") {
-                episodePodcasts
-            } else {
-                episodePodcasts.filter { pod ->
-                    pod.genre.split(",")
-                        .map { it.trim() }
-                        .any { it.equals(selectedGenre, ignoreCase = true) }
-                }
-            }
-        }
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LatestEpisodesList(
+    episodePodcasts: List<Podcast>,
+    allHistory: List<ListeningHistoryEntity>,
+    useSmartRank: Boolean,
+    scoreEpisodes: suspend (
+        List<Podcast>,
+        List<ListeningHistoryEntity>,
+    ) -> Map<String, Double>,
+    actions: LatestTabActions,
+    isPlayerActive: Boolean,
+) {
+    val distinctGenres = remember(episodePodcasts) { extractDistinctGenres(episodePodcasts) }
+    var selectedGenre by rememberSaveable { mutableStateOf("All") }
+    val filteredEpisodePodcasts = remember(episodePodcasts, selectedGenre) {
+        filterPodcastsByGenre(episodePodcasts, selectedGenre)
+    }
+    val episodeScores by produceState(
+        initialValue = emptyMap<String, Double>(),
+        filteredEpisodePodcasts,
+        allHistory,
+        useSmartRank,
+    ) {
+        value = scoreLatestIfNeeded(useSmartRank, filteredEpisodePodcasts, allHistory, scoreEpisodes)
+    }
+    val displayPodcasts = remember(filteredEpisodePodcasts, useSmartRank, episodeScores) {
+        sortLatestDisplayPodcasts(filteredEpisodePodcasts, useSmartRank, episodeScores)
+    }
+    val groupedEpisodes = remember(displayPodcasts, useSmartRank) {
+        groupLatestByDateHeader(displayPodcasts, useSmartRank)
+    }
 
-        val episodeScores by produceState<Map<String, Double>>(
-            initialValue = emptyMap(),
-            filteredEpisodePodcasts,
-            allHistory,
-            useSmartRank,
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            contentPadding = PaddingValues(bottom = 240.dp, top = 4.dp),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            value = if (useSmartRank) {
-                scoreEpisodes(filteredEpisodePodcasts, allHistory)
-            } else {
-                emptyMap()
-            }
-        }
-
-        val displayPodcasts = remember(filteredEpisodePodcasts, useSmartRank, episodeScores) {
-            if (useSmartRank) {
-                filteredEpisodePodcasts.sortedByDescending {
-                    episodeScores[it.latestEpisode?.id] ?: 0.0
-                }
-            } else {
-                filteredEpisodePodcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
-            }
-        }
-
-        val groupedEpisodes = remember(displayPodcasts, useSmartRank) {
-            if (useSmartRank) {
-                emptyMap()
-            } else {
-                displayPodcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate) }
-            }
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 240.dp, top = 4.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                item {
-                    SubscriptionGenreChips(
-                        selectedGenre = selectedGenre,
-                        onGenreChange = {
-                            selectedGenre = it
-                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "latest")
-                        },
-                        distinctGenres = distinctGenres,
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        modifier = Modifier
+            item {
+                SubscriptionGenreChips(
+                    selectedGenre = selectedGenre,
+                    onGenreChange = {
+                        selectedGenre = it
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                            .trackLibrarySubscriptionsGenreFiltered(it, "latest")
+                    },
+                    distinctGenres = distinctGenres,
+                    modifier =
+                        Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                    )
-                }
-
-                if (useSmartRank) {
-                    items(items = displayPodcasts, key = { "${it.id}_latest_smart" }) { podcast ->
-                        val episode = podcast.latestEpisode!!
-                        LatestEpisodeRow(
-                            episode = episode,
-                            podcast = podcast,
-                            onClick = { onEpisodeClick?.invoke(episode, podcast, "library_latest_episodes") },
-                            onPlay = if (onPlayEpisode != null) {
-                                { onPlayEpisode(episode, podcast) }
-                            } else null
-                        )
-                    }
-                } else {
-                    groupedEpisodes.forEach { (header, podcastsInGroup) ->
-                        stickyHeader {
-                            DateHeader(text = header)
-                        }
-                        items(items = podcastsInGroup, key = { "${it.id}_latest_chrono" }) { podcast ->
-                            val episode = podcast.latestEpisode!!
-                            LatestEpisodeRow(
-                                episode = episode,
-                                podcast = podcast,
-                                onClick = { onEpisodeClick?.invoke(episode, podcast, "library_latest_episodes") },
-                                onPlay = if (onPlayEpisode != null) {
-                                    { onPlayEpisode(episode, podcast) }
-                                } else null
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (displayPodcasts.isNotEmpty()) {
-                PlayAllFab(
-                    isPlayerActive = isPlayerActive,
-                    onClick = {
-                        val episodesToPlay = displayPodcasts.map { it.latestEpisode!! }
-                        val firstPodcast = displayPodcasts.firstOrNull()
-                        if (firstPodcast != null && onPlayEpisodes != null) {
-                            onPlayEpisodes(episodesToPlay, firstPodcast)
-                        }
-                    }
+                            .padding(bottom = 8.dp),
                 )
             }
+            latestEpisodeItems(
+                useSmartRank = useSmartRank,
+                displayPodcasts = displayPodcasts,
+                groupedEpisodes = groupedEpisodes,
+                actions = actions,
+            )
+        }
+        LatestPlayAllFab(
+            displayPodcasts = displayPodcasts,
+            isPlayerActive = isPlayerActive,
+            onPlayEpisodes = actions.onPlayEpisodes,
+        )
+    }
+}
+
+internal suspend fun scoreLatestIfNeeded(
+    useSmartRank: Boolean,
+    podcasts: List<Podcast>,
+    history: List<ListeningHistoryEntity>,
+    scoreEpisodes: suspend (List<Podcast>, List<ListeningHistoryEntity>) -> Map<String, Double>,
+): Map<String, Double> =
+    if (useSmartRank) scoreEpisodes(podcasts, history) else emptyMap()
+
+internal fun sortLatestDisplayPodcasts(
+    podcasts: List<Podcast>,
+    useSmartRank: Boolean,
+    episodeScores: Map<String, Double>,
+): List<Podcast> =
+    if (useSmartRank) {
+        podcasts.sortedByDescending { episodeScores[it.latestEpisode?.id] ?: 0.0 }
+    } else {
+        podcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
+    }
+
+internal fun groupLatestByDateHeader(
+    podcasts: List<Podcast>,
+    useSmartRank: Boolean,
+): Map<String, List<Podcast>> =
+    if (useSmartRank) {
+        emptyMap()
+    } else {
+        podcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate) }
+    }
+
+@OptIn(ExperimentalFoundationApi::class)
+private fun androidx.compose.foundation.lazy.LazyListScope.latestEpisodeItems(
+    useSmartRank: Boolean,
+    displayPodcasts: List<Podcast>,
+    groupedEpisodes: Map<String, List<Podcast>>,
+    actions: LatestTabActions,
+) {
+    if (useSmartRank) {
+        items(items = displayPodcasts, key = { "${it.id}_latest_smart" }) { podcast ->
+            LatestEpisodeListRow(podcast = podcast, actions = actions)
+        }
+        return
+    }
+    groupedEpisodes.forEach { (header, podcastsInGroup) ->
+        stickyHeader { DateHeader(text = header) }
+        items(items = podcastsInGroup, key = { "${it.id}_latest_chrono" }) { podcast ->
+            LatestEpisodeListRow(podcast = podcast, actions = actions)
         }
     }
 }
 
+@Composable
+private fun BoxScope.LatestPlayAllFab(
+    displayPodcasts: List<Podcast>,
+    isPlayerActive: Boolean,
+    onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)?,
+) {
+    if (displayPodcasts.isEmpty() || onPlayEpisodes == null) return
+    val firstPodcast = displayPodcasts.firstOrNull() ?: return
+    PlayAllFab(
+        isPlayerActive = isPlayerActive,
+        onClick = {
+            onPlayEpisodes(displayPodcasts.map { it.latestEpisode!! }, firstPodcast)
+        },
+    )
+}
+
+@Composable
+private fun LatestEpisodeListRow(
+    podcast: Podcast,
+    actions: LatestTabActions,
+) {
+    val episode = podcast.latestEpisode!!
+    LatestEpisodeRow(
+        episode = episode,
+        podcast = podcast,
+        onClick = { actions.onEpisodeClick?.invoke(episode, podcast, "library_latest_episodes") },
+        onPlay =
+            if (actions.onPlayEpisode != null) {
+                { actions.onPlayEpisode.invoke(episode, podcast) }
+            } else {
+                null
+            },
+    )
+}
