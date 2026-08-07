@@ -4,9 +4,6 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.network.model.OnboardingSelectedShowDto
-import cx.aswin.boxlore.core.network.model.OnboardingSimilarShowsRequest
-import cx.aswin.boxlore.core.network.model.toPodcast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
@@ -290,6 +287,9 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
     val selectedShows = currentState.selectedPodcasts.values.toList()
     if (selectedShows.isEmpty()) return
 
+    val seedIds = selectedShows.map { it.id }.toSet()
+    val seedCount = seedIds.size
+
     _uiState.update {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
@@ -297,106 +297,35 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
             isSynthesizing = true,
             aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
             onboardingError = null,
+            aiCurriculumRows = emptyList(),
+            genreChartsPodcasts = emptyList(),
+            suggestionSeedCount = seedCount,
             reachedSuggestionsViaSearchFlow = true,
             reachedSuggestionsViaAiFlow = false,
+            reachedSuggestionsViaOpmlFlow = false,
         )
     }
 
-    val finalAction: () -> Unit = {
-        _uiState.update {
-            it.copy(
-                isAiLoading = true,
-                isSynthesizing = true,
-                aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
-                onboardingError = null,
-            )
-        }
-        viewModelScope.launch {
-            try {
-                // Subscribe to manually selected shows first
-                for (podcast in selectedShows) {
-                    subscriptionRepository.subscribe(podcast)
-                }
-
-                val locale = discoveryLocaleForRegion(currentState.currentRegion)
-                val request =
-                    OnboardingSimilarShowsRequest(
-                        shows =
-                            selectedShows.distinctBy { it.title.lowercase().trim() }.take(20).map {
-                                OnboardingSelectedShowDto(
-                                    title = it.title,
-                                    description = it.description ?: "",
-                                )
-                            },
-                        country = locale.country,
-                        languages = locale.languages,
-                    )
-
-                val response =
-                    withContext(Dispatchers.IO) {
-                        podcastRepository.api
-                            .getSimilarShows(
-                                publicKey = podcastRepository.publicKey,
-                                request = request,
-                            ).execute()
-                    }
-
-                if (response.isSuccessful && response.body() != null) {
-                    val rows =
-                        response.body()!!.map {
-                            it.copy(episodes = emptyList())
-                        }
-
-                    val newPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }
-                    // Filter out podcasts that are already in selectedPodcasts to avoid resetting selections
-                    val defaultSelectedIds =
-                        buildSet {
-                            rows.forEach { row ->
-                                row.podcasts.firstOrNull()?.let { add(it.id.toString()) }
-                            }
-                        }
-                    // Only auto-select recommendations that are NOT already manually selected
-                    val recommendationsToSelect =
-                        newPodcasts.filter {
-                            it.id in defaultSelectedIds &&
-                                it.id !in currentState.selectedPodcasts.keys
-                        }
-
-                    _uiState.update { state ->
-                        val newSelected = state.selectedPodcasts + recommendationsToSelect.associateBy { it.id }
-                        state.copy(
-                            aiCurriculumRows = rows,
-                            isAiLoading = false,
-                            isSynthesizing = false,
-                            aiLoadingStage = AiLoadingStage.IDLE,
-                            selectedPodcasts = newSelected,
-                            subscribedPodcastIds = newSelected.keys,
-                            onboardingError = null,
-                        )
-                    }
-                } else {
-                    throw Exception("Failed to load similar shows from backend: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                Log.e("OnboardingViewModel", "Error in generateRecommendationsFromSearch", e)
-                _uiState.update { state ->
-                    state.copy(
-                        isAiLoading = false,
-                        isSynthesizing = false,
-                        aiLoadingStage = AiLoadingStage.IDLE,
-                        onboardingError = "We encountered a temporary issue generating recommendations. Let's try again.",
-                    )
-                }
+    launchSimilarShowsFetch(
+        seedShows = selectedShows,
+        seedIds = seedIds,
+        seedCount = seedCount,
+        region = currentState.currentRegion,
+        errorContext = "generateRecommendationsFromSearch",
+        beforeApi = {
+            for (podcast in selectedShows) {
+                subscriptionRepository.subscribe(podcast)
             }
-        }
-    }
-    lastFailedAction = finalAction
-    finalAction()
+        },
+    )
 }
 
 fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<Podcast>) {
     if (importedPodcasts.isEmpty()) return
 
+    val seedIds = importedPodcasts.map { it.id }.toSet()
+    val seedCount = seedIds.size
+
     _uiState.update {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
@@ -404,96 +333,24 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
             isSynthesizing = true,
             aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
             onboardingError = null,
+            aiCurriculumRows = emptyList(),
+            genreChartsPodcasts = emptyList(),
+            suggestionSeedCount = seedCount,
             reachedSuggestionsViaSearchFlow = false,
             reachedSuggestionsViaAiFlow = false,
             reachedSuggestionsViaOpmlFlow = true,
             selectedPodcasts = importedPodcasts.associateBy { p -> p.id },
+            subscribedPodcastIds = seedIds,
         )
     }
 
-    val finalAction: () -> Unit = {
-        _uiState.update {
-            it.copy(
-                isAiLoading = true,
-                isSynthesizing = true,
-                aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
-                onboardingError = null,
-            )
-        }
-        viewModelScope.launch {
-            try {
-                val locale = discoveryLocaleForRegion(_uiState.value.currentRegion)
-                val request =
-                    OnboardingSimilarShowsRequest(
-                        shows =
-                            importedPodcasts.distinctBy { it.title.lowercase().trim() }.take(20).map {
-                                OnboardingSelectedShowDto(
-                                    title = it.title,
-                                    description = it.description ?: "",
-                                )
-                            },
-                        country = locale.country,
-                        languages = locale.languages,
-                    )
-
-                val response =
-                    withContext(Dispatchers.IO) {
-                        podcastRepository.api
-                            .getSimilarShows(
-                                publicKey = podcastRepository.publicKey,
-                                request = request,
-                            ).execute()
-                    }
-
-                if (response.isSuccessful && response.body() != null) {
-                    val rows =
-                        response.body()!!.map {
-                            it.copy(episodes = emptyList())
-                        }
-
-                    val newPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }
-                    val defaultSelectedIds =
-                        buildSet {
-                            rows.forEach { row ->
-                                row.podcasts.firstOrNull()?.let { add(it.id.toString()) }
-                            }
-                        }
-                    val recommendationsToSelect =
-                        newPodcasts.filter {
-                            it.id in defaultSelectedIds &&
-                                it.id !in importedPodcasts.map { p -> p.id }
-                        }
-
-                    _uiState.update { state ->
-                        val newSelected = state.selectedPodcasts + recommendationsToSelect.associateBy { it.id }
-                        state.copy(
-                            aiCurriculumRows = rows,
-                            isAiLoading = false,
-                            isSynthesizing = false,
-                            aiLoadingStage = AiLoadingStage.IDLE,
-                            selectedPodcasts = newSelected,
-                            subscribedPodcastIds = newSelected.keys,
-                            onboardingError = null,
-                        )
-                    }
-                } else {
-                    throw Exception("Failed to load similar shows from backend: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                Log.e("OnboardingViewModel", "Error in generateRecommendationsFromOpml", e)
-                _uiState.update { state ->
-                    state.copy(
-                        isAiLoading = false,
-                        isSynthesizing = false,
-                        aiLoadingStage = AiLoadingStage.IDLE,
-                        onboardingError = "We encountered a temporary issue generating recommendations. Let's try again.",
-                    )
-                }
-            }
-        }
-    }
-    lastFailedAction = finalAction
-    finalAction()
+    launchSimilarShowsFetch(
+        seedShows = importedPodcasts,
+        seedIds = seedIds,
+        seedCount = seedCount,
+        region = _uiState.value.currentRegion,
+        errorContext = "generateRecommendationsFromOpml",
+    )
 }
 
 internal fun OnboardingViewModel.skipOnboarding(onDone: () -> Unit) {

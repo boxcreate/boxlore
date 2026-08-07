@@ -54,6 +54,8 @@ data class OnboardingUiState(
     val reachedSuggestionsViaAiFlow: Boolean = false,
     val reachedSuggestionsViaSearchFlow: Boolean = false,
     val reachedSuggestionsViaOpmlFlow: Boolean = false,
+    /** Count of search/OPML seed shows used for the suggestions loader copy (stable during fetch). */
+    val suggestionSeedCount: Int = 0,
     val hasSentCustomInput: Boolean = false,
     val popularPodcasts: List<Podcast> = emptyList(),
     val isPopularLoading: Boolean = false,

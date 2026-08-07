@@ -129,37 +129,43 @@ private fun SuggestionCardArtwork(
     isSubscribed: Boolean,
     onOpenDetails: (Podcast) -> Unit,
 ) {
+    // Match [FeedMediaCard]: round art bottom corners so the text band peeks through as a soft curve.
+    val artBottomShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f),
     ) {
-        OptimizedImage(
-            url = podcast.imageUrl,
-            proxyWidth = 400,
-            contentDescription = podcast.title,
-            contentScale = ContentScale.Crop,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)),
-        )
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops =
-                                arrayOf(
-                                    0f to Color.Transparent,
-                                    0.55f to Color.Transparent,
-                                    1f to Color.Black.copy(alpha = 0.45f),
-                                ),
+                    .clip(artBottomShape),
+        ) {
+            OptimizedImage(
+                url = podcast.imageUrl,
+                proxyWidth = 400,
+                contentDescription = podcast.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops =
+                                    arrayOf(
+                                        0f to Color.Transparent,
+                                        0.55f to Color.Transparent,
+                                        1f to Color.Black.copy(alpha = 0.45f),
+                                    ),
+                            ),
                         ),
-                    ),
-        )
+            )
+        }
         SuggestionCardGenreChip(genre = podcast.genre.trim())
         IconButton(
             onClick = { onOpenDetails(podcast) },

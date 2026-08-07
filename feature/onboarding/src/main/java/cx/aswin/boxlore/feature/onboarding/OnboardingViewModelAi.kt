@@ -477,6 +477,8 @@ internal fun OnboardingViewModel.navigateToSuggestions() {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
             reachedSuggestionsViaAiFlow = true,
+            reachedSuggestionsViaSearchFlow = false,
+            reachedSuggestionsViaOpmlFlow = false,
         )
     }
 }
@@ -490,7 +492,15 @@ internal fun OnboardingViewModel.navigateBackFromSuggestions() {
             state.reachedSuggestionsViaOpmlFlow -> OnboardingStep.WELCOME
             else -> OnboardingStep.LENGTH_PICKER
         }
-    _uiState.update { it.copy(currentStep = nextStep) }
+    val clearSuggestionPayload =
+        OnboardingSuggestionsPresentation.shouldClearSuggestionPayloadOnBack(nextStep)
+    _uiState.update {
+        if (clearSuggestionPayload) {
+            OnboardingSuggestionsPresentation.withClearedSuggestionPayload(it, nextStep)
+        } else {
+            it.copy(currentStep = nextStep)
+        }
+    }
     if (nextStep == OnboardingStep.AI_ONBOARDING) {
         turnStartMs = System.currentTimeMillis()
     } else if (nextStep == OnboardingStep.LENGTH_PICKER) {
