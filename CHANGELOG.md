@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Redesigned Subscriptions UI with genre filter chips, denser episode rows, image‑first show grid, sort/hide‑played options, and elevated tabs; added persistent open_app_to preference stored in DataStore and tracked via analytics; introduced SubscriptionForegroundSync process that runs once per process after onboarding to perform foreground latest‑episode sync for subscriptions ([#958](https://github.com/boxcreate/boxlore/pull/958)) <!-- impact:user-impact-high -->
+- Added home-screen RemoteViews widgets (now playing 4×2, compact bar 4×1, playback controls 2×2, scrollable Subscriptions and New Episodes 4×3) via new :feature:widgets module with providers, coordinators, snapshot stores, RemoteViewsService adapter, artwork loader, theme sync, and integration into :app through WidgetPlaybackSource and WidgetLibrarySource, using system accent colors and supporting deep links and widget picker previews ([#959](https://github.com/boxcreate/boxlore/pull/959)) <!-- impact:user-impact-high -->
 ### Changed
 - Navigation start‑destination now respects open_app_to setting, launching Subscriptions directly when selected and using Back to return to Home; HomeViewModel no longer performs foreground sync, delegating to SubscriptionForegroundSync ([#958](https://github.com/boxcreate/boxlore/pull/958)) <!-- impact:user-impact-high -->
 ## [v0.0.13] - 2026-07-29

@@ -57,9 +57,13 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🆕 New features:</b>
+<ul align="left">
+<li>Add home‑screen widgets for quick playback controls, now‑playing info, and scrollable lists of subscriptions and new episodes. <a href="https://github.com/boxcreate/boxlore/pull/959"><img src="https://img.shields.io/badge/PR-959-6750A4?style=flat-square" alt="PR #959" height="18"/></a></li>
+</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Subscriptions now have genre chips, tighter rows, image‑first grid, sort/hide‑played options, and open first if you set it as start screen. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
+<li>Subscriptions now lets you filter by genre, view denser rows or image‑first grids, sort or hide played episodes, and opens directly if set. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
