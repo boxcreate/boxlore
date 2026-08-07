@@ -477,6 +477,8 @@ internal fun OnboardingViewModel.navigateToSuggestions() {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
             reachedSuggestionsViaAiFlow = true,
+            reachedSuggestionsViaSearchFlow = false,
+            reachedSuggestionsViaOpmlFlow = false,
         )
     }
 }

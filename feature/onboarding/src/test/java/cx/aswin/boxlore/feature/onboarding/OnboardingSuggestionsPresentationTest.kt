@@ -156,6 +156,39 @@ class OnboardingSuggestionsPresentationTest {
     }
 
     @Test
+    fun `isError only when error set and content empty`() {
+        assertTrue(
+            OnboardingSuggestionsPresentation.isError(
+                OnboardingUiState(onboardingError = "boom"),
+            ),
+        )
+        assertFalse(OnboardingSuggestionsPresentation.isError(OnboardingUiState()))
+        assertFalse(
+            OnboardingSuggestionsPresentation.isError(
+                OnboardingUiState(
+                    onboardingError = "boom",
+                    aiCurriculumRows =
+                        listOf(
+                            OnboardingCurriculumRowDto(
+                                rowTitle = "Lane",
+                                podcasts = listOf(OnboardingCurriculumPodcastDto(id = 1, title = "A")),
+                            ),
+                        ),
+                ),
+            ),
+        )
+        assertFalse(
+            OnboardingSuggestionsPresentation.isError(
+                OnboardingUiState(
+                    onboardingError = "boom",
+                    genreChartsPodcasts =
+                        listOf(Podcast(id = "c1", title = "Chart", artist = "Host", imageUrl = "")),
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `withClearedSuggestionPayload keeps picks and clears rows`() {
         val pick = Podcast(id = "p1", title = "Kept", artist = "Host", imageUrl = "")
         val cleared =
@@ -187,6 +220,26 @@ class OnboardingSuggestionsPresentationTest {
         assertEquals(null, cleared.onboardingError)
         assertEquals(mapOf(pick.id to pick), cleared.selectedPodcasts)
         assertEquals("news", cleared.searchQuery)
+        assertFalse(cleared.reachedSuggestionsViaSearchFlow)
+        assertFalse(cleared.reachedSuggestionsViaOpmlFlow)
+        assertFalse(cleared.reachedSuggestionsViaAiFlow)
+        assertEquals(
+            "Subscribe & start · 1",
+            OnboardingSuggestionsPresentation.finishCtaLabel(
+                cleared.copy(
+                    subscribedPodcastIds = setOf(pick.id),
+                    aiCurriculumRows =
+                        listOf(
+                            OnboardingCurriculumRowDto(
+                                rowTitle = "Later AI",
+                                podcasts = listOf(OnboardingCurriculumPodcastDto(id = 9, title = "X")),
+                            ),
+                        ),
+                    reachedSuggestionsViaAiFlow = true,
+                ),
+                selectedCount = 1,
+            ),
+        )
         assertTrue(OnboardingSuggestionsPresentation.shouldClearSuggestionPayloadOnBack(OnboardingStep.SEARCH))
         assertTrue(OnboardingSuggestionsPresentation.shouldClearSuggestionPayloadOnBack(OnboardingStep.WELCOME))
         assertFalse(

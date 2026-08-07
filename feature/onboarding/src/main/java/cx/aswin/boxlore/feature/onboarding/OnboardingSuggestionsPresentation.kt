@@ -114,5 +114,8 @@ internal object OnboardingSuggestionsPresentation {
             aiLoadingStage = AiLoadingStage.IDLE,
             onboardingError = null,
             suggestionSeedCount = 0,
+            reachedSuggestionsViaSearchFlow = false,
+            reachedSuggestionsViaOpmlFlow = false,
+            reachedSuggestionsViaAiFlow = false,
         )
 }

@@ -40,6 +40,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   OnboardingViewModelAi.kt
   OnboardingViewModelGenre.kt
   OnboardingViewModelSearch.kt
+  OnboardingViewModelSimilarShows.kt
   SearchOnboardingScreen.kt
 ```
 ## Dependencies
