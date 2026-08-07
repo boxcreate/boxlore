@@ -19,19 +19,21 @@ abstract class BaseNowPlayingWidgetReceiver : AppWidgetProvider() {
         appWidgetIds: IntArray,
     ) {
         val appContext = context.applicationContext
-        val store = NowPlayingWidgetSnapshotStore(appContext)
-        val snapshot = store.read() ?: NowPlayingWidgetSnapshot()
-        val optionsById =
-            appWidgetIds.associateWith { id -> appWidgetManager.getAppWidgetOptions(id) }
-        NowPlayingWidgetRenderer.updateAll(
-            context = appContext,
-            appWidgetManager = appWidgetManager,
-            appWidgetIds = appWidgetIds,
-            snapshot = snapshot,
-            optionsById = optionsById,
-            variant = variant,
-        )
-        NowPlayingWidgetCoordinator.requestRefresh(appContext)
+        // Prefs read off main; single render (no duplicate requestRefresh pass).
+        receiverScope.launch {
+            val store = NowPlayingWidgetSnapshotStore(appContext)
+            val snapshot = store.read() ?: NowPlayingWidgetSnapshot()
+            val optionsById =
+                appWidgetIds.associateWith { id -> appWidgetManager.getAppWidgetOptions(id) }
+            NowPlayingWidgetRenderer.updateAll(
+                context = appContext,
+                appWidgetManager = appWidgetManager,
+                appWidgetIds = appWidgetIds,
+                snapshot = snapshot,
+                optionsById = optionsById,
+                variant = variant,
+            )
+        }
     }
 
     override fun onAppWidgetOptionsChanged(
@@ -41,15 +43,17 @@ abstract class BaseNowPlayingWidgetReceiver : AppWidgetProvider() {
         newOptions: Bundle,
     ) {
         val appContext = context.applicationContext
-        val snapshot = NowPlayingWidgetSnapshotStore(appContext).read() ?: NowPlayingWidgetSnapshot()
-        NowPlayingWidgetRenderer.updateOne(
-            context = appContext,
-            appWidgetManager = appWidgetManager,
-            appWidgetId = appWidgetId,
-            snapshot = snapshot,
-            options = newOptions,
-            variant = variant,
-        )
+        receiverScope.launch {
+            val snapshot = NowPlayingWidgetSnapshotStore(appContext).read() ?: NowPlayingWidgetSnapshot()
+            NowPlayingWidgetRenderer.updateOne(
+                context = appContext,
+                appWidgetManager = appWidgetManager,
+                appWidgetId = appWidgetId,
+                snapshot = snapshot,
+                options = newOptions,
+                variant = variant,
+            )
+        }
     }
 
     override fun onReceive(

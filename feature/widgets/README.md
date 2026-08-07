@@ -53,8 +53,10 @@ src/main/res/
 
 - Both `configure*` helpers are called once from `BoxLoreApplication` after `AppContainer` is ready.
 - Coordinator collection and artwork IO run on the application `CoroutineScope` from dependencies.
-- Widget control broadcasts use `goAsync()` + an IO scope; optimistic snapshot render happens before transport restore/actions.
+- Widget control broadcasts use `goAsync()` + `Dispatchers.Main.immediate`; optimistic snapshot render happens before transport restore/actions. Failed restore/transport rolls the snapshot back from authoritative playback state.
+- `onUpdate` reads snapshot prefs on a background scope then renders once (no double `requestRefresh` pass on the main thread).
 - `:app`’s `NowPlayingWidgetPlaybackAdapter` hops every transport action onto `Dispatchers.Main` before touching `MediaController`.
+- Dependency holders expose `instance` with an `internal` setter — only `configure*` installs them.
 - `:app`’s `WidgetLibrarySourceAdapter` enriches/sorts subscribed podcasts with history + `AdaptiveCandidateScorer` to match Library → Subscriptions.
 - Lettering: playback episode/podcast titles use RemoteViews `TextView`s; empty-state labels may use `WidgetTextBitmapRenderer`.
 - Widget chrome uses system Material You colors (`system_neutral*` / `system_accent*` via `widget_*` resources) for light and dark UI — not artwork-seeded palettes. Colors are applied with `RemoteViews.setColor(resource)` so accents re-resolve; `WidgetThemeSync` also re-pushes widgets on configuration changes.

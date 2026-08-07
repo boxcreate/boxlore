@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.widgets.logic
 import cx.aswin.boxlore.feature.widgets.WidgetEpisodeRow
 import cx.aswin.boxlore.feature.widgets.WidgetShowRow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -37,7 +38,7 @@ class LibraryWidgetLogicTest {
     }
 
     @Test
-    fun mergeArtworkPathsReusesCacheForSamePodcast() {
+    fun mergeArtworkPathsReusesCacheForSameUrl() {
         val previous =
             listOf(
                 WidgetShowRow(
@@ -59,6 +60,89 @@ class LibraryWidgetLogicTest {
             )
         val merged = LibraryWidgetLogic.mergeArtworkPaths(previous, next)
         assertEquals("/cache/a.jpg", merged.single().artworkCachePath)
+    }
+
+    @Test
+    fun mergeArtworkPathsDoesNotReuseCacheWhenUrlChanges() {
+        val previous =
+            listOf(
+                WidgetShowRow(
+                    podcastId = "p1",
+                    title = "Show",
+                    artworkUrl = "https://example.com/old.jpg",
+                    artworkCachePath = "/cache/old.jpg",
+                    deepLinkUri = "boxlore://podcast/p1",
+                ),
+            )
+        val next =
+            listOf(
+                WidgetShowRow(
+                    podcastId = "p1",
+                    title = "Show",
+                    artworkUrl = "https://example.com/new.jpg",
+                    deepLinkUri = "boxlore://podcast/p1",
+                ),
+            )
+        val merged = LibraryWidgetLogic.mergeArtworkPaths(previous, next)
+        assertNull(merged.single().artworkCachePath)
+    }
+
+    @Test
+    fun mergeEpisodeArtworkPathsReusesCacheForSameUrl() {
+        val previous =
+            listOf(
+                WidgetEpisodeRow(
+                    episodeId = "e1",
+                    episodeTitle = "Ep",
+                    podcastId = "p1",
+                    podcastTitle = "Show",
+                    artworkUrl = "https://example.com/ep.jpg",
+                    artworkCachePath = "/cache/ep.jpg",
+                    deepLinkUri = "boxlore://episode/e1",
+                ),
+            )
+        val next =
+            listOf(
+                WidgetEpisodeRow(
+                    episodeId = "e1",
+                    episodeTitle = "Ep",
+                    podcastId = "p1",
+                    podcastTitle = "Show",
+                    artworkUrl = "https://example.com/ep.jpg",
+                    deepLinkUri = "boxlore://episode/e1",
+                ),
+            )
+        val merged = LibraryWidgetLogic.mergeEpisodeArtworkPaths(previous, next)
+        assertEquals("/cache/ep.jpg", merged.single().artworkCachePath)
+    }
+
+    @Test
+    fun mergeEpisodeArtworkPathsDoesNotReuseCacheWhenUrlChanges() {
+        val previous =
+            listOf(
+                WidgetEpisodeRow(
+                    episodeId = "e1",
+                    episodeTitle = "Ep",
+                    podcastId = "p1",
+                    podcastTitle = "Show",
+                    artworkUrl = "https://example.com/old.jpg",
+                    artworkCachePath = "/cache/old.jpg",
+                    deepLinkUri = "boxlore://episode/e1",
+                ),
+            )
+        val next =
+            listOf(
+                WidgetEpisodeRow(
+                    episodeId = "e1",
+                    episodeTitle = "Ep",
+                    podcastId = "p1",
+                    podcastTitle = "Show",
+                    artworkUrl = "https://example.com/new.jpg",
+                    deepLinkUri = "boxlore://episode/e1",
+                ),
+            )
+        val merged = LibraryWidgetLogic.mergeEpisodeArtworkPaths(previous, next)
+        assertNull(merged.single().artworkCachePath)
     }
 
     @Test

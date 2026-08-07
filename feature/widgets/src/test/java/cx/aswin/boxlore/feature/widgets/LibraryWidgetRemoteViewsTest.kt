@@ -58,6 +58,18 @@ class LibraryWidgetSnapshotStoreTest {
     fun usesStablePrefsFileName() {
         assertEquals("boxlore_library_widget", LibraryWidgetSnapshotStore.PREFS_NAME)
     }
+
+    @Test
+    fun malformedSnapshotJsonReturnsNull() {
+        val prefs =
+            context.getSharedPreferences(
+                LibraryWidgetSnapshotStore.PREFS_NAME,
+                Context.MODE_PRIVATE,
+            )
+        prefs.edit().putString("snapshot", "{not-valid-json").commit()
+
+        assertNull(LibraryWidgetSnapshotStore(context).read())
+    }
 }
 
 @RunWith(RobolectricTestRunner::class)

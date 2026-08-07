@@ -8,7 +8,7 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 
 /** Transport / seek / speed [PlaybackRepository] API. */
-fun PlaybackRepository.isTransportReady(): Boolean = controller != null
+fun PlaybackRepository.isTransportReady(): Boolean = controller?.isConnected == true
 
 fun PlaybackRepository.resume(entryPointContext: android.os.Bundle? = null) = transportHelper.resume(entryPointContext)
 
@@ -22,26 +22,28 @@ fun PlaybackRepository.skipToNextEpisode() = transportHelper.skipToNextEpisode()
 
 fun PlaybackRepository.skipToPreviousEpisode() = transportHelper.skipToPreviousEpisode()
 
-fun PlaybackRepository.isShuffleEnabled(): Boolean = controller?.shuffleModeEnabled == true
+fun PlaybackRepository.isShuffleEnabled(): Boolean =
+    controller?.takeIf { it.isConnected }?.shuffleModeEnabled == true
 
-fun PlaybackRepository.currentRepeatMode(): Int = controller?.repeatMode ?: Player.REPEAT_MODE_OFF
+fun PlaybackRepository.currentRepeatMode(): Int =
+    controller?.takeIf { it.isConnected }?.repeatMode ?: Player.REPEAT_MODE_OFF
 
 fun PlaybackRepository.toggleShuffle(): Boolean {
-    val mediaController = controller ?: return false
+    val mediaController = controller?.takeIf { it.isConnected } ?: return false
     val enabled = !mediaController.shuffleModeEnabled
     mediaController.shuffleModeEnabled = enabled
     return enabled
 }
 
 fun PlaybackRepository.cycleRepeatMode(): Int {
-    val mediaController = controller ?: return Player.REPEAT_MODE_OFF
+    val mediaController = controller?.takeIf { it.isConnected } ?: return Player.REPEAT_MODE_OFF
     val nextMode = PlaybackRepeatModePolicy.next(mediaController.repeatMode)
     mediaController.repeatMode = nextMode
     return nextMode
 }
 
 fun PlaybackRepository.togglePlayPause(entryPointContext: android.os.Bundle? = null) {
-    val mediaController = controller ?: return
+    val mediaController = controller?.takeIf { it.isConnected } ?: return
     if (mediaController.isPlaying) {
         mediaController.pause()
     } else {
@@ -59,7 +61,7 @@ internal object PlaybackRepeatModePolicy {
 }
 
 fun PlaybackRepository.pause() {
-    controller?.pause()
+    controller?.takeIf { it.isConnected }?.pause()
 }
 
 fun PlaybackRepository.skipForward() {
@@ -80,7 +82,7 @@ fun PlaybackRepository.skipBackward() {
 
 fun PlaybackRepository.setPlaybackSpeed(speed: Float) {
     val sanitized = PlaybackControlSync.sanitizePlaybackSpeed(speed)
-    controller?.playbackParameters = PlaybackParameters(sanitized)
+    controller?.takeIf { it.isConnected }?.playbackParameters = PlaybackParameters(sanitized)
     playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = sanitized)
     repositoryScope.launch {
         try {

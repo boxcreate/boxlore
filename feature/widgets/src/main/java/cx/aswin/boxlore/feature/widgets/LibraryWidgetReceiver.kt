@@ -18,15 +18,17 @@ abstract class BaseLibraryWidgetReceiver : AppWidgetProvider() {
         appWidgetIds: IntArray,
     ) {
         val appContext = context.applicationContext
-        val snapshot = LibraryWidgetSnapshotStore(appContext).read() ?: LibraryWidgetSnapshot()
-        LibraryWidgetRenderer.updateAll(
-            context = appContext,
-            appWidgetManager = appWidgetManager,
-            appWidgetIds = appWidgetIds,
-            snapshot = snapshot,
-            kind = kind,
-        )
-        LibraryWidgetCoordinator.requestRefresh(appContext)
+        // Prefs read off main; single render (no duplicate requestRefresh pass).
+        receiverScope.launch {
+            val snapshot = LibraryWidgetSnapshotStore(appContext).read() ?: LibraryWidgetSnapshot()
+            LibraryWidgetRenderer.updateAll(
+                context = appContext,
+                appWidgetManager = appWidgetManager,
+                appWidgetIds = appWidgetIds,
+                snapshot = snapshot,
+                kind = kind,
+            )
+        }
     }
 
     override fun onReceive(

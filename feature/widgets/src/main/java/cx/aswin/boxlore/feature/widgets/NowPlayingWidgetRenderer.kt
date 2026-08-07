@@ -131,7 +131,7 @@ object NowPlayingWidgetRenderer {
         )
 
         if (!snapshot.hasEpisode) {
-            bindEmptyState(context, views, widthDp)
+            bindEmptyState(context, views, widthDp, variant)
             return
         }
 
@@ -154,9 +154,18 @@ object NowPlayingWidgetRenderer {
         context: Context,
         views: RemoteViews,
         widthDp: Int,
+        variant: WidgetVariant,
     ) {
         views.setViewVisibility(R.id.widget_playing_container, View.GONE)
         views.setViewVisibility(R.id.widget_empty_container, View.VISIBLE)
+        if (variant != WidgetVariant.CONTROLS) {
+            WidgetRemoteViewsColors.setColorFilter(
+                views,
+                R.id.widget_empty_surface_background,
+                WidgetPalette.surface,
+                context,
+            )
+        }
         views.setOnClickPendingIntent(R.id.widget_empty_container, WidgetActionIntents.openApp(context))
         val textWidth = (widthDp - EMPTY_HORIZONTAL_PADDING_DP).coerceAtLeast(MIN_TEXT_WIDTH_DP)
         views.setImageViewBitmap(

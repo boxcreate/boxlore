@@ -16,11 +16,14 @@ object LibraryWidgetLogic {
         previous: List<WidgetShowRow>,
         next: List<WidgetShowRow>,
     ): List<WidgetShowRow> {
-        val cached = previous.associate { it.podcastId to it.artworkCachePath }
+        val previousById = previous.associateBy { it.podcastId }
         return next.map { row ->
             val path =
                 row.artworkCachePath
-                    ?: cached[row.podcastId]?.takeIf { row.artworkUrl != null }
+                    ?: previousById[row.podcastId]
+                        ?.takeIf { prev ->
+                            prev.artworkUrl != null && prev.artworkUrl == row.artworkUrl
+                        }?.artworkCachePath
             row.copy(artworkCachePath = path)
         }
     }
@@ -29,11 +32,14 @@ object LibraryWidgetLogic {
         previous: List<WidgetEpisodeRow>,
         next: List<WidgetEpisodeRow>,
     ): List<WidgetEpisodeRow> {
-        val cached = previous.associate { it.episodeId to it.artworkCachePath }
+        val previousById = previous.associateBy { it.episodeId }
         return next.map { row ->
             val path =
                 row.artworkCachePath
-                    ?: cached[row.episodeId]?.takeIf { row.artworkUrl != null }
+                    ?: previousById[row.episodeId]
+                        ?.takeIf { prev ->
+                            prev.artworkUrl != null && prev.artworkUrl == row.artworkUrl
+                        }?.artworkCachePath
             row.copy(artworkCachePath = path)
         }
     }

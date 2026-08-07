@@ -175,15 +175,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:background="@drawable/widget_surface"
         android:clipToOutline="true"
-        android:padding="12dp"
         android:visibility="visible">
+
+        <ImageView
+            android:id="@+id/widget_empty_surface_background"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="fitXY"
+            android:src="@drawable/widget_surface" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="12dp">
 
             <ImageView
                 android:id="@+id/widget_empty_title"

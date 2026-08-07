@@ -34,6 +34,7 @@ interface NowPlayingWidgetDependencies {
 object NowPlayingWidgetDependenciesHolder {
     @Volatile
     var instance: NowPlayingWidgetDependencies? = null
+        internal set
 
     fun require(): NowPlayingWidgetDependencies =
         instance

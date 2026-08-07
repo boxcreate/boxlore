@@ -244,7 +244,7 @@ object LibraryWidgetRenderer {
     private fun requestCode(
         appWidgetId: Int,
         slot: Int,
-    ): Int = 60_000 + appWidgetId * 20 + slot
+    ): Int = (appWidgetId * 31 + slot) and 0x7fffffff
 
     private const val HEADER_REQUEST = 10
     private const val ROOT_REQUEST = 11

@@ -59,6 +59,7 @@ interface LibraryWidgetDependencies {
 object LibraryWidgetDependenciesHolder {
     @Volatile
     var instance: LibraryWidgetDependencies? = null
+        internal set
 
     fun require(): LibraryWidgetDependencies =
         instance

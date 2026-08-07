@@ -35,6 +35,7 @@ class WidgetControlReceiver : BroadcastReceiver() {
     }
 
     private companion object {
-        val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        // MediaController / transport actions require main; adapter also hops to Main.
+        val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     }
 }

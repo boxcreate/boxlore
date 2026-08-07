@@ -1,9 +1,12 @@
 package cx.aswin.boxlore.feature.widgets.actions
 
+import android.content.Context
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetCoordinator
+import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetDependencies
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetDependenciesHolder
 import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetSnapshotStore
 import cx.aswin.boxlore.feature.widgets.WidgetControl
+import cx.aswin.boxlore.feature.widgets.logic.NowPlayingWidgetMapper
 import cx.aswin.boxlore.feature.widgets.logic.WidgetOptimisticAction
 
 object WidgetActionHandler {
@@ -15,22 +18,51 @@ object WidgetActionHandler {
 
         val store = NowPlayingWidgetSnapshotStore(deps.context)
         val current = store.read()
+        var wroteOptimistic = false
         if (current != null && control != WidgetControl.OPEN_APP) {
             val optimistic = WidgetOptimisticAction.apply(current, control)
             store.write(optimistic)
             NowPlayingWidgetCoordinator.requestRefresh(deps.context)
+            wroteOptimistic = true
         }
 
-        if (control != WidgetControl.OPEN_APP) {
-            deps.playback.restoreBeforeAction()
+        try {
+            if (control != WidgetControl.OPEN_APP) {
+                deps.playback.restoreBeforeAction()
+            }
+            when (control) {
+                WidgetControl.TOGGLE -> deps.playback.togglePlayPause()
+                WidgetControl.PREVIOUS -> deps.playback.previous()
+                WidgetControl.NEXT -> deps.playback.next()
+                WidgetControl.SKIP_BACK -> deps.playback.skipBackward()
+                WidgetControl.SKIP_FORWARD -> deps.playback.skipForward()
+                WidgetControl.OPEN_APP -> Unit
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (wroteOptimistic) {
+                refreshFromAuthoritativePlayback(deps.context, store, deps)
+            }
         }
-        when (control) {
-            WidgetControl.TOGGLE -> deps.playback.togglePlayPause()
-            WidgetControl.PREVIOUS -> deps.playback.previous()
-            WidgetControl.NEXT -> deps.playback.next()
-            WidgetControl.SKIP_BACK -> deps.playback.skipBackward()
-            WidgetControl.SKIP_FORWARD -> deps.playback.skipForward()
-            WidgetControl.OPEN_APP -> Unit
-        }
+    }
+
+    private fun refreshFromAuthoritativePlayback(
+        context: Context,
+        store: NowPlayingWidgetSnapshotStore,
+        deps: NowPlayingWidgetDependencies,
+    ) {
+        val playback = deps.playback.state.value
+        val previous = store.read()
+        val cachedPath =
+            previous
+                ?.takeIf { it.episodeId == playback.episodeId && it.artworkUrl == playback.artworkUrl }
+                ?.artworkCachePath
+        store.write(
+            NowPlayingWidgetMapper.fromPlayback(
+                state = playback,
+                artworkCachePath = cachedPath,
+            ),
+        )
+        NowPlayingWidgetCoordinator.requestRefresh(context)
     }
 }

@@ -43,12 +43,31 @@ class WidgetArtworkLoader(
             if (result !is SuccessResult) return@withContext null
 
             val bitmap = result.drawable.toBitmapOrNull() ?: return@withContext null
-            runCatching {
-                target.outputStream().use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+            val temp = File(cacheDir, "${target.nameWithoutExtension}.tmp")
+            val wrote =
+                runCatching {
+                    temp.outputStream().use { out ->
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+                    }
+                    if (temp.length() <= 0L) {
+                        temp.delete()
+                        return@runCatching false
+                    }
+                    if (target.exists() && !target.delete()) {
+                        temp.delete()
+                        return@runCatching false
+                    }
+                    if (!temp.renameTo(target)) {
+                        temp.copyTo(target, overwrite = true)
+                        temp.delete()
+                    }
+                    true
+                }.getOrElse {
+                    temp.delete()
+                    false
                 }
-            }.getOrNull()
 
+            if (!wrote) return@withContext null
             target.takeIf { it.exists() && it.length() > 0L }?.absolutePath
         }
 

@@ -47,4 +47,16 @@ class NowPlayingWidgetSnapshotStoreTest {
     fun usesStablePrefsFileName() {
         assertEquals("boxlore_now_playing_widget", NowPlayingWidgetSnapshotStore.PREFS_NAME)
     }
+
+    @Test
+    fun malformedSnapshotJsonReturnsNull() {
+        val prefs =
+            context.getSharedPreferences(
+                NowPlayingWidgetSnapshotStore.PREFS_NAME,
+                Context.MODE_PRIVATE,
+            )
+        prefs.edit().putString("snapshot", "{not-valid-json").commit()
+
+        assertNull(NowPlayingWidgetSnapshotStore(context).read())
+    }
 }

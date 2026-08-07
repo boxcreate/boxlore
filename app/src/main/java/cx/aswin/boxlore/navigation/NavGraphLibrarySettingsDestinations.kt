@@ -405,7 +405,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                 navDeepLink { uriPattern = "boxcast://library/subscriptions" },
             ),
     ) { backStackEntry ->
-        val initialTab = backStackEntry.arguments?.getInt("tab") ?: 0
+        val initialTab = (backStackEntry.arguments?.getInt("tab") ?: 0).coerceIn(0, 1)
         val viewModel =
             androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                 factory =
