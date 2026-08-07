@@ -75,6 +75,7 @@ dependencies {
     kover(projects.feature.library)
     kover(projects.feature.onboarding)
     kover(projects.feature.briefing)
+    kover(projects.feature.widgets)
     kover(projects.feature.player)
     kover(projects.app)
 }

@@ -15,18 +15,20 @@ import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
-import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.core.network.NetworkModule
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
-class BoxLoreApplication : Application(), Configuration.Provider {
+class BoxLoreApplication :
+    Application(),
+    Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     lateinit var container: AppContainer
@@ -40,24 +42,63 @@ class BoxLoreApplication : Application(), Configuration.Provider {
         private set
 
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(LegacyWorkerFactory())
-            .build()
+        get() =
+            Configuration
+                .Builder()
+                .setWorkerFactory(LegacyWorkerFactory())
+                .build()
 
     override fun onCreate() {
         super.onCreate()
 
         // Single prefs instance shared with AppContainer (theme fast-cache + engagement).
         userPreferencesRepository = UserPreferencesRepository(this)
-        container = AppContainer(
-            context = this,
-            apiBaseUrl = BuildConfig.BOXLORE_API_BASE_URL,
-            publicKey = BuildConfig.BOXLORE_PUBLIC_KEY,
-            sharedUserPreferences = userPreferencesRepository,
-            applicationScope = applicationScope,
-        )
+        container =
+            AppContainer(
+                context = this,
+                apiBaseUrl = BuildConfig.BOXLORE_API_BASE_URL,
+                publicKey = BuildConfig.BOXLORE_PUBLIC_KEY,
+                sharedUserPreferences = userPreferencesRepository,
+                applicationScope = applicationScope,
+            )
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
+        cx.aswin.boxlore.feature.widgets.configureNowPlayingWidget(
+            object : cx.aswin.boxlore.feature.widgets.NowPlayingWidgetDependencies {
+                override val context: android.content.Context = this@BoxLoreApplication
+                override val scope = applicationScope
+                override val playback =
+                    cx.aswin.boxlore.widgets.NowPlayingWidgetPlaybackAdapter(
+                        playbackRepository = container.playbackRepository,
+                        scope = applicationScope,
+                    )
+            },
+        )
+        cx.aswin.boxlore.feature.widgets.configureLibraryWidgets(
+            object : cx.aswin.boxlore.feature.widgets.LibraryWidgetDependencies {
+                override val context: android.content.Context = this@BoxLoreApplication
+                override val scope = applicationScope
+                override val library =
+                    cx.aswin.boxlore.widgets.WidgetLibrarySourceAdapter(
+                        subscriptionRepository = container.subscriptionRepository,
+                        playbackRepository = container.playbackRepository,
+                        userPreferencesRepository = userPreferencesRepository,
+                        adaptiveScorer = container.adaptiveCandidateScorer,
+                        scope = applicationScope,
+                    )
+            },
+        )
+        // Widget RemoteViews apply ROND from theme fast-cache; re-render when lettering changes.
+        applicationScope.launch {
+            userPreferencesRepository.fontRoundnessStream.collect {
+                cx.aswin.boxlore.feature.widgets.NowPlayingWidgetCoordinator.requestRefresh(
+                    this@BoxLoreApplication,
+                )
+                cx.aswin.boxlore.feature.widgets.LibraryWidgetCoordinator.requestRefresh(
+                    this@BoxLoreApplication,
+                )
+            }
+        }
         engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
         // Eagerly touch the container ranking façade so create/install runs its no-op
         // fallback if Room initialization fails — same startup behavior as before, without
@@ -67,34 +108,38 @@ class BoxLoreApplication : Application(), Configuration.Provider {
         // Live learner signal log: on by default in debug; release stays off unless the
         // user explicitly opts in via the debug-screen toggle (persisted true).
         LearningEventLog.configure(
-            cx.aswin.boxlore.core.prefs.BoxcastPrefs(this)
+            cx.aswin.boxlore.core.prefs
+                .BoxcastPrefs(this)
                 .resolveLearnerLogEnabled(isDebugBuild = BuildConfig.DEBUG),
         )
 
-        val config = PostHogAndroidConfig(
-            apiKey = BuildConfig.POSTHOG_API_KEY,
-            host = BuildConfig.POSTHOG_HOST
-        ).apply {
-            captureApplicationLifecycleEvents = true
-            captureScreenViews = false
-            captureDeepLinks = false
-            debug = BuildConfig.DEBUG
-            // PostHog Surveys with a Material3 1.5-compatible delegate (the published
-            // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
-            surveys = true
-            surveysConfig.surveysDelegate =
-                BoxcastPostHogSurveysDelegate(
-                    context = this@BoxLoreApplication,
-                    userPrefs = userPreferencesRepository,
-                    engagementCoordinator = engagementPromptCoordinator,
-                )
-        }
+        val config =
+            PostHogAndroidConfig(
+                apiKey = BuildConfig.POSTHOG_API_KEY,
+                host = BuildConfig.POSTHOG_HOST,
+            ).apply {
+                captureApplicationLifecycleEvents = true
+                captureScreenViews = false
+                captureDeepLinks = false
+                debug = BuildConfig.DEBUG
+                // PostHog Surveys with a Material3 1.5-compatible delegate (the published
+                // posthog-android-surveys-compose:0.1.0 module crashes against our M3 pin).
+                surveys = true
+                surveysConfig.surveysDelegate =
+                    BoxcastPostHogSurveysDelegate(
+                        context = this@BoxLoreApplication,
+                        userPrefs = userPreferencesRepository,
+                        engagementCoordinator = engagementPromptCoordinator,
+                    )
+            }
         PostHogAndroid.setup(this, config)
 
         // Non-fatal error sink: Crashlytics when available, Logcat fallback inside ErrorReporter.
         cx.aswin.boxlore.core.analytics.ErrorReporter.install { throwable, message ->
             try {
-                val crashlytics = com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance()
+                val crashlytics =
+                    com.google.firebase.crashlytics.FirebaseCrashlytics
+                        .getInstance()
                 if (message != null) {
                     crashlytics.log(message)
                 }
@@ -123,25 +168,28 @@ class BoxLoreApplication : Application(), Configuration.Provider {
             val initialCapabilities = connectivityManager.getNetworkCapabilities(initialNetwork)
             var hasInternet = initialCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 
-            connectivityManager.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    super.onAvailable(network)
-                    hasInternet = true
-                }
-
-                override fun onLost(network: Network) {
-                    super.onLost(network)
-                    val activeNetwork = connectivityManager.activeNetwork
-                    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
-                    val isConnected = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-                    if (!isConnected) {
-                        if (hasInternet) {
-                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackOfflineModeEntered()
-                        }
-                        hasInternet = false
+            connectivityManager.registerDefaultNetworkCallback(
+                object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        super.onAvailable(network)
+                        hasInternet = true
                     }
-                }
-            })
+
+                    override fun onLost(network: Network) {
+                        super.onLost(network)
+                        val activeNetwork = connectivityManager.activeNetwork
+                        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+                        val isConnected = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                        if (!isConnected) {
+                            if (hasInternet) {
+                                cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                                    .trackOfflineModeEntered()
+                            }
+                            hasInternet = false
+                        }
+                    }
+                },
+            )
         } catch (e: Exception) {
             cx.aswin.boxlore.core.analytics.ErrorReporter.report(
                 e,
@@ -154,8 +202,9 @@ class BoxLoreApplication : Application(), Configuration.Provider {
     private fun reportAdaptiveRankingStatus() {
         applicationScope.launch {
             try {
-                val statuses = container.adaptiveRankingRepository
-                    .aggregateTelemetry()
+                val statuses =
+                    container.adaptiveRankingRepository
+                        .aggregateTelemetry()
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
                     .trackAdaptiveRankingStatus(statuses)
             } catch (error: kotlinx.coroutines.CancellationException) {
@@ -199,13 +248,15 @@ class BoxLoreApplication : Application(), Configuration.Provider {
             // Pre-warm: start the token exchange at launch so it's cached before
             // the first API request, closing the cold-start gap. The result is
             // reported once per launch to PostHog for adoption/health tracking.
-            appCheck.getAppCheckToken(false)
+            appCheck
+                .getAppCheckToken(false)
                 .addOnSuccessListener {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackAppCheckStatus(true, provider)
-                }
-                .addOnFailureListener { e ->
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                        .trackAppCheckStatus(true, provider)
+                }.addOnFailureListener { e ->
                     android.util.Log.w("BoxCastApp", "App Check pre-warm failed: ${e.message}")
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackAppCheckStatus(false, provider)
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                        .trackAppCheckStatus(false, provider)
                 }
             NetworkModule.appCheckTokenProvider = {
                 try {

@@ -2,11 +2,14 @@ package cx.aswin.boxlore.core.playback
 
 import android.util.Log
 import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import kotlinx.coroutines.launch
 import java.io.IOException
 
 /** Transport / seek / speed [PlaybackRepository] API. */
+fun PlaybackRepository.isTransportReady(): Boolean = controller != null
+
 fun PlaybackRepository.resume(entryPointContext: android.os.Bundle? = null) = transportHelper.resume(entryPointContext)
 
 fun PlaybackRepository.skipToEpisode(
@@ -19,6 +22,24 @@ fun PlaybackRepository.skipToNextEpisode() = transportHelper.skipToNextEpisode()
 
 fun PlaybackRepository.skipToPreviousEpisode() = transportHelper.skipToPreviousEpisode()
 
+fun PlaybackRepository.isShuffleEnabled(): Boolean = controller?.shuffleModeEnabled == true
+
+fun PlaybackRepository.currentRepeatMode(): Int = controller?.repeatMode ?: Player.REPEAT_MODE_OFF
+
+fun PlaybackRepository.toggleShuffle(): Boolean {
+    val mediaController = controller ?: return false
+    val enabled = !mediaController.shuffleModeEnabled
+    mediaController.shuffleModeEnabled = enabled
+    return enabled
+}
+
+fun PlaybackRepository.cycleRepeatMode(): Int {
+    val mediaController = controller ?: return Player.REPEAT_MODE_OFF
+    val nextMode = PlaybackRepeatModePolicy.next(mediaController.repeatMode)
+    mediaController.repeatMode = nextMode
+    return nextMode
+}
+
 fun PlaybackRepository.togglePlayPause(entryPointContext: android.os.Bundle? = null) {
     val mediaController = controller ?: return
     if (mediaController.isPlaying) {
@@ -26,6 +47,15 @@ fun PlaybackRepository.togglePlayPause(entryPointContext: android.os.Bundle? = n
     } else {
         resume(entryPointContext)
     }
+}
+
+internal object PlaybackRepeatModePolicy {
+    fun next(mode: Int): Int =
+        when (mode) {
+            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+            else -> Player.REPEAT_MODE_OFF
+        }
 }
 
 fun PlaybackRepository.pause() {

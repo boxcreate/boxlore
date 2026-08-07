@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/now_playing_bar_widget_description"
+    android:initialLayout="@layout/now_playing_widget_bar"
+    android:minWidth="245dp"
+    android:minHeight="48dp"
+    android:minResizeWidth="245dp"
+    android:minResizeHeight="48dp"
+    android:previewLayout="@layout/widget_preview_bar_4x1"
+    android:resizeMode="horizontal"
+    android:targetCellWidth="4"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional" />
