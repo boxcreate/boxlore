@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="now_playing_widget_label">boxlore now playing</string>
+    <string name="now_playing_bar_widget_label">boxlore now playing bar</string>
+    <string name="playback_controls_widget_label">boxlore playback controls</string>
+    <string name="now_playing_bar_widget_description">Compact artwork, episode, and seek controls</string>
+    <string name="playback_controls_widget_description">Artwork, play, and seek controls</string>
+    <string name="widget_empty_title">Ready when you are</string>
+    <string name="widget_empty_cta">Open boxlore</string>
+    <string name="widget_previous">Previous episode</string>
+    <string name="widget_next">Next episode</string>
+    <string name="widget_skip_back">Seek backward</string>
+    <string name="widget_skip_forward">Seek forward</string>
+    <string name="widget_play">Play</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_preview_episode">Why curiosity compounds</string>
+    <string name="widget_preview_podcast">The Daily Lore</string>
+    <string name="widget_preview_show_2">Field Notes</string>
+    <string name="widget_preview_show_2_sub">12 new episodes</string>
+    <string name="widget_preview_show_3">Soft Power</string>
+    <string name="widget_preview_show_3_sub">Updated yesterday</string>
+    <string name="widget_preview_episode_2">A quiet week in Kyoto</string>
+    <string name="widget_preview_episode_2_show">Field Notes</string>
+    <string name="widget_preview_episode_3">How maps shape memory</string>
+    <string name="widget_preview_episode_3_show">Soft Power</string>
+    <string name="widget_preview_count">12</string>
+    <string name="subscriptions_widget_label">boxlore subscriptions</string>
+    <string name="subscriptions_widget_description">Your subscribed shows</string>
+    <string name="subscriptions_widget_header">Subscriptions</string>
+    <string name="subscriptions_widget_empty_title">No subscriptions yet</string>
+    <string name="subscriptions_widget_empty_cta">Open boxlore</string>
+    <string name="new_episodes_widget_label">boxlore new episodes</string>
+    <string name="new_episodes_widget_description">Latest episodes from your shows</string>
+    <string name="new_episodes_widget_header">New episodes</string>
+    <string name="new_episodes_widget_empty_title">No new episodes</string>
+    <string name="new_episodes_widget_empty_cta">Open subscriptions</string>
+    <string name="library_widget_view_all">View all</string>
+</resources>

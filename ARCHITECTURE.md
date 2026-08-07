@@ -36,7 +36,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 :core:analytics | :core:catalog | :core:rss | :core:downloads | :core:playback | :core:ranking
 :core:designsystem | :core:testing
 :feature:home | :feature:player | :feature:info | :feature:explore
-:feature:library | :feature:onboarding | :feature:briefing
+:feature:library | :feature:onboarding | :feature:briefing | :feature:widgets
 ```
 
 On disk, the folder path matches the Gradle id (`core/playback` → `:core:playback`).
@@ -66,6 +66,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:feature:library` | Library hub, subscriptions, downloads, history, liked | [`feature/library/README.md`](feature/library/README.md) |
 | `:feature:onboarding` | First-run flows (AI, genre, search, import) | [`feature/onboarding/README.md`](feature/onboarding/README.md) |
 | `:feature:briefing` | Daily briefing screen | [`feature/briefing/README.md`](feature/briefing/README.md) |
+| `:feature:widgets` | Home-screen Now Playing, compact bar, playback-control, subscriptions, and new-episodes widgets (RemoteViews) | [`feature/widgets/README.md`](feature/widgets/README.md) |
 
 ### Core package roots
 
@@ -93,6 +94,7 @@ flowchart TB
     library[:feature:library]
     onboarding[:feature:onboarding]
     briefing[:feature:briefing]
+    widgets[:feature:widgets]
   end
   playback[:core:playback]
   catalog[:core:catalog]
@@ -218,6 +220,8 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | `boxcast_analytics_prefs` | `boxlore_analytics_prefs` | `AnalyticsHelper` |
 | `boxcast_player` | `boxlore_player` | `PlaybackRepository` / `PodcastRepository` |
 | — | `android_auto_artwork_sources` | `AutoArtworkSourceStore` / `AutoCollageProvider` (Android Auto art URI map; do not rename) |
+| — | `boxlore_now_playing_widget` | `NowPlayingWidgetSnapshotStore` (`:feature:widgets`; last rendered Now Playing snapshot JSON; do not rename) |
+| — | `boxlore_library_widget` | `LibraryWidgetSnapshotStore` (`:feature:widgets`; last rendered Subscriptions / New Episodes snapshot JSON; do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

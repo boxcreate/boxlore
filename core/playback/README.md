@@ -8,7 +8,7 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 
 - `PlaybackRepository` exposes player/session operations to app and feature UI (history ports via
   class delegation to `PlaybackHistoryStore`; queue / transport / sleep / history helpers via
-  same-package extension API files).
+  same-package extension API files). `isTransportReady()` reports whether a Media3 controller is connected; the transport API also exposes previous/next and seek (skip forward/back) operations used by the home-screen widget adapter.
 - `QueueRepository` and `QueueManager` persist and orchestrate explicit queue operations. `QueueManager` emits `queue_modified` add only after `PlaybackRepository.addToQueue` returns success.
 - `PlaybackQueueCoordinator` emits `queue_modified` remove on remove; `undoQueueRemoval` emits a compensating `add` (`source=undo`) so undone removals do not permanently skew analytics.
 - `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic.
@@ -39,7 +39,7 @@ src/main/java/cx/aswin/boxlore/core/playback/
   PlaybackHistoryDeps.kt             # player + data deps for HistoryStore ctors
   PlaybackSleepController.kt         # sleep timer + late-night nudge
   PlaybackRepositoryQueueApi.kt      # queue extension API
-  PlaybackRepositoryTransportApi.kt  # transport / seek / speed extension API
+  PlaybackRepositoryTransportApi.kt  # transport / seek / speed extension API (+ [isTransportReady])
   PlaybackRepositoryHistoryApi.kt    # non-port history extension API
   PlaybackRepositorySleepApi.kt      # sleep / nudge extension API
   PlaybackRepositoryChaptersApi.kt   # chapters / transcript extension API

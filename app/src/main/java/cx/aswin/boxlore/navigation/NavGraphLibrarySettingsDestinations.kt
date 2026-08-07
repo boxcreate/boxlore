@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import cx.aswin.boxlore.feature.home.settings.DownloadsNavigation
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import kotlinx.coroutines.Dispatchers
@@ -396,8 +397,15 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                     defaultValue = 0
                 },
             ),
+        deepLinks =
+            listOf(
+                navDeepLink { uriPattern = "boxlore://library/subscriptions?tab={tab}" },
+                navDeepLink { uriPattern = "boxlore://library/subscriptions" },
+                navDeepLink { uriPattern = "boxcast://library/subscriptions?tab={tab}" },
+                navDeepLink { uriPattern = "boxcast://library/subscriptions" },
+            ),
     ) { backStackEntry ->
-        val initialTab = backStackEntry.arguments?.getInt("tab") ?: 0
+        val initialTab = (backStackEntry.arguments?.getInt("tab") ?: 0).coerceIn(0, 1)
         val viewModel =
             androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                 factory =
