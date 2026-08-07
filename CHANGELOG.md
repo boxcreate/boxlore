@@ -9,14 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.14] - 2026-08-07
+
 ### Added
-- Redesigned Subscriptions UI with genre filter chips, denser episode rows, image‑first show grid, sort/hide‑played options, and elevated tabs; added persistent open_app_to preference stored in DataStore and tracked via analytics; introduced SubscriptionForegroundSync process that runs once per process after onboarding to perform foreground latest‑episode sync for subscriptions. ([#958](https://github.com/boxcreate/boxlore/pull/958)) <!-- impact:user-impact-high -->
+- Redesigned Subscriptions UI with genre filter chips, denser episode rows, image‑first show grid, sort/hide‑played options, and elevated tabs; added persistent open_app_to preference in DataStore with analytics tracking; introduced SubscriptionForegroundSync process that runs once per process after onboarding to perform foreground latest‑episode sync for subscriptions. ([#958](https://github.com/boxcreate/boxlore/pull/958)) <!-- impact:user-impact-high -->
 - Implemented home‑screen RemoteViews widgets (now playing 4×2, compact bar 4×1, playback controls 2×2, scrollable Subscriptions and New Episodes 4×3) via new :feature:widgets module with providers, coordinators, snapshot stores, RemoteViewsService adapter, artwork loader, theme sync, and integration into :app through WidgetPlaybackSource and WidgetLibrarySource, supporting system accent colors, deep links, and widget picker previews. ([#959](https://github.com/boxcreate/boxlore/pull/959)) <!-- impact:user-impact-high -->
 ### Changed
-- Navigation start‑destination now respects open_app_to setting, launching Subscriptions directly when selected and using Back to return to Home; HomeViewModel no longer performs foreground sync, delegating to SubscriptionForegroundSync. ([#958](https://github.com/boxcreate/boxlore/pull/958)) <!-- impact:user-impact-high -->
+- Navigation start‑destination now respects open_app_to setting, launching Subscriptions directly when selected and using Back to return to Home; HomeViewModel delegating foreground sync to SubscriptionForegroundSync. ([#958](https://github.com/boxcreate/boxlore/pull/958)) <!-- impact:user-impact-high -->
 - Updated CTA button texts to “Continue with N”, “Start without adding”, and “Add N & start”, and refined loader copy to “Subscribed to N shows”, aligning with FeedMediaCard bottom‑art clipping. ([#960](https://github.com/boxcreate/boxlore/pull/960)) <!-- impact:user-impact-medium -->
 ### Fixed
-- Restored suggestions loading gate to display a real loader during AI loading or synthesizing in search and OPML onboarding, eliminating the empty “No suggestions yet” state; cleared stale curriculum on continue/back and filtered seed picks out of similar‑show lanes, preventing auto‑selection of recommendations in search/OPML flows. ([#960](https://github.com/boxcreate/boxlore/pull/960)) <!-- impact:user-impact-medium -->
+- Restored suggestions loading gate to display a real loader during AI loading or synthesizing in search and OPML onboarding, eliminating empty “No suggestions yet” state; cleared stale curriculum on continue/back and filtered seed picks out of similar‑show lanes, preventing auto‑selection of recommendations in search/OPML flows. ([#960](https://github.com/boxcreate/boxlore/pull/960)) <!-- impact:user-impact-medium -->
+
 ## [v0.0.13] - 2026-07-29
 
 ### Added

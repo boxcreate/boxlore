@@ -9,7 +9,7 @@
 <br/>
 
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.13.apk">
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk">
   <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
 <!-- download-apk:end -->
@@ -57,36 +57,23 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-<b>🆕 New features:</b>
-<ul align="left">
-<li>Add home‑screen widgets for now playing, playback controls, and quick access to Subscriptions and new episodes. <a href="https://github.com/boxcreate/boxlore/pull/959"><img src="https://img.shields.io/badge/PR-959-6750A4?style=flat-square" alt="PR #959" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>Subscriptions screen now shows genre filter chips, denser rows, image‑first grid, sort/hide‑played options, and opens directly from the app shortcut. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
-</ul>
-<b>🐛 Fixes:</b>
-<ul align="left">
-<li>Loading suggestions now shows a proper spinner and fixes empty states during AI search and OPML import. <a href="https://github.com/boxcreate/boxlore/pull/960"><img src="https://img.shields.io/badge/PR-960-6750A4?style=flat-square" alt="PR #960" height="18"/></a></li>
-</ul>
+New features and improvements for the next release are currently in development.
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
 
 
-### What's New · `v0.0.13` · 2026-07-29
+### What's New · `v0.0.14` · 2026-08-07
 
 <!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.13 date=2026-07-29 -->
+<!-- release-meta: version=v0.0.14 date=2026-08-07 -->
 <b>🆕 New features:</b>
 <ul align="left">
-<li>An all‑new way to search shows and episodes: typo‑tolerant podcast search powered by <a href="https://github.com/meilisearch/meilisearch">Meilisearch</a>, plus concept search for shows and episodes powered by <a href="https://github.com/qdrant/qdrant">Qdrant</a>. <a href="https://github.com/boxcreate/boxlore/pull/955"><img src="https://img.shields.io/badge/PR-955-6750A4?style=flat-square" alt="PR #955" height="18"/></a></li>
-<li>Discovery expands with new chart countries — France, Germany, Netherlands, Singapore, Spain, Brazil, Russia, and Indonesia — alongside a new country picker and language filters, and stronger multilingual recommendations using <strong>Qwen3</strong> embeddings. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
+<li>Add home‑screen widgets for now‑playing, playback controls, and scrollable Subscriptions and New Episodes lists. <a href="https://github.com/boxcreate/boxlore/pull/959"><img src="https://img.shields.io/badge/PR-959-6750A4?style=flat-square" alt="PR #959" height="18"/></a></li>
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Faster content delivery from backend optimizations so charts, search, and recommendations reach you sooner. <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
-<li>NotebookLM‑style briefings are tighter and less sloppy — more aware of repetition, depth, and which stories matter. <a href="https://github.com/boxcreate/boxlore/pull/949"><img src="https://img.shields.io/badge/PR-949-6750A4?style=flat-square" alt="PR #949" height="18"/></a></li>
-<li>UI polish across startup, onboarding suggestions, Home and Explore search, and several other screens. <a href="https://github.com/boxcreate/boxlore/pull/954"><img src="https://img.shields.io/badge/PR-954-6750A4?style=flat-square" alt="PR #954" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/952"><img src="https://img.shields.io/badge/PR-952-6750A4?style=flat-square" alt="PR #952" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/953"><img src="https://img.shields.io/badge/PR-953-6750A4?style=flat-square" alt="PR #953" height="18"/></a></li>
+<li>Redesigned Subscriptions screen with genre filters, hide‑played toggle, and direct‑open setting for quicker access. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
+<li>Updated button copy and fixed loading placeholders so suggestions appear correctly during searches and onboarding. <a href="https://github.com/boxcreate/boxlore/pull/960"><img src="https://img.shields.io/badge/PR-960-6750A4?style=flat-square" alt="PR #960" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-whats-new:end -->
