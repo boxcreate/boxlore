@@ -63,7 +63,8 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Subscriptions now lets you filter by genre, view denser rows or image‑first grids, sort or hide played episodes, and opens directly if set. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
+<li>You can toggle "Launch to subscriptions" in the settings to..well, launch directly into the subscriptions screen instead of the homescreen.<a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
+<li> Subscriptions now lets you filter by genre, view denser rows or image‑first grids, sort or hide played episodes. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
