@@ -29,45 +29,8 @@ class WidgetArtworkLoader(
                 return@withContext target.absolutePath
             }
 
-            val request =
-                ImageRequest
-                    .Builder(appContext)
-                    .data(normalized)
-                    .allowHardware(false)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .networkCachePolicy(CachePolicy.ENABLED)
-                    .build()
-
-            val result = imageLoader.execute(request)
-            if (result !is SuccessResult) return@withContext null
-
-            val bitmap = result.drawable.toBitmapOrNull() ?: return@withContext null
-            val temp = File(cacheDir, "${target.nameWithoutExtension}.tmp")
-            val wrote =
-                runCatching {
-                    temp.outputStream().use { out ->
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
-                    }
-                    if (temp.length() <= 0L) {
-                        temp.delete()
-                        return@runCatching false
-                    }
-                    if (target.exists() && !target.delete()) {
-                        temp.delete()
-                        return@runCatching false
-                    }
-                    if (!temp.renameTo(target)) {
-                        temp.copyTo(target, overwrite = true)
-                        temp.delete()
-                    }
-                    true
-                }.getOrElse {
-                    temp.delete()
-                    false
-                }
-
-            if (!wrote) return@withContext null
+            val bitmap = fetchBitmap(normalized) ?: return@withContext null
+            if (!publishAtomically(bitmap, target)) return@withContext null
             target.takeIf { it.exists() && it.length() > 0L }?.absolutePath
         }
 
@@ -76,6 +39,69 @@ class WidgetArtworkLoader(
         if (normalized.isEmpty()) return null
         val file = cacheFileFor(normalized)
         return file.takeIf { it.exists() && it.length() > 0L }?.absolutePath
+    }
+
+    private suspend fun fetchBitmap(url: String): Bitmap? {
+        val request =
+            ImageRequest
+                .Builder(appContext)
+                .data(url)
+                .allowHardware(false)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .networkCachePolicy(CachePolicy.ENABLED)
+                .build()
+        val result = imageLoader.execute(request)
+        if (result !is SuccessResult) return null
+        return result.drawable.toBitmapOrNull()
+    }
+
+    private fun publishAtomically(
+        bitmap: Bitmap,
+        target: File,
+    ): Boolean {
+        val temp = File(cacheDir, "${target.nameWithoutExtension}.tmp")
+        return runCatching {
+            writeJpeg(temp, bitmap) && replaceTarget(temp, target)
+        }.getOrElse {
+            deleteQuietly(temp)
+            false
+        }
+    }
+
+    private fun writeJpeg(
+        temp: File,
+        bitmap: Bitmap,
+    ): Boolean {
+        temp.outputStream().use { out ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+        }
+        if (temp.length() > 0L) return true
+        deleteQuietly(temp)
+        return false
+    }
+
+    private fun replaceTarget(
+        temp: File,
+        target: File,
+    ): Boolean {
+        if (target.exists()) {
+            deleteQuietly(target)
+            if (target.exists()) {
+                deleteQuietly(temp)
+                return false
+            }
+        }
+        if (temp.renameTo(target)) return true
+        temp.copyTo(target, overwrite = true)
+        deleteQuietly(temp)
+        return target.exists() && target.length() > 0L
+    }
+
+    private fun deleteQuietly(file: File) {
+        if (!file.exists()) return
+        // Best-effort cleanup; ignore races where another writer already removed the file.
+        if (!file.delete() && file.exists()) return
     }
 
     private fun cacheFileFor(url: String): File {
