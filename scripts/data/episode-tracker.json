@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-07T03:27:48.964Z",
+  "lastRun": "2026-08-07T05:15:57.028Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -37,9 +37,9 @@
       "lastCheckedAt": 1782580346119
     },
     "415434": {
-      "lastEpisodeId": "58595289351",
-      "lastEpisodeTitle": "Hotline: E Ink, the fediverse, and smart Puka shells",
-      "lastCheckedAt": 1785988155410
+      "lastEpisodeId": "58646698244",
+      "lastEpisodeTitle": "The next big thing in movies is 60-year-old IMAX tech",
+      "lastCheckedAt": 1786079758358
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -95,6 +95,11 @@
       "lastEpisodeId": "56439207381",
       "lastEpisodeTitle": "The Last 12 Weeks - Ep. 5",
       "lastCheckedAt": 1783703560299
+    },
+    "808826": {
+      "lastEpisodeId": "58535288885",
+      "lastEpisodeTitle": "30 Minutes of Street Fighter",
+      "lastCheckedAt": 1786079759579
     },
     "838740": {
       "lastEpisodeId": "58561863103",
