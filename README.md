@@ -59,12 +59,15 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <!-- release-upcoming:start -->
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Add home‑screen widgets for quick playback controls, now‑playing info, and scrollable lists of subscriptions and new episodes. <a href="https://github.com/boxcreate/boxlore/pull/959"><img src="https://img.shields.io/badge/PR-959-6750A4?style=flat-square" alt="PR #959" height="18"/></a></li>
+<li>Add home‑screen widgets for now playing, playback controls, and quick access to Subscriptions and new episodes. <a href="https://github.com/boxcreate/boxlore/pull/959"><img src="https://img.shields.io/badge/PR-959-6750A4?style=flat-square" alt="PR #959" height="18"/></a></li>
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>You can toggle "Launch to subscriptions" in the settings to..well, launch directly into the subscriptions screen instead of the homescreen.<a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
-<li> Subscriptions now lets you filter by genre, view denser rows or image‑first grids, sort or hide played episodes. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
+<li>Subscriptions screen now shows genre filter chips, denser rows, image‑first grid, sort/hide‑played options, and opens directly from the app shortcut. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
+</ul>
+<b>🐛 Fixes:</b>
+<ul align="left">
+<li>Loading suggestions now shows a proper spinner and fixes empty states during AI search and OPML import. <a href="https://github.com/boxcreate/boxlore/pull/960"><img src="https://img.shields.io/badge/PR-960-6750A4?style=flat-square" alt="PR #960" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
