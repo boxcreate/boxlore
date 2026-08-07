@@ -8,6 +8,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
+import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
@@ -19,65 +20,55 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
  * A bitmap makes the typeface, line count, and clipping deterministic across launchers.
  */
 object WidgetTextBitmapRenderer {
+    data class Spec(
+        val text: String,
+        val widthDp: Int,
+        val heightDp: Int,
+        val preferredSizeSp: Float,
+        val minSizeSp: Float,
+        val weight: Int,
+        val maxLines: Int,
+        val alignment: Layout.Alignment = Layout.Alignment.ALIGN_NORMAL,
+    )
+
     fun render(
         context: Context,
-        text: String,
-        widthDp: Int,
-        heightDp: Int,
-        preferredSizeSp: Float,
-        minSizeSp: Float,
-        weight: Int,
-        maxLines: Int,
+        spec: Spec,
         @ColorRes colorRes: Int,
-        alignment: Layout.Alignment = Layout.Alignment.ALIGN_NORMAL,
     ): Bitmap =
         renderColor(
             context = context,
-            text = text,
-            widthDp = widthDp,
-            heightDp = heightDp,
-            preferredSizeSp = preferredSizeSp,
-            minSizeSp = minSizeSp,
-            weight = weight,
-            maxLines = maxLines,
+            spec = spec,
             color = ContextCompat.getColor(context, colorRes),
-            alignment = alignment,
         )
 
     fun renderColor(
         context: Context,
-        text: String,
-        widthDp: Int,
-        heightDp: Int,
-        preferredSizeSp: Float,
-        minSizeSp: Float,
-        weight: Int,
-        maxLines: Int,
-        color: Int,
-        alignment: Layout.Alignment = Layout.Alignment.ALIGN_NORMAL,
+        spec: Spec,
+        @ColorInt color: Int,
     ): Bitmap {
         val density = context.resources.displayMetrics.density
         val scaledDensity = density * context.resources.configuration.fontScale
-        val widthPx = (widthDp * density).toInt().coerceAtLeast(1)
-        val heightPx = (heightDp * density).toInt().coerceAtLeast(1)
+        val widthPx = (spec.widthDp * density).toInt().coerceAtLeast(1)
+        val heightPx = (spec.heightDp * density).toInt().coerceAtLeast(1)
         val paint =
             TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
                 this.color = color
                 typeface =
                     GoogleSansTypefaces.create(
                         context = context,
-                        weight = weight,
+                        weight = spec.weight,
                         roundness = GoogleSansTypefaces.cachedRoundness(context),
                     )
             }
 
-        var low = minSizeSp
-        var high = preferredSizeSp.coerceAtLeast(minSizeSp)
-        var best = minSizeSp
+        var low = spec.minSizeSp
+        var high = spec.preferredSizeSp.coerceAtLeast(spec.minSizeSp)
+        var best = spec.minSizeSp
         repeat(FIT_ITERATIONS) {
             val candidate = (low + high) / 2f
             paint.textSize = candidate * scaledDensity
-            val layout = buildLayout(text, paint, widthPx, maxLines, alignment)
+            val layout = buildLayout(spec.text, paint, widthPx, spec.maxLines, spec.alignment)
             if (layout.height <= heightPx && !isEllipsized(layout)) {
                 best = candidate
                 low = candidate
@@ -87,7 +78,7 @@ object WidgetTextBitmapRenderer {
         }
 
         paint.textSize = best * scaledDensity
-        val layout = buildLayout(text, paint, widthPx, maxLines, alignment)
+        val layout = buildLayout(spec.text, paint, widthPx, spec.maxLines, spec.alignment)
         return Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888).also { bitmap ->
             val canvas = Canvas(bitmap)
             canvas.translate(0f, ((heightPx - layout.height) / 2f).coerceAtLeast(0f))

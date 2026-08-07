@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <application>
+    <!-- Match other library modules; :app overrides allowBackup via tools:replace. -->
+    <application
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
+        <!--
+          App widget providers must be exported so the launcher / AppWidgetHost can bind.
+          BIND_APPWIDGET is a privileged system permission — only the platform can send
+          APPWIDGET_* broadcasts to these receivers (Sonar S5320).
+        -->
         <receiver
             android:name=".NowPlayingWidgetReceiver"
             android:exported="true"
-            android:label="@string/now_playing_widget_label">
+            android:label="@string/now_playing_widget_label"
+            android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -17,7 +26,8 @@
         <receiver
             android:name=".NowPlayingBarWidgetReceiver"
             android:exported="true"
-            android:label="@string/now_playing_bar_widget_label">
+            android:label="@string/now_playing_bar_widget_label"
+            android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -29,7 +39,8 @@
         <receiver
             android:name=".PlaybackControlsWidgetReceiver"
             android:exported="true"
-            android:label="@string/playback_controls_widget_label">
+            android:label="@string/playback_controls_widget_label"
+            android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -41,7 +52,8 @@
         <receiver
             android:name=".SubscriptionsWidgetReceiver"
             android:exported="true"
-            android:label="@string/subscriptions_widget_label">
+            android:label="@string/subscriptions_widget_label"
+            android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -53,7 +65,8 @@
         <receiver
             android:name=".NewEpisodesWidgetReceiver"
             android:exported="true"
-            android:label="@string/new_episodes_widget_label">
+            android:label="@string/new_episodes_widget_label"
+            android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

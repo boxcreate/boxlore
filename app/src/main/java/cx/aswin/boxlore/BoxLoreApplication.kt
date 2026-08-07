@@ -20,6 +20,7 @@ import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
+import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,42 +64,14 @@ class BoxLoreApplication :
             )
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
-        cx.aswin.boxlore.feature.widgets.configureNowPlayingWidget(
-            object : cx.aswin.boxlore.feature.widgets.NowPlayingWidgetDependencies {
-                override val context: android.content.Context = this@BoxLoreApplication
-                override val scope = applicationScope
-                override val playback =
-                    cx.aswin.boxlore.widgets.NowPlayingWidgetPlaybackAdapter(
-                        playbackRepository = container.playbackRepository,
-                        scope = applicationScope,
-                    )
-            },
+        HomeScreenWidgetsInstaller.install(
+            context = this,
+            scope = applicationScope,
+            playbackRepository = container.playbackRepository,
+            subscriptionRepository = container.subscriptionRepository,
+            userPreferencesRepository = userPreferencesRepository,
+            adaptiveScorer = container.adaptiveCandidateScorer,
         )
-        cx.aswin.boxlore.feature.widgets.configureLibraryWidgets(
-            object : cx.aswin.boxlore.feature.widgets.LibraryWidgetDependencies {
-                override val context: android.content.Context = this@BoxLoreApplication
-                override val scope = applicationScope
-                override val library =
-                    cx.aswin.boxlore.widgets.WidgetLibrarySourceAdapter(
-                        subscriptionRepository = container.subscriptionRepository,
-                        playbackRepository = container.playbackRepository,
-                        userPreferencesRepository = userPreferencesRepository,
-                        adaptiveScorer = container.adaptiveCandidateScorer,
-                        scope = applicationScope,
-                    )
-            },
-        )
-        // Widget RemoteViews apply ROND from theme fast-cache; re-render when lettering changes.
-        applicationScope.launch {
-            userPreferencesRepository.fontRoundnessStream.collect {
-                cx.aswin.boxlore.feature.widgets.NowPlayingWidgetCoordinator.requestRefresh(
-                    this@BoxLoreApplication,
-                )
-                cx.aswin.boxlore.feature.widgets.LibraryWidgetCoordinator.requestRefresh(
-                    this@BoxLoreApplication,
-                )
-            }
-        }
         engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
         // Eagerly touch the container ranking façade so create/install runs its no-op
         // fallback if Room initialization fails — same startup behavior as before, without

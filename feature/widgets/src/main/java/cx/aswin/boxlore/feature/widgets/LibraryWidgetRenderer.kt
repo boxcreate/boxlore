@@ -105,46 +105,56 @@ object LibraryWidgetRenderer {
                 openListUri,
             )
         } else {
-            views.setViewVisibility(R.id.widget_count_chip, View.VISIBLE)
-            views.setViewVisibility(R.id.widget_footer, View.VISIBLE)
-            views.setTextViewText(R.id.widget_count_chip_text, count.toString())
-            WidgetRemoteViewsColors.setTextColor(
-                views,
-                R.id.widget_count_chip_text,
-                WidgetPalette.onSecondaryContainer,
-                context,
-            )
-            WidgetRemoteViewsColors.setColorFilter(
-                views,
-                R.id.widget_count_chip_bg,
-                WidgetPalette.secondaryContainer,
-                context,
-            )
-            WidgetRemoteViewsColors.setColorFilter(
-                views,
-                R.id.widget_footer_bg,
-                WidgetPalette.secondaryContainer,
-                context,
-            )
-            WidgetRemoteViewsColors.setTextColor(
-                views,
-                R.id.widget_footer_text,
-                WidgetPalette.onSecondaryContainer,
-                context,
-            )
-            val open =
-                WidgetActionIntents.openDeepLink(
-                    context,
-                    openListUri,
-                    requestCode(appWidgetId, FOOTER_REQUEST),
-                )
-            views.setOnClickPendingIntent(R.id.widget_footer, open)
-            views.setOnClickPendingIntent(R.id.widget_footer_text, open)
-            views.setOnClickPendingIntent(R.id.widget_count_chip, open)
-            views.setViewVisibility(R.id.widget_empty_container, View.GONE)
+            bindPopulated(context, views, appWidgetId, count, openListUri)
         }
 
         return views
+    }
+
+    private fun bindPopulated(
+        context: Context,
+        views: RemoteViews,
+        appWidgetId: Int,
+        count: Int,
+        openListUri: String,
+    ) {
+        views.setViewVisibility(R.id.widget_count_chip, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_footer, View.VISIBLE)
+        views.setTextViewText(R.id.widget_count_chip_text, count.toString())
+        WidgetRemoteViewsColors.setTextColor(
+            views,
+            R.id.widget_count_chip_text,
+            WidgetPalette.onSecondaryContainer,
+            context,
+        )
+        WidgetRemoteViewsColors.setColorFilter(
+            views,
+            R.id.widget_count_chip_bg,
+            WidgetPalette.secondaryContainer,
+            context,
+        )
+        WidgetRemoteViewsColors.setColorFilter(
+            views,
+            R.id.widget_footer_bg,
+            WidgetPalette.secondaryContainer,
+            context,
+        )
+        WidgetRemoteViewsColors.setTextColor(
+            views,
+            R.id.widget_footer_text,
+            WidgetPalette.onSecondaryContainer,
+            context,
+        )
+        val open =
+            WidgetActionIntents.openDeepLink(
+                context,
+                openListUri,
+                requestCode(appWidgetId, FOOTER_REQUEST),
+            )
+        views.setOnClickPendingIntent(R.id.widget_footer, open)
+        views.setOnClickPendingIntent(R.id.widget_footer_text, open)
+        views.setOnClickPendingIntent(R.id.widget_count_chip, open)
+        views.setViewVisibility(R.id.widget_empty_container, View.GONE)
     }
 
     private fun collectionClickTemplate(

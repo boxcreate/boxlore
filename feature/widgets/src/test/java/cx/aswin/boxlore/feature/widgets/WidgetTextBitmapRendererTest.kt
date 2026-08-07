@@ -18,13 +18,16 @@ class WidgetTextBitmapRendererTest {
         val bitmap =
             WidgetTextBitmapRenderer.render(
                 context = context,
-                text = "A rounded episode title",
-                widthDp = 180,
-                heightDp = 48,
-                preferredSizeSp = 22f,
-                minSizeSp = 14f,
-                weight = 600,
-                maxLines = 2,
+                spec =
+                    WidgetTextBitmapRenderer.Spec(
+                        text = "A rounded episode title",
+                        widthDp = 180,
+                        heightDp = 48,
+                        preferredSizeSp = 22f,
+                        minSizeSp = 14f,
+                        weight = 600,
+                        maxLines = 2,
+                    ),
                 colorRes = R.color.widget_on_surface,
             )
         val density = context.resources.displayMetrics.density

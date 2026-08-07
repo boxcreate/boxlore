@@ -163,30 +163,36 @@ object NowPlayingWidgetRenderer {
             R.id.widget_empty_title,
             WidgetTextBitmapRenderer.renderColor(
                 context = context,
-                text = context.getString(R.string.widget_empty_title),
-                widthDp = textWidth,
-                heightDp = 40,
-                preferredSizeSp = 22f,
-                minSizeSp = 16f,
-                weight = TITLE_WEIGHT,
-                maxLines = 1,
+                spec =
+                    WidgetTextBitmapRenderer.Spec(
+                        text = context.getString(R.string.widget_empty_title),
+                        widthDp = textWidth,
+                        heightDp = 40,
+                        preferredSizeSp = 22f,
+                        minSizeSp = 16f,
+                        weight = TITLE_WEIGHT,
+                        maxLines = 1,
+                        alignment = Layout.Alignment.ALIGN_CENTER,
+                    ),
                 color = WidgetRemoteViewsColors.resolve(context, WidgetPalette.onSurface),
-                alignment = Layout.Alignment.ALIGN_CENTER,
             ),
         )
         views.setImageViewBitmap(
             R.id.widget_empty_cta,
             WidgetTextBitmapRenderer.renderColor(
                 context = context,
-                text = context.getString(R.string.widget_empty_cta),
-                widthDp = textWidth,
-                heightDp = 28,
-                preferredSizeSp = 17f,
-                minSizeSp = 14f,
-                weight = BODY_WEIGHT,
-                maxLines = 1,
+                spec =
+                    WidgetTextBitmapRenderer.Spec(
+                        text = context.getString(R.string.widget_empty_cta),
+                        widthDp = textWidth,
+                        heightDp = 28,
+                        preferredSizeSp = 17f,
+                        minSizeSp = 14f,
+                        weight = BODY_WEIGHT,
+                        maxLines = 1,
+                        alignment = Layout.Alignment.ALIGN_CENTER,
+                    ),
                 color = WidgetRemoteViewsColors.resolve(context, WidgetPalette.primary),
-                alignment = Layout.Alignment.ALIGN_CENTER,
             ),
         )
     }
