@@ -393,7 +393,7 @@ internal fun OnboardingSearchScreen(
                             if (isAiSideTrip) {
                                 "Subscribe & Continue Chat (${subscribedIds.size})"
                             } else {
-                                "Done (${subscribedIds.size} selected)"
+                                "Continue with ${subscribedIds.size}"
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.bold,

@@ -290,6 +290,9 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
     val selectedShows = currentState.selectedPodcasts.values.toList()
     if (selectedShows.isEmpty()) return
 
+    val seedIds = selectedShows.map { it.id }.toSet()
+    val seedCount = seedIds.size
+
     _uiState.update {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
@@ -297,8 +300,12 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
             isSynthesizing = true,
             aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
             onboardingError = null,
+            aiCurriculumRows = emptyList(),
+            genreChartsPodcasts = emptyList(),
+            suggestionSeedCount = seedCount,
             reachedSuggestionsViaSearchFlow = true,
             reachedSuggestionsViaAiFlow = false,
+            reachedSuggestionsViaOpmlFlow = false,
         )
     }
 
@@ -309,6 +316,9 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
                 isSynthesizing = true,
                 aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
                 onboardingError = null,
+                aiCurriculumRows = emptyList(),
+                genreChartsPodcasts = emptyList(),
+                suggestionSeedCount = seedCount,
             )
         }
         viewModelScope.launch {
@@ -343,34 +353,21 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
 
                 if (response.isSuccessful && response.body() != null) {
                     val rows =
-                        response.body()!!.map {
-                            it.copy(episodes = emptyList())
-                        }
+                        OnboardingSuggestionsPresentation.filterCurriculumRowsExcluding(
+                            rows =
+                                response.body()!!.map {
+                                    it.copy(episodes = emptyList())
+                                },
+                            excludeIds = seedIds,
+                        )
 
-                    val newPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }
-                    // Filter out podcasts that are already in selectedPodcasts to avoid resetting selections
-                    val defaultSelectedIds =
-                        buildSet {
-                            rows.forEach { row ->
-                                row.podcasts.firstOrNull()?.let { add(it.id.toString()) }
-                            }
-                        }
-                    // Only auto-select recommendations that are NOT already manually selected
-                    val recommendationsToSelect =
-                        newPodcasts.filter {
-                            it.id in defaultSelectedIds &&
-                                it.id !in currentState.selectedPodcasts.keys
-                        }
-
+                    // Seeds stay selected/subscribed; do not auto-check similar-show recommendations.
                     _uiState.update { state ->
-                        val newSelected = state.selectedPodcasts + recommendationsToSelect.associateBy { it.id }
                         state.copy(
                             aiCurriculumRows = rows,
                             isAiLoading = false,
                             isSynthesizing = false,
                             aiLoadingStage = AiLoadingStage.IDLE,
-                            selectedPodcasts = newSelected,
-                            subscribedPodcastIds = newSelected.keys,
                             onboardingError = null,
                         )
                     }
@@ -397,6 +394,9 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
 fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<Podcast>) {
     if (importedPodcasts.isEmpty()) return
 
+    val seedIds = importedPodcasts.map { it.id }.toSet()
+    val seedCount = seedIds.size
+
     _uiState.update {
         it.copy(
             currentStep = OnboardingStep.AI_SUGGESTIONS,
@@ -404,10 +404,14 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
             isSynthesizing = true,
             aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
             onboardingError = null,
+            aiCurriculumRows = emptyList(),
+            genreChartsPodcasts = emptyList(),
+            suggestionSeedCount = seedCount,
             reachedSuggestionsViaSearchFlow = false,
             reachedSuggestionsViaAiFlow = false,
             reachedSuggestionsViaOpmlFlow = true,
             selectedPodcasts = importedPodcasts.associateBy { p -> p.id },
+            subscribedPodcastIds = seedIds,
         )
     }
 
@@ -418,6 +422,9 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
                 isSynthesizing = true,
                 aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
                 onboardingError = null,
+                aiCurriculumRows = emptyList(),
+                genreChartsPodcasts = emptyList(),
+                suggestionSeedCount = seedCount,
             )
         }
         viewModelScope.launch {
@@ -447,32 +454,21 @@ fun OnboardingViewModel.generateRecommendationsFromOpml(importedPodcasts: List<P
 
                 if (response.isSuccessful && response.body() != null) {
                     val rows =
-                        response.body()!!.map {
-                            it.copy(episodes = emptyList())
-                        }
+                        OnboardingSuggestionsPresentation.filterCurriculumRowsExcluding(
+                            rows =
+                                response.body()!!.map {
+                                    it.copy(episodes = emptyList())
+                                },
+                            excludeIds = seedIds,
+                        )
 
-                    val newPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }
-                    val defaultSelectedIds =
-                        buildSet {
-                            rows.forEach { row ->
-                                row.podcasts.firstOrNull()?.let { add(it.id.toString()) }
-                            }
-                        }
-                    val recommendationsToSelect =
-                        newPodcasts.filter {
-                            it.id in defaultSelectedIds &&
-                                it.id !in importedPodcasts.map { p -> p.id }
-                        }
-
+                    // Imported shows stay selected; do not auto-check similar-show recommendations.
                     _uiState.update { state ->
-                        val newSelected = state.selectedPodcasts + recommendationsToSelect.associateBy { it.id }
                         state.copy(
                             aiCurriculumRows = rows,
                             isAiLoading = false,
                             isSynthesizing = false,
                             aiLoadingStage = AiLoadingStage.IDLE,
-                            selectedPodcasts = newSelected,
-                            subscribedPodcastIds = newSelected.keys,
                             onboardingError = null,
                         )
                     }

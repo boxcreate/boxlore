@@ -83,14 +83,8 @@ internal fun AiSuggestionsScreen(
     onRetry: () -> Unit,
     onFinish: () -> Unit,
 ) {
-    val isLoading =
-        uiState.isLoadingPodcasts &&
-            uiState.aiCurriculumRows.isEmpty() &&
-            uiState.genreChartsPodcasts.isEmpty()
-    val isError =
-        uiState.onboardingError != null &&
-            uiState.aiCurriculumRows.isEmpty() &&
-            uiState.genreChartsPodcasts.isEmpty()
+    val isLoading = OnboardingSuggestionsPresentation.isLoading(uiState)
+    val isError = OnboardingSuggestionsPresentation.isError(uiState)
 
     val lanes =
         remember(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres) {
@@ -519,58 +513,46 @@ private fun SuggestionsFinishBar(
 internal fun suggestionsFinishCtaLabel(
     uiState: OnboardingUiState,
     selectedCount: Int,
-): String {
-    if (!uiState.reachedSuggestionsViaSearchFlow) {
-        return if (selectedCount > 0) {
-            "Subscribe & start · $selectedCount"
-        } else {
-            "Start without subscribing"
-        }
-    }
-    val recommendedIds =
-        uiState.aiCurriculumRows
-            .flatMap { it.podcasts }
-            .map { it.id.toString() }
-            .toSet()
-    val selectedRecommendationsCount = uiState.subscribedPodcastIds.count { it in recommendedIds }
-    return if (selectedRecommendationsCount > 0) {
-        "Subscribe & start · +$selectedRecommendationsCount recommended"
-    } else {
-        "Start without subscribing"
-    }
-}
+): String = OnboardingSuggestionsPresentation.finishCtaLabel(uiState, selectedCount)
 
 @Composable
 private fun SuggestionsLoadingState(
     uiState: OnboardingUiState,
     modifier: Modifier = Modifier,
 ) {
+    val copy = OnboardingSuggestionsPresentation.loadingCopy(uiState)
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.padding(horizontal = 32.dp, vertical = 24.dp),
         ) {
             BoxLoreLoader.Expressive(size = 80.dp)
-            Text(
-                text =
-                    when {
-                        uiState.reachedSuggestionsViaOpmlFlow ->
-                            "Your OPML shows are subscribed!\nGathering new shows inspired by your library…"
-                        uiState.reachedSuggestionsViaSearchFlow ->
-                            "Subscribed to ${uiState.selectedPodcasts.size} shows!\nFinding similar shows you might love…"
-                        else -> "Synthesizing your feed…"
-                    },
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = GoogleSansWeight.bold,
-                        textAlign = TextAlign.Center,
-                    ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = copy.title,
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = GoogleSansWeight.bold,
+                            textAlign = TextAlign.Center,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = copy.subtitle,
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            textAlign = TextAlign.Center,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
