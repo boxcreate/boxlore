@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-12T12:09:02.304Z",
+  "lastRun": "2026-08-12T13:56:45.577Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -55,6 +55,11 @@
       "lastEpisodeId": "58788069666",
       "lastEpisodeTitle": "Jonny Cooper: Back Three is the Magic Number | The West Stand",
       "lastCheckedAt": 1786347555686
+    },
+    "499394": {
+      "lastEpisodeId": "58790594679",
+      "lastEpisodeTitle": "The Quitting Expert: Michael Jordan Is WRONG About Quitting, Do This Before AI Comes! | Seth Godin",
+      "lastCheckedAt": 1786543007735
     },
     "511104": {
       "lastEpisodeId": "33950172189",
@@ -116,6 +121,11 @@
       "lastEpisodeTitle": "Linux Cracks 10% Desktop Usage!",
       "lastCheckedAt": 1786107659226
     },
+    "902798": {
+      "lastEpisodeId": "58415182781",
+      "lastEpisodeTitle": "How Scammers Use Deepfakes, Fake Calls & OTP Fraud | Sunil Bajpai | FO543 Raj Shamani",
+      "lastCheckedAt": 1786543009010
+    },
     "947138": {
       "lastEpisodeId": "58666912138",
       "lastEpisodeTitle": "Your Luxury Car Now Has Ads!",
@@ -171,6 +181,11 @@
       "lastEpisodeTitle": "El Héroe perdido capitulo 55",
       "lastCheckedAt": 1785095022405
     },
+    "3628391": {
+      "lastEpisodeId": "58217379219",
+      "lastEpisodeTitle": "S09E17:- W*MM*LA ITHAAN DA CINEMA ft Witcher, \"Black leg\" Sanji, Roronoa Zoro, \"Soul King\" Brook",
+      "lastCheckedAt": 1786543010233
+    },
     "3759297": {
       "lastEpisodeId": "58796204554",
       "lastEpisodeTitle": "I'm Wade. I'm Bald.",
@@ -180,6 +195,11 @@
       "lastEpisodeId": "58711221307",
       "lastEpisodeTitle": "Shadows on the Pitch: 4. The Agony of Doha",
       "lastCheckedAt": 1786185121715
+    },
+    "4112681": {
+      "lastEpisodeId": "58787237805",
+      "lastEpisodeTitle": "#147 - Does Sleep Really Clean Your Brain?",
+      "lastCheckedAt": 1786543010583
     },
     "4150268": {
       "lastEpisodeId": "42575210570",
@@ -251,6 +271,11 @@
       "lastEpisodeTitle": "I Got Banned From Spotify (Maybe?)",
       "lastCheckedAt": 1786421908687
     },
+    "6766874": {
+      "lastEpisodeId": "53696806037",
+      "lastEpisodeTitle": "bye bye !",
+      "lastCheckedAt": 1786543011784
+    },
     "6897392": {
       "lastEpisodeId": "58887640672",
       "lastEpisodeTitle": "The Black Museum - The Silencer",
@@ -275,6 +300,11 @@
       "lastEpisodeId": "58807154378",
       "lastEpisodeTitle": "The Basement: Travis Taylor | Black Holes, UFOs & Skinwalker Ranch",
       "lastCheckedAt": 1786381310024
+    },
+    "7447848": {
+      "lastEpisodeId": "58448466733",
+      "lastEpisodeTitle": "S01E18: Source: Trust me Bro ft. Tobirama Senju,Kakashi Hatake, Mankatha Mani & Space Monkey",
+      "lastCheckedAt": 1786543012618
     },
     "7485285": {
       "lastEpisodeId": "52832238101",
@@ -301,10 +331,20 @@
       "lastEpisodeTitle": "1 Peter 1",
       "lastCheckedAt": 1786442413386
     },
+    "7662230": {
+      "lastEpisodeId": "48800123551",
+      "lastEpisodeTitle": "Scientists Discuss the Future of Extreme Weather",
+      "lastCheckedAt": 1786543013085
+    },
     "7837137": {
       "lastEpisodeId": "57875815786",
       "lastEpisodeTitle": "Sorveteira Confessa Dois Assassinatos Após Três Anos Vendendo Sorvete Acima dos Cadáveres",
       "lastCheckedAt": 1784625183964
+    },
+    "7903936": {
+      "lastEpisodeId": "55941239469",
+      "lastEpisodeTitle": "Hakeem Oluseyi: The different realms of the universe, in 69 minutes",
+      "lastCheckedAt": 1786543013196
     }
   }
 }
