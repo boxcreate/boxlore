@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="72" viewBox="0 0 240 72" role="img" aria-label="Coming soon on Google Play">
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="72" viewBox="0 0 240 72" role="img" aria-label="Get it on Google Play">
   <defs>
     <linearGradient id="gpBg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#2B2930"/>
@@ -14,6 +14,6 @@
     <path fill="#4285F4" d="M19.8 9.3 1.6.1C.9-.3.2.1.2 1.2L15.7 14.7z"/>
     <path fill="#34A853" d="M19.8 18.7 15.7 14.7.2 28.2c.3 1.1 1.1 1.3 1.9.8z"/>
   </g>
-  <text x="84" y="29" font-family="Roboto, 'Google Sans', 'Segoe UI', system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.4" fill="#CAC4D0">COMING SOON ON</text>
+  <text x="84" y="29" font-family="Roboto, 'Google Sans', 'Segoe UI', system-ui, sans-serif" font-size="10" font-weight="600" letter-spacing="1.4" fill="#CAC4D0">GET IT ON</text>
   <text x="84" y="50" font-family="Roboto, 'Google Sans', 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="700" fill="#E6E1E5">Google Play</text>
 </svg>

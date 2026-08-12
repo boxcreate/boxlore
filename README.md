@@ -8,15 +8,23 @@
 
 <br/>
 
+<!-- download-play:start -->
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
+  <img src="docs/images/card_playstore_v6.svg" height="80" alt="Get it on Google Play"/>
+</a>
+<!-- download-play:end -->
+&nbsp;&nbsp;
 <!-- download-apk:start -->
 <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk">
-  <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
+  <img src="docs/images/card_github_v6.svg" height="64" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
 <!-- download-apk:end -->
-&nbsp;&nbsp;
-<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-  <img src="docs/images/card_playstore_v6.svg" height="72" alt="Coming soon on Google Play"/>
-</a>
+
+<br/>
+
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Google%20Play&amp;color=3DDC84&amp;style=flat-square&amp;logo=googleplay&amp;logoColor=white" alt="Google Play version"/></a>
+&nbsp;
+<a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;logo=github&amp;label=GitHub&amp;color=6750A4" alt="GitHub latest release"/></a>
 
 <br/><br/>
 
@@ -171,11 +179,17 @@ Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
 
 <a id="install"></a>
 
-Use the **GitHub APK** button at the top of this page (latest release asset) or get it on Play:
+Get it on **Google Play**, or grab the GitHub APK (latest release asset).
+
+Version badges above update live: **Google Play** from the public store listing, **GitHub** from the latest release tag (they can differ while a build is rolling out).
 
 <div align="center">
   <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-    <img src="docs/images/card_playstore_v6.svg" height="72" alt="Coming soon on Google Play"/>
+    <img src="docs/images/card_playstore_v6.svg" height="80" alt="Get it on Google Play"/>
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk">
+    <img src="docs/images/card_github_v6.svg" height="64" alt="Download boxlore podcast app APK on GitHub"/>
   </a>
 </div>
 
