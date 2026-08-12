@@ -22,10 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- readme-copy:start pr=971 -->
 ### Critical
-- Fixes an issue where some shows lagged behind in the Podcast Index catalog
-- When you subscribe, boxlore checks whether that show is stale, then keeps it updated from Podcast Index or the publisher’s feed — whichever is actually current
-- If a show still looks behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed
-- Show notifications follow the same path, so alerts come from the fresher source
+- Fixes an issue where some shows were missing the latest episodes because Podcast Index hadn’t caught up yet
+- When you subscribe, boxlore checks whether that show’s episode list is behind, then keeps it updated from Podcast Index or the publisher’s feed — whichever has the newer episodes
+- If episodes still look behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed
+- Show notifications follow the same path, so new-episode alerts come from the fresher source
 <!-- readme-copy:end pr=971 -->
 ## [v0.0.14] - 2026-08-07
 

@@ -66,10 +66,10 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <!-- release-upcoming:start -->
 <b>🚨 Critical:</b>
 <ul align="left">
-<li>Fixes an issue where some shows lagged behind in the Podcast Index catalog <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
-<li>When you subscribe, boxlore checks whether that show is stale, then keeps it updated from Podcast Index or the publisher’s feed — whichever is actually current <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
-<li>If a show still looks behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
-<li>Show notifications follow the same path, so alerts come from the fresher source <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+<li>Fixes an issue where some shows were missing the latest episodes because Podcast Index hadn’t caught up yet <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+<li>When you subscribe, boxlore checks whether that show’s episode list is behind, then keeps it updated from Podcast Index or the publisher’s feed — whichever has the newer episodes <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+<li>If episodes still look behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+<li>Show notifications follow the same path, so new-episode alerts come from the fresher source <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
 </ul>
 <!-- release-upcoming:end -->
 
