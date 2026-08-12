@@ -47,6 +47,10 @@ jobs:
         if: steps.skip.outputs.skip != 'true'
         uses: actions/checkout@v5
 
+      - name: Changelog and release-note script tests
+        if: steps.skip.outputs.skip != 'true'
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
       - name: Set up JDK 17
         if: steps.skip.outputs.skip != 'true'
         uses: actions/setup-java@v5
