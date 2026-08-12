@@ -742,7 +742,7 @@ fun PodcastInfoScreen(
                     contentAlignment = Alignment.BottomCenter,
                 ) {
                     AnimatedVisibility(
-                        visible = targetJumpEpisode != null && !isTargetVisible && isFabVisible,
+                        visible = jumpPillVisible,
                         enter =
                             slideInVertically(
                                 initialOffsetY = { it },

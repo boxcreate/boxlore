@@ -27,6 +27,37 @@ class EpisodeSupplementRepositoryTest {
     }
 
     @Test
+    fun `resolveHttpsFeedUrl prefers request https then stored https`() {
+        assertEquals(
+            "https://feeds.example/live.xml",
+            EpisodeSupplementRepository.resolveHttpsFeedUrl(
+                "https://feeds.example/live.xml",
+                "https://feeds.example/stored.xml",
+            ),
+        )
+        assertEquals(
+            "https://feeds.example/stored.xml",
+            EpisodeSupplementRepository.resolveHttpsFeedUrl(
+                "http://feeds.example/insecure.xml",
+                "https://feeds.example/stored.xml",
+            ),
+        )
+        assertEquals(
+            "https://feeds.example/stored.xml",
+            EpisodeSupplementRepository.resolveHttpsFeedUrl(
+                "",
+                "https://feeds.example/stored.xml",
+            ),
+        )
+        assertNull(
+            EpisodeSupplementRepository.resolveHttpsFeedUrl(
+                "http://feeds.example/insecure.xml",
+                "http://feeds.example/also-insecure.xml",
+            ),
+        )
+    }
+
+    @Test
     fun `pickMatchingFeedEpisode uses newest when no match constraint`() {
         val newest = rssEpisode("-1", guid = "g-new", audioUrl = "https://cdn/new.mp3")
         val older = rssEpisode("-2", guid = "g-old", audioUrl = "https://cdn/old.mp3")

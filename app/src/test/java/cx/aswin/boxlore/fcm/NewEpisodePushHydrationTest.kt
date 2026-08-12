@@ -185,6 +185,38 @@ class NewEpisodePushHydrationTest {
                     episodeSupplementPort = port,
                 )
             assertEquals("-8", result?.id)
+            assertEquals("guid-ep", port.lastMatch?.guid)
+            assertEquals("https://cdn.example.com/ep.mp3", port.lastMatch?.enclosureUrl)
+        }
+
+    @Test
+    fun promotesMatchedGuidWhenEnclosureIsAbsent() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val tip = episode("-9", audioUrl = "https://cdn.example.com/guid-only.mp3")
+            val port = FakePort(optedIn = setOf("123"), tip = tip, tipGuid = "guid-ep")
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = null,
+                    payloadGuid = "guid-ep",
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                )
+            assertEquals("-9", result?.id)
+            assertEquals("guid-ep", port.lastMatch?.guid)
+            assertNull(port.lastMatch?.enclosureUrl)
         }
 
     private fun episode(
@@ -205,8 +237,10 @@ class NewEpisodePushHydrationTest {
         var tip: Episode? = null,
         var cached: List<Episode> = emptyList(),
         var throwOnResolve: Boolean = false,
+        var tipGuid: String? = null,
     ) : EpisodeSupplementPort {
         var resolveCalls: Int = 0
+        var lastMatch: EpisodeSupplementPort.FeedItemMatch? = null
 
         override suspend fun refreshFromFeed(
             podcastIndexId: String,
@@ -237,14 +271,14 @@ class NewEpisodePushHydrationTest {
             request: EpisodeSupplementPort.NewestTipRequest,
         ): Episode? {
             resolveCalls += 1
+            lastMatch = request.match
             if (throwOnResolve) error("feed down")
             val guid = request.match?.guid?.trim().orEmpty()
             val enclosure = request.match?.enclosureUrl?.trim().orEmpty()
-            if (guid.isNotEmpty() || enclosure.isNotEmpty()) {
-                val matches =
-                    (enclosure.isNotEmpty() && tip?.audioUrl?.trim() == enclosure)
-                if (!matches) return null
-            }
+            if (guid.isEmpty() && enclosure.isEmpty()) return tip
+            if (enclosure.isNotEmpty() && tip?.audioUrl?.trim() != enclosure) return null
+            if (guid.isNotEmpty() && tipGuid != null && guid != tipGuid) return null
+            if (guid.isNotEmpty() && enclosure.isEmpty() && tipGuid == null) return null
             return tip
         }
 

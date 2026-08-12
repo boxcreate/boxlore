@@ -74,4 +74,54 @@ class EpisodeSupplementListMergeTest {
             EpisodeSupplementListMerge.unionSearchResults(emptyList(), emptyList()).isEmpty(),
         )
     }
+
+    @Test
+    fun `merge drops supplements that duplicate a PI episode by audio URL`() {
+        val pi =
+            listOf(
+                TestFixtures.episode(
+                    id = "pi-1",
+                    title = "PI title",
+                    audioUrl = "https://cdn/same.mp3",
+                    publishedDate = 50,
+                ),
+            )
+        val extras =
+            listOf(
+                TestFixtures.episode(
+                    id = "-1",
+                    title = "Feed title",
+                    audioUrl = "https://cdn/same.mp3",
+                    publishedDate = 50,
+                ),
+            )
+        val merged =
+            EpisodeSupplementListMerge.merge(pi, extras, EpisodeSupplementListMerge.Sort.NEWEST)
+        assertEquals(listOf("pi-1"), merged.map { it.id })
+    }
+
+    @Test
+    fun `merge oldest sort puts earlier published dates first`() {
+        val pi =
+            listOf(
+                TestFixtures.episode(
+                    id = "pi-new",
+                    title = "New",
+                    audioUrl = "https://cdn/new.mp3",
+                    publishedDate = 200,
+                ),
+            )
+        val extras =
+            listOf(
+                TestFixtures.episode(
+                    id = "-old",
+                    title = "Old extra",
+                    audioUrl = "https://cdn/old.mp3",
+                    publishedDate = 10,
+                ),
+            )
+        val merged =
+            EpisodeSupplementListMerge.merge(pi, extras, EpisodeSupplementListMerge.Sort.OLDEST)
+        assertEquals(listOf("-old", "pi-new"), merged.map { it.id })
+    }
 }

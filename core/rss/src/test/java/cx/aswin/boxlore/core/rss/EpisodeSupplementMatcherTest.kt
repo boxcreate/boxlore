@@ -156,6 +156,46 @@ class EpisodeSupplementMatcherTest {
         assertFalse(EpisodeSupplementMatcher.isPresentInBaseline(rss, baseline))
     }
 
+    @Test
+    fun `isDuplicateOf matches id, audio URL, and rejects distant same titles`() {
+        val left =
+            TestFixtures.episode(
+                id = "pi-1",
+                title = "Daily",
+                audioUrl = "https://cdn/a.mp3",
+                publishedDate = 1_000L,
+            )
+        assertTrue(EpisodeSupplementMatcher.isDuplicateOf(left, left.copy(title = "Other")))
+        assertTrue(
+            EpisodeSupplementMatcher.isDuplicateOf(
+                left,
+                left.copy(id = "-9", title = "Feed title"),
+            ),
+        )
+        val blankAudio =
+            TestFixtures.episode(id = "a", title = "X", audioUrl = "  ", publishedDate = 1L)
+        val otherBlank =
+            TestFixtures.episode(id = "b", title = "Y", audioUrl = "", publishedDate = 1L)
+        assertFalse(EpisodeSupplementMatcher.isDuplicateOf(blankAudio, otherBlank))
+        val day = 24L * 60L * 60L
+        assertFalse(
+            EpisodeSupplementMatcher.isDuplicateOf(
+                TestFixtures.episode(
+                    id = "pi-1",
+                    title = "Daily",
+                    audioUrl = "https://cdn/a.mp3",
+                    publishedDate = 1_000L,
+                ),
+                TestFixtures.episode(
+                    id = "-9",
+                    title = "Daily",
+                    audioUrl = "https://cdn/b.mp3",
+                    publishedDate = 1_000L + day * 10,
+                ),
+            ),
+        )
+    }
+
     private fun rssEpisode(
         episodeId: String,
         title: String,

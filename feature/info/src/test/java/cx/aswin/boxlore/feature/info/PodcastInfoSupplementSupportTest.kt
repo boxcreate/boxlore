@@ -133,6 +133,40 @@ class PodcastInfoSupplementSupportTest {
         }
 
     @Test
+    fun `refreshMissingEpisodes surfaces Failure message and still reloads`() =
+        runTest {
+            val port = FakePort(optedIn = mutableSetOf("123"))
+            port.refreshOutcome =
+                EpisodeSupplementOutcome.Failure("Couldn't update episodes from the feed")
+            val support =
+                PodcastInfoSupplementSupport(
+                    episodeSupplementPort = port,
+                    loadPage = { _, _, offset, _ ->
+                        PodcastRepository.EpisodePage(
+                            episodes = listOf(TestFixtures.episode(id = "pi-1")),
+                            hasMore = false,
+                            sourceCount = if (offset == 0) 4 else 0,
+                        )
+                    },
+                )
+            val state =
+                PodcastInfoUiState.Success(
+                    podcast = TestFixtures.podcast(id = "123").copy(
+                        feedUrl = "https://feeds.example/show.xml",
+                    ),
+                    episodes = emptyList(),
+                    isSubscribed = true,
+                )
+            val refresh = support.refreshMissingEpisodes(state, announceResult = true)
+            assertEquals(
+                "Couldn't update episodes from the feed",
+                refresh.state.userMessage,
+            )
+            assertEquals(4, refresh.pageSourceCount)
+            assertNull(refresh.libraryTip)
+        }
+
+    @Test
     fun `shouldRefreshOnOpen is true only for opted-in PI shows`() =
         runTest {
             val port = FakePort(optedIn = mutableSetOf("123"))

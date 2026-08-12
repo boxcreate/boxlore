@@ -135,10 +135,7 @@ class EpisodeSupplementRepository internal constructor(
         requirePiPodcastId(request.podcastIndexId)
         val existing = dao.getSupplement(request.podcastIndexId) ?: return@withContext null
         val resolvedUrl =
-            request.feedUrl.trim().ifEmpty { existing.feedUrl.trim() }
-        if (!resolvedUrl.startsWith("https://", ignoreCase = true)) {
-            return@withContext null
-        }
+            resolveHttpsFeedUrl(request.feedUrl, existing.feedUrl) ?: return@withContext null
         val parsed = fetchParsedFeed(request.podcastIndexId, resolvedUrl)
         val chosen =
             pickMatchingFeedEpisode(
@@ -301,6 +298,14 @@ class EpisodeSupplementRepository internal constructor(
             require(!podcastIndexId.startsWith("rss:")) {
                 "Supplement is only for Podcast Index shows"
             }
+        }
+
+        /** Prefer a request HTTPS URL; otherwise the stored supplement HTTPS URL. */
+        internal fun resolveHttpsFeedUrl(requestUrl: String, storedUrl: String): String? {
+            val requested = requestUrl.trim()
+            if (requested.startsWith("https://", ignoreCase = true)) return requested
+            val stored = storedUrl.trim()
+            return stored.takeIf { it.startsWith("https://", ignoreCase = true) }
         }
 
         internal fun pickMatchingFeedEpisode(
