@@ -36,6 +36,7 @@ import com.posthog.surveys.PostHogDisplaySurveyRatingType
 import com.posthog.surveys.PostHogNextSurveyQuestion
 import com.posthog.surveys.PostHogSurveyResponse
 import cx.aswin.boxlore.core.designsystem.components.EngagementBottomSheetScaffold
+import cx.aswin.boxlore.surveys.NpsSurveyBranching
 import cx.aswin.boxlore.surveys.internal.theme.LocalSurveyAppearance
 import cx.aswin.boxlore.surveys.internal.theme.localAppearance
 import cx.aswin.boxlore.surveys.internal.theme.resolveAppearance
@@ -114,7 +115,13 @@ internal fun SurveySheet(
             hasReportedFirstRating = true
             onFirstRatingSubmitted(response.rating)
         }
-        val next = onSubmit(currentQuestionIndex, response)
+        val answeredIndex = currentQuestionIndex
+        val next =
+            NpsSurveyBranching.adjustNext(
+                survey = survey,
+                answeredQuestionIndex = answeredIndex,
+                sdkNext = onSubmit(answeredIndex, response),
+            )
         when (val step = surveySubmitStep(next, appearance.displayThankYouMessage)) {
             SurveySubmitStep.Dismiss -> dismissSheet()
             SurveySubmitStep.ShowConfirmation -> showingConfirmation = true
