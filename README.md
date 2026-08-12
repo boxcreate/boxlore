@@ -8,17 +8,21 @@
 
 <br/>
 
+<table align="center">
+  <tr>
+    <td align="center" valign="middle">
 <!-- download-play:start -->
-<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-  <img src="docs/images/card_playstore_v7.svg" height="88" alt="Get it on Google Play"/>
-</a>
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="docs/images/card_playstore_v7.svg" width="260" height="80" alt="Get it on Google Play"/></a>
 <!-- download-play:end -->
-&nbsp;&nbsp;
+    </td>
+    <td width="16"></td>
+    <td align="center" valign="middle">
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk">
-  <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
-</a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
 <!-- download-apk:end -->
+    </td>
+  </tr>
+</table>
 
 <br/><br/>
 
@@ -176,13 +180,17 @@ Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
 Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live Play vs GitHub release versions are in the status badges under the title.
 
 <div align="center">
-  <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-    <img src="docs/images/card_playstore_v7.svg" height="88" alt="Get it on Google Play"/>
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk">
-    <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
-  </a>
+  <table>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="docs/images/card_playstore_v7.svg" width="260" height="80" alt="Get it on Google Play"/></a>
+      </td>
+      <td width="16"></td>
+      <td align="center" valign="middle">
+        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+      </td>
+    </tr>
+  </table>
 </div>
 
 <br/>

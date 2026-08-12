@@ -659,9 +659,9 @@ def release_apk_url(repository: str, version: AppVersion) -> str:
 def _render_download_apk_inner(repository: str, target: AppVersion) -> str:
     url = release_apk_url(repository, target)
     return (
-        f'<a href="{url}">\n'
-        '  <img src="docs/images/card_github_v6.svg" height="72" '
-        'alt="Download boxlore podcast app APK on GitHub"/>\n'
+        f'<a href="{url}">'
+        '<img src="docs/images/card_github_v7.svg" width="260" height="80" '
+        'alt="Download boxlore podcast app APK on GitHub"/>'
         "</a>"
     )
 
