@@ -123,6 +123,29 @@ class ReadmeReleaseMarkersTest(unittest.TestCase):
             )
         )
 
+    def test_promote_preserves_verbatim_upcoming_without_ai_notice(self) -> None:
+        upcoming_body = (
+            '<b>🚨 Critical:</b>\n<ul align="left">\n'
+            "<li>Missing episodes now show up in the same show.</li>\n</ul>"
+        )
+        readme = (
+            "# boxlore\n\n"
+            f"{uc.DOWNLOAD_APK_START}\napk\n{uc.DOWNLOAD_APK_END}\n\n"
+            + uc._render_release_notes_shell(
+                upcoming_inner=upcoming_body,
+                whats_new_inner=None,
+                include_ai_notice=False,
+            )
+            + "\n\n## Search\n"
+        )
+        promoted = pr.promote_readme(readme, pr.AppVersion("0.0.14", 14), "2026-08-12")
+        whats_new = uc._extract_marked_region(
+            promoted, uc.RELEASE_WHATS_NEW_START, uc.RELEASE_WHATS_NEW_END
+        )
+        assert whats_new is not None
+        self.assertIn("Missing episodes now show up in the same show.", whats_new)
+        self.assertNotIn("AI-generated summary", whats_new)
+
     def test_skip_notify_url_rewrite_preserves_whats_new(self) -> None:
         whats = uc._render_whats_new_inner("v0.0.12", "2026-07-25", SAMPLE_WHATS_NEW_BODY)
         upcoming = "Something cooking for next."

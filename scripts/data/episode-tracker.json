@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-12T05:54:55.222Z",
+  "lastRun": "2026-08-12T16:04:12.177Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -56,6 +56,11 @@
       "lastEpisodeTitle": "Jonny Cooper: Back Three is the Magic Number | The West Stand",
       "lastCheckedAt": 1786347555686
     },
+    "499394": {
+      "lastEpisodeId": "58790594679",
+      "lastEpisodeTitle": "The Quitting Expert: Michael Jordan Is WRONG About Quitting, Do This Before AI Comes! | Seth Godin",
+      "lastCheckedAt": 1786543007735
+    },
     "511104": {
       "lastEpisodeId": "33950172189",
       "lastEpisodeTitle": "Chapter VII f: The Unconscious and Consciousness. Reality.",
@@ -87,9 +92,9 @@
       "lastCheckedAt": 1782757505666
     },
     "743229": {
-      "lastEpisodeId": "58841291660",
-      "lastEpisodeTitle": "The U.S. Missile Stockpile Is Dangerously Low",
-      "lastCheckedAt": 1786442405343
+      "lastEpisodeId": "58888364219",
+      "lastEpisodeTitle": "All the President’s Planes",
+      "lastCheckedAt": 1786528990137
     },
     "744587": {
       "lastEpisodeId": "58814005789",
@@ -107,19 +112,29 @@
       "lastCheckedAt": 1786484687327
     },
     "838740": {
-      "lastEpisodeId": "58790418710",
-      "lastEpisodeTitle": "TRAVIS BARKER: \"My Biggest Fear Actually Happened\"",
-      "lastCheckedAt": 1786353572385
+      "lastEpisodeId": "58892403865",
+      "lastEpisodeTitle": "Jim Curtis: The Secret to Stop Self-Sabotage",
+      "lastCheckedAt": 1786536545473
     },
     "889671": {
       "lastEpisodeId": "58664377266",
       "lastEpisodeTitle": "Linux Cracks 10% Desktop Usage!",
       "lastCheckedAt": 1786107659226
     },
+    "902798": {
+      "lastEpisodeId": "58415182781",
+      "lastEpisodeTitle": "How Scammers Use Deepfakes, Fake Calls & OTP Fraud | Sunil Bajpai | FO543 Raj Shamani",
+      "lastCheckedAt": 1786543009010
+    },
     "947138": {
       "lastEpisodeId": "58666912138",
       "lastEpisodeTitle": "Your Luxury Car Now Has Ads!",
       "lastCheckedAt": 1786113089297
+    },
+    "980370": {
+      "lastEpisodeId": "58859040764",
+      "lastEpisodeTitle": "How satellites and AI can protect the planet | Robbie Schingler",
+      "lastCheckedAt": 1786546783958
     },
     "1015378": {
       "lastEpisodeId": "58694645262",
@@ -127,9 +142,9 @@
       "lastCheckedAt": 1786158681589
     },
     "1047718": {
-      "lastEpisodeId": "58814563905",
-      "lastEpisodeTitle": "Infantino hangs on by a thread and the overhaul at Newcastle: Football Weekly",
-      "lastCheckedAt": 1786396345359
+      "lastEpisodeId": "58884055225",
+      "lastEpisodeTitle": "Infantino, Trump, Bezos and Mourinho: together at last: Football Weekly",
+      "lastCheckedAt": 1786524455004
     },
     "1065434": {
       "lastEpisodeId": "58645613077",
@@ -166,6 +181,11 @@
       "lastEpisodeTitle": "El Héroe perdido capitulo 55",
       "lastCheckedAt": 1785095022405
     },
+    "3628391": {
+      "lastEpisodeId": "58217379219",
+      "lastEpisodeTitle": "S09E17:- W*MM*LA ITHAAN DA CINEMA ft Witcher, \"Black leg\" Sanji, Roronoa Zoro, \"Soul King\" Brook",
+      "lastCheckedAt": 1786543010233
+    },
     "3759297": {
       "lastEpisodeId": "58796204554",
       "lastEpisodeTitle": "I'm Wade. I'm Bald.",
@@ -175,6 +195,11 @@
       "lastEpisodeId": "58711221307",
       "lastEpisodeTitle": "Shadows on the Pitch: 4. The Agony of Doha",
       "lastCheckedAt": 1786185121715
+    },
+    "4112681": {
+      "lastEpisodeId": "58787237805",
+      "lastEpisodeTitle": "#147 - Does Sleep Really Clean Your Brain?",
+      "lastCheckedAt": 1786543010583
     },
     "4150268": {
       "lastEpisodeId": "42575210570",
@@ -217,14 +242,14 @@
       "lastCheckedAt": 1785274710339
     },
     "5930143": {
-      "lastEpisodeId": "58842618377",
-      "lastEpisodeTitle": "Guerre hybride : Moscou teste nos lignes rouges",
-      "lastCheckedAt": 1786445927587
+      "lastEpisodeId": "58891118019",
+      "lastEpisodeTitle": "Big Tech : l’Amérique donnera-t-elle raison à l’Europe ?",
+      "lastCheckedAt": 1786533689222
     },
     "5972153": {
-      "lastEpisodeId": "58842659054",
-      "lastEpisodeTitle": "Colombia earthquake, Trump's vaccines order and Bezos' soccer play",
-      "lastCheckedAt": 1786445928166
+      "lastEpisodeId": "58891446115",
+      "lastEpisodeTitle": "US primaries, Trump's secret plane swap and total eclipse",
+      "lastCheckedAt": 1786533690524
     },
     "6655297": {
       "lastEpisodeId": "58623529123",
@@ -237,19 +262,24 @@
       "lastCheckedAt": 1784368585708
     },
     "6698148": {
-      "lastEpisodeId": "58655469283",
-      "lastEpisodeTitle": "The British Celebrity Boyfriend Crisis",
-      "lastCheckedAt": 1786090382017
+      "lastEpisodeId": "58885847730",
+      "lastEpisodeTitle": "James Bond: Sex, Spies and Soggy Towels (Ep1)",
+      "lastCheckedAt": 1786524457183
     },
     "6764080": {
       "lastEpisodeId": "58827636737",
       "lastEpisodeTitle": "I Got Banned From Spotify (Maybe?)",
       "lastCheckedAt": 1786421908687
     },
+    "6766874": {
+      "lastEpisodeId": "53696806037",
+      "lastEpisodeTitle": "bye bye !",
+      "lastCheckedAt": 1786543011784
+    },
     "6897392": {
-      "lastEpisodeId": "58840468966",
-      "lastEpisodeTitle": "The Black Museum - The Scarf",
-      "lastCheckedAt": 1786442411842
+      "lastEpisodeId": "58887640672",
+      "lastEpisodeTitle": "The Black Museum - The Silencer",
+      "lastCheckedAt": 1786528994240
     },
     "6956562": {
       "lastEpisodeId": "58872425295",
@@ -270,6 +300,11 @@
       "lastEpisodeId": "58807154378",
       "lastEpisodeTitle": "The Basement: Travis Taylor | Black Holes, UFOs & Skinwalker Ranch",
       "lastCheckedAt": 1786381310024
+    },
+    "7447848": {
+      "lastEpisodeId": "58448466733",
+      "lastEpisodeTitle": "S01E18: Source: Trust me Bro ft. Tobirama Senju,Kakashi Hatake, Mankatha Mani & Space Monkey",
+      "lastCheckedAt": 1786543012618
     },
     "7485285": {
       "lastEpisodeId": "52832238101",
@@ -296,10 +331,20 @@
       "lastEpisodeTitle": "1 Peter 1",
       "lastCheckedAt": 1786442413386
     },
+    "7662230": {
+      "lastEpisodeId": "48800123551",
+      "lastEpisodeTitle": "Scientists Discuss the Future of Extreme Weather",
+      "lastCheckedAt": 1786543013085
+    },
     "7837137": {
       "lastEpisodeId": "57875815786",
       "lastEpisodeTitle": "Sorveteira Confessa Dois Assassinatos Após Três Anos Vendendo Sorvete Acima dos Cadáveres",
       "lastCheckedAt": 1784625183964
+    },
+    "7903936": {
+      "lastEpisodeId": "55941239469",
+      "lastEpisodeTitle": "Hakeem Oluseyi: The different realms of the universe, in 69 minutes",
+      "lastCheckedAt": 1786543013196
     }
   }
 }

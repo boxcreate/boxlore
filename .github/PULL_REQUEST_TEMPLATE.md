@@ -33,7 +33,7 @@ Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ru
 
 ## Summary
 
-<!-- What changed and why. Release notes / changelog bullets are derived from this — be specific. -->
+<!-- What changed and why. Be specific. Exact CHANGELOG / README wording goes in Release copy below. -->
 
 -
 
@@ -61,17 +61,19 @@ Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ru
 
 | Label | Use when |
 |:--|:--|
+| `user-impact-critical` | **Critical fix** — listeners already feel a correctness bug (missing episodes, late/wrong alerts, data loss). Highest README / changelog priority; **release-copy below is required** and is pasted verbatim (not AI-rewritten). |
 | `user-impact-high` | Listeners clearly notice (player, search, downloads, onboarding, major UX) |
 | `user-impact-medium` | Noticeable but not headline (polish, secondary flows) |
 | `user-impact-low` | Minor user-facing tweak |
 | `no-user-impact` | CI, docs, tooling, internal-only — no listener-facing change |
 
+- [ ] `user-impact-critical`
 - [ ] `user-impact-high`
 - [ ] `user-impact-medium`
 - [ ] `user-impact-low`
 - [ ] `no-user-impact`
 
-### Listener impact — **required when** `user-impact-high` or `user-impact-medium`
+### Listener impact — **required when** `user-impact-critical`, `user-impact-high`, or `user-impact-medium`
 
 <!-- Write this for a listener, not an engineer. What is different in their day-to-day use of boxlore after this ships? -->
 <!-- Skip only for `user-impact-low` or `no-user-impact`. -->
@@ -84,13 +86,49 @@ Scheduled bots push to `master` via the **boxlore-master-pusher** GitHub App (ru
 
 | Label | Use when |
 |:--|:--|
-| `backend-change` | Touches server / proxy / infra (can combine with high/medium/low/none) |
+| `backend-change` | Touches server / proxy / infra (can combine with critical/high/medium/low/none) |
 
 - [ ] `backend-change`
 
-Examples: `user-impact-high` + `backend-change`, or `no-user-impact` + `backend-change`, or just `user-impact-medium`.
+Examples: `user-impact-critical` + `backend-change`, `user-impact-high` + `backend-change`, or `no-user-impact` + `backend-change`.
 
-Add impact labels on the PR (`gh pr edit <n> --add-label user-impact-high --add-label backend-change`).
+Add impact labels on the PR (`gh pr edit <n> --add-label user-impact-critical --add-label backend-change`).
+
+## Release copy (verbatim — highest priority)
+
+<!--
+changelog-on-merge (update_changelog.py) and prepare-release (prepare_release.py)
+paste these two regions as-is. Groq must not rewrite them.
+
+Required for user-impact-critical. Optional for other labels — if a region is
+filled, it is still used verbatim for that surface.
+
+Leave a region empty (or only `-` / TBD) to fall back to AI for that surface only.
+Do not hand-edit CHANGELOG.md or README Upcoming / What's New; this section is
+the source those workflows copy from.
+-->
+
+### CHANGELOG.md (developer copy)
+
+Keep a Changelog bullets for engineers. Use `### Added` / `### Changed` / `### Fixed` when you have more than one category. Class/module names are OK here.
+
+<!-- release-copy:changelog:start -->
+
+### Fixed
+- 
+
+<!-- release-copy:changelog:end -->
+
+### README What's New / Upcoming (listener copy)
+
+Plain listener English for README Upcoming, then What's New on release, and in-app release notes. Product name is **boxlore** (lowercase). No class names, FCM keys, or CI.
+
+<!-- release-copy:readme:start -->
+
+### Critical
+- 
+
+<!-- release-copy:readme:end -->
 
 ## Test plan
 

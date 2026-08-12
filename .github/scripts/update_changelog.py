@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Append merged-PR release notes to CHANGELOG.md and sync README Upcoming Changes."""
+"""Append merged-PR release notes to CHANGELOG.md and sync README Upcoming Changes.
+
+Author-written copy in the PR body (`<!-- release-copy:changelog -->` and
+`<!-- release-copy:readme -->`) is highest priority: it is pasted verbatim,
+tagged `<!-- copy:locked -->`, and never sent to Groq for rewrite. prepare_release
+promotes locked README Upcoming into What's New as-is.
+"""
 
 from __future__ import annotations
 
@@ -43,10 +49,18 @@ README_AI_NOTICE = (
 )
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "openai/gpt-oss-120b"
-GROQ_USER_AGENT = "boxlore-changelog/1.3"
+GROQ_USER_AGENT = "boxlore-changelog/1.4"
 CATEGORY_ORDER = ("Added", "Changed", "Fixed", "Deprecated", "Removed", "Security")
-README_GROUP_ORDER = ("New features", "Improvements", "Fixes", "Security", "Other")
+README_GROUP_ORDER = (
+    "Critical",
+    "New features",
+    "Improvements",
+    "Fixes",
+    "Security",
+    "Other",
+)
 README_GROUP_EMOJI = {
+    "Critical": "🚨",
     "New features": "🆕",
     "Improvements": "⚡",
     "Fixes": "🐛",
@@ -57,6 +71,7 @@ DEFAULT_GITHUB_REPOSITORY = "boxcreate/boxlore"
 
 # Required: exactly one user-impact level. Optional: backend-change (pairable).
 USER_IMPACT_LABELS = (
+    "user-impact-critical",
     "user-impact-high",
     "user-impact-medium",
     "user-impact-low",
@@ -64,6 +79,7 @@ USER_IMPACT_LABELS = (
 )
 BACKEND_CHANGE_LABEL = "backend-change"
 USER_IMPACT_SCORE = {
+    "user-impact-critical": 100,
     "user-impact-high": 95,
     "user-impact-medium": 70,
     "user-impact-low": 45,
@@ -71,6 +87,9 @@ USER_IMPACT_SCORE = {
 }
 # Legacy labels still recognized when reading older CHANGELOG markers / open PRs.
 USER_IMPACT_ALIASES = {
+    "user-impact-critical": "user-impact-critical",
+    "user impact critical": "user-impact-critical",
+    "user-impact-critical-fix": "user-impact-critical",
     "user-impact-high": "user-impact-high",
     "user impact high": "user-impact-high",
     "user-impact": "user-impact-high",
@@ -95,6 +114,37 @@ IMPACT_MARKER_RE = re.compile(
     r"<!--\s*impact:([a-z0-9\-]+)(?:\+(backend-change))?\s*-->",
     re.IGNORECASE,
 )
+COPY_LOCKED_MARKER = "<!-- copy:locked -->"
+COPY_LOCKED_RE = re.compile(r"<!--\s*copy:locked\s*-->", re.IGNORECASE)
+PR_CHANGELOG_COPY_START = "<!-- release-copy:changelog:start -->"
+PR_CHANGELOG_COPY_END = "<!-- release-copy:changelog:end -->"
+PR_README_COPY_START = "<!-- release-copy:readme:start -->"
+PR_README_COPY_END = "<!-- release-copy:readme:end -->"
+README_COPY_BLOCK_RE = re.compile(
+    r"<!--\s*readme-copy:start\s+pr=(\d+)\s*-->\s*(.*?)\s*"
+    r"<!--\s*readme-copy:end\s+pr=\1\s*-->",
+    re.DOTALL | re.IGNORECASE,
+)
+PLACEHOLDER_BULLET_RE = re.compile(
+    r"^(?:[-*]\s*)?(?:tbd|todo|n/?a|…|\.{3}|-)?\s*$",
+    re.IGNORECASE,
+)
+KEEP_A_CHANGELOG_HEADER_RE = re.compile(
+    r"^###\s+(Added|Changed|Fixed|Deprecated|Removed|Security)\s*$",
+    re.IGNORECASE,
+)
+README_HEADING_ALIASES = {
+    "critical": "Critical",
+    "new features": "New features",
+    "added": "New features",
+    "improvements": "Improvements",
+    "changed": "Improvements",
+    "fixes": "Fixes",
+    "fixed": "Fixes",
+    "security": "Security",
+    "other": "Other",
+}
+CATEGORY_BY_LOWER = {name.lower(): name for name in CATEGORY_ORDER}
 
 
 def _github_repository() -> str:
@@ -149,6 +199,8 @@ def _resolve_pr_tags(
         if user_impact is None:
             # Prefer explicit level phrases before legacy aliases.
             for alias in (
+                "user-impact-critical",
+                "user impact critical",
                 "user-impact-high",
                 "user impact high",
                 "user-impact-medium",
@@ -193,15 +245,41 @@ def _strip_impact_marker(text: str) -> str:
     return IMPACT_MARKER_RE.sub("", text).strip()
 
 
+def _is_copy_locked(text: str) -> bool:
+    return bool(COPY_LOCKED_RE.search(text or ""))
+
+
+def _strip_copy_locked(text: str) -> str:
+    return COPY_LOCKED_RE.sub("", text or "").strip()
+
+
+def _strip_changelog_markers(text: str) -> str:
+    return _strip_copy_locked(_strip_impact_marker(text)).strip()
+
+
+def _attach_copy_locked(text: str) -> str:
+    cleaned = _strip_copy_locked(text)
+    if not cleaned:
+        return cleaned
+    return f"{cleaned} {COPY_LOCKED_MARKER}"
+
+
 def _attach_impact(
     text: str,
     impact: str | None,
     backend_change: bool = False,
+    copy_locked: bool = False,
 ) -> str:
-    cleaned = _strip_impact_marker(text).strip()
-    if not cleaned or not impact:
+    was_locked = copy_locked or _is_copy_locked(text)
+    cleaned = _strip_changelog_markers(text).strip()
+    if not cleaned:
         return cleaned
-    return f"{cleaned} {_impact_marker(impact, backend_change)}"
+    parts = [cleaned]
+    if impact:
+        parts.append(_impact_marker(impact, backend_change))
+    if was_locked:
+        parts.append(COPY_LOCKED_MARKER)
+    return " ".join(parts)
 
 
 def _labels_from_env_or_payload(payload: dict | None = None) -> list[str]:
@@ -250,6 +328,113 @@ def _pr_already_present(content: str, pr_number: int) -> bool:
             rf"\[#{pr_number}\]\(https://github\.com/[^/]+/[^/]+/pull/{pr_number}\)",
             content,
         )
+    )
+
+
+def _is_placeholder_bullet(text: str) -> bool:
+    return bool(PLACEHOLDER_BULLET_RE.match((text or "").strip()))
+
+
+def _default_changelog_category(pr_title: str, impact: str | None) -> str:
+    if impact == "user-impact-critical":
+        return "Fixed"
+    title = (pr_title or "").strip()
+    conventional = re.match(
+        r"^(?P<type>feat|fix|chore|ci|docs|refactor|test|perf|build|style)"
+        r"(?:\([^)]*\))?!?:",
+        title,
+        flags=re.IGNORECASE,
+    )
+    if conventional:
+        kind = conventional.group("type").lower()
+        if kind == "feat":
+            return "Added"
+        if kind == "fix":
+            return "Fixed"
+    return "Changed"
+
+
+def _normalize_readme_heading(raw: str, impact: str | None = None) -> str:
+    cleaned = re.sub(r"^[^\w]+", "", (raw or "").strip()).strip()
+    if not cleaned:
+        return "Critical" if impact == "user-impact-critical" else "Improvements"
+    return README_HEADING_ALIASES.get(cleaned.lower(), cleaned)
+
+
+def parse_pr_changelog_copy(
+    body: str,
+    pr_title: str = "",
+    impact: str | None = None,
+) -> dict[str, list[str]]:
+    """Keep a Changelog bullets from the PR body's verbatim changelog region."""
+    inner = (_extract_marked_region(body or "", PR_CHANGELOG_COPY_START, PR_CHANGELOG_COPY_END) or "").strip()
+    if not inner:
+        return {}
+
+    sections: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in inner.splitlines():
+        header = KEEP_A_CHANGELOG_HEADER_RE.match(line.strip())
+        if header:
+            current = CATEGORY_BY_LOWER[header.group(1).lower()]
+            sections.setdefault(current, [])
+            continue
+        match = re.match(r"^[-*]\s+(.+)$", line.strip())
+        if not match:
+            continue
+        bullet = match.group(1).strip()
+        if not bullet or _is_placeholder_bullet(bullet):
+            continue
+        category = current or _default_changelog_category(pr_title, impact)
+        sections.setdefault(category, []).append(bullet)
+    return {key: values for key, values in sections.items() if values}
+
+
+def parse_pr_readme_copy(
+    body: str,
+    impact: str | None = None,
+) -> list[dict[str, list[str]]]:
+    """Listener README bullets from the PR body's verbatim readme region."""
+    inner = (_extract_marked_region(body or "", PR_README_COPY_START, PR_README_COPY_END) or "").strip()
+    if not inner:
+        return []
+    return _parse_readme_copy_inner(inner, impact=impact)
+
+
+def _parse_readme_copy_inner(
+    inner: str,
+    impact: str | None = None,
+) -> list[dict[str, list[str]]]:
+    grouped: dict[str, list[str]] = defaultdict(list)
+    current_heading: str | None = None
+    found_bullet = False
+    leftover: list[str] = []
+    for line in inner.splitlines():
+        stripped = line.strip()
+        header = re.match(r"^###\s+(.+)$", stripped)
+        if header:
+            current_heading = _normalize_readme_heading(header.group(1), impact)
+            continue
+        match = re.match(r"^[-*]\s+(.+)$", stripped)
+        if match:
+            bullet = match.group(1).strip()
+            if not bullet or _is_placeholder_bullet(bullet):
+                continue
+            found_bullet = True
+            heading = current_heading or _normalize_readme_heading("", impact)
+            grouped[heading].append(bullet)
+            continue
+        if stripped and not stripped.startswith("<!--"):
+            leftover.append(stripped)
+
+    if not found_bullet:
+        paragraph = " ".join(leftover).strip()
+        if paragraph and not _is_placeholder_bullet(paragraph):
+            heading = current_heading or _normalize_readme_heading("", impact)
+            grouped[heading].append(paragraph)
+
+    return _sort_readme_groups(
+        [{"heading": heading, "bullets": bullets} for heading, bullets in grouped.items() if bullets]
     )
 
 
@@ -355,6 +540,7 @@ class ChangelogCluster:
     theme: str = "general"
     impact: str | None = None
     backend_change: bool = False
+    copy_locked: bool = False
 
     def text_blob(self) -> str:
         return " ".join(text for _, text in self.items).lower()
@@ -404,11 +590,14 @@ def _cluster_sections_by_pr(sections: dict[str, list[str]]) -> list[ChangelogClu
                 continue
             pr_number = _extract_pr_number(bullet)
             impact, backend = _extract_impact_tags(bullet)
-            cleaned = _strip_impact_marker(_strip_pr_links(bullet))
+            locked = _is_copy_locked(bullet)
+            cleaned = _strip_changelog_markers(_strip_pr_links(bullet))
             cluster = grouped.setdefault(pr_number, ChangelogCluster(pr_number=pr_number))
             cluster.items.append((category, cleaned))
             if backend:
                 cluster.backend_change = True
+            if locked:
+                cluster.copy_locked = True
             if impact:
                 if cluster.impact is None or USER_IMPACT_SCORE[impact] > USER_IMPACT_SCORE.get(
                     cluster.impact, 0
@@ -436,7 +625,8 @@ def _render_clustered_changelog(clusters: list[ChangelogCluster]) -> str:
         impact = cluster.impact or "unlabeled"
         backend = " backend-change" if cluster.backend_change else ""
         lines.append(
-            f"## {label} | impact {impact}{backend} | importance {cluster.importance} | theme: {cluster.theme}"
+            f"## {label} | impact {impact}{backend} | importance {cluster.importance} | "
+            f"theme: {cluster.theme}{' | copy-locked' if cluster.copy_locked else ''}"
         )
         by_category: dict[str, list[str]] = defaultdict(list)
         for category, text in cluster.items:
@@ -527,11 +717,13 @@ def _format_changelog_bullet(
     pr_number: int | None,
     impact: str | None = None,
     backend_change: bool = False,
+    copy_locked: bool = False,
 ) -> str:
     return _attach_impact(
         _format_readme_bullet(text, pr_number),
         impact,
         backend_change=backend_change,
+        copy_locked=copy_locked,
     )
 
 
@@ -549,6 +741,7 @@ def _sections_from_cluster_bullets(
     pr_backend = {
         c.pr_number: c.backend_change for c in clusters if c.pr_number is not None
     }
+    pr_locked = {c.pr_number: c.copy_locked for c in clusters if c.pr_number is not None}
 
     def sort_key(item: tuple[str, int | None]) -> tuple[int, str]:
         _, pr_number = item
@@ -566,6 +759,7 @@ def _sections_from_cluster_bullets(
                 pr,
                 pr_impact.get(pr) if pr is not None else None,
                 pr_backend.get(pr, False) if pr is not None else False,
+                copy_locked=pr_locked.get(pr, False) if pr is not None else False,
             )
             for text, pr in sorted_items
             if text.strip()
@@ -579,6 +773,10 @@ def _fallback_changelog_from_clusters(clusters: list[ChangelogCluster]) -> dict[
     curated: dict[str, list[tuple[str, int | None]]] = defaultdict(list)
     for cluster in clusters:
         if not cluster.items:
+            continue
+        if cluster.copy_locked:
+            for category, text in cluster.items:
+                curated[category].append((text, cluster.pr_number))
             continue
         by_category: dict[str, list[str]] = defaultdict(list)
         for category, text in cluster.items:
@@ -610,17 +808,18 @@ Audience: developers — use technical, precise language (class names, tiers, mo
 This is NOT the user-facing README; do not simplify away useful implementation detail.
 
 Input is grouped by PR/theme with impact tags and importance scores. Each ## block is one merged feature area.
-Impact levels: user-impact-high (~95), user-impact-medium (~70), user-impact-low (~45), no-user-impact (~12).
+Impact levels: user-impact-critical (~100), user-impact-high (~95), user-impact-medium (~70), user-impact-low (~45), no-user-impact (~12).
 Optional flag backend-change may appear with any impact level (pairable).
+Blocks marked copy-locked are author-written and must be preserved verbatim — do not rewrite, merge, or drop them.
 
 Return ONLY valid JSON:
 {"Added": [{"text": "...", "pr": 853}, ...], "Changed": [...], "Fixed": [...], "Removed": [...], ...}
 
 Rules:
-1. ONE bullet object per ## block per category. Merge all [Added] lines in a block into one Added bullet; same for Changed/Fixed/Removed.
+1. ONE bullet object per ## block per category. Merge all [Added] lines in a block into one Added bullet; same for Changed/Fixed/Removed. Exception: copy-locked blocks keep every bullet unchanged.
 2. Include "pr" from the ## PR #NNN header on every bullet.
 3. Preserve every ## block so release reconciliation can prove each merged PR is represented. Put no-user-impact / tooling last and collapse it to one concise Changed bullet.
-4. Within each category array, order bullets by importance (user-impact-high first, no-user-impact last). backend-change does not by itself lower priority when paired with a user-impact level.
+4. Within each category array, order bullets by importance (user-impact-critical first, then high, no-user-impact last). backend-change does not by itself lower priority when paired with a user-impact level.
 5. Keep a Changelog category names exactly: Added, Changed, Fixed, Deprecated, Removed, Security.
 6. No PR numbers inside "text" (appended separately). No markdown headers in output.
 7. Prefer 2–4 bullets per PR cluster total across categories, not one line per commit.
@@ -675,21 +874,222 @@ Do NOT use README listener tone like "shows why each item is there" — use prov
     return _fallback_changelog_from_clusters(clusters)
 
 
-def _replace_unreleased_sections(content: str, sections: dict[str, list[str]]) -> str:
+def _unreleased_bounds(content: str) -> tuple[int, int] | None:
     match = re.search(r"^## \[Unreleased\]\s*$", content, flags=re.MULTILINE)
     if not match:
-        raise ValueError("Could not find '## [Unreleased]' header in CHANGELOG.md")
-
+        return None
     start = match.end()
     next_version = re.search(r"^## \[", content[start:], flags=re.MULTILINE)
     end = start + next_version.start() if next_version else len(content)
+    return start, end
 
+
+def _unreleased_raw(content: str) -> str:
+    bounds = _unreleased_bounds(content)
+    if bounds is None:
+        return ""
+    start, end = bounds
+    return content[start:end]
+
+
+def _collect_readme_copy_blocks(unreleased_block: str) -> dict[int, str]:
+    return {
+        int(match.group(1)): match.group(0).strip()
+        for match in README_COPY_BLOCK_RE.finditer(unreleased_block)
+    }
+
+
+def _strip_readme_copy_blocks(text: str) -> str:
+    stripped = README_COPY_BLOCK_RE.sub("", text)
+    return re.sub(r"\n{3,}", "\n\n", stripped).strip()
+
+
+def _render_readme_copy_block(pr_number: int, groups: list[dict[str, list[str]]]) -> str:
+    lines = [f"<!-- readme-copy:start pr={pr_number} -->"]
+    for group in groups:
+        heading = str(group.get("heading") or "").strip()
+        bullets = [str(item).strip() for item in group.get("bullets") or [] if str(item).strip()]
+        if not bullets:
+            continue
+        if heading:
+            lines.append(f"### {heading}")
+        for bullet in bullets:
+            lines.append(f"- {bullet}")
+    lines.append(f"<!-- readme-copy:end pr={pr_number} -->")
+    return "\n".join(lines)
+
+
+def _write_unreleased_region(
+    content: str,
+    sections: dict[str, list[str]],
+    copy_blocks: dict[int, str] | None = None,
+) -> str:
+    bounds = _unreleased_bounds(content)
+    if bounds is None:
+        raise ValueError("Could not find '## [Unreleased]' header in CHANGELOG.md")
+    start, end = bounds
+    if copy_blocks is None:
+        copy_blocks = _collect_readme_copy_blocks(content[start:end])
     rendered = _render_unreleased(sections)
-    replacement = f"\n{rendered}\n" if rendered else "\n"
+    extras = "\n\n".join(
+        copy_blocks[number] for number in sorted(copy_blocks) if copy_blocks[number].strip()
+    )
+    if rendered and extras:
+        replacement = f"\n{rendered}\n\n{extras}\n"
+    elif rendered:
+        replacement = f"\n{rendered}\n"
+    elif extras:
+        replacement = f"\n{extras}\n"
+    else:
+        replacement = "\n"
     updated = content[:start] + replacement + content[end:]
     if not updated.endswith("\n"):
         updated += "\n"
     return updated
+
+
+def _replace_unreleased_sections(
+    content: str,
+    sections: dict[str, list[str]],
+    copy_blocks: dict[int, str] | None = None,
+) -> str:
+    return _write_unreleased_region(content, sections, copy_blocks=copy_blocks)
+
+
+def _upsert_readme_copy_block(
+    content: str,
+    pr_number: int,
+    groups: list[dict[str, list[str]]],
+) -> str:
+    bounds = _unreleased_bounds(content)
+    if bounds is None:
+        raise ValueError("Could not find '## [Unreleased]' header in CHANGELOG.md")
+    start, end = bounds
+    block = content[start:end]
+    copy_blocks = _collect_readme_copy_blocks(block)
+    copy_blocks[pr_number] = _render_readme_copy_block(pr_number, groups)
+    sections = _parse_unreleased_sections(block)
+    return _write_unreleased_region(content, sections, copy_blocks)
+
+
+def _partition_locked_sections(
+    sections: dict[str, list[str]],
+) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    locked: dict[str, list[str]] = {}
+    unlocked: dict[str, list[str]] = {}
+    for category, bullets in sections.items():
+        for bullet in bullets:
+            dest = locked if _is_copy_locked(bullet) else unlocked
+            dest.setdefault(category, []).append(bullet)
+    return locked, unlocked
+
+
+def _bullet_sort_key(bullet: str) -> tuple[int, int]:
+    impact, _ = _extract_impact_tags(bullet)
+    score = USER_IMPACT_SCORE.get(impact or "", 0)
+    pr_number = _extract_pr_number(bullet) or 0
+    return (-score, pr_number)
+
+
+def _sort_section_bullets(sections: dict[str, list[str]]) -> dict[str, list[str]]:
+    return {
+        category: sorted(bullets, key=_bullet_sort_key)
+        for category, bullets in sections.items()
+        if bullets
+    }
+
+
+def _merge_locked_and_curated(
+    locked: dict[str, list[str]],
+    curated: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    locked_prs = {
+        _extract_pr_number(bullet)
+        for bullets in locked.values()
+        for bullet in bullets
+        if _extract_pr_number(bullet) is not None
+    }
+    merged: dict[str, list[str]] = {}
+    for category in CATEGORY_ORDER:
+        locked_bullets = sorted(locked.get(category, []), key=_bullet_sort_key)
+        curated_bullets = [
+            bullet
+            for bullet in curated.get(category, [])
+            if _extract_pr_number(bullet) not in locked_prs
+        ]
+        combined = locked_bullets + curated_bullets
+        if combined:
+            merged[category] = combined
+    return merged
+
+
+def _sections_excluding_prs(
+    sections: dict[str, list[str]],
+    pr_numbers: set[int],
+) -> dict[str, list[str]]:
+    filtered: dict[str, list[str]] = {}
+    for category, bullets in sections.items():
+        kept = [
+            bullet
+            for bullet in bullets
+            if (pr := _extract_pr_number(bullet)) is None or pr not in pr_numbers
+        ]
+        if kept:
+            filtered[category] = kept
+    return filtered
+
+
+def _locked_readme_groups_from_changelog(
+    content: str,
+) -> tuple[list[dict[str, list[str]]], set[int]]:
+    grouped: dict[str, list[str]] = defaultdict(list)
+    locked_prs: set[int] = set()
+    for match in README_COPY_BLOCK_RE.finditer(_unreleased_raw(content)):
+        pr_number = int(match.group(1))
+        locked_prs.add(pr_number)
+        for group in _parse_readme_copy_inner(match.group(2)):
+            heading = group["heading"]
+            for bullet in group["bullets"]:
+                grouped[heading].append(_format_readme_bullet(bullet, pr_number))
+    groups = _sort_readme_groups(
+        [{"heading": heading, "bullets": bullets} for heading, bullets in grouped.items() if bullets]
+    )
+    return groups, locked_prs
+
+
+def _drop_prs_from_readme_groups(
+    groups: list[dict[str, list[str]]],
+    pr_numbers: set[int],
+) -> list[dict[str, list[str]]]:
+    cleaned: list[dict[str, list[str]]] = []
+    for group in groups:
+        bullets = [
+            bullet
+            for bullet in group.get("bullets") or []
+            if (pr := _extract_pr_number(bullet)) is None or pr not in pr_numbers
+        ]
+        if bullets:
+            cleaned.append({"heading": group["heading"], "bullets": bullets})
+    return cleaned
+
+
+def _merge_readme_groups(
+    locked: list[dict[str, list[str]]],
+    ai_groups: list[dict[str, list[str]]],
+) -> list[dict[str, list[str]]]:
+    by_heading: dict[str, list[str]] = defaultdict(list)
+    seen: dict[str, set[str]] = defaultdict(set)
+    for source in (locked, ai_groups):
+        for group in source:
+            heading = group["heading"]
+            for bullet in group.get("bullets") or []:
+                if bullet in seen[heading]:
+                    continue
+                seen[heading].add(bullet)
+                by_heading[heading].append(bullet)
+    return _sort_readme_groups(
+        [{"heading": heading, "bullets": bullets} for heading, bullets in by_heading.items() if bullets]
+    )
 
 
 def _format_readme_bullet(text: str, pr_number: int | None) -> str:
@@ -711,6 +1111,8 @@ def _parse_readme_bullet(entry: object) -> tuple[str, int | None]:
 
 
 def _dominant_readme_heading(cluster: ChangelogCluster) -> str:
+    if cluster.impact == "user-impact-critical":
+        return "Critical"
     categories = {cat for cat, _ in cluster.items}
     if "Added" in categories:
         return "New features"
@@ -729,6 +1131,8 @@ def _readme_eligible(cluster: ChangelogCluster) -> bool:
         return False
     if cluster.impact == "no-user-impact":
         return False
+    if cluster.impact == "user-impact-critical":
+        return True
     if cluster.impact == "user-impact-high":
         return True
     if cluster.impact == "user-impact-medium":
@@ -786,6 +1190,7 @@ Return ONLY valid JSON:
 Each bullet MUST include "pr" copied from the matching ## PR #NNN block in the input. One bullet object per ## block you keep.
 
 Allowed headings (exactly one per group, omit empty):
+- "Critical" — correctness fixes listeners already feel (missing episodes, late alerts). Lead the list.
 - "New features" — new capabilities listeners can use (from Added clusters that are truly new surfaces)
 - "Improvements" — clearer UI, polish, safer dismissal, better update notes (prefer this for announcement/dialog polish)
 - "Fixes" — bugs resolved (from Fixed clusters)
@@ -795,14 +1200,15 @@ MANDATORY clustering rules:
 1. ONE README bullet per input ## block in most cases. Never split a single PR/theme across multiple bullets.
 2. For importance 90+ themes (queue, playback, discovery): allow at most TWO bullets if they describe clearly distinct user wins; prefer ONE strong sentence.
 3. For importance 40–55 themes (NPS, surveys, review prompts): exactly ONE bullet, never lead the list.
-4. Drop clusters with importance below 40 / no-user-impact entirely from README. Include user-impact-high and user-impact-medium always; user-impact-low when space allows. backend-change may be paired with any user-impact level and does not exclude README by itself.
-5. Merge all bullets inside a ## block before writing — e.g. four queue bullets → one: "Smart queue auto-refills, shows why items appear, supports drag reorder, and undo remove."
-6. Sort bullets within each group by the cluster importance score (highest first). user-impact-high MUST appear before medium/low.
-7. Cap at 8 bullets total across all groups.
+4. Drop clusters with importance below 40 / no-user-impact entirely from README. Include user-impact-critical, user-impact-high and user-impact-medium always; user-impact-low when space allows. backend-change may be paired with any user-impact level and does not exclude README by itself.
+5. Merge all bullets inside a ## block before writing — e.g. four queue bullets → one: "Smart queue auto-refills, shows why items appear, supports drag reorder, and undo remove." Never rewrite copy-locked blocks.
+6. Sort bullets within each group by the cluster importance score (highest first). user-impact-critical MUST appear before high/medium/low.
+7. Cap at 8 bullets total across all groups. Copy-locked bullets are exempt from the cap and must be kept.
 8. Prefer concrete listener outcomes (easier to read update notes, harder to dismiss by accident, Play installs skip GitHub download prompts) over UI toolkit or logging details.
 
 Importance guidance (respect the scores in input):
-- user-impact-high / 90–100: headline features
+- user-impact-critical / 100: lead README / What's New; author copy if present
+- user-impact-high / 90–99: headline features
 - user-impact-medium / 70–89: solid README entries
 - user-impact-low / 40–55: optional shorter lines
 - no-user-impact / below 40: omit from README (CHANGELOG only)
@@ -890,6 +1296,7 @@ Ignore implementation detail; keep listener-facing outcomes only.
 
 
 def _parse_unreleased_sections(unreleased_block: str) -> dict[str, list[str]]:
+    unreleased_block = README_COPY_BLOCK_RE.sub("", unreleased_block)
     sections: dict[str, list[str]] = {}
     current: str | None = None
     for line in unreleased_block.splitlines():
@@ -921,6 +1328,7 @@ def _merge_entries(
     pr_number: int,
     impact: str | None = None,
     backend_change: bool = False,
+    copy_locked: bool = False,
 ) -> dict[str, list[str]]:
     merged = {key: list(values) for key, values in existing.items()}
     suffix = _pr_suffix(pr_number)
@@ -930,7 +1338,12 @@ def _merge_entries(
         seen = set(merged[category])
         for bullet in bullets:
             tagged = bullet if _pr_already_present(bullet, pr_number) else f"{bullet} {suffix}".strip()
-            tagged = _attach_impact(tagged, impact, backend_change=backend_change)
+            tagged = _attach_impact(
+                tagged,
+                impact,
+                backend_change=backend_change,
+                copy_locked=copy_locked,
+            )
             if tagged not in seen:
                 merged[category].append(tagged)
                 seen.add(tagged)
@@ -949,7 +1362,7 @@ def _extract_unreleased_sections(content: str) -> dict[str, list[str]]:
 
 
 def _bullet_to_html_list_item(bullet: str) -> str:
-    cleaned = _strip_impact_marker(bullet.strip())
+    cleaned = _strip_changelog_markers(bullet.strip())
     match = re.search(r"^(.*?)\s*\(\[#(\d+)\]\(([^)]+)\)\)\s*$", cleaned)
     if match:
         text, pr_number, url = match.groups()
@@ -991,12 +1404,22 @@ def _parse_release_meta(whats_new_inner: str) -> tuple[str, str] | None:
     return match.group(1), match.group(2)
 
 
-def _render_whats_new_inner(version_tag: str, release_date: str, body_html: str) -> str:
+def _render_whats_new_inner(
+    version_tag: str,
+    release_date: str,
+    body_html: str,
+    include_ai_notice: bool = True,
+) -> str:
     body = body_html.strip()
+    if include_ai_notice:
+        return (
+            f"<!-- release-meta: version={version_tag} date={release_date} -->\n"
+            f"{body}\n"
+            f"{README_AI_NOTICE}"
+        )
     return (
         f"<!-- release-meta: version={version_tag} date={release_date} -->\n"
-        f"{body}\n"
-        f"{README_AI_NOTICE}"
+        f"{body}"
     )
 
 
@@ -1021,10 +1444,12 @@ def _render_readme_upcoming_body(groups: list[dict[str, list[str]]] | None = Non
     return EMPTY_UPCOMING_TEXT
 
 
-def _format_upcoming_inner(body: str) -> str:
+def _format_upcoming_inner(body: str, include_ai_notice: bool = True) -> str:
     stripped = body.strip()
     if not stripped:
         stripped = EMPTY_UPCOMING_TEXT
+    if not include_ai_notice:
+        return stripped
     if stripped == EMPTY_UPCOMING_TEXT or (
         not stripped.startswith("<ul") and not stripped.startswith("<b>")
     ):
@@ -1032,16 +1457,18 @@ def _format_upcoming_inner(body: str) -> str:
     return f"{stripped}\n{README_AI_NOTICE}"
 
 
-def _render_release_notes_shell(*, upcoming_inner: str, whats_new_inner: str | None) -> str:
-    upcoming = _format_upcoming_inner(upcoming_inner)
+def _render_release_notes_shell(
+    *,
+    upcoming_inner: str,
+    whats_new_inner: str | None,
+    include_ai_notice: bool = True,
+) -> str:
+    upcoming = _format_upcoming_inner(upcoming_inner, include_ai_notice=include_ai_notice)
     whats_new_block = ""
     if whats_new_inner and whats_new_inner.strip():
         meta = _parse_release_meta(whats_new_inner) or ("v0.0.0", "1970-01-01")
         version_tag, release_date = meta
-        # Ensure AI notice once on published notes.
         body = whats_new_inner.strip()
-        if "AI-generated summary; may contain mistakes." not in body:
-            body = f"{body.rstrip()}\n{README_AI_NOTICE}"
         whats_new_block = (
             f"\n\n### What's New · `{version_tag}` · {release_date}\n\n"
             f"{RELEASE_WHATS_NEW_START}\n"
@@ -1060,7 +1487,12 @@ def _render_release_notes_shell(*, upcoming_inner: str, whats_new_inner: str | N
     )
 
 
-def _render_readme_upcoming_block(content: str, groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
+def _render_readme_upcoming_block(
+    content: str,
+    groups: list[dict[str, list[str]]] | None = None,
+    bullets: list[str] | None = None,
+    include_ai_notice: bool = True,
+) -> str:
     """Rewrite the Upcoming body; preserve the latest What's New region if present."""
     body = _render_readme_upcoming_body(groups=groups, bullets=bullets)
     existing_whats_new = _extract_marked_region(
@@ -1086,11 +1518,22 @@ def _render_readme_upcoming_block(content: str, groups: list[dict[str, list[str]
     return _render_release_notes_shell(
         upcoming_inner=body,
         whats_new_inner=existing_whats_new,
+        include_ai_notice=include_ai_notice,
     )
 
 
-def _update_readme(content: str, groups: list[dict[str, list[str]]] | None = None, bullets: list[str] | None = None) -> str:
-    block = _render_readme_upcoming_block(content, groups=groups, bullets=bullets)
+def _update_readme(
+    content: str,
+    groups: list[dict[str, list[str]]] | None = None,
+    bullets: list[str] | None = None,
+    include_ai_notice: bool = True,
+) -> str:
+    block = _render_readme_upcoming_block(
+        content,
+        groups=groups,
+        bullets=bullets,
+        include_ai_notice=include_ai_notice,
+    )
     pattern = re.compile(
         re.escape(UPCOMING_CHANGES_START) + r".*?" + re.escape(UPCOMING_CHANGES_END),
         flags=re.DOTALL,
@@ -1126,39 +1569,28 @@ def _update_changelog(
     pr_number: int,
     impact: str | None = None,
     backend_change: bool = False,
+    copy_locked: bool = False,
 ) -> tuple[str, bool]:
     if _pr_already_present(content, pr_number):
         print(f"CHANGELOG already contains entry for PR #{pr_number}; skipping merge.")
         return content, False
 
-    match = re.search(r"^## \[Unreleased\]\s*$", content, flags=re.MULTILINE)
-    if not match:
+    bounds = _unreleased_bounds(content)
+    if bounds is None:
         raise ValueError("Could not find '## [Unreleased]' header in CHANGELOG.md")
-
-    start = match.end()
-    next_version = re.search(r"^## \[", content[start:], flags=re.MULTILINE)
-    end = start + next_version.start() if next_version else len(content)
-
+    start, end = bounds
     unreleased_block = content[start:end]
     existing = _parse_unreleased_sections(unreleased_block)
+    copy_blocks = _collect_readme_copy_blocks(unreleased_block)
     merged = _merge_entries(
         existing,
         entries,
         pr_number,
         impact=impact,
         backend_change=backend_change,
+        copy_locked=copy_locked,
     )
-    rendered = _render_unreleased(merged)
-
-    if rendered:
-        replacement = f"\n{rendered}\n"
-    else:
-        replacement = "\n"
-
-    updated = content[:start] + replacement + content[end:]
-    if not updated.endswith("\n"):
-        updated += "\n"
-    return updated, True
+    return _write_unreleased_region(content, merged, copy_blocks), True
 
 
 def append_changelog(
@@ -1189,16 +1621,27 @@ def append_changelog(
             print(f"PR #{pr_number} also has backend-change")
 
     changelog_original = CHANGELOG_PATH.read_text(encoding="utf-8")
-    entries = _groq_entries(api_key, pr_number, pr_title, pr_body)
-    if not entries:
-        print(
-            f"Groq returned no changelog entries for PR #{pr_number}; "
-            "synthesizing a Changed/Added/Fixed bullet from the PR title."
-        )
-        entries = _fallback_entries_from_title(pr_title)
+    locked_entries = parse_pr_changelog_copy(pr_body, pr_title, impact)
+    copy_locked = bool(locked_entries)
+    if copy_locked:
+        print(f"PR #{pr_number}: using verbatim CHANGELOG copy from the PR body (not Groq).")
+        entries = locked_entries
+    else:
+        if impact == "user-impact-critical":
+            print(
+                f"::warning::PR #{pr_number} is user-impact-critical but "
+                "release-copy:changelog is empty; falling back to Groq."
+            )
+        entries = _groq_entries(api_key, pr_number, pr_title, pr_body)
         if not entries:
-            print("Could not synthesize a changelog entry from the PR title.")
-            return False
+            print(
+                f"Groq returned no changelog entries for PR #{pr_number}; "
+                "synthesizing a Changed/Added/Fixed bullet from the PR title."
+            )
+            entries = _fallback_entries_from_title(pr_title)
+            if not entries:
+                print("Could not synthesize a changelog entry from the PR title.")
+                return False
 
     changelog_updated, changelog_changed = _update_changelog(
         changelog_original,
@@ -1206,9 +1649,26 @@ def append_changelog(
         pr_number,
         impact=impact,
         backend_change=backend_change,
+        copy_locked=copy_locked,
     )
     if changelog_changed:
-        CHANGELOG_PATH.write_text(changelog_updated, encoding="utf-8")
+        changelog_original = changelog_updated
+
+    readme_groups = parse_pr_readme_copy(pr_body, impact)
+    if readme_groups:
+        print(f"PR #{pr_number}: storing verbatim README copy for Upcoming / What's New.")
+        with_copy = _upsert_readme_copy_block(changelog_original, pr_number, readme_groups)
+        if with_copy != changelog_original:
+            changelog_original = with_copy
+            changelog_changed = True
+    elif impact == "user-impact-critical":
+        print(
+            f"::warning::PR #{pr_number} is user-impact-critical but "
+            "release-copy:readme is empty; README will be Groq-curated."
+        )
+
+    if changelog_changed:
+        CHANGELOG_PATH.write_text(changelog_original, encoding="utf-8")
         print(f"Updated CHANGELOG.md for PR #{pr_number}.")
     else:
         print(f"No CHANGELOG changes for PR #{pr_number}.")
@@ -1222,17 +1682,24 @@ def sync_changelog_unreleased(api_key: str) -> bool:
 
     original = CHANGELOG_PATH.read_text(encoding="utf-8")
     unreleased = _extract_unreleased_sections(original)
-    if not unreleased:
+    copy_blocks = _collect_readme_copy_blocks(_unreleased_raw(original))
+    if not unreleased and not copy_blocks:
         print("No [Unreleased] entries to curate.")
         return False
 
-    print("Curating CHANGELOG [Unreleased] grouping and priority...")
-    curated = _groq_curate_changelog_unreleased(api_key, unreleased)
-    if not curated:
-        print("CHANGELOG curation produced no entries.")
-        return False
+    locked, unlocked = _partition_locked_sections(unreleased)
+    if not any(unlocked.values()):
+        print("All [Unreleased] bullets are copy-locked; skipping Groq CHANGELOG curation.")
+        curated = _sort_section_bullets(locked)
+    else:
+        print("Curating unlocked CHANGELOG bullets with Groq; preserving copy-locked bullets.")
+        groq_curated = _groq_curate_changelog_unreleased(api_key, unlocked)
+        if not groq_curated and not any(locked.values()):
+            print("CHANGELOG curation produced no entries.")
+            return False
+        curated = _merge_locked_and_curated(locked, groq_curated or {})
 
-    updated = _replace_unreleased_sections(original, curated)
+    updated = _replace_unreleased_sections(original, curated, copy_blocks=copy_blocks)
     if updated != original:
         CHANGELOG_PATH.write_text(updated, encoding="utf-8")
         print("Re-grouped CHANGELOG.md [Unreleased] section.")
@@ -1258,15 +1725,37 @@ def sync_readme_upcoming(api_key: str) -> bool:
         print("No [Unreleased] entries; clearing README upcoming section.")
         readme_updated = _update_readme(readme_original)
     else:
-        print("Curating README from all [Unreleased] changelog entries...")
-        groups = _groq_curate_readme_upcoming(api_key, unreleased)
-        if groups:
-            readme_updated = _update_readme(readme_original, groups=groups)
+        locked_groups, locked_prs = _locked_readme_groups_from_changelog(changelog_content)
+        unlocked = _sections_excluding_prs(unreleased, locked_prs)
+        ai_groups: list[dict[str, list[str]]] = []
+        if any(unlocked.values()):
+            print("Curating README from unlocked [Unreleased] changelog entries...")
+            ai_groups = _groq_curate_readme_upcoming(api_key, unlocked)
+            if not ai_groups:
+                print("Grouped curation empty; falling back to cluster bullets.")
+                clusters = _cluster_sections_by_pr(unlocked)
+                ai_groups = _fallback_readme_from_clusters(clusters)
+            ai_groups = _drop_prs_from_readme_groups(ai_groups, locked_prs)
+        elif locked_groups:
+            print("Using verbatim README copy; skipping Groq README curation.")
         else:
-            print("Grouped curation empty; falling back to cluster bullets.")
-            clusters = _cluster_sections_by_pr(unreleased)
-            groups = _fallback_readme_from_clusters(clusters)
-            readme_updated = _update_readme(readme_original, groups=groups)
+            print("Curating README from all [Unreleased] changelog entries...")
+            ai_groups = _groq_curate_readme_upcoming(api_key, unreleased)
+            if not ai_groups:
+                print("Grouped curation empty; falling back to cluster bullets.")
+                clusters = _cluster_sections_by_pr(unreleased)
+                ai_groups = _fallback_readme_from_clusters(clusters)
+
+        groups = _merge_readme_groups(locked_groups, ai_groups)
+        include_ai_notice = bool(ai_groups)
+        if groups:
+            readme_updated = _update_readme(
+                readme_original,
+                groups=groups,
+                include_ai_notice=include_ai_notice,
+            )
+        else:
+            readme_updated = _update_readme(readme_original)
 
     if readme_updated != readme_original:
         README_PATH.write_text(readme_updated, encoding="utf-8")

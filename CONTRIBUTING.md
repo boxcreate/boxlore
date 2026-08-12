@@ -20,7 +20,7 @@ If you have an idea for a new feature or improvement, please submit an issue usi
 - Ensure that your code adheres to standard Kotlin/Android formatting conventions.
 - If your PR introduces a new feature, include relevant documentation updates.
 - Please detail your changes clearly in the PR description so we can review your work properly.
-- Follow the PR template (Conventional Commit title, exactly one `user-impact-*` label).
+- Follow the PR template (Conventional Commit title, exactly one `user-impact-*` label including `user-impact-critical` for correctness fixes). Fill **Release copy** when the change should appear verbatim in CHANGELOG / README What's New.
 - **Merge gate:** unit checks run on every PR push (cancelling prior in-progress runs). Resolve SonarCloud + CodeRabbit threads, wait for `testDebugUnitTest` + `coderabbit-threads-resolved`, then squash-merge. See `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## API & Proxy Repository

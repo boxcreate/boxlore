@@ -580,7 +580,8 @@ def promote_changelog(content: str, target: AppVersion, release_date: str) -> st
         fail("CHANGELOG.md is missing the [Unreleased] header")
     next_version = re.search(r"^## \[", content[header.end() :], flags=re.MULTILINE)
     end = header.end() + next_version.start() if next_version else len(content)
-    release_body = content[header.end() : end].strip()
+    raw_unreleased = content[header.end() : end].strip()
+    release_body = update_changelog._strip_readme_copy_blocks(raw_unreleased)
     if not release_body or not update_changelog._extract_unreleased_sections(content):
         fail("Cannot prepare a release with an empty [Unreleased] section")
 
@@ -620,6 +621,7 @@ def promote_readme(content: str, target: AppVersion, release_date: str) -> str:
             fail("README.md is missing the Upcoming release notes region")
         upcoming_inner = legacy.group(1)
     release_body = upcoming_inner.strip()
+    had_ai_notice = "AI-generated summary; may contain mistakes." in release_body
     # Strip AI notice / empty placeholder before promoting into What's New.
     release_body = re.sub(
         r'<p align="center">\s*<sub><sub>.*?AI-generated summary.*?</sub></sub>\s*</p>\s*',
@@ -638,6 +640,7 @@ def promote_readme(content: str, target: AppVersion, release_date: str) -> str:
         target.tag,
         release_date,
         release_body,
+        include_ai_notice=had_ai_notice,
     )
     replacement = update_changelog._render_release_notes_shell(
         upcoming_inner=update_changelog.EMPTY_UPCOMING_TEXT,

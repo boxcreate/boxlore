@@ -305,7 +305,9 @@ jobs:
           - APK asset: \`${APK_ASSET}\`
           - AAB asset: \`${AAB_ASSET}\`
 
-          > Changelog and README summaries are AI-generated and may contain mistakes. Verify them against the linked pull requests before merging.
+          > Changelog and README use author-written **release-copy** from the PR when
+          > those regions are filled; otherwise they are AI-generated and may contain
+          > mistakes. Verify them against the linked pull requests before merging.
 
           ## On merge
           The protected release job will rebuild this exact merge commit, verify versions and signing identity, then publish the signed APK and AAB with checksums.
