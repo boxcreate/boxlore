@@ -18,7 +18,7 @@
     <td width="16"></td>
     <td align="center" valign="middle">
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.15.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
 <!-- download-apk:end -->
     </td>
   </tr>
@@ -64,6 +64,15 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.15` · 2026-08-12
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.15 date=2026-08-12 -->
 <b>🚨 Critical:</b>
 <ul align="left">
 <li>Fixes an issue where some shows were missing the latest episodes because Podcast Index hadn’t caught up yet <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
@@ -71,23 +80,6 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <li>If episodes still look behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
 <li>Show notifications follow the same path, so new-episode alerts come from the fresher source <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
 </ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.14` · 2026-08-07
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.14 date=2026-08-07 -->
-<b>🆕 New features:</b>
-<ul align="left">
-<li>Add home‑screen widgets for now‑playing, playback controls, and scrollable Subscriptions and New Episodes lists. <a href="https://github.com/boxcreate/boxlore/pull/959"><img src="https://img.shields.io/badge/PR-959-6750A4?style=flat-square" alt="PR #959" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>Redesigned Subscriptions screen with genre filters, hide‑played toggle, and direct‑open setting for quicker access. <a href="https://github.com/boxcreate/boxlore/pull/958"><img src="https://img.shields.io/badge/PR-958-6750A4?style=flat-square" alt="PR #958" height="18"/></a></li>
-<li>Updated button copy and fixed loading placeholders so suggestions appear correctly during searches and onboarding. <a href="https://github.com/boxcreate/boxlore/pull/960"><img src="https://img.shields.io/badge/PR-960-6750A4?style=flat-square" alt="PR #960" height="18"/></a></li>
-</ul>
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-whats-new:end -->
 
 <!-- upcoming-changes:end -->
@@ -193,7 +185,7 @@ Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live
       </td>
       <td width="16"></td>
       <td align="center" valign="middle">
-        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.15.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
       </td>
     </tr>
   </table>
