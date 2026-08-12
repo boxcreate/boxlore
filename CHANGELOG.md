@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- PodcastRepository unions cached publisher-feed extras after the PI page for getEpisodes, offset-0 pagination, and in-show search (skip rss: rows; merged lists are not cached) ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- Check New Episodes polls HTTPS feedUrl on RTDB tracked_podcasts when present (lastRssKey = guid else enclosure); unmatched feed-only drops omit PI episodeId and open the podcast page; GHA never mints negative ids ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- NewEpisodePushHydration refreshes an opted-in feed on FCM, promotes the local tip with markAsNew, and notifies / autodownloads with the local episode id ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+### Changed
+- Subscribe auto-opts in to Missing episodes? when PI vs the publisher feed is disconnected; notifications stay off by default and still do not register on subscribe ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- setNotificationsEnabled(true) writes RTDB tracked_podcasts/{id} including HTTPS feedUrl when the show is opted in; foreground sync heals existing notifying + opted-in rows ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- LatestEpisodeTipLogic never writes an older tip over a newer one; same date + different id still replaces (PI catch-up); feed promotes use updateLatestEpisode(..., markAsNew = true) ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+### Fixed
+- Home Your Shows NEW, the New episodes chip, Podcast Info, and Smart Queue no longer miss publisher-feed episodes that Podcast Index has not ingested yet ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=971 -->
+### Critical
+- Fixes an issue where some shows lagged behind in the Podcast Index catalog
+- When you subscribe, boxlore checks whether that show is stale, then keeps it updated from Podcast Index or the publisher’s feed — whichever is actually current
+- If a show still looks behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed
+- Show notifications follow the same path, so alerts come from the fresher source
+<!-- readme-copy:end pr=971 -->
 ## [v0.0.14] - 2026-08-07
 
 ### Added

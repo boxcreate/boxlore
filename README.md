@@ -64,8 +64,13 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<b>🚨 Critical:</b>
+<ul align="left">
+<li>Fixes an issue where some shows lagged behind in the Podcast Index catalog <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+<li>When you subscribe, boxlore checks whether that show is stale, then keeps it updated from Podcast Index or the publisher’s feed — whichever is actually current <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+<li>If a show still looks behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+<li>Show notifications follow the same path, so alerts come from the fresher source <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
