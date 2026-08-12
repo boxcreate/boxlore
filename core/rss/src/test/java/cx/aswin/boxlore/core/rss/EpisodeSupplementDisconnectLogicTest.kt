@@ -55,4 +55,22 @@ class EpisodeSupplementDisconnectLogicTest {
             ),
         )
     }
+
+    @Test
+    fun `unknown feed tip date without extras is not a disconnect`() {
+        assertFalse(
+            EpisodeSupplementDisconnectLogic.shouldOptIn(
+                feedOnlyCount = 0,
+                newestFeedPublishedDate = 0L,
+                newestBaselinePublishedDate = 100L,
+            ),
+        )
+        assertFalse(
+            EpisodeSupplementDisconnectLogic.shouldOptIn(
+                feedOnlyCount = 0,
+                newestFeedPublishedDate = -1L,
+                newestBaselinePublishedDate = 0L,
+            ),
+        )
+    }
 }
