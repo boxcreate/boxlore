@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
 import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
 import cx.aswin.boxlore.core.catalog.logic.mergeShowSearchResults
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
 
@@ -69,6 +70,11 @@ class PodcastRepository(
     val publicKey: String,
     private val context: android.content.Context,
     internal val rssRepository: RssPodcastRepository,
+    /**
+     * Optional PI episode supplement store (feed-only extras under a PI podcast id).
+     * Null in older tests; production wires [cx.aswin.boxlore.core.rss.EpisodeSupplementRepository].
+     */
+    internal val episodeSupplementRepository: EpisodeSupplementPort? = null,
     private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
     /**
      * Optional override for hermetic JVM/MockWebServer tests. Production leaves this null so

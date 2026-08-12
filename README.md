@@ -40,7 +40,8 @@
 **[Get started](#get-started)** ·
 **[Screenshots](#screenshots)** ·
 **[Install](#install)** ·
-**[Developers](#for-developers)**
+**[Developers](#for-developers)** ·
+**[Roadmap](https://github.com/orgs/boxcreate/projects/2)**
 
 <img src="docs/images/m3/divider.svg" width="820" alt=""/>
 
@@ -243,7 +244,8 @@ Agent notes: [`AGENTS.md`](AGENTS.md) · architecture: [`ARCHITECTURE.md`](ARCHI
 
 1. **Bugs** — [Issues](https://github.com/boxcreate/boxlore/issues)
 2. **Ideas** — [Discussions](https://github.com/boxcreate/boxlore/discussions)
-3. **PRs** — Fork, change, open a pull request
+3. **Roadmap** — [Projects kanban](https://github.com/orgs/boxcreate/projects/2)
+4. **PRs** — Fork, change, open a pull request
 
 ## License
 

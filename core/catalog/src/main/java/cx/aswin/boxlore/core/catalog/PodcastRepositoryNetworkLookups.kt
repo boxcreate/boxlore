@@ -63,7 +63,7 @@ internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): Li
 
 internal suspend fun PodcastRepository.getEpisodeImpl(episodeId: String): Episode? = withContext(Dispatchers.IO) {
     if (episodeId.toLongOrNull()?.let { it < 0L } == true) {
-        return@withContext getRssEpisode(episodeId)
+        return@withContext getRssEpisode(episodeId) ?: getSupplementEpisode(episodeId)
     }
     getNetworkEpisode(episodeId)
 }
@@ -74,6 +74,15 @@ internal suspend fun PodcastRepository.getRssEpisode(episodeId: String): Episode
     throw e
 } catch (e: Exception) {
     android.util.Log.e("PodcastRepository", "RSS getEpisode failed for $episodeId", e)
+    null
+}
+
+internal suspend fun PodcastRepository.getSupplementEpisode(episodeId: String): Episode? = try {
+    episodeSupplementRepository?.getEpisode(episodeId)
+} catch (e: kotlinx.coroutines.CancellationException) {
+    throw e
+} catch (e: Exception) {
+    android.util.Log.e("PodcastRepository", "Supplement getEpisode failed for $episodeId", e)
     null
 }
 

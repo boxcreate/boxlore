@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 
 /** Shared deps for podcast/episode info ViewModels (keeps assembler APIs ≤7 params). */
@@ -37,6 +38,7 @@ object InfoViewModelAssembler {
         deps: InfoSharedDeps,
         subscriptionRepository: SubscriptionRepository,
         rssRepository: RssPodcastRepository,
+        episodeSupplementPort: EpisodeSupplementPort,
         userPrefs: UserPreferencesRepository,
         routeArgs: PodcastInfoRouteArgs,
     ): PodcastInfoViewModel =
@@ -48,6 +50,7 @@ object InfoViewModelAssembler {
             queueManager = deps.queueManager,
             subscriptionRepository = subscriptionRepository,
             rssRepository = rssRepository,
+            episodeSupplementPort = episodeSupplementPort,
             localCatalog = deps.localCatalog,
             userPreferencesRepository = userPrefs,
             entryPoint = routeArgs.entryPoint,
@@ -61,6 +64,7 @@ object InfoViewModelAssembler {
         deps: InfoSharedDeps,
         subscriptionRepository: SubscriptionRepository,
         rssRepository: RssPodcastRepository,
+        episodeSupplementPort: EpisodeSupplementPort,
         userPrefs: UserPreferencesRepository,
         routeArgs: PodcastInfoRouteArgs,
     ): ViewModelProvider.Factory =
@@ -75,6 +79,7 @@ object InfoViewModelAssembler {
                     deps = deps,
                     subscriptionRepository = subscriptionRepository,
                     rssRepository = rssRepository,
+                    episodeSupplementPort = episodeSupplementPort,
                     userPrefs = userPrefs,
                     routeArgs = routeArgs,
                 ) as T

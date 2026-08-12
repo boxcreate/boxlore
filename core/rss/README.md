@@ -10,6 +10,7 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 - `RssPodcastRepository` implements `RssSubscriptionPort` and manages RSS podcast and episode catalog operations.
 - `RssIdGenerator` creates deterministic `rss:` podcast IDs and negative episode IDs.
 - `RssSourceMatcher` provides migration and matching heuristics between Podcast Index and RSS sources.
+- `EpisodeSupplementRepository` implements `EpisodeSupplementPort`: fetches a PI show’s public feed and caches **feed-only** episodes under the Podcast Index id. This is **not** a subscription — it never creates `rss:` library rows, never migrates/retires a PI subscription, and never touches FCM / autodownload. Prefer `RssPodcastRepository` / `RssSubscriptionPort` for true RSS library ownership.
 - `ports.DownloadCacheRelinker` is injected by app wiring so RSS can request download cache relinking without a downloads dependency.
 
 ## Internal structure
@@ -18,6 +19,8 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 src/main/java/cx/aswin/boxlore/core/rss/
   RssFeedClient.kt
   RssPodcastRepository.kt
+  EpisodeSupplementRepository.kt
+  EpisodeSupplementMatcher.kt
   ports/
     DownloadCacheRelinker.kt
 ```
@@ -44,7 +47,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 ## Testing notes
 
 - Unit tests live under `core/rss/src/test`.
-- Existing coverage includes deterministic ID contracts, source matching heuristics, and feed-client helpers.
+- Existing coverage includes deterministic ID contracts, source matching heuristics, feed-client helpers, and episode-supplement matching.
 - MockWebServer is available for feed-fetch tests.
 
 ```bash

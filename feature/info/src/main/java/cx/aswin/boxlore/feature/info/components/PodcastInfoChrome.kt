@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.info.DirectFeedChipState
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -345,6 +348,9 @@ internal fun PodcastInfoTopOverlay(
     hideCompleted: Boolean,
     context: android.content.Context,
     actions: PodcastInfoTopOverlayActions,
+    missingEpisodesChipVisible: Boolean = false,
+    directFeedChip: DirectFeedChipState = DirectFeedChipState.Hidden,
+    onMissingEpisodesClick: () -> Unit = {},
 ) {
     Box(
         modifier =
@@ -375,6 +381,68 @@ internal fun PodcastInfoTopOverlay(
                     .padding(end = 4.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val chipShown =
+                    missingEpisodesChipVisible &&
+                        directFeedChip != DirectFeedChipState.Hidden
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = chipShown,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
+                    val quietColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                    val clickable = directFeedChip == DirectFeedChipState.Offer
+                    TextButton(
+                        onClick = onMissingEpisodesClick,
+                        enabled = clickable,
+                        shape = RoundedCornerShape(percent = 50),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                contentColor = quietColor,
+                                disabledContainerColor =
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                disabledContentColor = quietColor,
+                            ),
+                        modifier =
+                            Modifier
+                                .padding(end = 4.dp)
+                                .heightIn(max = 28.dp),
+                    ) {
+                        when (directFeedChip) {
+                            DirectFeedChipState.Fetching -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(10.dp),
+                                    strokeWidth = 1.5.dp,
+                                    color = quietColor,
+                                )
+                                Spacer(modifier = Modifier.size(5.dp))
+                                Text(
+                                    text = "Fetching…",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = GoogleSansWeight.medium,
+                                    maxLines = 1,
+                                )
+                            }
+                            DirectFeedChipState.Updated -> {
+                                Text(
+                                    text = "Updated",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = GoogleSansWeight.medium,
+                                    maxLines = 1,
+                                )
+                            }
+                            else -> {
+                                Text(
+                                    text = "Missing episodes?",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = GoogleSansWeight.medium,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                }
                 IconButton(
                     onClick = { showShareSheet = true },
                 ) {

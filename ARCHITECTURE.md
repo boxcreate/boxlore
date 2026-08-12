@@ -23,7 +23,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 | WorkManager | `LegacyWorkerFactory` plus permanent `core.data.*` stubs resolve historical FQCNs |
 | Deep links | `boxlore://` and `boxcast://`, plus both HTTPS share-path prefixes |
 | BuildConfig | Prefer `BOXLORE_*`; Gradle still dual-reads `BOXCAST_*` fallbacks |
-| Episode / media IDs | `rss:` prefixes, negative RSS IDs, mediaId prefixes, and `customCacheKey` schemes stay as implemented |
+| Episode / media IDs | `rss:` prefixes, negative RSS IDs, mediaId prefixes, and `customCacheKey` schemes stay as implemented. PI **episode supplements** also use negative episode IDs (generated under an `rss:` feed namespace) but keep `Episode.podcastId` as the Podcast Index show id — they are not `rss:` library rows |
 | Playback instance | One UI-scoped `PlaybackRepository`; routes and workers must not construct a second one |
 | Object graph order | DB → `PodcastRepository` → `QueueRepository` → `PlaybackRepository` → `QueueManager` → `SmartDownloadManager` |
 | Smart Queue refill | Owned by `BoxLorePlaybackService` only |
@@ -53,7 +53,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:prefs` | DataStore and SharedPreferences façades (`UserPreferencesRepository`, `BoxcastPrefs`) | [`core/prefs/README.md`](core/prefs/README.md) |
 | `:core:analytics` | Analytics façade (`AnalyticsHelper`, `Analytics`, `RecordingAnalytics`); PostHog init stays in `:app`. Event names and properties: [`docs/ANALYTICS_EVENT_GLOSSARY.md`](docs/ANALYTICS_EVENT_GLOSSARY.md) | [`core/analytics/README.md`](core/analytics/README.md) |
 | `:core:catalog` | Catalog orchestration: `PodcastRepository`, subscriptions, content sections, backup/restore | [`core/catalog/README.md`](core/catalog/README.md) |
-| `:core:rss` | RSS fetch/parse, `RssPodcastRepository`, `rss:` / negative IDs | [`core/rss/README.md`](core/rss/README.md) |
+| `:core:rss` | RSS fetch/parse, `RssPodcastRepository`, PI episode supplement (`EpisodeSupplementRepository`), `rss:` / negative IDs | [`core/rss/README.md`](core/rss/README.md) |
 | `:core:ranking` | Adaptive scoring, LinUCB, feedback, `AdaptiveRankingDatabase`. Behavior detail: [`docs/recommendation-system.md`](docs/recommendation-system.md) | [`core/ranking/README.md`](core/ranking/README.md) |
 | `:core:downloads` | `DownloadRepository`, Smart Downloads, related WorkManager workers | [`core/downloads/README.md`](core/downloads/README.md) |
 | `:core:playback` | `PlaybackRepository`, queue, Media3 services, smart-queue helpers | [`core/playback/README.md`](core/playback/README.md) |
@@ -187,6 +187,7 @@ Home, Settings, and Info ViewModels are built through assemblers (`HomeViewModel
 | HTTP API | `:core:network` | Separate from RSS |
 | Ranking | `:core:ranking` | Own adaptive Room database; personalization detail in [`docs/recommendation-system.md`](docs/recommendation-system.md) |
 | RSS catalog | `:core:rss` | Negative / `rss:` IDs; exposed through catalog |
+| PI episode supplement | `:core:rss` + `:core:database` | Feed-only extras under PI podcast id; not a subscription |
 
 ## Upgrade failsafes
 

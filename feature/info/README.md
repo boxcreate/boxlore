@@ -13,6 +13,7 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 - Logic helpers under `logic/` and component-level formatters used by tests.
 - Detail UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 - `EpisodeInfoSeekLogic` builds the progress-save payload when seeking an episode that is not the current player item.
+- For PI-owned shows with a valid HTTPS `feedUrl`, Podcast Info’s top bar shows a compact **Missing episodes?** pill (quiet, right-aligned; hides as the header collapses). Confirm opts the show into **direct-feed refresh on every open**. The same pill becomes **Fetching…** then persistent **Updated**. Never uses `RssSubscriptionPort`.
 
 ## Internal structure
 
@@ -53,7 +54,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ## Testing notes
 
 - Unit tests live under `feature/info/src/test`.
-- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, toolbar logic, HTML stripping, and podcast info ViewModel logic.
+- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, toolbar logic, HTML stripping, podcast info ViewModel logic, and episode-supplement merge/eligibility.
 - Catalog HTTP paths are covered in `:core:catalog` tests.
 
 ```bash

@@ -62,4 +62,50 @@ object BoxLoreDatabaseMigrations {
             "CREATE INDEX IF NOT EXISTS index_listening_rollups_episodeId ON listening_rollups(episodeId)",
         )
     }
+
+    fun migrate30To31(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS episode_supplements (
+                podcastId TEXT NOT NULL PRIMARY KEY,
+                feedUrl TEXT NOT NULL,
+                rssNamespaceId TEXT NOT NULL,
+                feedEtag TEXT,
+                feedLastModified TEXT,
+                fetchedAt INTEGER NOT NULL
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS episode_supplement_items (
+                episodeId TEXT NOT NULL PRIMARY KEY CHECK(CAST(episodeId AS INTEGER) < 0),
+                podcastId TEXT NOT NULL,
+                guid TEXT,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                audioUrl TEXT NOT NULL,
+                imageUrl TEXT,
+                duration INTEGER NOT NULL,
+                publishedDate INTEGER NOT NULL,
+                chaptersUrl TEXT,
+                transcriptUrl TEXT,
+                transcripts TEXT,
+                persons TEXT,
+                seasonNumber INTEGER,
+                episodeNumber INTEGER,
+                episodeType TEXT,
+                enclosureType TEXT
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_episode_supplement_items_podcastId " +
+                "ON episode_supplement_items(podcastId)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_episode_supplement_items_podcastId_publishedDate " +
+                "ON episode_supplement_items(podcastId, publishedDate)",
+        )
+    }
 }

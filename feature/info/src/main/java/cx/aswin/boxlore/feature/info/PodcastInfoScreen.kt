@@ -21,6 +21,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,6 +47,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -60,6 +63,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -131,6 +138,8 @@ fun PodcastInfoScreen(
     var showMarkAllPlayedDialog by remember { mutableStateOf(false) }
     var showMarkAllUnplayedDialog by remember { mutableStateOf(false) }
     var showPodcastPlaybackSettings by remember { mutableStateOf(false) }
+    var showMissingEpisodesConfirm by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Permission Launcher for Android 13+ Notification Permission
     val notifPermissionLauncher =
@@ -574,7 +583,45 @@ fun PodcastInfoScreen(
                             onToggleHideCompleted = { viewModel.toggleHideCompleted() },
                             onPlaybackSettings = { showPodcastPlaybackSettings = true },
                         ),
+                    missingEpisodesChipVisible = scrollFraction < 0.5f,
+                    directFeedChip = state.directFeedChip,
+                    onMissingEpisodesClick = {
+                        if (state.directFeedChip == DirectFeedChipState.Offer) {
+                            showMissingEpisodesConfirm = true
+                        }
+                    },
                 )
+
+                if (showMissingEpisodesConfirm) {
+                    AlertDialog(
+                        onDismissRequest = { showMissingEpisodesConfirm = false },
+                        title = { Text("Episode list look outdated?") },
+                        text = {
+                            Text(
+                                "This is uncommon. For a few shows, our catalog can take " +
+                                    "longer to pick up new episodes.\n\n" +
+                                    "Turn this on and we'll load episodes from the show's own " +
+                                    "feed whenever you open this page — you only need to do it once.\n\n" +
+                                    "Home and notifications may still lag until the catalog catches up.",
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showMissingEpisodesConfirm = false
+                                    viewModel.loadMissingEpisodes()
+                                },
+                            ) {
+                                Text("Update episode list")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showMissingEpisodesConfirm = false }) {
+                                Text("Not now")
+                            }
+                        },
+                    )
+                }
 
                 if (showPodcastPlaybackSettings) {
                     cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsSheet(
@@ -598,6 +645,19 @@ fun PodcastInfoScreen(
                 }
 
                 // SNACKBAR HOST (Overlay)
+                LaunchedEffect(state.userMessage) {
+                    val message = state.userMessage ?: return@LaunchedEffect
+                    snackbarHostState.showSnackbar(message)
+                    viewModel.consumeUserMessage()
+                }
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(bottom = bottomContentPadding + 16.dp),
+                )
 
                 // FLOATING TITLE
                 Text(

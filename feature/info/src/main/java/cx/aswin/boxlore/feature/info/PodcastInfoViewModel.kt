@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -42,6 +43,7 @@ class PodcastInfoViewModel(
     private val queueManager: cx.aswin.boxlore.core.playback.QueueManager,
     private val subscriptionRepository: cx.aswin.boxlore.core.catalog.SubscriptionRepository,
     private val rssRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
+    episodeSupplementPort: EpisodeSupplementPort,
     private val localCatalog: LocalCatalogPort,
     private val userPreferencesRepository: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
     private val entryPoint: String?,
@@ -49,6 +51,7 @@ class PodcastInfoViewModel(
     private val scrollDepth: Int?,
     private val searchQuery: String?,
 ) : AndroidViewModel(application) {
+    private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort)
     private val _uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Loading)
 
     private var currentPodcastId: String = ""
@@ -317,6 +320,42 @@ class PodcastInfoViewModel(
         private const val SEARCH_DEBOUNCE_MS = 500L
     }
 
+    fun consumeUserMessage() {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (state.userMessage == null) return
+        _uiState.value = state.copy(userMessage = null)
+    }
+
+    /**
+     * One-shot RSS feed supplement for PI-owned shows. Never calls [cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort].
+     */
+    fun loadMissingEpisodes() {
+        val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (currentState.directFeedChip != DirectFeedChipState.Offer) return
+
+        _uiState.value =
+            currentState.copy(
+                directFeedChip = DirectFeedChipState.Fetching,
+                userMessage = null,
+            )
+        viewModelScope.launch {
+            try {
+                val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                _uiState.value = supplementSupport.refreshMissingEpisodes(latest, announceResult = true)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load missing episodes", e)
+                val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                _uiState.value =
+                    latest.copy(
+                        directFeedChip = DirectFeedChipState.Offer,
+                        userMessage = e.message?.takeIf(String::isNotBlank) ?: "Couldn't load feed",
+                    )
+            }
+        }
+    }
+
     fun loadPodcast(podcastId: String) {
         if (currentPodcastId == podcastId && (_uiState.value is PodcastInfoUiState.Success || _uiState.value is PodcastInfoUiState.Error)) {
             return
@@ -376,15 +415,18 @@ class PodcastInfoViewModel(
                     val cachedPage =
                         repository.getEpisodesPaginated(effectivePodcastId, limit, 0, sortParam)
                     currentOffset = cachedPage.episodes.size
-                    _uiState.value =
+                    val successState =
                         PodcastInfoUiState.Success(
                             podcast = currentPodcast,
                             episodes = cachedPage.episodes,
+                            piEpisodes = cachedPage.episodes,
                             isSubscribed = isSubscribed,
                             hasMoreEpisodes = cachedPage.hasMore,
                             currentSort = initialSort,
                             isLoadingMore = true,
+                            directFeedChip = DirectFeedChipState.Hidden,
                         )
+                    _uiState.value = successState
                     // Conditional: cheap HEAD check for validator-capable feeds, interval-gated
                     // otherwise, so opening a show doesn't re-download unchanged feeds. Pull-to-
                     // refresh calls the forced refreshCatalog path instead.
@@ -414,15 +456,51 @@ class PodcastInfoViewModel(
                     }
 
                     currentOffset = page.episodes.size
-                    _uiState.value =
+                    val baseSuccess =
                         PodcastInfoUiState.Success(
                             podcast = apiPodcastWithFallback,
                             episodes = page.episodes,
+                            piEpisodes = page.episodes,
                             isSubscribed = isSubscribed,
                             hasMoreEpisodes = page.hasMore,
                             currentSort = initialSort,
                             isLoadingMore = false,
                         )
+                    _uiState.value =
+                        supplementSupport.remountWithSupplements(
+                            state = baseSuccess,
+                            piEpisodes = page.episodes,
+                            hasMoreEpisodes = page.hasMore,
+                            isLoadingMore = false,
+                        )
+
+                    if (supplementSupport.shouldRefreshOnOpen(
+                            apiPodcastWithFallback.id,
+                            apiPodcastWithFallback.isRss,
+                        )
+                    ) {
+                        launch {
+                            val latest =
+                                _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                            _uiState.value =
+                                latest.copy(directFeedChip = DirectFeedChipState.Fetching)
+                            try {
+                                _uiState.value =
+                                    supplementSupport.refreshMissingEpisodes(
+                                        state = latest.copy(directFeedChip = DirectFeedChipState.Fetching),
+                                        announceResult = false,
+                                    )
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Silent direct-feed refresh failed", e)
+                                val failed =
+                                    _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                                _uiState.value =
+                                    failed.copy(directFeedChip = DirectFeedChipState.Updated)
+                            }
+                        }
+                    }
 
                     if (isSubscribed) {
                         apiPodcastWithFallback.latestEpisode?.id?.let { episodeId ->
@@ -584,11 +662,14 @@ class PodcastInfoViewModel(
                 val sortParam = if (currentState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
                 val page = repository.getEpisodesPaginated(currentPodcastId, limit, currentOffset, sortParam)
                 currentOffset += page.episodes.size
+                val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                val nextPi = latest.piEpisodes + page.episodes
                 _uiState.value =
-                    currentState.copy(
-                        episodes = currentState.episodes + page.episodes,
-                        isLoadingMore = false,
+                    supplementSupport.remountWithSupplements(
+                        state = latest,
+                        piEpisodes = nextPi,
                         hasMoreEpisodes = page.hasMore,
+                        isLoadingMore = false,
                     )
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -614,13 +695,12 @@ class PodcastInfoViewModel(
                     repository.getEpisodesPaginated(currentPodcastId, limit, 0, sortParam)
                 currentOffset = page.episodes.size
                 _uiState.value =
-                    latestState.copy(
-                        podcast = podcast,
-                        episodes = page.episodes,
-                        isLoadingMore = false,
-                        isRssRefreshing = false,
+                    supplementSupport.remountWithSupplements(
+                        state = latestState.copy(podcast = podcast),
+                        piEpisodes = page.episodes,
                         hasMoreEpisodes = page.hasMore,
-                    )
+                        isLoadingMore = false,
+                    ).copy(isRssRefreshing = false)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -647,6 +727,7 @@ class PodcastInfoViewModel(
             currentState.copy(
                 currentSort = newSort,
                 episodes = emptyList(),
+                piEpisodes = emptyList(),
                 isLoadingMore = true,
                 hasMoreEpisodes = true,
                 searchQuery = "",
@@ -667,10 +748,11 @@ class PodcastInfoViewModel(
                 currentOffset = page.episodes.size
                 val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 _uiState.value =
-                    latestState.copy(
-                        episodes = page.episodes,
-                        isLoadingMore = false,
+                    supplementSupport.remountWithSupplements(
+                        state = latestState,
+                        piEpisodes = page.episodes,
                         hasMoreEpisodes = page.hasMore,
+                        isLoadingMore = false,
                     )
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -709,8 +791,20 @@ class PodcastInfoViewModel(
                     // Correctly search for episodes within this feed using the repository
                     val podcastContext = (uiState.value as? PodcastInfoUiState.Success)
                     val feedId = podcastContext?.podcast?.id ?: return@launch
+                    val podcast = podcastContext.podcast
 
-                    val results = repository.searchEpisodes(feedId, query)
+                    val networkResults = repository.searchEpisodes(feedId, query)
+                    val results =
+                        supplementSupport.unionSearch(
+                            feedId = feedId,
+                            query = query,
+                            networkResults = networkResults,
+                            podcastTitle = podcast.title,
+                            podcastImageUrl = podcast.imageUrl,
+                            podcastGenre = podcast.genre,
+                            podcastArtist = podcast.artist,
+                            isRss = podcast.isRss,
+                        )
 
                     // Ensure we are still in a valid state to update
                     val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
