@@ -5,6 +5,9 @@ package cx.aswin.boxlore.core.catalog
  *
  * [feedUrl] is included only for HTTPS publisher feeds on shows the user opted into
  * via Missing episodes? — the checker then polls RSS instead of Podcast Index `max=1`.
+ *
+ * Live RTDB rules allow only `title`, `imageUrl`, and optional HTTPS `feedUrl`
+ * (delete of `feedUrl` is allowed). Extra children are rejected.
  */
 object TrackedPodcastRtdbLogic {
     fun httpsFeedUrl(raw: String?): String? {
