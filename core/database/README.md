@@ -2,13 +2,14 @@
 
 ## Purpose
 
-Owns the main Room database, entities, DAOs, type converters, and migrations for podcasts, queue items, listening history, downloads, and RSS episodes. It does not own repositories, ranking's separate Room database, playback services, download workers, or feature UI.
+Owns the main Room database, entities, DAOs, type converters, and migrations for podcasts, queue items, listening history, downloads, RSS episodes, and PI episode supplements. It does not own repositories, ranking's separate Room database, playback services, download workers, or feature UI.
 
 ## Public API
 
 - `BoxLoreDatabase` and its `getDatabase` factory.
-- Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, and `entities.QueueItem`.
-- DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, and `dao.QueueDao`.
+- Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity`, and `entities.QueueItem`.
+- DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, `EpisodeSupplementDao`, and `dao.QueueDao`.
+- `EpisodeSupplementDao.replaceAll` / `upsertSupplementAndOptionalItems` keep validator rows and tip items in one Room transaction.
 - `ListeningInsightsMaintenance` for rolling session/rollup maintenance (via `BoxLoreDatabase.listeningInsightsMaintenance()`).
 - `ListeningRollupMerge` for pure session→rollup merge logic.
 - `Converters` for Room type conversion.
@@ -31,6 +32,9 @@ src/main/java/cx/aswin/boxlore/core/database/
   PodcastEntity.kt
   RssEpisodeDao.kt
   RssEpisodeEntity.kt
+  EpisodeSupplementDao.kt
+  EpisodeSupplementEntity.kt
+  EpisodeSupplementItemEntity.kt
   dao/
     QueueDao.kt
   entities/

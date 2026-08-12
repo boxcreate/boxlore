@@ -37,7 +37,13 @@ internal fun SelectorCover(
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
 
     val hasRecentNew =
-        remember(podcast.subscribedAt, latestEpisodeId, latestEpisodePubDate, lastSeenId) {
+        remember(
+            podcast.subscribedAt,
+            latestEpisodeId,
+            latestEpisodePubDate,
+            podcast.rssHasNewEpisodes,
+            lastSeenId,
+        ) {
             podcast.isLatestEpisodeNew(lastSeenId)
         }
 

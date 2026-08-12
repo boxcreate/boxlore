@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
  * canned data to force the engine down a specific tier path, then asserts on the
  * returned batch (sources, ordering, exclusions, and network usage).
  */
+@Suppress("LargeClass")
 class SmartQueueEngineTest {
     private val now = 1_700_000_000_000L
 

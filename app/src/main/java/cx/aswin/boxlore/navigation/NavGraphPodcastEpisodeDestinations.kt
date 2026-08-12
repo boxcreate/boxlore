@@ -84,6 +84,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
                 deps = infoSharedDeps,
                 subscriptionRepository = subscriptionRepository,
                 rssRepository = container.rssPodcastRepository,
+                episodeSupplementPort = container.episodeSupplementRepository,
                 userPrefs = userPrefs,
                 routeArgs = cx.aswin.boxlore.feature.info.PodcastInfoRouteArgs(
                     entryPoint = entryPoint,

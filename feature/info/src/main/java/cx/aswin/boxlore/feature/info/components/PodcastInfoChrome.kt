@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info.components
 
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.info.DirectFeedChipState
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -337,6 +340,12 @@ internal data class PodcastInfoTopOverlayActions(
     val onPlaybackSettings: () -> Unit,
 )
 
+internal data class MissingEpisodesChip(
+    val visible: Boolean = false,
+    val state: DirectFeedChipState = DirectFeedChipState.Hidden,
+    val onClick: () -> Unit = {},
+)
+
 @Composable
 internal fun PodcastInfoTopOverlay(
     podcast: Podcast,
@@ -345,6 +354,7 @@ internal fun PodcastInfoTopOverlay(
     hideCompleted: Boolean,
     context: android.content.Context,
     actions: PodcastInfoTopOverlayActions,
+    missingEpisodesChip: MissingEpisodesChip = MissingEpisodesChip(),
 ) {
     Box(
         modifier =
@@ -366,102 +376,181 @@ internal fun PodcastInfoTopOverlay(
         }
 
         // Share and More Options Dropdown Menu (Top Right)
-        var showMenu by remember { mutableStateOf(false) }
-        var showShareSheet by remember { mutableStateOf(false) }
-        Box(
+        PodcastInfoHeaderOverflow(
+            podcast = podcast,
+            hideCompleted = hideCompleted,
+            context = context,
+            actions = actions,
+            missingEpisodesChip = missingEpisodesChip,
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun PodcastInfoHeaderOverflow(
+    podcast: Podcast,
+    hideCompleted: Boolean,
+    context: android.content.Context,
+    actions: PodcastInfoTopOverlayActions,
+    missingEpisodesChip: MissingEpisodesChip,
+    modifier: Modifier = Modifier,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    var showShareSheet by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MissingEpisodesChipButton(chip = missingEpisodesChip)
+            IconButton(
+                onClick = { showShareSheet = true },
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Share,
+                    contentDescription = "Share Podcast",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            IconButton(
+                onClick = { showMenu = true },
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = "More Options",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+
+        if (showShareSheet) {
+            cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
+                id = podcast.id,
+                type = "podcast",
+                title = podcast.title,
+                subtitle = podcast.artist,
+                imageUrl = podcast.imageUrl,
+                onDismissRequest = { showShareSheet = false },
+                onShare = { _, _, _, target ->
+                    cx.aswin.boxlore.core.designsystem.share.ShareManager.sharePodcast(
+                        context = context,
+                        podcast = podcast,
+                        target = target,
+                    )
+                },
+            )
+        }
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+            shape = RoundedCornerShape(20.dp),
+            offset = DpOffset(x = (-12).dp, y = 4.dp),
+        ) {
+            DropdownMenuItem(
+                text = { Text("Mark all as played") },
+                onClick = {
+                    showMenu = false
+                    actions.onMarkAllPlayed()
+                },
+                leadingIcon = {
+                    Icon(Icons.Rounded.DoneAll, contentDescription = null)
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Mark all as unplayed") },
+                onClick = {
+                    showMenu = false
+                    actions.onMarkAllUnplayed()
+                },
+                leadingIcon = {
+                    Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null)
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
+                onClick = {
+                    showMenu = false
+                    actions.onToggleHideCompleted()
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (hideCompleted) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                        contentDescription = null,
+                    )
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Playback for this show") },
+                onClick = {
+                    showMenu = false
+                    actions.onPlaybackSettings()
+                },
+                leadingIcon = {
+                    Icon(Icons.Rounded.Tune, contentDescription = null)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
+    val chipShown = chip.visible && chip.state != DirectFeedChipState.Hidden
+    AnimatedVisibility(
+        visible = chipShown,
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        val quietColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+        val clickable = chip.state == DirectFeedChipState.Offer
+        TextButton(
+            onClick = chip.onClick,
+            enabled = clickable,
+            shape = RoundedCornerShape(percent = 50),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+            colors =
+                ButtonDefaults.textButtonColors(
+                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                    contentColor = quietColor,
+                    disabledContainerColor =
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                    disabledContentColor = quietColor,
+                ),
             modifier =
                 Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 4.dp),
+                    .padding(end = 4.dp)
+                    .heightIn(max = 28.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { showShareSheet = true },
-                ) {
-                    Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Rounded.Share,
-                        contentDescription = "Share Podcast",
-                        tint = MaterialTheme.colorScheme.onSurface,
+            when (chip.state) {
+                DirectFeedChipState.Fetching -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(10.dp),
+                        strokeWidth = 1.5.dp,
+                        color = quietColor,
+                    )
+                    Spacer(modifier = Modifier.size(5.dp))
+                    Text(
+                        text = "Fetching…",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.medium,
+                        maxLines = 1,
                     )
                 }
-                IconButton(
-                    onClick = { showMenu = true },
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.MoreVert,
-                        contentDescription = "More Options",
-                        tint = MaterialTheme.colorScheme.onSurface,
+                DirectFeedChipState.Updated -> {
+                    Text(
+                        text = "Updated",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.medium,
+                        maxLines = 1,
                     )
                 }
-            }
-
-            if (showShareSheet) {
-                cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
-                    id = podcast.id,
-                    type = "podcast",
-                    title = podcast.title,
-                    subtitle = podcast.artist,
-                    imageUrl = podcast.imageUrl,
-                    onDismissRequest = { showShareSheet = false },
-                    onShare = { _, _, _, target ->
-                        cx.aswin.boxlore.core.designsystem.share.ShareManager.sharePodcast(
-                            context = context,
-                            podcast = podcast,
-                            target = target,
-                        )
-                    },
-                )
-            }
-
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-                shape = RoundedCornerShape(20.dp),
-                offset = DpOffset(x = (-12).dp, y = 4.dp),
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Mark all as played") },
-                    onClick = {
-                        showMenu = false
-                        actions.onMarkAllPlayed()
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.DoneAll, contentDescription = null)
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text("Mark all as unplayed") },
-                    onClick = {
-                        showMenu = false
-                        actions.onMarkAllUnplayed()
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null)
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
-                    onClick = {
-                        showMenu = false
-                        actions.onToggleHideCompleted()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = if (hideCompleted) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                            contentDescription = null,
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text("Playback for this show") },
-                    onClick = {
-                        showMenu = false
-                        actions.onPlaybackSettings()
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.Tune, contentDescription = null)
-                    },
-                )
+                else -> {
+                    Text(
+                        text = "Missing episodes?",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.medium,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }

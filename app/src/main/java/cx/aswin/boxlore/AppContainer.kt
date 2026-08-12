@@ -30,6 +30,7 @@ import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
+import cx.aswin.boxlore.core.rss.EpisodeSupplementRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import kotlinx.coroutines.CoroutineScope
@@ -90,6 +91,14 @@ class AppContainer(
         RssPodcastRepository.create(appContext, database).also(RssPodcastRepository::install)
     }
 
+    /**
+     * PI show feed-only episode cache (not a subscription). Wired into [podcastRepository]
+     * for episode lookup fallback and into Podcast Info for "Missing episodes?".
+     */
+    val episodeSupplementRepository: EpisodeSupplementRepository by lazy {
+        EpisodeSupplementRepository.create(database)
+    }
+
     /** Single install path for adaptive ranking; production callers must not call getInstance. */
     override val adaptiveRankingRepository: AdaptiveRankingRepository by lazy {
         AdaptiveRankingRepository.create(appContext).also(AdaptiveRankingRepository::install)
@@ -121,6 +130,7 @@ class AppContainer(
             publicKey = publicKey,
             context = appContext,
             rssRepository = rssPodcastRepository,
+            episodeSupplementRepository = episodeSupplementRepository,
         )
     }
 
@@ -159,13 +169,17 @@ class AppContainer(
     }
 
     override val subscriptionRepository: SubscriptionRepository by lazy {
-        SubscriptionRepository(database.podcastDao())
+        SubscriptionRepository(
+            podcastDao = database.podcastDao(),
+            episodeSupplementPort = episodeSupplementRepository,
+        )
     }
 
     override val subscriptionForegroundSync: SubscriptionForegroundSync by lazy {
         SubscriptionForegroundSync.create(
             podcastRepository = podcastRepository,
             subscriptionRepository = subscriptionRepository,
+            episodeSupplementPort = episodeSupplementRepository,
             scope = syncScope,
         )
     }

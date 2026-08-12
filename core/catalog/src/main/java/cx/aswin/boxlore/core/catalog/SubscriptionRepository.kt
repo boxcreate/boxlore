@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
@@ -10,7 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class SubscriptionRepository(
-    private val podcastDao: PodcastDao
+    private val podcastDao: PodcastDao,
+    private val episodeSupplementPort: EpisodeSupplementPort? = null,
 ) {
 
     val subscribedPodcastIds: Flow<Set<String>> = podcastDao.getSubscribedPodcasts()
@@ -19,6 +21,10 @@ class SubscriptionRepository(
     fun getAllSubscribedPodcasts(): Flow<List<PodcastEntity>> {
         return podcastDao.getSubscribedPodcasts()
     }
+
+    /** Room row for tip / feed-url lookups (Home direct-feed sync). */
+    suspend fun getPodcastEntity(podcastId: String): PodcastEntity? =
+        podcastDao.getPodcast(podcastId)
 
     val subscribedPodcasts: Flow<List<Podcast>> = podcastDao.getSubscribedPodcasts()
         .map { list ->
@@ -223,20 +229,61 @@ class SubscriptionRepository(
             return
         }
         podcastDao.setNotificationsEnabled(podcast.id, enabled)
-        updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, enabled)
+        val feedUrl =
+            if (enabled && episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) == true) {
+                TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
+                    ?: TrackedPodcastRtdbLogic.httpsFeedUrl(podcastDao.getPodcast(podcast.id)?.feedUrl)
+            } else {
+                null
+            }
+        updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, enabled, feedUrl)
     }
 
-    private fun updateFirebaseSubscription(podcastId: String, title: String, imageUrl: String, isSubscribed: Boolean) {
+    /**
+     * When notifications are already on and the show just opted into Missing episodes?,
+     * patch RTDB `tracked_podcasts/{id}` with the publisher `feedUrl` so the checker
+     * polls RSS. No-ops unless the Room row has notifications enabled and a supplement.
+     */
+    suspend fun syncTrackedPodcastFeedUrl(podcast: Podcast) {
+        if (podcast.isRss) return
+        val entity = podcastDao.getPodcast(podcast.id) ?: return
+        if (!entity.notificationsEnabled) return
+        if (episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) != true) {
+            updateFirebaseSubscription(
+                podcastId = podcast.id,
+                title = entity.title,
+                imageUrl = entity.imageUrl,
+                isSubscribed = true,
+                feedUrl = null,
+            )
+            return
+        }
+        val feedUrl =
+            TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
+                ?: TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl)
+        updateFirebaseSubscription(
+            podcastId = podcast.id,
+            title = entity.title,
+            imageUrl = entity.imageUrl,
+            isSubscribed = true,
+            feedUrl = feedUrl,
+        )
+    }
+
+    private fun updateFirebaseSubscription(
+        podcastId: String,
+        title: String,
+        imageUrl: String,
+        isSubscribed: Boolean,
+        feedUrl: String? = null,
+    ) {
         try {
             if (isSubscribed) {
                 val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance()
                     .getReference("tracked_podcasts")
                     .child(podcastId)
                 
-                val data = mapOf(
-                    "title" to title,
-                    "imageUrl" to imageUrl
-                )
+                val data = TrackedPodcastRtdbLogic.payload(title, imageUrl, feedUrl)
                 dbRef.setValue(data)
                 
                 com.google.firebase.messaging.FirebaseMessaging.getInstance()
@@ -249,6 +296,12 @@ class SubscriptionRepository(
                         }
                     }
             } else {
+                val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance()
+                    .getReference("tracked_podcasts")
+                    .child(podcastId)
+                // Keep the tracked node (unsubscribe does not delete it) but drop
+                // feedUrl so Check New Episodes stops polling the publisher feed.
+                dbRef.child("feedUrl").removeValue()
                 com.google.firebase.messaging.FirebaseMessaging.getInstance()
                     .unsubscribeFromTopic("new_ep_$podcastId")
                     .addOnCompleteListener { task ->
@@ -264,7 +317,15 @@ class SubscriptionRepository(
         }
     }
 
-    suspend fun updateLatestEpisode(podcastId: String, episode: cx.aswin.boxlore.core.model.Episode?) {
+    suspend fun updateLatestEpisode(
+        podcastId: String,
+        episode: cx.aswin.boxlore.core.model.Episode?,
+        /**
+         * When true (direct-feed tip promote), sets [PodcastEntity.rssHasNewEpisodes] so Home
+         * NEW badges / hero grid "NEW" use the same freshness as RSS until the tip is seen.
+         */
+        markAsNew: Boolean = false,
+    ) {
         val enrichedEpisode = episode?.let { ep ->
             val resolvedTitle = if (ep.podcastTitle.isNullOrBlank()) {
                 val podcast = podcastDao.getPodcast(podcastId)
@@ -277,20 +338,29 @@ class SubscriptionRepository(
                 podcastTitle = resolvedTitle
             )
         }
+        if (enrichedEpisode != null) {
+            val existing = podcastDao.getPodcast(podcastId)?.latestEpisode
+            if (!LatestEpisodeTipLogic.shouldReplace(existing, enrichedEpisode)) {
+                return
+            }
+        }
         podcastDao.updateLatestEpisode(podcastId, enrichedEpisode)
+        if (markAsNew && enrichedEpisode != null) {
+            podcastDao.markHasNewEpisodes(podcastId)
+        }
+    }
+
+    /**
+     * Clears the shared "new episodes" badge ([PodcastEntity.rssHasNewEpisodes]) used by
+     * true-RSS freshness and PI direct-feed tip promotes. Safe for either source.
+     */
+    suspend fun clearRssNewEpisodesFlag(podcastId: String) {
+        podcastDao.clearRssNewEpisodesFlag(podcastId)
     }
 
     suspend fun updatePreferredSort(podcastId: String, sort: String?) {
         val type = if (sort == "oldest") "serial" else "episodic"
         podcastDao.updatePreferredSortAndType(podcastId, sort, type)
-    }
-
-    /**
-     * Marks a podcast's episodes as seen, clearing the RSS "new episodes" badge
-     * ([PodcastEntity.rssHasNewEpisodes]). Safe to call for non-RSS podcasts (no-op).
-     */
-    suspend fun clearRssNewEpisodesFlag(podcastId: String) {
-        podcastDao.clearRssNewEpisodesFlag(podcastId)
     }
 
     suspend fun setAutoDownloadEnabled(podcastId: String, enabled: Boolean) {
@@ -331,11 +401,15 @@ class SubscriptionRepository(
                 "Reconciling ${podcasts.size} FCM topic subscriptions after restore",
             )
             for (entity in podcasts) {
+                val optedIn = episodeSupplementPort?.hasDirectFeedOptIn(entity.podcastId) == true
+                val feedUrl =
+                    if (optedIn) TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl) else null
                 updateFirebaseSubscription(
                     podcastId = entity.podcastId,
                     title = entity.title,
                     imageUrl = entity.imageUrl,
                     isSubscribed = true,
+                    feedUrl = feedUrl,
                 )
             }
         } catch (e: Exception) {

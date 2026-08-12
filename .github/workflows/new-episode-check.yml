@@ -34,6 +34,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci --prefix scripts
 
+      - name: Test checker logic
+        run: npm run test:check-new-episodes --prefix scripts
+
       - name: Authenticate GCP/Firebase
         run: |
           echo '${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}' > gcp-key.json

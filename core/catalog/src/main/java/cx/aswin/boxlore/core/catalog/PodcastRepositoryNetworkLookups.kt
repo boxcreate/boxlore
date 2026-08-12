@@ -18,11 +18,13 @@ internal suspend fun PodcastRepository.searchRssEpisodes(feedId: String, query: 
 internal suspend fun PodcastRepository.searchNetworkEpisodes(feedId: String, query: String): List<Episode> = try {
     val resolvedId = resolvePodcastIndexFeedId(feedId)
     val response = api.searchEpisodes(publicKey, resolvedId, query).execute()
-    if (response.isSuccessful && response.body() != null) {
-        response.body()!!.items.mapNotNull { mapToEpisode(it) }
-    } else {
-        emptyList()
-    }
+    val network =
+        if (response.isSuccessful && response.body() != null) {
+            response.body()!!.items.mapNotNull { mapToEpisode(it) }
+        } else {
+            emptyList()
+        }
+    unionCachedSupplementSearch(resolvedId, query, network)
 } catch (e: kotlinx.coroutines.CancellationException) {
     throw e
 } catch (e: Exception) {
@@ -50,11 +52,13 @@ internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): Li
     // Use paginated endpoint with high limit to get "all" (max 1000 per proxy)
     // This avoids the parsing issue with EpisodesResponse vs EpisodesPaginatedResponse
     val response = api.getEpisodesPaginated(publicKey, resolvedId, limit = 1000).execute()
-    if (response.isSuccessful && response.body() != null) {
-        response.body()!!.items.mapNotNull { mapToEpisode(it) }
-    } else {
-        emptyList()
-    }
+    val piItems =
+        if (response.isSuccessful && response.body() != null) {
+            response.body()!!.items.mapNotNull { mapToEpisode(it) }
+        } else {
+            emptyList()
+        }
+    mergeCachedSupplementsNewest(resolvedId, piItems)
 } catch (e: kotlinx.coroutines.CancellationException) {
     throw e
 } catch (e: Exception) {
@@ -63,7 +67,9 @@ internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): Li
 
 internal suspend fun PodcastRepository.getEpisodeImpl(episodeId: String): Episode? = withContext(Dispatchers.IO) {
     if (episodeId.toLongOrNull()?.let { it < 0L } == true) {
-        return@withContext getRssEpisode(episodeId)
+        // Prefer the PI supplement row so a colliding rss: library id cannot steal
+        // playback / deep-link resolution for a Podcast Index show.
+        return@withContext getSupplementEpisode(episodeId) ?: getRssEpisode(episodeId)
     }
     getNetworkEpisode(episodeId)
 }
@@ -74,6 +80,15 @@ internal suspend fun PodcastRepository.getRssEpisode(episodeId: String): Episode
     throw e
 } catch (e: Exception) {
     android.util.Log.e("PodcastRepository", "RSS getEpisode failed for $episodeId", e)
+    null
+}
+
+internal suspend fun PodcastRepository.getSupplementEpisode(episodeId: String): Episode? = try {
+    episodeSupplementRepository?.getEpisode(episodeId)
+} catch (e: kotlinx.coroutines.CancellationException) {
+    throw e
+} catch (e: Exception) {
+    android.util.Log.e("PodcastRepository", "Supplement getEpisode failed for $episodeId", e)
     null
 }
 

@@ -13,6 +13,7 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 - Logic helpers under `logic/` and component-level formatters used by tests.
 - Detail UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 - `EpisodeInfoSeekLogic` builds the progress-save payload when seeking an episode that is not the current player item.
+- For PI-owned shows with a valid HTTPS `feedUrl`, Podcast Info’s top bar shows a compact **Missing episodes?** pill (quiet, right-aligned; hides as the header collapses). Confirm opts the show into **direct-feed refresh on every open**. The confirm copy notes that **subscribing already auto-checks** the publisher feed and adds missing episodes; the pill is for shows already in the library when the list still looks behind. The same pill becomes **Fetching…** then persistent **Updated**. Never uses `RssSubscriptionPort`. **Subscribe auto-check:** on a new subscribe, the loaded repository page list (`piEpisodes`, already merged on offset-0) is matched against the publisher feed; if there is a disconnect, the show is opted in automatically (tip promoted to Room, chip → **Updated**) without a manual tap. Manual pill remains for shows already in the library. Episode lists come from `PodcastRepository` (PI page + cached feed extras); Info remounts the chip and re-fetches after a feed refresh rather than merging a second time. Pagination uses `EpisodePage.sourceCount` so extras do not skip PI items; a supplement refresh reloads page one and resets that offset. On successful refresh, the newest feed tip is written to Room `podcasts.latestEpisode` with `markAsNew = true` (shared `rssHasNewEpisodes`) **when the show is subscribed** so Home Your Shows NEW badges and the New episodes hero chip stay in sync with the same PI+feed tip; opening the show clears the flag. `SubscriptionForegroundSync` also refreshes those opted-in tips from the feed on cold start (mark-as-new on feed promote only). If show notifications are already on, a successful opt-in (manual or subscribe auto-check) also patches RTDB `tracked_podcasts/{id}.feedUrl` so new-episode pushes can poll the publisher feed.
 
 ## Internal structure
 
@@ -24,6 +25,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
   InfoViewModelAssembler.kt
   PodcastInfoScreen.kt
   PodcastInfoViewModel.kt
+  PodcastInfoSupplementSupport.kt
   components/
   logic/
     EpisodeInfoSeekLogic.kt
@@ -53,7 +55,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ## Testing notes
 
 - Unit tests live under `feature/info/src/test`.
-- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, toolbar logic, HTML stripping, and podcast info ViewModel logic.
+- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, toolbar logic, HTML stripping, podcast info ViewModel logic, episode-supplement merge/eligibility, and `PodcastInfoSupplementSupport` refresh / auto-opt-in / search union.
 - Catalog HTTP paths are covered in `:core:catalog` tests.
 
 ```bash

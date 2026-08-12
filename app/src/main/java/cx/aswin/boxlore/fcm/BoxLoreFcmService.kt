@@ -98,17 +98,61 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
     private fun handleNewEpisodeMessage(data: Map<String, String>) {
         val podcastId = data["podcastId"] ?: return
-        val episodeId = data["episodeId"] ?: return
-        val podcastTitle = data["podcastTitle"] ?: "New Release"
-        val episodeTitle = data["episodeTitle"] ?: "New Episode"
-        val imageUrl = data["image"] ?: data["imageUrl"]
-        val rawRoute = data["route"] ?: "boxlore://podcast/$podcastId"
-        val route = if (rawRoute.startsWith("boxlore://episode/")) {
-            "boxlore://episode/$episodeId?autoplay=false&podcastId=${Uri.encode(podcastId)}&podcastTitle=${Uri.encode(podcastTitle)}"
-        } else {
-            rawRoute
+        CoroutineScope(Dispatchers.IO).launch {
+            val deps = SharedAppDependenciesHolder.instance
+            val local =
+                if (deps != null) {
+                    NewEpisodePushHydration.resolveLocalEpisode(
+                        podcastId = podcastId,
+                        payloadFeedUrl = FcmPayloadParser.feedUrl(data),
+                        payloadEnclosureUrl = FcmPayloadParser.enclosureUrl(data),
+                        payloadGuid = FcmPayloadParser.guid(data),
+                        subscriptionRepository = deps.subscriptionRepository,
+                        episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
+                    )
+                } else {
+                    null
+                }
+            val episodeId =
+                NewEpisodeFcmLogic.usableEpisodeId(local?.id)
+                    ?: NewEpisodeFcmLogic.usableEpisodeId(data["episodeId"])
+            val podcastTitle =
+                data["podcastTitle"]?.takeIf { it.isNotBlank() }
+                    ?: local?.podcastTitle?.takeIf { it.isNotBlank() }
+                    ?: "New Release"
+            val episodeTitle =
+                local?.title?.takeIf { it.isNotBlank() }
+                    ?: data["episodeTitle"]?.takeIf { it.isNotBlank() }
+                    ?: "New Episode"
+            val imageUrl = local?.imageUrl ?: data["image"] ?: data["imageUrl"]
+            val duration =
+                NewEpisodeFcmLogic.durationMinutes(local?.duration, data["duration"])
+            val route = NewEpisodeFcmLogic.route(podcastId, episodeId, podcastTitle)
+            showNewEpisodeNotification(
+                podcastId = podcastId,
+                episodeId = episodeId,
+                podcastTitle = podcastTitle,
+                episodeTitle = episodeTitle,
+                imageUrl = imageUrl,
+                durationMinutes = duration,
+                route = route,
+            )
+            if (episodeId != null) {
+                triggerAutoDownload(podcastId, episodeId)
+            }
+            triggerSmartDownloadSync()
         }
+    }
 
+    private fun showNewEpisodeNotification(
+        podcastId: String,
+        episodeId: String?,
+        podcastTitle: String,
+        episodeTitle: String,
+        imageUrl: String?,
+        durationMinutes: Int,
+        route: String,
+    ) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "boxlore_new_episodes_v1"
         val soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime")
@@ -135,7 +179,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             putExtra("from_push", true)
             putExtra("notification_type", "new_episode")
             putExtra("podcast_id", podcastId)
-            putExtra("episode_id", episodeId)
+            episodeId?.let { putExtra("episode_id", it) }
             putExtra("target_route", route)
         }
 
@@ -146,8 +190,12 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val duration = data["duration"]?.toIntOrNull() ?: 0
-        val bodyText = if (duration > 0) "\"$episodeTitle\" ($duration mins)" else "\"$episodeTitle\""
+        val bodyText =
+            if (durationMinutes > 0) {
+                "\"$episodeTitle\" ($durationMinutes mins)"
+            } else {
+                "\"$episodeTitle\""
+            }
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
@@ -180,12 +228,6 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
 
         notificationManager.notify(podcastId.hashCode(), notificationBuilder.build())
-
-        // Trigger the per-podcast Auto-Download check
-        triggerAutoDownload(podcastId, episodeId)
-
-        // Trigger Smart Download sync automatically to fetch new content in background
-        triggerSmartDownloadSync()
     }
 
     private fun triggerAutoDownload(podcastId: String, episodeId: String) {

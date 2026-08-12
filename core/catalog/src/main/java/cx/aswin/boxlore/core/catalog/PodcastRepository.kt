@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
 import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
 import cx.aswin.boxlore.core.catalog.logic.mergeShowSearchResults
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
 
@@ -69,6 +70,11 @@ class PodcastRepository(
     val publicKey: String,
     private val context: android.content.Context,
     internal val rssRepository: RssPodcastRepository,
+    /**
+     * Optional PI episode supplement store (feed-only extras under a PI podcast id).
+     * Null in older tests; production wires [cx.aswin.boxlore.core.rss.EpisodeSupplementRepository].
+     */
+    val episodeSupplementRepository: EpisodeSupplementPort? = null,
     private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
     /**
      * Optional override for hermetic JVM/MockWebServer tests. Production leaves this null so
@@ -255,7 +261,9 @@ class PodcastRepository(
 
     data class EpisodePage(
         val episodes: List<Episode>,
-        val hasMore: Boolean
+        val hasMore: Boolean,
+        /** PI/RSS items in this fetch before supplement extras. Use for pagination offsets. */
+        val sourceCount: Int = episodes.size,
     )
 
     suspend fun getEpisodesPaginated(
@@ -301,25 +309,38 @@ class PodcastRepository(
         val now = System.currentTimeMillis()
         if (cached != null && now - cached.second < 300_000L) { // 5-minute cache
             android.util.Log.d("PodcastRepository", "Cache HIT for getEpisodesPaginated: $cacheKey")
-            return cached.first
+            return mergeCachedSupplementsIntoPage(resolvedId, cached.first, offset, sort)
         }
         android.util.Log.d("PodcastRepository", "Cache MISS for getEpisodesPaginated: $cacheKey. Fetching from network.")
         return try {
             val response = api.getEpisodesPaginated(publicKey, resolvedId, limit, offset, sort).execute()
             if (response.isSuccessful && response.body() != null) {
-                val page = EpisodePage(
-                    episodes = response.body()!!.items.mapNotNull { mapToEpisode(it) },
-                    hasMore = response.body()!!.hasMore
-                )
+                val piItems = response.body()!!.items.mapNotNull { mapToEpisode(it) }
+                val page =
+                    EpisodePage(
+                        episodes = piItems,
+                        hasMore = response.body()!!.hasMore,
+                        sourceCount = piItems.size,
+                    )
                 episodesCache[cacheKey] = Pair(page, now)
-                page
+                mergeCachedSupplementsIntoPage(resolvedId, page, offset, sort)
             } else {
-                EpisodePage(emptyList(), false)
+                mergeCachedSupplementsIntoPage(
+                    resolvedId,
+                    EpisodePage(emptyList(), false, sourceCount = 0),
+                    offset,
+                    sort,
+                )
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            EpisodePage(emptyList(), false)
+            mergeCachedSupplementsIntoPage(
+                resolvedId,
+                EpisodePage(emptyList(), false, sourceCount = 0),
+                offset,
+                sort,
+            )
         }
     }
 
@@ -393,19 +414,13 @@ class PodcastRepository(
             val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
             if (podcastIndexIds.isEmpty()) return@withContext emptyMap()
 
-            val request = cx.aswin.boxlore.core.network.model.SyncRequest(podcastIndexIds)
-            val response = api.syncSubscriptions(publicKey, request).execute()
-
-            if (response.isSuccessful && response.body() != null) {
-                response.body()!!.items.mapNotNull { item ->
-                    val ep = item.latestEpisode?.let { mapToEpisode(it) }?.copy(
-                        podcastId = item.id
-                    )
-                    if (ep != null) item.id to ep else null
-                }.toMap()
-            } else {
-                emptyMap()
-            }
+            val optedIn = loadOptedInPodcastIds()
+            val piIds = podcastIndexIds.filterNot { it in optedIn }
+            val piTips = fetchPiSyncTips(piIds)
+            val feedTips = loadCachedFeedTips(podcastIndexIds.filter { it in optedIn })
+            piTips + feedTips
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             emptyMap()
         }

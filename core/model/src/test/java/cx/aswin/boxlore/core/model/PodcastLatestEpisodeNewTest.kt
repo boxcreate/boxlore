@@ -49,6 +49,18 @@ class PodcastLatestEpisodeNewTest {
     }
 
     @Test
+    fun piDirectFeedFlagIsAlwaysNewEvenWhenStaleOrSeen() {
+        val podcast =
+            podcast(
+                sourceType = Podcast.SOURCE_PODCAST_INDEX,
+                rssHasNewEpisodes = true,
+                latestEpisode = episode(publishedSecondsAgo = 100L * 24 * 3600),
+                episodeStatus = EpisodeStatus.UNPLAYED,
+            )
+        assertTrue(podcast.isLatestEpisodeNew(lastSeenId = "ep-1"))
+    }
+
+    @Test
     fun recentUnplayedEpisodeReleasedAfterSubscriptionIsNew() {
         assertTrue(podcast().isLatestEpisodeNew(lastSeenId = null))
     }

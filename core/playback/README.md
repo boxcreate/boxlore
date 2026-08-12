@@ -11,7 +11,7 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
   same-package extension API files). `isTransportReady()` reports whether a Media3 controller is connected; the transport API also exposes previous/next and seek (skip forward/back) operations used by the home-screen widget adapter.
 - `QueueRepository` and `QueueManager` persist and orchestrate explicit queue operations. `QueueManager` emits `queue_modified` add only after `PlaybackRepository.addToQueue` returns success.
 - `PlaybackQueueCoordinator` emits `queue_modified` remove on remove; `undoQueueRemoval` emits a compensating `add` (`source=undo`) so undone removals do not permanently skew analytics.
-- `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic.
+- `QueueMath`, `QueueSkipMemory`, `SmartQueueEngine`, `SmartQueueSources`, and `MixtapeEngine` implement queue and mixtape logic. `DefaultSmartQueueSources` reads episodes through `PodcastRepository`, which already unions cached publisher-feed extras for PI shows opted into **Missing episodes?** — same-show continuation, subscription auto-add, and trending picks can queue feed-only episodes, not only the Room tip.
 - `PlaybackMediaIdPolicy`, `PlaybackArtworkResolver`, and `PlaybackSkipPolicy` define session IDs, artwork, and skip behavior.
 - `PlaybackMediaIdPolicy.customCacheKey` (via `:core:model` `EpisodeMediaCacheKey`) appends briefing audio `v=` so Media3 does not keep playing a same-day regenerated brief from a stale SimpleCache entry.
 - `PlaybackSkipPolicy` also owns intent-aware stale resume: when Settings → Playback → **Restart forgotten episodes** is on (default), implicit plays (queue / mixtape / Smart Queue / casual) soft-expire mid-episode seek after 7 days without `lastPlayedAt`; Jump Back In (`home_hero_resume*`) and History (`library_history`) always seek. Progress is never wiped — seek policy only. Mixtape/SQ still *select* unfinished episodes within the 30-day suggestion band; chrome follows soft-expire (mixtape hides progress / “Xm left”; Smart Queue stamps `resume_stale` → queue label “Starting over”).
@@ -89,7 +89,7 @@ Files under `core/data/service` are compatibility stubs for old service class na
 ## Testing notes
 
 - Unit tests live under `core/playback/src/test`.
-- Existing coverage includes skip policy (including stale-resume intent × flag × freshness), media ID policy, artwork resolution, control sync (speed/seek preserve on clear), history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue, playback session mapping, Auto artwork fetch/content-type policy, collage freshness signatures, and Auto artwork source-store durability.
+- Existing coverage includes skip policy (including stale-resume intent × flag × freshness), media ID policy, artwork resolution, control sync (speed/seek preserve on clear), history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue (including feed-supplement merge + negative-id continuation), playback session mapping, Auto artwork fetch/content-type policy, collage freshness signatures, and Auto artwork source-store durability.
 - Service-level tests must install shared dependency holders before exercising service code.
 
 ```bash

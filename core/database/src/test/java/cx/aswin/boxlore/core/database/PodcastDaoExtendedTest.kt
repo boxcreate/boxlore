@@ -201,6 +201,14 @@ class PodcastDaoExtendedTest {
         }
 
     @Test
+    fun markHasNewEpisodesSetsFlagForPiOwnedShow() =
+        runTest {
+            dao.upsert(podcast("1258562", sourceType = PodcastEntity.SOURCE_PODCAST_INDEX))
+            dao.markHasNewEpisodes("1258562")
+            assertTrue(dao.getPodcast("1258562")!!.rssHasNewEpisodes)
+        }
+
+    @Test
     fun updateLatestEpisodeAcceptsNull() =
         runTest {
             dao.upsert(podcast("1"))
