@@ -36,7 +36,7 @@ sealed interface PodcastInfoUiState {
         val searchQuery: String = "",
         val isSearching: Boolean = false,
         val searchResults: List<Episode>? = null, // null = not searching, empty = no results
-        /** Raw Podcast Index (or RSS) page episodes before supplement merge. */
+        /** Accumulated repository page list (offset-0 pages already include cached feed extras). */
         val piEpisodes: List<Episode> = emptyList(),
         val directFeedChip: DirectFeedChipState = DirectFeedChipState.Hidden,
         /** One-shot toast/snackbar text; cleared via [PodcastInfoViewModel.consumeUserMessage]. */

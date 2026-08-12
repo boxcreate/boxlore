@@ -36,5 +36,7 @@ class NewEpisodeFcmLogicTest {
         assertEquals(30, NewEpisodeFcmLogic.durationMinutes(1800, "9"))
         assertEquals(9, NewEpisodeFcmLogic.durationMinutes(null, "9"))
         assertEquals(0, NewEpisodeFcmLogic.durationMinutes(0, null))
+        assertEquals(0, NewEpisodeFcmLogic.durationMinutes(null, "invalid"))
+        assertEquals(0, NewEpisodeFcmLogic.durationMinutes(null, "-1"))
     }
 }

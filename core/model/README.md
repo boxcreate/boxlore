@@ -16,7 +16,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `AutoTranscriptState`.
 - `PodcastGenres` and `RankingAggregateTelemetry`.
 - Cross-promotion model types.
-- `SleepTimerConstants`.
+- `Podcast.isLatestEpisodeNew`: shared NEW badge. Room `rssHasNewEpisodes` is true for true-RSS freshness **and** for Podcast Index direct-feed tip promotions (`updateLatestEpisode(..., markAsNew = true)`). Opening the show clears the flag. Otherwise the 48h window / last-seen id rules apply.
 
 ## Internal structure
 

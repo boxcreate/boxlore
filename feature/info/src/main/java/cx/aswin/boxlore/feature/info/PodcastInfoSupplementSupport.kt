@@ -13,13 +13,30 @@ import cx.aswin.boxlore.feature.info.logic.EpisodeSupplementMergeLogic
  * post-feed reload so newly cached extras appear without a second merge pass.
  */
 internal class PodcastInfoSupplementSupport(
-    private val repository: PodcastRepository,
     private val episodeSupplementPort: EpisodeSupplementPort,
+    private val loadPage: suspend (
+        podcastId: String,
+        limit: Int,
+        offset: Int,
+        sort: String,
+    ) -> PodcastRepository.EpisodePage,
 ) {
+    constructor(
+        repository: PodcastRepository,
+        episodeSupplementPort: EpisodeSupplementPort,
+    ) : this(
+        episodeSupplementPort,
+        { id, limit, offset, sort ->
+            repository.getEpisodesPaginated(id, limit, offset, sort)
+        },
+    )
+
     data class MissingEpisodesRefresh(
         val state: PodcastInfoUiState.Success,
         /** Promote into Room `latestEpisode` for Home filter chips when subscribed. */
         val libraryTip: Episode?,
+        /** Reloaded page `sourceCount` so [PodcastInfoViewModel] can reset pagination. */
+        val pageSourceCount: Int? = null,
     )
 
     suspend fun remountWithSupplements(
@@ -67,7 +84,7 @@ internal class PodcastInfoSupplementSupport(
     ): MissingEpisodesRefresh {
         val podcast = state.podcast
         val baseline =
-            repository.getEpisodesPaginated(
+            loadPage(
                 podcast.id,
                 SUPPLEMENT_BASELINE_LIMIT,
                 0,
@@ -111,6 +128,7 @@ internal class PodcastInfoSupplementSupport(
                     isFetchingFromFeed = false,
                 ),
             libraryTip = tip,
+            pageSourceCount = reloaded.sourceCount,
         )
     }
 
@@ -170,6 +188,7 @@ internal class PodcastInfoSupplementSupport(
                             isFetchingFromFeed = false,
                         ),
                     libraryTip = outcome.newestFeedEpisode,
+                    pageSourceCount = reloaded.sourceCount,
                 )
             }
         }
@@ -182,10 +201,7 @@ internal class PodcastInfoSupplementSupport(
         feedId: String,
         query: String,
         networkResults: List<Episode>,
-        podcastTitle: String?,
-        podcastImageUrl: String?,
-        podcastGenre: String?,
-        podcastArtist: String?,
+        meta: PodcastListMeta,
         isRss: Boolean,
     ): List<Episode> {
         if (isRss) return networkResults
@@ -193,20 +209,23 @@ internal class PodcastInfoSupplementSupport(
             episodeSupplementPort.search(
                 podcastIndexId = feedId,
                 query = query,
-                podcastTitle = podcastTitle,
-                podcastImageUrl = podcastImageUrl,
-                podcastGenre = podcastGenre,
-                podcastArtist = podcastArtist,
+                podcastTitle = meta.title,
+                podcastImageUrl = meta.imageUrl,
+                podcastGenre = meta.genre,
+                podcastArtist = meta.artist,
             )
-        // Supplement matches first so enriched extras win if the repository already unioned.
-        return EpisodeSupplementMergeLogic.unionSearchResults(supplementMatches, networkResults)
+        // Preferred list wins on identity match so enriched extras beat a PI duplicate.
+        return EpisodeSupplementMergeLogic.unionSearchResults(
+            preferred = supplementMatches,
+            fallback = networkResults,
+        )
     }
 
     private suspend fun reloadDisplayPage(
         state: PodcastInfoUiState.Success,
     ): PodcastRepository.EpisodePage {
         val oldest = state.currentSort == EpisodeSort.OLDEST
-        return repository.getEpisodesPaginated(
+        return loadPage(
             state.podcast.id,
             if (oldest) OLDEST_PAGE_SIZE else DISPLAY_PAGE_SIZE,
             0,
@@ -215,8 +234,19 @@ internal class PodcastInfoSupplementSupport(
     }
 
     companion object {
+        /**
+         * Podcast Index paginated max is 1000. Using that as the matching baseline
+         * avoids treating later-page PI episodes as feed-only extras.
+         */
         const val SUPPLEMENT_BASELINE_LIMIT = 1000
         private const val DISPLAY_PAGE_SIZE = 20
         private const val OLDEST_PAGE_SIZE = 200
     }
 }
+
+internal data class PodcastListMeta(
+    val title: String?,
+    val imageUrl: String?,
+    val genre: String?,
+    val artist: String?,
+)

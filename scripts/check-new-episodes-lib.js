@@ -35,6 +35,7 @@ function durationMinutes(raw) {
         } else {
             seconds = parts[0];
         }
+        if (!Number.isFinite(seconds) || seconds < 0) return '0';
         return String(Math.round(seconds / 60) || 0);
     }
     const n = Number(s);
@@ -146,6 +147,22 @@ function applyCheck({ existing, source, newest, now = Date.now() }) {
         if (existing.lastRssKey === newest.key) {
             return { notify: false, reason: 'unchanged', nextState: existing };
         }
+        if (
+            newest.piEpisodeId &&
+            existing.lastEpisodeId &&
+            String(existing.lastEpisodeId) === String(newest.piEpisodeId)
+        ) {
+            return {
+                notify: false,
+                reason: 'unchanged',
+                nextState: {
+                    lastRssKey: newest.key,
+                    lastEpisodeTitle: newest.title,
+                    lastEpisodeId: existing.lastEpisodeId,
+                    lastCheckedAt: now,
+                },
+            };
+        }
         return {
             notify: true,
             reason: 'rss-new',
@@ -165,7 +182,7 @@ function applyCheck({ existing, source, newest, now = Date.now() }) {
             nextState: {
                 lastEpisodeId: newest.piEpisodeId,
                 lastEpisodeTitle: newest.title,
-                lastRssKey: undefined,
+                lastRssKey: newest.rssKey || undefined,
                 lastCheckedAt: now,
             },
         };
@@ -173,13 +190,25 @@ function applyCheck({ existing, source, newest, now = Date.now() }) {
     if (String(existing.lastEpisodeId) === String(newest.piEpisodeId)) {
         return { notify: false, reason: 'unchanged', nextState: existing };
     }
+    if (newest.rssKey && existing.lastRssKey && newest.rssKey === existing.lastRssKey) {
+        return {
+            notify: false,
+            reason: 'unchanged',
+            nextState: {
+                lastEpisodeId: newest.piEpisodeId,
+                lastEpisodeTitle: newest.title,
+                lastRssKey: existing.lastRssKey,
+                lastCheckedAt: now,
+            },
+        };
+    }
     return {
         notify: true,
         reason: 'pi-new',
         nextState: {
             lastEpisodeId: newest.piEpisodeId,
             lastEpisodeTitle: newest.title,
-            lastRssKey: existing.lastRssKey,
+            lastRssKey: newest.rssKey || existing.lastRssKey,
             lastCheckedAt: now,
         },
     };

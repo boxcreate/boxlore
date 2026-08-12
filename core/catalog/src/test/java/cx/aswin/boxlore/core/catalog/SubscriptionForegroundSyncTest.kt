@@ -123,7 +123,6 @@ class SubscriptionForegroundSyncTest {
             var networkCalls = 0
             SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
                 loadIds = { setOf("opted", "plain", "rss:other") },
-                loadOptedInIds = { setOf("opted") },
                 loadPodcastMeta = { id ->
                     DirectFeedTipMeta(
                         feedUrl = "https://feeds.example/$id.xml",
@@ -134,19 +133,22 @@ class SubscriptionForegroundSyncTest {
                         knownTip = null,
                     )
                 },
-                loadCachedFeedTip = { null },
-                resolveFeedTip = { id, _ ->
-                    networkCalls++
-                    assertEquals("opted", id)
-                    feedTip
-                },
                 syncChunk = { chunk ->
                     piSynced += chunk
                     chunk.associateWith { feedTip.copy(id = "pi_$it", podcastId = it) }
                 },
                 saveLatest = { id, ep -> saved[id] = ep.id },
                 chunkSize = 10,
-                feedNetworkDelayMs = 0L,
+                directFeed = DirectFeedSyncSeams(
+                    loadOptedInIds = { setOf("opted") },
+                    loadCachedFeedTip = { null },
+                    resolveFeedTip = { id, _ ->
+                        networkCalls++
+                        assertEquals("opted", id)
+                        feedTip
+                    },
+                    feedNetworkDelayMs = 0L,
+                ),
             )
             assertEquals("-1", saved["opted"])
             assertEquals(1, networkCalls)
@@ -156,7 +158,7 @@ class SubscriptionForegroundSyncTest {
         }
 
     @Test
-    fun syncSubscribedLatestEpisodes_promotesCachedTipWithoutNetworkWhenCurrent() =
+    fun syncSubscribedLatestEpisodes_promotesCachedTipThenRefreshesNetwork() =
         runTest {
             val cached =
                 cx.aswin.boxlore.core.model.Episode(
@@ -173,7 +175,6 @@ class SubscriptionForegroundSyncTest {
             val saved = mutableMapOf<String, String>()
             SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
                 loadIds = { setOf("opted") },
-                loadOptedInIds = { setOf("opted") },
                 loadPodcastMeta = {
                     DirectFeedTipMeta(
                         feedUrl = "https://feeds.example/x.xml",
@@ -184,14 +185,17 @@ class SubscriptionForegroundSyncTest {
                         knownTip = cached.copy(id = "old-pi", publishedDate = 50L),
                     )
                 },
-                loadCachedFeedTip = { cached },
-                resolveFeedTip = { _, _ ->
-                    networkCalls++
-                    cached
-                },
                 syncChunk = { error("PI should not run for only opted-in") },
                 saveLatest = { id, ep -> saved[id] = ep.id },
-                feedNetworkDelayMs = 0L,
+                directFeed = DirectFeedSyncSeams(
+                    loadOptedInIds = { setOf("opted") },
+                    loadCachedFeedTip = { cached },
+                    resolveFeedTip = { _, _ ->
+                        networkCalls++
+                        cached
+                    },
+                    feedNetworkDelayMs = 0L,
+                ),
             )
             assertEquals("-42", saved["opted"])
             assertEquals(1, networkCalls)

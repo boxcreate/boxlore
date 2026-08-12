@@ -229,7 +229,13 @@ class SubscriptionRepository(
             return
         }
         podcastDao.setNotificationsEnabled(podcast.id, enabled)
-        val feedUrl = if (enabled) resolveTrackedFeedUrl(podcast) else null
+        val feedUrl =
+            if (enabled && episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) == true) {
+                TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
+                    ?: TrackedPodcastRtdbLogic.httpsFeedUrl(podcastDao.getPodcast(podcast.id)?.feedUrl)
+            } else {
+                null
+            }
         updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, enabled, feedUrl)
     }
 
@@ -242,7 +248,16 @@ class SubscriptionRepository(
         if (podcast.isRss) return
         val entity = podcastDao.getPodcast(podcast.id) ?: return
         if (!entity.notificationsEnabled) return
-        if (episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) != true) return
+        if (episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) != true) {
+            updateFirebaseSubscription(
+                podcastId = podcast.id,
+                title = entity.title,
+                imageUrl = entity.imageUrl,
+                isSubscribed = true,
+                feedUrl = null,
+            )
+            return
+        }
         val feedUrl =
             TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
                 ?: TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl)
@@ -253,12 +268,6 @@ class SubscriptionRepository(
             isSubscribed = true,
             feedUrl = feedUrl,
         )
-    }
-
-    private suspend fun resolveTrackedFeedUrl(podcast: Podcast): String? {
-        if (episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) != true) return null
-        return TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
-            ?: TrackedPodcastRtdbLogic.httpsFeedUrl(podcastDao.getPodcast(podcast.id)?.feedUrl)
     }
 
     private fun updateFirebaseSubscription(
@@ -287,6 +296,12 @@ class SubscriptionRepository(
                         }
                     }
             } else {
+                val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance()
+                    .getReference("tracked_podcasts")
+                    .child(podcastId)
+                // Keep the tracked node (unsubscribe does not delete it) but drop
+                // feedUrl so Check New Episodes stops polling the publisher feed.
+                dbRef.child("feedUrl").removeValue()
                 com.google.firebase.messaging.FirebaseMessaging.getInstance()
                     .unsubscribeFromTopic("new_ep_$podcastId")
                     .addOnCompleteListener { task ->

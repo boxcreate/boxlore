@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.catalog
 import android.util.Log
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -46,6 +47,7 @@ class SubscriptionForegroundSync(
     companion object {
         private const val TAG = "SubscriptionForegroundSync"
         const val DEFAULT_INITIAL_DELAY_MS = 2000L
+
         /** Extra wait after PI tip sync before downloading publisher feeds. */
         const val DEFAULT_FEED_NETWORK_DELAY_MS = 12_000L
         const val DEFAULT_CHUNK_SIZE = 10
@@ -73,7 +75,6 @@ class SubscriptionForegroundSync(
                 syncAction = {
                     syncSubscribedLatestEpisodes(
                         loadIds = { subscriptionRepository.subscribedPodcastIds.first() },
-                        loadOptedInIds = { episodeSupplementPort.listOptedInPodcastIds() },
                         loadPodcastMeta = { id ->
                             subscriptionRepository.getPodcastEntity(id)?.let { entity ->
                                 DirectFeedTipMeta(
@@ -86,47 +87,40 @@ class SubscriptionForegroundSync(
                                 )
                             }
                         },
-                        loadCachedFeedTip = { id ->
-                            episodeSupplementPort
-                                .getEpisodesForPodcast(id)
-                                .maxByOrNull { it.publishedDate }
-                        },
-                        resolveFeedTip = { id, meta ->
-                            episodeSupplementPort.resolveNewestTipFromFeed(
-                                podcastIndexId = id,
-                                feedUrl = meta.feedUrl.orEmpty(),
-                                knownEpisodes = listOfNotNull(meta.knownTip),
-                                podcastTitle = meta.title,
-                                podcastImageUrl = meta.imageUrl,
-                                podcastGenre = meta.genre,
-                                podcastArtist = meta.artist,
-                            )
-                        },
                         syncChunk = { ids -> podcastRepository.syncSubscriptions(ids) },
-                        saveLatest = saveLatest@{ id, episode ->
-                            val existing = subscriptionRepository.getPodcastEntity(id)?.latestEpisode
-                            if (existing?.id == episode.id &&
-                                existing.publishedDate == episode.publishedDate
-                            ) {
-                                return@saveLatest
-                            }
+                        saveLatest = { id, episode ->
                             subscriptionRepository.updateLatestEpisode(id, episode)
                         },
-                        saveDirectFeedLatest = saveFeed@{ id, episode ->
-                            val existing = subscriptionRepository.getPodcastEntity(id)?.latestEpisode
-                            if (existing?.id == episode.id &&
-                                existing.publishedDate == episode.publishedDate
-                            ) {
-                                return@saveFeed
-                            }
-                            subscriptionRepository.updateLatestEpisode(
-                                podcastId = id,
-                                episode = episode,
-                                markAsNew = true,
-                            )
-                        },
                         chunkSize = chunkSize,
-                        feedNetworkDelayMs = feedNetworkDelayMs,
+                        directFeed = DirectFeedSyncSeams(
+                            loadOptedInIds = { episodeSupplementPort.listOptedInPodcastIds() },
+                            loadCachedFeedTip = { id ->
+                                episodeSupplementPort
+                                    .getEpisodesForPodcast(id)
+                                    .maxByOrNull { it.publishedDate }
+                            },
+                            resolveFeedTip = { id, meta ->
+                                episodeSupplementPort.resolveNewestTipFromFeed(
+                                    EpisodeSupplementPort.NewestTipRequest(
+                                        podcastIndexId = id,
+                                        feedUrl = meta.feedUrl.orEmpty(),
+                                        knownEpisodes = listOfNotNull(meta.knownTip),
+                                        podcastTitle = meta.title,
+                                        podcastImageUrl = meta.imageUrl,
+                                        podcastGenre = meta.genre,
+                                        podcastArtist = meta.artist,
+                                    ),
+                                )
+                            },
+                            saveDirectFeedLatest = { id, episode ->
+                                subscriptionRepository.updateLatestEpisode(
+                                    podcastId = id,
+                                    episode = episode,
+                                    markAsNew = true,
+                                )
+                            },
+                            feedNetworkDelayMs = feedNetworkDelayMs,
+                        ),
                     )
                     syncTrackedFeedUrlsForOptedInNotifications(
                         episodeSupplementPort = episodeSupplementPort,
@@ -146,17 +140,14 @@ class SubscriptionForegroundSync(
             syncChunk: suspend (List<String>) -> Map<String, Episode>,
             saveLatest: suspend (String, Episode) -> Unit,
             chunkSize: Int = DEFAULT_CHUNK_SIZE,
-            loadOptedInIds: suspend () -> Set<String> = { emptySet() },
             loadPodcastMeta: suspend (String) -> DirectFeedTipMeta? = { null },
-            loadCachedFeedTip: suspend (String) -> Episode? = { null },
-            resolveFeedTip: suspend (String, DirectFeedTipMeta) -> Episode? = { _, _ -> null },
-            /** Opted-in feed tips — sets the shared NEW badge until tip is seen. */
-            saveDirectFeedLatest: suspend (String, Episode) -> Unit = saveLatest,
-            feedNetworkDelayMs: Long = 0L,
+            directFeed: DirectFeedSyncSeams = DirectFeedSyncSeams(),
         ) {
             val currentSubs =
                 try {
                     loadIds()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Background sync failed totally", e)
                     return
@@ -165,7 +156,9 @@ class SubscriptionForegroundSync(
 
             val optedIn =
                 try {
-                    loadOptedInIds()
+                    directFeed.loadOptedInIds()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to load direct-feed opt-ins; falling back to PI sync", e)
                     emptySet()
@@ -189,16 +182,17 @@ class SubscriptionForegroundSync(
                 syncOneChunk(chunk, syncChunk, saveLatest)
             }
 
+            val saveFeed = directFeed.saveDirectFeedLatest ?: saveLatest
             for (id in feedTipIds) {
-                promoteCachedDirectFeedTip(id, loadPodcastMeta, loadCachedFeedTip, saveDirectFeedLatest)
+                promoteCachedDirectFeedTip(id, loadPodcastMeta, directFeed.loadCachedFeedTip, saveFeed)
             }
 
-            if (feedTipIds.isNotEmpty() && feedNetworkDelayMs > 0L) {
-                delay(feedNetworkDelayMs)
+            if (feedTipIds.isNotEmpty() && directFeed.feedNetworkDelayMs > 0L) {
+                delay(directFeed.feedNetworkDelayMs)
             }
 
             for (id in feedTipIds) {
-                syncOneDirectFeedTip(id, loadPodcastMeta, resolveFeedTip, saveDirectFeedLatest)
+                syncOneDirectFeedTip(id, loadPodcastMeta, directFeed.resolveFeedTip, saveFeed)
             }
             Log.d(TAG, "Finished background sync for all ${currentSubs.size} subs")
         }
@@ -217,6 +211,8 @@ class SubscriptionForegroundSync(
                     val entity = subscriptionRepository.getPodcastEntity(id) ?: continue
                     subscriptionRepository.syncTrackedPodcastFeedUrl(entity.toPodcast())
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to sync tracked feed URLs for notifications", e)
             }
@@ -242,6 +238,8 @@ class SubscriptionForegroundSync(
                 }
                 saveLatest(podcastId, cached)
                 Log.d(TAG, "Promoted cached direct-feed tip for $podcastId")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Cached direct-feed tip promote failed for $podcastId", e)
             }
@@ -259,6 +257,13 @@ class SubscriptionForegroundSync(
                     Log.w(TAG, "No Room row for opted-in $podcastId; skipping feed tip")
                     return
                 }
+                val storedUrl = meta.feedUrl?.trim().orEmpty()
+                if (storedUrl.isEmpty()) {
+                    Log.d(
+                        TAG,
+                        "No Room feedUrl for opted-in $podcastId; port may still use the stored supplement URL",
+                    )
+                }
                 val tip = resolveFeedTip(podcastId, meta)
                 if (tip != null) {
                     val known = meta.knownTip
@@ -271,6 +276,8 @@ class SubscriptionForegroundSync(
                 } else {
                     Log.w(TAG, "Direct-feed tip empty for $podcastId")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Direct-feed tip sync failed for $podcastId", e)
             }
@@ -287,6 +294,8 @@ class SubscriptionForegroundSync(
                 for ((podId, episode) in synced) {
                     saveLatest(podId, episode)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Background sync chunk failed", e)
             }
@@ -302,4 +311,13 @@ internal data class DirectFeedTipMeta(
     val genre: String?,
     val artist: String?,
     val knownTip: Episode?,
+)
+
+/** Direct-feed callbacks grouped so [SubscriptionForegroundSync.syncSubscribedLatestEpisodes] stays under the param limit. */
+internal data class DirectFeedSyncSeams(
+    val loadOptedInIds: suspend () -> Set<String> = { emptySet() },
+    val loadCachedFeedTip: suspend (String) -> Episode? = { null },
+    val resolveFeedTip: suspend (String, DirectFeedTipMeta) -> Episode? = { _, _ -> null },
+    val saveDirectFeedLatest: (suspend (String, Episode) -> Unit)? = null,
+    val feedNetworkDelayMs: Long = 0L,
 )

@@ -44,19 +44,12 @@ object InfoViewModelAssembler {
     ): PodcastInfoViewModel =
         PodcastInfoViewModel(
             application = application,
-            repository = deps.podcastRepository,
-            playbackRepository = deps.playbackRepository,
-            downloadRepository = deps.downloadRepository,
-            queueManager = deps.queueManager,
+            deps = deps,
             subscriptionRepository = subscriptionRepository,
             rssRepository = rssRepository,
             episodeSupplementPort = episodeSupplementPort,
-            localCatalog = deps.localCatalog,
             userPreferencesRepository = userPrefs,
-            entryPoint = routeArgs.entryPoint,
-            genreFilter = routeArgs.genreFilter,
-            scrollDepth = routeArgs.scrollDepth,
-            searchQuery = routeArgs.searchQuery,
+            routeArgs = routeArgs,
         )
 
     fun podcastInfoFactory(

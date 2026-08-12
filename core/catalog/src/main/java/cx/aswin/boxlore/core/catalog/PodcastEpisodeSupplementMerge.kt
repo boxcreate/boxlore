@@ -30,7 +30,10 @@ internal object PodcastEpisodeSupplementMerge {
         if (podcastId.startsWith("rss:") || supplementMatches.isEmpty()) {
             return networkResults
         }
-        return EpisodeSupplementListMerge.unionSearchResults(networkResults, supplementMatches)
+        return EpisodeSupplementListMerge.unionSearchResults(
+            preferred = networkResults,
+            fallback = supplementMatches,
+        )
     }
 
     fun sortFromQuery(sort: String): EpisodeSupplementListMerge.Sort =

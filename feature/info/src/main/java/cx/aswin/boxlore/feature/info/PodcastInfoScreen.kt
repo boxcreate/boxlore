@@ -93,6 +93,7 @@ import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
 import cx.aswin.boxlore.feature.info.components.MarkAllEpisodesDialog
+import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.PodcastInfoSearchOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
@@ -583,13 +584,16 @@ fun PodcastInfoScreen(
                             onToggleHideCompleted = { viewModel.toggleHideCompleted() },
                             onPlaybackSettings = { showPodcastPlaybackSettings = true },
                         ),
-                    missingEpisodesChipVisible = scrollFraction < 0.5f,
-                    directFeedChip = state.directFeedChip,
-                    onMissingEpisodesClick = {
-                        if (state.directFeedChip == DirectFeedChipState.Offer) {
-                            showMissingEpisodesConfirm = true
-                        }
-                    },
+                    missingEpisodesChip =
+                        MissingEpisodesChip(
+                            visible = scrollFraction < 0.5f,
+                            state = state.directFeedChip,
+                            onClick = {
+                                if (state.directFeedChip == DirectFeedChipState.Offer) {
+                                    showMissingEpisodesConfirm = true
+                                }
+                            },
+                        ),
                 )
 
                 if (showMissingEpisodesConfirm) {
@@ -647,20 +651,12 @@ fun PodcastInfoScreen(
                     )
                 }
 
-                // SNACKBAR HOST (Overlay)
+                // SNACKBAR HOST (Overlay) — placed after jump-pill visibility is known
                 LaunchedEffect(state.userMessage) {
                     val message = state.userMessage ?: return@LaunchedEffect
                     snackbarHostState.showSnackbar(message)
                     viewModel.consumeUserMessage()
                 }
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .navigationBarsPadding()
-                            .padding(bottom = bottomContentPadding + 16.dp),
-                )
 
                 // FLOATING TITLE
                 Text(
@@ -721,6 +717,20 @@ fun PodcastInfoScreen(
                             lastOffset = currentOffset
                         }
                 }
+
+                val jumpPillVisible =
+                    targetJumpEpisode != null && !isTargetVisible && isFabVisible
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(
+                                bottom = bottomContentPadding + 16.dp +
+                                    if (jumpPillVisible) 56.dp else 0.dp,
+                            ),
+                )
 
                 // Floating Jump-To Pill overlay
                 val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()

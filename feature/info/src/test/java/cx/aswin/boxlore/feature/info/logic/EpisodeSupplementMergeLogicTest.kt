@@ -43,20 +43,51 @@ class EpisodeSupplementMergeLogicTest {
     }
 
     @Test
-    fun `unionSearchResults dedupes by id and sorts newest first`() {
+    fun `unionSearchResults preferred list wins and empty inputs stay empty`() {
         val network =
             listOf(
-                TestFixtures.episode(id = "n1", title = "Net", publishedDate = 100),
-                TestFixtures.episode(id = "shared", title = "Shared", publishedDate = 50),
+                TestFixtures.episode(
+                    id = "n1",
+                    title = "Net",
+                    audioUrl = "https://cdn/n1.mp3",
+                    publishedDate = 100,
+                ),
+                TestFixtures.episode(
+                    id = "shared",
+                    title = "Shared",
+                    audioUrl = "https://cdn/shared.mp3",
+                    publishedDate = 50,
+                ),
             )
         val supplements =
             listOf(
-                TestFixtures.episode(id = "shared", title = "Shared RSS", publishedDate = 50),
-                TestFixtures.episode(id = "s1", title = "Supp", publishedDate = 200),
+                TestFixtures.episode(
+                    id = "shared",
+                    title = "Shared RSS",
+                    audioUrl = "https://cdn/shared.mp3",
+                    publishedDate = 50,
+                ),
+                TestFixtures.episode(
+                    id = "s1",
+                    title = "Supp",
+                    audioUrl = "https://cdn/s1.mp3",
+                    publishedDate = 200,
+                ),
             )
 
-        val union = EpisodeSupplementMergeLogic.unionSearchResults(network, supplements)
+        val union =
+            EpisodeSupplementMergeLogic.unionSearchResults(
+                preferred = supplements,
+                fallback = network,
+            )
         assertEquals(listOf("s1", "n1", "shared"), union.map { it.id })
+        assertEquals("Shared RSS", union.first { it.id == "shared" }.title)
         assertTrue(union.distinctBy { it.id }.size == union.size)
+        assertTrue(
+            EpisodeSupplementMergeLogic.unionSearchResults(emptyList(), emptyList()).isEmpty(),
+        )
+        assertTrue(
+            EpisodeSupplementMergeLogic.merge(emptyList(), emptyList(), EpisodeSort.NEWEST).isEmpty(),
+        )
     }
 }

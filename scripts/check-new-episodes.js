@@ -50,25 +50,47 @@ async function fetchText(url, { timeoutMs = 15000, maxBytes = 5_000_000 } = {}) 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        const buffer = await response.arrayBuffer();
-        if (buffer.byteLength > maxBytes) {
-            throw new Error(`feed too large (${buffer.byteLength} bytes)`);
+        const declared = Number(response.headers.get('content-length'));
+        if (Number.isFinite(declared) && declared > maxBytes) {
+            throw new Error(`feed too large (${declared} bytes)`);
         }
-        return new TextDecoder('utf-8').decode(buffer);
+        if (!response.body) {
+            throw new Error('empty body');
+        }
+        const chunks = [];
+        let received = 0;
+        for await (const chunk of response.body) {
+            received += chunk.byteLength;
+            if (received > maxBytes) {
+                throw new Error(`feed too large (${received} bytes)`);
+            }
+            chunks.push(Buffer.from(chunk));
+        }
+        return Buffer.concat(chunks).toString('utf8');
     } finally {
         clearTimeout(timer);
     }
 }
 
 async function fetchPiLatest(podcastId) {
-    const url = `https://api.podcastindex.org/api/1.0/episodes/byfeedid?id=${podcastId}&max=1`;
-    const response = await fetch(url, { headers: generateAuthHeaders() });
-    if (!response.ok) {
-        throw new Error(`Podcast Index API returned status ${response.status}`);
+    const encoded = encodeURIComponent(String(podcastId));
+    const url = `https://api.podcastindex.org/api/1.0/episodes/byfeedid?id=${encoded}&max=1`;
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 15000);
+    try {
+        const response = await fetch(url, {
+            headers: generateAuthHeaders(),
+            signal: ac.signal,
+        });
+        if (!response.ok) {
+            throw new Error(`Podcast Index API returned status ${response.status}`);
+        }
+        const result = await response.json();
+        const episodes = result.items || [];
+        return episodes[0] || null;
+    } finally {
+        clearTimeout(timer);
     }
-    const result = await response.json();
-    const episodes = result.items || [];
-    return episodes[0] || null;
 }
 
 async function fetchRssNewest(feedUrl) {
@@ -166,6 +188,7 @@ async function run() {
                 });
                 if (decision.notify) {
                     console.log(`[NEW EPISODE] "${rssItem.title || 'New Episode'}" detected for ${podcastTitle} (RSS)`);
+                    let delivered = true;
                     try {
                         await sendFcm(podcastId, lib.buildRssFcmData({
                             podcastId,
@@ -176,14 +199,19 @@ async function run() {
                             feedUrl,
                         }));
                     } catch (fcmError) {
+                        delivered = false;
                         console.error(`Failed to send FCM notification for ${podcastTitle}:`, fcmError);
+                    }
+                    if (decision.reason !== 'unchanged' && delivered) {
+                        state.podcasts[podcastId] = decision.nextState;
+                        changeCount++;
                     }
                 } else {
                     console.log(`RSS ${decision.reason} for ${podcastTitle} (${podcastId})`);
-                }
-                if (decision.reason !== 'unchanged') {
-                    state.podcasts[podcastId] = decision.nextState;
-                    changeCount++;
+                    if (decision.reason !== 'unchanged') {
+                        state.podcasts[podcastId] = decision.nextState;
+                        changeCount++;
+                    }
                 }
                 continue;
             }
@@ -202,10 +230,15 @@ async function run() {
                 newest: {
                     piEpisodeId: latestEpId,
                     title: latestEpTitle,
+                    rssKey: lib.rssItemKey({
+                        guid: latestEp.guid,
+                        enclosureUrl: latestEp.enclosureUrl,
+                    }),
                 },
             });
             if (decision.notify) {
                 console.log(`[NEW EPISODE] "${latestEpTitle}" detected for ${podcastTitle}`);
+                let delivered = true;
                 try {
                     await sendFcm(podcastId, lib.buildPiFcmData({
                         podcastId,
@@ -214,10 +247,14 @@ async function run() {
                         piEpisode: latestEp,
                     }));
                 } catch (fcmError) {
+                    delivered = false;
                     console.error(`Failed to send FCM notification for ${podcastTitle}:`, fcmError);
                 }
-            }
-            if (decision.reason !== 'unchanged') {
+                if (decision.reason !== 'unchanged' && delivered) {
+                    state.podcasts[podcastId] = decision.nextState;
+                    changeCount++;
+                }
+            } else if (decision.reason !== 'unchanged') {
                 state.podcasts[podcastId] = decision.nextState;
                 changeCount++;
             }

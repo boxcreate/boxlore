@@ -7,7 +7,7 @@ Owns thin domain ports and small result types used by ViewModels, repositories, 
 ## Public API
 
 - `RssSubscriptionPort` and `RssSubscriptionResult`.
-- `EpisodeSupplementPort` and `EpisodeSupplementOutcome` (PI show feed extras; not an RSS subscription).
+- `EpisodeSupplementPort` and `EpisodeSupplementOutcome` (PI show feed extras; not an RSS subscription). `NewestTipRequest` / `FeedItemMatch` bundle the lighter tip-refresh path used by library sync and FCM hydration.
 - `RankingResetPort`.
 - `PodcastCatalogPort`.
 - `HistoryRecommendationSource`.

@@ -67,7 +67,9 @@ internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): Li
 
 internal suspend fun PodcastRepository.getEpisodeImpl(episodeId: String): Episode? = withContext(Dispatchers.IO) {
     if (episodeId.toLongOrNull()?.let { it < 0L } == true) {
-        return@withContext getRssEpisode(episodeId) ?: getSupplementEpisode(episodeId)
+        // Prefer the PI supplement row so a colliding rss: library id cannot steal
+        // playback / deep-link resolution for a Podcast Index show.
+        return@withContext getSupplementEpisode(episodeId) ?: getRssEpisode(episodeId)
     }
     getNetworkEpisode(episodeId)
 }

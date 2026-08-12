@@ -65,6 +65,6 @@ Non-sync helpers (CI stubs, one-offs, data files) may also live here. They are u
 | Script | [`scripts/check-new-episodes.js`](check-new-episodes.js) + [`check-new-episodes-lib.js`](check-new-episodes-lib.js) |
 | Who to poll | Firebase RTDB `tracked_podcasts/{podcastIndexId}` (client writes this when **show notifications** are on) |
 | Last-notified state | [`scripts/data/episode-tracker.json`](data/episode-tracker.json) (the Action commits this) |
-| Tests | `npm run test:check-new-episodes` from `scripts/` (also runs in the workflow before the live poll) |
+| Tests | `npm ci` then `npm run test:check-new-episodes` from `scripts/` (the Check New Episodes workflow runs the same script after `npm ci`) |
 
 If a tracked row has HTTPS `feedUrl` (opted-in Missing episodes?), the checker polls that RSS/Atom feed and compares `lastRssKey` (guid, else enclosure). Otherwise it keeps Podcast Index `episodes/byfeedid?max=1` vs `lastEpisodeId`. First see is a baseline (no notify). RSS fetch failure falls back to Podcast Index and does not wipe `lastRssKey`. The Action never mints negative episode ids; unmatched feed-only drops omit `episodeId` and deep-link the podcast page. The phone hydrates the local supplement cache on receive.

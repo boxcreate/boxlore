@@ -113,6 +113,49 @@ class EpisodeSupplementMatcherTest {
         assertFalse(EpisodeSupplementMatcher.isPresentInBaseline(rss, baseline))
     }
 
+    @Test
+    fun `empty normalized titles do not match`() {
+        val rss =
+            rssEpisode(
+                episodeId = "-5",
+                title = "!!!",
+                audioUrl = "https://cdn.example/rss.mp3",
+                publishedDate = 10L,
+            )
+        val baseline =
+            listOf(
+                TestFixtures.episode(
+                    id = "pi-1",
+                    title = "???",
+                    audioUrl = "https://cdn.example/pi.mp3",
+                    publishedDate = 10L,
+                ),
+            )
+        assertFalse(EpisodeSupplementMatcher.isPresentInBaseline(rss, baseline))
+    }
+
+    @Test
+    fun `unique title with distant dates is not a match`() {
+        val day = 24L * 60L * 60L
+        val rss =
+            rssEpisode(
+                episodeId = "-6",
+                title = "Only One",
+                audioUrl = "https://cdn.example/rss.mp3",
+                publishedDate = 1_000L,
+            )
+        val baseline =
+            listOf(
+                TestFixtures.episode(
+                    id = "pi-1",
+                    title = "Only One",
+                    audioUrl = "https://cdn.example/pi.mp3",
+                    publishedDate = 1_000L + day * 10,
+                ),
+            )
+        assertFalse(EpisodeSupplementMatcher.isPresentInBaseline(rss, baseline))
+    }
+
     private fun rssEpisode(
         episodeId: String,
         title: String,

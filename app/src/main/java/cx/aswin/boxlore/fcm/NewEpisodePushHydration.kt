@@ -17,22 +17,31 @@ internal object NewEpisodePushHydration {
         payloadEnclosureUrl: String?,
         subscriptionRepository: SubscriptionRepository,
         episodeSupplementPort: EpisodeSupplementPort?,
+        payloadGuid: String? = null,
     ): Episode? {
         val port = episodeSupplementPort ?: return null
         if (!port.hasDirectFeedOptIn(podcastId)) return null
         val entity = subscriptionRepository.getPodcastEntity(podcastId)
         val feedUrl =
             payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() }
+        val guid = payloadGuid?.trim().orEmpty()
+        val enclosure = payloadEnclosureUrl?.trim().orEmpty()
         val tip =
             try {
                 port.resolveNewestTipFromFeed(
-                    podcastIndexId = podcastId,
-                    feedUrl = feedUrl,
-                    knownEpisodes = listOfNotNull(entity?.latestEpisode),
-                    podcastTitle = entity?.title,
-                    podcastImageUrl = entity?.imageUrl,
-                    podcastGenre = entity?.genre,
-                    podcastArtist = entity?.author,
+                    EpisodeSupplementPort.NewestTipRequest(
+                        podcastIndexId = podcastId,
+                        feedUrl = feedUrl,
+                        knownEpisodes = listOfNotNull(entity?.latestEpisode),
+                        podcastTitle = entity?.title,
+                        podcastImageUrl = entity?.imageUrl,
+                        podcastGenre = entity?.genre,
+                        podcastArtist = entity?.author,
+                        match = EpisodeSupplementPort.FeedItemMatch(
+                            guid = guid.takeIf { it.isNotEmpty() },
+                            enclosureUrl = enclosure.takeIf { it.isNotEmpty() },
+                        ).takeIf { it.guid != null || it.enclosureUrl != null },
+                    ),
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -43,7 +52,6 @@ internal object NewEpisodePushHydration {
             subscriptionRepository.updateLatestEpisode(podcastId, tip, markAsNew = true)
             return tip
         }
-        val enclosure = payloadEnclosureUrl?.trim().orEmpty()
         if (enclosure.isEmpty()) return null
         val cached =
             port

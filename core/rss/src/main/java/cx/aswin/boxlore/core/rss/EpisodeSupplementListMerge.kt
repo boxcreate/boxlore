@@ -1,12 +1,11 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.model.Episode
-import java.util.Locale
 
 /**
  * Merges Podcast Index pages with feed-only supplement episodes (PI ownership preserved).
  * Catalog list reads merge through `PodcastRepository`; this helper stays shared
- * so Info search union and tests use the same rules.
+ * so Info search union and tests use the same rules as [EpisodeSupplementMatcher].
  */
 object EpisodeSupplementListMerge {
     enum class Sort {
@@ -19,16 +18,8 @@ object EpisodeSupplementListMerge {
         supplements: List<Episode>,
         sort: Sort,
     ): List<Episode> {
-        val piIds = piEpisodes.map { it.id }.toSet()
-        val piAudio = piEpisodes.mapNotNull { it.audioUrl.trim().takeIf(String::isNotBlank) }.toSet()
-        val piTitles = piEpisodes
-            .groupBy { normalizeText(it.title) }
-            .mapValues { (_, eps) -> eps }
-
         val extras = supplements.filterNot { supp ->
-            supp.id in piIds ||
-                supp.audioUrl.trim().takeIf(String::isNotBlank)?.let { it in piAudio } == true ||
-                matchesUniqueOrDatedTitle(supp, piTitles)
+            piEpisodes.any { pi -> EpisodeSupplementMatcher.isDuplicateOf(supp, pi) }
         }
 
         val combined = piEpisodes + extras
@@ -42,36 +33,23 @@ object EpisodeSupplementListMerge {
         }
     }
 
+    /**
+     * Unions two search result lists. [preferred] wins when the same episode appears
+     * in both (id, audio URL, or dated title). Callers that want feed extras to win
+     * should pass supplement matches as [preferred].
+     */
     fun unionSearchResults(
-        networkResults: List<Episode>,
-        supplementMatches: List<Episode>,
+        preferred: List<Episode>,
+        fallback: List<Episode>,
     ): List<Episode> {
-        val seen = linkedSetOf<String>()
-        val out = ArrayList<Episode>(networkResults.size + supplementMatches.size)
-        for (episode in networkResults + supplementMatches) {
-            if (seen.add(episode.id)) out.add(episode)
+        val out = ArrayList<Episode>(preferred.size + fallback.size)
+        for (episode in preferred + fallback) {
+            if (out.none { EpisodeSupplementMatcher.isDuplicateOf(it, episode) }) {
+                out.add(episode)
+            }
         }
         return out.sortedWith(
             compareByDescending<Episode> { it.publishedDate }.thenBy { it.id },
         )
     }
-
-    private fun matchesUniqueOrDatedTitle(
-        supp: Episode,
-        piByTitle: Map<String, List<Episode>>,
-    ): Boolean {
-        val key = normalizeText(supp.title)
-        val titleMatches = piByTitle[key].orEmpty()
-        if (titleMatches.size == 1) return true
-        if (supp.publishedDate <= 0L) return false
-        return titleMatches.any { pi ->
-            pi.publishedDate > 0L &&
-                kotlin.math.abs(pi.publishedDate - supp.publishedDate) <= ONE_DAY_SECONDS
-        }
-    }
-
-    private fun normalizeText(value: String): String =
-        value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
-
-    private const val ONE_DAY_SECONDS = 24L * 60L * 60L
 }

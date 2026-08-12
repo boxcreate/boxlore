@@ -181,4 +181,59 @@ describe('check-new-episodes-lib', () => {
         assert.equal(data.episodeId, '555');
         assert.equal(data.route, 'boxlore://episode/555?autoplay=false');
     });
+
+    it('durationMinutes covers empty, seconds, clock forms, and negatives', () => {
+        assert.equal(lib.durationMinutes(''), '0');
+        assert.equal(lib.durationMinutes('1800'), '30');
+        assert.equal(lib.durationMinutes('12:00'), '12');
+        assert.equal(lib.durationMinutes('01:00:00'), '60');
+        assert.equal(lib.durationMinutes('nope'), '0');
+        assert.equal(lib.durationMinutes('-1'), '0');
+        assert.equal(lib.durationMinutes('-1:00'), '0');
+    });
+
+    it('applyCheck does not notify twice when RSS then PI describe the same episode', () => {
+        const afterRss = lib.applyCheck({
+            existing: {
+                lastRssKey: 'guid-old',
+                lastEpisodeId: '10',
+                lastEpisodeTitle: 'Old',
+                lastCheckedAt: 1,
+            },
+            source: 'rss',
+            newest: { key: 'guid-new', title: 'Feed only' },
+            now: 50,
+        });
+        assert.equal(afterRss.notify, true);
+
+        const piCatchUp = lib.applyCheck({
+            existing: afterRss.nextState,
+            source: 'pi',
+            newest: {
+                piEpisodeId: '99',
+                title: 'Feed only',
+                rssKey: 'guid-new',
+            },
+            now: 60,
+        });
+        assert.equal(piCatchUp.notify, false);
+        assert.equal(piCatchUp.nextState.lastEpisodeId, '99');
+        assert.equal(piCatchUp.nextState.lastRssKey, 'guid-new');
+    });
+
+    it('applyCheck RSS does not notify when PI id already recorded', () => {
+        const result = lib.applyCheck({
+            existing: {
+                lastRssKey: 'guid-old',
+                lastEpisodeId: '555',
+                lastEpisodeTitle: 'Same',
+                lastCheckedAt: 1,
+            },
+            source: 'rss',
+            newest: { key: 'guid-new', title: 'Same', piEpisodeId: '555' },
+            now: 50,
+        });
+        assert.equal(result.notify, false);
+        assert.equal(result.nextState.lastRssKey, 'guid-new');
+    });
 });

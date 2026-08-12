@@ -33,7 +33,7 @@ interface EpisodeSupplementDao {
     suspend fun getAllNewest(podcastId: String): List<EpisodeSupplementItemEntity>
 
     /**
-     * [query] must already be escaped for SQL LIKE (see [cx.aswin.boxlore.core.catalog.escapeForSqlLike])
+     * [query] must already be escaped for SQL LIKE (see [cx.aswin.boxlore.core.rss.escapeForSqlLike])
      * so literal `%`/`_` characters in a user's search don't get treated as wildcards.
      */
     @Query(
@@ -61,5 +61,17 @@ interface EpisodeSupplementDao {
         deleteItemsForPodcast(podcastId)
         upsertSupplement(supplement)
         upsertItems(items)
+    }
+
+    /** Atomically refresh validators and optionally insert a feed-only tip item. */
+    @Transaction
+    suspend fun upsertSupplementAndOptionalItems(
+        supplement: EpisodeSupplementEntity,
+        items: List<EpisodeSupplementItemEntity>,
+    ) {
+        upsertSupplement(supplement)
+        if (items.isNotEmpty()) {
+            upsertItems(items)
+        }
     }
 }

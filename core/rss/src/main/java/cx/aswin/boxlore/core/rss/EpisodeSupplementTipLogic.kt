@@ -25,9 +25,9 @@ internal object EpisodeSupplementTipLogic {
             return matched.copy(
                 podcastId = podcastIndexId,
                 podcastTitle = podcastTitle?.takeIf(String::isNotBlank) ?: matched.podcastTitle,
-                podcastImageUrl = podcastImageUrl ?: matched.podcastImageUrl,
-                podcastGenre = podcastGenre ?: matched.podcastGenre,
-                podcastArtist = podcastArtist ?: matched.podcastArtist,
+                podcastImageUrl = podcastImageUrl?.takeIf(String::isNotBlank) ?: matched.podcastImageUrl,
+                podcastGenre = podcastGenre?.takeIf(String::isNotBlank) ?: matched.podcastGenre,
+                podcastArtist = podcastArtist?.takeIf(String::isNotBlank) ?: matched.podcastArtist,
             )
         }
         return newestFeedEpisode

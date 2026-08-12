@@ -54,19 +54,38 @@ interface EpisodeSupplementPort {
     suspend fun listOptedInPodcastIds(): Set<String>
 
     /**
-     * For opted-in library sync: fetch the publisher feed and return the newest tip
-     * under [podcastIndexId] without requiring a full PI episode baseline.
-     * Also upserts the tip item when it is feed-only so playback can resolve it.
+     * Optional identity for a specific feed item (FCM hydration). When set,
+     * [resolveNewestTipFromFeed] returns that item instead of whatever is currently newest.
      */
-    suspend fun resolveNewestTipFromFeed(
-        podcastIndexId: String,
-        feedUrl: String,
-        knownEpisodes: List<Episode> = emptyList(),
-        podcastTitle: String? = null,
-        podcastImageUrl: String? = null,
-        podcastGenre: String? = null,
-        podcastArtist: String? = null,
-    ): Episode?
+    data class FeedItemMatch(
+        val guid: String? = null,
+        val enclosureUrl: String? = null,
+    )
+
+    /**
+     * Inputs for [resolveNewestTipFromFeed]. Bundled so the port stays under
+     * detekt's parameter-list threshold.
+     */
+    data class NewestTipRequest(
+        val podcastIndexId: String,
+        val feedUrl: String,
+        val knownEpisodes: List<Episode> = emptyList(),
+        val podcastTitle: String? = null,
+        val podcastImageUrl: String? = null,
+        val podcastGenre: String? = null,
+        val podcastArtist: String? = null,
+        val match: FeedItemMatch? = null,
+    )
+
+    /**
+     * For opted-in library sync: fetch the publisher feed and return a tip
+     * under [NewestTipRequest.podcastIndexId] without requiring a full PI episode baseline.
+     * Also upserts the tip item when it is feed-only so playback can resolve it.
+     *
+     * When [NewestTipRequest.match] is set (FCM hydration), only that feed item is
+     * returned — not an unrelated newer item.
+     */
+    suspend fun resolveNewestTipFromFeed(request: NewestTipRequest): Episode?
 
     suspend fun getEpisodesForPodcast(
         podcastIndexId: String,

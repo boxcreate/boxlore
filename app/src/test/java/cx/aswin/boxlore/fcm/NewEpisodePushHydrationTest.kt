@@ -121,6 +121,71 @@ class NewEpisodePushHydrationTest {
             assertEquals("-8", result?.id)
         }
 
+    @Test
+    fun returnsNullWhenResolveThrowsAndNoCachedMatch() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val port =
+                FakePort(
+                    optedIn = setOf("123"),
+                    throwOnResolve = true,
+                )
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                )
+            assertNull(result)
+            assertNull(subscriptionRepository.getPodcastEntity("123")?.latestEpisode)
+        }
+
+    @Test
+    fun doesNotPromoteUnrelatedNewestWhenPayloadEnclosureDiffers() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val newest = episode("-9", audioUrl = "https://cdn.example.com/newer.mp3")
+            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+            val port =
+                FakePort(
+                    optedIn = setOf("123"),
+                    tip = newest,
+                    cached = listOf(cached),
+                )
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                    payloadGuid = "guid-ep",
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                )
+            assertEquals("-8", result?.id)
+        }
+
     private fun episode(
         id: String,
         audioUrl: String = "https://cdn.example.com/ep.mp3",
@@ -138,6 +203,7 @@ class NewEpisodePushHydrationTest {
         var optedIn: Set<String> = emptySet(),
         var tip: Episode? = null,
         var cached: List<Episode> = emptyList(),
+        var throwOnResolve: Boolean = false,
     ) : EpisodeSupplementPort {
         var resolveCalls: Int = 0
 
@@ -167,15 +233,17 @@ class NewEpisodePushHydrationTest {
         override suspend fun listOptedInPodcastIds(): Set<String> = optedIn
 
         override suspend fun resolveNewestTipFromFeed(
-            podcastIndexId: String,
-            feedUrl: String,
-            knownEpisodes: List<Episode>,
-            podcastTitle: String?,
-            podcastImageUrl: String?,
-            podcastGenre: String?,
-            podcastArtist: String?,
+            request: EpisodeSupplementPort.NewestTipRequest,
         ): Episode? {
             resolveCalls += 1
+            if (throwOnResolve) error("feed down")
+            val guid = request.match?.guid?.trim().orEmpty()
+            val enclosure = request.match?.enclosureUrl?.trim().orEmpty()
+            if (guid.isNotEmpty() || enclosure.isNotEmpty()) {
+                val matches =
+                    (enclosure.isNotEmpty() && tip?.audioUrl?.trim() == enclosure)
+                if (!matches) return null
+            }
             return tip
         }
 

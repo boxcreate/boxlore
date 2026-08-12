@@ -106,6 +106,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         podcastId = podcastId,
                         payloadFeedUrl = FcmPayloadParser.feedUrl(data),
                         payloadEnclosureUrl = FcmPayloadParser.enclosureUrl(data),
+                        payloadGuid = FcmPayloadParser.guid(data),
                         subscriptionRepository = deps.subscriptionRepository,
                         episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
                     )
@@ -115,8 +116,14 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             val episodeId =
                 NewEpisodeFcmLogic.usableEpisodeId(local?.id)
                     ?: NewEpisodeFcmLogic.usableEpisodeId(data["episodeId"])
-            val podcastTitle = data["podcastTitle"] ?: local?.podcastTitle ?: "New Release"
-            val episodeTitle = local?.title ?: data["episodeTitle"] ?: "New Episode"
+            val podcastTitle =
+                data["podcastTitle"]?.takeIf { it.isNotBlank() }
+                    ?: local?.podcastTitle?.takeIf { it.isNotBlank() }
+                    ?: "New Release"
+            val episodeTitle =
+                local?.title?.takeIf { it.isNotBlank() }
+                    ?: data["episodeTitle"]?.takeIf { it.isNotBlank() }
+                    ?: "New Episode"
             val imageUrl = local?.imageUrl ?: data["image"] ?: data["imageUrl"]
             val duration =
                 NewEpisodeFcmLogic.durationMinutes(local?.duration, data["duration"])

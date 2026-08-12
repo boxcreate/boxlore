@@ -13,9 +13,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
-import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CancellationException
@@ -33,25 +31,26 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Suppress("kotlin:S6310")
 class PodcastInfoViewModel(
     application: Application,
-    private val repository: PodcastRepository,
-    private val playbackRepository: cx.aswin.boxlore.core.playback.PlaybackRepository,
-    private val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
-    private val queueManager: cx.aswin.boxlore.core.playback.QueueManager,
+    deps: InfoSharedDeps,
     private val subscriptionRepository: cx.aswin.boxlore.core.catalog.SubscriptionRepository,
     private val rssRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
     episodeSupplementPort: EpisodeSupplementPort,
-    private val localCatalog: LocalCatalogPort,
     private val userPreferencesRepository: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
-    private val entryPoint: String?,
-    private val genreFilter: String?,
-    private val scrollDepth: Int?,
-    private val searchQuery: String?,
+    routeArgs: PodcastInfoRouteArgs,
 ) : AndroidViewModel(application) {
+    private val repository = deps.podcastRepository
+    private val playbackRepository = deps.playbackRepository
+    private val downloadRepository = deps.downloadRepository
+    private val queueManager = deps.queueManager
+    private val localCatalog = deps.localCatalog
+    private val entryPoint = routeArgs.entryPoint
+    private val genreFilter = routeArgs.genreFilter
+    private val scrollDepth = routeArgs.scrollDepth
+    private val searchQuery = routeArgs.searchQuery
     private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort)
     private val _uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Loading)
 
@@ -344,12 +343,15 @@ class PodcastInfoViewModel(
                 val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 val refresh = supplementSupport.refreshMissingEpisodes(latest, announceResult = true)
                 _uiState.value = refresh.state
-                refresh.libraryTip?.let { tip ->
-                    subscriptionRepository.updateLatestEpisode(
-                        podcastId = latest.podcast.id,
-                        episode = tip,
-                        markAsNew = true,
-                    )
+                refresh.pageSourceCount?.let { currentOffset = it }
+                if (latest.isSubscribed) {
+                    refresh.libraryTip?.let { tip ->
+                        subscriptionRepository.updateLatestEpisode(
+                            podcastId = latest.podcast.id,
+                            episode = tip,
+                            markAsNew = true,
+                        )
+                    }
                 }
                 subscriptionRepository.syncTrackedPodcastFeedUrl(latest.podcast)
             } catch (e: CancellationException) {
@@ -360,7 +362,7 @@ class PodcastInfoViewModel(
                 _uiState.value =
                     latest.copy(
                         directFeedChip = DirectFeedChipState.Offer,
-                        userMessage = e.message?.takeIf(String::isNotBlank) ?: "Couldn't load feed",
+                        userMessage = "Couldn't update episodes from the feed",
                     )
             }
         }
@@ -501,12 +503,15 @@ class PodcastInfoViewModel(
                                         announceResult = false,
                                     )
                                 _uiState.value = refreshed.state
-                                refreshed.libraryTip?.let { tip ->
-                                    subscriptionRepository.updateLatestEpisode(
-                                        podcastId = apiPodcastWithFallback.id,
-                                        episode = tip,
-                                        markAsNew = true,
-                                    )
+                                refreshed.pageSourceCount?.let { currentOffset = it }
+                                if (latest.isSubscribed) {
+                                    refreshed.libraryTip?.let { tip ->
+                                        subscriptionRepository.updateLatestEpisode(
+                                            podcastId = apiPodcastWithFallback.id,
+                                            episode = tip,
+                                            markAsNew = true,
+                                        )
+                                    }
                                 }
                             } catch (e: CancellationException) {
                                 throw e
@@ -817,10 +822,12 @@ class PodcastInfoViewModel(
                             feedId = feedId,
                             query = query,
                             networkResults = networkResults,
-                            podcastTitle = podcast.title,
-                            podcastImageUrl = podcast.imageUrl,
-                            podcastGenre = podcast.genre,
-                            podcastArtist = podcast.artist,
+                            meta = PodcastListMeta(
+                                title = podcast.title,
+                                imageUrl = podcast.imageUrl,
+                                genre = podcast.genre,
+                                artist = podcast.artist,
+                            ),
                             isRss = podcast.isRss,
                         )
 
@@ -841,75 +848,76 @@ class PodcastInfoViewModel(
 
     fun toggleSubscription() {
         val currentState = _uiState.value
-        if (currentState is PodcastInfoUiState.Success) {
-            viewModelScope.launch {
-                val wasSubscribed = currentState.isSubscribed
-                if (wasSubscribed) {
-                    didUnsubscribe = true
-                } else {
-                    didSubscribe = true
+        if (currentState !is PodcastInfoUiState.Success) return
+        viewModelScope.launch {
+            val wasSubscribed = currentState.isSubscribed
+            if (wasSubscribed) {
+                didUnsubscribe = true
+            } else {
+                didSubscribe = true
+            }
+            subscriptionRepository.toggleSubscription(currentState.podcast)
+            val isSubscribed = subscriptionRepository.isSubscribed(currentState.podcast.id)
+            applyToggledSubscriptionUi(currentState, isSubscribed)
+            if (isSubscribed && !wasSubscribed) {
+                launch { refreshTipAfterSubscribe() }
+            } else if (!isSubscribed && wasSubscribed) {
+                userPrefs.removeLastSeenEpisodeId(currentState.podcast.id)
+            }
+        }
+    }
+
+    private fun applyToggledSubscriptionUi(
+        currentState: PodcastInfoUiState.Success,
+        isSubscribed: Boolean,
+    ) {
+        val updatedPodcast =
+            currentState.podcast.copy(
+                subscribedAt = if (isSubscribed) System.currentTimeMillis() else 0L,
+                notificationsEnabled = isSubscribed && currentState.podcast.notificationsEnabled,
+                autoDownloadEnabled = isSubscribed && currentState.podcast.autoDownloadEnabled,
+            )
+        _uiState.value =
+            currentState.copy(
+                podcast = updatedPodcast,
+                isSubscribed = isSubscribed,
+            )
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPodcastSubscriptionToggled(
+            podcastId = currentState.podcast.id,
+            podcastName = currentState.podcast.title,
+            isSubscribed = isSubscribed,
+            entryPoint = entryPoint ?: "unknown",
+        )
+    }
+
+    private suspend fun refreshTipAfterSubscribe() {
+        try {
+            val latest = _uiState.value as? PodcastInfoUiState.Success ?: return
+            val auto = supplementSupport.autoOptInOnSubscribeIfDisconnected(latest)
+            if (auto != null) {
+                _uiState.value = auto.state
+                auto.pageSourceCount?.let { currentOffset = it }
+                auto.libraryTip?.let { tip ->
+                    subscriptionRepository.updateLatestEpisode(
+                        podcastId = latest.podcast.id,
+                        episode = tip,
+                        markAsNew = true,
+                    )
                 }
-                subscriptionRepository.toggleSubscription(currentState.podcast)
-                // Refresh state
-                val isSubscribed = subscriptionRepository.isSubscribed(currentState.podcast.id)
-                val updatedPodcast =
-                    currentState.podcast.copy(
-                        subscribedAt = if (isSubscribed) System.currentTimeMillis() else 0L,
-                        notificationsEnabled = isSubscribed && currentState.podcast.notificationsEnabled,
-                        autoDownloadEnabled = isSubscribed && currentState.podcast.autoDownloadEnabled,
+                subscriptionRepository.syncTrackedPodcastFeedUrl(latest.podcast)
+            } else {
+                val synced = repository.syncSubscriptions(listOf(latest.podcast.id))
+                synced[latest.podcast.id]?.let { episode ->
+                    subscriptionRepository.updateLatestEpisode(
+                        latest.podcast.id,
+                        episode,
                     )
-                _uiState.value =
-                    currentState.copy(
-                        podcast = updatedPodcast,
-                        isSubscribed = isSubscribed,
-                    )
-
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPodcastSubscriptionToggled(
-                    podcastId = currentState.podcast.id,
-                    podcastName = currentState.podcast.title,
-                    isSubscribed = isSubscribed,
-                    entryPoint = entryPoint ?: "unknown",
-                )
-
-                if (isSubscribed && !wasSubscribed) {
-                    launch {
-                        try {
-                            val latest =
-                                _uiState.value as? PodcastInfoUiState.Success ?: return@launch
-                            val auto =
-                                supplementSupport.autoOptInOnSubscribeIfDisconnected(latest)
-                            if (auto != null) {
-                                _uiState.value = auto.state
-                                auto.libraryTip?.let { tip ->
-                                    subscriptionRepository.updateLatestEpisode(
-                                        podcastId = latest.podcast.id,
-                                        episode = tip,
-                                        markAsNew = true,
-                                    )
-                                }
-                                subscriptionRepository.syncTrackedPodcastFeedUrl(latest.podcast)
-                            } else {
-                                withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                    val synced =
-                                        repository.syncSubscriptions(listOf(latest.podcast.id))
-                                    synced[latest.podcast.id]?.let { episode ->
-                                        subscriptionRepository.updateLatestEpisode(
-                                            latest.podcast.id,
-                                            episode,
-                                        )
-                                    }
-                                }
-                            }
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Post-subscribe tip / direct-feed check failed", e)
-                        }
-                    }
-                } else if (!isSubscribed && wasSubscribed) {
-                    userPrefs.removeLastSeenEpisodeId(currentState.podcast.id)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Post-subscribe tip / direct-feed check failed", e)
         }
     }
 

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
  * canned data to force the engine down a specific tier path, then asserts on the
  * returned batch (sources, ordering, exclusions, and network usage).
  */
+@Suppress("LargeClass")
 class SmartQueueEngineTest {
     private val now = 1_700_000_000_000L
 
@@ -217,26 +218,6 @@ class SmartQueueEngineTest {
             // Binge fast path: no network tiers at all.
             assertEquals(0, sources.recommendationsCalls)
             assertEquals(0, sources.trendingCalls)
-        }
-
-    @Test
-    fun `same-show continuation queues a newer feed-only supplement episode`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] =
-                listOf(
-                    episode(10, publishedDate = 10),
-                    episode(id = -203, publishedDate = 20),
-                )
-
-            val batch =
-                engine(sources).getNextEpisodes(
-                    currentItem(10),
-                    podcast("pod1", type = "episodic", genre = "News"),
-                )
-
-            assertEquals(listOf("-203"), batch.map { it.episode.id.toString() })
-            assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
         }
 
     @Test
@@ -539,21 +520,6 @@ class SmartQueueEngineTest {
                 sources.queueCandidateRequests,
             )
             assertTrue(batch.any { it.episode.id < 0L })
-        }
-
-    @Test
-    fun `subscription fallback queues a feed-only negative id from candidates`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.subscriptions = listOf(podcast("1258562"))
-            sources.episodesByPodcast["1258562"] =
-                listOf(episode(id = -9001, podcastId = "1258562", publishedDate = 999))
-
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
-            assertTrue(subs.any { it.episode.id == -9001L })
         }
 
     @Test

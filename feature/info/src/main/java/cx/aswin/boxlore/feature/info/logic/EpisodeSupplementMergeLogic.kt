@@ -23,10 +23,13 @@ object EpisodeSupplementMergeLogic {
         )
 
     fun unionSearchResults(
-        networkResults: List<Episode>,
-        supplementMatches: List<Episode>,
+        preferred: List<Episode>,
+        fallback: List<Episode>,
     ): List<Episode> =
-        EpisodeSupplementListMerge.unionSearchResults(networkResults, supplementMatches)
+        EpisodeSupplementListMerge.unionSearchResults(
+            preferred = preferred,
+            fallback = fallback,
+        )
 
     fun sorted(episodes: List<Episode>, sort: EpisodeSort): List<Episode> =
         merge(episodes, emptyList(), sort)
