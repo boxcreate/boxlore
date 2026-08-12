@@ -10,26 +10,22 @@
 
 <!-- download-play:start -->
 <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-  <img src="docs/images/card_playstore_v6.svg" height="80" alt="Get it on Google Play"/>
+  <img src="docs/images/card_playstore_v7.svg" height="88" alt="Get it on Google Play"/>
 </a>
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
 <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk">
-  <img src="docs/images/card_github_v6.svg" height="64" alt="Download boxlore podcast app APK on GitHub"/>
+  <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
 </a>
 <!-- download-apk:end -->
-
-<br/>
-
-<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Google%20Play&amp;color=3DDC84&amp;style=flat-square&amp;logo=googleplay&amp;logoColor=white" alt="Google Play version"/></a>
-&nbsp;
-<a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;logo=github&amp;label=GitHub&amp;color=6750A4" alt="GitHub latest release"/></a>
 
 <br/><br/>
 
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="PolyForm Strict License"/></a>
 <img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total downloads"/>
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20version&amp;color=3DDC84&amp;style=flat-square" alt="Google Play version"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=6750A4" alt="GitHub latest release"/></a>
 <img src="https://img.shields.io/badge/Material%203-You-D0BCFF?style=flat-square&labelColor=4F378B&color=D0BCFF" alt="Material 3"/>
 <img src="https://img.shields.io/badge/Android-Podcast%20Player-1C1B1F?style=flat-square&logo=android&logoColor=D0BCFF" alt="Android podcast player"/>
 
@@ -179,17 +175,15 @@ Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
 
 <a id="install"></a>
 
-Get it on **Google Play**, or grab the GitHub APK (latest release asset).
-
-Version badges above update live: **Google Play** from the public store listing, **GitHub** from the latest release tag (they can differ while a build is rolling out).
+Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live Play vs GitHub release versions are in the status badges under the title.
 
 <div align="center">
   <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore">
-    <img src="docs/images/card_playstore_v6.svg" height="80" alt="Get it on Google Play"/>
+    <img src="docs/images/card_playstore_v7.svg" height="88" alt="Get it on Google Play"/>
   </a>
   &nbsp;&nbsp;
   <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.14.apk">
-    <img src="docs/images/card_github_v6.svg" height="64" alt="Download boxlore podcast app APK on GitHub"/>
+    <img src="docs/images/card_github_v6.svg" height="72" alt="Download boxlore podcast app APK on GitHub"/>
   </a>
 </div>
 
