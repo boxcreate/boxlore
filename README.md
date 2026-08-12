@@ -26,8 +26,6 @@
 <img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total downloads"/>
 <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20version&amp;color=3DDC84&amp;style=flat-square" alt="Google Play version"/></a>
 <a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=6750A4" alt="GitHub latest release"/></a>
-<img src="https://img.shields.io/badge/Material%203-You-D0BCFF?style=flat-square&labelColor=4F378B&color=D0BCFF" alt="Material 3"/>
-<img src="https://img.shields.io/badge/Android-Podcast%20Player-1C1B1F?style=flat-square&logo=android&logoColor=D0BCFF" alt="Android podcast player"/>
 
 <br/><br/>
 
