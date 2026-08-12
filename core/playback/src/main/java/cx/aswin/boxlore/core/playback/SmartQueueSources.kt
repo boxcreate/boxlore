@@ -80,13 +80,16 @@ class DefaultSmartQueueSources(
     override suspend fun getEpisodes(podcastId: String): List<Episode> =
         podcastRepository.getEpisodes(podcastId)
 
-    override suspend fun getQueueCandidates(podcastId: String, limit: Int): List<Episode> =
-        podcastRepository.getEpisodesPaginated(
-            feedId = podcastId,
-            limit = limit,
-            offset = 0,
-            sort = "newest",
-        ).episodes
+    override suspend fun getQueueCandidates(podcastId: String, limit: Int): List<Episode> {
+        val page =
+            podcastRepository.getEpisodesPaginated(
+                feedId = podcastId,
+                limit = limit,
+                offset = 0,
+                sort = "newest",
+            )
+        return page.episodes.take(limit)
+    }
 
     override suspend fun getPodcastDetails(podcastId: String): Podcast? =
         podcastRepository.getPodcastDetails(podcastId)

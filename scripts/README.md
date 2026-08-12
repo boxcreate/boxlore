@@ -55,3 +55,16 @@ A second tree `/opt/boxlore-sync/boxlore-src` may exist as a snapshot — **cron
 ## Other things under `scripts/`
 
 Non-sync helpers (CI stubs, one-offs, data files) may also live here. They are unrelated to the VPS catalog cron unless documented otherwise. When in doubt, ask before assuming GHA runs them.
+
+### Check New Episodes (GitHub Actions — not VPS catalog sync)
+
+[`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) still runs on a ~30 minute cron. It is **not** the sunset catalog pipeline.
+
+| What | Where |
+| :--- | :--- |
+| Script | [`scripts/check-new-episodes.js`](check-new-episodes.js) + [`check-new-episodes-lib.js`](check-new-episodes-lib.js) |
+| Who to poll | Firebase RTDB `tracked_podcasts/{podcastIndexId}` (client writes this when **show notifications** are on) |
+| Last-notified state | [`scripts/data/episode-tracker.json`](data/episode-tracker.json) (the Action commits this) |
+| Tests | `npm run test:check-new-episodes` from `scripts/` (also runs in the workflow before the live poll) |
+
+If a tracked row has HTTPS `feedUrl` (opted-in Missing episodes?), the checker polls that RSS/Atom feed and compares `lastRssKey` (guid, else enclosure). Otherwise it keeps Podcast Index `episodes/byfeedid?max=1` vs `lastEpisodeId`. First see is a baseline (no notify). RSS fetch failure falls back to Podcast Index and does not wipe `lastRssKey`. The Action never mints negative episode ids; unmatched feed-only drops omit `episodeId` and deep-link the podcast page. The phone hydrates the local supplement cache on receive.

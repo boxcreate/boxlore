@@ -240,12 +240,17 @@ private fun GridCell(
         mode == HeroGridMode.Resume &&
             podcast.resumeProgress != null &&
             podcast.resumeProgress!! > 0f
+    // Same freshness as Your Shows NEW: shared Room flag (RSS / PI direct-feed) or 48h window.
     val isNew =
         mode == HeroGridMode.NewEpisodes &&
-            podcast.latestEpisode?.let { episode ->
-                episode.publishedDate > 0L &&
-                    (System.currentTimeMillis() / 1000L - episode.publishedDate) < NewEpisodeWindowSeconds
-            } == true
+            (
+                podcast.rssHasNewEpisodes ||
+                    podcast.latestEpisode?.let { episode ->
+                        episode.publishedDate > 0L &&
+                            (System.currentTimeMillis() / 1000L - episode.publishedDate) <
+                            NewEpisodeWindowSeconds
+                    } == true
+                )
     val titleFootHeight =
         with(LocalDensity.current) {
             TitleLineHeight.toDp() * TitleMaxLines

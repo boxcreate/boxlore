@@ -31,6 +31,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: scripts/package-lock.json
 
+      - name: Test checker logic
+        run: node --test scripts/check-new-episodes-lib.test.js
+
       - name: Install Dependencies
         run: npm ci --prefix scripts
 

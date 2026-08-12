@@ -10,7 +10,11 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 - `RssPodcastRepository` implements `RssSubscriptionPort` and manages RSS podcast and episode catalog operations.
 - `RssIdGenerator` creates deterministic `rss:` podcast IDs and negative episode IDs.
 - `RssSourceMatcher` provides migration and matching heuristics between Podcast Index and RSS sources.
-- `EpisodeSupplementRepository` implements `EpisodeSupplementPort`: fetches a PI show’s public feed and caches **feed-only** episodes under the Podcast Index id. This is **not** a subscription — it never creates `rss:` library rows, never migrates/retires a PI subscription, and never touches FCM / autodownload. Prefer `RssPodcastRepository` / `RssSubscriptionPort` for true RSS library ownership.
+- `EpisodeSupplementRepository` implements `EpisodeSupplementPort`: fetches a PI show’s public feed and caches **feed-only** episodes under the Podcast Index id. This is **not** a subscription — it never creates `rss:` library rows, never migrates/retires a PI subscription, and never writes FCM topics or autodownload flags. Prefer `RssPodcastRepository` / `RssSubscriptionPort` for true RSS library ownership. Catalog subscription code may read `hasDirectFeedOptIn` when attaching `feedUrl` to notification RTDB rows.
+- After a successful feed refresh, `EpisodeSupplementOutcome.Success.newestFeedEpisode` is the tip callers should write to Room `podcasts.latestEpisode` (Home filter chips). `resolveNewestTipFromFeed` is the lighter path used by `SubscriptionForegroundSync` for opted-in subscribed shows (falls back to the stored supplement `feedUrl` when the podcast row has none).
+- `optInFromFeedIfDisconnected` fetches the feed and persists a supplement **only** when there are feed-only episodes or a newer tip vs the PI baseline; otherwise returns `NoDisconnect` (no opt-in row).
+- `EpisodeSupplementListMerge` dedupes PI pages with feed-only supplement episodes. **`PodcastRepository` is the only PI+feed list merge** (Home filter, Podcast Info, Smart Queue, and other catalog reads). Info may still union in-show search so enriched supplement hits win.
+- `EpisodeSupplementDisconnectLogic` decides auto opt-in on subscribe.
 - `ports.DownloadCacheRelinker` is injected by app wiring so RSS can request download cache relinking without a downloads dependency.
 
 ## Internal structure
@@ -21,6 +25,9 @@ src/main/java/cx/aswin/boxlore/core/rss/
   RssPodcastRepository.kt
   EpisodeSupplementRepository.kt
   EpisodeSupplementMatcher.kt
+  EpisodeSupplementTipLogic.kt
+  EpisodeSupplementDisconnectLogic.kt
+  EpisodeSupplementListMerge.kt
   ports/
     DownloadCacheRelinker.kt
 ```
@@ -47,7 +54,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 ## Testing notes
 
 - Unit tests live under `core/rss/src/test`.
-- Existing coverage includes deterministic ID contracts, source matching heuristics, feed-client helpers, and episode-supplement matching.
+- Existing coverage includes deterministic ID contracts, source matching heuristics, feed-client helpers, episode-supplement matching, tip-resolution (PI id vs negative feed id), and disconnect / auto-opt-in predicates.
 - MockWebServer is available for feed-fetch tests.
 
 ```bash

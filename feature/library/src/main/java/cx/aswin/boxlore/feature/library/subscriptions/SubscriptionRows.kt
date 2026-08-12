@@ -178,9 +178,16 @@ internal fun SubscriptionListRow(
     modifier: Modifier = Modifier
 ) {
     val lastSeen = cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes.current[podcast.id]
-    val hasRecentNew = remember(podcast.subscribedAt, podcast.latestEpisode?.id, podcast.latestEpisode?.publishedDate, lastSeen) {
-        podcast.isLatestEpisodeNew(lastSeen)
-    }
+    val hasRecentNew =
+        remember(
+            podcast.subscribedAt,
+            podcast.latestEpisode?.id,
+            podcast.latestEpisode?.publishedDate,
+            podcast.rssHasNewEpisodes,
+            lastSeen,
+        ) {
+            podcast.isLatestEpisodeNew(lastSeen)
+        }
     val updateLabel = remember(podcast.latestEpisode?.publishedDate) {
         podcast.latestEpisode?.publishedDate?.let { published ->
             formatRelativeUpdateLabel(published)?.let { "Updated $it" }
@@ -412,9 +419,16 @@ internal fun SubscriptionGridCard(
     val latestEpisodeId = podcast.latestEpisode?.id
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
 
-    val hasRecentNew = remember(podcast.subscribedAt, latestEpisodeId, latestEpisodePubDate, lastSeenId) {
-        podcast.isLatestEpisodeNew(lastSeenId)
-    }
+    val hasRecentNew =
+        remember(
+            podcast.subscribedAt,
+            latestEpisodeId,
+            latestEpisodePubDate,
+            podcast.rssHasNewEpisodes,
+            lastSeenId,
+        ) {
+            podcast.isLatestEpisodeNew(lastSeenId)
+        }
 
     Box(
         modifier = modifier

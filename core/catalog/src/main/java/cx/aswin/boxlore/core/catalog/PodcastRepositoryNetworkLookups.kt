@@ -18,11 +18,13 @@ internal suspend fun PodcastRepository.searchRssEpisodes(feedId: String, query: 
 internal suspend fun PodcastRepository.searchNetworkEpisodes(feedId: String, query: String): List<Episode> = try {
     val resolvedId = resolvePodcastIndexFeedId(feedId)
     val response = api.searchEpisodes(publicKey, resolvedId, query).execute()
-    if (response.isSuccessful && response.body() != null) {
-        response.body()!!.items.mapNotNull { mapToEpisode(it) }
-    } else {
-        emptyList()
-    }
+    val network =
+        if (response.isSuccessful && response.body() != null) {
+            response.body()!!.items.mapNotNull { mapToEpisode(it) }
+        } else {
+            emptyList()
+        }
+    unionCachedSupplementSearch(resolvedId, query, network)
 } catch (e: kotlinx.coroutines.CancellationException) {
     throw e
 } catch (e: Exception) {
@@ -50,11 +52,13 @@ internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): Li
     // Use paginated endpoint with high limit to get "all" (max 1000 per proxy)
     // This avoids the parsing issue with EpisodesResponse vs EpisodesPaginatedResponse
     val response = api.getEpisodesPaginated(publicKey, resolvedId, limit = 1000).execute()
-    if (response.isSuccessful && response.body() != null) {
-        response.body()!!.items.mapNotNull { mapToEpisode(it) }
-    } else {
-        emptyList()
-    }
+    val piItems =
+        if (response.isSuccessful && response.body() != null) {
+            response.body()!!.items.mapNotNull { mapToEpisode(it) }
+        } else {
+            emptyList()
+        }
+    mergeCachedSupplementsNewest(resolvedId, piItems)
 } catch (e: kotlinx.coroutines.CancellationException) {
     throw e
 } catch (e: Exception) {

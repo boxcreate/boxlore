@@ -2,11 +2,32 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.testing.TestFixtures
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class EpisodeSupplementMatcherTest {
+    @Test
+    fun `findMatchingBaseline returns the PI episode`() {
+        val rss =
+            rssEpisode(
+                episodeId = "-1",
+                title = "Different title",
+                audioUrl = "https://cdn.example/ep.mp3",
+                publishedDate = 10L,
+            )
+        val baseline =
+            listOf(
+                TestFixtures.episode(
+                    id = "pi-1",
+                    title = "PI title",
+                    audioUrl = "https://cdn.example/ep.mp3",
+                ),
+            )
+        assertEquals("pi-1", EpisodeSupplementMatcher.findMatchingBaseline(rss, baseline)?.id)
+    }
+
     @Test
     fun `audio URL match counts as present`() {
         val rss =

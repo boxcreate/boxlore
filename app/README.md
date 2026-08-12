@@ -10,7 +10,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 - On startup, `BoxLoreApplication` configures `LearningEventLog` via `BoxcastPrefs.resolveLearnerLogEnabled`: on by default in debug when unset; **always off in release** unless the user has explicitly persisted an opt-in from the debug screen.
 - `AppContainer` constructs the shared graph: database, network, RSS, ranking, catalog, playback, queue, downloads, prefs, and analytics dependencies.
 - Install attribution: `AppContainer` wires `InstallReferrerManager.onInstallReferrerResolved` → analytics person properties (`install_channel`). Catalog stays free of `:core:analytics`.
-- FCM (`BoxLoreFcmService`) owns notification_received / tap extras (`notification_type`, podcast/episode ids for snake+camel keys). Generic push intents propagate those extras so taps are not always `"push"`.
+- FCM (`BoxLoreFcmService`) owns notification_received / tap extras (`notification_type`, podcast/episode ids for snake+camel keys). Generic push intents propagate those extras so taps are not always `"push"`. For `type=new_episode`, opted-in PI shows refresh the publisher feed first (`NewEpisodePushHydration`) so the notification, deep link, and auto-download use the local episode (Podcast Index id or negative supplement id). If the payload has no usable episode id, the tap opens the podcast page.
 - Library backup/import analytics (`trackBackupRestoreResult`, import failed) use allowlisted error codes from `LibraryBackupAnalyticsErrors` — never raw exception text.
 - `MainActivity` / `BoxLoreAppRoot` own deep-link and session-restore analytics at the shell layer.
 - App-shell UI uses the centralized Google Sans Flex weight tokens from `:core:designsystem`.
@@ -48,6 +48,10 @@ src/main/java/cx/aswin/boxlore/
     PushTargetRouteAllowlist.kt
   connectivity/
   fcm/
+    BoxLoreFcmService.kt
+    FcmPayloadParser.kt
+    NewEpisodeFcmLogic.kt
+    NewEpisodePushHydration.kt
   lifecycle/
   surveys/
   ui/
@@ -86,7 +90,7 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 
 ## Testing notes
 
-- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids), library backup analytics error codes, push-target route allowlisting, cold-start destination precedence (`StartDestinationResolverTest`), and launch-Subscriptions Back decisions (`LaunchSubscriptionsBackDecisionTest`).
+- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids, feedUrl/guid/enclosure), new-episode route/id helpers, opted-in feed hydration before notify, library backup analytics error codes, push-target route allowlisting, cold-start destination precedence (`StartDestinationResolverTest`), and launch-Subscriptions Back decisions (`LaunchSubscriptionsBackDecisionTest`).
 - Navigation and feature UI behavior are covered mainly in feature module tests and Maestro smoke flows.
 
 ```bash

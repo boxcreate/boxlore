@@ -2,6 +2,7 @@ const admin = require('firebase-admin');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const lib = require('./check-new-episodes-lib');
 
 // 1. Initialize Firebase Admin SDK using application default credentials (GCP_SA_KEY)
 admin.initializeApp({
@@ -32,6 +33,53 @@ function generateAuthHeaders() {
         "Authorization": authHeader,
         "User-Agent": "BoxLore/1.0"
     };
+}
+
+async function fetchText(url, { timeoutMs = 15000, maxBytes = 5_000_000 } = {}) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, {
+            signal: ac.signal,
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'BoxLore/1.0',
+                'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+            },
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const buffer = await response.arrayBuffer();
+        if (buffer.byteLength > maxBytes) {
+            throw new Error(`feed too large (${buffer.byteLength} bytes)`);
+        }
+        return new TextDecoder('utf-8').decode(buffer);
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function fetchPiLatest(podcastId) {
+    const url = `https://api.podcastindex.org/api/1.0/episodes/byfeedid?id=${podcastId}&max=1`;
+    const response = await fetch(url, { headers: generateAuthHeaders() });
+    if (!response.ok) {
+        throw new Error(`Podcast Index API returned status ${response.status}`);
+    }
+    const result = await response.json();
+    const episodes = result.items || [];
+    return episodes[0] || null;
+}
+
+async function fetchRssNewest(feedUrl) {
+    const xml = await fetchText(feedUrl);
+    return lib.newestRssItem(lib.parseFeedItems(xml));
+}
+
+async function sendFcm(podcastId, data) {
+    const topic = `new_ep_${podcastId}`;
+    const messageId = await admin.messaging().send({ topic, data });
+    console.log(`Sent notification ${messageId} to topic: ${topic}`);
 }
 
 async function run() {
@@ -65,79 +113,112 @@ async function run() {
             console.warn("Failed to parse state file, initializing fresh state:", e);
         }
     }
+    if (!state.podcasts) {
+        state.podcasts = {};
+    }
 
     state.lastRun = new Date().toISOString();
     let changeCount = 0;
 
     // 4. Poll each tracked podcast for new episodes
     for (const [podcastId, podcastData] of Object.entries(trackedPodcasts)) {
+        if (!podcastData || typeof podcastData !== 'object') {
+            continue;
+        }
         const podcastTitle = podcastData.title || "Podcast";
         const imageUrl = podcastData.imageUrl || "";
+        const existingState = state.podcasts[podcastId];
 
         try {
-            const url = `https://api.podcastindex.org/api/1.0/episodes/byfeedid?id=${podcastId}&max=1`;
-            const response = await fetch(url, { headers: generateAuthHeaders() });
-            
-            if (!response.ok) {
-                console.error(`Podcast Index API returned status ${response.status} for podcast ${podcastId}`);
+            const feedUrl = lib.usableFeedUrl(podcastData.feedUrl);
+            let rssItem = null;
+            if (feedUrl) {
+                try {
+                    rssItem = await fetchRssNewest(feedUrl);
+                } catch (rssError) {
+                    console.warn(
+                        `RSS fetch failed for ${podcastTitle} (${podcastId}); falling back to Podcast Index:`,
+                        rssError.message || rssError,
+                    );
+                }
+            }
+
+            const rssKey = lib.rssItemKey(rssItem);
+            if (rssItem && rssKey) {
+                let piEpisode = null;
+                try {
+                    piEpisode = await fetchPiLatest(podcastId);
+                } catch (piError) {
+                    console.warn(
+                        `Podcast Index lookup failed after RSS for ${podcastTitle} (${podcastId}):`,
+                        piError.message || piError,
+                    );
+                }
+                const matched = lib.rssMatchesPi(rssItem, piEpisode);
+                const decision = lib.applyCheck({
+                    existing: existingState,
+                    source: 'rss',
+                    newest: {
+                        key: rssKey,
+                        title: rssItem.title || 'New Episode',
+                        piEpisodeId: matched && piEpisode ? String(piEpisode.id) : undefined,
+                    },
+                });
+                if (decision.notify) {
+                    console.log(`[NEW EPISODE] "${rssItem.title || 'New Episode'}" detected for ${podcastTitle} (RSS)`);
+                    try {
+                        await sendFcm(podcastId, lib.buildRssFcmData({
+                            podcastId,
+                            podcastTitle,
+                            imageUrl,
+                            rssItem,
+                            piEpisode: matched ? piEpisode : null,
+                            feedUrl,
+                        }));
+                    } catch (fcmError) {
+                        console.error(`Failed to send FCM notification for ${podcastTitle}:`, fcmError);
+                    }
+                } else {
+                    console.log(`RSS ${decision.reason} for ${podcastTitle} (${podcastId})`);
+                }
+                if (decision.reason !== 'unchanged') {
+                    state.podcasts[podcastId] = decision.nextState;
+                    changeCount++;
+                }
                 continue;
             }
 
-            const result = await response.json();
-            const episodes = result.items || [];
-            
-            if (episodes.length === 0) {
+            const latestEp = await fetchPiLatest(podcastId);
+            if (!latestEp) {
                 console.log(`No episodes found in Podcast Index for ${podcastTitle} (${podcastId})`);
                 continue;
             }
 
-            const latestEp = episodes[0];
             const latestEpId = String(latestEp.id);
             const latestEpTitle = latestEp.title || "New Episode";
-            
-            const existingState = state.podcasts[podcastId];
-
-            if (!existingState) {
-                // Initialize baseline state without triggering notification
-                console.log(`Setting baseline for new tracked podcast: ${podcastTitle} -> Latest: "${latestEpTitle}" (${latestEpId})`);
-                state.podcasts[podcastId] = {
-                    lastEpisodeId: latestEpId,
-                    lastEpisodeTitle: latestEpTitle,
-                    lastCheckedAt: Date.now()
-                };
-                changeCount++;
-            } else if (existingState.lastEpisodeId !== latestEpId) {
-                // Found a new episode! Trigger push notification
+            const decision = lib.applyCheck({
+                existing: existingState,
+                source: 'pi',
+                newest: {
+                    piEpisodeId: latestEpId,
+                    title: latestEpTitle,
+                },
+            });
+            if (decision.notify) {
                 console.log(`[NEW EPISODE] "${latestEpTitle}" detected for ${podcastTitle}`);
-                
-                const topic = `new_ep_${podcastId}`;
-                const message = {
-                    topic: topic,
-                    data: {
-                        type: 'new_episode',
-                        podcastId: String(podcastId),
-                        podcastTitle: String(podcastTitle),
-                        episodeTitle: String(latestEpTitle),
-                        episodeId: String(latestEpId),
-                        duration: String(latestEp.duration ? Math.round(Number(latestEp.duration) / 60) : '0'),
-                        image: String(latestEp.image || latestEp.feedImage || imageUrl || ''),
-                        route: `boxlore://episode/${latestEpId}?autoplay=false`
-                    }
-                };
-
                 try {
-                    const messageId = await admin.messaging().send(message);
-                    console.log(`Sent notification ${messageId} to topic: ${topic}`);
+                    await sendFcm(podcastId, lib.buildPiFcmData({
+                        podcastId,
+                        podcastTitle,
+                        imageUrl,
+                        piEpisode: latestEp,
+                    }));
                 } catch (fcmError) {
                     console.error(`Failed to send FCM notification for ${podcastTitle}:`, fcmError);
                 }
-
-                // Update state
-                state.podcasts[podcastId] = {
-                    lastEpisodeId: latestEpId,
-                    lastEpisodeTitle: latestEpTitle,
-                    lastCheckedAt: Date.now()
-                };
+            }
+            if (decision.reason !== 'unchanged') {
+                state.podcasts[podcastId] = decision.nextState;
                 changeCount++;
             }
         } catch (podcastError) {

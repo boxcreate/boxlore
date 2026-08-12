@@ -245,5 +245,90 @@ class SubscriptionRepositoryTest {
             val stored = podcastDao.getPodcast("pod-1")!!.latestEpisode!!
             assertEquals("pod-1", stored.podcastId)
             assertEquals("My Show", stored.podcastTitle)
+            assertFalse(podcastDao.getPodcast("pod-1")!!.rssHasNewEpisodes)
+        }
+
+    @Test
+    fun updateLatestEpisodeMarkAsNewSetsSharedBadge() =
+        runTest {
+            repository.subscribe(podcast(id = "1258562", title = "Desi Crime"))
+            val episode =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "-9001",
+                    title = "203. Feed tip",
+                    description = "d",
+                    audioUrl = "https://example.com/ep.mp3",
+                    podcastId = "1258562",
+                )
+
+            repository.updateLatestEpisode(
+                podcastId = "1258562",
+                episode = episode,
+                markAsNew = true,
+            )
+
+            assertTrue(podcastDao.getPodcast("1258562")!!.rssHasNewEpisodes)
+            assertEquals("-9001", podcastDao.getPodcast("1258562")!!.latestEpisode!!.id)
+        }
+
+    @Test
+    fun updateLatestEpisodeIgnoresOlderTip() =
+        runTest {
+            repository.subscribe(podcast(id = "pod-tip", title = "Show"))
+            val newer =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "-9",
+                    title = "Feed tip",
+                    description = "d",
+                    audioUrl = "https://example.com/new.mp3",
+                    podcastId = "pod-tip",
+                    publishedDate = 200L,
+                )
+            val older =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "1",
+                    title = "PI tip",
+                    description = "d",
+                    audioUrl = "https://example.com/old.mp3",
+                    podcastId = "pod-tip",
+                    publishedDate = 100L,
+                )
+
+            repository.updateLatestEpisode("pod-tip", newer, markAsNew = true)
+            repository.updateLatestEpisode("pod-tip", older, markAsNew = true)
+
+            val stored = podcastDao.getPodcast("pod-tip")!!.latestEpisode!!
+            assertEquals("-9", stored.id)
+            assertEquals(200L, stored.publishedDate)
+            assertTrue(podcastDao.getPodcast("pod-tip")!!.rssHasNewEpisodes)
+        }
+
+    @Test
+    fun updateLatestEpisodeSameDateDifferentIdReplaces() =
+        runTest {
+            repository.subscribe(podcast(id = "pod-catchup", title = "Show"))
+            val feedOnly =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "-9",
+                    title = "Same drop",
+                    description = "d",
+                    audioUrl = "https://example.com/a.mp3",
+                    podcastId = "pod-catchup",
+                    publishedDate = 100L,
+                )
+            val piCatchUp =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "55",
+                    title = "Same drop",
+                    description = "d",
+                    audioUrl = "https://example.com/a.mp3",
+                    podcastId = "pod-catchup",
+                    publishedDate = 100L,
+                )
+
+            repository.updateLatestEpisode("pod-catchup", feedOnly)
+            repository.updateLatestEpisode("pod-catchup", piCatchUp)
+
+            assertEquals("55", podcastDao.getPodcast("pod-catchup")!!.latestEpisode!!.id)
         }
 }

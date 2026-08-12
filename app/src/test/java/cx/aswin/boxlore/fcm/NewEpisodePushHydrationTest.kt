@@ -1,0 +1,207 @@
+package cx.aswin.boxlore.fcm
+
+import android.content.Context
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class NewEpisodePushHydrationTest {
+    private lateinit var database: BoxLoreDatabase
+    private lateinit var subscriptionRepository: SubscriptionRepository
+
+    @Before
+    fun setUp() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        database =
+            Room
+                .inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
+        subscriptionRepository = SubscriptionRepository(database.podcastDao())
+    }
+
+    @After
+    fun tearDown() {
+        database.close()
+    }
+
+    @Test
+    fun skipsWhenNotOptedIn() =
+        runBlocking {
+            val port = FakePort(optedIn = emptySet(), tip = episode("-9"))
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                )
+            assertNull(result)
+            assertEquals(0, port.resolveCalls)
+        }
+
+    @Test
+    fun promotesFeedTipWhenOptedIn() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val tip = episode("-9")
+            val port = FakePort(optedIn = setOf("123"), tip = tip)
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = null,
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                )
+            assertEquals("-9", result?.id)
+            assertEquals(1, port.resolveCalls)
+            val stored = subscriptionRepository.getPodcastEntity("123")
+            assertEquals("-9", stored?.latestEpisode?.id)
+            assertTrue(stored?.rssHasNewEpisodes == true)
+        }
+
+    @Test
+    fun fallsBackToCachedEnclosureWhenRefreshReturnsNull() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+            val port =
+                FakePort(
+                    optedIn = setOf("123"),
+                    tip = null,
+                    cached = listOf(cached),
+                )
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                )
+            assertEquals("-8", result?.id)
+        }
+
+    private fun episode(
+        id: String,
+        audioUrl: String = "https://cdn.example.com/ep.mp3",
+    ) = Episode(
+        id = id,
+        title = "Feed ep",
+        description = "d",
+        audioUrl = audioUrl,
+        podcastId = "123",
+        publishedDate = 200L,
+        duration = 1800,
+    )
+
+    private class FakePort(
+        var optedIn: Set<String> = emptySet(),
+        var tip: Episode? = null,
+        var cached: List<Episode> = emptyList(),
+    ) : EpisodeSupplementPort {
+        var resolveCalls: Int = 0
+
+        override suspend fun refreshFromFeed(
+            podcastIndexId: String,
+            feedUrl: String,
+            baselineEpisodes: List<Episode>,
+            podcastTitle: String?,
+            podcastImageUrl: String?,
+            podcastGenre: String?,
+            podcastArtist: String?,
+        ): EpisodeSupplementOutcome = EpisodeSupplementOutcome.NoDisconnect
+
+        override suspend fun optInFromFeedIfDisconnected(
+            podcastIndexId: String,
+            feedUrl: String,
+            baselineEpisodes: List<Episode>,
+            podcastTitle: String?,
+            podcastImageUrl: String?,
+            podcastGenre: String?,
+            podcastArtist: String?,
+        ): EpisodeSupplementOutcome = EpisodeSupplementOutcome.NoDisconnect
+
+        override suspend fun hasDirectFeedOptIn(podcastIndexId: String): Boolean =
+            podcastIndexId in optedIn
+
+        override suspend fun listOptedInPodcastIds(): Set<String> = optedIn
+
+        override suspend fun resolveNewestTipFromFeed(
+            podcastIndexId: String,
+            feedUrl: String,
+            knownEpisodes: List<Episode>,
+            podcastTitle: String?,
+            podcastImageUrl: String?,
+            podcastGenre: String?,
+            podcastArtist: String?,
+        ): Episode? {
+            resolveCalls += 1
+            return tip
+        }
+
+        override suspend fun getEpisodesForPodcast(
+            podcastIndexId: String,
+            podcastTitle: String?,
+            podcastImageUrl: String?,
+            podcastGenre: String?,
+            podcastArtist: String?,
+        ): List<Episode> = cached
+
+        override suspend fun getEpisode(
+            episodeId: String,
+            podcastTitle: String?,
+            podcastImageUrl: String?,
+            podcastGenre: String?,
+            podcastArtist: String?,
+        ): Episode? = cached.find { it.id == episodeId }
+
+        override suspend fun search(
+            podcastIndexId: String,
+            query: String,
+            podcastTitle: String?,
+            podcastImageUrl: String?,
+            podcastGenre: String?,
+            podcastArtist: String?,
+        ): List<Episode> = emptyList()
+    }
+}

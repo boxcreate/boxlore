@@ -102,7 +102,14 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE notificationsEnabled = 1")
     suspend fun getNotificationEnabledPodcasts(): List<PodcastEntity>
 
-    /** Clears the "new episodes" RSS badge once the user has opened/dismissed the podcast. */
+    /** Clears the "new episodes" badge once the user has opened/dismissed the podcast. */
     @Query("UPDATE podcasts SET rssHasNewEpisodes = 0 WHERE podcastId = :id")
     suspend fun clearRssNewEpisodesFlag(id: String)
+
+    /**
+     * Sets the shared "new episodes" badge (RSS freshness or PI direct-feed tip promote).
+     * Cleared via [clearRssNewEpisodesFlag] when the tip is seen.
+     */
+    @Query("UPDATE podcasts SET rssHasNewEpisodes = 1 WHERE podcastId = :id")
+    suspend fun markHasNewEpisodes(id: String)
 }

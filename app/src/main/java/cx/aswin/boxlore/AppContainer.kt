@@ -169,13 +169,17 @@ class AppContainer(
     }
 
     override val subscriptionRepository: SubscriptionRepository by lazy {
-        SubscriptionRepository(database.podcastDao())
+        SubscriptionRepository(
+            podcastDao = database.podcastDao(),
+            episodeSupplementPort = episodeSupplementRepository,
+        )
     }
 
     override val subscriptionForegroundSync: SubscriptionForegroundSync by lazy {
         SubscriptionForegroundSync.create(
             podcastRepository = podcastRepository,
             subscriptionRepository = subscriptionRepository,
+            episodeSupplementPort = episodeSupplementRepository,
             scope = syncScope,
         )
     }

@@ -11,6 +11,11 @@ import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SubscriptionForegroundSyncTest {
+    @org.junit.jupiter.api.BeforeEach
+    fun resetProcessGuard() {
+        SubscriptionForegroundSync.resetProcessGuardForTests()
+    }
+
     @Test
     fun ensureStartedRunsSyncActionOnlyOnce() =
         runTest {
@@ -97,6 +102,99 @@ class SubscriptionForegroundSyncTest {
                 chunkSize = 1,
             )
             assertEquals(listOf("a", "c"), saved)
+        }
+
+    @Test
+    fun syncSubscribedLatestEpisodes_optedInUsesDirectFeedNotPiSync() =
+        runTest {
+            val piSynced = mutableListOf<List<String>>()
+            val saved = mutableMapOf<String, String>()
+            val feedTip =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "-1",
+                    title = "From feed",
+                    description = "",
+                    audioUrl = "https://example.com/feed.mp3",
+                    imageUrl = null,
+                    publishedDate = 99L,
+                    duration = 60,
+                    podcastId = "opted",
+                )
+            var networkCalls = 0
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { setOf("opted", "plain", "rss:other") },
+                loadOptedInIds = { setOf("opted") },
+                loadPodcastMeta = { id ->
+                    DirectFeedTipMeta(
+                        feedUrl = "https://feeds.example/$id.xml",
+                        title = id,
+                        imageUrl = null,
+                        genre = null,
+                        artist = null,
+                        knownTip = null,
+                    )
+                },
+                loadCachedFeedTip = { null },
+                resolveFeedTip = { id, _ ->
+                    networkCalls++
+                    assertEquals("opted", id)
+                    feedTip
+                },
+                syncChunk = { chunk ->
+                    piSynced += chunk
+                    chunk.associateWith { feedTip.copy(id = "pi_$it", podcastId = it) }
+                },
+                saveLatest = { id, ep -> saved[id] = ep.id },
+                chunkSize = 10,
+                feedNetworkDelayMs = 0L,
+            )
+            assertEquals("-1", saved["opted"])
+            assertEquals(1, networkCalls)
+            assertEquals(listOf(listOf("plain", "rss:other")), piSynced)
+            assertTrue(saved.containsKey("plain"))
+            assertTrue(saved.containsKey("rss:other"))
+        }
+
+    @Test
+    fun syncSubscribedLatestEpisodes_promotesCachedTipWithoutNetworkWhenCurrent() =
+        runTest {
+            val cached =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "-42",
+                    title = "Cached tip",
+                    description = "",
+                    audioUrl = "https://example.com/c.mp3",
+                    imageUrl = null,
+                    publishedDate = 200L,
+                    duration = 60,
+                    podcastId = "opted",
+                )
+            var networkCalls = 0
+            val saved = mutableMapOf<String, String>()
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { setOf("opted") },
+                loadOptedInIds = { setOf("opted") },
+                loadPodcastMeta = {
+                    DirectFeedTipMeta(
+                        feedUrl = "https://feeds.example/x.xml",
+                        title = "opted",
+                        imageUrl = null,
+                        genre = null,
+                        artist = null,
+                        knownTip = cached.copy(id = "old-pi", publishedDate = 50L),
+                    )
+                },
+                loadCachedFeedTip = { cached },
+                resolveFeedTip = { _, _ ->
+                    networkCalls++
+                    cached
+                },
+                syncChunk = { error("PI should not run for only opted-in") },
+                saveLatest = { id, ep -> saved[id] = ep.id },
+                feedNetworkDelayMs = 0L,
+            )
+            assertEquals("-42", saved["opted"])
+            assertEquals(1, networkCalls)
         }
 
     @Test

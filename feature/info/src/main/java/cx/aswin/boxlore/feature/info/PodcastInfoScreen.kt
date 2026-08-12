@@ -600,8 +600,11 @@ fun PodcastInfoScreen(
                             Text(
                                 "This is uncommon. For a few shows, our catalog can take " +
                                     "longer to pick up new episodes.\n\n" +
-                                    "Turn this on and we'll load episodes from the show's own " +
-                                    "feed whenever you open this page — you only need to do it once.\n\n" +
+                                    "Subscribing already checks the show's feed and adds any " +
+                                    "missing episodes. If you're already subscribed and the " +
+                                    "list still looks behind, turn this on — we'll load " +
+                                    "episodes from the show's own feed whenever you open this " +
+                                    "page. You only need to do it once.\n\n" +
                                     "Home and notifications may still lag until the catalog catches up.",
                             )
                         },

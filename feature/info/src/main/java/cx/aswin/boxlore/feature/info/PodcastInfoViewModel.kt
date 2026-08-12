@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Suppress("kotlin:S6310")
 class PodcastInfoViewModel(
@@ -341,7 +342,16 @@ class PodcastInfoViewModel(
         viewModelScope.launch {
             try {
                 val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
-                _uiState.value = supplementSupport.refreshMissingEpisodes(latest, announceResult = true)
+                val refresh = supplementSupport.refreshMissingEpisodes(latest, announceResult = true)
+                _uiState.value = refresh.state
+                refresh.libraryTip?.let { tip ->
+                    subscriptionRepository.updateLatestEpisode(
+                        podcastId = latest.podcast.id,
+                        episode = tip,
+                        markAsNew = true,
+                    )
+                }
+                subscriptionRepository.syncTrackedPodcastFeedUrl(latest.podcast)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -414,7 +424,7 @@ class PodcastInfoViewModel(
                 if (currentPodcast?.isRss == true) {
                     val cachedPage =
                         repository.getEpisodesPaginated(effectivePodcastId, limit, 0, sortParam)
-                    currentOffset = cachedPage.episodes.size
+                    currentOffset = cachedPage.sourceCount
                     val successState =
                         PodcastInfoUiState.Success(
                             podcast = currentPodcast,
@@ -455,7 +465,7 @@ class PodcastInfoViewModel(
                         wasSubscribedAtStart = isSubscribed
                     }
 
-                    currentOffset = page.episodes.size
+                    currentOffset = page.sourceCount
                     val baseSuccess =
                         PodcastInfoUiState.Success(
                             podcast = apiPodcastWithFallback,
@@ -485,11 +495,19 @@ class PodcastInfoViewModel(
                             _uiState.value =
                                 latest.copy(directFeedChip = DirectFeedChipState.Fetching)
                             try {
-                                _uiState.value =
+                                val refreshed =
                                     supplementSupport.refreshMissingEpisodes(
                                         state = latest.copy(directFeedChip = DirectFeedChipState.Fetching),
                                         announceResult = false,
                                     )
+                                _uiState.value = refreshed.state
+                                refreshed.libraryTip?.let { tip ->
+                                    subscriptionRepository.updateLatestEpisode(
+                                        podcastId = apiPodcastWithFallback.id,
+                                        episode = tip,
+                                        markAsNew = true,
+                                    )
+                                }
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
@@ -661,7 +679,7 @@ class PodcastInfoViewModel(
                 val limit = if (currentState.currentSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
                 val sortParam = if (currentState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
                 val page = repository.getEpisodesPaginated(currentPodcastId, limit, currentOffset, sortParam)
-                currentOffset += page.episodes.size
+                currentOffset += page.sourceCount
                 val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 val nextPi = latest.piEpisodes + page.episodes
                 _uiState.value =
@@ -693,7 +711,7 @@ class PodcastInfoViewModel(
                 val podcast = repository.getPodcastDetails(currentPodcastId) ?: latestState.podcast
                 val page =
                     repository.getEpisodesPaginated(currentPodcastId, limit, 0, sortParam)
-                currentOffset = page.episodes.size
+                currentOffset = page.sourceCount
                 _uiState.value =
                     supplementSupport.remountWithSupplements(
                         state = latestState.copy(podcast = podcast),
@@ -745,7 +763,7 @@ class PodcastInfoViewModel(
                 val limit = if (newSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
                 val sortParam = if (newSort == EpisodeSort.OLDEST) "oldest" else "newest"
                 val page = repository.getEpisodesPaginated(currentPodcastId, limit, 0, sortParam)
-                currentOffset = page.episodes.size
+                currentOffset = page.sourceCount
                 val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 _uiState.value =
                     supplementSupport.remountWithSupplements(
@@ -854,14 +872,38 @@ class PodcastInfoViewModel(
                 )
 
                 if (isSubscribed && !wasSubscribed) {
-                    launch(kotlinx.coroutines.Dispatchers.IO) {
+                    launch {
                         try {
-                            val synced = repository.syncSubscriptions(listOf(currentState.podcast.id))
-                            synced[currentState.podcast.id]?.let { episode ->
-                                subscriptionRepository.updateLatestEpisode(currentState.podcast.id, episode)
+                            val latest =
+                                _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                            val auto =
+                                supplementSupport.autoOptInOnSubscribeIfDisconnected(latest)
+                            if (auto != null) {
+                                _uiState.value = auto.state
+                                auto.libraryTip?.let { tip ->
+                                    subscriptionRepository.updateLatestEpisode(
+                                        podcastId = latest.podcast.id,
+                                        episode = tip,
+                                        markAsNew = true,
+                                    )
+                                }
+                                subscriptionRepository.syncTrackedPodcastFeedUrl(latest.podcast)
+                            } else {
+                                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    val synced =
+                                        repository.syncSubscriptions(listOf(latest.podcast.id))
+                                    synced[latest.podcast.id]?.let { episode ->
+                                        subscriptionRepository.updateLatestEpisode(
+                                            latest.podcast.id,
+                                            episode,
+                                        )
+                                    }
+                                }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Post-subscribe tip / direct-feed check failed", e)
                         }
                     }
                 } else if (!isSubscribed && wasSubscribed) {

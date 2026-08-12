@@ -16,15 +16,24 @@ internal object EpisodeSupplementMatcher {
     fun isPresentInBaseline(
         rssEpisode: RssEpisodeEntity,
         baseline: List<Episode>,
-    ): Boolean {
+    ): Boolean = findMatchingBaseline(rssEpisode, baseline) != null
+
+    /**
+     * Returns the baseline episode that matches [rssEpisode], preferring audio URL,
+     * then unique title, then title + publishedDate within one day.
+     */
+    fun findMatchingBaseline(
+        rssEpisode: RssEpisodeEntity,
+        baseline: List<Episode>,
+    ): Episode? {
         val rssAudio = rssEpisode.audioUrl.trim().takeIf(String::isNotBlank)
         if (rssAudio != null) {
-            if (baseline.any { it.audioUrl.trim() == rssAudio }) return true
+            baseline.firstOrNull { it.audioUrl.trim() == rssAudio }?.let { return it }
         }
         val titleMatches = baseline.filter {
             normalizeText(it.title) == normalizeText(rssEpisode.title)
         }
-        if (titleMatches.size == 1) return true
+        if (titleMatches.size == 1) return titleMatches.first()
         if (rssEpisode.publishedDate > 0L) {
             val closest = titleMatches.minByOrNull {
                 abs(it.publishedDate - rssEpisode.publishedDate)
@@ -33,10 +42,10 @@ internal object EpisodeSupplementMatcher {
                 closest.publishedDate > 0L &&
                 abs(closest.publishedDate - rssEpisode.publishedDate) <= ONE_DAY_SECONDS
             ) {
-                return true
+                return closest
             }
         }
-        return false
+        return null
     }
 
     private fun normalizeText(value: String): String =

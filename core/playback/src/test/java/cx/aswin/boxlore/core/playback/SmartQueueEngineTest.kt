@@ -220,6 +220,26 @@ class SmartQueueEngineTest {
         }
 
     @Test
+    fun `same-show continuation queues a newer feed-only supplement episode`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] =
+                listOf(
+                    episode(10, publishedDate = 10),
+                    episode(id = -203, publishedDate = 20),
+                )
+
+            val batch =
+                engine(sources).getNextEpisodes(
+                    currentItem(10),
+                    podcast("pod1", type = "episodic", genre = "News"),
+                )
+
+            assertEquals(listOf("-203"), batch.map { it.episode.id.toString() })
+            assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+        }
+
+    @Test
     fun `preferredSort oldest forces chronological continuation on an episodic show`() =
         runTest {
             val sources = FakeSources()
@@ -519,6 +539,21 @@ class SmartQueueEngineTest {
                 sources.queueCandidateRequests,
             )
             assertTrue(batch.any { it.episode.id < 0L })
+        }
+
+    @Test
+    fun `subscription fallback queues a feed-only negative id from candidates`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = listOf(episode(1))
+            sources.subscriptions = listOf(podcast("1258562"))
+            sources.episodesByPodcast["1258562"] =
+                listOf(episode(id = -9001, podcastId = "1258562", publishedDate = 999))
+
+            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+            val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
+            assertTrue(subs.any { it.episode.id == -9001L })
         }
 
     @Test

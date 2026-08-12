@@ -6,6 +6,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.home.components.YourShowsSection
@@ -22,6 +26,16 @@ internal fun LazyStaggeredGridScope.yourShowsItem(
     if (!shouldShowYourShows(content, feedState, loadingState)) return
     item(span = StaggeredGridItemSpan.FullLine, key = "your_shows", contentType = "your_shows") {
         PinnedGridItemContent {
+            // Keep hero + filter chips on the same reveal (`viewportReady` / !isLoading).
+            // Skeleton layout is frozen via peak sub count so Room emissions do not remorph
+            // 1-row → 2-row while we wait for that coordinated reveal.
+            val subCount = content.subscribedItems.list.size
+            var skeletonLayoutCount by remember { mutableIntStateOf(0) }
+            LaunchedEffect(subCount) {
+                if (subCount > skeletonLayoutCount) {
+                    skeletonLayoutCount = subCount
+                }
+            }
             androidx.compose.animation.Crossfade(
                 targetState = derivedState.viewportReady,
                 animationSpec = tween(500),
@@ -30,6 +44,7 @@ internal fun LazyStaggeredGridScope.yourShowsItem(
             ) { ready ->
                 YourShowsFeedContent(
                     ready = ready,
+                    skeletonLayoutCount = skeletonLayoutCount,
                     content = content,
                     feedState = feedState,
                     loadingState = loadingState,
@@ -51,6 +66,7 @@ private fun shouldShowYourShows(
 @Composable
 private fun YourShowsFeedContent(
     ready: Boolean,
+    skeletonLayoutCount: Int,
     content: PodcastFeedContent,
     feedState: PodcastFeedUiState,
     loadingState: PodcastFeedLoadingState,
@@ -58,7 +74,11 @@ private fun YourShowsFeedContent(
     callbacks: HomeFeedCallbacks,
 ) {
     when {
-        !ready -> YourShowsSkeleton(subscribedCount = content.subscribedItems.list.size)
+        !ready ->
+            YourShowsSkeleton(
+                // Peak count freezes 1-row vs 2-row for the whole wait; never drop back to 0/5.
+                subscribedCount = skeletonLayoutCount,
+            )
         content.subscribedItems.list.isNotEmpty() ->
             YourShowsSection(
                 subscribedPodcasts = content.subscribedItems,

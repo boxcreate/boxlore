@@ -57,7 +57,8 @@ data class Podcast(
 }
 
 fun Podcast.isLatestEpisodeNew(lastSeenId: String?): Boolean {
-    if (isRss && rssHasNewEpisodes) return true
+    // Shared badge for true-RSS freshness checks and PI direct-feed tip promotes.
+    if (rssHasNewEpisodes) return true
     if (episodeStatus != EpisodeStatus.UNPLAYED) return false
     val ep = latestEpisode ?: return false
     if (subscribedAt <= 0L) return false

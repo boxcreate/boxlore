@@ -17,6 +17,9 @@ interface EpisodeSupplementDao {
     @Query("SELECT * FROM episode_supplements WHERE podcastId = :podcastId LIMIT 1")
     suspend fun getSupplement(podcastId: String): EpisodeSupplementEntity?
 
+    @Query("SELECT podcastId FROM episode_supplements")
+    suspend fun listOptedInPodcastIds(): List<String>
+
     @Query("SELECT * FROM episode_supplement_items WHERE episodeId = :episodeId LIMIT 1")
     suspend fun getEpisode(episodeId: String): EpisodeSupplementItemEntity?
 

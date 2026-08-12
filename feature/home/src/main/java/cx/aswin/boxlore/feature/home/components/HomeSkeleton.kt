@@ -221,8 +221,10 @@ fun YourShowsSkeleton(
             )
         }
 
-        // Selector covers - match the dynamic height of YourShowsSection
-        if (subscribedCount > 4) {
+        // Selector covers - match YourShowsSection. When count is still 0 (Room not
+        // emitted yet), reserve the 2-row height so a later count update does not remorph
+        // a 1-row shimmer into a 2-row one mid-wait.
+        if (subscribedCount == 0 || subscribedCount > 4) {
             // 2-row layout matching the height 156.dp
             Column(
                 modifier =

@@ -6,12 +6,13 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 
 ## Public API
 
-- `PodcastRepository` coordinates Podcast Index calls, recommendation endpoints, curated vibes, home bootstrap, similar episodes (with content languages), content catalog/v3, and RSS delegation.
+- `PodcastRepository` coordinates Podcast Index calls, recommendation endpoints, curated vibes, home bootstrap, similar episodes (with content languages), content catalog/v3, and RSS delegation. For PI shows opted into **Missing episodes?**, episode list reads (`getEpisodes`, offset-0 `getEpisodesPaginated`, in-show `searchEpisodes`) union **cached** feed-only extras after the PI response. True `rss:` rows are unchanged. Pagination offsets use `EpisodePage.sourceCount` (PI size before extras).
+- `syncSubscriptions` (`POST /sync`) is PI-only for shows that are **not** opted in. Opted-in ids are omitted from the request; the map may include the newest cached supplement tip instead. Live feed freshen stays on `SubscriptionForegroundSync` and Podcast Info.
 - Show search: legacy `searchPodcasts` / `searchPodcastsWithCorrection` keep calling `GET /search` (hybrid). New clients use `searchPodcastsTypeahead` (`GET /search/typeahead` / Meili) and `searchPodcastsGrouped` (parallel typeahead + hybrid → Matches / Also found). Concept search uses `searchSemanticGrouped` / `searchEpisodesSemantic` (`GET /search/semantic`: one CF embed → Qdrant podcasts + episodes; additive `feeds` + legacy `items`).
 - `logic.mergeShowSearchResults` dedupes Meili vs hybrid by id / itunes / feed URL.
 - `mapRegionForBriefing` maps content regions to briefing markets (`us` / `in` / `gb` / `global`; legacy `uk` → `gb`) via `ContentRegions.briefingMarket`.
-- `SubscriptionRepository`, `ChapterRepository`, and `TranscriptRepository` expose catalog-adjacent data operations.
-- `SubscriptionForegroundSync` is the process-once foreground refresh of subscribed latest episodes (`syncSubscriptions` in chunks of 10, 2s UI settle delay). `:app` starts it after onboarding from `BoxLoreAppRoot` so cold starts that skip Home (open-app-to Subscriptions, offline Downloads) still refresh New Episodes; Home's ViewModel may call `ensureStarted` again (idempotent).
+- `SubscriptionRepository`, `ChapterRepository`, and `TranscriptRepository` expose catalog-adjacent data operations. `updateLatestEpisode` never replaces a newer Room tip with an older PI or feed item (`LatestEpisodeTipLogic`); same published date may replace when the episode id changes (PI catch-up). When the listener turns **show notifications** on, `SubscriptionRepository` writes RTDB `tracked_podcasts/{podcastIndexId}` (`title`, `imageUrl`, and HTTPS `feedUrl` only if the show is opted into Missing episodes?). Subscribe does not write that map. After a later opt-in while notifications are already on, `syncTrackedPodcastFeedUrl` patches `feedUrl` so the Check New Episodes Action can poll the publisher feed.
+- `SubscriptionForegroundSync` is the process-once foreground refresh of subscribed latest episodes (`syncSubscriptions` in chunks of 10, 2s UI settle delay). Shows the user opted into via Podcast Info **Missing episodes?** skip PI `/sync` for the tip: first promote from the **local** supplement cache, then after an extra ~12s delay refresh the publisher feed so Home first paint is not competing with RSS download/parse. Direct-feed tip writes use `updateLatestEpisode(..., markAsNew = true)` so the shared `rssHasNewEpisodes` badge drives Your Shows NEW and the New episodes hero chip the same way true-RSS does; plain PI `/sync` tips do not set that flag. The same process-once pass also patches RTDB `feedUrl` for opted-in shows that already have notifications on. `:app` starts it after onboarding from `BoxLoreAppRoot` so cold starts that skip Home (open-app-to Subscriptions, offline Downloads) still refresh New Episodes; Home's ViewModel may call `ensureStarted` again (idempotent).
 - `content.ContentOrchestrator`, `ServerGroupedSectionProvider`, `ContentContextEngine`, and related content contracts assemble discovery slates from catalog/v3 (no live `content/sections/v1` client).
 - `content.CuratedMoods` is the shared catalog of curated-mood IDs/titles used by Home daypart rails and Explore For You chips (`getCuratedVibe`).
 - `backup.LibraryBackupManager` imports and exports library data, OPML, listening history, ranking backup payloads, and global prefs including `contentLanguages`.
@@ -30,8 +31,12 @@ src/main/java/cx/aswin/boxlore/core/catalog/
   PodcastRepositoryContentMapping.kt
   PodcastRepositoryMappers.kt
   PodcastRepositoryNetworkLookups.kt
+  PodcastRepositoryEpisodeSupplements.kt
   PodcastRepositoryRecommendations.kt
   PodcastRepositoryStreams.kt
+  PodcastEpisodeSupplementMerge.kt
+  LatestEpisodeTipLogic.kt
+  TrackedPodcastRtdbLogic.kt
   EpisodeMapper.kt
   SubscriptionRepository.kt
   ChapterRepository.kt
@@ -75,7 +80,7 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 ## Testing notes
 
 - Unit tests live under `core/catalog/src/test`.
-- Existing coverage includes `PodcastRepositoryCatalogTest`, `ShowSearchMergeTest`, `InstallReferrerManager` channel derivation / attribution callback seams, `SubscriptionForegroundSync` once-guard / delay, content orchestration tests, content signal enrichment, grouped sections, recent section intent storage, cross-promotion detection, transcript behavior, and dependency-holder behavior.
+- Existing coverage includes `PodcastRepositoryCatalogTest`, `PodcastRepositoryEpisodeSupplementTest` (offset-0 merge, later-page PI-only, search union, opted-in `/sync` skip), `LatestEpisodeTipLogicTest`, `TrackedPodcastRtdbLogicTest` (HTTPS `feedUrl` on notification RTDB rows), `ShowSearchMergeTest`, `InstallReferrerManager` channel derivation / attribution callback seams, `SubscriptionForegroundSync` once-guard / delay / direct-feed opt-in tip path, content orchestration tests, content signal enrichment, grouped sections, recent section intent storage, cross-promotion detection, transcript behavior, and dependency-holder behavior.
 - RSS ID and matcher tests live in `:core:rss`; smart-queue tests live in `:core:playback`.
 
 ```bash

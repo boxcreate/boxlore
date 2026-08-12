@@ -97,4 +97,21 @@ class FcmPayloadParserTest {
         assertEquals("pod-1", parsed.podcastId)
         assertEquals("ep-9", parsed.episodeId)
     }
+
+    @Test
+    fun testParse_readsFeedUrlGuidAndEnclosure() {
+        val parsed =
+            FcmPayloadParser.parse(
+                mapOf(
+                    "type" to "new_episode",
+                    "podcastId" to "123",
+                    "feedUrl" to "https://feeds.example/show.xml",
+                    "guid" to "guid-new",
+                    "enclosureUrl" to "https://cdn.example.com/ep.mp3",
+                ),
+            )
+        assertEquals("https://feeds.example/show.xml", parsed.feedUrl)
+        assertEquals("guid-new", parsed.guid)
+        assertEquals("https://cdn.example.com/ep.mp3", parsed.enclosureUrl)
+    }
 }
