@@ -24,7 +24,7 @@
 
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="PolyForm Strict License"/></a>
 <img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total downloads"/>
-<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20version&amp;color=3DDC84&amp;style=flat-square" alt="Google Play version"/></a>
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20version&amp;color=6750A4&amp;style=flat-square" alt="Google Play version"/></a>
 <a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=6750A4" alt="GitHub latest release"/></a>
 
 <br/><br/>
