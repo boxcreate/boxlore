@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-12T18:28:28.691Z",
+  "lastRun": "2026-08-12T19:40:02.629Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -25,9 +25,10 @@
       "lastCheckedAt": 1786559311588
     },
     "160817": {
-      "lastEpisodeId": "58791086500",
-      "lastEpisodeTitle": "The Last Shutdown | LINUX Unplugged 679",
-      "lastCheckedAt": 1786353569844
+      "lastEpisodeId": "58907199258",
+      "lastEpisodeTitle": "Minimaxxing | The Launch 🚀 79",
+      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/79",
+      "lastCheckedAt": 1786563604961
     },
     "212882": {
       "lastRssKey": "44010190-a7f8-11f0-954a-6bb14b668972",
@@ -148,9 +149,10 @@
       "lastCheckedAt": 1786559320882
     },
     "980370": {
-      "lastEpisodeId": "58859040764",
-      "lastEpisodeTitle": "How satellites and AI can protect the planet | Robbie Schingler",
-      "lastCheckedAt": 1786546783958
+      "lastEpisodeId": "58908315927",
+      "lastEpisodeTitle": "The hidden power of sad songs and rainy days | Susan Cain and Min Kym",
+      "lastRssKey": "6a7b780bf91cd396b39c5cf4",
+      "lastCheckedAt": 1786563611891
     },
     "1015378": {
       "lastRssKey": "bf461c11-8e10-4124-8c40-f24dab393cf9",
