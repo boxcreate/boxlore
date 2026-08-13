@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-13T04:11:34.566Z",
+  "lastRun": "2026-08-13T05:56:41.742Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -42,9 +42,10 @@
       "lastCheckedAt": 1782580346119
     },
     "415434": {
-      "lastEpisodeId": "58876043104",
-      "lastEpisodeTitle": "Lessons from the very first chatbot",
-      "lastCheckedAt": 1786507621379
+      "lastEpisodeId": "58925393724",
+      "lastEpisodeTitle": "Pixel 11 and Pixel Watch 5: Our first impressions | The Vergecast Livestream",
+      "lastRssKey": "475e8214-6e7b-11f1-94bf-eb669e00516e",
+      "lastCheckedAt": 1786600604436
     },
     "448245": {
       "lastEpisodeId": "56601446692",
