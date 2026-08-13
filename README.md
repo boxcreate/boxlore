@@ -64,8 +64,11 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<b>🚨 Critical:</b>
+<ul align="left">
+<li>Sorry for another update so soon — this is a follow-up fix for yesterday’s release <a href="https://github.com/boxcreate/boxlore/pull/975"><img src="https://img.shields.io/badge/PR-975-6750A4?style=flat-square" alt="PR #975" height="18"/></a></li>
+<li>New episodes in your library and on Home now show up when you open boxlore, including if you go straight to Subscriptions, without tapping into each show first <a href="https://github.com/boxcreate/boxlore/pull/975"><img src="https://img.shields.io/badge/PR-975-6750A4?style=flat-square" alt="PR #975" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
