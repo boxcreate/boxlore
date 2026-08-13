@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -703,8 +704,20 @@ class PodcastInfoViewModel(
 
     fun refreshRssFeed() {
         val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
-        if (!currentState.podcast.isRss || currentState.isRssRefreshing) return
+        if (currentState.isRssRefreshing) return
+        when (
+            PodcastInfoPullRefreshLogic.target(
+                isRss = currentState.podcast.isRss,
+                chip = currentState.directFeedChip,
+            )
+        ) {
+            PodcastInfoPullRefreshLogic.Target.RSS_CATALOG -> refreshTrueRssCatalog(currentState)
+            PodcastInfoPullRefreshLogic.Target.DIRECT_FEED -> refreshDirectFeedFromPull(currentState)
+            PodcastInfoPullRefreshLogic.Target.NONE -> Unit
+        }
+    }
 
+    private fun refreshTrueRssCatalog(currentState: PodcastInfoUiState.Success) {
         _uiState.value = currentState.copy(isLoadingMore = true, isRssRefreshing = true)
         viewModelScope.launch {
             try {
@@ -734,6 +747,45 @@ class PodcastInfoViewModel(
                 )
                 val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 _uiState.value = latestState.copy(isLoadingMore = false, isRssRefreshing = false)
+            }
+        }
+    }
+
+    private fun refreshDirectFeedFromPull(currentState: PodcastInfoUiState.Success) {
+        _uiState.value =
+            currentState.copy(
+                isRssRefreshing = true,
+                directFeedChip = DirectFeedChipState.Fetching,
+            )
+        viewModelScope.launch {
+            try {
+                val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                val refreshed =
+                    supplementSupport.refreshMissingEpisodes(
+                        state = latest,
+                        announceResult = false,
+                    )
+                _uiState.value = refreshed.state.copy(isRssRefreshing = false)
+                refreshed.pageSourceCount?.let { currentOffset = it }
+                if (latest.isSubscribed) {
+                    refreshed.libraryTip?.let { tip ->
+                        subscriptionRepository.updateLatestEpisode(
+                            podcastId = latest.podcast.id,
+                            episode = tip,
+                            markAsNew = true,
+                        )
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Pull-to-refresh direct-feed failed", e)
+                val failed = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                _uiState.value =
+                    failed.copy(
+                        isRssRefreshing = false,
+                        directFeedChip = DirectFeedChipState.Updated,
+                    )
             }
         }
     }

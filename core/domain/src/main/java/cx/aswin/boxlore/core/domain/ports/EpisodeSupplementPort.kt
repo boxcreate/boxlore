@@ -13,6 +13,22 @@ import cx.aswin.boxlore.core.model.Episode
  */
 interface EpisodeSupplementPort {
     /**
+     * Inputs for [refreshFromFeed]. Optional [loadBaseline] starts in parallel with
+     * the publisher GET so launch sync does not wait for a 1000-episode PI page
+     * before downloading RSS.
+     */
+    data class RefreshFromFeedRequest(
+        val podcastIndexId: String,
+        val feedUrl: String,
+        val baselineEpisodes: List<Episode> = emptyList(),
+        val loadBaseline: (suspend () -> List<Episode>)? = null,
+        val podcastTitle: String? = null,
+        val podcastImageUrl: String? = null,
+        val podcastGenre: String? = null,
+        val podcastArtist: String? = null,
+    )
+
+    /**
      * Fetches [feedUrl], keeps feed-only episodes not present in [baselineEpisodes],
      * and replaces the cached supplement for [podcastIndexId].
      *
@@ -28,6 +44,30 @@ interface EpisodeSupplementPort {
         podcastGenre: String? = null,
         podcastArtist: String? = null,
     ): EpisodeSupplementOutcome
+
+    /**
+     * Default delegates to the list form and ignores [RefreshFromFeedRequest.loadBaseline].
+     * Production overrides this to fetch the feed and PI baseline together.
+     */
+    suspend fun refreshFromFeed(request: RefreshFromFeedRequest): EpisodeSupplementOutcome =
+        refreshFromFeed(
+            podcastIndexId = request.podcastIndexId,
+            feedUrl = request.feedUrl,
+            baselineEpisodes = request.baselineEpisodes,
+            podcastTitle = request.podcastTitle,
+            podcastImageUrl = request.podcastImageUrl,
+            podcastGenre = request.podcastGenre,
+            podcastArtist = request.podcastArtist,
+        )
+
+    /**
+     * True when the stored supplement ETag / Last-Modified still matches the live feed.
+     * Default false (always refresh). Production HEADs the publisher URL.
+     */
+    suspend fun isPublisherFeedUnchanged(
+        podcastIndexId: String,
+        feedUrl: String,
+    ): Boolean = false
 
     /**
      * Fetches [feedUrl] and **only** persists a supplement (opt-in) when the feed

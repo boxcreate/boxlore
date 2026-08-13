@@ -1,13 +1,18 @@
 package cx.aswin.boxlore.fcm
 
+import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * On a new-episode push, refresh the publisher feed for opted-in PI shows so the
- * notification and auto-download use a local episode id (PI or negative supplement).
+ * On a new-episode push, persist the full publisher-feed extras for opted-in PI
+ * shows (same [EpisodeSupplementPort.refreshFromFeed] path as launch sync) so Home
+ * chips and Library New Episodes share the extras, then resolve the payload item
+ * for the notification / auto-download.
+ *
  * Does not opt the show in from FCM.
  */
 internal object NewEpisodePushHydration {
@@ -18,51 +23,137 @@ internal object NewEpisodePushHydration {
         subscriptionRepository: SubscriptionRepository,
         episodeSupplementPort: EpisodeSupplementPort?,
         payloadGuid: String? = null,
+        loadPiBaseline: (suspend (String) -> List<Episode>)? = null,
     ): Episode? {
         val port = episodeSupplementPort ?: return null
         if (!port.hasDirectFeedOptIn(podcastId)) return null
         val entity = subscriptionRepository.getPodcastEntity(podcastId)
-        val feedUrl =
-            payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() }
+        val meta =
+            HydrationMeta(
+                feedUrl = payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() },
+                title = entity?.title,
+                imageUrl = entity?.imageUrl,
+                genre = entity?.genre,
+                artist = entity?.author,
+                knownTip = entity?.latestEpisode,
+            )
         val guid = payloadGuid?.trim().orEmpty()
         val enclosure = payloadEnclosureUrl?.trim().orEmpty()
-        val tip =
-            try {
-                port.resolveNewestTipFromFeed(
-                    EpisodeSupplementPort.NewestTipRequest(
-                        podcastIndexId = podcastId,
-                        feedUrl = feedUrl,
-                        knownEpisodes = listOfNotNull(entity?.latestEpisode),
-                        podcastTitle = entity?.title,
-                        podcastImageUrl = entity?.imageUrl,
-                        podcastGenre = entity?.genre,
-                        podcastArtist = entity?.author,
-                        match = EpisodeSupplementPort.FeedItemMatch(
-                            guid = guid.takeIf { it.isNotEmpty() },
-                            enclosureUrl = enclosure.takeIf { it.isNotEmpty() },
-                        ).takeIf { it.guid != null || it.enclosureUrl != null },
-                    ),
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                null
+
+        val outcome = runFullRefresh(port, podcastId, meta, loadPiBaseline)
+        if (outcome is EpisodeSupplementOutcome.Success) {
+            outcome.newestFeedEpisode?.let { tip ->
+                subscriptionRepository.updateLatestEpisode(podcastId, tip, markAsNew = true)
             }
-        if (tip != null) {
-            subscriptionRepository.updateLatestEpisode(podcastId, tip, markAsNew = true)
-            return tip
         }
-        if (enclosure.isEmpty()) return null
-        val cached =
-            port
-                .getEpisodesForPodcast(
-                    podcastIndexId = podcastId,
-                    podcastTitle = entity?.title,
-                    podcastImageUrl = entity?.imageUrl,
-                    podcastGenre = entity?.genre,
-                    podcastArtist = entity?.author,
-                ).find { it.audioUrl.trim() == enclosure } ?: return null
+
+        val extras = cachedExtras(port, podcastId, meta)
+        val newest = (outcome as? EpisodeSupplementOutcome.Success)?.newestFeedEpisode
+        val picked = NewEpisodeFcmLogic.pickHydratedEpisode(extras, newest, enclosure)
+        if (enclosure.isNotEmpty() && picked?.audioUrl?.trim() == enclosure) {
+            return picked
+        }
+        if (guid.isEmpty() && enclosure.isEmpty()) {
+            return picked
+        }
+
+        val matched = resolveMatchedTip(port, podcastId, meta, guid, enclosure)
+        if (matched != null) {
+            subscriptionRepository.updateLatestEpisode(podcastId, matched, markAsNew = true)
+            return matched
+        }
+        if (enclosure.isEmpty()) return picked
+        val cached = extras.find { it.audioUrl.trim() == enclosure } ?: return picked
         subscriptionRepository.updateLatestEpisode(podcastId, cached, markAsNew = true)
         return cached
     }
+
+    private suspend fun runFullRefresh(
+        port: EpisodeSupplementPort,
+        podcastId: String,
+        meta: HydrationMeta,
+        loadPiBaseline: (suspend (String) -> List<Episode>)?,
+    ): EpisodeSupplementOutcome? =
+        try {
+            port.refreshFromFeed(
+                EpisodeSupplementPort.RefreshFromFeedRequest(
+                    podcastIndexId = podcastId,
+                    feedUrl = meta.feedUrl,
+                    loadBaseline = loadPiBaseline?.let { loader -> { loader(podcastId) } },
+                    podcastTitle = meta.title,
+                    podcastImageUrl = meta.imageUrl,
+                    podcastGenre = meta.genre,
+                    podcastArtist = meta.artist,
+                ),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+
+    private suspend fun cachedExtras(
+        port: EpisodeSupplementPort,
+        podcastId: String,
+        meta: HydrationMeta,
+    ): List<Episode> =
+        try {
+            port.getEpisodesForPodcast(
+                podcastIndexId = podcastId,
+                podcastTitle = meta.title,
+                podcastImageUrl = meta.imageUrl,
+                podcastGenre = meta.genre,
+                podcastArtist = meta.artist,
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+    private suspend fun resolveMatchedTip(
+        port: EpisodeSupplementPort,
+        podcastId: String,
+        meta: HydrationMeta,
+        guid: String,
+        enclosure: String,
+    ): Episode? =
+        try {
+            port.resolveNewestTipFromFeed(
+                EpisodeSupplementPort.NewestTipRequest(
+                    podcastIndexId = podcastId,
+                    feedUrl = meta.feedUrl,
+                    knownEpisodes = listOfNotNull(meta.knownTip),
+                    podcastTitle = meta.title,
+                    podcastImageUrl = meta.imageUrl,
+                    podcastGenre = meta.genre,
+                    podcastArtist = meta.artist,
+                    match =
+                        EpisodeSupplementPort.FeedItemMatch(
+                            guid = guid.takeIf { it.isNotEmpty() },
+                            enclosureUrl = enclosure.takeIf { it.isNotEmpty() },
+                        )
+                            .takeIf { it.guid != null || it.enclosureUrl != null },
+                ),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+
+    internal fun piBaselineLoader(
+        loadPage: suspend (feedId: String, limit: Int) -> List<Episode>,
+    ): suspend (String) -> List<Episode> = { podcastId ->
+        loadPage(podcastId, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT)
+    }
+
+    private data class HydrationMeta(
+        val feedUrl: String,
+        val title: String?,
+        val imageUrl: String?,
+        val genre: String?,
+        val artist: String?,
+        val knownTip: Episode?,
+    )
 }

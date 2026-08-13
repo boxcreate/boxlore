@@ -127,6 +127,7 @@ fun SubscriptionsScreen(
                 }
                 viewModel.trackSubscriptionsExit()
             } else if (event == androidx.lifecycle.Lifecycle.Event.ON_START) {
+                // Live `/sync` — including open-app-to Subscriptions — not Room cache only.
                 viewModel.onScreenResume()
             }
         }

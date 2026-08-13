@@ -3,7 +3,9 @@ package cx.aswin.boxlore.feature.home
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -40,11 +42,17 @@ internal fun HomeViewModel.observeSelectedPodcast() {
                     "HomeViewModelFilteredView",
                     "historySignal collected: podcastId=$podcastId, lastPlayedEpisodeId=$lastPlayedEpisodeId, sort=$sort",
                 )
-                if (podcastId != previouslyLoadedPodcastId) {
+                val switchingPodcast = podcastId != previouslyLoadedPodcastId
+                if (switchingPodcast) {
                     _selectedPodcastEpisodes.value = emptyList()
                     previouslyLoadedPodcastId = podcastId
                 }
-                _isSelectedPodcastLoading.value = true
+                val showLoading =
+                    HomeSelectedPodcastLogic.shouldShowLoading(
+                        switchingPodcast = switchingPodcast,
+                        listEmpty = _selectedPodcastEpisodes.value.isEmpty(),
+                    )
+                _isSelectedPodcastLoading.value = showLoading
                 try {
                     if (sort == "oldest") {
                         val page =
@@ -76,9 +84,13 @@ internal fun HomeViewModel.observeSelectedPodcast() {
                             )
                         _selectedPodcastEpisodes.value = page.episodes
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     android.util.Log.e("HomeViewModelFilteredView", "Failed to fetch episodes for filter: $podcastId", e)
-                    _selectedPodcastEpisodes.value = emptyList()
+                    if (showLoading) {
+                        _selectedPodcastEpisodes.value = emptyList()
+                    }
                 } finally {
                     _isSelectedPodcastLoading.value = false
                 }
@@ -120,6 +132,17 @@ internal fun HomeViewModel.observeSelectedPodcast() {
                     selectedPodcastEpisodes = eps,
                     isSelectedPodcastLoading = loading,
                 )
+            }
+        }
+    }
+}
+
+internal fun HomeViewModel.observeDirectFeedRefresh() {
+    viewModelScope.launch {
+        val sync = SharedAppDependenciesHolder.instance?.subscriptionForegroundSync ?: return@launch
+        sync.directFeedRefreshed.collect { podcastId ->
+            if (podcastId == _selectedPodcastId.value) {
+                _rssRefreshVersion.value += 1L
             }
         }
     }

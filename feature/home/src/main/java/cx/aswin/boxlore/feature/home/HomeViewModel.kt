@@ -337,6 +337,9 @@ class HomeViewModel(
     ) {
         filterSelectionIsAuto = isAuto && podcastId != null
         _selectedPodcastId.value = podcastId
+        SharedAppDependenciesHolder.instance
+            ?.subscriptionForegroundSync
+            ?.preferFeedPodcast(podcastId)
         if (podcastId == null) return
 
         // Auto-selections resolve from the fresher subscriptionRepository list (passed in by the
@@ -470,6 +473,7 @@ class HomeViewModel(
 
     init {
         observeSelectedPodcast()
+        observeDirectFeedRefresh()
         manageFilterSelectionOnSubscriptionChange()
         observeDiscoveryGreeting()
         loadData()
@@ -631,7 +635,7 @@ class HomeViewModel(
     /**
      * Warms a single freshly-subscribed show: tops up its RSS catalog or syncs its latest
      * episode, so it's ready for the mixtape and Home filter view without waiting for the next
-     * periodic [startBackgroundSync]. Failures are logged and swallowed per-podcast so one bad
+     * foreground subscription sync. Failures are logged and swallowed per-podcast so one bad
      * feed doesn't stop the rest of the batch in [eagerlyLoadNewSubscriptions].
      */
     private suspend fun warmUpNewSubscription(pod: Podcast) {
@@ -658,8 +662,9 @@ class HomeViewModel(
     }
 
     private fun startBackgroundSync() {
-        // Process-once sync shared with AppRoot so cold starts that skip Home
-        // (open-app-to Subscriptions, offline Downloads) still refresh latest episodes.
+        // Shared with AppRoot so cold starts that skip Home (open-app-to Subscriptions)
+        // still refresh latest episodes. Library Subscriptions also calls requestRefresh
+        // so that landing is a live `/sync`, not Room cache only.
         SharedAppDependenciesHolder.instance?.subscriptionForegroundSync?.ensureStarted()
     }
 

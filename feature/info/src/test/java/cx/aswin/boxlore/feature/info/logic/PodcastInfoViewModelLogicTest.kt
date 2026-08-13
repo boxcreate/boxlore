@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info.logic
 
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -68,5 +69,37 @@ class PodcastInfoViewModelLogicTest {
 
         assertEquals("new", enriched.latestEpisode?.id)
         assertNull(enriched.skipBeginningOverrideMs)
+    }
+
+    @Test
+    fun `pull refresh targets RSS catalog, opted-in feed, or nothing`() {
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.RSS_CATALOG,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = true,
+                chip = DirectFeedChipState.Hidden,
+            ),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.DIRECT_FEED,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = false,
+                chip = DirectFeedChipState.Updated,
+            ),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.NONE,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = false,
+                chip = DirectFeedChipState.Offer,
+            ),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.NONE,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = false,
+                chip = DirectFeedChipState.Fetching,
+            ),
+        )
     }
 }

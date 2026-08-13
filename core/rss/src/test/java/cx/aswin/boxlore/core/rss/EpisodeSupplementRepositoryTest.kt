@@ -146,6 +146,74 @@ class EpisodeSupplementRepositoryTest {
             )
         }
 
+    @Test
+    fun `refreshFromFeed without HTTPS url is a generic failure`() =
+        runTest {
+            val repo =
+                EpisodeSupplementRepository(
+                    dao = FakeDao(),
+                    feedClient = RssFeedClient(),
+                    runInTransaction = { it() },
+                )
+            val outcome =
+                repo.refreshFromFeed(
+                    podcastIndexId = "123",
+                    feedUrl = "",
+                    baselineEpisodes = emptyList(),
+                )
+            assertTrue(outcome is EpisodeSupplementOutcome.Failure)
+            assertEquals(
+                EpisodeSupplementRepository.FEED_LOAD_FAILED_MESSAGE,
+                (outcome as EpisodeSupplementOutcome.Failure).message,
+            )
+        }
+
+    @Test
+    fun `isPublisherFeedUnchanged is false without stored validators`() =
+        runTest {
+            val dao = FakeDao()
+            dao.supplement =
+                EpisodeSupplementEntity(
+                    podcastId = "123",
+                    feedUrl = "https://feeds.example/show.xml",
+                    rssNamespaceId = "rss:show",
+                    feedEtag = null,
+                    feedLastModified = null,
+                    fetchedAt = 1L,
+                )
+            val repo =
+                EpisodeSupplementRepository(
+                    dao = dao,
+                    feedClient = RssFeedClient(),
+                    runInTransaction = { it() },
+                    isFeedUnchanged = { _, _, _ -> error("should not HEAD") },
+                )
+            assertFalse(repo.isPublisherFeedUnchanged("123", "https://feeds.example/show.xml"))
+        }
+
+    @Test
+    fun `isPublisherFeedUnchanged is true when HEAD matches`() =
+        runTest {
+            val dao = FakeDao()
+            dao.supplement =
+                EpisodeSupplementEntity(
+                    podcastId = "123",
+                    feedUrl = "https://feeds.example/show.xml",
+                    rssNamespaceId = "rss:show",
+                    feedEtag = "etag-1",
+                    feedLastModified = null,
+                    fetchedAt = 1L,
+                )
+            val repo =
+                EpisodeSupplementRepository(
+                    dao = dao,
+                    feedClient = RssFeedClient(),
+                    runInTransaction = { it() },
+                    isFeedUnchanged = { _, _, _ -> true },
+                )
+            assertTrue(repo.isPublisherFeedUnchanged("123", "https://feeds.example/show.xml"))
+        }
+
     private fun rssEpisode(
         episodeId: String,
         guid: String,
