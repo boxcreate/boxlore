@@ -24,6 +24,8 @@ internal object HomeSelectedPodcastLogic {
             lastPlayedEpisodeId = lastPlayed?.episodeId,
             sort = preferredSort,
             rssRefreshVersion = rssRefreshVersion,
+            latestEpisodeId = podcast?.latestEpisode?.id,
+            rssHasNewEpisodes = podcast?.rssHasNewEpisodes == true,
         )
     }
 
@@ -58,4 +60,13 @@ internal object HomeSelectedPodcastLogic {
         } else {
             episodes
         }
+
+    /**
+     * Skeleton only when switching chips or the stream is still empty.
+     * Same-chip tip / extras refresh must swap in place.
+     */
+    fun shouldShowLoading(
+        switchingPodcast: Boolean,
+        listEmpty: Boolean,
+    ): Boolean = switchingPodcast || listEmpty
 }

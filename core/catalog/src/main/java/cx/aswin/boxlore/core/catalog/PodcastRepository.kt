@@ -270,12 +270,40 @@ class PodcastRepository(
         feedId: String,
         limit: Int = 20,
         offset: Int = 0,
-        sort: String = "newest"
+        sort: String = "newest",
+        /**
+         * When false, skip cached feed extras. Use this for Missing-episodes? matching
+         * so extras are not treated as Podcast Index rows and wiped on refresh.
+         */
+        mergeSupplements: Boolean = true,
     ): EpisodePage = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {
             return@withContext getRssEpisodesPaginated(feedId, limit, offset, sort)
         }
-        getNetworkEpisodesPaginated(feedId, limit, offset, sort)
+        getNetworkEpisodesPaginated(feedId, limit, offset, sort, mergeSupplements)
+    }
+
+    /** Drop cached PI episode pages for [feedId] so the next read hits the network. */
+    fun invalidateEpisodesCache(feedId: String) {
+        val prefix = "$feedId|"
+        episodesCache.keys.removeAll { it.startsWith(prefix) }
+    }
+
+    /**
+     * Strict PI page for feed-extra matching. Throws on HTTP/network failure so
+     * [EpisodeSupplementPort.refreshFromFeed] does not persist extras against an
+     * empty baseline (which would treat every feed item as feed-only).
+     */
+    suspend fun loadPiEpisodesForBaseline(
+        feedId: String,
+        limit: Int,
+    ): List<Episode> = withContext(Dispatchers.IO) {
+        val resolvedId = resolvePodcastIndexFeedId(feedId)
+        val response = api.getEpisodesPaginated(publicKey, resolvedId, limit, 0, "oldest").execute()
+        check(response.isSuccessful && response.body() != null) {
+            "PI baseline HTTP ${response.code()}"
+        }
+        response.body()!!.items.mapNotNull { mapToEpisode(it) }
     }
 
     private suspend fun getRssEpisodesPaginated(
@@ -302,6 +330,7 @@ class PodcastRepository(
         limit: Int,
         offset: Int,
         sort: String,
+        mergeSupplements: Boolean,
     ): EpisodePage {
         val resolvedId = resolvePodcastIndexFeedId(feedId)
         val cacheKey = "$resolvedId|$limit|$offset|$sort"
@@ -309,7 +338,7 @@ class PodcastRepository(
         val now = System.currentTimeMillis()
         if (cached != null && now - cached.second < 300_000L) { // 5-minute cache
             android.util.Log.d("PodcastRepository", "Cache HIT for getEpisodesPaginated: $cacheKey")
-            return mergeCachedSupplementsIntoPage(resolvedId, cached.first, offset, sort)
+            return maybeMergeSupplements(resolvedId, cached.first, offset, sort, mergeSupplements)
         }
         android.util.Log.d("PodcastRepository", "Cache MISS for getEpisodesPaginated: $cacheKey. Fetching from network.")
         return try {
@@ -323,25 +352,38 @@ class PodcastRepository(
                         sourceCount = piItems.size,
                     )
                 episodesCache[cacheKey] = Pair(page, now)
-                mergeCachedSupplementsIntoPage(resolvedId, page, offset, sort)
+                maybeMergeSupplements(resolvedId, page, offset, sort, mergeSupplements)
             } else {
-                mergeCachedSupplementsIntoPage(
+                maybeMergeSupplements(
                     resolvedId,
                     EpisodePage(emptyList(), false, sourceCount = 0),
                     offset,
                     sort,
+                    mergeSupplements,
                 )
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            mergeCachedSupplementsIntoPage(
+            maybeMergeSupplements(
                 resolvedId,
                 EpisodePage(emptyList(), false, sourceCount = 0),
                 offset,
                 sort,
+                mergeSupplements,
             )
         }
+    }
+
+    private suspend fun maybeMergeSupplements(
+        podcastId: String,
+        page: EpisodePage,
+        offset: Int,
+        sort: String,
+        mergeSupplements: Boolean,
+    ): EpisodePage {
+        if (!mergeSupplements) return page
+        return mergeCachedSupplementsIntoPage(podcastId, page, offset, sort)
     }
 
     override suspend fun getPodcastDetails(feedId: String): Podcast? = withContext(Dispatchers.IO) {

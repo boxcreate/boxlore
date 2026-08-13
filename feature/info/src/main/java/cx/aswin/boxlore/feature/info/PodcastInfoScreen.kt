@@ -546,26 +546,22 @@ fun PodcastInfoScreen(
                     }
                 }
 
-                if (state.podcast.isRss) {
-                    PullToRefreshBox(
-                        isRefreshing = state.isRssRefreshing,
-                        onRefresh = viewModel::refreshRssFeed,
-                        state = pullToRefreshState,
-                        modifier = Modifier.fillMaxSize(),
-                        indicator = {
-                            PullToRefreshDefaults.LoadingIndicator(
-                                state = pullToRefreshState,
-                                isRefreshing = state.isRssRefreshing,
-                                modifier =
-                                    Modifier
-                                        .align(Alignment.TopCenter)
-                                        .padding(top = collapsedHeaderHeight),
-                            )
-                        },
-                    ) {
-                        EpisodeLazyColumn()
-                    }
-                } else {
+                PullToRefreshBox(
+                    isRefreshing = state.isRssRefreshing,
+                    onRefresh = viewModel::refreshRssFeed,
+                    state = pullToRefreshState,
+                    modifier = Modifier.fillMaxSize(),
+                    indicator = {
+                        PullToRefreshDefaults.LoadingIndicator(
+                            state = pullToRefreshState,
+                            isRefreshing = state.isRssRefreshing,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = collapsedHeaderHeight),
+                        )
+                    },
+                ) {
                     EpisodeLazyColumn()
                 }
 

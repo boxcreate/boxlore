@@ -60,6 +60,29 @@ class HomeSelectedPodcastLogicTest {
         assertEquals("ep-2", signal?.lastPlayedEpisodeId)
         assertEquals("oldest", signal?.sort)
         assertEquals(3L, signal?.rssRefreshVersion)
+        assertEquals(subs[0].latestEpisode?.id, signal?.latestEpisodeId)
+        assertEquals(false, signal?.rssHasNewEpisodes)
+    }
+
+    @Test
+    fun `build signal includes latest episode id and rss new flag`() {
+        val latest = TestFixtures.episode(id = "tip-9")
+        val subs =
+            listOf(
+                TestFixtures.podcast(id = "pod-1").copy(
+                    latestEpisode = latest,
+                    rssHasNewEpisodes = true,
+                ),
+            )
+        val signal =
+            HomeSelectedPodcastLogic.buildSignal(
+                podcastId = "pod-1",
+                allHistory = emptyList(),
+                subs = subs,
+                rssRefreshVersion = 0L,
+            )
+        assertEquals("tip-9", signal?.latestEpisodeId)
+        assertEquals(true, signal?.rssHasNewEpisodes)
     }
 
     @Test
@@ -91,5 +114,12 @@ class HomeSelectedPodcastLogicTest {
                 .filterCompletedIfNeeded(episodes, hideCompleted = false, completedIds = setOf("b"))
                 .map { it.id },
         )
+    }
+
+    @Test
+    fun `should show loading only when switching or list is empty`() {
+        assertEquals(true, HomeSelectedPodcastLogic.shouldShowLoading(switchingPodcast = true, listEmpty = false))
+        assertEquals(true, HomeSelectedPodcastLogic.shouldShowLoading(switchingPodcast = false, listEmpty = true))
+        assertEquals(false, HomeSelectedPodcastLogic.shouldShowLoading(switchingPodcast = false, listEmpty = false))
     }
 }

@@ -167,6 +167,40 @@ class PodcastInfoSupplementSupportTest {
         }
 
     @Test
+    fun `refreshMissingEpisodes matches against PI-only baseline not merged extras`() =
+        runTest {
+            val port = FakePort(optedIn = mutableSetOf("123"))
+            port.refreshOutcome =
+                EpisodeSupplementOutcome.Success(
+                    addedCount = 1,
+                    totalSupplementCount = 1,
+                    newestFeedEpisode = TestFixtures.episode(id = "-9"),
+                )
+            val support =
+                PodcastInfoSupplementSupport(
+                    episodeSupplementPort = port,
+                    loadPage = { _, _, _, _ ->
+                        PodcastRepository.EpisodePage(
+                            episodes = listOf(TestFixtures.episode(id = "merged-extra")),
+                            hasMore = false,
+                            sourceCount = 1,
+                        )
+                    },
+                    loadPiBaseline = { listOf(TestFixtures.episode(id = "pi-only")) },
+                )
+            val state =
+                PodcastInfoUiState.Success(
+                    podcast = TestFixtures.podcast(id = "123").copy(
+                        feedUrl = "https://feeds.example/show.xml",
+                    ),
+                    episodes = emptyList(),
+                    isSubscribed = true,
+                )
+            support.refreshMissingEpisodes(state, announceResult = false)
+            assertEquals(listOf("pi-only"), port.capturedBaselineIds)
+        }
+
+    @Test
     fun `shouldRefreshOnOpen is true only for opted-in PI shows`() =
         runTest {
             val port = FakePort(optedIn = mutableSetOf("123"))
@@ -186,6 +220,7 @@ class PodcastInfoSupplementSupportTest {
         var refreshOutcome: EpisodeSupplementOutcome = EpisodeSupplementOutcome.NoDisconnect
         var optInOutcome: EpisodeSupplementOutcome = EpisodeSupplementOutcome.NoDisconnect
         var searchResults: List<Episode> = emptyList()
+        var capturedBaselineIds: List<String> = emptyList()
 
         override suspend fun refreshFromFeed(
             podcastIndexId: String,
@@ -197,6 +232,7 @@ class PodcastInfoSupplementSupportTest {
             podcastArtist: String?,
         ): EpisodeSupplementOutcome {
             optedIn.add(podcastIndexId)
+            capturedBaselineIds = baselineEpisodes.map { it.id }
             return refreshOutcome
         }
 

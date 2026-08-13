@@ -20,7 +20,25 @@ internal class PodcastInfoSupplementSupport(
         offset: Int,
         sort: String,
     ) -> PodcastRepository.EpisodePage,
+    /** PI rows only — must not include cached feed extras or a refresh wipes them. */
+    private val loadPiBaseline: suspend (podcastId: String) -> List<Episode>,
 ) {
+    constructor(
+        episodeSupplementPort: EpisodeSupplementPort,
+        loadPage: suspend (
+            podcastId: String,
+            limit: Int,
+            offset: Int,
+            sort: String,
+        ) -> PodcastRepository.EpisodePage,
+    ) : this(
+        episodeSupplementPort,
+        loadPage,
+        loadPiBaseline = { id ->
+            loadPage(id, SUPPLEMENT_BASELINE_LIMIT, 0, "oldest").episodes
+        },
+    )
+
     constructor(
         repository: PodcastRepository,
         episodeSupplementPort: EpisodeSupplementPort,
@@ -28,6 +46,15 @@ internal class PodcastInfoSupplementSupport(
         episodeSupplementPort,
         { id, limit, offset, sort ->
             repository.getEpisodesPaginated(id, limit, offset, sort)
+        },
+        { id ->
+            repository.getEpisodesPaginated(
+                feedId = id,
+                limit = SUPPLEMENT_BASELINE_LIMIT,
+                offset = 0,
+                sort = "oldest",
+                mergeSupplements = false,
+            ).episodes
         },
     )
 
@@ -83,18 +110,12 @@ internal class PodcastInfoSupplementSupport(
         announceResult: Boolean,
     ): MissingEpisodesRefresh {
         val podcast = state.podcast
-        val baseline =
-            loadPage(
-                podcast.id,
-                SUPPLEMENT_BASELINE_LIMIT,
-                0,
-                "oldest",
-            )
+        val baselineEpisodes = loadPiBaseline(podcast.id)
         val outcome =
             episodeSupplementPort.refreshFromFeed(
                 podcastIndexId = podcast.id,
                 feedUrl = podcast.feedUrl.orEmpty(),
-                baselineEpisodes = baseline.episodes,
+                baselineEpisodes = baselineEpisodes,
                 podcastTitle = podcast.title,
                 podcastImageUrl = podcast.imageUrl,
                 podcastGenre = podcast.genre,

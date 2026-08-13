@@ -10,6 +10,8 @@ internal data class SelectedPodcastSignal(
     val lastPlayedEpisodeId: String?,
     val sort: String,
     val rssRefreshVersion: Long,
+    val latestEpisodeId: String? = null,
+    val rssHasNewEpisodes: Boolean = false,
 )
 
 data class HomeDataWrapper(

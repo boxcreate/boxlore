@@ -11,6 +11,8 @@ import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 /**
@@ -24,6 +26,13 @@ class EpisodeSupplementRepository internal constructor(
     private val dao: EpisodeSupplementDao,
     private val feedClient: RssFeedClient,
     private val runInTransaction: suspend (suspend () -> Unit) -> Unit,
+    private val isFeedUnchanged: suspend (
+        url: String,
+        etag: String?,
+        lastModified: String?,
+    ) -> Boolean = { url, etag, lastModified ->
+        feedClient.confirmHeadValidators(url, etag, lastModified)
+    },
 ) : EpisodeSupplementPort {
     constructor(
         database: BoxLoreDatabase,
@@ -42,19 +51,45 @@ class EpisodeSupplementRepository internal constructor(
         podcastImageUrl: String?,
         podcastGenre: String?,
         podcastArtist: String?,
+    ): EpisodeSupplementOutcome =
+        refreshFromFeed(
+            EpisodeSupplementPort.RefreshFromFeedRequest(
+                podcastIndexId = podcastIndexId,
+                feedUrl = feedUrl,
+                baselineEpisodes = baselineEpisodes,
+                podcastTitle = podcastTitle,
+                podcastImageUrl = podcastImageUrl,
+                podcastGenre = podcastGenre,
+                podcastArtist = podcastArtist,
+            ),
+        )
+
+    override suspend fun refreshFromFeed(
+        request: EpisodeSupplementPort.RefreshFromFeedRequest,
     ): EpisodeSupplementOutcome = withContext(Dispatchers.IO) {
         try {
-            val parsed = fetchParsedFeed(podcastIndexId, feedUrl)
+            val url = resolvedRefreshFeedUrl(request.podcastIndexId, request.feedUrl)
+            val loader = request.loadBaseline
+            val (parsed, baseline) =
+                if (loader != null) {
+                    coroutineScope {
+                        val parsedDeferred = async { fetchParsedFeed(request.podcastIndexId, url) }
+                        val baselineDeferred = async { loader() }
+                        parsedDeferred.await() to baselineDeferred.await()
+                    }
+                } else {
+                    fetchParsedFeed(request.podcastIndexId, url) to request.baselineEpisodes
+                }
             persistParsedSupplement(
                 PersistParsedSupplementRequest(
-                    podcastIndexId = podcastIndexId,
+                    podcastIndexId = request.podcastIndexId,
                     parsed = parsed,
-                    baselineEpisodes = baselineEpisodes,
+                    baselineEpisodes = baseline,
                     meta = SupplementPodcastMeta(
-                        title = podcastTitle,
-                        imageUrl = podcastImageUrl,
-                        genre = podcastGenre,
-                        artist = podcastArtist,
+                        title = request.podcastTitle,
+                        imageUrl = request.podcastImageUrl,
+                        genre = request.podcastGenre,
+                        artist = request.podcastArtist,
                     ),
                 ),
             )
@@ -62,6 +97,26 @@ class EpisodeSupplementRepository internal constructor(
             throw error
         } catch (_: Exception) {
             feedLoadFailure()
+        }
+    }
+
+    override suspend fun isPublisherFeedUnchanged(
+        podcastIndexId: String,
+        feedUrl: String,
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            requirePiPodcastId(podcastIndexId)
+            val existing = dao.getSupplement(podcastIndexId) ?: return@withContext false
+            if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
+                return@withContext false
+            }
+            val url =
+                resolveHttpsFeedUrl(feedUrl, existing.feedUrl) ?: return@withContext false
+            isFeedUnchanged(url, existing.feedEtag, existing.feedLastModified)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -75,7 +130,7 @@ class EpisodeSupplementRepository internal constructor(
         podcastArtist: String?,
     ): EpisodeSupplementOutcome = withContext(Dispatchers.IO) {
         try {
-            val parsed = fetchParsedFeed(podcastIndexId, feedUrl)
+            val parsed = fetchParsedFeed(podcastIndexId, resolvedRefreshFeedUrl(podcastIndexId, feedUrl))
             val feedOnly = parsed.episodes.filterNot { rss ->
                 EpisodeSupplementMatcher.isPresentInBaseline(rss, baselineEpisodes)
             }
@@ -221,6 +276,16 @@ class EpisodeSupplementRepository internal constructor(
         dao.search(podcastIndexId, trimmed.escapeForSqlLike()).map {
             it.toEpisode(podcastTitle, podcastImageUrl, podcastGenre, podcastArtist)
         }
+    }
+
+    private suspend fun resolvedRefreshFeedUrl(
+        podcastIndexId: String,
+        feedUrl: String,
+    ): String {
+        requirePiPodcastId(podcastIndexId)
+        val stored = dao.getSupplement(podcastIndexId)?.feedUrl.orEmpty()
+        return resolveHttpsFeedUrl(feedUrl, stored)
+            ?: error("No HTTPS feed URL")
     }
 
     private suspend fun fetchParsedFeed(

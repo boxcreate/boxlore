@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.core.catalog
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,6 +27,8 @@ class SubscriptionForegroundSyncTest {
                     scope = this,
                     initialDelayMs = 2_000L,
                     syncAction = { runs++ },
+                    periodicIntervalMs = 0L,
+                    nowMs = { testScheduler.currentTime },
                 )
 
             assertFalse(sync.hasStarted())
@@ -49,6 +53,8 @@ class SubscriptionForegroundSyncTest {
                     scope = this,
                     initialDelayMs = 500L,
                     syncAction = { runs++ },
+                    periodicIntervalMs = 0L,
+                    nowMs = { testScheduler.currentTime },
                 )
 
             sync.ensureStarted()
@@ -101,7 +107,7 @@ class SubscriptionForegroundSyncTest {
                 saveLatest = { id, _ -> saved += id },
                 chunkSize = 1,
             )
-            assertEquals(listOf("a", "c"), saved)
+            assertEquals(setOf("a", "c"), saved.toSet())
         }
 
     @Test
@@ -139,16 +145,17 @@ class SubscriptionForegroundSyncTest {
                 },
                 saveLatest = { id, ep -> saved[id] = ep.id },
                 chunkSize = 10,
-                directFeed = DirectFeedSyncSeams(
-                    loadOptedInIds = { setOf("opted") },
-                    loadCachedFeedTip = { null },
-                    resolveFeedTip = { id, _ ->
-                        networkCalls++
-                        assertEquals("opted", id)
-                        feedTip
-                    },
-                    feedNetworkDelayMs = 0L,
-                ),
+                directFeed =
+                    DirectFeedSyncSeams(
+                        loadOptedInIds = { setOf("opted") },
+                        loadCachedFeedTip = { null },
+                        resolveFeedTip = { id, _ ->
+                            networkCalls++
+                            assertEquals("opted", id)
+                            DirectFeedResolveResult(tip = feedTip, persisted = true)
+                        },
+                        feedNetworkDelayMs = 0L,
+                    ),
             )
             assertEquals("-1", saved["opted"])
             assertEquals(1, networkCalls)
@@ -187,15 +194,16 @@ class SubscriptionForegroundSyncTest {
                 },
                 syncChunk = { error("PI should not run for only opted-in") },
                 saveLatest = { id, ep -> saved[id] = ep.id },
-                directFeed = DirectFeedSyncSeams(
-                    loadOptedInIds = { setOf("opted") },
-                    loadCachedFeedTip = { cached },
-                    resolveFeedTip = { _, _ ->
-                        networkCalls++
-                        cached
-                    },
-                    feedNetworkDelayMs = 0L,
-                ),
+                directFeed =
+                    DirectFeedSyncSeams(
+                        loadOptedInIds = { setOf("opted") },
+                        loadCachedFeedTip = { cached },
+                        resolveFeedTip = { _, _ ->
+                            networkCalls++
+                            DirectFeedResolveResult(tip = cached, persisted = true)
+                        },
+                        feedNetworkDelayMs = 0L,
+                    ),
             )
             assertEquals("-42", saved["opted"])
             assertEquals(1, networkCalls)
@@ -217,4 +225,192 @@ class SubscriptionForegroundSyncTest {
             assertEquals(0, syncCalls)
             assertEquals(0, saveCalls)
         }
+
+    @Test
+    fun `syncSubscribedLatestEpisodes caps overlapping feed resolves`() =
+        runTest {
+            var inFlight = 0
+            var maxInFlight = 0
+            val order = mutableListOf<String>()
+            val ids = (1..8).map { "p$it" }
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { ids.toSet() },
+                loadPodcastMeta = { id ->
+                    DirectFeedTipMeta(
+                        feedUrl = "https://feeds.example/$id.xml",
+                        title = id,
+                        imageUrl = null,
+                        genre = null,
+                        artist = null,
+                        knownTip = null,
+                    )
+                },
+                syncChunk = { emptyMap() },
+                saveLatest = { _, _ -> },
+                directFeed =
+                    DirectFeedSyncSeams(
+                        loadOptedInIds = { ids.toSet() },
+                        resolveFeedTip = { id, _ ->
+                            order += id
+                            inFlight++
+                            maxInFlight = maxOf(maxInFlight, inFlight)
+                            delay(50)
+                            inFlight--
+                            DirectFeedResolveResult(
+                                tip = episode(id = "e_$id", podcastId = id),
+                                persisted = true,
+                            )
+                        },
+                        feedConcurrency = 6,
+                        preferredPodcastId = { "p5" },
+                    ),
+            )
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(6, maxInFlight)
+            assertEquals("p5", order.first())
+            assertEquals(8, order.size)
+        }
+
+    @Test
+    fun `syncSubscribedLatestEpisodes isolates one feed failure`() =
+        runTest {
+            val saved = mutableListOf<String>()
+            val refreshed = mutableListOf<String>()
+            SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+                loadIds = { setOf("ok", "boom", "also") },
+                loadPodcastMeta = { id ->
+                    DirectFeedTipMeta(
+                        feedUrl = "https://feeds.example/$id.xml",
+                        title = id,
+                        imageUrl = null,
+                        genre = null,
+                        artist = null,
+                        knownTip = null,
+                    )
+                },
+                syncChunk = { emptyMap() },
+                saveLatest = { id, _ -> saved += id },
+                directFeed =
+                    DirectFeedSyncSeams(
+                        loadOptedInIds = { setOf("ok", "boom", "also") },
+                        resolveFeedTip = { id, _ ->
+                            if (id == "boom") error("feed down")
+                            DirectFeedResolveResult(
+                                tip = episode(id = "e_$id", podcastId = id),
+                                persisted = true,
+                            )
+                        },
+                        onFeedRefreshed = { refreshed += it },
+                    ),
+            )
+            assertEquals(setOf("ok", "also"), saved.toSet())
+            assertEquals(setOf("ok", "also"), refreshed.toSet())
+        }
+
+    @Test
+    fun requestRefreshFetchesImmediatelyWithoutWaitingForHomeDelay() =
+        runTest {
+            var runs = 0
+            val sync =
+                SubscriptionForegroundSync(
+                    scope = this,
+                    initialDelayMs = 2_000L,
+                    syncAction = { runs++ },
+                    periodicIntervalMs = 0L,
+                    cooldownMs = 5_000L,
+                    nowMs = { testScheduler.currentTime },
+                )
+            sync.ensureStarted()
+            sync.requestRefresh()
+            advanceUntilIdle()
+            assertEquals(1, runs)
+        }
+
+    @Test
+    fun requestRefreshSkipsDuringCooldownThenRunsAgain() =
+        runTest {
+            var runs = 0
+            val sync =
+                SubscriptionForegroundSync(
+                    scope = this,
+                    initialDelayMs = 0L,
+                    syncAction = { runs++ },
+                    periodicIntervalMs = 0L,
+                    cooldownMs = 5_000L,
+                    nowMs = { testScheduler.currentTime },
+                )
+            sync.requestRefresh()
+            advanceUntilIdle()
+            assertEquals(1, runs)
+
+            sync.requestRefresh()
+            advanceUntilIdle()
+            assertEquals(1, runs)
+
+            advanceTimeBy(5_000L)
+            sync.requestRefresh()
+            advanceUntilIdle()
+            assertEquals(2, runs)
+        }
+
+    @Test
+    fun requestRefreshCoalescesWhileSyncIsInFlight() =
+        runTest {
+            var runs = 0
+            val sync =
+                SubscriptionForegroundSync(
+                    scope = this,
+                    initialDelayMs = 0L,
+                    syncAction = {
+                        runs++
+                        delay(1_000L)
+                    },
+                    periodicIntervalMs = 0L,
+                    cooldownMs = 0L,
+                    nowMs = { testScheduler.currentTime },
+                )
+            sync.requestRefresh()
+            runCurrent()
+            sync.requestRefresh()
+            sync.requestRefresh()
+            advanceTimeBy(1_000L)
+            runCurrent()
+            assertEquals(1, runs)
+        }
+
+    @Test
+    fun periodicLoopRefreshesAfterInterval() =
+        runTest {
+            var runs = 0
+            val sync =
+                SubscriptionForegroundSync(
+                    scope = backgroundScope,
+                    initialDelayMs = 0L,
+                    syncAction = { runs++ },
+                    periodicIntervalMs = 1_000L,
+                    cooldownMs = 0L,
+                    nowMs = { testScheduler.currentTime },
+                )
+            sync.ensureStarted()
+            runCurrent()
+            assertEquals(1, runs)
+            advanceTimeBy(1_000L)
+            runCurrent()
+            assertEquals(2, runs)
+        }
+
+    private fun episode(
+        id: String,
+        podcastId: String,
+    ) = cx.aswin.boxlore.core.model.Episode(
+        id = id,
+        title = "T",
+        description = "",
+        audioUrl = "https://example.com/a.mp3",
+        imageUrl = null,
+        publishedDate = 1L,
+        duration = 60,
+        podcastId = podcastId,
+    )
 }

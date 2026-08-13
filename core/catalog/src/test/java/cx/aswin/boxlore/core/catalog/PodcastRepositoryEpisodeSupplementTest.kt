@@ -149,6 +149,99 @@ class PodcastRepositoryEpisodeSupplementTest {
         }
 
     @Test
+    fun `getEpisodesPaginated mergeSupplements false stays PI-only on offset zero`() =
+        runTest(testDispatcher) {
+            val podcastId = "900030"
+            fakePort.episodesByPodcast[podcastId] =
+                listOf(
+                    TestFixtures.episode(
+                        id = "-203",
+                        title = "Feed only",
+                        audioUrl = "https://cdn.example/feed-only.mp3",
+                        publishedDate = 200L,
+                    ),
+                )
+            enqueueEpisodesPage(
+                id = 12,
+                title = "PI latest",
+                enclosureUrl = "https://cdn.example/pi.mp3",
+                datePublished = 100,
+                hasMore = false,
+            )
+
+            val page =
+                repository.getEpisodesPaginated(
+                    feedId = podcastId,
+                    limit = 20,
+                    offset = 0,
+                    sort = "newest",
+                    mergeSupplements = false,
+                )
+
+            assertEquals(listOf("12"), page.episodes.map { it.id })
+        }
+
+    @Test
+    fun `invalidateEpisodesCache forces the next PI page to hit the network`() =
+        runTest(testDispatcher) {
+            val podcastId = "900040"
+            enqueueEpisodesPage(
+                id = 1,
+                title = "Cached",
+                enclosureUrl = "https://cdn.example/cached.mp3",
+                datePublished = 100,
+                hasMore = false,
+            )
+            enqueueEpisodesPage(
+                id = 2,
+                title = "Fresh",
+                enclosureUrl = "https://cdn.example/fresh.mp3",
+                datePublished = 200,
+                hasMore = false,
+            )
+
+            val cached =
+                repository.getEpisodesPaginated(
+                    feedId = podcastId,
+                    limit = 20,
+                    offset = 0,
+                    sort = "newest",
+                    mergeSupplements = false,
+                )
+            assertEquals(listOf("1"), cached.episodes.map { it.id })
+
+            val stillCached =
+                repository.getEpisodesPaginated(
+                    feedId = podcastId,
+                    limit = 20,
+                    offset = 0,
+                    sort = "newest",
+                    mergeSupplements = false,
+                )
+            assertEquals(listOf("1"), stillCached.episodes.map { it.id })
+
+            repository.invalidateEpisodesCache(podcastId)
+            val fresh =
+                repository.getEpisodesPaginated(
+                    feedId = podcastId,
+                    limit = 20,
+                    offset = 0,
+                    sort = "newest",
+                    mergeSupplements = false,
+                )
+            assertEquals(listOf("2"), fresh.episodes.map { it.id })
+        }
+
+    @Test
+    fun `loadPiEpisodesForBaseline throws on HTTP failure`() =
+        runTest(testDispatcher) {
+            server.enqueue(MockResponse().setResponseCode(500))
+            val thrown =
+                runCatching { repository.loadPiEpisodesForBaseline("900041", limit = 1000) }.exceptionOrNull()
+            assertTrue(thrown is IllegalStateException)
+        }
+
+    @Test
     fun `searchEpisodes unions PI hits with supplement matches`() =
         runTest(testDispatcher) {
             val podcastId = "900003"

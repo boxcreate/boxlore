@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.playback.likedEpisodes
 import cx.aswin.boxlore.core.playback.playEpisode
@@ -257,6 +258,7 @@ class LibraryViewModel(
     var genericItemsRemovedCount = 0
 
     fun onScreenResume() {
+        SharedAppDependenciesHolder.instance?.subscriptionForegroundSync?.requestRefresh()
         if (sessionStartTime == 0L) {
             sessionStartTime = System.currentTimeMillis()
             hasTrackedExit = false
