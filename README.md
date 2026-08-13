@@ -90,7 +90,7 @@ New features and improvements for the next release are currently in development.
 
 Two jobs. Same Explore search bar (and onboarding when you already know your shows).
 
-| Find a show | By idea |
+| Find a show | Ask anything |
 | :--- | :--- |
 | Type a podcast name — typos welcome. Fast, typo‑tolerant lookup via [Meilisearch](https://github.com/meilisearch/meilisearch). Primary hits under **Matches**; extra coverage under **Also found**. | Describe a topic or mood. Concept search via [Qdrant](https://github.com/qdrant/qdrant) returns related shows and episodes by meaning — e.g. *“stories about startup failure”* finds the conversation, not just shared keywords. |
 

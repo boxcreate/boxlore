@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -170,18 +171,17 @@ fun SearchTabSelector(
     onTabSelected: (SearchTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Wider than legacy "Shows" / "Episodes" — intent education chips
-    val totalWidth = 288.dp
+    val totalWidth = 312.dp
     val padding = 4.dp
     val spacing = 4.dp
-    val tabWidth = 138.dp
+    val tabWidth = 150.dp
     val tabHeight = 36.dp
 
     val targetOffset = if (selectedTab == SearchTab.EPISODES) tabWidth + spacing else 0.dp
     val animatedOffset by animateDpAsState(
         targetValue = targetOffset,
         animationSpec = spring(
-            dampingRatio = 0.65f, // Premium bouncy feel
+            dampingRatio = 0.65f,
             stiffness = Spring.StiffnessMediumLow
         ),
         label = "search_tab_offset"
@@ -200,7 +200,6 @@ fun SearchTabSelector(
             Box(
                 modifier = Modifier.padding(padding)
             ) {
-                // Sliding selection pill indicator
                 Box(
                     modifier = Modifier
                         .offset(x = animatedOffset)
@@ -212,19 +211,17 @@ fun SearchTabSelector(
                         )
                 )
 
-                // Row containing the tab buttons on top
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(spacing),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Find a show (Meili typeahead + hybrid Also found)
                     val isShowsSelected = selectedTab == SearchTab.SHOWS
                     val showsContentColor by animateColorAsState(
                         targetValue = if (isShowsSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         label = "shows_content"
                     )
-                    
+
                     Box(
                         modifier = Modifier
                             .width(tabWidth)
@@ -234,15 +231,27 @@ fun SearchTabSelector(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "Find a show",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = GoogleSansWeight.bold,
-                            color = showsContentColor
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = showsContentColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Find a show",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = GoogleSansWeight.bold,
+                                color = showsContentColor,
+                                maxLines = 1,
+                            )
+                        }
                     }
 
-                    // By concept → podcast + episode vectors (one CF embed); high debounce in ViewModel
                     val isEpisodesSelected = selectedTab == SearchTab.EPISODES
                     val episodesContentColor by animateColorAsState(
                         targetValue = if (isEpisodesSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -270,10 +279,11 @@ fun SearchTabSelector(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "By concept",
+                                text = "Ask anything",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = GoogleSansWeight.bold,
-                                color = episodesContentColor
+                                color = episodesContentColor,
+                                maxLines = 1,
                             )
                         }
                     }

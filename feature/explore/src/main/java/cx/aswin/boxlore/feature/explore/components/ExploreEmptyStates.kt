@@ -1,9 +1,7 @@
 package cx.aswin.boxlore.feature.explore.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,12 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.SearchOff
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,7 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.feature.explore.logic.ConceptSearchExample
+import cx.aswin.boxlore.feature.explore.logic.ConceptSearchIdleLogic
 
 @Composable
 internal fun ExploreEmptyState() {
@@ -70,56 +71,26 @@ internal fun ExploreEmptyState() {
 }
 
 @Composable
-internal fun ExploreEpisodesSearchEmptyState() {
+internal fun ExploreEpisodesSearchEmptyState(
+    onExampleClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(top = 40.dp, bottom = 12.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.SearchOff,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(36.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Nothing matched",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
+        ConceptSearchCopyHeader(
+            title = "Nothing matched that idea",
+            subtitle = "Try a question, or pick one below.",
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "Try a different phrase — a topic, mood, or vibe usually works better than a show title.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
+        Spacer(modifier = Modifier.height(20.dp))
+        ConceptQuestionList(onExampleClick = onExampleClick)
     }
 }
 
-private val CONCEPT_SEARCH_EXAMPLES =
-    listOf(
-        "ancient Rome history",
-        "calm sleep stories",
-        "unsolved mysteries",
-        "startup founder interviews",
-    )
-
 /**
- * By concept idle: section header aligned with Find-a-show idle, then a
- * single structured list of example queries (not a free-floating chip cloud).
+ * By-concept idle: one title+subtitle block, then full-width question rows.
  */
 @Composable
 internal fun ExploreEpisodesSearchIdleState(
@@ -127,64 +98,103 @@ internal fun ExploreEpisodesSearchIdleState(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 40.dp, bottom = 12.dp),
     ) {
-        ExploreIconTitleHeader(
-            title = "Search by concept",
-            subtitle = "Type a topic or mood — we’ll match shows and episodes.",
-            icon = Icons.Rounded.AutoAwesome,
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ConceptSearchCopyHeader(
+            title = "Try a question",
+            subtitle = "Or a mood. We’ll match shows and episodes.",
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+        ConceptQuestionList(onExampleClick = onExampleClick)
+    }
+}
+
+/** Inset shared by the header copy and the question-row labels. */
+private val ConceptIdleTextStart = 16.dp
+
+@Composable
+private fun ConceptSearchCopyHeader(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = ConceptIdleTextStart),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
-            text = "Try one of these",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = GoogleSansWeight.semiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 10.dp),
+            text = title,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = GoogleSansWeight.semiBold,
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
         )
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxWidth(),
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun ConceptQuestionList(
+    onExampleClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        ConceptSearchIdleLogic.examples.forEach { example ->
+            ConceptQuestionRow(
+                example = example,
+                onClick = { onExampleClick(example.query) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConceptQuestionRow(
+    example: ConceptSearchExample,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = ConceptIdleTextStart, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                CONCEPT_SEARCH_EXAMPLES.forEachIndexed { index, example ->
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .expressiveClickable {
-                                    onExampleClick(example)
-                                }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = example,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = GoogleSansWeight.medium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                        )
-                    }
-                    if (index < CONCEPT_SEARCH_EXAMPLES.lastIndex) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
-                    }
-                }
-            }
+            Text(
+                text = example.label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = GoogleSansWeight.semiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .size(18.dp),
+            )
         }
     }
 }
