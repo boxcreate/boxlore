@@ -1,16 +1,28 @@
 {
-  "lastRun": "2026-08-13T13:07:43.909Z",
+  "lastRun": "2026-08-13T15:58:10.158Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
       "lastEpisodeTitle": "Rewind: CEO Jim Farley on Ford's EV gamble",
       "lastCheckedAt": 1782580345480
     },
+    "6921": {
+      "lastEpisodeId": "58700077873",
+      "lastEpisodeTitle": "Why is TB still killing people?",
+      "lastRssKey": "urn:bbc:podcast:w3ct8k78",
+      "lastCheckedAt": 1786636690598
+    },
     "9926": {
       "lastRssKey": "aa0aed9e-95ea-11f1-a237-371ed920e1b6",
       "lastEpisodeTitle": "UFO Over the Bass Triangle? The Disappearance of Fred Valentich",
       "lastEpisodeId": "58702615907",
       "lastCheckedAt": 1786559309216
+    },
+    "48166": {
+      "lastEpisodeId": "58782923579",
+      "lastEpisodeTitle": "Disney: The Renaissance and the Empire",
+      "lastRssKey": "dc17bee9-e7e2-4c06-afdd-e80244a0e9db",
+      "lastCheckedAt": 1786636690918
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/73860136",
@@ -46,6 +58,12 @@
       "lastEpisodeTitle": "Pixel 11 and Pixel Watch 5: Our first impressions | The Vergecast Livestream",
       "lastRssKey": "475e8214-6e7b-11f1-94bf-eb669e00516e",
       "lastCheckedAt": 1786600604436
+    },
+    "437685": {
+      "lastEpisodeId": "58934350169",
+      "lastEpisodeTitle": "The Battle of Antietam",
+      "lastRssKey": "96c8acf4-8d5b-11f1-9320-8777c5767ca9",
+      "lastCheckedAt": 1786636694565
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -144,6 +162,12 @@
       "lastEpisodeTitle": "How Scammers Use Deepfakes, Fake Calls & OTP Fraud | Sunil Bajpai | FO543 Raj Shamani",
       "lastCheckedAt": 1786543009010
     },
+    "928708": {
+      "lastEpisodeId": "58937774972",
+      "lastEpisodeTitle": "This Day in History - August 13, 2026",
+      "lastRssKey": "ca937152-9596-11f1-8d05-2333ecff2399",
+      "lastCheckedAt": 1786636701514
+    },
     "947138": {
       "lastRssKey": "8176e5d0-b5cc-11f0-92f1-c745395c267c",
       "lastEpisodeTitle": "Your Luxury Car Now Has Ads!",
@@ -225,6 +249,12 @@
       "lastEpisodeId": "58796204554",
       "lastCheckedAt": 1786559327645
     },
+    "3880049": {
+      "lastEpisodeId": "13360674190",
+      "lastEpisodeTitle": "#263 - Renato Trezoitão",
+      "lastRssKey": "http://www.arthurpetry.com/deriva/?name=2023-02-10_263_-_renato_trezoitao.mp3",
+      "lastCheckedAt": 1786636709711
+    },
     "3927361": {
       "lastRssKey": "urn:bbc:podcast:p0nz5k7y",
       "lastEpisodeTitle": "Shadows on the Pitch: 4. The Agony of Doha",
@@ -250,9 +280,10 @@
       "lastCheckedAt": 1786559328886
     },
     "4507961": {
-      "lastEpisodeId": "58698156408",
-      "lastEpisodeTitle": "230 - Alejandra Guajardo Sada: Sada Organics",
-      "lastCheckedAt": 1786163714269
+      "lastEpisodeId": "58947416428",
+      "lastEpisodeTitle": "231 - Daniel Sempere Pico: Speak 'Prompt' and Enter",
+      "lastRssKey": "a06ef7bd-66fa-45b2-91ef-06423aa99e24",
+      "lastCheckedAt": 1786636711153
     },
     "4780435": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2367938180",
