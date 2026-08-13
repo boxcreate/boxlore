@@ -4,6 +4,7 @@ import cx.aswin.boxlore.core.playback.completedEpisodeIds
 
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
+import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
@@ -141,7 +142,7 @@ internal fun HomeViewModel.observeDirectFeedRefresh() {
     viewModelScope.launch {
         val sync = SharedAppDependenciesHolder.instance?.subscriptionForegroundSync ?: return@launch
         sync.directFeedRefreshed.collect { podcastId ->
-            if (podcastId == _selectedPodcastId.value) {
+            if (HomeForegroundSyncLogic.shouldReloadSelectedChip(podcastId, _selectedPodcastId.value)) {
                 _rssRefreshVersion.value += 1L
             }
         }

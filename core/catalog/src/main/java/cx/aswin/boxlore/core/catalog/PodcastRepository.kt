@@ -283,6 +283,29 @@ class PodcastRepository(
         getNetworkEpisodesPaginated(feedId, limit, offset, sort, mergeSupplements)
     }
 
+    /** Drop cached PI episode pages for [feedId] so the next read hits the network. */
+    fun invalidateEpisodesCache(feedId: String) {
+        val prefix = "$feedId|"
+        episodesCache.keys.removeAll { it.startsWith(prefix) }
+    }
+
+    /**
+     * Strict PI page for feed-extra matching. Throws on HTTP/network failure so
+     * [EpisodeSupplementPort.refreshFromFeed] does not persist extras against an
+     * empty baseline (which would treat every feed item as feed-only).
+     */
+    suspend fun loadPiEpisodesForBaseline(
+        feedId: String,
+        limit: Int,
+    ): List<Episode> = withContext(Dispatchers.IO) {
+        val resolvedId = resolvePodcastIndexFeedId(feedId)
+        val response = api.getEpisodesPaginated(publicKey, resolvedId, limit, 0, "oldest").execute()
+        check(response.isSuccessful && response.body() != null) {
+            "PI baseline HTTP ${response.code()}"
+        }
+        response.body()!!.items.mapNotNull { mapToEpisode(it) }
+    }
+
     private suspend fun getRssEpisodesPaginated(
         feedId: String,
         limit: Int,

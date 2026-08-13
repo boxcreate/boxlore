@@ -255,6 +255,61 @@ class NewEpisodePushHydrationTest {
             assertNull(port.lastMatch?.enclosureUrl)
         }
 
+    @Test
+    fun returnsNullWhenIdentifiedPayloadDoesNotMatchNewestTip() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val newest = episode("-9", audioUrl = "https://cdn.example.com/newer.mp3")
+            val port =
+                FakePort(
+                    optedIn = setOf("123"),
+                    tip = newest,
+                    cached = listOf(newest),
+                    refreshOutcome =
+                        EpisodeSupplementOutcome.Success(
+                            addedCount = 1,
+                            totalSupplementCount = 1,
+                            newestFeedEpisode = newest,
+                        ),
+                )
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
+                    payloadGuid = "guid-missing",
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                )
+            assertNull(result)
+        }
+
+    @Test
+    fun piBaselineLoaderForwardsPodcastIdAndLimit1000() =
+        runBlocking {
+            var seenFeed: String? = null
+            var seenLimit: Int? = null
+            val loader =
+                NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
+                    seenFeed = feedId
+                    seenLimit = limit
+                    emptyList()
+                }
+            loader("123")
+            assertEquals("123", seenFeed)
+            assertEquals(1000, seenLimit)
+        }
+
     private fun episode(
         id: String,
         audioUrl: String = "https://cdn.example.com/ep.mp3",

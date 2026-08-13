@@ -7,6 +7,7 @@ internal object PodcastInfoPullRefreshLogic {
     enum class Target {
         RSS_CATALOG,
         DIRECT_FEED,
+        PI_CATALOG,
         NONE,
     }
 
@@ -17,6 +18,13 @@ internal object PodcastInfoPullRefreshLogic {
         when {
             isRss -> Target.RSS_CATALOG
             chip == DirectFeedChipState.Updated -> Target.DIRECT_FEED
-            else -> Target.NONE
+            chip == DirectFeedChipState.Fetching -> Target.NONE
+            else -> Target.PI_CATALOG
         }
+
+    fun shouldApply(currentPodcastId: String, targetPodcastId: String): Boolean =
+        currentPodcastId == targetPodcastId
+
+    fun shouldPersistLibraryTip(isSubscribed: Boolean, hasTip: Boolean): Boolean =
+        isSubscribed && hasTip
 }

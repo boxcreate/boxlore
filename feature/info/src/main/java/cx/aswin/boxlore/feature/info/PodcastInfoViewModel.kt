@@ -713,45 +713,85 @@ class PodcastInfoViewModel(
         ) {
             PodcastInfoPullRefreshLogic.Target.RSS_CATALOG -> refreshTrueRssCatalog(currentState)
             PodcastInfoPullRefreshLogic.Target.DIRECT_FEED -> refreshDirectFeedFromPull(currentState)
+            PodcastInfoPullRefreshLogic.Target.PI_CATALOG -> refreshPiCatalogFromPull(currentState)
             PodcastInfoPullRefreshLogic.Target.NONE -> Unit
         }
     }
 
     private fun refreshTrueRssCatalog(currentState: PodcastInfoUiState.Success) {
+        val targetPodcastId = currentState.podcast.id
         _uiState.value = currentState.copy(isLoadingMore = true, isRssRefreshing = true)
         viewModelScope.launch {
             try {
-                rssRepository.refreshCatalog(currentPodcastId)
+                rssRepository.refreshCatalog(targetPodcastId)
+                if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+                    return@launch
+                }
                 val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
-                val limit = if (latestState.currentSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
-                val sortParam =
-                    if (latestState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
-                val podcast = repository.getPodcastDetails(currentPodcastId) ?: latestState.podcast
-                val page =
-                    repository.getEpisodesPaginated(currentPodcastId, limit, 0, sortParam)
-                currentOffset = page.sourceCount
-                _uiState.value =
-                    supplementSupport.remountWithSupplements(
-                        state = latestState.copy(podcast = podcast),
-                        piEpisodes = page.episodes,
-                        hasMoreEpisodes = page.hasMore,
-                        isLoadingMore = false,
-                    ).copy(isRssRefreshing = false)
+                applyFirstPageRefresh(latestState, targetPodcastId)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 e.printStackTrace()
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackRssRefreshFailed(
-                    currentPodcastId,
+                    targetPodcastId,
                     e::class.simpleName,
                 )
-                val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
-                _uiState.value = latestState.copy(isLoadingMore = false, isRssRefreshing = false)
+                clearPullRefreshing(targetPodcastId)
             }
         }
     }
 
+    private fun refreshPiCatalogFromPull(currentState: PodcastInfoUiState.Success) {
+        val targetPodcastId = currentState.podcast.id
+        _uiState.value = currentState.copy(isLoadingMore = true, isRssRefreshing = true)
+        viewModelScope.launch {
+            try {
+                repository.invalidateEpisodesCache(targetPodcastId)
+                if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+                    return@launch
+                }
+                val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                applyFirstPageRefresh(latestState, targetPodcastId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Pull-to-refresh PI catalog failed", e)
+                clearPullRefreshing(targetPodcastId)
+            }
+        }
+    }
+
+    private suspend fun applyFirstPageRefresh(
+        latestState: PodcastInfoUiState.Success,
+        targetPodcastId: String,
+    ) {
+        val limit = if (latestState.currentSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
+        val sortParam =
+            if (latestState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
+        val podcast = repository.getPodcastDetails(targetPodcastId) ?: latestState.podcast
+        val page = repository.getEpisodesPaginated(targetPodcastId, limit, 0, sortParam)
+        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+            return
+        }
+        currentOffset = page.sourceCount
+        _uiState.value =
+            supplementSupport.remountWithSupplements(
+                state = latestState.copy(podcast = podcast),
+                piEpisodes = page.episodes,
+                hasMoreEpisodes = page.hasMore,
+                isLoadingMore = false,
+            ).copy(isRssRefreshing = false)
+    }
+
+    private fun clearPullRefreshing(targetPodcastId: String) {
+        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) return
+        val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        _uiState.value = latestState.copy(isLoadingMore = false, isRssRefreshing = false)
+    }
+
     private fun refreshDirectFeedFromPull(currentState: PodcastInfoUiState.Success) {
+        val targetPodcastId = currentState.podcast.id
         _uiState.value =
             currentState.copy(
                 isRssRefreshing = true,
@@ -759,18 +799,28 @@ class PodcastInfoViewModel(
             )
         viewModelScope.launch {
             try {
-                val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 val refreshed =
                     supplementSupport.refreshMissingEpisodes(
-                        state = latest,
+                        state =
+                            currentState.copy(
+                                isRssRefreshing = true,
+                                directFeedChip = DirectFeedChipState.Fetching,
+                            ),
                         announceResult = false,
                     )
+                if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+                    return@launch
+                }
                 _uiState.value = refreshed.state.copy(isRssRefreshing = false)
                 refreshed.pageSourceCount?.let { currentOffset = it }
-                if (latest.isSubscribed) {
+                if (PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(
+                        isSubscribed = currentState.isSubscribed,
+                        hasTip = refreshed.libraryTip != null,
+                    )
+                ) {
                     refreshed.libraryTip?.let { tip ->
                         subscriptionRepository.updateLatestEpisode(
-                            podcastId = latest.podcast.id,
+                            podcastId = targetPodcastId,
                             episode = tip,
                             markAsNew = true,
                         )
@@ -780,6 +830,9 @@ class PodcastInfoViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Pull-to-refresh direct-feed failed", e)
+                if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+                    return@launch
+                }
                 val failed = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
                 _uiState.value =
                     failed.copy(

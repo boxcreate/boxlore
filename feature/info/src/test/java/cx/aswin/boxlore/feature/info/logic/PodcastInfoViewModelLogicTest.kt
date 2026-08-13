@@ -4,7 +4,9 @@ import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.EpisodeSort
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PodcastInfoViewModelLogicTest {
@@ -72,7 +74,7 @@ class PodcastInfoViewModelLogicTest {
     }
 
     @Test
-    fun `pull refresh targets RSS catalog, opted-in feed, or nothing`() {
+    fun `pull refresh targets RSS catalog, opted-in feed, or PI catalog`() {
         assertEquals(
             PodcastInfoPullRefreshLogic.Target.RSS_CATALOG,
             PodcastInfoPullRefreshLogic.target(
@@ -88,7 +90,7 @@ class PodcastInfoViewModelLogicTest {
             ),
         )
         assertEquals(
-            PodcastInfoPullRefreshLogic.Target.NONE,
+            PodcastInfoPullRefreshLogic.Target.PI_CATALOG,
             PodcastInfoPullRefreshLogic.target(
                 isRss = false,
                 chip = DirectFeedChipState.Offer,
@@ -101,5 +103,17 @@ class PodcastInfoViewModelLogicTest {
                 chip = DirectFeedChipState.Fetching,
             ),
         )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.PI_CATALOG,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = false,
+                chip = DirectFeedChipState.Hidden,
+            ),
+        )
+        assertTrue(PodcastInfoPullRefreshLogic.shouldApply("p1", "p1"))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldApply("p1", "p2"))
+        assertTrue(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = true))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = false))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = false, hasTip = true))
     }
 }

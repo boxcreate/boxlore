@@ -7,7 +7,7 @@ Owns thin domain ports and small result types used by ViewModels, repositories, 
 ## Public API
 
 - `RssSubscriptionPort` and `RssSubscriptionResult`.
-- `EpisodeSupplementPort` and `EpisodeSupplementOutcome` (PI show feed extras; not an RSS subscription). `NewestTipRequest` / `FeedItemMatch` bundle the lighter tip-refresh path used as an FCM payload match fallback. `RefreshFromFeedRequest` optionally loads the PI baseline in parallel with the feed GET (launch sync and FCM hydration). `isPublisherFeedUnchanged` defaults to false (always refresh).
+- `EpisodeSupplementPort` and `EpisodeSupplementOutcome` (PI show feed extras; not an RSS subscription). `NewestTipRequest` / `FeedItemMatch` bundle the lighter tip-refresh path used as an FCM payload match fallback. `RefreshFromFeedRequest` optionally loads the PI baseline in parallel with the feed GET via `loadBaseline` (launch sync and FCM hydration). If that loader throws (strict PI HTTP failure), production `refreshFromFeed` returns `Failure` and does not replace stored supplement rows. `isPublisherFeedUnchanged` defaults to false (always refresh).
 - `RankingResetPort`.
 - `PodcastCatalogPort`.
 - `HistoryRecommendationSource`.

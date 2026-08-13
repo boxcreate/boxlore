@@ -90,6 +90,7 @@ import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialog
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
+import cx.aswin.boxlore.ui.logic.SubscriptionResumeRefreshLogic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -299,11 +300,10 @@ fun BoxLoreAppRoot(
             val observer =
                 LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_START) {
-                        if (skipFirstStart) {
-                            skipFirstStart = false
-                        } else {
+                        if (SubscriptionResumeRefreshLogic.shouldRequestRefreshOnStart(skipFirstStart)) {
                             container.subscriptionForegroundSync.requestRefresh()
                         }
+                        skipFirstStart = false
                     }
                 }
             lifecycleOwner.lifecycle.addObserver(observer)

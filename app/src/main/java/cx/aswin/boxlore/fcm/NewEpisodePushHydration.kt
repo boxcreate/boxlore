@@ -62,10 +62,7 @@ internal object NewEpisodePushHydration {
             subscriptionRepository.updateLatestEpisode(podcastId, matched, markAsNew = true)
             return matched
         }
-        if (enclosure.isEmpty()) return picked
-        val cached = extras.find { it.audioUrl.trim() == enclosure } ?: return picked
-        subscriptionRepository.updateLatestEpisode(podcastId, cached, markAsNew = true)
-        return cached
+        return null
     }
 
     private suspend fun runFullRefresh(

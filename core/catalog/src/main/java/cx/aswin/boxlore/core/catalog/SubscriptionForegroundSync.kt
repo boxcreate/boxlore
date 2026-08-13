@@ -267,15 +267,10 @@ class SubscriptionForegroundSync(
                             podcastIndexId = podcastId,
                             feedUrl = meta.feedUrl.orEmpty(),
                             loadBaseline = {
-                                podcastRepository
-                                    .getEpisodesPaginated(
-                                        feedId = podcastId,
-                                        limit = DIRECT_FEED_BASELINE_LIMIT,
-                                        offset = 0,
-                                        sort = "oldest",
-                                        mergeSupplements = false,
-                                    )
-                                    .episodes
+                                podcastRepository.loadPiEpisodesForBaseline(
+                                    feedId = podcastId,
+                                    limit = DIRECT_FEED_BASELINE_LIMIT,
+                                )
                             },
                             podcastTitle = meta.title,
                             podcastImageUrl = meta.imageUrl,
@@ -368,8 +363,11 @@ class SubscriptionForegroundSync(
             val chunks = piSyncIds.chunked(chunkSize)
             if (chunks.isEmpty()) return
             coroutineScope {
+                val gate = Semaphore(DEFAULT_FEED_CONCURRENCY)
                 chunks.map { chunk ->
-                    async { syncOneChunk(chunk, syncChunk, saveLatest) }
+                    async {
+                        gate.withPermit { syncOneChunk(chunk, syncChunk, saveLatest) }
+                    }
                 }
                     .awaitAll()
             }

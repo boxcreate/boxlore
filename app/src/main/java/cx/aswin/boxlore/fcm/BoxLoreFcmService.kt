@@ -111,15 +111,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
                         loadPiBaseline =
                             NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
-                                deps.podcastRepository
-                                    .getEpisodesPaginated(
-                                        feedId = feedId,
-                                        limit = limit,
-                                        offset = 0,
-                                        sort = "oldest",
-                                        mergeSupplements = false,
-                                    )
-                                    .episodes
+                                deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
                             },
                     )
                 } else {

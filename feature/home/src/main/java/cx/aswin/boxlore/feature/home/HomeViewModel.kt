@@ -22,6 +22,7 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.logic.FilterSelectionAction
 import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
 import cx.aswin.boxlore.feature.home.logic.HomeFilterSelectionLogic
+import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -339,7 +340,7 @@ class HomeViewModel(
         _selectedPodcastId.value = podcastId
         SharedAppDependenciesHolder.instance
             ?.subscriptionForegroundSync
-            ?.preferFeedPodcast(podcastId)
+            ?.preferFeedPodcast(HomeForegroundSyncLogic.preferredFeedPodcastId(podcastId))
         if (podcastId == null) return
 
         // Auto-selections resolve from the fresher subscriptionRepository list (passed in by the
