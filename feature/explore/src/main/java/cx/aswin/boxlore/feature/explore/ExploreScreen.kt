@@ -310,7 +310,15 @@ fun ExploreContent(
                         },
                         expanded = false,
                         onExpandedChange = { searchActive = it },
-                        placeholder = { Text("Search podcasts...") },
+                        placeholder = {
+                            Text(
+                                if (state.searchTab == SearchTab.EPISODES) {
+                                    "Ask anything..."
+                                } else {
+                                    "Search podcasts..."
+                                }
+                            )
+                        },
                         leadingIcon = { 
                             if (searchActive || state.searchQuery.isNotEmpty() || state.currentVibe != null) {
                                 IconButton(onClick = {
@@ -346,7 +354,7 @@ fun ExploreContent(
                 SearchTabSelector(
                     selectedTab = state.searchTab,
                     onTabSelected = onSearchTabSelected,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
             
@@ -463,7 +471,9 @@ fun ExploreContent(
                             }
                             showEmptyState -> {
                                 item(span = StaggeredGridItemSpan.FullLine) {
-                                    ExploreEpisodesSearchEmptyState()
+                                    ExploreEpisodesSearchEmptyState(
+                                        onExampleClick = onSearchQueryChanged,
+                                    )
                                 }
                             }
                             showContent -> {

@@ -1,35 +1,52 @@
 {
-  "lastRun": "2026-08-12T17:28:34.658Z",
+  "lastRun": "2026-08-13T17:02:19.146Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
       "lastEpisodeTitle": "Rewind: CEO Jim Farley on Ford's EV gamble",
       "lastCheckedAt": 1782580345480
     },
+    "6921": {
+      "lastEpisodeId": "58700077873",
+      "lastEpisodeTitle": "Why is TB still killing people?",
+      "lastRssKey": "urn:bbc:podcast:w3ct8k78",
+      "lastCheckedAt": 1786636690598
+    },
     "9926": {
+      "lastRssKey": "aa0aed9e-95ea-11f1-a237-371ed920e1b6",
+      "lastEpisodeTitle": "UFO Over the Bass Triangle? The Disappearance of Fred Valentich",
       "lastEpisodeId": "58702615907",
-      "lastEpisodeTitle": "Was 'The Battle of the Sexes' Fixed?",
-      "lastCheckedAt": 1786171896202
+      "lastCheckedAt": 1786559309216
+    },
+    "48166": {
+      "lastEpisodeId": "58782923579",
+      "lastEpisodeTitle": "Disney: The Renaissance and the Empire",
+      "lastRssKey": "dc17bee9-e7e2-4c06-afdd-e80244a0e9db",
+      "lastCheckedAt": 1786636690918
     },
     "69930": {
-      "lastEpisodeId": "58871130416",
-      "lastEpisodeTitle": "Merchant fees for UPI, a 200 crore property scam, and Air India mishap",
-      "lastCheckedAt": 1786499489386
+      "lastRssKey": "https://api.spreaker.com/episode/73860136",
+      "lastEpisodeTitle": "TMC led health scheme flagged, Third Mumbai, and Karnataka bans tobacco",
+      "lastEpisodeId": "58918128695",
+      "lastCheckedAt": 1786585996608
     },
     "78573": {
-      "lastEpisodeId": "58803241749",
+      "lastRssKey": "a68b8b82-71d8-424d-94a6-99055264d796",
       "lastEpisodeTitle": "CUM SCOȚI SĂRĂCIA ȘI HOȚIA DIN ORAȘ? ADUCI LUXUL - ION SORIN TIMIȘ #IGDLCC 346",
-      "lastCheckedAt": 1786377535755
+      "lastEpisodeId": "58803241749",
+      "lastCheckedAt": 1786559311588
     },
     "160817": {
-      "lastEpisodeId": "58791086500",
-      "lastEpisodeTitle": "The Last Shutdown | LINUX Unplugged 679",
-      "lastCheckedAt": 1786353569844
+      "lastEpisodeId": "58907199258",
+      "lastEpisodeTitle": "Minimaxxing | The Launch 🚀 79",
+      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/79",
+      "lastCheckedAt": 1786563604961
     },
     "212882": {
-      "lastEpisodeId": "58691788675",
+      "lastRssKey": "44010190-a7f8-11f0-954a-6bb14b668972",
       "lastEpisodeTitle": "This Might Get us Back Into Anime | Trash Taste #320",
-      "lastCheckedAt": 1786152473228
+      "lastEpisodeId": "58691788675",
+      "lastCheckedAt": 1786559312841
     },
     "311214": {
       "lastEpisodeId": "567104661",
@@ -37,9 +54,16 @@
       "lastCheckedAt": 1782580346119
     },
     "415434": {
-      "lastEpisodeId": "58876043104",
-      "lastEpisodeTitle": "Lessons from the very first chatbot",
-      "lastCheckedAt": 1786507621379
+      "lastEpisodeId": "58925393724",
+      "lastEpisodeTitle": "Pixel 11 and Pixel Watch 5: Our first impressions | The Vergecast Livestream",
+      "lastRssKey": "475e8214-6e7b-11f1-94bf-eb669e00516e",
+      "lastCheckedAt": 1786600604436
+    },
+    "437685": {
+      "lastEpisodeId": "58934350169",
+      "lastEpisodeTitle": "The Battle of Antietam",
+      "lastRssKey": "96c8acf4-8d5b-11f1-9320-8777c5767ca9",
+      "lastCheckedAt": 1786636694565
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -47,14 +71,16 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
+      "lastRssKey": "6eb443db-39c5-4408-abce-afd3c3d2fab7",
+      "lastEpisodeTitle": "I Wouldn&#39;t Drive 25,000 Miles | Tesla Time News 661",
       "lastEpisodeId": "58862523001",
-      "lastEpisodeTitle": "I Wouldn't Drive 25,000 Miles | Tesla Time News 661",
-      "lastCheckedAt": 1786480870774
+      "lastCheckedAt": 1786559313763
     },
     "491579": {
-      "lastEpisodeId": "58788069666",
+      "lastRssKey": "6a790797c867c1681776924c",
       "lastEpisodeTitle": "Jonny Cooper: Back Three is the Magic Number | The West Stand",
-      "lastCheckedAt": 1786347555686
+      "lastEpisodeId": "58788069666",
+      "lastCheckedAt": 1786559314407
     },
     "499394": {
       "lastEpisodeId": "58790594679",
@@ -62,14 +88,16 @@
       "lastCheckedAt": 1786543007735
     },
     "511104": {
+      "lastRssKey": "https://www.archive.org/download/interpretationofdreams_1401_librivox/interpretationofdreams_00_freud_64kb.mp3",
+      "lastEpisodeTitle": "Preface to the Third, Second, and First Editions",
       "lastEpisodeId": "33950172189",
-      "lastEpisodeTitle": "Chapter VII f: The Unconscious and Consciousness. Reality.",
-      "lastCheckedAt": 1786246889848
+      "lastCheckedAt": 1786559316926
     },
     "522792": {
-      "lastEpisodeId": "58748111224",
+      "lastRssKey": "d25d0426-92ed-11f1-b384-63b7569c8738",
       "lastEpisodeTitle": "My Family Left Me - WAN Show August 7, 2026",
-      "lastCheckedAt": 1786264887184
+      "lastEpisodeId": "58748111224",
+      "lastCheckedAt": 1786559317200
     },
     "555427": {
       "lastEpisodeId": "386077022",
@@ -77,39 +105,46 @@
       "lastCheckedAt": 1782585870863
     },
     "570903": {
+      "lastRssKey": "urn:bbc:podcast:p0nyqqs5",
+      "lastEpisodeTitle": "Evil Animals, Series 3: Chimpanzees",
       "lastEpisodeId": "58699345714",
-      "lastEpisodeTitle": "Evil Animals, Series 3: Orcas",
-      "lastCheckedAt": 1786163710871
+      "lastCheckedAt": 1786559317558
     },
     "577105": {
-      "lastEpisodeId": "58604969966",
+      "lastRssKey": "prx_7057_4ea76520-0a3f-4789-bca4-fbd980488243",
       "lastEpisodeTitle": "LOW - Trailer",
-      "lastCheckedAt": 1786008310889
+      "lastEpisodeId": "58604969966",
+      "lastCheckedAt": 1786559318103
     },
     "585994": {
-      "lastEpisodeId": "40591739575",
+      "lastRssKey": "gid://art19-episode-locator/V0/Hl3lxVH1SYC6ADJIHm6z1LAgILoOGqwxApm6Ulw06I0",
       "lastEpisodeTitle": "1865 Presents American Criminal | The Murder of Medgar Evers",
-      "lastCheckedAt": 1782757505666
+      "lastEpisodeId": "40591739575",
+      "lastCheckedAt": 1786559318597
     },
     "743229": {
-      "lastEpisodeId": "58888364219",
-      "lastEpisodeTitle": "All the President’s Planes",
-      "lastCheckedAt": 1786528990137
+      "lastEpisodeId": "58935318835",
+      "lastEpisodeTitle": "Are The Democratic Socialists Winning or Losing?",
+      "lastRssKey": "fcbf774a-cff4-4304-92a2-f8e7b28f985f",
+      "lastCheckedAt": 1786617359267
     },
     "744587": {
-      "lastEpisodeId": "58814005789",
+      "lastRssKey": "dfb7e611-5432-429f-b0d9-8c96085aa415",
       "lastEpisodeTitle": "Algo Macabro Camina en el Pueblo de Madrugada",
-      "lastCheckedAt": 1786392643147
+      "lastEpisodeId": "58814005789",
+      "lastCheckedAt": 1786559319297
     },
     "745392": {
-      "lastEpisodeId": "56439207381",
+      "lastRssKey": "20ad2ce9-3088-449b-8001-2e3e739b54d8",
       "lastEpisodeTitle": "The Last 12 Weeks - Ep. 5",
-      "lastCheckedAt": 1783703560299
+      "lastEpisodeId": "56439207381",
+      "lastCheckedAt": 1786559319432
     },
     "808826": {
-      "lastEpisodeId": "58865121562",
+      "lastRssKey": "6a703c04f7c2060a1fed2fab",
       "lastEpisodeTitle": "30 Minutes of Straight Fire",
-      "lastCheckedAt": 1786484687327
+      "lastEpisodeId": "58865121562",
+      "lastCheckedAt": 1786559319689
     },
     "838740": {
       "lastEpisodeId": "58892403865",
@@ -117,34 +152,45 @@
       "lastCheckedAt": 1786536545473
     },
     "889671": {
-      "lastEpisodeId": "58664377266",
+      "lastRssKey": "09c4b7a9-1459-48c5-aa1f-282f59c188b7",
       "lastEpisodeTitle": "Linux Cracks 10% Desktop Usage!",
-      "lastCheckedAt": 1786107659226
+      "lastEpisodeId": "58664377266",
+      "lastCheckedAt": 1786559320338
     },
     "902798": {
       "lastEpisodeId": "58415182781",
       "lastEpisodeTitle": "How Scammers Use Deepfakes, Fake Calls & OTP Fraud | Sunil Bajpai | FO543 Raj Shamani",
       "lastCheckedAt": 1786543009010
     },
+    "928708": {
+      "lastEpisodeId": "58937774972",
+      "lastEpisodeTitle": "This Day in History - August 13, 2026",
+      "lastRssKey": "ca937152-9596-11f1-8d05-2333ecff2399",
+      "lastCheckedAt": 1786636701514
+    },
     "947138": {
-      "lastEpisodeId": "58666912138",
+      "lastRssKey": "8176e5d0-b5cc-11f0-92f1-c745395c267c",
       "lastEpisodeTitle": "Your Luxury Car Now Has Ads!",
-      "lastCheckedAt": 1786113089297
+      "lastEpisodeId": "58666912138",
+      "lastCheckedAt": 1786559320882
     },
     "980370": {
-      "lastEpisodeId": "58859040764",
-      "lastEpisodeTitle": "How satellites and AI can protect the planet | Robbie Schingler",
-      "lastCheckedAt": 1786546783958
+      "lastEpisodeId": "58908315927",
+      "lastEpisodeTitle": "The hidden power of sad songs and rainy days | Susan Cain and Min Kym",
+      "lastRssKey": "6a7b780bf91cd396b39c5cf4",
+      "lastCheckedAt": 1786563611891
     },
     "1015378": {
-      "lastEpisodeId": "58694645262",
-      "lastEpisodeTitle": "Google's AI Brain Drain, SpaceX's Huge Quarter, Airtable's 90% Collapse, US Data Fuels China AI",
-      "lastCheckedAt": 1786158681589
+      "lastRssKey": "2d3f7c13-7a54-434d-8136-5c13aeca9ca1",
+      "lastEpisodeTitle": "Rahm Emanuel: Trump's Foreign Policy, China, Europe's Decline, Immigration & DSA vs Democrats",
+      "lastEpisodeId": "58921535467",
+      "lastCheckedAt": 1786594307399
     },
     "1047718": {
+      "lastRssKey": "6a7d82418f088792503eb2f1",
+      "lastEpisodeTitle": "Our EFL preview and a Super Cup review as PSG prevail: Football Weekly",
       "lastEpisodeId": "58884055225",
-      "lastEpisodeTitle": "Infantino, Trump, Bezos and Mourinho: together at last: Football Weekly",
-      "lastCheckedAt": 1786524455004
+      "lastCheckedAt": 1786621504058
     },
     "1065434": {
       "lastEpisodeId": "58645613077",
@@ -152,29 +198,39 @@
       "lastCheckedAt": 1786073274019
     },
     "1076260": {
-      "lastEpisodeId": "57423685615",
+      "lastRssKey": "d3131f4c-6d89-4cff-99f9-b4830111fdf4",
       "lastEpisodeTitle": "Wietze de Jager, Pieter Cobelens & Dilan Yesilgöz",
-      "lastCheckedAt": 1783804950872
+      "lastEpisodeId": "57423685615",
+      "lastCheckedAt": 1786559323967
     },
     "1149997": {
-      "lastEpisodeId": "52712305996",
+      "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
       "lastEpisodeTitle": "422: Especial despedida (El Último Episodio)",
-      "lastCheckedAt": 1785296965818
+      "lastEpisodeId": "52712305996",
+      "lastCheckedAt": 1786559324168
     },
     "1208307": {
+      "lastRssKey": "6a71ab126af4dfc918649545",
+      "lastEpisodeTitle": "Are these F1 conspiracy theories actually true? - The Undercut with Damon Hill and Mark Hughes",
       "lastEpisodeId": "58869581763",
-      "lastEpisodeTitle": "Has F1 become anti-innovation?",
-      "lastCheckedAt": 1786499494287
+      "lastCheckedAt": 1786640556716
+    },
+    "1258562": {
+      "lastRssKey": "6a78653cc963f68fbd09e7d1",
+      "lastEpisodeTitle": "203. The Orkut Murder: Adnan Patrawala",
+      "lastCheckedAt": 1786559324755
     },
     "1266933": {
-      "lastEpisodeId": "486874573",
+      "lastRssKey": "4c5fea84-d345-4950-ad09-54ab043d0ef2",
       "lastEpisodeTitle": "ما وراء الأفلام",
-      "lastCheckedAt": 1786437047207
+      "lastEpisodeId": "486874573",
+      "lastCheckedAt": 1786559324862
     },
     "1621172": {
+      "lastRssKey": "https://krfp.org/?p=33408",
+      "lastEpisodeTitle": "Evening Report &#8211; Wed., Aug 12, 2026 &#8211; Vic Bondi on 40 Years of Political Punk / Idaho K-12 Public School Enrollment Down",
       "lastEpisodeId": "58845636279",
-      "lastEpisodeTitle": "Evening Report – Mon., Aug 10, 2026 – Western Wildfires",
-      "lastCheckedAt": 1786453302081
+      "lastCheckedAt": 1786594311839
     },
     "2955119": {
       "lastEpisodeId": "2138780960",
@@ -182,49 +238,64 @@
       "lastCheckedAt": 1785095022405
     },
     "3628391": {
-      "lastEpisodeId": "58217379219",
+      "lastRssKey": "b23f9a2d-78db-4ebd-92e1-f60b083e7c2b",
       "lastEpisodeTitle": "S09E17:- W*MM*LA ITHAAN DA CINEMA ft Witcher, \"Black leg\" Sanji, Roronoa Zoro, \"Soul King\" Brook",
-      "lastCheckedAt": 1786543010233
+      "lastEpisodeId": "58217379219",
+      "lastCheckedAt": 1786559327180
     },
     "3759297": {
-      "lastEpisodeId": "58796204554",
+      "lastRssKey": "5be6d65c-9471-11f1-b573-138fdc021e7d",
       "lastEpisodeTitle": "I'm Wade. I'm Bald.",
-      "lastCheckedAt": 1786362372821
+      "lastEpisodeId": "58796204554",
+      "lastCheckedAt": 1786559327645
+    },
+    "3880049": {
+      "lastEpisodeId": "13360674190",
+      "lastEpisodeTitle": "#263 - Renato Trezoitão",
+      "lastRssKey": "http://www.arthurpetry.com/deriva/?name=2023-02-10_263_-_renato_trezoitao.mp3",
+      "lastCheckedAt": 1786636709711
     },
     "3927361": {
-      "lastEpisodeId": "58711221307",
+      "lastRssKey": "urn:bbc:podcast:p0nz5k7y",
       "lastEpisodeTitle": "Shadows on the Pitch: 4. The Agony of Doha",
-      "lastCheckedAt": 1786185121715
+      "lastEpisodeId": "58711221307",
+      "lastCheckedAt": 1786559328141
     },
     "4112681": {
-      "lastEpisodeId": "58787237805",
+      "lastRssKey": "Buzzsprout-19620451",
       "lastEpisodeTitle": "#147 - Does Sleep Really Clean Your Brain?",
-      "lastCheckedAt": 1786543010583
+      "lastEpisodeId": "58787237805",
+      "lastCheckedAt": 1786559328411
     },
     "4150268": {
+      "lastRssKey": "gid://art19-episode-locator/V0/h5hw61rsgaIAL8VcwFEzvNDMa4LfLW-cWVW_lE9tpXo",
+      "lastEpisodeTitle": "Listen Now: I Am Not Nicholas",
       "lastEpisodeId": "42575210570",
-      "lastEpisodeTitle": "Introducing: Origin Stories",
-      "lastCheckedAt": 1782757507934
+      "lastCheckedAt": 1786559328642
     },
     "4373297": {
-      "lastEpisodeId": "55631248416",
+      "lastRssKey": "urn:bbc:podcast:p0npnq09",
       "lastEpisodeTitle": "Steve Claridge - Machetes, Thongs and Halftime Haymakers",
-      "lastCheckedAt": 1784368585371
+      "lastEpisodeId": "55631248416",
+      "lastCheckedAt": 1786559328886
     },
     "4507961": {
-      "lastEpisodeId": "58698156408",
-      "lastEpisodeTitle": "230 - Alejandra Guajardo Sada: Sada Organics",
-      "lastCheckedAt": 1786163714269
+      "lastEpisodeId": "58947416428",
+      "lastEpisodeTitle": "231 - Daniel Sempere Pico: Speak 'Prompt' and Enter",
+      "lastRssKey": "a06ef7bd-66fa-45b2-91ef-06423aa99e24",
+      "lastCheckedAt": 1786636711153
     },
     "4780435": {
-      "lastEpisodeId": "58381513018",
+      "lastRssKey": "tag:soundcloud,2010:tracks/2367938180",
       "lastEpisodeTitle": "وعي ١١٠ | سلسلة الصحابة | السيدة فاطمة رضي الله عنها",
-      "lastCheckedAt": 1786358588554
+      "lastEpisodeId": "58381513018",
+      "lastCheckedAt": 1786559329521
     },
     "5107672": {
+      "lastRssKey": "338a3686-c9d9-4ea9-ad94-62cf5bffa4b0",
+      "lastEpisodeTitle": "#171 - Oh... h-h-hey T",
       "lastEpisodeId": "58682922356",
-      "lastEpisodeTitle": "#171 - Oh... h-h-hey T ",
-      "lastCheckedAt": 1786135186687
+      "lastCheckedAt": 1786559330314
     },
     "5377667": {
       "lastEpisodeId": "22189071",
@@ -232,104 +303,124 @@
       "lastCheckedAt": 1782580347307
     },
     "5433112": {
-      "lastEpisodeId": "55799020660",
+      "lastRssKey": "Buzzsprout-19303927",
       "lastEpisodeTitle": "معضلة التعود",
-      "lastCheckedAt": 1786437048470
+      "lastEpisodeId": "55799020660",
+      "lastCheckedAt": 1786559330450
     },
     "5716308": {
-      "lastEpisodeId": "58218122771",
-      "lastEpisodeTitle": "EP 218: Cardboard Cutouts",
-      "lastCheckedAt": 1785274710339
+      "lastRssKey": "urn:bbc:podcast:p0p3wh3m",
+      "lastEpisodeTitle": "EP 219: New Trafford",
+      "lastEpisodeId": "58905529079",
+      "lastCheckedAt": 1786559330847
     },
     "5930143": {
+      "lastRssKey": "781192c1-79f0-48c6-953b-69df2535dfe0",
+      "lastEpisodeTitle": "Peine de mort : le Liban abolit quand ses voisins continuent d'exécuter",
       "lastEpisodeId": "58891118019",
-      "lastEpisodeTitle": "Big Tech : l’Amérique donnera-t-elle raison à l’Europe ?",
-      "lastCheckedAt": 1786533689222
+      "lastCheckedAt": 1786606684912
     },
     "5972153": {
+      "lastRssKey": "78e3f868-96db-11f1-b403-7fb022ca6281",
+      "lastEpisodeTitle": "Oil spill, earthquake rescue and record Lakers deal",
       "lastEpisodeId": "58891446115",
-      "lastEpisodeTitle": "US primaries, Trump's secret plane swap and total eclipse",
-      "lastCheckedAt": 1786533690524
+      "lastCheckedAt": 1786617373346
     },
     "6655297": {
+      "lastRssKey": "indieventurepodcast.podbean.com/0045e776-a06f-3a8e-b824-c0887be00354",
+      "lastEpisodeTitle": "#64. Indie Game Detective Stories (Mermaid Mask, Desktop Explorer, Galley House)",
       "lastEpisodeId": "58623529123",
-      "lastEpisodeTitle": "#64. Indie Game Detective Stories",
-      "lastCheckedAt": 1786062238300
+      "lastCheckedAt": 1786559331797
     },
     "6686930": {
-      "lastEpisodeId": "21858946288",
+      "lastRssKey": "661671f397ce6d00176628b4",
       "lastEpisodeTitle": "सुबह बर्खास्त कर दिया - subah barkhast kar diya",
-      "lastCheckedAt": 1784368585708
+      "lastEpisodeId": "21858946288",
+      "lastCheckedAt": 1786559332068
     },
     "6698148": {
+      "lastRssKey": "6f426b62-9660-11f1-b689-af348b77d3db",
+      "lastEpisodeTitle": "How To Win Lunch With a Celeb",
       "lastEpisodeId": "58885847730",
-      "lastEpisodeTitle": "James Bond: Sex, Spies and Soggy Towels (Ep1)",
-      "lastCheckedAt": 1786524457183
+      "lastCheckedAt": 1786578001250
     },
     "6764080": {
-      "lastEpisodeId": "58827636737",
+      "lastRssKey": "41fc6e2c-deb3-4aed-bb18-b4a200725ad0",
       "lastEpisodeTitle": "I Got Banned From Spotify (Maybe?)",
-      "lastCheckedAt": 1786421908687
+      "lastEpisodeId": "58827636737",
+      "lastCheckedAt": 1786559332534
     },
     "6766874": {
-      "lastEpisodeId": "53696806037",
+      "lastRssKey": "ed6805a0-f221-4158-bc3b-a1fc349bdbe5",
       "lastEpisodeTitle": "bye bye !",
-      "lastCheckedAt": 1786543011784
+      "lastEpisodeId": "53696806037",
+      "lastCheckedAt": 1786559332738
     },
     "6897392": {
+      "lastRssKey": "https://api.spreaker.com/episode/59779757",
+      "lastEpisodeTitle": "Lives Of Harry Lime - An Old Moorish Custom",
       "lastEpisodeId": "58887640672",
-      "lastEpisodeTitle": "The Black Museum - The Silencer",
-      "lastCheckedAt": 1786528994240
+      "lastCheckedAt": 1786612276632
     },
     "6956562": {
-      "lastEpisodeId": "58872425295",
-      "lastEpisodeTitle": "Indian cement meets both new bridges and broken roads",
-      "lastCheckedAt": 1786499498141
+      "lastRssKey": "7cfbcf15-da24-4233-9af0-8de741a80ed2",
+      "lastEpisodeTitle": "Why Bengaluru's Metro takes forever?",
+      "lastEpisodeId": "58919547875",
+      "lastCheckedAt": 1786586015075
     },
     "7045713": {
-      "lastEpisodeId": "47507791854",
+      "lastRssKey": "sonsofpatriarchy.podbean.com/8c867280-f689-387b-acd9-e385184f81ee",
       "lastEpisodeTitle": "Introducing: Sons of Patriarchy",
-      "lastCheckedAt": 1783910579606
+      "lastEpisodeId": "47507791854",
+      "lastCheckedAt": 1786559335991
     },
     "7200648": {
+      "lastRssKey": "https://api.spreaker.com/episode/64228821",
+      "lastEpisodeTitle": "Bhoot FM - 13 Number Oshuvo Songket (Special)",
       "lastEpisodeId": "33401269201",
-      "lastEpisodeTitle": "Bhoot FM - Bhoyer Koboch (Special)",
-      "lastCheckedAt": 1783509755881
+      "lastCheckedAt": 1786559336271
     },
     "7324937": {
-      "lastEpisodeId": "58807154378",
+      "lastRssKey": "ae687e58-2d42-11f1-801d-f7c6f6794ee7",
       "lastEpisodeTitle": "The Basement: Travis Taylor | Black Holes, UFOs & Skinwalker Ranch",
-      "lastCheckedAt": 1786381310024
+      "lastEpisodeId": "58807154378",
+      "lastCheckedAt": 1786559336817
     },
     "7447848": {
-      "lastEpisodeId": "58448466733",
+      "lastRssKey": "0dcf758b-e288-479f-8dbb-6d00d36d401d",
       "lastEpisodeTitle": "S01E18: Source: Trust me Bro ft. Tobirama Senju,Kakashi Hatake, Mankatha Mani & Space Monkey",
-      "lastCheckedAt": 1786543012618
+      "lastEpisodeId": "58448466733",
+      "lastCheckedAt": 1786559336994
     },
     "7485285": {
-      "lastEpisodeId": "52832238101",
+      "lastRssKey": "bc1ec1a5-462c-4872-b1c8-b59e2d5e1d06",
       "lastEpisodeTitle": "Is Linux Winbro Proof?",
-      "lastCheckedAt": 1783910579755
+      "lastEpisodeId": "52832238101",
+      "lastCheckedAt": 1786559337106
     },
     "7492905": {
+      "lastRssKey": "d3ff31e0-95a5-11f1-a776-df7c653c1b3d",
+      "lastEpisodeTitle": "Vergecast: ELIZA, the world's first chatbot",
       "lastEpisodeId": "57793191904",
-      "lastEpisodeTitle": "The Clapper: Light work",
-      "lastCheckedAt": 1784471912429
+      "lastCheckedAt": 1786559337402
     },
     "7587315": {
+      "lastRssKey": "5993fda2-9634-11f1-a666-fbfd20bc037b",
+      "lastEpisodeTitle": "The Lake At The North Pole That Stops Europe From Freezing",
       "lastEpisodeId": "58798183213",
-      "lastEpisodeTitle": "The Science of Putting Sunglasses on The Sun",
-      "lastCheckedAt": 1786367106062
+      "lastCheckedAt": 1786578006225
     },
     "7634730": {
-      "lastEpisodeId": "58726344353",
+      "lastRssKey": "d2cdf2d7-f2df-4fc5-92d3-6d81c8e08cd6",
       "lastEpisodeTitle": "Video Nasties, Mary Whitehouse and Censorship (Part 4)",
-      "lastCheckedAt": 1786215099488
+      "lastEpisodeId": "58726344353",
+      "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastEpisodeId": "58839687138",
-      "lastEpisodeTitle": "1 Peter 1",
-      "lastCheckedAt": 1786442413386
+      "lastRssKey": "aa949b52-15a0-411b-a07c-b54901f96cee",
+      "lastEpisodeTitle": "1 Peter 3",
+      "lastEpisodeId": "58934828433",
+      "lastCheckedAt": 1786617379989
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
@@ -342,9 +433,10 @@
       "lastCheckedAt": 1784625183964
     },
     "7903936": {
-      "lastEpisodeId": "55941239469",
+      "lastRssKey": "baec2fbc-e8bf-4eee-8d6a-edf7f9700093",
       "lastEpisodeTitle": "Hakeem Oluseyi: The different realms of the universe, in 69 minutes",
-      "lastCheckedAt": 1786543013196
+      "lastEpisodeId": "55941239469",
+      "lastCheckedAt": 1786559339176
     }
   }
 }

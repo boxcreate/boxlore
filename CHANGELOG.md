@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.15] - 2026-08-12
+
 ### Added
 - PodcastRepository unions cached publisher-feed extras after the PI page for getEpisodes, offset-0 pagination, and in-show search (skip rss: rows; merged lists are not cached) ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - Check New Episodes polls HTTPS feedUrl on RTDB tracked_podcasts when present (lastRssKey = guid else enclosure); unmatched feed-only drops omit PI episodeId and open the podcast page; GHA never mints negative ids ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
@@ -20,13 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Home Your Shows NEW, the New episodes chip, Podcast Info, and Smart Queue no longer miss publisher-feed episodes that Podcast Index has not ingested yet ([#971](https://github.com/boxcreate/boxlore/pull/971)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=971 -->
-### Critical
-- Fixes an issue where some shows were missing the latest episodes because Podcast Index hadn’t caught up yet
-- When you subscribe, boxlore checks whether that show’s episode list is behind, then keeps it updated from Podcast Index or the publisher’s feed — whichever has the newer episodes
-- If episodes still look behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed
-- Show notifications follow the same path, so new-episode alerts come from the fresher source
-<!-- readme-copy:end pr=971 -->
 ## [v0.0.14] - 2026-08-07
 
 ### Added
