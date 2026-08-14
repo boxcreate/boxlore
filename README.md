@@ -18,7 +18,7 @@
     <td width="16"></td>
     <td align="center" valign="middle">
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.15.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.16.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
 <!-- download-apk:end -->
     </td>
   </tr>
@@ -64,24 +64,19 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.16` · 2026-08-14
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.16 date=2026-08-14 -->
 <b>🚨 Critical:</b>
 <ul align="left">
 <li>Sorry for another update so soon — this is a follow-up fix for yesterday’s release <a href="https://github.com/boxcreate/boxlore/pull/975"><img src="https://img.shields.io/badge/PR-975-6750A4?style=flat-square" alt="PR #975" height="18"/></a></li>
 <li>New episodes in your library and on Home now show up when you open boxlore, including if you go straight to Subscriptions, without tapping into each show first <a href="https://github.com/boxcreate/boxlore/pull/975"><img src="https://img.shields.io/badge/PR-975-6750A4?style=flat-square" alt="PR #975" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.15` · 2026-08-12
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.15 date=2026-08-12 -->
-<b>🚨 Critical:</b>
-<ul align="left">
-<li>Fixes an issue where some shows were missing the latest episodes because Podcast Index hadn’t caught up yet <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
-<li>When you subscribe, boxlore checks whether that show’s episode list is behind, then keeps it updated from Podcast Index or the publisher’s feed — whichever has the newer episodes <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
-<li>If episodes still look behind, or you haven’t subscribed yet, turn on Missing episodes? on the show page to always use the publisher feed <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
-<li>Show notifications follow the same path, so new-episode alerts come from the fresher source <a href="https://github.com/boxcreate/boxlore/pull/971"><img src="https://img.shields.io/badge/PR-971-6750A4?style=flat-square" alt="PR #971" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
@@ -188,7 +183,7 @@ Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live
       </td>
       <td width="16"></td>
       <td align="center" valign="middle">
-        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.15.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.16.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
       </td>
     </tr>
   </table>
