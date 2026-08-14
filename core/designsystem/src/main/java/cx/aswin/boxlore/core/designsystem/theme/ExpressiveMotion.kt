@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.collect
  */
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.LaunchedEffect
@@ -178,5 +179,36 @@ fun Modifier.expressiveClickable(
             indication = indication,
             enabled = enabled,
             onClick = onClick
+        )
+}
+
+/** Same press scale as [expressiveClickable], plus a long-press callback (multi-select, etc.). */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+fun Modifier.expressiveClickable(
+    enabled: Boolean = true,
+    shape: androidx.compose.ui.graphics.Shape? = null,
+    indication: Indication? = null,
+    onLongClickLabel: String? = null,
+    onLongClick: () -> Unit,
+    onClick: () -> Unit,
+): Modifier = composed {
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val visualScale = rememberExpressiveVisualScale(interactionSource)
+    this
+        .graphicsLayer {
+            scaleX = visualScale.value
+            scaleY = visualScale.value
+            if (shape != null) {
+                clip = true
+                this.shape = shape
+            }
+        }
+        .combinedClickable(
+            interactionSource = interactionSource,
+            indication = indication,
+            enabled = enabled,
+            onLongClickLabel = onLongClickLabel,
+            onLongClick = onLongClick,
+            onClick = onClick,
         )
 }
