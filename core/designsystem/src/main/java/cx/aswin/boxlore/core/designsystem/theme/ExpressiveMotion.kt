@@ -122,30 +122,43 @@ private fun rememberExpressiveVisualScale(
     return scale
 }
 
+private fun Modifier.expressivePressLayer(
+    scale: Float,
+    shape: androidx.compose.ui.graphics.Shape?,
+): Modifier =
+    graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+        if (shape != null) {
+            clip = true
+            this.shape = shape
+        }
+    }
+
 /**
  * Expressive clickable modifier that always shows visible animation:
  * 1. On tap: Quickly shrink to 0.85
  * 2. Then immediately bounce back to 1.0
  * 3. Fire onClick when animation starts
+ *
+ * Pass [shape] so the shrink stays rounded (no sharp square). Set [pressScaleEnabled]
+ * false while a drag overlay owns scale so press and drag do not compound.
  */
 fun Modifier.expressiveClickable(
     enabled: Boolean = true,
     shape: androidx.compose.ui.graphics.Shape? = null,
     indication: Indication? = null,
     @Suppress("UNUSED_PARAMETER") isolate: Boolean = false,
+    pressScaleEnabled: Boolean = true,
     onClick: () -> Unit
 ): Modifier = composed {
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val visualScale = rememberExpressiveVisualScale(interactionSource)
     this
-        .graphicsLayer {
-            scaleX = visualScale.value
-            scaleY = visualScale.value
-            if (shape != null) {
-                clip = true
-                this.shape = shape
-            }
-        }
+        .expressivePressLayer(
+            scale = if (pressScaleEnabled) visualScale.value else 1f,
+            shape = shape,
+        )
         .clickable(
             interactionSource = interactionSource,
             indication = indication,
@@ -161,19 +174,16 @@ fun Modifier.expressiveClickable(
     enabled: Boolean = true,
     shape: androidx.compose.ui.graphics.Shape? = null,
     indication: Indication? = null,
+    pressScaleEnabled: Boolean = true,
     onClick: () -> Unit
 ): Modifier = composed {
     val localInteractionSource = interactionSource ?: remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val visualScale = rememberExpressiveVisualScale(localInteractionSource)
     this
-        .graphicsLayer {
-            scaleX = visualScale.value
-            scaleY = visualScale.value
-            if (shape != null) {
-                clip = true
-                this.shape = shape
-            }
-        }
+        .expressivePressLayer(
+            scale = if (pressScaleEnabled) visualScale.value else 1f,
+            shape = shape,
+        )
         .clickable(
             interactionSource = localInteractionSource,
             indication = indication,
@@ -188,6 +198,7 @@ fun Modifier.expressiveClickable(
     enabled: Boolean = true,
     shape: androidx.compose.ui.graphics.Shape? = null,
     indication: Indication? = null,
+    pressScaleEnabled: Boolean = true,
     onLongClickLabel: String? = null,
     onLongClick: () -> Unit,
     onClick: () -> Unit,
@@ -195,14 +206,10 @@ fun Modifier.expressiveClickable(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val visualScale = rememberExpressiveVisualScale(interactionSource)
     this
-        .graphicsLayer {
-            scaleX = visualScale.value
-            scaleY = visualScale.value
-            if (shape != null) {
-                clip = true
-                this.shape = shape
-            }
-        }
+        .expressivePressLayer(
+            scale = if (pressScaleEnabled) visualScale.value else 1f,
+            shape = shape,
+        )
         .combinedClickable(
             interactionSource = interactionSource,
             indication = indication,

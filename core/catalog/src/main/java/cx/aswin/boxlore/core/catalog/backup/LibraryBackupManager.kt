@@ -30,6 +30,8 @@ data class GlobalPreferencesBackup(
     val useDynamicColor: Boolean? = null,
     val openAppTo: String? = null,
     val subscriptionSort: String? = null,
+    val subscriptionManualOrder: List<String>? = null,
+    val homePinnedPodcastIds: List<String>? = null,
     val latestEpisodesSortUseSmart: Boolean? = null,
     val skipBehavior: String? = null,
     val skipBeginningMs: Long? = null,
@@ -97,6 +99,8 @@ class LibraryBackupManager(
                 useDynamicColor = userPrefs.useDynamicColorStream.first(),
                 openAppTo = userPrefs.openAppToStream.first(),
                 subscriptionSort = userPrefs.subscriptionSortStream.first(),
+                subscriptionManualOrder = userPrefs.subscriptionManualOrderStream.first(),
+                homePinnedPodcastIds = userPrefs.homePinnedPodcastIdsStream.first(),
                 latestEpisodesSortUseSmart = userPrefs.latestEpisodesSortUseSmartStream.first(),
                 skipBehavior = userPrefs.skipBehaviorStream.first(),
                 skipBeginningMs = userPrefs.skipBeginningMsStream.first(),
@@ -186,6 +190,8 @@ class LibraryBackupManager(
                     prefs.useDynamicColor?.let { up.setUseDynamicColor(it) }
                     prefs.openAppTo?.let { up.setOpenAppTo(it) }
                     prefs.subscriptionSort?.let { up.setSubscriptionSort(it) }
+                    prefs.subscriptionManualOrder?.let { up.setSubscriptionManualOrder(it) }
+                    prefs.homePinnedPodcastIds?.let { up.setHomePinnedPodcastIds(it) }
                     prefs.latestEpisodesSortUseSmart?.let { up.setLatestEpisodesSortUseSmart(it) }
                     prefs.skipBehavior?.let { up.setSkipBehavior(it) }
                     prefs.skipBeginningMs?.let { up.setSkipBeginningMs(it) }

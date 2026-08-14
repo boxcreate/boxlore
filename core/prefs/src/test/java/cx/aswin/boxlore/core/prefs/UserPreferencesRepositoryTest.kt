@@ -212,6 +212,34 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun subscriptionManualOrderAndPinsRoundTrip() =
+        runTest {
+            assertEquals(emptyList<String>(), repository.subscriptionManualOrderStream.first())
+            assertEquals(emptyList<String>(), repository.homePinnedPodcastIdsStream.first())
+
+            repository.setSubscriptionManualOrder(listOf("a", "rss:https://feeds.example/x.xml"))
+            repository.setHomePinnedPodcastIds(listOf("p1", "p2", "p3", "p4", "p5", "p6"))
+
+            assertEquals(
+                listOf("a", "rss:https://feeds.example/x.xml"),
+                repository.subscriptionManualOrderStream.first(),
+            )
+            assertEquals(listOf("p1", "p2", "p3", "p4", "p5"), repository.homePinnedPodcastIdsStream.first())
+        }
+
+    @Test
+    fun removePodcastIdFromManualOrderAndPinsDropsMatchingIds() =
+        runTest {
+            repository.setSubscriptionManualOrder(listOf("keep", "gone"))
+            repository.setHomePinnedPodcastIds(listOf("gone", "pin"))
+
+            repository.removePodcastIdFromManualOrderAndPins("gone")
+
+            assertEquals(listOf("keep"), repository.subscriptionManualOrderStream.first())
+            assertEquals(listOf("pin"), repository.homePinnedPodcastIdsStream.first())
+        }
+
+    @Test
     fun latestEpisodesSortDefaultsToSmart() =
         runTest {
             assertTrue(repository.latestEpisodesSortUseSmartStream.first())

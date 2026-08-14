@@ -6,7 +6,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 
 ## Public API
 
-- `BoxLoreTheme` and theme helpers such as expressive shapes, motion, typography, and dynamic color utilities. `Modifier.expressiveClickable` has a long-press overload (`onLongClick`) used by Downloads multi-select.
+- `BoxLoreTheme` and theme helpers such as expressive shapes, motion, typography, and dynamic color utilities. `Modifier.expressiveClickable` has a long-press overload (`onLongClick`) used by Downloads multi-select. Pass `shape` so press-shrink stays rounded; `pressScaleEnabled = false` while a drag overlay owns scale.
 - Shared components including `OptimizedImage` (optional `errorContent` for blank/failed art), loaders, `PillFilterChip` (onboarding/Explore genre pills), `BoxLoreLogo` (optional `height` for hero vs chrome sizes), player-control primitives used by UI modules, floating 3+1 navigation chrome, bottom-content clearance helpers, and sleep-timer chrome.
 - `PredictiveBackWrapper` peeks the NavHost (scale 1.0 → 0.9) during system Back. Progress always returns to rest after commit or cancel so a Back that replaces the start destination (cold-start Subscriptions → Home) does not leave Home scaled down.
 - Shared discovery poster cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing` (Home “Based on Your Taste” and Explore For You).

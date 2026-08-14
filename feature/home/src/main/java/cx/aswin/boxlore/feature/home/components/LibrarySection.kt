@@ -104,6 +104,8 @@ fun YourShowsSection(
     onViewLibrary: () -> Unit,
     downloadedEpisodeIds: Set<String> = emptySet(),
     modifier: Modifier = Modifier,
+    pinnedPodcastIds: Set<String> = emptySet(),
+    onTogglePin: (String) -> Unit = {},
 ) {
     if (subscribedPodcasts.list.isEmpty()) return
     val lastSeenEpisodes = LocalLastSeenEpisodes.current
@@ -301,6 +303,8 @@ fun YourShowsSection(
                             }
                         },
                         modifier = Modifier.size(60.dp).animateItem(),
+                        isPinned = podcast.id in pinnedPodcastIds,
+                        onTogglePin = { onTogglePin(podcast.id) },
                     )
                 }
             }
@@ -376,6 +380,8 @@ fun YourShowsSection(
                                         onPodcastSelected(if (selectedPodcastId == item.id) null else item.id)
                                     },
                                     modifier = itemModifier,
+                                    isPinned = item.id in pinnedPodcastIds,
+                                    onTogglePin = { onTogglePin(item.id) },
                                 )
                             }
                         }
@@ -397,6 +403,8 @@ fun YourShowsSection(
                                         onPodcastSelected(if (selectedPodcastId == item.id) null else item.id)
                                     },
                                     modifier = itemModifier,
+                                    isPinned = item.id in pinnedPodcastIds,
+                                    onTogglePin = { onTogglePin(item.id) },
                                 )
                             }
                         }
@@ -432,6 +440,8 @@ fun YourShowsSection(
                             onPodcastSelected(if (selectedPodcastId == podcast.id) null else podcast.id)
                         },
                         modifier = Modifier.size(60.dp).animateItem(),
+                        isPinned = podcast.id in pinnedPodcastIds,
+                        onTogglePin = { onTogglePin(podcast.id) },
                     )
                 }
             }

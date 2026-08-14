@@ -37,6 +37,7 @@ data class HomeDataWrapper(
     val isRecommendationsFallback: Boolean = true,
     val editorialRows: List<HomeEditorialRow> = emptyList(),
     val isEditorialRowsLoading: Boolean = true,
+    val pinnedPodcastIds: List<String> = emptyList(),
 )
 
 internal data class HomeCoreSlice(

@@ -306,10 +306,12 @@ internal fun HomeViewModel.loadData() {
                     },
                     _editorialRows,
                     _isEditorialRowsLoading,
-                ) { wrapper, editorialRows, isEditorialRowsLoading ->
+                    userPrefs.homePinnedPodcastIdsStream,
+                ) { wrapper, editorialRows, isEditorialRowsLoading, pinnedIds ->
                     wrapper.copy(
                         editorialRows = editorialRows,
                         isEditorialRowsLoading = isEditorialRowsLoading,
+                        pinnedPodcastIds = pinnedIds,
                     )
                 }.debounce(100L).collect { wrapper ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -467,6 +469,7 @@ internal fun HomeViewModel.loadData() {
                                 briefingDismissedDate = wrapper.briefingDismissedDate,
                                 briefingDismissedForever = wrapper.briefingDismissedForever,
                                 staleRestartEnabled = staleRestartEnabled,
+                                pinnedPodcastIds = wrapper.pinnedPodcastIds,
                             )
 
                         stablePodcastOrder = assembled.stablePodcastOrder
@@ -521,6 +524,7 @@ internal fun HomeViewModel.loadData() {
                                 isRecommendationsFallback = wrapper.isRecommendationsFallback,
                                 editorialRows = wrapper.editorialRows,
                                 isEditorialRowsLoading = wrapper.isEditorialRowsLoading,
+                                pinnedPodcastIds = wrapper.pinnedPodcastIds.toSet(),
                             )
                     }
                 }

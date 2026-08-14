@@ -9,6 +9,8 @@ class SubscriptionSortTest {
         SubscriptionSort.entries.forEach { sort ->
             assertEquals(sort, SubscriptionSort.valueOf(sort.name))
         }
+        assertEquals(SubscriptionSort.Manual, SubscriptionSort.valueOf("Manual"))
+        assertEquals("Manual", SubscriptionSort.Manual.name)
     }
 
     @Test

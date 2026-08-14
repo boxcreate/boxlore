@@ -374,6 +374,54 @@ class UserPreferencesRepository(
         }
     }
 
+    val subscriptionManualOrderStream: Flow<List<String>> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                PreferenceIdList.decode(preferences[Keys.SUBSCRIPTION_MANUAL_ORDER])
+            }.distinctUntilChanged()
+
+    suspend fun setSubscriptionManualOrder(ids: List<String>) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SUBSCRIPTION_MANUAL_ORDER] = PreferenceIdList.encode(ids)
+        }
+    }
+
+    val homePinnedPodcastIdsStream: Flow<List<String>> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                HomePinnedShows.sanitize(PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]))
+            }.distinctUntilChanged()
+
+    suspend fun setHomePinnedPodcastIds(ids: List<String>) {
+        dataStore.edit { preferences ->
+            preferences[Keys.HOME_PINNED_PODCAST_IDS] =
+                PreferenceIdList.encode(HomePinnedShows.sanitize(ids))
+        }
+    }
+
+    /** Drops an unsubscribed show from Manual order and Home pins without touching other prefs. */
+    suspend fun removePodcastIdFromManualOrderAndPins(podcastId: String) {
+        val id = podcastId.trim()
+        if (id.isEmpty()) return
+        dataStore.edit { preferences ->
+            val prevOrder = PreferenceIdList.decode(preferences[Keys.SUBSCRIPTION_MANUAL_ORDER])
+            if (id in prevOrder) {
+                preferences[Keys.SUBSCRIPTION_MANUAL_ORDER] =
+                    PreferenceIdList.encode(prevOrder.filter { it != id })
+            }
+            val prevPins =
+                HomePinnedShows.sanitize(PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]))
+            if (id in prevPins) {
+                preferences[Keys.HOME_PINNED_PODCAST_IDS] =
+                    PreferenceIdList.encode(prevPins.filter { it != id })
+            }
+        }
+    }
+
     val latestEpisodesSortUseSmartStream: Flow<Boolean> =
         dataStore.data
             .catch { exception ->

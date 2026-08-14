@@ -1,35 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <baseline version="1.0">
     <file name="src/main/java/cx/aswin/boxlore/feature/home/AdaptiveLearnerDebugSection.kt">
-        <error line="97" column="14" source="standard:function-naming" />
-        <error line="176" column="13" source="standard:function-naming" />
-        <error line="249" column="13" source="standard:function-naming" />
-        <error line="292" column="13" source="standard:function-naming" />
-        <error line="300" column="141" source="standard:max-line-length" />
-        <error line="307" column="141" source="standard:max-line-length" />
-        <error line="354" column="13" source="standard:function-naming" />
-        <error line="399" column="13" source="standard:function-naming" />
-        <error line="455" column="13" source="standard:function-naming" />
-        <error line="490" column="13" source="standard:function-naming" />
-        <error line="519" column="13" source="standard:function-naming" />
-        <error line="551" column="13" source="standard:function-naming" />
-        <error line="591" column="13" source="standard:function-naming" />
-        <error line="641" column="13" source="standard:function-naming" />
-        <error line="692" column="13" source="standard:function-naming" />
-        <error line="720" column="13" source="standard:function-naming" />
-        <error line="744" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="57" column="1" source="standard:no-unused-imports" />
+        <error line="99" column="14" source="standard:function-naming" />
+        <error line="178" column="13" source="standard:function-naming" />
+        <error line="251" column="13" source="standard:function-naming" />
+        <error line="294" column="13" source="standard:function-naming" />
+        <error line="302" column="141" source="standard:max-line-length" />
+        <error line="309" column="141" source="standard:max-line-length" />
+        <error line="356" column="13" source="standard:function-naming" />
+        <error line="401" column="13" source="standard:function-naming" />
+        <error line="457" column="13" source="standard:function-naming" />
+        <error line="492" column="13" source="standard:function-naming" />
+        <error line="521" column="13" source="standard:function-naming" />
+        <error line="553" column="13" source="standard:function-naming" />
+        <error line="593" column="13" source="standard:function-naming" />
+        <error line="643" column="13" source="standard:function-naming" />
+        <error line="694" column="13" source="standard:function-naming" />
+        <error line="722" column="13" source="standard:function-naming" />
+        <error line="746" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/DebugScreen.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="66" column="5" source="standard:function-naming" />
-        <error line="157" column="14" source="standard:function-naming" />
-        <error line="192" column="14" source="standard:function-naming" />
-        <error line="208" column="14" source="standard:function-naming" />
-        <error line="258" column="14" source="standard:function-naming" />
-        <error line="283" column="14" source="standard:function-naming" />
-        <error line="322" column="14" source="standard:function-naming" />
-        <error line="337" column="14" source="standard:function-naming" />
-        <error line="372" column="14" source="standard:function-naming" />
+        <error line="47" column="1" source="standard:no-unused-imports" />
+        <error line="68" column="5" source="standard:function-naming" />
+        <error line="159" column="14" source="standard:function-naming" />
+        <error line="194" column="14" source="standard:function-naming" />
+        <error line="210" column="14" source="standard:function-naming" />
+        <error line="260" column="14" source="standard:function-naming" />
+        <error line="285" column="14" source="standard:function-naming" />
+        <error line="324" column="14" source="standard:function-naming" />
+        <error line="339" column="14" source="standard:function-naming" />
+        <error line="374" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/DebugScreenContent.kt">
         <error line="62" column="14" source="standard:function-naming" />
@@ -39,61 +42,76 @@
         <error line="3" column="1" source="standard:import-ordering" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeFeed.kt">
-        <error line="77" column="14" source="standard:function-naming" />
-        <error line="126" column="35" source="standard:chain-method-continuation" />
-        <error line="126" column="56" source="standard:chain-method-continuation" />
-        <error line="144" column="10" source="standard:wrapping" />
-        <error line="145" column="72" source="standard:wrapping" />
-        <error line="164" column="61" source="standard:chain-method-continuation" />
-        <error line="172" column="14" source="standard:function-naming" />
-        <error line="182" column="13" source="standard:function-naming" />
+        <error line="80" column="14" source="standard:function-naming" />
+        <error line="129" column="35" source="standard:chain-method-continuation" />
+        <error line="129" column="56" source="standard:chain-method-continuation" />
+        <error line="147" column="10" source="standard:wrapping" />
+        <error line="148" column="72" source="standard:wrapping" />
+        <error line="167" column="61" source="standard:chain-method-continuation" />
+        <error line="175" column="14" source="standard:function-naming" />
+        <error line="185" column="13" source="standard:function-naming" />
     </file>
-    <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeFeedAdaptiveSections.kt">
-        <error line="59" column="49" source="standard:chain-method-continuation" />
-        <error line="92" column="14" source="standard:function-naming" />
-        <error line="138" column="14" source="standard:function-naming" />
-        <error line="171" column="14" source="standard:function-naming" />
-        <error line="181" column="14" source="standard:function-naming" />
+    <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeFeedEditorialRows.kt">
+        <error line="33" column="53" source="standard:chain-method-continuation" />
+        <error line="58" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeFeedIcons.kt">
-        <error line="39" column="56" source="standard:function-signature" />
+        <error line="41" column="56" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeFeedRecommendations.kt">
-        <error line="183" column="27" source="standard:function-literal" />
-        <error line="183" column="58" source="standard:chain-method-continuation" />
-        <error line="183" column="67" source="standard:argument-list-wrapping" />
-        <error line="183" column="104" source="standard:argument-list-wrapping" />
-        <error line="183" column="137" source="standard:argument-list-wrapping" />
-        <error line="183" column="141" source="standard:argument-list-wrapping" />
-        <error line="183" column="141" source="standard:max-line-length" />
-        <error line="183" column="143" source="standard:function-literal" />
-        <error line="198" column="13" source="standard:function-naming" />
+        <error line="197" column="27" source="standard:function-literal" />
+        <error line="197" column="58" source="standard:chain-method-continuation" />
+        <error line="197" column="67" source="standard:argument-list-wrapping" />
+        <error line="197" column="104" source="standard:argument-list-wrapping" />
+        <error line="197" column="137" source="standard:argument-list-wrapping" />
+        <error line="197" column="141" source="standard:argument-list-wrapping" />
+        <error line="197" column="141" source="standard:max-line-length" />
+        <error line="197" column="143" source="standard:function-literal" />
+        <error line="212" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeFeedYourShows.kt">
-        <error line="48" column="13" source="standard:function-signature" />
-        <error line="52" column="13" source="standard:function-naming" />
-        <error line="88" column="13" source="standard:function-naming" />
-        <error line="90" column="56" source="standard:chain-method-continuation" />
-        <error line="94" column="60" source="standard:chain-method-continuation" />
-        <error line="98" column="60" source="standard:chain-method-continuation" />
-        <error line="102" column="60" source="standard:chain-method-continuation" />
-        <error line="106" column="60" source="standard:chain-method-continuation" />
+        <error line="63" column="13" source="standard:function-signature" />
+        <error line="67" column="13" source="standard:function-naming" />
+        <error line="111" column="13" source="standard:function-naming" />
+        <error line="113" column="56" source="standard:chain-method-continuation" />
+        <error line="117" column="60" source="standard:chain-method-continuation" />
+        <error line="121" column="60" source="standard:chain-method-continuation" />
+        <error line="125" column="60" source="standard:chain-method-continuation" />
+        <error line="129" column="60" source="standard:chain-method-continuation" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeScreen.kt">
-        <error line="149" column="5" source="standard:function-naming" />
-        <error line="348" column="13" source="standard:function-naming" />
-        <error line="410" column="13" source="standard:function-naming" />
-        <error line="488" column="5" source="standard:function-naming" />
-        <error line="552" column="5" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="53" column="1" source="standard:no-unused-imports" />
+        <error line="153" column="5" source="standard:function-naming" />
+        <error line="363" column="13" source="standard:function-naming" />
+        <error line="427" column="13" source="standard:function-naming" />
+        <error line="505" column="5" source="standard:function-naming" />
+        <error line="574" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="53" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="81" column="18" source="standard:backing-property-naming" />
-        <error line="91" column="18" source="standard:backing-property-naming" />
-        <error line="94" column="18" source="standard:backing-property-naming" />
+        <error line="47" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="72" column="18" source="standard:backing-property-naming" />
+        <error line="82" column="18" source="standard:backing-property-naming" />
+        <error line="85" column="18" source="standard:backing-property-naming" />
+        <error line="89" column="18" source="standard:backing-property-naming" />
+        <error line="92" column="18" source="standard:backing-property-naming" />
+        <error line="95" column="18" source="standard:backing-property-naming" />
+        <error line="95" column="18" source="standard:backing-property-naming" />
+        <error line="96" column="18" source="standard:backing-property-naming" />
+        <error line="96" column="18" source="standard:backing-property-naming" />
+        <error line="97" column="18" source="standard:backing-property-naming" />
+        <error line="97" column="18" source="standard:backing-property-naming" />
         <error line="98" column="18" source="standard:backing-property-naming" />
+        <error line="98" column="18" source="standard:backing-property-naming" />
+        <error line="99" column="18" source="standard:backing-property-naming" />
+        <error line="99" column="18" source="standard:backing-property-naming" />
+        <error line="100" column="18" source="standard:backing-property-naming" />
+        <error line="100" column="18" source="standard:backing-property-naming" />
         <error line="101" column="18" source="standard:backing-property-naming" />
+        <error line="101" column="18" source="standard:backing-property-naming" />
+        <error line="102" column="18" source="standard:backing-property-naming" />
+        <error line="102" column="18" source="standard:backing-property-naming" />
         <error line="104" column="18" source="standard:backing-property-naming" />
         <error line="104" column="18" source="standard:backing-property-naming" />
         <error line="105" column="18" source="standard:backing-property-naming" />
@@ -108,41 +126,21 @@
         <error line="109" column="18" source="standard:backing-property-naming" />
         <error line="110" column="18" source="standard:backing-property-naming" />
         <error line="110" column="18" source="standard:backing-property-naming" />
-        <error line="111" column="18" source="standard:backing-property-naming" />
-        <error line="111" column="18" source="standard:backing-property-naming" />
-        <error line="113" column="18" source="standard:backing-property-naming" />
-        <error line="113" column="18" source="standard:backing-property-naming" />
-        <error line="114" column="18" source="standard:backing-property-naming" />
-        <error line="114" column="18" source="standard:backing-property-naming" />
-        <error line="115" column="18" source="standard:backing-property-naming" />
-        <error line="115" column="18" source="standard:backing-property-naming" />
-        <error line="116" column="18" source="standard:backing-property-naming" />
-        <error line="116" column="18" source="standard:backing-property-naming" />
-        <error line="117" column="18" source="standard:backing-property-naming" />
-        <error line="117" column="18" source="standard:backing-property-naming" />
-        <error line="118" column="18" source="standard:backing-property-naming" />
-        <error line="118" column="18" source="standard:backing-property-naming" />
-        <error line="119" column="18" source="standard:backing-property-naming" />
-        <error line="119" column="18" source="standard:backing-property-naming" />
-        <error line="355" column="18" source="standard:backing-property-naming" />
-        <error line="355" column="18" source="standard:backing-property-naming" />
-        <error line="356" column="18" source="standard:backing-property-naming" />
-        <error line="356" column="18" source="standard:backing-property-naming" />
-        <error line="357" column="18" source="standard:backing-property-naming" />
-        <error line="357" column="18" source="standard:backing-property-naming" />
-        <error line="358" column="18" source="standard:backing-property-naming" />
-        <error line="358" column="18" source="standard:backing-property-naming" />
-        <error line="359" column="18" source="standard:backing-property-naming" />
-        <error line="359" column="18" source="standard:backing-property-naming" />
-        <error line="363" column="18" source="standard:backing-property-naming" />
-        <error line="363" column="18" source="standard:backing-property-naming" />
-        <error line="510" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="536" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="760" column="1" source="standard:no-consecutive-blank-lines" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelAdaptive.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="243" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="317" column="18" source="standard:backing-property-naming" />
+        <error line="317" column="18" source="standard:backing-property-naming" />
+        <error line="318" column="18" source="standard:backing-property-naming" />
+        <error line="318" column="18" source="standard:backing-property-naming" />
+        <error line="319" column="18" source="standard:backing-property-naming" />
+        <error line="319" column="18" source="standard:backing-property-naming" />
+        <error line="320" column="18" source="standard:backing-property-naming" />
+        <error line="320" column="18" source="standard:backing-property-naming" />
+        <error line="321" column="18" source="standard:backing-property-naming" />
+        <error line="321" column="18" source="standard:backing-property-naming" />
+        <error line="325" column="18" source="standard:backing-property-naming" />
+        <error line="325" column="18" source="standard:backing-property-naming" />
+        <error line="475" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="501" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="720" column="1" source="standard:no-consecutive-blank-lines" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelAssembler.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -153,7 +151,8 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelLoadData.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="554" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="16" column="1" source="standard:no-unused-imports" />
+        <error line="605" column="1" source="standard:no-consecutive-blank-lines" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelSelected.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -162,41 +161,44 @@
         <error line="3" column="1" source="standard:import-ordering" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/BecauseYouLikeSection.kt">
-        <error line="4" column="1" source="standard:no-wildcard-imports" />
-        <error line="12" column="1" source="standard:no-wildcard-imports" />
-        <error line="31" column="5" source="standard:function-naming" />
-        <error line="177" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="6" column="1" source="standard:no-wildcard-imports" />
+        <error line="14" column="1" source="standard:no-wildcard-imports" />
+        <error line="21" column="1" source="standard:no-unused-imports" />
+        <error line="35" column="5" source="standard:function-naming" />
+        <error line="184" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/ChangeRecommendationPodcastSheet.kt">
-        <error line="4" column="1" source="standard:no-wildcard-imports" />
-        <error line="10" column="1" source="standard:no-wildcard-imports" />
-        <error line="24" column="5" source="standard:function-naming" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/feature/home/components/CuratedEpisodeCard.kt">
-        <error line="20" column="5" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="6" column="1" source="standard:no-wildcard-imports" />
+        <error line="12" column="1" source="standard:no-wildcard-imports" />
+        <error line="18" column="1" source="standard:no-unused-imports" />
+        <error line="26" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/DailyBriefingCard.kt">
-        <error line="69" column="5" source="standard:function-naming" />
-        <error line="360" column="13" source="standard:function-naming" />
-        <error line="436" column="13" source="standard:function-naming" />
-        <error line="492" column="13" source="standard:function-naming" />
-        <error line="532" column="13" source="standard:function-naming" />
-        <error line="577" column="13" source="standard:function-naming" />
-        <error line="649" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="71" column="5" source="standard:function-naming" />
+        <error line="362" column="13" source="standard:function-naming" />
+        <error line="438" column="13" source="standard:function-naming" />
+        <error line="494" column="13" source="standard:function-naming" />
+        <error line="534" column="13" source="standard:function-naming" />
+        <error line="579" column="13" source="standard:function-naming" />
+        <error line="651" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/DenseEpisodeRows.kt">
-        <error line="47" column="14" source="standard:function-naming" />
-        <error line="124" column="13" source="standard:function-naming" />
-        <error line="159" column="13" source="standard:function-naming" />
-        <error line="189" column="13" source="standard:function-naming" />
-        <error line="209" column="22" source="standard:function-naming" />
-        <error line="225" column="22" source="standard:function-naming" />
-        <error line="260" column="13" source="standard:function-naming" />
-        <error line="284" column="22" source="standard:function-naming" />
-        <error line="296" column="13" source="standard:function-naming" />
-        <error line="318" column="13" source="standard:function-naming" />
-        <error line="334" column="13" source="standard:function-naming" />
-        <error line="352" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="49" column="14" source="standard:function-naming" />
+        <error line="126" column="13" source="standard:function-naming" />
+        <error line="161" column="13" source="standard:function-naming" />
+        <error line="191" column="13" source="standard:function-naming" />
+        <error line="211" column="22" source="standard:function-naming" />
+        <error line="227" column="22" source="standard:function-naming" />
+        <error line="262" column="13" source="standard:function-naming" />
+        <error line="286" column="22" source="standard:function-naming" />
+        <error line="298" column="13" source="standard:function-naming" />
+        <error line="320" column="13" source="standard:function-naming" />
+        <error line="336" column="13" source="standard:function-naming" />
+        <error line="354" column="1" source="standard:no-consecutive-blank-lines" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/DiscoverSection.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />
@@ -204,25 +206,24 @@
         <error line="29" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/FeaturedCuratedCard.kt">
-        <error line="3" column="1" source="standard:no-wildcard-imports" />
-        <error line="6" column="1" source="standard:no-wildcard-imports" />
-        <error line="22" column="5" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="5" column="1" source="standard:no-wildcard-imports" />
+        <error line="8" column="1" source="standard:no-wildcard-imports" />
+        <error line="14" column="1" source="standard:no-unused-imports" />
+        <error line="24" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/ForYouSection.kt">
-        <error line="4" column="1" source="standard:no-wildcard-imports" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="6" column="1" source="standard:no-wildcard-imports" />
         <error line="13" column="1" source="standard:no-wildcard-imports" />
-        <error line="151" column="13" source="standard:function-naming" />
-        <error line="307" column="13" source="standard:function-naming" />
-        <error line="322" column="13" source="standard:function-naming" />
-        <error line="458" column="13" source="standard:function-naming" />
+        <error line="22" column="1" source="standard:no-unused-imports" />
+        <error line="152" column="13" source="standard:function-naming" />
+        <error line="308" column="13" source="standard:function-naming" />
+        <error line="323" column="13" source="standard:function-naming" />
+        <error line="459" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/GenreSelector.kt">
-        <error line="4" column="1" source="standard:no-wildcard-imports" />
-        <error line="7" column="1" source="standard:no-wildcard-imports" />
-        <error line="8" column="1" source="standard:no-wildcard-imports" />
-        <error line="9" column="1" source="standard:no-wildcard-imports" />
-        <error line="17" column="5" source="standard:function-naming" />
-        <error line="143" column="13" source="standard:function-naming" />
+        <error line="52" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/HeroCard.kt">
         <error line="44" column="5" source="standard:function-naming" />
@@ -232,83 +233,99 @@
         <error line="19" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/HeroGridCard.kt">
-        <error line="4" column="1" source="standard:no-wildcard-imports" />
-        <error line="6" column="1" source="standard:no-wildcard-imports" />
-        <error line="40" column="5" source="standard:function-naming" />
-        <error line="119" column="13" source="standard:function-naming" />
-        <error line="137" column="13" source="standard:function-naming" />
-        <error line="160" column="13" source="standard:function-naming" />
-        <error line="188" column="13" source="standard:function-naming" />
-        <error line="205" column="13" source="standard:function-naming" />
-        <error line="300" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="54" column="19" source="standard:property-naming" />
+        <error line="55" column="19" source="standard:property-naming" />
+        <error line="72" column="5" source="standard:function-naming" />
+        <error line="130" column="44" source="standard:multiline-expression-wrapping" />
+        <error line="152" column="13" source="standard:function-naming" />
+        <error line="166" column="13" source="standard:function-naming" />
+        <error line="186" column="13" source="standard:function-naming" />
+        <error line="212" column="13" source="standard:function-naming" />
+        <error line="230" column="13" source="standard:function-naming" />
+        <error line="253" column="1" source="standard:indent" />
+        <error line="391" column="13" source="standard:function-naming" />
+    </file>
+    <file name="src/main/java/cx/aswin/boxlore/feature/home/components/HomeFeedSpacing.kt">
+        <error line="19" column="15" source="standard:property-naming" />
+        <error line="20" column="15" source="standard:property-naming" />
+        <error line="21" column="15" source="standard:property-naming" />
+        <error line="23" column="53" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/HomeSectionHeaders.kt">
-        <error line="29" column="5" source="standard:function-naming" />
-        <error line="86" column="5" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="31" column="5" source="standard:function-naming" />
+        <error line="88" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/HomeSkeleton.kt">
-        <error line="41" column="5" source="standard:function-naming" />
-        <error line="65" column="5" source="standard:function-naming" />
-        <error line="91" column="5" source="standard:function-naming" />
-        <error line="119" column="75" source="standard:function-naming" />
-        <error line="126" column="5" source="standard:function-naming" />
-        <error line="189" column="5" source="standard:function-naming" />
-        <error line="207" column="5" source="standard:function-naming" />
-        <error line="313" column="5" source="standard:function-naming" />
-        <error line="348" column="5" source="standard:function-naming" />
+        <error line="40" column="5" source="standard:function-naming" />
+        <error line="64" column="5" source="standard:function-naming" />
+        <error line="90" column="5" source="standard:function-naming" />
+        <error line="118" column="75" source="standard:function-naming" />
+        <error line="125" column="5" source="standard:function-naming" />
+        <error line="177" column="5" source="standard:function-naming" />
+        <error line="195" column="5" source="standard:function-naming" />
+        <error line="304" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySection.kt">
-        <error line="85" column="5" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="88" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionMixtape.kt">
-        <error line="68" column="14" source="standard:function-naming" />
-        <error line="132" column="14" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="45" column="1" source="standard:no-unused-imports" />
+        <error line="70" column="14" source="standard:function-naming" />
+        <error line="134" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionRows.kt">
-        <error line="28" column="14" source="standard:function-naming" />
+        <error line="43" column="14" source="standard:function-naming" />
+        <error line="156" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/PodcastCard.kt">
-        <error line="38" column="5" source="standard:function-naming" />
-        <error line="100" column="5" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="25" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/ReviewSheet.kt">
-        <error line="3" column="1" source="standard:no-wildcard-imports" />
-        <error line="13" column="1" source="standard:no-wildcard-imports" />
-        <error line="14" column="1" source="standard:no-wildcard-imports" />
-        <error line="32" column="5" source="standard:function-naming" />
-        <error line="191" column="5" source="standard:function-naming" />
-        <error line="331" column="5" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="5" column="1" source="standard:no-wildcard-imports" />
+        <error line="15" column="1" source="standard:no-wildcard-imports" />
+        <error line="16" column="1" source="standard:no-wildcard-imports" />
+        <error line="19" column="1" source="standard:no-unused-imports" />
+        <error line="34" column="5" source="standard:function-naming" />
+        <error line="193" column="5" source="standard:function-naming" />
+        <error line="333" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/TopControlBar.kt">
         <error line="51" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/logic/HomeHeroLogic.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/feature/home/logic/HomeUiAssemblyLogic.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="191" column="63" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/SettingsScreen.kt">
-        <error line="122" column="5" source="standard:function-naming" />
+        <error line="126" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/components/SettingsRows.kt">
-        <error line="58" column="14" source="standard:function-naming" />
-        <error line="136" column="14" source="standard:function-naming" />
-        <error line="181" column="14" source="standard:function-naming" />
-        <error line="213" column="14" source="standard:function-naming" />
-        <error line="239" column="14" source="standard:function-naming" />
-        <error line="323" column="14" source="standard:function-naming" />
-        <error line="362" column="14" source="standard:function-naming" />
-        <error line="390" column="14" source="standard:function-naming" />
-        <error line="457" column="14" source="standard:function-naming" />
-        <error line="525" column="13" source="standard:function-naming" />
-        <error line="577" column="14" source="standard:function-naming" />
-        <error line="613" column="13" source="standard:function-naming" />
-        <error line="652" column="14" source="standard:function-naming" />
-        <error line="681" column="14" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="60" column="14" source="standard:function-naming" />
+        <error line="138" column="14" source="standard:function-naming" />
+        <error line="183" column="14" source="standard:function-naming" />
+        <error line="215" column="14" source="standard:function-naming" />
+        <error line="241" column="14" source="standard:function-naming" />
+        <error line="325" column="14" source="standard:function-naming" />
+        <error line="364" column="14" source="standard:function-naming" />
+        <error line="392" column="14" source="standard:function-naming" />
+        <error line="459" column="14" source="standard:function-naming" />
+        <error line="527" column="13" source="standard:function-naming" />
+        <error line="579" column="14" source="standard:function-naming" />
+        <error line="615" column="13" source="standard:function-naming" />
+        <error line="654" column="14" source="standard:function-naming" />
+        <error line="683" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/components/SettingsScaffold.kt">
-        <error line="38" column="14" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="34" column="1" source="standard:no-unused-imports" />
+        <error line="40" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/dialogs/AccentColorPickerDialog.kt">
         <error line="44" column="19" source="standard:property-naming" />
@@ -322,47 +339,63 @@
         <error line="145" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/dialogs/ResetAnalyticsDialog.kt">
-        <error line="27" column="14" source="standard:function-naming" />
-        <error line="46" column="141" source="standard:max-line-length" />
-        <error line="70" column="141" source="standard:max-line-length" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="20" column="1" source="standard:no-unused-imports" />
+        <error line="29" column="14" source="standard:function-naming" />
+        <error line="48" column="141" source="standard:max-line-length" />
+        <error line="72" column="141" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/AboutSettingsPage.kt">
-        <error line="51" column="14" source="standard:function-naming" />
-        <error line="146" column="13" source="standard:function-naming" />
-        <error line="179" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="30" column="1" source="standard:no-unused-imports" />
+        <error line="53" column="14" source="standard:function-naming" />
+        <error line="148" column="13" source="standard:function-naming" />
+        <error line="181" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/AppearanceSettingsPage.kt">
-        <error line="59" column="14" source="standard:function-naming" />
-        <error line="106" column="13" source="standard:function-naming" />
-        <error line="150" column="13" source="standard:function-naming" />
-        <error line="177" column="13" source="standard:function-naming" />
-        <error line="200" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="76" column="14" source="standard:function-naming" />
+        <error line="137" column="13" source="standard:function-naming" />
+        <error line="157" column="13" source="standard:function-naming" />
+        <error line="182" column="13" source="standard:function-naming" />
+        <error line="218" column="13" source="standard:function-naming" />
+        <error line="245" column="13" source="standard:function-naming" />
+        <error line="268" column="13" source="standard:function-naming" />
+        <error line="311" column="13" source="standard:function-naming" />
+        <error line="330" column="13" source="standard:function-naming" />
+        <error line="359" column="13" source="standard:function-naming" />
+        <error line="408" column="13" source="standard:function-naming" />
+        <error line="434" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/DownloadsSettingsPage.kt">
         <error line="21" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/LibrarySettingsPage.kt">
-        <error line="52" column="14" source="standard:function-naming" />
-        <error line="144" column="13" source="standard:function-naming" />
-        <error line="237" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="32" column="1" source="standard:no-unused-imports" />
+        <error line="54" column="14" source="standard:function-naming" />
+        <error line="153" column="13" source="standard:function-naming" />
+        <error line="249" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/PlaybackSettingsPage.kt">
-        <error line="46" column="14" source="standard:function-naming" />
-        <error line="85" column="141" source="standard:max-line-length" />
+        <error line="49" column="14" source="standard:function-naming" />
+        <error line="88" column="141" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/PrivacySettingsPage.kt">
-        <error line="51" column="19" source="standard:property-naming" />
-        <error line="62" column="14" source="standard:function-naming" />
-        <error line="246" column="13" source="standard:function-naming" />
-        <error line="324" column="13" source="standard:function-naming" />
-        <error line="347" column="13" source="standard:function-naming" />
-        <error line="378" column="13" source="standard:function-naming" />
-        <error line="398" column="13" source="standard:function-naming" />
-        <error line="466" column="13" source="standard:function-naming" />
-        <error line="490" column="13" source="standard:function-naming" />
-        <error line="524" column="13" source="standard:function-naming" />
-        <error line="557" column="13" source="standard:function-naming" />
-        <error line="599" column="13" source="standard:function-naming" />
+        <error line="3" column="1" source="standard:import-ordering" />
+        <error line="44" column="1" source="standard:no-unused-imports" />
+        <error line="53" column="19" source="standard:property-naming" />
+        <error line="64" column="14" source="standard:function-naming" />
+        <error line="248" column="13" source="standard:function-naming" />
+        <error line="326" column="13" source="standard:function-naming" />
+        <error line="349" column="13" source="standard:function-naming" />
+        <error line="380" column="13" source="standard:function-naming" />
+        <error line="400" column="13" source="standard:function-naming" />
+        <error line="468" column="13" source="standard:function-naming" />
+        <error line="492" column="13" source="standard:function-naming" />
+        <error line="526" column="13" source="standard:function-naming" />
+        <error line="559" column="13" source="standard:function-naming" />
+        <error line="601" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/SettingsHub.kt">
         <error line="17" column="14" source="standard:function-naming" />

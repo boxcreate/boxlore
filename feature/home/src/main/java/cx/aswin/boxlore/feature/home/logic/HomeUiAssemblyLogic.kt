@@ -82,6 +82,7 @@ internal object HomeUiAssemblyLogic {
         briefingDismissedForever: Boolean,
         staleRestartEnabled: Boolean = true,
         nowMs: Long = System.currentTimeMillis(),
+        pinnedPodcastIds: List<String> = emptyList(),
     ): HomeUiAssemblyResult {
         val completedCount = allHistory.count { it.isCompleted }
         val catchUp =
@@ -96,6 +97,7 @@ internal object HomeUiAssemblyLogic {
                 previousOrder = previousStableOrder,
                 subs = subs,
                 scores = podcastScores,
+                pinnedIds = pinnedPodcastIds,
             )
         val sortedSubs = HomeShowsOrderLogic.orderedSubs(orderToUse, subs)
 

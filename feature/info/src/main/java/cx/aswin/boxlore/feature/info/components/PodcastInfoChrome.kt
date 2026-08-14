@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Tune
@@ -58,7 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -338,6 +339,9 @@ internal data class PodcastInfoTopOverlayActions(
     val onMarkAllUnplayed: () -> Unit,
     val onToggleHideCompleted: () -> Unit,
     val onPlaybackSettings: () -> Unit,
+    val isSubscribed: Boolean = false,
+    val isPinnedToHome: Boolean = false,
+    val onToggleHomePin: () -> Unit = {},
 )
 
 internal data class MissingEpisodesChip(
@@ -488,6 +492,22 @@ private fun PodcastInfoHeaderOverflow(
                     Icon(Icons.Rounded.Tune, contentDescription = null)
                 },
             )
+            if (actions.isSubscribed) {
+                DropdownMenuItem(
+                    text = { Text(if (actions.isPinnedToHome) "Unpin" else "Pin") },
+                    onClick = {
+                        showMenu = false
+                        actions.onToggleHomePin()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.PushPin,
+                            contentDescription = null,
+                            modifier = Modifier.graphicsLayer { rotationZ = 45f },
+                        )
+                    },
+                )
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 
 ## Public API
 
-- `PodcastInfoScreen` and `PodcastInfoViewModel`.
+- `PodcastInfoScreen` and `PodcastInfoViewModel`. Subscribed shows expose **Pin** / **Unpin** in the overflow menu (same max-5 list as Your Shows; at capacity a snackbar explains the limit).
 - `EpisodeInfoScreen` and `EpisodeInfoViewModel` (similar episodes use prefs `content_languages` + region).
 - `InfoViewModelAssembler` for podcast and episode ViewModel factories.
 - `InfoListeningProgressItem` and supporting components/sections for detail UI.
@@ -49,6 +49,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ## Persistence & identity
 
 - This module owns no storage files or stable keys.
+- Pin reads and writes `home_pinned_podcast_ids` through `:core:prefs`.
 - Podcast, episode, RSS, download, and listening-progress identities come from core modules.
 - App navigation owns route patterns and deep links.
 

@@ -2,22 +2,37 @@ package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -32,6 +47,8 @@ internal fun SelectorCover(
     isAnyPodcastSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier.size(60.dp),
+    isPinned: Boolean = false,
+    onTogglePin: () -> Unit = {},
 ) {
     val latestEpisodeId = podcast.latestEpisode?.id
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
@@ -61,21 +78,24 @@ internal fun SelectorCover(
     )
     val cornerRadius by animateDpAsState(targetValue = if (isSelected) 16.dp else 12.dp, label = "cornerRadius")
     val borderStrokeWidth by animateDpAsState(targetValue = if (isSelected) 3.dp else 0.dp, label = "borderStrokeWidth")
+    val coverShape = RoundedCornerShape(cornerRadius)
+    var showPinMenu by remember { mutableStateOf(false) }
 
     Box(
         modifier =
             modifier
                 .scale(scale),
     ) {
-        // Inner Box to apply clipping and clickable to the cover image container
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .expressiveClickable(
-                        shape = RoundedCornerShape(cornerRadius),
+                        shape = coverShape,
+                        onLongClickLabel = if (isPinned) "Unpin" else "Pin",
+                        onLongClick = { showPinMenu = true },
                         onClick = onClick,
-                    ).clip(RoundedCornerShape(cornerRadius)),
+                    ).clip(coverShape),
         ) {
             OptimizedImage(
                 url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
@@ -90,16 +110,68 @@ internal fun SelectorCover(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerRadius)),
+                            .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, coverShape),
                 )
             }
         }
 
-        // New episode "NEW" text chip indicator (overlapping the top right corner) with a slow shimmer effect
+        DropdownMenu(
+            expanded = showPinMenu,
+            onDismissRequest = { showPinMenu = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            tonalElevation = 3.dp,
+            shadowElevation = 3.dp,
+            offset = DpOffset(x = 0.dp, y = 4.dp),
+            properties = PopupProperties(clippingEnabled = false, focusable = true),
+        ) {
+            DropdownMenuItem(
+                text = { Text(if (isPinned) "Unpin" else "Pin") },
+                onClick = {
+                    showPinMenu = false
+                    onTogglePin()
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.PushPin,
+                        contentDescription = null,
+                        modifier = Modifier.graphicsLayer { rotationZ = 45f },
+                    )
+                },
+            )
+        }
+
         if (hasRecentNew && !isSelected) {
             NewEpisodeBadge(
                 modifier = Modifier.offset(x = 6.dp, y = (-4).dp),
             )
         }
+        if (isPinned) {
+            HomePinnedBadge(modifier = Modifier.align(Alignment.BottomStart))
+        }
+    }
+}
+
+@Composable
+private fun HomePinnedBadge(modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .padding(2.dp)
+                .size(18.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.PushPin,
+            contentDescription = "Pinned",
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier =
+                Modifier
+                    .size(10.dp)
+                    .graphicsLayer { rotationZ = 45f },
+        )
     }
 }

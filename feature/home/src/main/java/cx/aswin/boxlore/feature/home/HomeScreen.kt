@@ -31,6 +31,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -127,6 +129,7 @@ data class HomeFeedCallbacks(
     val onDismissBriefing: () -> Unit,
     val onDismissBriefingForever: () -> Unit,
     val onFeedbackClick: () -> Unit,
+    val onToggleHomePin: (String) -> Unit = {},
 )
 
 @androidx.compose.runtime.Stable
@@ -213,6 +216,12 @@ fun HomeRoute(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(viewModel) {
+        viewModel.pinFeedback.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
     var hasReportedInitialContentReady by remember { mutableStateOf(false) }
     LaunchedEffect(uiState.isLoading) {
         if (!uiState.isLoading && !hasReportedInitialContentReady) {
@@ -289,6 +298,7 @@ fun HomeRoute(
                         onDismissBriefing = viewModel::dismissBriefingForToday,
                         onDismissBriefingForever = viewModel::dismissBriefingForever,
                         onFeedbackClick = viewModel::triggerFeedback,
+                        onToggleHomePin = viewModel::toggleHomePin,
                     ),
                 onNavigateToSettings = onNavigateToSettings,
                 onForceReviewPrompt = viewModel::forceReviewPrompt,
@@ -333,6 +343,7 @@ fun HomeRoute(
                     candidatePodcasts = candidatePodcasts,
                 ),
             callbacks = callbacks,
+            snackbarHostState = snackbarHostState,
             modifier = modifier,
         )
     }
@@ -383,6 +394,7 @@ private fun HomeScreenFeedContent(
                 briefingChapters = uiState.briefingChapters,
                 seemsToLikePodcast = uiState.seemsToLikePodcast,
                 showImportBanner = uiState.showImportBanner,
+                pinnedPodcastIds = uiState.pinnedPodcastIds,
             ),
         recommendationState =
             PodcastFeedRecommendationState(
@@ -496,6 +508,7 @@ fun HomeScreen(
     sheets: HomeSheetUi,
     callbacks: HomeScreenCallbacks,
     modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) {
     // Track scroll state for collapsing top bar
     val gridState = rememberLazyStaggeredGridState()
@@ -538,6 +551,10 @@ fun HomeScreen(
                     playback = playback,
                     callbacks = callbacks.feed,
                     onChangePodcastClick = { showChangePodcastSheet = true },
+                )
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }

@@ -13,8 +13,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -30,13 +33,22 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.PlayAllFab
+import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyGridState
+import sh.calvin.reorderable.rememberReorderableLazyListState
+
+private const val ShowsGenreHeaderKey = "shows_genre_header"
 
 @Composable
 internal fun ShowsTabContent(
     podcasts: List<Podcast>,
     onExploreClick: () -> Unit,
     onPodcastClick: (String) -> Unit,
-    isGridView: Boolean
+    isGridView: Boolean,
+    canReorder: Boolean = false,
+    pinnedPodcastIds: Set<String> = emptySet(),
+    onReorder: (orderedIds: List<String>) -> Unit = {},
 ) {
     if (podcasts.isEmpty()) {
         ExpressiveSolarSystemEmptyState(
@@ -50,6 +62,11 @@ internal fun ShowsTabContent(
         var selectedGenre by rememberSaveable { mutableStateOf("All") }
         val filteredPodcasts = remember(podcasts, selectedGenre) { filterPodcastsByGenre(podcasts, selectedGenre) }
         val distinctPodcasts = remember(filteredPodcasts) { filteredPodcasts.distinctBy { it.id } }
+        val reorderEnabled = canReorder && selectedGenre == "All"
+        var orderedPodcasts by remember { mutableStateOf(distinctPodcasts) }
+        LaunchedEffect(distinctPodcasts.map { it.id }) {
+            orderedPodcasts = distinctPodcasts
+        }
 
         val genreChips: @Composable () -> Unit = {
             SubscriptionGenreChips(
@@ -64,14 +81,30 @@ internal fun ShowsTabContent(
         }
 
         if (isGridView) {
+            val gridState = rememberLazyGridState()
+            val reorderableGridState =
+                rememberReorderableLazyGridState(gridState) { from, to ->
+                    if (!reorderEnabled) return@rememberReorderableLazyGridState
+                    val fromId = from.key as? String ?: return@rememberReorderableLazyGridState
+                    val toId = to.key as? String ?: return@rememberReorderableLazyGridState
+                    if (fromId == ShowsGenreHeaderKey || toId == ShowsGenreHeaderKey) {
+                        return@rememberReorderableLazyGridState
+                    }
+                    val moved =
+                        moveVisiblePodcasts(orderedPodcasts, fromId, toId)
+                            ?: return@rememberReorderableLazyGridState
+                    orderedPodcasts = moved
+                    onReorder(moved.map { it.id })
+                }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
+                state = gridState,
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 180.dp, top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                item(key = ShowsGenreHeaderKey, span = { GridItemSpan(maxLineSpan) }) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -81,21 +114,51 @@ internal fun ShowsTabContent(
                     }
                 }
 
-                items(items = distinctPodcasts, key = { it.id }) { podcast ->
+                items(items = orderedPodcasts, key = { it.id }) { podcast ->
                     val lastSeenEpisodes = LocalLastSeenEpisodes.current
-                    SubscriptionGridCard(
-                        podcast = podcast,
-                        lastSeenId = lastSeenEpisodes[podcast.id],
-                        onClick = { onPodcastClick(podcast.id) }
-                    )
+                    ReorderableItem(
+                        reorderableGridState,
+                        key = podcast.id,
+                        enabled = reorderEnabled,
+                    ) { isDragging ->
+                        SubscriptionGridCard(
+                            podcast = podcast,
+                            lastSeenId = lastSeenEpisodes[podcast.id],
+                            onClick = { onPodcastClick(podcast.id) },
+                            isPinned = podcast.id in pinnedPodcastIds,
+                            isDragging = isDragging,
+                            dragModifier =
+                                if (reorderEnabled) {
+                                    Modifier.longPressDraggableHandle()
+                                } else {
+                                    Modifier
+                                },
+                        )
+                    }
                 }
             }
         } else {
+            val listState = rememberLazyListState()
+            val reorderableListState =
+                rememberReorderableLazyListState(listState) { from, to ->
+                    if (!reorderEnabled) return@rememberReorderableLazyListState
+                    val fromId = from.key as? String ?: return@rememberReorderableLazyListState
+                    val toId = to.key as? String ?: return@rememberReorderableLazyListState
+                    if (fromId == ShowsGenreHeaderKey || toId == ShowsGenreHeaderKey) {
+                        return@rememberReorderableLazyListState
+                    }
+                    val moved =
+                        moveVisiblePodcasts(orderedPodcasts, fromId, toId)
+                            ?: return@rememberReorderableLazyListState
+                    orderedPodcasts = moved
+                    onReorder(moved.map { it.id })
+                }
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(bottom = 180.dp, top = 8.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                item {
+                item(key = ShowsGenreHeaderKey) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -105,15 +168,41 @@ internal fun ShowsTabContent(
                     }
                 }
 
-                items(items = distinctPodcasts, key = { it.id }) { podcast ->
-                    SubscriptionListRow(
-                        podcast = podcast,
-                        onClick = { onPodcastClick(podcast.id) }
-                    )
+                items(items = orderedPodcasts, key = { it.id }) { podcast ->
+                    ReorderableItem(
+                        reorderableListState,
+                        key = podcast.id,
+                        enabled = reorderEnabled,
+                    ) { isDragging ->
+                        SubscriptionListRow(
+                            podcast = podcast,
+                            onClick = { onPodcastClick(podcast.id) },
+                            isPinned = podcast.id in pinnedPodcastIds,
+                            isDragging = isDragging,
+                            dragModifier =
+                                if (reorderEnabled) {
+                                    Modifier.longPressDraggableHandle()
+                                } else {
+                                    Modifier
+                                },
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+private fun moveVisiblePodcasts(
+    current: List<Podcast>,
+    fromId: String,
+    toId: String,
+): List<Podcast>? {
+    val currentIds = current.map { it.id }
+    val nextIds = SubscriptionManualOrderLogic.move(currentIds, fromId, toId)
+    if (nextIds == currentIds) return null
+    val byId = current.associateBy { it.id }
+    return nextIds.mapNotNull { byId[it] }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
