@@ -9,15 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.16] - 2026-08-14
+
 ### Fixed
 - Follow-up to #971: subscribed Home chips, Library New Episodes, and Podcast Info rematch publisher-feed extras against a 1000-oldest PI baseline and refresh Room tips on launch, resume, Subscriptions appear, 15-minute periodic sync, and FCM — without opening each show. ([#975](https://github.com/boxcreate/boxlore/pull/975)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Open-app-to-Subscriptions runs a live PI `/sync` (`requestRefresh`) instead of a cache-only Room read; Home still delays 2s for first paint. ([#975](https://github.com/boxcreate/boxlore/pull/975)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=975 -->
-### Critical
-- Sorry for another update so soon — this is a follow-up fix for yesterday’s release
-- New episodes in your library and on Home now show up when you open boxlore, including if you go straight to Subscriptions, without tapping into each show first
-<!-- readme-copy:end pr=975 -->
 ## [v0.0.15] - 2026-08-12
 
 ### Added
