@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-14T07:23:54.547Z",
+  "lastRun": "2026-08-14T08:44:41.436Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -218,9 +218,10 @@
       "lastCheckedAt": 1786640556716
     },
     "1258562": {
-      "lastRssKey": "6a78653cc963f68fbd09e7d1",
-      "lastEpisodeTitle": "203. The Orkut Murder: Adnan Patrawala",
-      "lastCheckedAt": 1786559324755
+      "lastEpisodeId": "53310059829",
+      "lastEpisodeTitle": "190. The Reality Show Triple Murder: Villupuram Case",
+      "lastRssKey": "43e0158d-f1e6-4e36-a502-cc8e53037491",
+      "lastCheckedAt": 1786697097252
     },
     "1266933": {
       "lastRssKey": "4c5fea84-d345-4950-ad09-54ab043d0ef2",
@@ -229,10 +230,10 @@
       "lastCheckedAt": 1786559324862
     },
     "1621172": {
-      "lastRssKey": "https://krfp.org/?p=33408",
-      "lastEpisodeTitle": "Evening Report &#8211; Wed., Aug 12, 2026 &#8211; Vic Bondi on 40 Years of Political Punk / Idaho K-12 Public School Enrollment Down",
+      "lastRssKey": "https://krfp.org/?p=33412",
+      "lastEpisodeTitle": "Evening Report &#8211; Thu., Aug 14, 2026 &#8211; Trump Targets American Prairie&#8217;s Bison Herd",
       "lastEpisodeId": "58845636279",
-      "lastCheckedAt": 1786594311839
+      "lastCheckedAt": 1786697099803
     },
     "2955119": {
       "lastEpisodeId": "2138780960",
