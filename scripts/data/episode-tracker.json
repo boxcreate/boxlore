@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-14T12:07:56.058Z",
+  "lastRun": "2026-08-14T13:52:51.309Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -148,9 +148,10 @@
       "lastCheckedAt": 1786559319689
     },
     "838740": {
-      "lastEpisodeId": "58892403865",
-      "lastEpisodeTitle": "Jim Curtis: The Secret to Stop Self-Sabotage",
-      "lastCheckedAt": 1786536545473
+      "lastEpisodeId": "58990816952",
+      "lastEpisodeTitle": "How to Make Friends as an Adult",
+      "lastRssKey": "5c78d95c-95ee-11f1-aebf-4f0ee84296c1",
+      "lastCheckedAt": 1786715580928
     },
     "889671": {
       "lastRssKey": "09c4b7a9-1459-48c5-aa1f-282f59c188b7",
@@ -228,6 +229,12 @@
       "lastEpisodeTitle": "ما وراء الأفلام",
       "lastEpisodeId": "486874573",
       "lastCheckedAt": 1786559324862
+    },
+    "1388001": {
+      "lastEpisodeId": "58976977232",
+      "lastEpisodeTitle": "En Russie, la guerre hors débat",
+      "lastRssKey": "c377637d-4b72-4165-b0a0-457f97ac8cd7",
+      "lastCheckedAt": 1786715586233
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33412",
@@ -401,6 +408,12 @@
       "lastEpisodeId": "58807154378",
       "lastCheckedAt": 1786559336817
     },
+    "7424167": {
+      "lastEpisodeId": "58947483488",
+      "lastEpisodeTitle": "The Customer Complaints Scam",
+      "lastRssKey": "urn:bbc:podcast:m002zrwd",
+      "lastCheckedAt": 1786715598324
+    },
     "7447848": {
       "lastRssKey": "0dcf758b-e288-479f-8dbb-6d00d36d401d",
       "lastEpisodeTitle": "S01E18: Source: Trust me Bro ft. Tobirama Senju,Kakashi Hatake, Mankatha Mani & Space Monkey",
@@ -446,6 +459,12 @@
       "lastEpisodeId": "57875815786",
       "lastEpisodeTitle": "Sorveteira Confessa Dois Assassinatos Após Três Anos Vendendo Sorvete Acima dos Cadáveres",
       "lastCheckedAt": 1784625183964
+    },
+    "7901923": {
+      "lastEpisodeId": "58837043795",
+      "lastEpisodeTitle": "Introducing 'What Happened to the McStays?'",
+      "lastRssKey": "ededcc04-94f8-11f1-bbbf-7f0d235b8709",
+      "lastCheckedAt": 1786715599865
     },
     "7903936": {
       "lastRssKey": "baec2fbc-e8bf-4eee-8d6a-edf7f9700093",
