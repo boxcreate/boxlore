@@ -347,6 +347,7 @@
     <ID>TooManyFunctions:DiscoveryAnalyticsTracks.kt$DiscoveryAnalyticsTracks</ID>
     <ID>TooManyFunctions:EpisodeDescriptionCard.kt$cx.aswin.boxlore.feature.info.EpisodeDescriptionCard.kt</ID>
     <ID>TooManyFunctions:EpisodeInfoViewModel.kt$EpisodeInfoViewModel : AndroidViewModel</ID>
+    <ID>TooManyFunctions:EpisodeSupplementRepository.kt$EpisodeSupplementRepository : EpisodeSupplementPort</ID>
     <ID>TooManyFunctions:ExploreViewModel.kt$ExploreViewModel : AndroidViewModel</ID>
     <ID>TooManyFunctions:HomeViewModel.kt$HomeViewModel : AndroidViewModel</ID>
     <ID>TooManyFunctions:LearnViewModel.kt$LearnViewModel : AndroidViewModel</ID>
@@ -371,6 +372,7 @@
     <ID>TooManyFunctions:RssPodcastRepository.kt$RssPodcastRepository : RssSubscriptionPort</ID>
     <ID>TooManyFunctions:ShareManager.kt$ShareManager</ID>
     <ID>TooManyFunctions:SmartQueueEngine.kt$DefaultSmartQueueEngine : SmartQueueEngine</ID>
+    <ID>TooManyFunctions:SubscriptionRepository.kt$SubscriptionRepository</ID>
     <ID>TooManyFunctions:UserPreferencesRepository.kt$UserPreferencesRepository</ID>
     <ID>UnusedParameter:AutoCollageGenerator.kt$AutoCollageGenerator$context: Context</ID>
     <ID>UnusedParameter:BecauseYouLikeSection.kt$currentPlayingEpisodeId: String?</ID>

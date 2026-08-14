@@ -106,7 +106,7 @@ internal fun LibrarySettingsPage(
         SettingsGroup(title = "Export") {
             SettingsNavigationRow(
                 title = "Full library backup",
-                supportingText = "Subscriptions, history, likes, and settings (JSON)",
+                supportingText = "Subscriptions, history, likes, settings, and Missing episodes? shows (JSON)",
                 icon = Icons.Rounded.FileUpload,
                 onClick = {
                     collapseCountryFaq()

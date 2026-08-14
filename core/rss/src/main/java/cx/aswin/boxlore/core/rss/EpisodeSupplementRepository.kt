@@ -176,6 +176,44 @@ class EpisodeSupplementRepository internal constructor(
             dao.listOptedInPodcastIds().toSet()
         }
 
+    override suspend fun listDirectFeedOptIns(): List<EpisodeSupplementPort.DirectFeedOptIn> =
+        withContext(Dispatchers.IO) {
+            dao.listSupplements().mapNotNull { row ->
+                val url = resolveHttpsFeedUrl(row.feedUrl, "") ?: return@mapNotNull null
+                EpisodeSupplementPort.DirectFeedOptIn(
+                    podcastIndexId = row.podcastId,
+                    feedUrl = url,
+                )
+            }
+        }
+
+    override suspend fun restoreDirectFeedOptIn(
+        podcastIndexId: String,
+        feedUrl: String,
+    ) = withContext(Dispatchers.IO) {
+        try {
+            requirePiPodcastId(podcastIndexId)
+            val https = resolveHttpsFeedUrl(feedUrl, "") ?: return@withContext
+            if (dao.getSupplement(podcastIndexId) != null) return@withContext
+            val namespace =
+                runCatching { RssIdGenerator.podcastId(https) }.getOrElse { return@withContext }
+            dao.upsertSupplement(
+                EpisodeSupplementEntity(
+                    podcastId = podcastIndexId,
+                    feedUrl = https,
+                    rssNamespaceId = namespace,
+                    feedEtag = null,
+                    feedLastModified = null,
+                    fetchedAt = 0L,
+                ),
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            // Invalid backup ids must not fail the surrounding library import.
+        }
+    }
+
     /**
      * Fetches the publisher feed and returns a tip under [request.podcastIndexId].
      *

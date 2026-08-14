@@ -74,4 +74,7 @@ interface EpisodeSupplementDao {
             upsertItems(items)
         }
     }
+
+    @Query("SELECT * FROM episode_supplements")
+    suspend fun listSupplements(): List<EpisodeSupplementEntity>
 }

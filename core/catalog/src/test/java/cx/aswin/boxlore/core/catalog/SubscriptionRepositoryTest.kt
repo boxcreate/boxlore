@@ -331,4 +331,21 @@ class SubscriptionRepositoryTest {
 
             assertEquals("55", podcastDao.getPodcast("pod-catchup")!!.latestEpisode!!.id)
         }
+
+    @Test
+    fun ensureHttpsFeedUrlWritesWhenRowExists() =
+        runTest {
+            repository.subscribe(podcast(id = "pod-1"))
+            repository.ensureHttpsFeedUrl("pod-1", "https://feeds.example/show.xml")
+            assertEquals("https://feeds.example/show.xml", podcastDao.getPodcast("pod-1")!!.feedUrl)
+        }
+
+    @Test
+    fun ensureHttpsFeedUrlIgnoresHttpAndMissingRows() =
+        runTest {
+            repository.subscribe(podcast(id = "pod-1", feedUrl = "https://feeds.example/old.xml"))
+            repository.ensureHttpsFeedUrl("pod-1", "http://insecure.example/show.xml")
+            repository.ensureHttpsFeedUrl("missing", "https://feeds.example/show.xml")
+            assertEquals("https://feeds.example/old.xml", podcastDao.getPodcast("pod-1")!!.feedUrl)
+        }
 }

@@ -8,7 +8,7 @@ Owns the main Room database, entities, DAOs, type converters, and migrations for
 
 - `BoxLoreDatabase` and its `getDatabase` factory.
 - Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity`, and `entities.QueueItem`.
-- DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, `EpisodeSupplementDao`, and `dao.QueueDao`.
+- DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, `EpisodeSupplementDao`, and `dao.QueueDao`. `PodcastDao.setFeedUrl` writes a publisher HTTPS URL after library restore. `EpisodeSupplementDao.listSupplements` is the export source for Missing episodes? opt-ins.
 - `EpisodeSupplementDao.replaceAll` / `upsertSupplementAndOptionalItems` keep validator rows and tip items in one Room transaction.
 - `ListeningInsightsMaintenance` for rolling session/rollup maintenance (via `BoxLoreDatabase.listeningInsightsMaintenance()`).
 - `ListeningRollupMerge` for pure session→rollup merge logic.

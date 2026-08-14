@@ -17,6 +17,9 @@ import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
 import android.util.Log
 import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
+import cx.aswin.boxlore.core.catalog.toPodcast
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 
 data class GlobalPreferencesBackup(
     val region: String? = null,
@@ -55,6 +58,7 @@ data class BoxLoreBackup(
     val history: List<ListeningHistoryEntity>,
     val globalPreferences: GlobalPreferencesBackup? = null,
     val adaptiveRanking: AdaptiveRankingBackup? = null,
+    val directFeedOptIns: List<DirectFeedOptInBackup>? = null,
 )
 
 data class OpmlFeed(
@@ -72,6 +76,7 @@ class LibraryBackupManager(
         SharedAppDependenciesHolder.require().adaptiveRankingRepository,
     private val rssPodcastRepository: RssPodcastRepository =
         SharedAppDependenciesHolder.require().rssPodcastRepository,
+    private val episodeSupplementPort: EpisodeSupplementPort? = null,
 ) {
     private val context = context.applicationContext
     private val gson: Gson = GsonBuilder()
@@ -116,12 +121,19 @@ class LibraryBackupManager(
         } else null
 
         val rankingBackup = adaptiveRankingRepository.exportBackup()
+        val portOptIns = supplementPort()?.listDirectFeedOptIns().orEmpty()
+        val directFeedOptIns =
+            LibraryBackupDirectFeedLogic.mergeExport(
+                portOptIns = portOptIns,
+                subscriptionFeedUrls = subscriptions.associate { it.podcastId to it.feedUrl },
+            )
         val backup = BoxLoreBackup(
-            version = 5,
+            version = LibraryBackupDirectFeedLogic.VERSION,
             subscriptions = subscriptions,
             history = allHistory,
             globalPreferences = globalPrefs,
             adaptiveRanking = rankingBackup,
+            directFeedOptIns = directFeedOptIns.takeIf { it.isNotEmpty() },
         )
         return gson.toJson(backup)
     }
@@ -306,6 +318,13 @@ class LibraryBackupManager(
                 }
                 importedIds.add(podcast.id)
             }
+
+            val directFeedTargets =
+                LibraryBackupDirectFeedLogic.restoreTargets(
+                    backup.directFeedOptIns,
+                    importedIds,
+                )
+            restoreImportedDirectFeeds(directFeedTargets)
             
             // 2. Restore playback histories (liked episodes)
             for (entity in backup.history) {
@@ -341,10 +360,16 @@ class LibraryBackupManager(
                 adaptiveRankingRepository.restoreBackup(rankingBackup)
             }
             
-            // 4. Trigger check for new episodes
-            if (importedIds.isNotEmpty()) {
+            // 4. Refresh latest episodes: publisher feeds already ran for opted-in
+            // shows; PI /sync covers the rest (rss: ids are ignored by /sync).
+            val piSyncIds =
+                LibraryBackupDirectFeedLogic.piSyncIds(
+                    importedIds = importedIds,
+                    restoredOptInIds = directFeedTargets.map { it.podcastId }.toSet(),
+                )
+            if (piSyncIds.isNotEmpty()) {
                 try {
-                    val syncedMap = podcastRepository.syncSubscriptions(importedIds)
+                    val syncedMap = podcastRepository.syncSubscriptions(piSyncIds)
                     for ((id, ep) in syncedMap) {
                         subscriptionRepository.updateLatestEpisode(id, ep)
                     }
@@ -352,6 +377,7 @@ class LibraryBackupManager(
                     Log.e("JSON_IMPORT", "Failed to sync episodes", e)
                 }
             }
+            refreshImportedRssCatalogs(importedIds)
             
             val hasNotificationsEnabled = backup.subscriptions.any { it.notificationsEnabled || it.autoDownloadEnabled }
             Pair(importedIds.size, hasNotificationsEnabled)
@@ -447,6 +473,66 @@ class LibraryBackupManager(
             Log.e("OPML_IMPORT", "Failed to import single feed: ${feed.title}", e)
         }
         return null
+    }
+
+    private fun supplementPort(): EpisodeSupplementPort? =
+        episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
+
+    private suspend fun restoreImportedDirectFeeds(targets: List<DirectFeedOptInBackup>) {
+        val port = supplementPort() ?: return
+        LibraryBackupDirectFeedRestore.restoreAndRefresh(
+            targets = targets,
+            actions =
+                DirectFeedRestoreActions(
+                    restoreStub = { id, url -> port.restoreDirectFeedOptIn(id, url) },
+                    ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                    invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
+                    refreshFeed = { id, url ->
+                        val entity = subscriptionRepository.getPodcastEntity(id)
+                        port.refreshFromFeed(
+                            EpisodeSupplementPort.RefreshFromFeedRequest(
+                                podcastIndexId = id,
+                                feedUrl = url,
+                                loadBaseline = {
+                                    podcastRepository.loadPiEpisodesForBaseline(
+                                        feedId = id,
+                                        limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
+                                    )
+                                },
+                                podcastTitle = entity?.title,
+                                podcastImageUrl = entity?.imageUrl,
+                                podcastGenre = entity?.genre,
+                                podcastArtist = entity?.author,
+                            ),
+                        )
+                    },
+                    saveTip = { id, episode ->
+                        subscriptionRepository.updateLatestEpisode(
+                            podcastId = id,
+                            episode = episode,
+                            markAsNew = true,
+                        )
+                    },
+                    syncTrackedUrl = { id ->
+                        subscriptionRepository.getPodcastEntity(id)?.toPodcast()?.let { podcast ->
+                            subscriptionRepository.syncTrackedPodcastFeedUrl(podcast)
+                        }
+                    },
+                    onError = { id, error ->
+                        Log.e("JSON_IMPORT", "Direct-feed restore failed for $id", error)
+                    },
+                ),
+        )
+    }
+
+    private suspend fun refreshImportedRssCatalogs(importedIds: Collection<String>) {
+        for (id in importedIds.filter { it.startsWith("rss:") }) {
+            try {
+                rssPodcastRepository.refreshCatalogIfNeeded(id)
+            } catch (e: Exception) {
+                Log.e("JSON_IMPORT", "RSS catalog refresh failed for $id", e)
+            }
+        }
     }
 
     suspend fun markAllEpisodesCompleted(podcast: cx.aswin.boxlore.core.model.Podcast) {
