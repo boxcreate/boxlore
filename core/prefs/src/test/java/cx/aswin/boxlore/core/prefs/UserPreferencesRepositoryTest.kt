@@ -212,6 +212,60 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun subscriptionManualOrderAndPinsRoundTrip() =
+        runTest {
+            assertEquals(emptyList<String>(), repository.subscriptionManualOrderStream.first())
+            assertEquals(emptyList<String>(), repository.homePinnedPodcastIdsStream.first())
+
+            repository.setSubscriptionManualOrder(listOf("a", "rss:https://feeds.example/x.xml"))
+            repository.setHomePinnedPodcastIds(listOf("p1", "p2", "p3", "p4", "p5", "p6"))
+
+            assertEquals(
+                listOf("a", "rss:https://feeds.example/x.xml"),
+                repository.subscriptionManualOrderStream.first(),
+            )
+            assertEquals(listOf("p1", "p2", "p3", "p4", "p5"), repository.homePinnedPodcastIdsStream.first())
+        }
+
+    @Test
+    fun removePodcastIdFromManualOrderAndPinsDropsMatchingIds() =
+        runTest {
+            repository.setSubscriptionManualOrder(listOf("keep", "gone"))
+            repository.setHomePinnedPodcastIds(listOf("gone", "pin"))
+
+            repository.removePodcastIdFromManualOrderAndPins("gone")
+
+            assertEquals(listOf("keep"), repository.subscriptionManualOrderStream.first())
+            assertEquals(listOf("pin"), repository.homePinnedPodcastIdsStream.first())
+        }
+
+    @Test
+    fun toggleHomePinnedPodcastIdPinsUnpinsAndLeavesListAtCapacity() =
+        runTest {
+            assertEquals(
+                HomePinnedShows.ToggleResult.Pinned,
+                repository.toggleHomePinnedPodcastId("a"),
+            )
+            assertEquals(listOf("a"), repository.homePinnedPodcastIdsStream.first())
+
+            assertEquals(
+                HomePinnedShows.ToggleResult.Unpinned,
+                repository.toggleHomePinnedPodcastId("a"),
+            )
+            assertEquals(emptyList<String>(), repository.homePinnedPodcastIdsStream.first())
+
+            repository.setHomePinnedPodcastIds(listOf("1", "2", "3", "4", "5"))
+            assertEquals(
+                HomePinnedShows.ToggleResult.AtCapacity,
+                repository.toggleHomePinnedPodcastId("6"),
+            )
+            assertEquals(
+                listOf("1", "2", "3", "4", "5"),
+                repository.homePinnedPodcastIdsStream.first(),
+            )
+        }
+
+    @Test
     fun latestEpisodesSortDefaultsToSmart() =
         runTest {
             assertTrue(repository.latestEpisodesSortUseSmartStream.first())

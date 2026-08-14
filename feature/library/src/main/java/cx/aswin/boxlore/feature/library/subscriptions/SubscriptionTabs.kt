@@ -148,6 +148,7 @@ internal fun showsSortLabel(sort: SubscriptionSort): String = when (sort) {
     SubscriptionSort.RecentlyUpdated -> "Updated"
     SubscriptionSort.Alphabetical -> "A–Z"
     SubscriptionSort.MostListened -> "Listened"
+    SubscriptionSort.Manual -> "Manual"
 }
 
 internal fun latestSortLabel(useSmartRank: Boolean): String =
@@ -230,6 +231,14 @@ internal fun ShowsSortMenuItems(
         selected = currentSort == SubscriptionSort.MostListened,
         onClick = {
             onSortChange(SubscriptionSort.MostListened)
+            onDismiss()
+        }
+    )
+    ShowsSortOption(
+        label = "Manual",
+        selected = currentSort == SubscriptionSort.Manual,
+        onClick = {
+            onSortChange(SubscriptionSort.Manual)
             onDismiss()
         }
     )

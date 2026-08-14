@@ -127,6 +127,7 @@ class SubscriptionFilterLogicTest {
         assertEquals("Updated", showsSortLabel(SubscriptionSort.RecentlyUpdated))
         assertEquals("A–Z", showsSortLabel(SubscriptionSort.Alphabetical))
         assertEquals("Listened", showsSortLabel(SubscriptionSort.MostListened))
+        assertEquals("Manual", showsSortLabel(SubscriptionSort.Manual))
     }
 
     @Test

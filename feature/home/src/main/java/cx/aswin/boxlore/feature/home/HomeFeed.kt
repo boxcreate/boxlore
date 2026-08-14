@@ -41,6 +41,7 @@ internal data class PodcastFeedUiState(
     val briefingChapters: List<cx.aswin.boxlore.core.model.Chapter>,
     val seemsToLikePodcast: Podcast?,
     val showImportBanner: Boolean,
+    val pinnedPodcastIds: Set<String> = emptySet(),
 )
 
 @androidx.compose.runtime.Stable

@@ -77,6 +77,7 @@ data class HomeUiState(
     val isRecommendationsFallback: Boolean = true,
     val editorialRows: List<HomeEditorialRow> = emptyList(),
     val isEditorialRowsLoading: Boolean = true,
+    val pinnedPodcastIds: Set<String> = emptySet(),
 )
 
 /**

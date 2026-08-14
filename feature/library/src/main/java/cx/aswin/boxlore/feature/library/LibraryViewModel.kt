@@ -20,18 +20,20 @@ import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
+import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-enum class SubscriptionSort { SmartRank, RecentlyUpdated, Alphabetical, MostListened }
+enum class SubscriptionSort { SmartRank, RecentlyUpdated, Alphabetical, MostListened, Manual }
 enum class DownloadsSortOrder { RECENT, NAME, SIZE, COUNT }
 enum class ShowSortOrder { NEWEST, OLDEST, LARGEST }
 
@@ -86,9 +88,48 @@ class LibraryViewModel(
             }
         }
 
+    private val sortAndManualOrder =
+        combine(
+            subscriptionSort,
+            userPreferencesRepository.subscriptionManualOrderStream,
+        ) { sort, order -> sort to order }
+
+    val pinnedPodcastIds: StateFlow<Set<String>> =
+        userPreferencesRepository.homePinnedPodcastIdsStream
+            .map { it.toSet() }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptySet(),
+            )
+
     fun setSubscriptionSort(sort: SubscriptionSort) {
         viewModelScope.launch {
+            if (sort == SubscriptionSort.Manual) {
+                val saved = userPreferencesRepository.subscriptionManualOrderStream.first()
+                if (saved.isEmpty()) {
+                    val currentIds =
+                        (uiState.value as? LibraryUiState.Success)
+                            ?.subscribedPodcasts
+                            ?.map { it.id }
+                            .orEmpty()
+                    if (currentIds.isNotEmpty()) {
+                        userPreferencesRepository.setSubscriptionManualOrder(currentIds)
+                    }
+                }
+            }
             userPreferencesRepository.setSubscriptionSort(sort.name)
+        }
+    }
+
+    fun reorderSubscriptions(orderedIds: List<String>) {
+        if (orderedIds.isEmpty()) return
+        viewModelScope.launch {
+            userPreferencesRepository.setSubscriptionManualOrder(orderedIds)
+            val currentName = userPreferencesRepository.subscriptionSortStream.first()
+            if (currentName != SubscriptionSort.Manual.name) {
+                userPreferencesRepository.setSubscriptionSort(SubscriptionSort.Manual.name)
+            }
         }
     }
 
@@ -153,8 +194,15 @@ class LibraryViewModel(
         playbackRepository.likedEpisodes,
         downloadRepository.downloads,
         playbackRepository.getAllHistory(),
-        subscriptionSort
-    ) { podcasts: List<Podcast>, liked: List<ListeningHistoryEntity>, downloads: List<cx.aswin.boxlore.core.database.DownloadedEpisodeEntity>, allHistory: List<ListeningHistoryEntity>, sort: SubscriptionSort ->
+        sortAndManualOrder,
+    ) {
+            podcasts: List<Podcast>,
+            liked: List<ListeningHistoryEntity>,
+            downloads: List<cx.aswin.boxlore.core.database.DownloadedEpisodeEntity>,
+            allHistory: List<ListeningHistoryEntity>,
+            sortAndOrder,
+        ->
+        val (sort, manualOrder) = sortAndOrder
         // Enrich podcasts with episode status from listening history
         val enrichedPodcasts = podcasts.map { podcast ->
             val episode = podcast.latestEpisode ?: return@map podcast
@@ -219,6 +267,9 @@ class LibraryViewModel(
             SubscriptionSort.MostListened -> {
                 val historyCounts = allHistory.groupBy { it.podcastId }.mapValues { it.value.size }
                 enrichedPodcasts.sortedByDescending { historyCounts[it.id] ?: 0 }
+            }
+            SubscriptionSort.Manual -> {
+                SubscriptionManualOrderLogic.apply(manualOrder, enrichedPodcasts)
             }
         }
 

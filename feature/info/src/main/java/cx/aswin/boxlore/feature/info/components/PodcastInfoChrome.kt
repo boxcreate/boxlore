@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Tune
@@ -58,7 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -338,6 +339,9 @@ internal data class PodcastInfoTopOverlayActions(
     val onMarkAllUnplayed: () -> Unit,
     val onToggleHideCompleted: () -> Unit,
     val onPlaybackSettings: () -> Unit,
+    val isSubscribed: Boolean = false,
+    val isPinnedToHome: Boolean = false,
+    val onToggleHomePin: () -> Unit = {},
 )
 
 internal data class MissingEpisodesChip(
@@ -445,50 +449,79 @@ private fun PodcastInfoHeaderOverflow(
             shape = RoundedCornerShape(20.dp),
             offset = DpOffset(x = (-12).dp, y = 4.dp),
         ) {
-            DropdownMenuItem(
-                text = { Text("Mark all as played") },
-                onClick = {
-                    showMenu = false
-                    actions.onMarkAllPlayed()
-                },
-                leadingIcon = {
-                    Icon(Icons.Rounded.DoneAll, contentDescription = null)
-                },
-            )
-            DropdownMenuItem(
-                text = { Text("Mark all as unplayed") },
-                onClick = {
-                    showMenu = false
-                    actions.onMarkAllUnplayed()
-                },
-                leadingIcon = {
-                    Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null)
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
-                onClick = {
-                    showMenu = false
-                    actions.onToggleHideCompleted()
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = if (hideCompleted) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                        contentDescription = null,
-                    )
-                },
-            )
-            DropdownMenuItem(
-                text = { Text("Playback for this show") },
-                onClick = {
-                    showMenu = false
-                    actions.onPlaybackSettings()
-                },
-                leadingIcon = {
-                    Icon(Icons.Rounded.Tune, contentDescription = null)
-                },
+            PodcastInfoOverflowMenuItems(
+                hideCompleted = hideCompleted,
+                onDismiss = { showMenu = false },
+                actions = actions,
             )
         }
+    }
+}
+
+@Composable
+private fun PodcastInfoOverflowMenuItems(
+    hideCompleted: Boolean,
+    onDismiss: () -> Unit,
+    actions: PodcastInfoTopOverlayActions,
+) {
+    DropdownMenuItem(
+        text = { Text("Mark all as played") },
+        onClick = {
+            onDismiss()
+            actions.onMarkAllPlayed()
+        },
+        leadingIcon = {
+            Icon(Icons.Rounded.DoneAll, contentDescription = null)
+        },
+    )
+    DropdownMenuItem(
+        text = { Text("Mark all as unplayed") },
+        onClick = {
+            onDismiss()
+            actions.onMarkAllUnplayed()
+        },
+        leadingIcon = {
+            Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null)
+        },
+    )
+    DropdownMenuItem(
+        text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
+        onClick = {
+            onDismiss()
+            actions.onToggleHideCompleted()
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = if (hideCompleted) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                contentDescription = null,
+            )
+        },
+    )
+    DropdownMenuItem(
+        text = { Text("Playback for this show") },
+        onClick = {
+            onDismiss()
+            actions.onPlaybackSettings()
+        },
+        leadingIcon = {
+            Icon(Icons.Rounded.Tune, contentDescription = null)
+        },
+    )
+    if (actions.isSubscribed) {
+        DropdownMenuItem(
+            text = { Text(if (actions.isPinnedToHome) "Unpin" else "Pin") },
+            onClick = {
+                onDismiss()
+                actions.onToggleHomePin()
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.PushPin,
+                    contentDescription = null,
+                    modifier = Modifier.graphicsLayer { rotationZ = 45f },
+                )
+            },
+        )
     }
 }
 

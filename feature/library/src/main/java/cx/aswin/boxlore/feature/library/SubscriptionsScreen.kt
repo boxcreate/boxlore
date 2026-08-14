@@ -94,6 +94,7 @@ fun SubscriptionsScreen(
     var isGridView by rememberSaveable { mutableStateOf(true) }
     val useSmartRank by viewModel.useSmartRank.collectAsStateWithLifecycle()
     val hideCompletedInSubs by viewModel.hideCompletedInSubs.collectAsStateWithLifecycle()
+    val pinnedPodcastIds by viewModel.pinnedPodcastIds.collectAsStateWithLifecycle()
     var showSortMenu by remember { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
@@ -252,6 +253,7 @@ fun SubscriptionsScreen(
                                                         SubscriptionSort.RecentlyUpdated -> "recently_updated"
                                                         SubscriptionSort.Alphabetical -> "alphabetical"
                                                         SubscriptionSort.MostListened -> "most_listened"
+                                                        SubscriptionSort.Manual -> "manual"
                                                     }
                                                     cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
                                                         analyticsName,
@@ -336,7 +338,10 @@ fun SubscriptionsScreen(
                                     viewModel.subPodcastsClickedCount++
                                     onPodcastClick(it)
                                 },
-                                isGridView = isGridView
+                                isGridView = isGridView,
+                                canReorder = searchQuery.isBlank(),
+                                pinnedPodcastIds = pinnedPodcastIds,
+                                onReorder = viewModel::reorderSubscriptions,
                             )
                             1 -> {
                                 LatestTabContent(

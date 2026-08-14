@@ -127,6 +127,7 @@ fun PodcastInfoScreen(
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState()
     val downloadingEpisodeIds by viewModel.downloadingEpisodeIds.collectAsState()
     val hideCompleted by viewModel.hideCompletedInShowDetails.collectAsState()
+    val isPinnedToHome by viewModel.isPinnedToHome.collectAsState()
     val globalSkipBeginningMs by viewModel.globalSkipBeginningMs.collectAsState()
     val globalSkipEndingMs by viewModel.globalSkipEndingMs.collectAsState()
     val listState = rememberLazyListState()
@@ -579,6 +580,9 @@ fun PodcastInfoScreen(
                             onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
                             onToggleHideCompleted = { viewModel.toggleHideCompleted() },
                             onPlaybackSettings = { showPodcastPlaybackSettings = true },
+                            isSubscribed = state.isSubscribed,
+                            isPinnedToHome = isPinnedToHome,
+                            onToggleHomePin = viewModel::toggleHomePin,
                         ),
                     missingEpisodesChip =
                         MissingEpisodesChip(

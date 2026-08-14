@@ -6,7 +6,9 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 
 ## Public API
 
-- `UserPreferencesRepository` exposes DataStore-backed settings such as theme, lettering roundness (`font_roundness`: `crisp` / `soft` / `round`, default `round`), navigation style (`navigation_style`: `floating` / `classic`), cold-start landing (`open_app_to`: `home` / `subscriptions`, default `home`; Back from launch-Subscriptions goes to Home), content region (11 chart storefronts), `content_languages` (English forced, max 4; resets to recommended on region change), skip durations, smart downloads, playback preferences, and `restart_forgotten_episodes` (default on — soft-expires mid-episode seek for implicit plays after 7 days; see `:core:playback` `PlaybackSkipPolicy`). Theme fast-cache (`boxlore_theme_fast_cache`) mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, `navigation_style`, and `open_app_to` for cold-start / non-Compose readers.
+- `UserPreferencesRepository` exposes DataStore-backed settings such as theme, lettering roundness (`font_roundness`: `crisp` / `soft` / `round`, default `round`), navigation style (`navigation_style`: `floating` / `classic`), cold-start landing (`open_app_to`: `home` / `subscriptions`, default `home`; Back from launch-Subscriptions goes to Home), content region (11 chart storefronts), `content_languages` (English forced, max 4; resets to recommended on region change), skip durations, smart downloads, playback preferences, `restart_forgotten_episodes` (default on — soft-expires mid-episode seek for implicit plays after 7 days; see `:core:playback` `PlaybackSkipPolicy`), `subscription_sort` (including `Manual`), `subscription_manual_order` (ordered podcast ids, unit-separator encoded so `rss:` URLs can contain commas), and `home_pinned_podcast_ids` (max 5; lead Your Shows). Theme fast-cache (`boxlore_theme_fast_cache`) mirrors `theme_config`, `surface_style`, `theme_brand`, `use_dynamic_color`, `font_roundness`, `navigation_style`, and `open_app_to` for cold-start / non-Compose readers.
+- `HomePinnedShows` sanitizes pin lists (distinct, max 5) and toggle results (`Pinned` / `Unpinned` / `AtCapacity`). `UserPreferencesRepository.toggleHomePinnedPodcastId` sanitizes, toggles, and persists inside one DataStore write; at capacity the stored list is unchanged.
+- `PreferenceIdList` encodes ordered id lists for DataStore string prefs.
 - `FontRoundnessAxis` centralizes lettering preset keys and ROND axis values for prefs, playback (Android Auto collage badges), and other non-Compose readers.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
 - `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, Learn history, and learner-log gates.
@@ -26,6 +28,8 @@ src/main/java/cx/aswin/boxlore/core/prefs/
   UserPreferenceKeys.kt
   FontRoundnessAxis.kt
   UserPreferencesRepository.kt
+  PreferenceIdList.kt
+  HomePinnedShows.kt
 ```
 
 ## Dependencies
@@ -46,12 +50,15 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 - Canonical SharedPreferences files include `boxlore_prefs` and `boxlore_theme_fast_cache`.
 - Legacy file names beginning with `boxcast_` are migrated through `PrefsFileMigrator`.
 - Preference keys defined in `UserPreferenceKeys` and `BoxcastPrefs` are persisted user identity and must not be renamed casually.
+- `subscription_manual_order` and `home_pinned_podcast_ids` live in the same `user_preferences` DataStore (do not rename the file). Unsubscribe drops that id from both lists.
 
 ## Testing notes
 
 - Unit tests live under `core/prefs/src/test`.
 - `BoxcastPrefsTest` covers facade behavior.
 - `PrefsFileMigratorTest` covers legacy-to-canonical file migration behavior.
+- `PreferenceIdListTest` and `HomePinnedShowsTest` cover id-list encoding, pin cap/toggle, and the at-capacity snackbar copy.
+- `UserPreferencesRepositoryTest` round-trips Manual order and Home pins, including atomic pin toggle and unsubscribe cleanup.
 
 ```bash
 ./gradlew :core:prefs:testDebugUnitTest

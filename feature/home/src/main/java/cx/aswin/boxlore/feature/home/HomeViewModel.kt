@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.content.ContentContextEngine
@@ -26,9 +27,11 @@ import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -546,6 +549,7 @@ class HomeViewModel(
                     }
                 } else {
                     userPrefs.removeLastSeenEpisodeId(podcastId)
+                    userPrefs.removePodcastIdFromManualOrderAndPins(podcastId)
                 }
             }
         }
@@ -687,6 +691,18 @@ class HomeViewModel(
     fun dismissBriefingForever() {
         viewModelScope.launch {
             userPrefs.dismissBriefingForever()
+        }
+    }
+
+    private val _pinFeedback = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val pinFeedback = _pinFeedback.asSharedFlow()
+
+    fun toggleHomePin(podcastId: String) {
+        viewModelScope.launch {
+            val result = userPrefs.toggleHomePinnedPodcastId(podcastId)
+            if (result == HomePinnedShows.ToggleResult.AtCapacity) {
+                _pinFeedback.emit(HomePinnedShows.capacityUserMessage())
+            }
         }
     }
 

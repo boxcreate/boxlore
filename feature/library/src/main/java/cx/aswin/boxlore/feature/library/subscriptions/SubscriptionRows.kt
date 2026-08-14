@@ -4,6 +4,8 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,6 +41,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -175,7 +180,10 @@ internal fun ArtworkTitleFallback(
 internal fun SubscriptionListRow(
     podcast: Podcast,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPinned: Boolean = false,
+    isDragging: Boolean = false,
+    dragModifier: Modifier = Modifier,
 ) {
     val lastSeen = cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes.current[podcast.id]
     val hasRecentNew =
@@ -194,6 +202,15 @@ internal fun SubscriptionListRow(
         }
     }
 
+    val artworkShape = RoundedCornerShape(10.dp)
+    val dragScale by animateFloatAsState(
+        targetValue = if (isDragging) 1.04f else 1f,
+        label = "subscriptionListDragScale",
+    )
+    val dragElevation by animateDpAsState(
+        targetValue = if (isDragging) 6.dp else 0.dp,
+        label = "subscriptionListDragElevation",
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -201,67 +218,25 @@ internal fun SubscriptionListRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        OptimizedImage(
-            url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
-            proxyWidth = 400,
-            contentDescription = podcast.title,
-            modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(10.dp)),
-            errorContent = {
-                ArtworkTitleFallback(title = podcast.title)
-            }
+        SubscriptionListArtwork(
+            podcast = podcast,
+            isPinned = isPinned,
+            isDragging = isDragging,
+            dragModifier = dragModifier,
+            artworkShape = artworkShape,
+            dragScale = dragScale,
+            dragElevation = dragElevation,
         )
 
         Spacer(modifier = Modifier.width(14.dp))
 
-        Column(
+        SubscriptionListRowText(
+            title = podcast.title,
+            artist = podcast.artist,
+            hasRecentNew = hasRecentNew,
+            updateLabel = updateLabel,
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = podcast.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = GoogleSansWeight.semiBold
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (hasRecentNew) {
-                    Text(
-                        text = "NEW",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            fontSize = 10.sp
-                        ),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = podcast.artist.takeIf { it.isNotEmpty() } ?: "Podcast",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (updateLabel != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = updateLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+        )
 
         Spacer(modifier = Modifier.width(4.dp))
 
@@ -414,7 +389,10 @@ internal fun SubscriptionGridCard(
     podcast: Podcast,
     lastSeenId: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPinned: Boolean = false,
+    isDragging: Boolean = false,
+    dragModifier: Modifier = Modifier,
 ) {
     val latestEpisodeId = podcast.latestEpisode?.id
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
@@ -430,32 +408,59 @@ internal fun SubscriptionGridCard(
             podcast.isLatestEpisodeNew(lastSeenId)
         }
 
+    val artworkShape = RoundedCornerShape(12.dp)
+    val dragScale by animateFloatAsState(
+        targetValue = if (isDragging) 1.04f else 1f,
+        label = "subscriptionGridDragScale",
+    )
+    val dragElevation by animateDpAsState(
+        targetValue = if (isDragging) 8.dp else 0.dp,
+        label = "subscriptionGridDragElevation",
+    )
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(12.dp))
-            .expressiveClickable(onClick = onClick)
+        modifier =
+            modifier
+                .then(dragModifier)
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .zIndex(if (isDragging) 1f else 0f)
+                .graphicsLayer {
+                    scaleX = dragScale
+                    scaleY = dragScale
+                    shape = artworkShape
+                    clip = true
+                }
+                .shadow(elevation = dragElevation, shape = artworkShape, clip = false)
+                .expressiveClickable(
+                    shape = artworkShape,
+                    pressScaleEnabled = !isDragging,
+                    onClick = onClick,
+                ),
     ) {
         OptimizedImage(
             url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
             proxyWidth = 400,
             contentDescription = podcast.title,
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(12.dp)
-                ),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clip(artworkShape)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                        shape = artworkShape,
+                    ),
             errorContent = {
                 ArtworkTitleFallback(title = podcast.title)
-            }
+            },
         )
 
         if (hasRecentNew) {
             NewEpisodeBadge()
+        }
+        if (isPinned) {
+            SubscriptionPinnedBadge(modifier = Modifier.align(Alignment.BottomStart))
         }
     }
 }

@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -139,6 +140,15 @@ class PodcastInfoViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = false,
             )
+
+    val isPinnedToHome: StateFlow<Boolean> =
+        combine(_currentPodcastIdFlow, userPrefs.homePinnedPodcastIdsStream) { id, pins ->
+            id.isNotEmpty() && id in pins
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false,
+        )
 
     fun setUseAppPlaybackDefaults(useDefaults: Boolean) {
         val state = _uiState.value as? PodcastInfoUiState.Success ?: return
@@ -325,6 +335,18 @@ class PodcastInfoViewModel(
         val state = _uiState.value as? PodcastInfoUiState.Success ?: return
         if (state.userMessage == null) return
         _uiState.value = state.copy(userMessage = null)
+    }
+
+    fun toggleHomePin() {
+        val podcastId = currentPodcastId
+        if (podcastId.isEmpty()) return
+        viewModelScope.launch {
+            val result = userPrefs.toggleHomePinnedPodcastId(podcastId)
+            if (result == HomePinnedShows.ToggleResult.AtCapacity) {
+                val state = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                _uiState.value = state.copy(userMessage = HomePinnedShows.capacityUserMessage())
+            }
+        }
     }
 
     /**
@@ -968,6 +990,7 @@ class PodcastInfoViewModel(
                 launch { refreshTipAfterSubscribe() }
             } else if (!isSubscribed && wasSubscribed) {
                 userPrefs.removeLastSeenEpisodeId(currentState.podcast.id)
+                userPrefs.removePodcastIdFromManualOrderAndPins(currentState.podcast.id)
             }
         }
     }

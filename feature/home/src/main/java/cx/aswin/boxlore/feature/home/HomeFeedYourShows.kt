@@ -100,6 +100,8 @@ private fun YourShowsFeedContent(
                 onPlayEpisode = callbacks.onPlayEpisode,
                 downloadedEpisodeIds = playback.player.downloadedEpisodeIds,
                 onViewLibrary = { callbacks.onNavigateToLibrary?.invoke() },
+                pinnedPodcastIds = feedState.pinnedPodcastIds,
+                onTogglePin = callbacks.onToggleHomePin,
             )
         feedState.showImportBanner -> HomeImportBannerContent(callbacks)
     }
