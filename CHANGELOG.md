@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.17] - 2026-08-14
+
 ### Added
 - Manual subscription sort: long-press-drag artwork on the unfiltered Shows list; first drop seeds `subscription_manual_order` and switches `subscription_sort` to Manual. New shows append A–Z; unsubscribe drops the id. ([#982](https://github.com/boxcreate/boxlore/pull/982)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Up to five Home pins (`home_pinned_podcast_ids`) lead Your Shows after mixtape. Long-press a cover for Pin / Unpin; show-page overflow has the same actions. A sixth pin is refused with a snackbar. ([#982](https://github.com/boxcreate/boxlore/pull/982)) <!-- impact:user-impact-high --> <!-- copy:locked -->
@@ -18,31 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Draw library import (JSON and OPML) in the activity window so OEM Dialog status-bar scrims cannot mismatch the page color. ([#979](https://github.com/boxcreate/boxlore/pull/979)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Restore predictive-back peek scale after Back from a cold-start Subscriptions screen so Home is not left at 0.9. ([#981](https://github.com/boxcreate/boxlore/pull/981)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=978 -->
-### Improvements
-- Restoring a full library backup now keeps Missing episodes? shows opted in and refreshes them so your library is up to date.
-<!-- readme-copy:end pr=978 -->
-
-<!-- readme-copy:start pr=979 -->
-### Polish
-- Importing your library from welcome no longer shows a black bar at the top of the screen.
-<!-- readme-copy:end pr=979 -->
-
-<!-- readme-copy:start pr=980 -->
-### Polish
-- Press and hold a download to select several episodes or shows and delete them together.
-<!-- readme-copy:end pr=980 -->
-
-<!-- readme-copy:start pr=981 -->
-### Fixes
-- Opening straight to Subscriptions, then using system Back, no longer leaves Home looking shrunk.
-<!-- readme-copy:end pr=981 -->
-
-<!-- readme-copy:start pr=982 -->
-### New features
-- Hold and drag shows in Subscriptions to set your own order.
-- Pin up to five shows so they sit at the front of Your Shows on Home (after mixtape).
-<!-- readme-copy:end pr=982 -->
 ## [v0.0.16] - 2026-08-14
 
 ### Fixed
