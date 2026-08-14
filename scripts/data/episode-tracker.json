@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-14T17:51:27.011Z",
+  "lastRun": "2026-08-14T18:52:39.016Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "415434": {
+      "lastRssKey": "c879875e-c3c7-11f0-8340-d7afc63f93a6",
+      "lastEpisodeTitle": "Mark Zuckerberg has an Instagzam",
       "lastEpisodeId": "58957517316",
-      "lastEpisodeTitle": "Should you let a robot mow your lawn?",
-      "lastRssKey": "47771b58-6e7b-11f1-94bf-3369603686ef",
-      "lastCheckedAt": 1786719387376
+      "lastCheckedAt": 1786733566887
     },
     "437685": {
       "lastEpisodeId": "58980962644",
@@ -172,10 +172,10 @@
       "lastCheckedAt": 1786709294037
     },
     "947138": {
-      "lastRssKey": "8176e5d0-b5cc-11f0-92f1-c745395c267c",
-      "lastEpisodeTitle": "Your Luxury Car Now Has Ads!",
+      "lastRssKey": "818bb424-b5cc-11f0-92f1-bfcda65914d9",
+      "lastEpisodeTitle": "We Skipped the Pixel Event",
       "lastEpisodeId": "58666912138",
-      "lastCheckedAt": 1786559320882
+      "lastCheckedAt": 1786733574751
     },
     "980370": {
       "lastRssKey": "6a7b870341d476dc7a72efe8",
