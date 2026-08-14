@@ -39,6 +39,11 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 
+internal data class CoverPin(
+    val pinned: Boolean = false,
+    val onToggle: () -> Unit = {},
+)
+
 @Composable
 internal fun SelectorCover(
     podcast: Podcast,
@@ -47,8 +52,7 @@ internal fun SelectorCover(
     isAnyPodcastSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier.size(60.dp),
-    isPinned: Boolean = false,
-    onTogglePin: () -> Unit = {},
+    pin: CoverPin = CoverPin(),
 ) {
     val latestEpisodeId = podcast.latestEpisode?.id
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
@@ -92,7 +96,7 @@ internal fun SelectorCover(
                     .fillMaxSize()
                     .expressiveClickable(
                         shape = coverShape,
-                        onLongClickLabel = if (isPinned) "Unpin" else "Pin",
+                        onLongClickLabel = if (pin.pinned) "Unpin" else "Pin",
                         onLongClick = { showPinMenu = true },
                         onClick = onClick,
                     ).clip(coverShape),
@@ -126,10 +130,10 @@ internal fun SelectorCover(
             properties = PopupProperties(clippingEnabled = false, focusable = true),
         ) {
             DropdownMenuItem(
-                text = { Text(if (isPinned) "Unpin" else "Pin") },
+                text = { Text(if (pin.pinned) "Unpin" else "Pin") },
                 onClick = {
                     showPinMenu = false
-                    onTogglePin()
+                    pin.onToggle()
                 },
                 leadingIcon = {
                     Icon(
@@ -146,7 +150,7 @@ internal fun SelectorCover(
                 modifier = Modifier.offset(x = 6.dp, y = (-4).dp),
             )
         }
-        if (isPinned) {
+        if (pin.pinned) {
             HomePinnedBadge(modifier = Modifier.align(Alignment.BottomStart))
         }
     }

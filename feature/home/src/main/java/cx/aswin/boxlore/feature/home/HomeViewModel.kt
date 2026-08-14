@@ -699,15 +699,9 @@ class HomeViewModel(
 
     fun toggleHomePin(podcastId: String) {
         viewModelScope.launch {
-            val current = userPrefs.homePinnedPodcastIdsStream.first()
-            val (next, result) = HomePinnedShows.toggle(current, podcastId)
-            when (result) {
-                HomePinnedShows.ToggleResult.AtCapacity -> {
-                    _pinFeedback.emit("You can pin up to ${HomePinnedShows.MAX} shows on Home")
-                }
-                HomePinnedShows.ToggleResult.Pinned,
-                HomePinnedShows.ToggleResult.Unpinned,
-                -> userPrefs.setHomePinnedPodcastIds(next)
+            val result = userPrefs.toggleHomePinnedPodcastId(podcastId)
+            if (result == HomePinnedShows.ToggleResult.AtCapacity) {
+                _pinFeedback.emit(HomePinnedShows.capacityUserMessage())
             }
         }
     }

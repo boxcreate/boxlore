@@ -114,6 +114,8 @@ fun YourShowsSection(
         remember(subscribedPodcasts) {
             val list = subscribedPodcasts.list
             if (list.size > 9) {
+                // LazyHorizontalGrid is column-major. Pairwise swap puts list[0] (pin 1)
+                // on the top row immediately after mixtape, matching the ≤9 row layout.
                 val result = mutableListOf<Podcast>()
                 var i = 0
                 while (i < list.size) {
@@ -303,8 +305,11 @@ fun YourShowsSection(
                             }
                         },
                         modifier = Modifier.size(60.dp).animateItem(),
-                        isPinned = podcast.id in pinnedPodcastIds,
-                        onTogglePin = { onTogglePin(podcast.id) },
+                        pin =
+                            CoverPin(
+                                pinned = podcast.id in pinnedPodcastIds,
+                                onToggle = { onTogglePin(podcast.id) },
+                            ),
                     )
                 }
             }
@@ -380,8 +385,11 @@ fun YourShowsSection(
                                         onPodcastSelected(if (selectedPodcastId == item.id) null else item.id)
                                     },
                                     modifier = itemModifier,
-                                    isPinned = item.id in pinnedPodcastIds,
-                                    onTogglePin = { onTogglePin(item.id) },
+                                    pin =
+                                        CoverPin(
+                                            pinned = item.id in pinnedPodcastIds,
+                                            onToggle = { onTogglePin(item.id) },
+                                        ),
                                 )
                             }
                         }
@@ -403,8 +411,11 @@ fun YourShowsSection(
                                         onPodcastSelected(if (selectedPodcastId == item.id) null else item.id)
                                     },
                                     modifier = itemModifier,
-                                    isPinned = item.id in pinnedPodcastIds,
-                                    onTogglePin = { onTogglePin(item.id) },
+                                    pin =
+                                        CoverPin(
+                                            pinned = item.id in pinnedPodcastIds,
+                                            onToggle = { onTogglePin(item.id) },
+                                        ),
                                 )
                             }
                         }
@@ -440,8 +451,11 @@ fun YourShowsSection(
                             onPodcastSelected(if (selectedPodcastId == podcast.id) null else podcast.id)
                         },
                         modifier = Modifier.size(60.dp).animateItem(),
-                        isPinned = podcast.id in pinnedPodcastIds,
-                        onTogglePin = { onTogglePin(podcast.id) },
+                        pin =
+                            CoverPin(
+                                pinned = podcast.id in pinnedPodcastIds,
+                                onToggle = { onTogglePin(podcast.id) },
+                            ),
                     )
                 }
             }

@@ -449,66 +449,79 @@ private fun PodcastInfoHeaderOverflow(
             shape = RoundedCornerShape(20.dp),
             offset = DpOffset(x = (-12).dp, y = 4.dp),
         ) {
-            DropdownMenuItem(
-                text = { Text("Mark all as played") },
-                onClick = {
-                    showMenu = false
-                    actions.onMarkAllPlayed()
-                },
-                leadingIcon = {
-                    Icon(Icons.Rounded.DoneAll, contentDescription = null)
-                },
+            PodcastInfoOverflowMenuItems(
+                hideCompleted = hideCompleted,
+                onDismiss = { showMenu = false },
+                actions = actions,
             )
-            DropdownMenuItem(
-                text = { Text("Mark all as unplayed") },
-                onClick = {
-                    showMenu = false
-                    actions.onMarkAllUnplayed()
-                },
-                leadingIcon = {
-                    Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null)
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
-                onClick = {
-                    showMenu = false
-                    actions.onToggleHideCompleted()
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = if (hideCompleted) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                        contentDescription = null,
-                    )
-                },
-            )
-            DropdownMenuItem(
-                text = { Text("Playback for this show") },
-                onClick = {
-                    showMenu = false
-                    actions.onPlaybackSettings()
-                },
-                leadingIcon = {
-                    Icon(Icons.Rounded.Tune, contentDescription = null)
-                },
-            )
-            if (actions.isSubscribed) {
-                DropdownMenuItem(
-                    text = { Text(if (actions.isPinnedToHome) "Unpin" else "Pin") },
-                    onClick = {
-                        showMenu = false
-                        actions.onToggleHomePin()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.PushPin,
-                            contentDescription = null,
-                            modifier = Modifier.graphicsLayer { rotationZ = 45f },
-                        )
-                    },
-                )
-            }
         }
+    }
+}
+
+@Composable
+private fun PodcastInfoOverflowMenuItems(
+    hideCompleted: Boolean,
+    onDismiss: () -> Unit,
+    actions: PodcastInfoTopOverlayActions,
+) {
+    DropdownMenuItem(
+        text = { Text("Mark all as played") },
+        onClick = {
+            onDismiss()
+            actions.onMarkAllPlayed()
+        },
+        leadingIcon = {
+            Icon(Icons.Rounded.DoneAll, contentDescription = null)
+        },
+    )
+    DropdownMenuItem(
+        text = { Text("Mark all as unplayed") },
+        onClick = {
+            onDismiss()
+            actions.onMarkAllUnplayed()
+        },
+        leadingIcon = {
+            Icon(Icons.Rounded.RadioButtonUnchecked, contentDescription = null)
+        },
+    )
+    DropdownMenuItem(
+        text = { Text(if (hideCompleted) "Show completed episodes" else "Hide completed episodes") },
+        onClick = {
+            onDismiss()
+            actions.onToggleHideCompleted()
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = if (hideCompleted) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                contentDescription = null,
+            )
+        },
+    )
+    DropdownMenuItem(
+        text = { Text("Playback for this show") },
+        onClick = {
+            onDismiss()
+            actions.onPlaybackSettings()
+        },
+        leadingIcon = {
+            Icon(Icons.Rounded.Tune, contentDescription = null)
+        },
+    )
+    if (actions.isSubscribed) {
+        DropdownMenuItem(
+            text = { Text(if (actions.isPinnedToHome) "Unpin" else "Pin") },
+            onClick = {
+                onDismiss()
+                actions.onToggleHomePin()
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.PushPin,
+                    contentDescription = null,
+                    modifier = Modifier.graphicsLayer { rotationZ = 45f },
+                )
+            },
+        )
     }
 }
 

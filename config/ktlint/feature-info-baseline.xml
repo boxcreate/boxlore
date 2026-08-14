@@ -52,12 +52,12 @@
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoViewModel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
         <error line="60" column="17" source="standard:backing-property-naming" />
-        <error line="810" column="30" source="standard:chain-method-continuation" />
-        <error line="961" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="1204" column="1" source="standard:indent" />
-        <error line="1205" column="1" source="standard:indent" />
-        <error line="1206" column="1" source="standard:indent" />
-        <error line="1207" column="1" source="standard:indent" />
+        <error line="801" column="30" source="standard:chain-method-continuation" />
+        <error line="952" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="1195" column="1" source="standard:indent" />
+        <error line="1196" column="1" source="standard:indent" />
+        <error line="1197" column="1" source="standard:indent" />
+        <error line="1198" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeActionRail.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -124,8 +124,9 @@
         <error line="261" column="14" source="standard:function-naming" />
         <error line="354" column="14" source="standard:function-naming" />
         <error line="395" column="13" source="standard:function-naming" />
-        <error line="516" column="13" source="standard:function-naming" />
-        <error line="580" column="14" source="standard:function-naming" />
+        <error line="462" column="13" source="standard:function-naming" />
+        <error line="529" column="13" source="standard:function-naming" />
+        <error line="593" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/PodcastInfoMetadataChips.kt">
         <error line="3" column="1" source="standard:import-ordering" />

@@ -33,4 +33,6 @@ object HomePinnedShows {
         }
         return sanitize(sanitized + id) to ToggleResult.Pinned
     }
+
+    fun capacityUserMessage(): String = "You can pin up to $MAX shows on Home"
 }

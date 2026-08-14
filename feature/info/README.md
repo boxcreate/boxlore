@@ -49,14 +49,14 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ## Persistence & identity
 
 - This module owns no storage files or stable keys.
-- Pin reads and writes `home_pinned_podcast_ids` through `:core:prefs`.
+- Pin reads and writes `home_pinned_podcast_ids` through `:core:prefs` (`toggleHomePinnedPodcastId`). At-capacity copy comes from `HomePinnedShows.capacityUserMessage()`.
 - Podcast, episode, RSS, download, and listening-progress identities come from core modules.
 - App navigation owns route patterns and deep links.
 
 ## Testing notes
 
 - Unit tests live under `feature/info/src/test`.
-- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, toolbar logic, HTML stripping, podcast info ViewModel logic, pull-to-refresh target (RSS vs opted-in direct feed), episode-supplement merge/eligibility, and `PodcastInfoSupplementSupport` refresh / PI-only baseline / auto-opt-in / search union.
+- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, toolbar logic, HTML stripping, podcast info ViewModel logic, pull-to-refresh target (RSS vs opted-in direct feed), episode-supplement merge/eligibility, and `PodcastInfoSupplementSupport` refresh / PI-only baseline / auto-opt-in / search union. Home pin persistence, capacity, and unsubscribe cleanup are covered in `:core:prefs` (`HomePinnedShowsTest`, `UserPreferencesRepositoryTest`) rather than constructing `PodcastInfoViewModel`.
 - Catalog HTTP paths are covered in `:core:catalog` tests.
 
 ```bash

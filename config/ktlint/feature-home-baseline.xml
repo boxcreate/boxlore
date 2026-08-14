@@ -140,7 +140,7 @@
         <error line="325" column="18" source="standard:backing-property-naming" />
         <error line="475" column="1" source="standard:no-consecutive-blank-lines" />
         <error line="501" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="720" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="714" column="1" source="standard:no-consecutive-blank-lines" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/HomeViewModelAssembler.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -278,8 +278,8 @@
         <error line="134" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionRows.kt">
-        <error line="43" column="14" source="standard:function-naming" />
-        <error line="156" column="13" source="standard:function-naming" />
+        <error line="48" column="14" source="standard:function-naming" />
+        <error line="160" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/PodcastCard.kt">
         <error line="3" column="1" source="standard:import-ordering" />

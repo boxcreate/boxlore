@@ -30,7 +30,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -178,30 +177,6 @@ internal fun ArtworkTitleFallback(
 }
 
 @Composable
-private fun SubscriptionPinnedBadge(modifier: Modifier = Modifier) {
-    Box(
-        modifier =
-            modifier
-                .padding(5.dp)
-                .size(22.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.PushPin,
-            contentDescription = "Pinned",
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier =
-                Modifier
-                    .size(12.dp)
-                    .graphicsLayer { rotationZ = 45f },
-        )
-    }
-}
-
-@Composable
 internal fun SubscriptionListRow(
     podcast: Podcast,
     onClick: () -> Unit,
@@ -243,85 +218,25 @@ internal fun SubscriptionListRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier =
-                dragModifier
-                    .size(64.dp)
-                    .zIndex(if (isDragging) 1f else 0f)
-                    .graphicsLayer {
-                        scaleX = dragScale
-                        scaleY = dragScale
-                        shape = artworkShape
-                        clip = true
-                    }
-                    .shadow(elevation = dragElevation, shape = artworkShape, clip = false)
-                    .clip(artworkShape),
-        ) {
-            OptimizedImage(
-                url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
-                proxyWidth = 400,
-                contentDescription = podcast.title,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(artworkShape),
-                errorContent = {
-                    ArtworkTitleFallback(title = podcast.title)
-                }
-            )
-            if (isPinned) {
-                SubscriptionPinnedBadge(modifier = Modifier.align(Alignment.BottomStart))
-            }
-        }
+        SubscriptionListArtwork(
+            podcast = podcast,
+            isPinned = isPinned,
+            isDragging = isDragging,
+            dragModifier = dragModifier,
+            artworkShape = artworkShape,
+            dragScale = dragScale,
+            dragElevation = dragElevation,
+        )
 
         Spacer(modifier = Modifier.width(14.dp))
 
-        Column(
+        SubscriptionListRowText(
+            title = podcast.title,
+            artist = podcast.artist,
+            hasRecentNew = hasRecentNew,
+            updateLabel = updateLabel,
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = podcast.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = GoogleSansWeight.semiBold
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (hasRecentNew) {
-                    Text(
-                        text = "NEW",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            fontSize = 10.sp
-                        ),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = podcast.artist.takeIf { it.isNotEmpty() } ?: "Podcast",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (updateLabel != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = updateLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+        )
 
         Spacer(modifier = Modifier.width(4.dp))
 

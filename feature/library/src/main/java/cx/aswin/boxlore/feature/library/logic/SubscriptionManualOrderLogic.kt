@@ -35,6 +35,18 @@ internal object SubscriptionManualOrderLogic {
         return ids.toMutableList().apply { add(to, removeAt(from)) }
     }
 
+    /** Null when [fromId]/[toId] is a non-podcast key (genre header) or the list is unchanged. */
+    fun moveVisible(
+        ids: List<String>,
+        fromId: String,
+        toId: String,
+        blockedKeys: Collection<String>,
+    ): List<String>? {
+        if (fromId in blockedKeys || toId in blockedKeys) return null
+        val next = move(ids, fromId, toId)
+        return next.takeIf { it != ids }
+    }
+
     fun orderAfterDrag(
         visibleIds: List<String>,
         fromId: String,

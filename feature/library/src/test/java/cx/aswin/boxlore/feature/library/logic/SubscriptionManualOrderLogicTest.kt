@@ -55,6 +55,37 @@ class SubscriptionManualOrderLogicTest {
     }
 
     @Test
+    fun `moveVisible skips blocked header keys and unchanged lists`() {
+        assertEquals(
+            null,
+            SubscriptionManualOrderLogic.moveVisible(
+                ids = listOf("a", "b"),
+                fromId = "shows_genre_header",
+                toId = "a",
+                blockedKeys = setOf("shows_genre_header"),
+            ),
+        )
+        assertEquals(
+            null,
+            SubscriptionManualOrderLogic.moveVisible(
+                ids = listOf("a", "b"),
+                fromId = "a",
+                toId = "a",
+                blockedKeys = emptySet(),
+            ),
+        )
+        assertEquals(
+            listOf("b", "a"),
+            SubscriptionManualOrderLogic.moveVisible(
+                ids = listOf("a", "b"),
+                fromId = "a",
+                toId = "b",
+                blockedKeys = setOf("shows_genre_header"),
+            ),
+        )
+    }
+
+    @Test
     fun `drop removes unsubscribed id`() {
         assertEquals(
             listOf("a", "c"),

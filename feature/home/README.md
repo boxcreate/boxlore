@@ -70,7 +70,7 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 
 ## Persistence & identity
 
-- This module owns no storage files or stable preference keys; Home pins are stored as `home_pinned_podcast_ids` in `:core:prefs`.
+- This module owns no storage files or stable preference keys; Home pins are stored as `home_pinned_podcast_ids` in `:core:prefs`. Toggles go through `UserPreferencesRepository.toggleHomePinnedPodcastId` (one DataStore write).
 - Settings read and write DataStore and `BoxcastPrefs` through `:core:prefs` APIs.
 - RSS IDs, ranking database rows, download cache entries, and playback media IDs are owned by core modules.
 - Stable Compose test tags include `home_settings_button`, `settings_add_rss_*`, `settings_downloads_smart`, `settings_downloads_auto`, `settings_reset_analytics_confirm`, and `settings_reset_analytics_cancel`.

@@ -341,19 +341,10 @@ class PodcastInfoViewModel(
         val podcastId = currentPodcastId
         if (podcastId.isEmpty()) return
         viewModelScope.launch {
-            val current = userPrefs.homePinnedPodcastIdsStream.first()
-            val (next, result) = HomePinnedShows.toggle(current, podcastId)
-            when (result) {
-                HomePinnedShows.ToggleResult.AtCapacity -> {
-                    val state = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
-                    _uiState.value =
-                        state.copy(
-                            userMessage = "You can pin up to ${HomePinnedShows.MAX} shows on Home",
-                        )
-                }
-                HomePinnedShows.ToggleResult.Pinned,
-                HomePinnedShows.ToggleResult.Unpinned,
-                -> userPrefs.setHomePinnedPodcastIds(next)
+            val result = userPrefs.toggleHomePinnedPodcastId(podcastId)
+            if (result == HomePinnedShows.ToggleResult.AtCapacity) {
+                val state = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                _uiState.value = state.copy(userMessage = HomePinnedShows.capacityUserMessage())
             }
         }
     }

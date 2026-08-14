@@ -37,4 +37,9 @@ class HomePinnedShowsTest {
         assertEquals(listOf("a"), result.first)
         assertEquals(HomePinnedShows.ToggleResult.Unpinned, result.second)
     }
+
+    @Test
+    fun `capacity user message names the five-show limit`() {
+        assertEquals("You can pin up to 5 shows on Home", HomePinnedShows.capacityUserMessage())
+    }
 }

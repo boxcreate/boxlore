@@ -403,6 +403,26 @@ class UserPreferencesRepository(
         }
     }
 
+    /**
+     * Sanitizes, toggles, and persists Home pins in one DataStore write.
+     * [HomePinnedShows.ToggleResult.AtCapacity] leaves the stored list unchanged.
+     */
+    suspend fun toggleHomePinnedPodcastId(podcastId: String): HomePinnedShows.ToggleResult {
+        var result = HomePinnedShows.ToggleResult.Unpinned
+        dataStore.edit { preferences ->
+            val current =
+                HomePinnedShows.sanitize(
+                    PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]),
+                )
+            val (next, toggleResult) = HomePinnedShows.toggle(current, podcastId)
+            result = toggleResult
+            if (toggleResult != HomePinnedShows.ToggleResult.AtCapacity) {
+                preferences[Keys.HOME_PINNED_PODCAST_IDS] = PreferenceIdList.encode(next)
+            }
+        }
+        return result
+    }
+
     /** Drops an unsubscribed show from Manual order and Home pins without touching other prefs. */
     suspend fun removePodcastIdFromManualOrderAndPins(podcastId: String) {
         val id = podcastId.trim()
