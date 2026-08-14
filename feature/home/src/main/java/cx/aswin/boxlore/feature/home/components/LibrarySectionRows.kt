@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -42,7 +43,21 @@ import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 internal data class CoverPin(
     val pinned: Boolean = false,
     val onToggle: () -> Unit = {},
-)
+) {
+    val actionLabel: String
+        get() = if (pinned) "Unpin" else "Pin"
+}
+
+private fun selectorCoverScale(isSelected: Boolean): Float = if (isSelected) 1.05f else 0.95f
+
+private fun selectorCoverAlpha(
+    isSelected: Boolean,
+    isAnyPodcastSelected: Boolean,
+): Float = if (isSelected || !isAnyPodcastSelected) 1f else 0.6f
+
+private fun selectorCoverCornerDp(isSelected: Boolean): Dp = if (isSelected) 16.dp else 12.dp
+
+private fun selectorCoverBorderDp(isSelected: Boolean): Dp = if (isSelected) 3.dp else 0.dp
 
 @Composable
 internal fun SelectorCover(
@@ -68,20 +83,19 @@ internal fun SelectorCover(
             podcast.isLatestEpisodeNew(lastSeenId)
         }
 
-    val scale by animateFloatAsState(targetValue = if (isSelected) 1.05f else 0.95f, label = "scale")
+    val scale by animateFloatAsState(targetValue = selectorCoverScale(isSelected), label = "scale")
     val alpha by animateFloatAsState(
-        targetValue =
-            if (isSelected) {
-                1f
-            } else if (isAnyPodcastSelected) {
-                0.6f
-            } else {
-                1f
-            },
+        targetValue = selectorCoverAlpha(isSelected, isAnyPodcastSelected),
         label = "alpha",
     )
-    val cornerRadius by animateDpAsState(targetValue = if (isSelected) 16.dp else 12.dp, label = "cornerRadius")
-    val borderStrokeWidth by animateDpAsState(targetValue = if (isSelected) 3.dp else 0.dp, label = "borderStrokeWidth")
+    val cornerRadius by animateDpAsState(
+        targetValue = selectorCoverCornerDp(isSelected),
+        label = "cornerRadius",
+    )
+    val borderStrokeWidth by animateDpAsState(
+        targetValue = selectorCoverBorderDp(isSelected),
+        label = "borderStrokeWidth",
+    )
     val coverShape = RoundedCornerShape(cornerRadius)
     var showPinMenu by remember { mutableStateOf(false) }
 
@@ -96,7 +110,7 @@ internal fun SelectorCover(
                     .fillMaxSize()
                     .expressiveClickable(
                         shape = coverShape,
-                        onLongClickLabel = if (pin.pinned) "Unpin" else "Pin",
+                        onLongClickLabel = pin.actionLabel,
                         onLongClick = { showPinMenu = true },
                         onClick = onClick,
                     ).clip(coverShape),
@@ -108,42 +122,19 @@ internal fun SelectorCover(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().alpha(alpha),
             )
-
-            if (isSelected) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, coverShape),
-                )
-            }
-        }
-
-        DropdownMenu(
-            expanded = showPinMenu,
-            onDismissRequest = { showPinMenu = false },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 3.dp,
-            shadowElevation = 3.dp,
-            offset = DpOffset(x = 0.dp, y = 4.dp),
-            properties = PopupProperties(clippingEnabled = false, focusable = true),
-        ) {
-            DropdownMenuItem(
-                text = { Text(if (pin.pinned) "Unpin" else "Pin") },
-                onClick = {
-                    showPinMenu = false
-                    pin.onToggle()
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.PushPin,
-                        contentDescription = null,
-                        modifier = Modifier.graphicsLayer { rotationZ = 45f },
-                    )
-                },
+            SelectorCoverSelectedBorder(
+                visible = isSelected,
+                borderStrokeWidth = borderStrokeWidth,
+                coverShape = coverShape,
             )
         }
+
+        CoverPinMenu(
+            expanded = showPinMenu,
+            actionLabel = pin.actionLabel,
+            onDismiss = { showPinMenu = false },
+            onToggle = pin.onToggle,
+        )
 
         if (hasRecentNew && !isSelected) {
             NewEpisodeBadge(
@@ -153,6 +144,55 @@ internal fun SelectorCover(
         if (pin.pinned) {
             HomePinnedBadge(modifier = Modifier.align(Alignment.BottomStart))
         }
+    }
+}
+
+@Composable
+private fun SelectorCoverSelectedBorder(
+    visible: Boolean,
+    borderStrokeWidth: Dp,
+    coverShape: RoundedCornerShape,
+) {
+    if (!visible) return
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, coverShape),
+    )
+}
+
+@Composable
+private fun CoverPinMenu(
+    expanded: Boolean,
+    actionLabel: String,
+    onDismiss: () -> Unit,
+    onToggle: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 3.dp,
+        shadowElevation = 3.dp,
+        offset = DpOffset(x = 0.dp, y = 4.dp),
+        properties = PopupProperties(clippingEnabled = false, focusable = true),
+    ) {
+        DropdownMenuItem(
+            text = { Text(actionLabel) },
+            onClick = {
+                onDismiss()
+                onToggle()
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.PushPin,
+                    contentDescription = null,
+                    modifier = Modifier.graphicsLayer { rotationZ = 45f },
+                )
+            },
+        )
     }
 }
 

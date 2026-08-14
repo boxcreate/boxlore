@@ -278,8 +278,10 @@
         <error line="134" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/LibrarySectionRows.kt">
-        <error line="48" column="14" source="standard:function-naming" />
-        <error line="160" column="13" source="standard:function-naming" />
+        <error line="63" column="14" source="standard:function-naming" />
+        <error line="151" column="13" source="standard:function-naming" />
+        <error line="166" column="13" source="standard:function-naming" />
+        <error line="200" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/components/PodcastCard.kt">
         <error line="3" column="1" source="standard:import-ordering" />
