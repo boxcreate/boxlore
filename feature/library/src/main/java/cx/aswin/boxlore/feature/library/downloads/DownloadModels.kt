@@ -90,10 +90,7 @@ internal fun PodcastListShowCard(
     onClick: () -> Unit,
     onPlayClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isSelectionMode: Boolean = false,
-    isSelected: Boolean = false,
-    onSelectedChange: (Boolean) -> Unit = {},
-    onLongClick: () -> Unit = {},
+    selection: DownloadShowCardSelection = DownloadShowCardSelection(),
 ) {
     val title = group.podcastName
     val imageUrl = group.podcastImageUrl
@@ -105,13 +102,13 @@ internal fun PodcastListShowCard(
             .fillMaxWidth()
             .expressiveClickable(
                 onClick = {
-                    if (isSelectionMode) {
-                        onSelectedChange(!isSelected)
+                    if (selection.active) {
+                        selection.onSelectedChange(!selection.selected)
                     } else {
                         onClick()
                     }
                 },
-                onLongClick = onLongClick,
+                onLongClick = selection.onLongClick,
                 onLongClickLabel = "Select",
                 shape = RoundedCornerShape(16.dp)
             )
@@ -120,10 +117,10 @@ internal fun PodcastListShowCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (isSelectionMode) {
+        if (selection.active) {
             Checkbox(
-                checked = isSelected,
-                onCheckedChange = onSelectedChange
+                checked = selection.selected,
+                onCheckedChange = selection.onSelectedChange
             )
         }
 
@@ -164,7 +161,7 @@ internal fun PodcastListShowCard(
             }
         }
 
-        if (!isSelectionMode) {
+        if (!selection.active) {
             IconButton(
                 onClick = onPlayClick,
                 modifier = Modifier
@@ -181,6 +178,13 @@ internal fun PodcastListShowCard(
         }
     }
 }
+
+internal data class DownloadShowCardSelection(
+    val active: Boolean = false,
+    val selected: Boolean = false,
+    val onSelectedChange: (Boolean) -> Unit = {},
+    val onLongClick: () -> Unit = {},
+)
 
 internal data class DownloadMultiSelect(
     val active: Boolean,

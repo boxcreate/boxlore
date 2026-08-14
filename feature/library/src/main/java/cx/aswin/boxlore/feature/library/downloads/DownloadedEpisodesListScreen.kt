@@ -336,22 +336,25 @@ fun DownloadedEpisodesScreen(
                                         val pod = group.episodes.first().toPodcast()
                                         viewModel.playQueue(eps, pod)
                                     },
-                                    isSelectionMode = isSelectionMode,
-                                    isSelected = isSelected,
-                                    onSelectedChange = { selected ->
-                                        if (selected) {
-                                            selectedPodcastIds.add(group.podcastId)
-                                        } else {
-                                            selectedPodcastIds.remove(group.podcastId)
-                                        }
-                                    },
-                                    onLongClick = {
-                                        isSelectionMode =
-                                            selectedPodcastIds.applyLongPressDownloadSelection(
-                                                isSelectionMode,
-                                                group.podcastId,
-                                            )
-                                    },
+                                    selection =
+                                        DownloadShowCardSelection(
+                                            active = isSelectionMode,
+                                            selected = isSelected,
+                                            onSelectedChange = { selected ->
+                                                if (selected) {
+                                                    selectedPodcastIds.add(group.podcastId)
+                                                } else {
+                                                    selectedPodcastIds.remove(group.podcastId)
+                                                }
+                                            },
+                                            onLongClick = {
+                                                isSelectionMode =
+                                                    selectedPodcastIds.applyLongPressDownloadSelection(
+                                                        isSelectionMode,
+                                                        group.podcastId,
+                                                    )
+                                            },
+                                        ),
                                 )
                             }
                         }
