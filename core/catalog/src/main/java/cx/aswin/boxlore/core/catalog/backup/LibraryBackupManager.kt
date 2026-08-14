@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.catalog.backup
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.rss.RssFeedClient
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
@@ -81,6 +82,7 @@ class LibraryBackupManager(
     private val episodeSupplementPort: EpisodeSupplementPort? = null,
 ) {
     private val context = context.applicationContext
+    private val rssFeedClient = RssFeedClient()
     private val gson: Gson = GsonBuilder()
         .setPrettyPrinting()
         .create()
@@ -429,53 +431,114 @@ class LibraryBackupManager(
 
     suspend fun importSingleOpmlFeed(feed: OpmlFeed): cx.aswin.boxlore.core.model.Podcast? {
         try {
-            runCatching {
+            resolveOpmlCatalogPodcast(feed)?.let { catalogMatch ->
+                subscriptionRepository.subscribe(catalogMatch)
+                syncImportedCatalogLatestEpisode(catalogMatch)
+                return catalogMatch
+            }
+
+            return runCatching {
                 rssPodcastRepository
                     .addSubscription(feed.xmlUrl)
                     .podcast
             }.onFailure { error ->
                 Log.w(
                     "OPML_IMPORT",
-                    "Direct RSS import failed for ${feed.title}; trying Podcast Index",
+                    "Catalog miss and RSS import failed for ${feed.title}",
                     error,
                 )
-            }.getOrNull()?.let { return it }
-
-            var matchedPodcast: cx.aswin.boxlore.core.model.Podcast? = null
-            
-            // 1. Try URL lookup since it is exact and fast
-            try {
-                val encodedUrl = java.net.URLEncoder.encode(feed.xmlUrl, "UTF-8")
-                matchedPodcast = podcastRepository.getPodcastDetails("url:$encodedUrl")
-            } catch (e: Exception) {
-                Log.e("OPML_IMPORT", "Failed URL lookup for: ${feed.xmlUrl}", e)
-            }
-            
-            // 2. Fallback to searching by title if URL lookup returned null
-            if (matchedPodcast == null) {
-                val results = podcastRepository.searchPodcasts(feed.title)
-                if (results.isNotEmpty()) {
-                    matchedPodcast = results.first()
-                }
-            }
-            
-            if (matchedPodcast != null) {
-                subscriptionRepository.subscribe(matchedPodcast)
-                // Sync latest episode so it shows up correctly in the home list
-                try {
-                    val syncedMap = podcastRepository.syncSubscriptions(listOf(matchedPodcast.id))
-                    for ((id, ep) in syncedMap) {
-                        subscriptionRepository.updateLatestEpisode(id, ep)
-                    }
-                } catch (e: Exception) {
-                    Log.e("OPML_IMPORT", "Failed to sync episodes for: ${matchedPodcast.title}", e)
-                }
-                return matchedPodcast
-            }
+            }.getOrNull()
         } catch (e: Exception) {
             Log.e("OPML_IMPORT", "Failed to import single feed: ${feed.title}", e)
         }
         return null
+    }
+
+    private suspend fun resolveOpmlCatalogPodcast(feed: OpmlFeed): cx.aswin.boxlore.core.model.Podcast? {
+        val urlLookup = lookupOpmlFeedByUrl(feed.xmlUrl)
+        val titleSearch =
+            if (urlLookup == null) {
+                runCatching { podcastRepository.searchPodcasts(feed.title) }
+                    .getOrDefault(emptyList())
+            } else {
+                emptyList()
+            }
+        OpmlImportLogic.catalogMatch(
+            opmlTitle = feed.title,
+            opmlXmlUrl = feed.xmlUrl,
+            urlLookup = urlLookup,
+            titleSearch = titleSearch,
+        )
+            ?.let { return it }
+
+        val peeked = peekOpmlFeed(feed.xmlUrl) ?: return null
+        val peekedLookup =
+            lookupOpmlFeedByUrl(peeked.finalUrl)
+                ?: peeked.guid?.let { lookupOpmlFeedByGuid(it) }
+        return OpmlImportLogic.catalogMatch(
+            opmlTitle = peeked.title.ifBlank { feed.title },
+            opmlXmlUrl = peeked.finalUrl,
+            urlLookup = peekedLookup,
+            titleSearch = titleSearch,
+        )
+    }
+
+    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): cx.aswin.boxlore.core.model.Podcast? {
+        for (candidate in OpmlImportLogic.urlLookupCandidates(xmlUrl)) {
+            val hit =
+                try {
+                    val encodedUrl = java.net.URLEncoder.encode(candidate, "UTF-8")
+                    podcastRepository.getPodcastDetails("url:$encodedUrl")
+                } catch (e: Exception) {
+                    Log.e("OPML_IMPORT", "Failed URL lookup for: $candidate", e)
+                    null
+                }
+            hit?.takeUnless { it.isRss }?.let { return it }
+        }
+        return null
+    }
+
+    private suspend fun lookupOpmlFeedByGuid(guid: String): cx.aswin.boxlore.core.model.Podcast? {
+        val value = guid.trim()
+        if (value.isEmpty()) return null
+        return try {
+            podcastRepository.getPodcastDetails("guid:$value")?.takeUnless { it.isRss }
+        } catch (e: Exception) {
+            Log.e("OPML_IMPORT", "Failed GUID lookup for: $value", e)
+            null
+        }
+    }
+
+    private suspend fun peekOpmlFeed(xmlUrl: String): PeekedOpmlFeed? {
+        val httpsUrl = OpmlImportLogic.httpsFeedUrl(xmlUrl) ?: return null
+        return runCatching {
+            val fetched = rssFeedClient.fetch(httpsUrl)
+            val parsed = rssFeedClient.parse(fetched.finalUrl, fetched.body)
+            PeekedOpmlFeed(
+                finalUrl = fetched.finalUrl,
+                title = parsed.title,
+                guid = parsed.podcastGuid,
+            )
+        }.onFailure { error ->
+            Log.w("OPML_IMPORT", "Feed peek failed for $xmlUrl", error)
+        }.getOrNull()
+    }
+
+    private data class PeekedOpmlFeed(
+        val finalUrl: String,
+        val title: String,
+        val guid: String?,
+    )
+
+    private suspend fun syncImportedCatalogLatestEpisode(podcast: cx.aswin.boxlore.core.model.Podcast) {
+        try {
+            val syncedMap = podcastRepository.syncSubscriptions(listOf(podcast.id))
+            for ((id, ep) in syncedMap) {
+                subscriptionRepository.updateLatestEpisode(id, ep)
+            }
+        } catch (e: Exception) {
+            Log.e("OPML_IMPORT", "Failed to sync episodes for: ${podcast.title}", e)
+        }
     }
 
     private fun supplementPort(): EpisodeSupplementPort? =

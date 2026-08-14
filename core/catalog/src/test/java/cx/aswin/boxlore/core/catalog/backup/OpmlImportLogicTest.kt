@@ -1,0 +1,108 @@
+package cx.aswin.boxlore.core.catalog.backup
+
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.testing.TestFixtures
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class OpmlImportLogicTest {
+    @Test
+    fun `url lookup wins over title search`() {
+        val byUrl = TestFixtures.podcast(id = "pi-url", title = "Show")
+        val byTitle = TestFixtures.podcast(id = "pi-title", title = "Show")
+        assertEquals(
+            byUrl,
+            OpmlImportLogic.catalogMatch(
+                opmlTitle = "Show",
+                opmlXmlUrl = "https://feeds.example/show.xml",
+                urlLookup = byUrl,
+                titleSearch = listOf(byTitle),
+            ),
+        )
+    }
+
+    @Test
+    fun `rss url lookup is ignored so catalog title can still match`() {
+        val rssHit =
+            TestFixtures.rssPodcast(id = "rss:show", title = "Show").copy(
+                sourceType = Podcast.SOURCE_RSS,
+            )
+        val catalog = TestFixtures.podcast(id = "42", title = "Show")
+        assertEquals(
+            catalog,
+            OpmlImportLogic.catalogMatch(
+                opmlTitle = "Show",
+                opmlXmlUrl = "https://feeds.example/show.xml",
+                urlLookup = rssHit,
+                titleSearch = listOf(catalog),
+            ),
+        )
+    }
+
+    @Test
+    fun `title search does not take the first unrelated hit`() {
+        val unrelated = TestFixtures.podcast(id = "1", title = "Other Show")
+        val match = TestFixtures.podcast(id = "2", title = "The Daily")
+        assertEquals(
+            match,
+            OpmlImportLogic.catalogMatch(
+                opmlTitle = "The Daily",
+                opmlXmlUrl = "https://feeds.example/daily.xml",
+                urlLookup = null,
+                titleSearch = listOf(unrelated, match),
+            ),
+        )
+    }
+
+    @Test
+    fun `feed url match wins when titles differ`() {
+        val match =
+            TestFixtures.podcast(id = "9", title = "Publisher Name").copy(
+                feedUrl = "https://feeds.example/show.xml/",
+            )
+        assertEquals(
+            match,
+            OpmlImportLogic.catalogMatch(
+                opmlTitle = "Show",
+                opmlXmlUrl = "HTTPS://feeds.example/show.xml",
+                urlLookup = null,
+                titleSearch = listOf(match),
+            ),
+        )
+    }
+
+    @Test
+    fun `no catalog match when search titles and urls differ`() {
+        assertNull(
+            OpmlImportLogic.catalogMatch(
+                opmlTitle = "Show",
+                opmlXmlUrl = "https://feeds.example/show.xml",
+                urlLookup = null,
+                titleSearch = listOf(TestFixtures.podcast(id = "1", title = "Something Else")),
+            ),
+        )
+    }
+
+    @Test
+    fun `url lookup candidates include scheme slash and www variants`() {
+        val candidates =
+            OpmlImportLogic.urlLookupCandidates("http://www.feeds.example/show.xml/")
+        assertTrue(candidates.contains("https://feeds.example/show.xml"))
+        assertTrue(candidates.contains("http://www.feeds.example/show.xml"))
+    }
+
+    @Test
+    fun `httpsFeedUrl rewrites http outlines`() {
+        assertEquals(
+            "https://feeds.example/show.xml",
+            OpmlImportLogic.httpsFeedUrl("http://feeds.example/show.xml"),
+        )
+        assertEquals(
+            "https://feeds.example/show.xml",
+            OpmlImportLogic.httpsFeedUrl("https://feeds.example/show.xml"),
+        )
+        assertNull(OpmlImportLogic.httpsFeedUrl("not-a-url"))
+    }
+}
