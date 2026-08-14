@@ -106,7 +106,7 @@ internal fun LibrarySettingsPage(
         SettingsGroup(title = "Export") {
             SettingsNavigationRow(
                 title = "Full library backup",
-                supportingText = "Subscriptions, history, likes, and settings (JSON)",
+                supportingText = "Subscriptions, history, likes, settings, and catalog shows with Missing episodes? (JSON)",
                 icon = Icons.Rounded.FileUpload,
                 onClick = {
                     collapseCountryFaq()
@@ -128,7 +128,7 @@ internal fun LibrarySettingsPage(
         SettingsGroup(title = "Import") {
             SettingsNavigationRow(
                 title = "Full library backup",
-                supportingText = "Restore from a JSON backup",
+                supportingText = "Restores Missing episodes? opt-ins and refreshes those shows",
                 icon = Icons.Rounded.FileDownload,
                 onClick = {
                     collapseCountryFaq()

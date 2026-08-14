@@ -215,4 +215,12 @@ class PodcastDaoExtendedTest {
             dao.updateLatestEpisode("1", null)
             assertNull(dao.getPodcast("1")!!.latestEpisode)
         }
+
+    @Test
+    fun setFeedUrlWritesPublisherHttpsUrl() =
+        runTest {
+            dao.upsert(podcast("1258562"))
+            dao.setFeedUrl("1258562", "https://feeds.example/show.xml")
+            assertEquals("https://feeds.example/show.xml", dao.getPodcast("1258562")!!.feedUrl)
+        }
 }

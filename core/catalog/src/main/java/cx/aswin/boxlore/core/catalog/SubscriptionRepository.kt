@@ -416,4 +416,17 @@ class SubscriptionRepository(
             android.util.Log.e("FCM_Topic", "FCM topic reconciliation failed", e)
         }
     }
+
+    /**
+     * Writes an HTTPS publisher [feedUrl] onto the Room row so launch sync and
+     * notification RTDB can poll the same feed after library restore.
+     */
+    suspend fun ensureHttpsFeedUrl(
+        podcastId: String,
+        feedUrl: String,
+    ) {
+        val https = TrackedPodcastRtdbLogic.httpsFeedUrl(feedUrl) ?: return
+        if (podcastDao.getPodcast(podcastId) == null) return
+        podcastDao.setFeedUrl(podcastId, https)
+    }
 }

@@ -93,6 +93,28 @@ interface EpisodeSupplementPort {
     /** Podcast Index ids that have a direct-feed supplement row (user opted in). */
     suspend fun listOptedInPodcastIds(): Set<String>
 
+    /** HTTPS publisher feed the user opted into via Missing episodes?. */
+    data class DirectFeedOptIn(
+        val podcastIndexId: String,
+        val feedUrl: String,
+    )
+
+    /**
+     * Opted-in PI shows with their stored publisher URLs. Default empty so fakes
+     * that only implement [listOptedInPodcastIds] keep compiling.
+     */
+    suspend fun listDirectFeedOptIns(): List<DirectFeedOptIn> = emptyList()
+
+    /**
+     * Restores Missing episodes? after library import by writing a supplement row
+     * without a feed GET. Existing extras stay. No-ops for blank / `rss:` ids or
+     * non-HTTPS URLs. Default no-op for fakes.
+     */
+    suspend fun restoreDirectFeedOptIn(
+        podcastIndexId: String,
+        feedUrl: String,
+    ) = Unit
+
     /**
      * Optional identity for a specific feed item (FCM hydration). When set,
      * [resolveNewestTipFromFeed] returns that item instead of whatever is currently newest.

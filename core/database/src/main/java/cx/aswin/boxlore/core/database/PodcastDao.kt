@@ -112,4 +112,11 @@ interface PodcastDao {
      */
     @Query("UPDATE podcasts SET rssHasNewEpisodes = 1 WHERE podcastId = :id")
     suspend fun markHasNewEpisodes(id: String)
+
+    /** Publisher HTTPS URL for PI shows opted into Missing episodes? (library restore). */
+    @Query("UPDATE podcasts SET feedUrl = :feedUrl WHERE podcastId = :id")
+    suspend fun setFeedUrl(
+        id: String,
+        feedUrl: String,
+    )
 }

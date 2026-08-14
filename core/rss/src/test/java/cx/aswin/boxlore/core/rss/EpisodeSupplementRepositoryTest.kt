@@ -147,6 +147,87 @@ class EpisodeSupplementRepositoryTest {
         }
 
     @Test
+    fun `restoreDirectFeedOptIn writes https stub`() =
+        runTest {
+            val dao = FakeDao()
+            val repo =
+                EpisodeSupplementRepository(
+                    dao = dao,
+                    feedClient = RssFeedClient(),
+                    runInTransaction = { it() },
+                )
+            repo.restoreDirectFeedOptIn("123", "https://feeds.example/show.xml")
+            assertTrue(repo.hasDirectFeedOptIn("123"))
+            val listed = repo.listDirectFeedOptIns()
+            assertEquals(1, listed.size)
+            assertEquals("123", listed.single().podcastIndexId)
+            assertEquals("https://feeds.example/show.xml", listed.single().feedUrl)
+            assertEquals(0L, dao.supplement!!.fetchedAt)
+            assertNull(dao.supplement!!.feedEtag)
+        }
+
+    @Test
+    fun `restoreDirectFeedOptIn ignores http and rss ids`() =
+        runTest {
+            val repo =
+                EpisodeSupplementRepository(
+                    dao = FakeDao(),
+                    feedClient = RssFeedClient(),
+                    runInTransaction = { it() },
+                )
+            repo.restoreDirectFeedOptIn("123", "http://feeds.example/show.xml")
+            repo.restoreDirectFeedOptIn("rss:show", "https://feeds.example/show.xml")
+            assertTrue(repo.listDirectFeedOptIns().isEmpty())
+            assertFalse(repo.hasDirectFeedOptIn("123"))
+        }
+
+    @Test
+    fun `restoreDirectFeedOptIn does not replace existing extras`() =
+        runTest {
+            val dao = FakeDao()
+            dao.supplement =
+                EpisodeSupplementEntity(
+                    podcastId = "123",
+                    feedUrl = "https://feeds.example/show.xml",
+                    rssNamespaceId = "rss:show",
+                    feedEtag = "etag",
+                    feedLastModified = null,
+                    fetchedAt = 9L,
+                )
+            dao.items.add(
+                EpisodeSupplementItemEntity(
+                    episodeId = "-1",
+                    podcastId = "123",
+                    guid = "g",
+                    title = "Extra",
+                    description = "",
+                    audioUrl = "https://cdn.example/a.mp3",
+                    imageUrl = null,
+                    duration = 1,
+                    publishedDate = 1L,
+                    chaptersUrl = null,
+                    transcriptUrl = null,
+                    transcripts = null,
+                    persons = null,
+                    seasonNumber = null,
+                    episodeNumber = null,
+                    episodeType = null,
+                    enclosureType = null,
+                ),
+            )
+            val repo =
+                EpisodeSupplementRepository(
+                    dao = dao,
+                    feedClient = RssFeedClient(),
+                    runInTransaction = { it() },
+                )
+            repo.restoreDirectFeedOptIn("123", "https://feeds.example/other.xml")
+            assertEquals("https://feeds.example/show.xml", dao.supplement!!.feedUrl)
+            assertEquals("etag", dao.supplement!!.feedEtag)
+            assertEquals(1, dao.items.size)
+        }
+
+    @Test
     fun `refreshFromFeed without HTTPS url is a generic failure`() =
         runTest {
             val repo =
@@ -309,6 +390,9 @@ class EpisodeSupplementRepositoryTest {
 
         override suspend fun listOptedInPodcastIds(): List<String> =
             listOfNotNull(supplement?.podcastId)
+
+        override suspend fun listSupplements(): List<EpisodeSupplementEntity> =
+            listOfNotNull(supplement)
 
         override suspend fun getEpisode(episodeId: String): EpisodeSupplementItemEntity? =
             items.find { it.episodeId == episodeId }
