@@ -344,7 +344,14 @@ fun DownloadedEpisodesScreen(
                                         } else {
                                             selectedPodcastIds.remove(group.podcastId)
                                         }
-                                    }
+                                    },
+                                    onLongClick = {
+                                        isSelectionMode =
+                                            selectedPodcastIds.applyLongPressDownloadSelection(
+                                                isSelectionMode,
+                                                group.podcastId,
+                                            )
+                                    },
                                 )
                             }
                         }

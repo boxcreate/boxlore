@@ -92,7 +92,8 @@ internal fun PodcastListShowCard(
     modifier: Modifier = Modifier,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
-    onSelectedChange: (Boolean) -> Unit = {}
+    onSelectedChange: (Boolean) -> Unit = {},
+    onLongClick: () -> Unit = {},
 ) {
     val title = group.podcastName
     val imageUrl = group.podcastImageUrl
@@ -110,6 +111,8 @@ internal fun PodcastListShowCard(
                         onClick()
                     }
                 },
+                onLongClick = onLongClick,
+                onLongClickLabel = "Select",
                 shape = RoundedCornerShape(16.dp)
             )
             .background(MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(16.dp))
@@ -177,5 +180,36 @@ internal fun PodcastListShowCard(
             }
         }
     }
+}
+
+internal data class DownloadMultiSelect(
+    val active: Boolean,
+    val ids: Set<String>,
+)
+
+/**
+ * Long-press a downloads row: enter multi-select with [itemId] checked.
+ * If already selecting, toggle [itemId] like a tap.
+ */
+internal fun longPressDownloadSelection(
+    selectionActive: Boolean,
+    selectedIds: Set<String>,
+    itemId: String,
+): DownloadMultiSelect {
+    if (!selectionActive) {
+        return DownloadMultiSelect(active = true, ids = selectedIds + itemId)
+    }
+    val ids = if (itemId in selectedIds) selectedIds - itemId else selectedIds + itemId
+    return DownloadMultiSelect(active = true, ids = ids)
+}
+
+internal fun MutableList<String>.applyLongPressDownloadSelection(
+    selectionActive: Boolean,
+    itemId: String,
+): Boolean {
+    val next = longPressDownloadSelection(selectionActive, toSet(), itemId)
+    clear()
+    addAll(next.ids)
+    return next.active
 }
 

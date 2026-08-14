@@ -9,6 +9,7 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 - `LibraryScreen` and `LibraryViewModel`.
 - `HistoryScreen` and `HistoryViewModel`.
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`.
+- Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.
 - `SmartDownloadsSettingsScreen` and `AutoDownloadSettingsScreen`.
 - `PlayAllFab` and library UI helpers.
 - History list bottom spacing uses designsystem’s shared navigation-style / mini-player padding contract.
@@ -81,7 +82,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - `HistoryFilterTest` covers history filtering behavior.
 - `SubscriptionSortTest` covers subscription ordering.
 - `SubscriptionFilterLogicTest` covers genre extract/filter, sort labels, and chronological header buckets.
-- Broader ViewModel coverage should use fakes for catalog, download, playback, and ranking dependencies.
+- `DownloadModelsTest` covers download entity mapping, size/date formatting, and long-press multi-select (`longPressDownloadSelection`).
 
 ```bash
 ./gradlew :feature:library:testDebugUnitTest

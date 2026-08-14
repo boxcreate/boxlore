@@ -85,4 +85,48 @@ class DownloadModelsTest {
         assertTrue(formatRelativeDate(nowSeconds - 5_184_000).endsWith("mo ago"))
         assertTrue(formatRelativeDate(nowSeconds - 63_072_000).endsWith("y ago"))
     }
+
+    @Test
+    fun longPressDownloadSelectionEntersModeWithPressedItem() {
+        val next =
+            longPressDownloadSelection(
+                selectionActive = false,
+                selectedIds = emptySet(),
+                itemId = "ep-2",
+            )
+        assertEquals(true, next.active)
+        assertEquals(setOf("ep-2"), next.ids)
+    }
+
+    @Test
+    fun longPressDownloadSelectionTogglesWhenAlreadySelecting() {
+        val removed =
+            longPressDownloadSelection(
+                selectionActive = true,
+                selectedIds = setOf("ep-1", "ep-2"),
+                itemId = "ep-1",
+            )
+        assertEquals(true, removed.active)
+        assertEquals(setOf("ep-2"), removed.ids)
+
+        val added =
+            longPressDownloadSelection(
+                selectionActive = true,
+                selectedIds = setOf("ep-2"),
+                itemId = "ep-1",
+            )
+        assertEquals(setOf("ep-1", "ep-2"), added.ids)
+    }
+
+    @Test
+    fun applyLongPressDownloadSelectionMutatesListAndReturnsActive() {
+        val selected = mutableListOf("ep-1")
+        val active =
+            selected.applyLongPressDownloadSelection(
+                selectionActive = false,
+                itemId = "ep-3",
+            )
+        assertEquals(true, active)
+        assertEquals(setOf("ep-1", "ep-3"), selected.toSet())
+    }
 }

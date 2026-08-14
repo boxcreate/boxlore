@@ -6,7 +6,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 
 ## Public API
 
-- `BoxLoreTheme` and theme helpers such as expressive shapes, motion, typography, and dynamic color utilities.
+- `BoxLoreTheme` and theme helpers such as expressive shapes, motion, typography, and dynamic color utilities. `Modifier.expressiveClickable` has a long-press overload (`onLongClick`) used by Downloads multi-select.
 - Shared components including `OptimizedImage` (optional `errorContent` for blank/failed art), loaders, `PillFilterChip` (onboarding/Explore genre pills), `BoxLoreLogo` (optional `height` for hero vs chrome sizes), player-control primitives used by UI modules, floating 3+1 navigation chrome, bottom-content clearance helpers, and sleep-timer chrome.
 - Shared discovery poster cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing` (Home “Based on Your Taste” and Explore For You).
 - `share.ShareManager` for composite share cards and the system share sheet; emits glossary `share_content` via `:core:analytics`.

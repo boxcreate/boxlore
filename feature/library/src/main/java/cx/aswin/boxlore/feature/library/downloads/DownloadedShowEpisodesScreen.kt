@@ -394,6 +394,7 @@ fun DownloadedShowEpisodesScreen(
                             SwipeToDismissBox(
                                 state = dismissState,
                                 enableDismissFromStartToEnd = false,
+                                enableDismissFromEndToStart = !isSelectionMode,
                                 onDismiss = { value ->
                                     if (value == SwipeToDismissBoxValue.EndToStart) {
                                         swipeToDeleteEpisode = download
@@ -426,6 +427,14 @@ fun DownloadedShowEpisodesScreen(
                                             .fillMaxWidth()
                                             .expressiveClickable(
                                                 shape = RoundedCornerShape(12.dp),
+                                                onLongClickLabel = "Select",
+                                                onLongClick = {
+                                                    isSelectionMode =
+                                                        selectedEpisodeIds.applyLongPressDownloadSelection(
+                                                            isSelectionMode,
+                                                            download.episodeId,
+                                                        )
+                                                },
                                                 onClick = {
                                                     if (isSelectionMode) {
                                                         if (selectedEpisodeIds.contains(download.episodeId)) {
