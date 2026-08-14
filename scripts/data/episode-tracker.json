@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-14T01:51:14.427Z",
+  "lastRun": "2026-08-14T04:07:43.449Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -274,6 +274,12 @@
       "lastEpisodeTitle": "Listen Now: I Am Not Nicholas",
       "lastEpisodeId": "42575210570",
       "lastCheckedAt": 1786559328642
+    },
+    "4239702": {
+      "lastEpisodeId": "42157398048",
+      "lastEpisodeTitle": "[F4A] Little Space Bedtime Story: The Word Collector",
+      "lastRssKey": "97b2e444-7985-48e2-abf4-f80d71eedd9a",
+      "lastCheckedAt": 1786680483827
     },
     "4373297": {
       "lastRssKey": "urn:bbc:podcast:p0npnq09",
