@@ -214,6 +214,36 @@ function applyCheck({ existing, source, newest, now = Date.now() }) {
     };
 }
 
+/** Same 25 MB ceiling as Android `RssFeedClient` — GHA previously used 5 MB. */
+const MAX_FEED_BYTES = 25 * 1024 * 1024;
+
+/** Stop after this many bytes once a complete RSS item / Atom entry is in the buffer. */
+const RSS_PREFIX_BYTES = 2 * 1024 * 1024;
+
+function feedHasCompleteItem(xml) {
+    const source = String(xml || '');
+    return /<\/item>/i.test(source) || /<\/entry>/i.test(source);
+}
+
+/**
+ * @returns {'too-large' | 'prefix-enough' | 'continue'}
+ */
+function rssDownloadDecision({
+    received = 0,
+    declared,
+    maxBytes = MAX_FEED_BYTES,
+    prefixBytes = RSS_PREFIX_BYTES,
+    xml = '',
+} = {}) {
+    const declaredN = Number(declared);
+    if (received === 0 && Number.isFinite(declaredN) && declaredN > maxBytes) {
+        return 'too-large';
+    }
+    if (received > maxBytes) return 'too-large';
+    if (received >= prefixBytes && feedHasCompleteItem(xml)) return 'prefix-enough';
+    return 'continue';
+}
+
 function omitEmpty(data) {
     const out = {};
     for (const [key, value] of Object.entries(data)) {
@@ -285,4 +315,8 @@ module.exports = {
     applyCheck,
     buildRssFcmData,
     buildPiFcmData,
+    MAX_FEED_BYTES,
+    RSS_PREFIX_BYTES,
+    feedHasCompleteItem,
+    rssDownloadDecision,
 };

@@ -221,6 +221,35 @@ describe('check-new-episodes-lib', () => {
         assert.equal(piCatchUp.nextState.lastRssKey, 'guid-new');
     });
 
+    it('rssDownloadDecision allows The Daily-sized Content-Length under the 25MB cap', () => {
+        const dailyBytes = 18519046;
+        assert.equal(
+            lib.rssDownloadDecision({
+                received: 0,
+                declared: dailyBytes,
+                maxBytes: 5_000_000,
+                xml: '',
+            }),
+            'too-large',
+        );
+        assert.equal(
+            lib.rssDownloadDecision({
+                received: 0,
+                declared: dailyBytes,
+                xml: '',
+            }),
+            'continue',
+        );
+        assert.equal(
+            lib.rssDownloadDecision({
+                received: lib.RSS_PREFIX_BYTES,
+                declared: dailyBytes,
+                xml: '<rss><channel><item><title>x</title></item>',
+            }),
+            'prefix-enough',
+        );
+    });
+
     it('applyCheck RSS does not notify when PI id already recorded', () => {
         const result = lib.applyCheck({
             existing: {

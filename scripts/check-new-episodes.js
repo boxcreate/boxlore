@@ -35,9 +35,16 @@ function generateAuthHeaders() {
     };
 }
 
-async function fetchText(url, { timeoutMs = 15000, maxBytes = 5_000_000 } = {}) {
+async function fetchText(url, {
+    timeoutMs = 15000,
+    maxBytes = lib.MAX_FEED_BYTES,
+    prefixBytes = lib.RSS_PREFIX_BYTES,
+} = {}) {
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), timeoutMs);
+    const decoder = new TextDecoder('utf-8');
+    let xml = '';
+    let received = 0;
     try {
         const response = await fetch(url, {
             signal: ac.signal,
@@ -51,22 +58,39 @@ async function fetchText(url, { timeoutMs = 15000, maxBytes = 5_000_000 } = {}) 
             throw new Error(`HTTP ${response.status}`);
         }
         const declared = Number(response.headers.get('content-length'));
-        if (Number.isFinite(declared) && declared > maxBytes) {
+        if (lib.rssDownloadDecision({ received: 0, declared, maxBytes, prefixBytes, xml: '' }) === 'too-large') {
             throw new Error(`feed too large (${declared} bytes)`);
         }
         if (!response.body) {
             throw new Error('empty body');
         }
-        const chunks = [];
-        let received = 0;
-        for await (const chunk of response.body) {
-            received += chunk.byteLength;
-            if (received > maxBytes) {
-                throw new Error(`feed too large (${received} bytes)`);
+        try {
+            for await (const chunk of response.body) {
+                received += chunk.byteLength;
+                xml += decoder.decode(chunk, { stream: true });
+                const decision = lib.rssDownloadDecision({
+                    received,
+                    declared,
+                    maxBytes,
+                    prefixBytes,
+                    xml,
+                });
+                if (decision === 'too-large') {
+                    throw new Error(`feed too large (${received} bytes)`);
+                }
+                if (decision === 'prefix-enough') {
+                    xml += decoder.decode();
+                    ac.abort();
+                    return xml;
+                }
             }
-            chunks.push(Buffer.from(chunk));
+        } catch (error) {
+            if (error && error.name === 'AbortError' && lib.feedHasCompleteItem(xml)) {
+                return xml + decoder.decode();
+            }
+            throw error;
         }
-        return Buffer.concat(chunks).toString('utf8');
+        return xml + decoder.decode();
     } finally {
         clearTimeout(timer);
     }
