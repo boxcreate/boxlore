@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Long-press a Downloads show or episode to enter multi-select with that row checked (checklist toggle remains). ([#980](https://github.com/boxcreate/boxlore/pull/980)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Fixed
 - JSON library backup/restore now keeps Missing episodes? (direct publisher feed) opt-ins and refreshes those shows on import. ([#978](https://github.com/boxcreate/boxlore/pull/978)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Draw library import (JSON and OPML) in the activity window so OEM Dialog status-bar scrims cannot mismatch the page color. ([#979](https://github.com/boxcreate/boxlore/pull/979)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -22,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Polish
 - Importing your library from welcome no longer shows a black bar at the top of the screen.
 <!-- readme-copy:end pr=979 -->
+
+<!-- readme-copy:start pr=980 -->
+### Polish
+- Press and hold a download to select several episodes or shows and delete them together.
+<!-- readme-copy:end pr=980 -->
 ## [v0.0.16] - 2026-08-14
 
 ### Fixed
