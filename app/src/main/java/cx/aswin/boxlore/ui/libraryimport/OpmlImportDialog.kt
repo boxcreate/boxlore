@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.ui.libraryimport
 
-import android.view.WindowManager
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -13,28 +14,29 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
+import androidx.compose.ui.zIndex
+import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Podcast
 
 sealed interface OpmlImportState {
@@ -115,61 +117,56 @@ fun OpmlImportDialog(
             onResult = { uri -> uri?.let { onImportOpmlSelected(it) } },
         )
     val canDismiss = canDismissImportState(state)
+    BackHandler {
+        if (canDismiss) onDismissRequest()
+    }
 
-    Dialog(
-        onDismissRequest = {
-            if (canDismiss) onDismissRequest()
-        },
-        properties =
-            DialogProperties(
-                usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false,
-            ),
+    // Draw in the Activity window (not a Dialog) so JSON and OPML share the same
+    // edge-to-edge chrome as welcome. OEM Dialog windows keep an opaque black bar.
+    val view = LocalView.current
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val darkTheme = LocalEffectiveDarkTheme.current
+    SideEffect {
+        val window = (view.context as? Activity)?.window ?: return@SideEffect
+        ImportDialogSystemBars.apply(
+            window = window,
+            backgroundArgb = backgroundColor.toArgb(),
+            darkTheme = darkTheme,
+        )
+    }
+
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .zIndex(200f)
+                .pointerInput(Unit) { /* Block touch-through to welcome / player. */ },
+        color = backgroundColor,
     ) {
-        // Dialog windows default to wrap-content height; force true full-screen so the
-        // welcome cinematic background cannot show above a short panel.
-        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect {
-            dialogWindow?.setLayout(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-            )
-        }
-
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background,
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
         ) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = MaterialTheme.colorScheme.background,
-            ) { innerPadding ->
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                ) {
-                    if (canDismiss) {
-                        ImportCloseButton(
-                            onClick = onDismissRequest,
-                            modifier = Modifier.align(Alignment.TopEnd),
-                        )
-                    }
-                    ImportDialogBody(
-                        state = state,
-                        onDismissRequest = onDismissRequest,
-                        onSelectionChanged = onSelectionChanged,
-                        onConfirmCompleted = onConfirmCompleted,
-                        onSkipCompleted = onSkipCompleted,
-                        onPickJson = {
-                            importJsonLauncher.launch(arrayOf("application/json"))
-                        },
-                        onPickOpml = { importOpmlLauncher.launch(arrayOf("*/*")) },
-                    )
-                }
+            if (canDismiss) {
+                ImportCloseButton(
+                    onClick = onDismissRequest,
+                    modifier = Modifier.align(Alignment.TopEnd),
+                )
             }
+            ImportDialogBody(
+                state = state,
+                onDismissRequest = onDismissRequest,
+                onSelectionChanged = onSelectionChanged,
+                onConfirmCompleted = onConfirmCompleted,
+                onSkipCompleted = onSkipCompleted,
+                onPickJson = {
+                    importJsonLauncher.launch(arrayOf("application/json"))
+                },
+                onPickOpml = { importOpmlLauncher.launch(arrayOf("*/*")) },
+            )
         }
     }
 }
