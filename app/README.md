@@ -13,12 +13,13 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 - FCM (`BoxLoreFcmService`) owns notification_received / tap extras (`notification_type`, podcast/episode ids for snake+camel keys). Generic push intents propagate those extras so taps are not always `"push"`. For `type=new_episode`, opted-in PI shows run the same full `refreshFromFeed` as launch sync (`NewEpisodePushHydration`, 1000-oldest PI baseline in parallel) so extras land in Room for Home chips and Library; the payload enclosure/guid still selects the notification episode. If the payload has no usable episode id, the tap opens the podcast page.
 - Library backup/import analytics (`trackBackupRestoreResult`, import failed) use allowlisted error codes from `LibraryBackupAnalyticsErrors` — never raw exception text.
 - `MainActivity` / `BoxLoreAppRoot` own deep-link and session-restore analytics at the shell layer.
+- Full-screen library import (`OpmlImportDialog`) is an in-window overlay (JSON and OPML share the same selector). It paints the theme background behind the status bar / cutout (`ImportDialogSystemBars`) and pads content with `WindowInsets.safeDrawing` so chrome matches the page instead of an OEM Dialog scrim.
 - App-shell UI uses the centralized Google Sans Flex weight tokens from `:core:designsystem`.
 - `SharedAppDependenciesHolder` and `DownloadsDependenciesHolder` are installed from the application so workers and Media3 services reuse the same graph.
 - `HomeScreenWidgetsInstaller` installs `NowPlayingWidgetDependencies` (via `NowPlayingWidgetPlaybackAdapter`) and `LibraryWidgetDependencies` (via `WidgetLibrarySourceAdapter`) so home-screen widgets share the app-scoped `PlaybackRepository` / library ports without a second graph. Transport calls hop to `Dispatchers.Main`. Lettering-roundness changes re-render bitmap labels so ROND matches Appearance.
 - `DownloadServiceLauncherHolder` is installed with `MediaDownloadService::class.java` so `:core:downloads` can launch the foreground download service without depending on `:core:playback`.
 - `LegacyWorkerFactory` maps legacy worker class names to current worker implementations for WorkManager continuity.
-- `MainActivity` hosts theme, edge-to-edge setup, app update hooks, surveys, OPML import state (full-screen `OpmlImportDialog` so onboarding welcome never shows through), the selected floating or classic navigation presentation, and the player overlay.
+- `MainActivity` hosts theme, edge-to-edge setup, app update hooks, surveys, library import state (full-screen `OpmlImportDialog` overlay so onboarding welcome never shows through), the selected floating or classic navigation presentation, and the player overlay.
 - NPS survey UI (`surveys/`) applies `NpsSurveyBranching` after each answer so detractor / passive / promoter open-text paths end instead of falling through into the next score band (PostHog open-question `end` branching is not reliably persisted via API).
 - `BoxLoreNavHost` owns app route registration and delegates screen bodies to feature modules; stack-slide transitions follow the visible Home → Explore → Library → Lore order, and Home’s first committed content frame unlocks the floating Lore launch animation.
 - Cold-start destination precedence (see `StartDestinationResolver`): incomplete onboarding → offline Downloads (no deep link) → Appearance **Open app to** Subscriptions (no deep link) → Home. Deep links and push `target_route` still win over Open app to. When cold start opens Subscriptions, `openedToSubscriptionsOnLaunch` makes Back navigate to Home (not Library hub); Library-tile entry still pops to Library.
@@ -58,6 +59,7 @@ src/main/java/cx/aswin/boxlore/
     announcement/
     libraryimport/
       OpmlImportDialog.kt
+      ImportDialogSystemBars.kt
       OpmlImportEffects.kt
       OpmlImportProgressContent.kt
   updates/
@@ -90,7 +92,7 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 
 ## Testing notes
 
-- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids, feedUrl/guid/enclosure), new-episode route/id helpers, opted-in feed hydration before notify, library backup analytics error codes, push-target route allowlisting, cold-start destination precedence (`StartDestinationResolverTest`), and launch-Subscriptions Back decisions (`LaunchSubscriptionsBackDecisionTest`).
+- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids, feedUrl/guid/enclosure), new-episode route/id helpers, opted-in feed hydration before notify, library backup analytics error codes, import-dialog system-bar edge-to-edge (`ImportDialogSystemBarsTest`), push-target route allowlisting, cold-start destination precedence (`StartDestinationResolverTest`), and launch-Subscriptions Back decisions (`LaunchSubscriptionsBackDecisionTest`).
 - Navigation and feature UI behavior are covered mainly in feature module tests and Maestro smoke flows.
 
 ```bash

@@ -378,10 +378,10 @@
         <error line="237" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/ui/libraryimport/OpmlImportDialog.kt">
-        <error line="92" column="5" source="standard:function-naming" />
-        <error line="160" column="13" source="standard:function-naming" />
-        <error line="183" column="13" source="standard:function-naming" />
-        <error line="235" column="13" source="standard:function-naming" />
+        @error line="98" column="5" source="standard:function-naming" />
+        <error line="175" column="13" source="standard:function-naming" />
+        <error line="198" column="13" source="standard:function-naming" />
+        <error line="250" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/ui/libraryimport/OpmlImportEffects.kt">
         <error line="21" column="5" source="standard:function-naming" />
