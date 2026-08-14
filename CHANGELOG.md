@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- JSON library backup/restore now keeps Missing episodes? (direct publisher feed) opt-ins and refreshes those shows on import. ([#978](https://github.com/boxcreate/boxlore/pull/978)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=978 -->
+### Improvements
+- Restoring a full library backup now keeps Missing episodes? shows opted in and refreshes them so your library is up to date.
+<!-- readme-copy:end pr=978 -->
 ## [v0.0.16] - 2026-08-14
 
 ### Fixed
