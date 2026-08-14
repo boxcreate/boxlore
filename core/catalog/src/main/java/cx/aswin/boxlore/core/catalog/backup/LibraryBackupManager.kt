@@ -319,13 +319,6 @@ class LibraryBackupManager(
                 importedIds.add(podcast.id)
             }
 
-            val directFeedTargets =
-                LibraryBackupDirectFeedLogic.restoreTargets(
-                    backup.directFeedOptIns,
-                    importedIds,
-                )
-            restoreImportedDirectFeeds(directFeedTargets)
-            
             // 2. Restore playback histories (liked episodes)
             for (entity in backup.history) {
                 if (entity.podcastId.startsWith("rss:") && entity.podcastId !in importedIds) {
@@ -360,24 +353,28 @@ class LibraryBackupManager(
                 adaptiveRankingRepository.restoreBackup(rankingBackup)
             }
             
-            // 4. Refresh latest episodes: publisher feeds already ran for opted-in
-            // shows; PI /sync covers the rest (rss: ids are ignored by /sync).
-            val piSyncIds =
-                LibraryBackupDirectFeedLogic.piSyncIds(
+            // 4. Refresh latest episodes: restore Missing episodes? feeds first,
+            // then PI /sync for everyone else, then true rss: catalogs.
+            val refreshPlan =
+                LibraryBackupDirectFeedLogic.refreshPlan(
                     importedIds = importedIds,
-                    restoredOptInIds = directFeedTargets.map { it.podcastId }.toSet(),
+                    backupOptIns = backup.directFeedOptIns,
                 )
-            if (piSyncIds.isNotEmpty()) {
-                try {
-                    val syncedMap = podcastRepository.syncSubscriptions(piSyncIds)
-                    for ((id, ep) in syncedMap) {
-                        subscriptionRepository.updateLatestEpisode(id, ep)
+            LibraryBackupDirectFeedLogic.runPostSubscribeRefresh(
+                plan = refreshPlan,
+                restoreDirectFeeds = { restoreImportedDirectFeeds(it) },
+                syncPi = { ids ->
+                    try {
+                        val syncedMap = podcastRepository.syncSubscriptions(ids)
+                        for ((id, ep) in syncedMap) {
+                            subscriptionRepository.updateLatestEpisode(id, ep)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("JSON_IMPORT", "Failed to sync episodes", e)
                     }
-                } catch (e: Exception) {
-                    Log.e("JSON_IMPORT", "Failed to sync episodes", e)
-                }
-            }
-            refreshImportedRssCatalogs(importedIds)
+                },
+                refreshRss = { refreshImportedRssCatalogs(it) },
+            )
             
             val hasNotificationsEnabled = backup.subscriptions.any { it.notificationsEnabled || it.autoDownloadEnabled }
             Pair(importedIds.size, hasNotificationsEnabled)
@@ -525,8 +522,8 @@ class LibraryBackupManager(
         )
     }
 
-    private suspend fun refreshImportedRssCatalogs(importedIds: Collection<String>) {
-        for (id in importedIds.filter { it.startsWith("rss:") }) {
+    private suspend fun refreshImportedRssCatalogs(rssIds: Collection<String>) {
+        for (id in rssIds) {
             try {
                 rssPodcastRepository.refreshCatalogIfNeeded(id)
             } catch (e: Exception) {

@@ -5,8 +5,15 @@ import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 
 /** JSON field for PI shows opted into Missing episodes? (backup version 6+). */
 data class DirectFeedOptInBackup(
-    val podcastId: String,
-    val feedUrl: String,
+    val podcastId: String? = null,
+    val feedUrl: String? = null,
+)
+
+/** Post-subscribe catalog refresh: direct-feed restore, then PI `/sync`, then RSS. */
+internal data class LibraryBackupRefreshPlan(
+    val directFeedTargets: List<DirectFeedOptInBackup>,
+    val piSyncIds: List<String>,
+    val rssIds: List<String>,
 )
 
 /** Pure helpers for exporting and targeting direct-feed opt-ins in library JSON. */
@@ -38,7 +45,8 @@ internal object LibraryBackupDirectFeedLogic {
         return backupOptIns
             .orEmpty()
             .mapNotNull { optIn ->
-                val id = optIn.podcastId.trim()
+                // Gson can write JSON null into Kotlin String fields.
+                val id = optIn.podcastId?.trim().orEmpty()
                 if (id.isEmpty() || id.startsWith("rss:") || id !in imported) {
                     return@mapNotNull null
                 }
@@ -56,4 +64,35 @@ internal object LibraryBackupDirectFeedLogic {
         importedIds.filter { id ->
             id.isNotBlank() && !id.startsWith("rss:") && id !in restoredOptInIds
         }
+
+    fun rssRefreshIds(importedIds: Collection<String>): List<String> =
+        importedIds.filter { id -> id.startsWith("rss:") && id.isNotBlank() }
+
+    fun refreshPlan(
+        importedIds: Collection<String>,
+        backupOptIns: List<DirectFeedOptInBackup>?,
+    ): LibraryBackupRefreshPlan {
+        val targets = restoreTargets(backupOptIns, importedIds)
+        val restoredIds = targets.mapNotNull { it.podcastId }.toSet()
+        return LibraryBackupRefreshPlan(
+            directFeedTargets = targets,
+            piSyncIds = piSyncIds(importedIds, restoredIds),
+            rssIds = rssRefreshIds(importedIds),
+        )
+    }
+
+    suspend fun runPostSubscribeRefresh(
+        plan: LibraryBackupRefreshPlan,
+        restoreDirectFeeds: suspend (List<DirectFeedOptInBackup>) -> Unit,
+        syncPi: suspend (List<String>) -> Unit,
+        refreshRss: suspend (List<String>) -> Unit,
+    ) {
+        restoreDirectFeeds(plan.directFeedTargets)
+        if (plan.piSyncIds.isNotEmpty()) {
+            syncPi(plan.piSyncIds)
+        }
+        if (plan.rssIds.isNotEmpty()) {
+            refreshRss(plan.rssIds)
+        }
+    }
 }

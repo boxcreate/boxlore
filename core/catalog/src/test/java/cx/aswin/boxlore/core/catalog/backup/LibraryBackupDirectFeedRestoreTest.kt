@@ -12,12 +12,7 @@ class LibraryBackupDirectFeedRestoreTest {
     @Test
     fun `restoreAndRefresh stubs, refreshes, saves tip, and patches tracked url`() =
         runTest {
-            val stubs = mutableListOf<String>()
-            val ensured = mutableListOf<String>()
-            val invalidated = mutableListOf<String>()
-            val refreshed = mutableListOf<String>()
-            val saved = mutableListOf<String>()
-            val tracked = mutableListOf<String>()
+            val order = mutableListOf<String>()
             val tip = TestFixtures.episode(id = "ep-1", title = "Tip", podcastId = "100")
             LibraryBackupDirectFeedRestore.restoreAndRefresh(
                 targets =
@@ -26,33 +21,39 @@ class LibraryBackupDirectFeedRestoreTest {
                     ),
                 actions =
                     DirectFeedRestoreActions(
-                        restoreStub = { id, _ -> stubs.add(id) },
-                        ensureFeedUrl = { id, _ -> ensured.add(id) },
-                        invalidateCache = { invalidated.add(it) },
+                        restoreStub = { id, _ -> order.add("stub:$id") },
+                        ensureFeedUrl = { id, _ -> order.add("ensure:$id") },
+                        invalidateCache = { order.add("invalidate:$it") },
                         refreshFeed = { id, _ ->
-                            refreshed.add(id)
+                            order.add("refresh:$id")
                             EpisodeSupplementOutcome.Success(
                                 addedCount = 1,
                                 totalSupplementCount = 1,
                                 newestFeedEpisode = tip,
                             )
                         },
-                        saveTip = { id, episode -> saved.add("$id:${episode.id}") },
-                        syncTrackedUrl = { tracked.add(it) },
+                        saveTip = { id, episode -> order.add("tip:$id:${episode.id}") },
+                        syncTrackedUrl = { order.add("tracked:$it") },
                     ),
             )
-            assertEquals(listOf("100"), stubs)
-            assertEquals(listOf("100"), ensured)
-            assertEquals(listOf("100"), invalidated)
-            assertEquals(listOf("100"), refreshed)
-            assertEquals(listOf("100:ep-1"), saved)
-            assertEquals(listOf("100"), tracked)
+            assertEquals(
+                listOf(
+                    "stub:100",
+                    "ensure:100",
+                    "tracked:100",
+                    "invalidate:100",
+                    "refresh:100",
+                    "tip:100:ep-1",
+                ),
+                order,
+            )
         }
 
     @Test
     fun `restoreAndRefresh keeps stub when refresh fails`() =
         runTest {
             val stubs = mutableListOf<String>()
+            val tracked = mutableListOf<String>()
             val saved = mutableListOf<String>()
             val errors = mutableListOf<String>()
             LibraryBackupDirectFeedRestore.restoreAndRefresh(
@@ -74,11 +75,12 @@ class LibraryBackupDirectFeedRestoreTest {
                             }
                         },
                         saveTip = { id, _ -> saved.add(id) },
-                        syncTrackedUrl = {},
+                        syncTrackedUrl = { tracked.add(it) },
                         onError = { id, _ -> errors.add(id) },
                     ),
             )
             assertEquals(listOf("100", "101"), stubs.sorted())
+            assertEquals(listOf("100", "101"), tracked.sorted())
             assertTrue(saved.isEmpty())
             assertEquals(listOf("101"), errors)
         }

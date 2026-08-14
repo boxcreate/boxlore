@@ -21,8 +21,9 @@ internal data class DirectFeedRestoreActions(
 )
 
 /**
- * After JSON subscribe: restore Missing episodes? stubs, refresh publisher feeds,
- * and promote tips. Failures are isolated per show so one dead feed does not abort import.
+ * After JSON subscribe: restore Missing episodes? stubs, patch RTDB `feedUrl`,
+ * refresh publisher feeds, and promote tips. Failures are isolated per show so
+ * one dead feed does not abort import.
  */
 internal object LibraryBackupDirectFeedRestore {
     const val DEFAULT_CONCURRENCY = 6
@@ -47,12 +48,15 @@ internal object LibraryBackupDirectFeedRestore {
         optIn: DirectFeedOptInBackup,
         actions: DirectFeedRestoreActions,
     ) {
-        val id = optIn.podcastId
+        val id = optIn.podcastId?.trim().orEmpty()
+        val url = optIn.feedUrl
+        if (id.isEmpty() || url.isNullOrBlank()) return
         try {
-            actions.restoreStub(id, optIn.feedUrl)
-            actions.ensureFeedUrl(id, optIn.feedUrl)
+            actions.restoreStub(id, url)
+            actions.ensureFeedUrl(id, url)
+            actions.syncTrackedUrl(id)
             actions.invalidateCache(id)
-            when (val outcome = actions.refreshFeed(id, optIn.feedUrl)) {
+            when (val outcome = actions.refreshFeed(id, url)) {
                 is EpisodeSupplementOutcome.Success -> {
                     val tip = outcome.newestFeedEpisode
                     if (tip != null) actions.saveTip(id, tip)
@@ -61,7 +65,6 @@ internal object LibraryBackupDirectFeedRestore {
                 EpisodeSupplementOutcome.NoDisconnect,
                 -> Unit
             }
-            actions.syncTrackedUrl(id)
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
