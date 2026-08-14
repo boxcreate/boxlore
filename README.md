@@ -64,6 +64,11 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🆕 New features:</b>
+<ul align="left">
+<li>Hold and drag shows in Subscriptions to set your own order. <a href="https://github.com/boxcreate/boxlore/pull/982"><img src="https://img.shields.io/badge/PR-982-6750A4?style=flat-square" alt="PR #982" height="18"/></a></li>
+<li>Pin up to five shows so they sit at the front of Your Shows on Home (after mixtape). <a href="https://github.com/boxcreate/boxlore/pull/982"><img src="https://img.shields.io/badge/PR-982-6750A4?style=flat-square" alt="PR #982" height="18"/></a></li>
+</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Restoring a full library backup now keeps Missing episodes? shows opted in and refreshes them so your library is up to date. <a href="https://github.com/boxcreate/boxlore/pull/978"><img src="https://img.shields.io/badge/PR-978-6750A4?style=flat-square" alt="PR #978" height="18"/></a></li>

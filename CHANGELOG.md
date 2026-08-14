@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Manual subscription sort: long-press-drag artwork on the unfiltered Shows list; first drop seeds `subscription_manual_order` and switches `subscription_sort` to Manual. New shows append A–Z; unsubscribe drops the id. ([#982](https://github.com/boxcreate/boxlore/pull/982)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Up to five Home pins (`home_pinned_podcast_ids`) lead Your Shows after mixtape. Long-press a cover for Pin / Unpin; show-page overflow has the same actions. A sixth pin is refused with a snackbar. ([#982](https://github.com/boxcreate/boxlore/pull/982)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Long-press a Downloads show or episode to enter multi-select with that row checked (checklist toggle remains). ([#980](https://github.com/boxcreate/boxlore/pull/980)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Fixed
 - JSON library backup/restore now keeps Missing episodes? (direct publisher feed) opt-ins and refreshes those shows on import. ([#978](https://github.com/boxcreate/boxlore/pull/978)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -35,6 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixes
 - Opening straight to Subscriptions, then using system Back, no longer leaves Home looking shrunk.
 <!-- readme-copy:end pr=981 -->
+
+<!-- readme-copy:start pr=982 -->
+### New features
+- Hold and drag shows in Subscriptions to set your own order.
+- Pin up to five shows so they sit at the front of Your Shows on Home (after mixtape).
+<!-- readme-copy:end pr=982 -->
 ## [v0.0.16] - 2026-08-14
 
 ### Fixed
