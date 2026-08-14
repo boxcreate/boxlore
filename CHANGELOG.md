@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - JSON library backup/restore now keeps Missing episodes? (direct publisher feed) opt-ins and refreshes those shows on import. ([#978](https://github.com/boxcreate/boxlore/pull/978)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Draw library import (JSON and OPML) in the activity window so OEM Dialog status-bar scrims cannot mismatch the page color. ([#979](https://github.com/boxcreate/boxlore/pull/979)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Restore predictive-back peek scale after Back from a cold-start Subscriptions screen so Home is not left at 0.9. ([#981](https://github.com/boxcreate/boxlore/pull/981)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=978 -->
 ### Improvements
@@ -29,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Polish
 - Press and hold a download to select several episodes or shows and delete them together.
 <!-- readme-copy:end pr=980 -->
+
+<!-- readme-copy:start pr=981 -->
+### Fixes
+- Opening straight to Subscriptions, then using system Back, no longer leaves Home looking shrunk.
+<!-- readme-copy:end pr=981 -->
 ## [v0.0.16] - 2026-08-14
 
 ### Fixed
