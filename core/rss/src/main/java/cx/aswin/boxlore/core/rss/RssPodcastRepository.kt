@@ -92,8 +92,10 @@ class RssPodcastRepository private constructor(
                 }
             val stateSource = exactMatch ?: existing
             val now = System.currentTimeMillis()
-            val latestEpisode =
-                parsed.episodes.first().toEpisode(
+            val sticky =
+                StickyRssEpisodeRemap.prepare(
+                    parsed = parsed.episodes,
+                    existing = episodeDao.listIdentities(podcastId),
                     podcastTitle = parsed.title,
                     podcastImageUrl = parsed.imageUrl,
                     podcastGenre = parsed.genre,
@@ -111,7 +113,7 @@ class RssPodcastRepository private constructor(
                     genre = parsed.genre,
                     type = parsed.podcastType,
                     lastRefreshed = now,
-                    latestEpisode = latestEpisode,
+                    latestEpisode = sticky.latestEpisode,
                     preferredSort =
                         stateSource?.preferredSort
                             ?: if (parsed.podcastType == "serial") "oldest" else "newest",
@@ -138,19 +140,19 @@ class RssPodcastRepository private constructor(
                 )
             database.withTransaction {
                 podcastDao.upsert(entity)
-                episodeDao.upsertAll(parsed.episodes)
+                episodeDao.upsertAll(sticky.episodes)
                 exactMatch?.let { matched ->
                     migrateLinkedState(
                         podcastIndexPodcast = matched,
                         rssPodcast = entity,
-                        rssEpisodes = parsed.episodes,
+                        rssEpisodes = sticky.episodes,
                     )
                 }
             }
             exactMatch?.let { unsubscribeFromPodcastIndexNotifications(it.podcastId) }
             RssSubscriptionResult(
                 podcast = entity.toPodcast(),
-                episodeCount = parsed.episodes.size,
+                episodeCount = sticky.episodes.size,
                 automaticUpdateChecksSupported = supportsHeadChecks,
                 potentialPodcastIndexMatch = potentialMatch?.toPodcast(),
                 linkedPodcastIndexId = exactMatch?.podcastId,
@@ -220,8 +222,10 @@ class RssPodcastRepository private constructor(
                                 etag = fetched.etag,
                                 lastModified = fetched.lastModified,
                             )
-                        val latestEpisode =
-                            parsed.episodes.first().toEpisode(
+                        val sticky =
+                            StickyRssEpisodeRemap.prepare(
+                                parsed = parsed.episodes,
+                                existing = episodeDao.listIdentities(podcastId),
                                 podcastTitle = parsed.title,
                                 podcastImageUrl = parsed.imageUrl ?: existing.imageUrl,
                                 podcastGenre = parsed.genre ?: existing.genre,
@@ -235,7 +239,7 @@ class RssPodcastRepository private constructor(
                                 description = parsed.description ?: existing.description,
                                 genre = parsed.genre ?: existing.genre,
                                 type = parsed.podcastType,
-                                latestEpisode = latestEpisode,
+                                latestEpisode = sticky.latestEpisode,
                                 lastRefreshed = System.currentTimeMillis(),
                                 feedUrl = fetched.finalUrl,
                                 feedEtag = fetched.etag,
@@ -251,16 +255,11 @@ class RssPodcastRepository private constructor(
                                 rssCatalogStale = false,
                                 rssHasNewEpisodes = false,
                             )
-                        val stickyEpisodes =
-                            StickyRssEpisodeRemap.remap(
-                                parsed = parsed.episodes,
-                                existing = episodeDao.listIdentities(podcastId),
-                            )
                         database.withTransaction {
                             podcastDao.upsert(updated)
-                            episodeDao.upsertAll(stickyEpisodes)
+                            episodeDao.upsertAll(sticky.episodes)
                         }
-                        parsed.episodes.size
+                        sticky.episodes.size
                     }
                 } finally {
                     markRefreshing(podcastId, false)

@@ -2,9 +2,36 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.database.RssEpisodeIdentity
+import cx.aswin.boxlore.core.model.Episode
 
 /** Reuses stored true-RSS episodeIds on refresh so history / downloads stay valid. */
 object StickyRssEpisodeRemap {
+    data class Catalog(
+        val episodes: List<RssEpisodeEntity>,
+        val latestEpisode: Episode?,
+    )
+
+    fun prepare(
+        parsed: List<RssEpisodeEntity>,
+        existing: List<RssEpisodeIdentity>,
+        podcastTitle: String? = null,
+        podcastImageUrl: String? = null,
+        podcastGenre: String? = null,
+        podcastArtist: String? = null,
+    ): Catalog {
+        val episodes = remap(parsed, existing)
+        return Catalog(
+            episodes = episodes,
+            latestEpisode =
+                episodes.firstOrNull()?.toEpisode(
+                    podcastTitle = podcastTitle,
+                    podcastImageUrl = podcastImageUrl,
+                    podcastGenre = podcastGenre,
+                    podcastArtist = podcastArtist,
+                ),
+        )
+    }
+
     fun remap(
         parsed: List<RssEpisodeEntity>,
         existing: List<RssEpisodeIdentity>,

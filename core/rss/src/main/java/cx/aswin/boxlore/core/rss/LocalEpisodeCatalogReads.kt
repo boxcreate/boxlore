@@ -123,6 +123,9 @@ internal class LocalEpisodeCatalogReads(
             val url =
                 LocalEpisodeCatalogRepository.resolveHttps(feedUrl, existing.feedUrl)
                     ?: return@withContext false
+            if (url != existing.feedUrl.trim()) {
+                return@withContext false
+            }
             try {
                 isFeedUnchanged(url, existing.feedEtag, existing.feedLastModified)
             } catch (error: CancellationException) {
@@ -164,7 +167,7 @@ internal class LocalEpisodeCatalogReads(
     override suspend fun sweepExpired(nowMillis: Long) =
         withContext(Dispatchers.IO) {
             for (id in dao.listExpiredFeedIds(nowMillis)) {
-                dao.deleteCatalog(id)
+                dao.deleteCatalogIfExpired(id, nowMillis)
             }
         }
 }

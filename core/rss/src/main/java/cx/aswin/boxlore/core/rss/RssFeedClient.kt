@@ -60,10 +60,10 @@ sealed interface RssFreshnessResult {
 }
 
 @Suppress("LargeClass")
-class RssFeedClient(
+open class RssFeedClient(
     private val httpClient: OkHttpClient = defaultHttpClient(),
 ) {
-    suspend fun fetch(url: String): RssFetchResult {
+    open suspend fun fetch(url: String): RssFetchResult {
         val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(url)
         val request =
             Request
@@ -168,7 +168,7 @@ class RssFeedClient(
         }
     }
 
-    suspend fun parse(
+    open suspend fun parse(
         feedUrl: String,
         bytes: ByteArray,
         podcastId: String = RssIdGenerator.podcastId(feedUrl),

@@ -58,6 +58,9 @@ private suspend fun publisherFeedUnchanged(
     }
     val resolved =
         LocalEpisodeCatalogRepository.resolveHttps(url, existing.feedUrl) ?: return false
+    if (resolved != existing.feedUrl.trim()) {
+        return false
+    }
     return try {
         deps.isFeedUnchanged(resolved, existing.feedEtag, existing.feedLastModified)
     } catch (error: CancellationException) {

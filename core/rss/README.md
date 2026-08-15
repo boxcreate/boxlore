@@ -7,8 +7,8 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 ## Public API
 
 - `RssFeedClient` fetches feeds, handles conditional freshness checks, and parses RSS/Atom data. HEAD 405/501 falls through to a conditional GET (`RssUnchangedLogic`) instead of treating the feed as changed.
-- `RssPodcastRepository` implements `RssSubscriptionPort` and manages RSS podcast and episode catalog operations. Refresh remaps parsed rows through `StickyRssEpisodeRemap` so stored `episodeId`s never remint.
-- `LocalEpisodeCatalogRepository` implements `LocalEpisodeCatalogPort`: full publisher-feed catalog under a Podcast Index id, sticky upsert by guid, per-show ready gate (count + listener ids + tip), HEAD/quiet skip, mega GET capped at 2. Never creates `rss:` rows. Incremental upsert never shrinks existing rows.
+- `RssPodcastRepository` implements `RssSubscriptionPort` and manages RSS podcast and episode catalog operations. Refresh and subscribe remap parsed rows through `StickyRssEpisodeRemap.prepare` before writing `latestEpisode` and `rss_episodes`, so stored `episodeId`s never remint.
+- `LocalEpisodeCatalogRepository` implements `LocalEpisodeCatalogPort`: full publisher-feed catalog under a Podcast Index id, sticky upsert by guid, per-show ready gate (count + listener ids + tip), HEAD/quiet skip, mega GET capped at 2. Never creates `rss:` rows. Incremental upsert never shrinks existing rows. HEAD validators are not reused after the publisher `feedUrl` changes. `sweepExpired` rechecks TTL before delete so a refresh that cleared `ttlExpiresAt` is kept.
 - `StickyEpisodeIdentity` / `LocalEpisodeCatalogPersist` / `FeedOrderLogic` / `LocalCatalogReadyLogic` / `LocalCatalogOrphanRematch` are the identity and freshness helpers. Orphan rematch (guid → enclosure → title+date) runs only when the stored id no longer resolves.
 - `RssIdGenerator` creates deterministic `rss:` podcast IDs and negative episode IDs (mint only, not refresh).
 - `RssSourceMatcher` provides migration and matching heuristics between Podcast Index and RSS sources.
@@ -67,7 +67,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 ## Testing notes
 
 - Unit tests live under `core/rss/src/test`.
-- Existing coverage includes deterministic ID contracts, source matching heuristics, feed-client helpers, episode-supplement matching (including empty titles and distant same-title dates), list merge, tip-resolution (PI id vs negative feed id, blank metadata), supplement artwork fallback (item / channel / show), repository require/failure mapping, disconnect / auto-opt-in predicates, and `restoreDirectFeedOptIn` / `listDirectFeedOptIns` (HTTPS stub, ignore http/`rss:`, keep existing extras).
+- Existing coverage includes deterministic ID contracts, source matching heuristics, feed-client helpers, episode-supplement matching (including empty titles and distant same-title dates), list merge, tip-resolution (PI id vs negative feed id, blank metadata), supplement artwork fallback (item / channel / show), repository require/failure mapping, disconnect / auto-opt-in predicates, `restoreDirectFeedOptIn` / `listDirectFeedOptIns` (HTTPS stub, ignore http/`rss:`, keep existing extras), local-catalog refresh outcomes (unchanged validators, empty parse, blank/`rss:` ids), bounded `getWindow`, TTL recheck on expiry sweep, and sticky RSS tip reuse when a stored id differs from the minted id.
 - MockWebServer is available for feed-fetch tests.
 
 ```bash

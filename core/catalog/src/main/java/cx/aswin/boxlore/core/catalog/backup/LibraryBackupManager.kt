@@ -280,22 +280,22 @@ class LibraryBackupManager(
 
     private suspend fun importRssBackupSubscription(entity: PodcastEntity): cx.aswin.boxlore.core.model.Podcast? {
         val feedUrl = entity.feedUrl
+        if (feedUrl.isNullOrBlank()) return null
         val rssPodcast =
-            if (!feedUrl.isNullOrBlank()) {
-                runCatching {
+            LibraryBackupImportLogic.runRestore(
+                block = {
                     rssPodcastRepository
                         .addSubscription(feedUrl)
                         .podcast
-                }.onFailure { error ->
+                },
+                onFailure = { error ->
                     Log.e(
                         "JSON_IMPORT",
                         "RSS restore failed for ${entity.title}; feed must be re-added",
                         error,
                     )
-                }.getOrNull()
-            } else {
-                null
-            } ?: return null
+                },
+            ) ?: return null
         val subscribedRssPodcast =
             rssPodcast.copy(
                 preferredSort = entity.preferredSort,
@@ -426,13 +426,12 @@ class LibraryBackupManager(
     }
 
     suspend fun importFromOpml(inputStream: InputStream): Int =
-        try {
+        LibraryBackupImportLogic.opmlImportCount(
+            onFailure = { error -> Log.e("OPML_IMPORT", "Failed to import OPML", error) },
+        ) {
             parseOpmlFeeds(inputStream).count { feed ->
                 importSingleOpmlFeed(feed) != null
             }
-        } catch (e: Exception) {
-            Log.e("OPML_IMPORT", "Failed to import OPML", e)
-            -1
         }
 
     fun parseOpmlFeeds(inputStream: InputStream): List<OpmlFeed> {
@@ -469,17 +468,22 @@ class LibraryBackupManager(
                 return catalogMatch
             }
 
-            return runCatching {
-                rssPodcastRepository
-                    .addSubscription(feed.xmlUrl)
-                    .podcast
-            }.onFailure { error ->
-                Log.w(
-                    "OPML_IMPORT",
-                    "Catalog miss and RSS import failed for ${feed.title}",
-                    error,
-                )
-            }.getOrNull()
+            return LibraryBackupImportLogic.runRestore(
+                block = {
+                    rssPodcastRepository
+                        .addSubscription(feed.xmlUrl)
+                        .podcast
+                },
+                onFailure = { error ->
+                    Log.w(
+                        "OPML_IMPORT",
+                        "Catalog miss and RSS import failed for ${feed.title}",
+                        error,
+                    )
+                },
+            )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("OPML_IMPORT", "Failed to import single feed: ${feed.title}", e)
         }

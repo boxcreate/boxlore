@@ -181,4 +181,18 @@ interface LocalEpisodeCatalogDao {
         deleteEpisodes(podcastId)
         deleteFeed(podcastId)
     }
+
+    /**
+     * Rechecks [ttlExpiresAt] inside the transaction so a refresh that cleared
+     * the TTL after [listExpiredFeedIds] cannot delete a live catalog.
+     */
+    @Transaction
+    suspend fun deleteCatalogIfExpired(
+        podcastId: String,
+        nowMillis: Long,
+    ) {
+        val ttl = getFeed(podcastId)?.ttlExpiresAt ?: return
+        if (ttl > nowMillis) return
+        deleteCatalog(podcastId)
+    }
 }

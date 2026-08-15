@@ -194,11 +194,18 @@ class SubscriptionForegroundSync(
                 directFeedRefreshedMutable = refreshed,
                 syncAction = {
                     val ids = subscriptionRepository.subscribedPodcastIds.first()
+                    val recoveryNow = System.currentTimeMillis()
                     recoverMissingFeedUrls(
                         ids = ids,
-                        subscriptionRepository = subscriptionRepository,
-                        podcastRepository = podcastRepository,
-                        localEpisodeCatalog = localEpisodeCatalog,
+                        recoverOne = { id ->
+                            recoverOneMissingFeedUrl(
+                                id = id,
+                                now = recoveryNow,
+                                subscriptionRepository = subscriptionRepository,
+                                podcastRepository = podcastRepository,
+                                localEpisodeCatalog = localEpisodeCatalog,
+                            )
+                        },
                     )
                     syncSubscribedLatestEpisodes(
                         loadIds = { ids },
@@ -521,24 +528,30 @@ class SubscriptionForegroundSync(
             }
         }
 
-        private suspend fun recoverMissingFeedUrls(
+        internal suspend fun recoverMissingFeedUrls(
             ids: Set<String>,
-            subscriptionRepository: SubscriptionRepository,
-            podcastRepository: PodcastRepository,
-            localEpisodeCatalog: LocalEpisodeCatalogPort?,
+            concurrency: Int = DEFAULT_FEED_CONCURRENCY,
+            recoverOne: suspend (id: String) -> Unit,
         ) {
-            val now = System.currentTimeMillis()
-            ids
-                .filter { !it.startsWith("rss:") }
-                .forEach { id ->
-                    recoverOneMissingFeedUrl(
-                        id = id,
-                        now = now,
-                        subscriptionRepository = subscriptionRepository,
-                        podcastRepository = podcastRepository,
-                        localEpisodeCatalog = localEpisodeCatalog,
-                    )
-                }
+            val targets = ids.filter { !it.startsWith("rss:") }
+            if (targets.isEmpty()) return
+            val gate = Semaphore(concurrency.coerceAtLeast(1))
+            coroutineScope {
+                targets
+                    .map { id ->
+                        async {
+                            gate.withPermit {
+                                try {
+                                    recoverOne(id)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Feed URL recovery failed for $id", e)
+                                }
+                            }
+                        }
+                    }.awaitAll()
+            }
         }
 
         private suspend fun recoverOneMissingFeedUrl(

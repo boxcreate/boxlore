@@ -94,6 +94,36 @@ class StickyRssEpisodeRemapTest {
         assertEquals("First", remapped.single().title)
     }
 
+    @Test
+    fun prepareUsesStickyIdForLatestEpisode() {
+        val namespace = RssIdGenerator.podcastId("https://example.com/feed.xml")
+        val minted =
+            RssIdGenerator.episodeIdForPodcast(
+                podcastId = namespace,
+                guid = "g1",
+                enclosureUrl = "https://cdn.example/a.mp3",
+                publishedDate = 10L,
+                title = "New title",
+            )
+        val prepared =
+            StickyRssEpisodeRemap.prepare(
+                parsed = listOf(rss(namespace, minted, "g1", "New title")),
+                existing =
+                    listOf(
+                        RssEpisodeIdentity(
+                            episodeId = "-12345",
+                            guid = "g1",
+                            audioUrl = "https://cdn.example/a.mp3",
+                        ),
+                    ),
+                podcastTitle = "Show",
+            )
+        assertEquals(listOf("-12345"), prepared.episodes.map { it.episodeId })
+        assertEquals("-12345", prepared.latestEpisode?.id)
+        assertEquals("New title", prepared.latestEpisode?.title)
+        assertEquals("Show", prepared.latestEpisode?.podcastTitle)
+    }
+
     private fun rss(
         podcastId: String,
         episodeId: String,
