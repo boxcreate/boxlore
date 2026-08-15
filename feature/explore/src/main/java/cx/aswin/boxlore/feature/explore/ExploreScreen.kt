@@ -137,6 +137,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreTabSelectorFab
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeChipRow
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
+import cx.aswin.boxlore.feature.explore.logic.ProgressiveSearchScrollLogic
 
 /**
  * Main Explore Screen Entry Point
@@ -408,6 +409,29 @@ fun ExploreContent(
             state.alsoFoundResults
                 .distinctBy { it.id }
                 .filter { it.id !in catalogIds }
+        }
+
+        val pinSnapshot =
+            if (state.searchTab == SearchTab.SHOWS && state.searchQuery.isNotEmpty()) {
+                ProgressiveSearchScrollLogic.Snapshot(
+                    query = state.searchQuery,
+                    topResultId = displayList.firstOrNull()?.id,
+                    hasAlsoFoundSection = alsoFoundDistinct.isNotEmpty(),
+                )
+            } else {
+                null
+            }
+        var previousPin by remember {
+            mutableStateOf<ProgressiveSearchScrollLogic.Snapshot?>(null)
+        }
+        LaunchedEffect(pinSnapshot) {
+            if (
+                pinSnapshot != null &&
+                ProgressiveSearchScrollLogic.shouldPinToTop(previousPin, pinSnapshot)
+            ) {
+                gridState.scrollToItem(0)
+            }
+            previousPin = pinSnapshot
         }
 
         val rawGridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
