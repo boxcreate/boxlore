@@ -9,7 +9,7 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 - `OnboardingScreen` and `OnboardingViewModel` for the flow shell.
 - Welcome step uses a cinematic podcast-cover marquee (`CinematicBackgroundGrid`): ~2.4s entrance with draw-phase-only chrome motion (`graphicsLayer`), static bottom scrim (no logo halo plate), modest cover glide that hands off into continuous drift (~700ms in — no pause), then logo/CTA cascade. Welcome chrome: wordmark + “Podcasts, done right.”; soft primary CTA with integrated AI cue; quieter tonal secondary actions.
 - Onboarding hero titles use `rememberCondensedGoogleSansFamily()` from `:core:designsystem` so condensed Google Sans Flex follows Appearance lettering roundness; AI onboarding uses centralized Google Sans Flex weight tokens.
-- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`. Search uses progressive Meili typeahead + hybrid `/search` (`searchPodcastsGrouped`) with **Matches** / **Also found** sections. Search genre chips use shared `PillFilterChip` from `:core:designsystem`. AI suggestions use the shared 11-country `RegionSegmentedSelector` (persisted via `UserPreferencesRepository.setRegion`, which also seeds recommended content languages). Curriculum / genre-synth / similar-shows requests use `discoveryLocaleForRegion` so `country` and `languages` stay canonical together; the proxy expands and `startsWith`-filters podcast languages.
+- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`. Search uses progressive Meili typeahead + hybrid `/search` (`searchPodcastsGrouped`) with **Matches** / **Also found** sections. When catalog hits prepend over local substring matches, the result list pins to the top via shared `ProgressiveSearchScrollLogic` so the best match stays on screen. Search genre chips use shared `PillFilterChip` from `:core:designsystem`. AI suggestions use the shared 11-country `RegionSegmentedSelector` (persisted via `UserPreferencesRepository.setRegion`, which also seeds recommended content languages). Curriculum / genre-synth / similar-shows requests use `discoveryLocaleForRegion` so `country` and `languages` stay canonical together; the proxy expands and `startsWith`-filters podcast languages.
 - Suggestions (“Designed for you”) is a **single screen**: one compact headline, a single-row scrollable taste-lane chip strip (full titles, no ellipsis; per-lane selection badges), a one-line purpose + Select all toolbar, and a 2-column select grid. Descriptions open in a Material bottom sheet. Finish CTA stays pinned. Shared by genre, AI, search, and OPML flows.
 - `AiSuggestionCards`, AI onboarding components, option icons, chat input, and chat message list logic.
 - Pure helpers including `OnboardingGenreLimits`, `OnboardingSearchBackStep`, `OnboardingCurriculumLogic`, `OnboardingSuggestionsLanes`, `OnboardingSuggestionsPresentation`, and `OnboardingDiscoveryLocale`.
@@ -33,6 +33,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   OnboardingGenreLimits.kt
   OnboardingScreen.kt
   OnboardingSearchBackStep.kt
+  OnboardingShowSearchCombine.kt
   OnboardingSuggestionsLanes.kt
   OnboardingSuggestionsPresentation.kt
   OnboardingUiModels.kt
@@ -66,7 +67,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 ## Testing notes
 
 - Unit tests live under `feature/onboarding/src/test`.
-- Existing coverage includes genre limits, search back-step behavior, curriculum logic, suggestions presentation (loading gate / seed filter / back-clear), AI option icons, and AI chat message list logic.
+- Existing coverage includes genre limits, search back-step behavior, curriculum logic, suggestions presentation (loading gate / seed filter / back-clear), AI option icons, and AI chat message list logic. Progressive search pin-to-top is covered in `:core:designsystem` (`ProgressiveSearchScrollLogicTest`).
 - ViewModel tests should use fakes for prefs, catalog, network, and analytics dependencies.
 
 ```bash

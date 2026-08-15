@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
+import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -259,7 +261,24 @@ internal fun OnboardingSearchScreen(
                         val catalogIds = distinctResults.map { it.id }.toSet()
                         alsoFoundResults.distinctBy { it.id }.filter { it.id !in catalogIds }
                     }
+                val listState = rememberLazyListState()
+                val pinSnapshot =
+                    ProgressiveSearchScrollLogic.Snapshot(
+                        query = query,
+                        topResultId = distinctResults.firstOrNull()?.id,
+                        hasAlsoFoundSection = distinctAlsoFound.isNotEmpty(),
+                    )
+                var previousPin by remember {
+                    mutableStateOf<ProgressiveSearchScrollLogic.Snapshot?>(null)
+                }
+                LaunchedEffect(pinSnapshot) {
+                    if (ProgressiveSearchScrollLogic.shouldPinToTop(previousPin, pinSnapshot)) {
+                        listState.scrollToItem(0)
+                    }
+                    previousPin = pinSnapshot
+                }
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),

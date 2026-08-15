@@ -116,6 +116,7 @@ import cx.aswin.boxlore.core.designsystem.component.ExploreTabSelectorFabHeight
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
+import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 
 import cx.aswin.boxlore.core.model.Episode
@@ -408,6 +409,29 @@ fun ExploreContent(
             state.alsoFoundResults
                 .distinctBy { it.id }
                 .filter { it.id !in catalogIds }
+        }
+
+        val pinSnapshot =
+            if (state.searchTab == SearchTab.SHOWS && state.searchQuery.isNotEmpty()) {
+                ProgressiveSearchScrollLogic.Snapshot(
+                    query = state.searchQuery,
+                    topResultId = displayList.firstOrNull()?.id,
+                    hasAlsoFoundSection = alsoFoundDistinct.isNotEmpty(),
+                )
+            } else {
+                null
+            }
+        var previousPin by remember {
+            mutableStateOf<ProgressiveSearchScrollLogic.Snapshot?>(null)
+        }
+        LaunchedEffect(pinSnapshot) {
+            if (
+                pinSnapshot != null &&
+                ProgressiveSearchScrollLogic.shouldPinToTop(previousPin, pinSnapshot)
+            ) {
+                gridState.scrollToItem(0)
+            }
+            previousPin = pinSnapshot
         }
 
         val rawGridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
