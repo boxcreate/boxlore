@@ -76,6 +76,10 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <ul align="left">
 <li>Importing your podcast list from another app now brings in catalog shows as normal shows, with notifications available, instead of tagging most of them as RSS. <a href="https://github.com/boxcreate/boxlore/pull/984"><img src="https://img.shields.io/badge/PR-984-6750A4?style=flat-square" alt="PR #984" height="18"/></a></li>
 </ul>
+<b>• Improved:</b>
+<ul align="left">
+<li>Show search stays on the best match as results fill in, so you don’t have to scroll up to find it. <a href="https://github.com/boxcreate/boxlore/pull/987"><img src="https://img.shields.io/badge/PR-987-6750A4?style=flat-square" alt="PR #987" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 

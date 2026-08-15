@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Subscribed shows no longer hide publisher episodes that Podcast Index has not indexed yet. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - Episode artwork falls back to channel / show image when the item has no itunes:image. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - OPML import matches Podcast Index first (feed URL variants, title/feed search, then publisher-feed GUID / redirected URL) and only creates a true `rss:` row when the show is not in the catalog. Settings → Add RSS is unchanged. ([#984](https://github.com/boxcreate/boxlore/pull/984)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Pin progressive Find-a-show results to the top in onboarding search and Explore when catalog hits prepend over local matches. ([#987](https://github.com/boxcreate/boxlore/pull/987)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=984 -->
 ### Fixes
@@ -31,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improvements
 - "Missing episodes?" is for shows you haven’t subscribed to yet, once per podcast. Subscribe to keep the full list up to date.
 <!-- readme-copy:end pr=986 -->
+
+<!-- readme-copy:start pr=987 -->
+### Improved
+- Show search stays on the best match as results fill in, so you don’t have to scroll up to find it.
+<!-- readme-copy:end pr=987 -->
 ## [v0.0.17] - 2026-08-14
 
 ### Added
