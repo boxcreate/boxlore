@@ -312,10 +312,11 @@ class DefaultSmartQueueEngine(
         preferredSort: String?,
         exclude: Set<String>
     ): List<QueueEntry> {
-        val allEpisodes = runSuspendCatching { sources.getEpisodes(podcast.id) }.getOrDefault(emptyList())
-        if (allEpisodes.isEmpty()) return emptyList()
-
         val currentId = currentEpisode.id.toString()
+        val allEpisodes =
+            runSuspendCatching { sources.getEpisodesAround(podcast.id, currentId) }
+                .getOrDefault(emptyList())
+        if (allEpisodes.isEmpty()) return emptyList()
         val sort = effectiveContinuationSort(preferredSort, podcast)
         val isSerialListening = podcast.type == "serial" || sort == "oldest"
         val newestFirst = !isSerialListening &&

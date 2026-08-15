@@ -263,12 +263,17 @@ class SubscriptionRepositoryTest {
 
             repository.updateLatestEpisode(
                 podcastId = "1258562",
-                episode = episode,
+                episode = episode.copy(publishedDate = 100L),
+                markAsNew = true,
+            )
+            repository.updateLatestEpisode(
+                podcastId = "1258562",
+                episode = episode.copy(id = "-9002", publishedDate = 200L),
                 markAsNew = true,
             )
 
             assertTrue(podcastDao.getPodcast("1258562")!!.rssHasNewEpisodes)
-            assertEquals("-9001", podcastDao.getPodcast("1258562")!!.latestEpisode!!.id)
+            assertEquals("-9002", podcastDao.getPodcast("1258562")!!.latestEpisode!!.id)
         }
 
     @Test
@@ -294,17 +299,21 @@ class SubscriptionRepositoryTest {
                     publishedDate = 100L,
                 )
 
-            repository.updateLatestEpisode("pod-tip", newer, markAsNew = true)
-            repository.updateLatestEpisode("pod-tip", older, markAsNew = true)
+            repository.updateLatestEpisode(
+                "pod-tip",
+                older.copy(id = "0", publishedDate = 50L),
+            )
+            repository.updateLatestEpisode("pod-tip", newer)
+            repository.updateLatestEpisode("pod-tip", older)
 
             val stored = podcastDao.getPodcast("pod-tip")!!.latestEpisode!!
             assertEquals("-9", stored.id)
             assertEquals(200L, stored.publishedDate)
-            assertTrue(podcastDao.getPodcast("pod-tip")!!.rssHasNewEpisodes)
+            assertFalse(podcastDao.getPodcast("pod-tip")!!.rssHasNewEpisodes)
         }
 
     @Test
-    fun updateLatestEpisodeSameDateDifferentIdReplaces() =
+    fun updateLatestEpisodeSameDateDifferentIdKeepsExisting() =
         runTest {
             repository.subscribe(podcast(id = "pod-catchup", title = "Show"))
             val feedOnly =
@@ -329,7 +338,7 @@ class SubscriptionRepositoryTest {
             repository.updateLatestEpisode("pod-catchup", feedOnly)
             repository.updateLatestEpisode("pod-catchup", piCatchUp)
 
-            assertEquals("55", podcastDao.getPodcast("pod-catchup")!!.latestEpisode!!.id)
+            assertEquals("-9", podcastDao.getPodcast("pod-catchup")!!.latestEpisode!!.id)
         }
 
     @Test
@@ -347,5 +356,58 @@ class SubscriptionRepositoryTest {
             repository.ensureHttpsFeedUrl("pod-1", "http://insecure.example/show.xml")
             repository.ensureHttpsFeedUrl("missing", "https://feeds.example/show.xml")
             assertEquals("https://feeds.example/old.xml", podcastDao.getPodcast("pod-1")!!.feedUrl)
+        }
+
+    @Test
+    fun subscribeRecoversHttpsFeedUrlWhenMissing() =
+        runTest {
+            var lookups = 0
+            val recovering =
+                SubscriptionRepository(
+                    podcastDao = podcastDao,
+                    lookupHttpsFeedUrl = {
+                        lookups++
+                        "https://feeds.example/recovered.xml"
+                    },
+                )
+            recovering.subscribe(podcast(id = "pod-recover"))
+            assertEquals(1, lookups)
+            assertEquals(
+                "https://feeds.example/recovered.xml",
+                podcastDao.getPodcast("pod-recover")!!.feedUrl,
+            )
+        }
+
+    @Test
+    fun subscribePersistsSuppliedHttpsWhenStoredFeedUrlBlank() =
+        runTest {
+            podcastDao.upsert(
+                PodcastEntity(
+                    podcastId = "pod-blank",
+                    title = "Show",
+                    author = "Artist",
+                    imageUrl = "https://example.com/pod-blank.jpg",
+                    description = "desc",
+                    isSubscribed = false,
+                    feedUrl = "",
+                ),
+            )
+            var lookups = 0
+            val recovering =
+                SubscriptionRepository(
+                    podcastDao = podcastDao,
+                    lookupHttpsFeedUrl = {
+                        lookups++
+                        "https://feeds.example/lookup.xml"
+                    },
+                )
+            recovering.subscribe(
+                podcast(id = "pod-blank", feedUrl = "https://feeds.example/supplied.xml"),
+            )
+            assertEquals(0, lookups)
+            assertEquals(
+                "https://feeds.example/supplied.xml",
+                podcastDao.getPodcast("pod-blank")!!.feedUrl,
+            )
         }
 }

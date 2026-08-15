@@ -7,8 +7,8 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
-import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -31,6 +31,7 @@ import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
 import cx.aswin.boxlore.core.rss.EpisodeSupplementRepository
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import kotlinx.coroutines.CoroutineScope
@@ -99,6 +100,31 @@ class AppContainer(
         EpisodeSupplementRepository.create(database)
     }
 
+    val localEpisodeCatalogRepository: LocalEpisodeCatalogRepository by lazy {
+        LocalEpisodeCatalogRepository.create(
+            database = database,
+            loadListenerEpisodeIds = { podcastId ->
+                val history =
+                    database
+                        .listeningHistoryDao()
+                        .getHistoryForPodcast(podcastId)
+                        .map { it.episodeId }
+                val downloads =
+                    database
+                        .downloadedEpisodeDao()
+                        .getDownloadsForPodcast(podcastId)
+                        .map { it.episodeId }
+                val queue = database.queueDao().getEpisodeIdsForPodcast(podcastId)
+                (history + downloads + queue).toSet()
+            },
+            loadKnownTip = { podcastId ->
+                database.podcastDao().getPodcast(podcastId)?.latestEpisode?.let { tip ->
+                    tip.id to tip.publishedDate
+                }
+            },
+        )
+    }
+
     /** Single install path for adaptive ranking; production callers must not call getInstance. */
     override val adaptiveRankingRepository: AdaptiveRankingRepository by lazy {
         AdaptiveRankingRepository.create(appContext).also(AdaptiveRankingRepository::install)
@@ -131,6 +157,7 @@ class AppContainer(
             context = appContext,
             rssRepository = rssPodcastRepository,
             episodeSupplementRepository = episodeSupplementRepository,
+            localEpisodeCatalog = localEpisodeCatalogRepository,
         )
     }
 
@@ -171,7 +198,12 @@ class AppContainer(
     override val subscriptionRepository: SubscriptionRepository by lazy {
         SubscriptionRepository(
             podcastDao = database.podcastDao(),
-            episodeSupplementPort = episodeSupplementRepository,
+            localEpisodeCatalog = localEpisodeCatalogRepository,
+            lookupHttpsFeedUrl = { id ->
+                cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(
+                    podcastRepository.getPodcastDetails(id)?.feedUrl,
+                )
+            },
         )
     }
 
@@ -180,6 +212,7 @@ class AppContainer(
             podcastRepository = podcastRepository,
             subscriptionRepository = subscriptionRepository,
             episodeSupplementPort = episodeSupplementRepository,
+            localEpisodeCatalog = localEpisodeCatalogRepository,
             scope = syncScope,
         )
     }

@@ -43,7 +43,7 @@ class NewEpisodeFcmLogicTest {
     }
 
     @Test
-    fun pickHydratedEpisodePrefersEnclosureThenNewestTip() {
+    fun pickHydratedEpisodeMatchesEnclosureOnly() {
         val extra =
             Episode(
                 id = "-8",
@@ -63,30 +63,26 @@ class NewEpisodeFcmLogicTest {
             )
         assertEquals(
             "-8",
-            NewEpisodeFcmLogic.pickHydratedEpisode(
-                extras = listOf(extra, newest),
-                newestTip = newest,
-                enclosureUrl = "https://cdn.example.com/ep.mp3",
-            )
-                ?.id,
+            NewEpisodeFcmLogic
+                .pickHydratedEpisode(
+                    extras = listOf(extra, newest),
+                    newestTip = newest,
+                    enclosureUrl = "https://cdn.example.com/ep.mp3",
+                )?.id,
         )
-        assertEquals(
-            "-9",
+        assertNull(
             NewEpisodeFcmLogic.pickHydratedEpisode(
                 extras = listOf(extra, newest),
                 newestTip = newest,
                 enclosureUrl = "",
-            )
-                ?.id,
+            ),
         )
-        assertEquals(
-            "-9",
+        assertNull(
             NewEpisodeFcmLogic.pickHydratedEpisode(
                 extras = listOf(extra, newest),
                 newestTip = null,
                 enclosureUrl = "",
-            )
-                ?.id,
+            ),
         )
         assertNull(
             NewEpisodeFcmLogic.pickHydratedEpisode(

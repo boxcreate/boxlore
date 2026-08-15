@@ -36,7 +36,7 @@ interface QueueDao {
     suspend fun updateQueuePositions(items: List<QueueItem>) {
         items.forEach { updateQueueItem(it) }
     }
-    
+
     @Query("SELECT MAX(position) FROM queue_items")
     suspend fun getMaxPosition(): Int?
 
@@ -45,4 +45,7 @@ interface QueueDao {
 
     @Query("SELECT * FROM queue_items WHERE episodeId = :episodeId LIMIT 1")
     suspend fun getQueueItemByEpisodeId(episodeId: String): QueueItem?
+
+    @Query("SELECT episodeId FROM queue_items WHERE podcastId = :podcastId")
+    suspend fun getEpisodeIdsForPodcast(podcastId: String): List<String>
 }

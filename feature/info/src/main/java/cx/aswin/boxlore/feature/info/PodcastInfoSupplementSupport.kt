@@ -22,6 +22,7 @@ internal class PodcastInfoSupplementSupport(
     ) -> PodcastRepository.EpisodePage,
     /** PI rows only — must not include cached feed extras or a refresh wipes them. */
     private val loadPiBaseline: suspend (podcastId: String) -> List<Episode>,
+    private val isCatalogReady: suspend (podcastId: String) -> Boolean = { false },
 ) {
     constructor(
         episodeSupplementPort: EpisodeSupplementPort,
@@ -37,6 +38,7 @@ internal class PodcastInfoSupplementSupport(
         loadPiBaseline = { id ->
             loadPage(id, SUPPLEMENT_BASELINE_LIMIT, 0, "oldest").episodes
         },
+        isCatalogReady = { false },
     )
 
     constructor(
@@ -48,14 +50,16 @@ internal class PodcastInfoSupplementSupport(
             repository.getEpisodesPaginated(id, limit, offset, sort)
         },
         { id ->
-            repository.getEpisodesPaginated(
-                feedId = id,
-                limit = SUPPLEMENT_BASELINE_LIMIT,
-                offset = 0,
-                sort = "oldest",
-                mergeSupplements = false,
-            ).episodes
+            repository
+                .getEpisodesPaginated(
+                    feedId = id,
+                    limit = SUPPLEMENT_BASELINE_LIMIT,
+                    offset = 0,
+                    sort = "oldest",
+                    mergeSupplements = false,
+                ).episodes
         },
+        { id -> repository.localEpisodeCatalog?.isReady(id) == true },
     )
 
     data class MissingEpisodesRefresh(
@@ -76,13 +80,16 @@ internal class PodcastInfoSupplementSupport(
     ): PodcastInfoUiState.Success {
         val podcast = state.podcast
         val eligible = EpisodeSupplementEligibility.canLoadMissingEpisodes(podcast)
+        val catalogReady = !podcast.isRss && isCatalogReady(podcast.id)
         val optedIn =
             !podcast.isRss && episodeSupplementPort.hasDirectFeedOptIn(podcast.id)
         val chip =
             when {
-                !eligible && !optedIn -> DirectFeedChipState.Hidden
+                catalogReady -> DirectFeedChipState.Hidden
                 isFetchingFromFeed -> DirectFeedChipState.Fetching
                 optedIn -> DirectFeedChipState.Updated
+                state.isSubscribed -> DirectFeedChipState.Hidden
+                !eligible -> DirectFeedChipState.Hidden
                 else -> DirectFeedChipState.Offer
             }
         val display =
@@ -154,8 +161,8 @@ internal class PodcastInfoSupplementSupport(
     }
 
     /**
-     * On subscribe: compare the loaded PI page to the publisher feed and auto-opt-in
-     * only when there is a disconnect. Silent — no snackbar unless [announce] is true.
+     * On subscribe: persist the publisher feed as the local catalog. Do not compare
+     * PI vs RSS for extras opt-in — subscribed shows are feed-first.
      */
     suspend fun autoOptInOnSubscribeIfDisconnected(
         state: PodcastInfoUiState.Success,
@@ -163,6 +170,7 @@ internal class PodcastInfoSupplementSupport(
     ): MissingEpisodesRefresh? {
         val podcast = state.podcast
         if (podcast.isRss) return null
+        if (isCatalogReady(podcast.id)) return null
         if (!EpisodeSupplementEligibility.canLoadMissingEpisodes(podcast)) return null
         if (episodeSupplementPort.hasDirectFeedOptIn(podcast.id)) return null
 
@@ -215,8 +223,13 @@ internal class PodcastInfoSupplementSupport(
         }
     }
 
-    suspend fun shouldRefreshOnOpen(podcastId: String, isRss: Boolean): Boolean =
-        !isRss && episodeSupplementPort.hasDirectFeedOptIn(podcastId)
+    suspend fun shouldRefreshOnOpen(
+        podcastId: String,
+        isRss: Boolean,
+    ): Boolean =
+        !isRss &&
+            !isCatalogReady(podcastId) &&
+            episodeSupplementPort.hasDirectFeedOptIn(podcastId)
 
     suspend fun unionSearch(
         feedId: String,
@@ -242,9 +255,7 @@ internal class PodcastInfoSupplementSupport(
         )
     }
 
-    private suspend fun reloadDisplayPage(
-        state: PodcastInfoUiState.Success,
-    ): PodcastRepository.EpisodePage {
+    private suspend fun reloadDisplayPage(state: PodcastInfoUiState.Success): PodcastRepository.EpisodePage {
         val oldest = state.currentSort == EpisodeSort.OLDEST
         return loadPage(
             state.podcast.id,

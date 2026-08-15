@@ -400,6 +400,33 @@ class SubscriptionForegroundSyncTest {
             assertEquals(2, runs)
         }
 
+    @Test
+    fun recoverMissingFeedUrlsIsolatesOrdinaryFailures() =
+        runTest {
+            val recovered = mutableListOf<String>()
+            SubscriptionForegroundSync.recoverMissingFeedUrls(
+                ids = setOf("ok", "rss:skip", "bad", "also-ok"),
+                concurrency = 2,
+            ) { id ->
+                if (id == "bad") error("lookup failed")
+                recovered += id
+            }
+            assertEquals(setOf("ok", "also-ok"), recovered.toSet())
+        }
+
+    @Test
+    fun recoverMissingFeedUrlsRethrowsCancellation() =
+        runTest {
+            org.junit.jupiter.api.assertThrows<kotlinx.coroutines.CancellationException> {
+                SubscriptionForegroundSync.recoverMissingFeedUrls(
+                    ids = setOf("a", "b"),
+                    concurrency = 1,
+                ) { id ->
+                    if (id == "b") throw kotlinx.coroutines.CancellationException("cancelled")
+                }
+            }
+        }
+
     private fun episode(
         id: String,
         podcastId: String,

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -30,17 +28,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.info.logic.EpisodeArtworkLogic
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 
 @Composable
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 fun EpisodeListItem(
     episode: Episode,
     isLiked: Boolean,
@@ -63,6 +63,7 @@ fun EpisodeListItem(
     onDownloadClick: () -> Unit,
     onMarkPlayedClick: () -> Unit,
     showMarkPlayedButton: Boolean = true,
+    podcastImageUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
     androidx.compose.material3.OutlinedCard(
@@ -95,7 +96,7 @@ fun EpisodeListItem(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         OptimizedImage(
-                            url = episode.imageUrl,
+                            url = EpisodeArtworkLogic.listUrl(episode, podcastImageUrl),
                             proxyWidth = 200, // 76dp thumbnails
                             contentDescription = episode.title,
                             modifier = Modifier.fillMaxSize(),

@@ -64,61 +64,62 @@ class EpisodeSupplementRepository internal constructor(
             ),
         )
 
-    override suspend fun refreshFromFeed(
-        request: EpisodeSupplementPort.RefreshFromFeedRequest,
-    ): EpisodeSupplementOutcome = withContext(Dispatchers.IO) {
-        try {
-            val url = resolvedRefreshFeedUrl(request.podcastIndexId, request.feedUrl)
-            val loader = request.loadBaseline
-            val (parsed, baseline) =
-                if (loader != null) {
-                    coroutineScope {
-                        val parsedDeferred = async { fetchParsedFeed(request.podcastIndexId, url) }
-                        val baselineDeferred = async { loader() }
-                        parsedDeferred.await() to baselineDeferred.await()
+    override suspend fun refreshFromFeed(request: EpisodeSupplementPort.RefreshFromFeedRequest): EpisodeSupplementOutcome =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = resolvedRefreshFeedUrl(request.podcastIndexId, request.feedUrl)
+                val loader = request.loadBaseline
+                val (parsed, baseline) =
+                    if (loader != null) {
+                        coroutineScope {
+                            val parsedDeferred = async { fetchParsedFeed(request.podcastIndexId, url) }
+                            val baselineDeferred = async { loader() }
+                            parsedDeferred.await() to baselineDeferred.await()
+                        }
+                    } else {
+                        fetchParsedFeed(request.podcastIndexId, url) to request.baselineEpisodes
                     }
-                } else {
-                    fetchParsedFeed(request.podcastIndexId, url) to request.baselineEpisodes
-                }
-            persistParsedSupplement(
-                PersistParsedSupplementRequest(
-                    podcastIndexId = request.podcastIndexId,
-                    parsed = parsed,
-                    baselineEpisodes = baseline,
-                    meta = SupplementPodcastMeta(
-                        title = request.podcastTitle,
-                        imageUrl = request.podcastImageUrl,
-                        genre = request.podcastGenre,
-                        artist = request.podcastArtist,
+                persistParsedSupplement(
+                    PersistParsedSupplementRequest(
+                        podcastIndexId = request.podcastIndexId,
+                        parsed = parsed,
+                        baselineEpisodes = baseline,
+                        meta =
+                            SupplementPodcastMeta(
+                                title = request.podcastTitle,
+                                imageUrl = request.podcastImageUrl,
+                                genre = request.podcastGenre,
+                                artist = request.podcastArtist,
+                            ),
                     ),
-                ),
-            )
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            feedLoadFailure()
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedLoadFailure()
+            }
         }
-    }
 
     override suspend fun isPublisherFeedUnchanged(
         podcastIndexId: String,
         feedUrl: String,
-    ): Boolean = withContext(Dispatchers.IO) {
-        try {
-            requirePiPodcastId(podcastIndexId)
-            val existing = dao.getSupplement(podcastIndexId) ?: return@withContext false
-            if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
-                return@withContext false
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                requirePiPodcastId(podcastIndexId)
+                val existing = dao.getSupplement(podcastIndexId) ?: return@withContext false
+                if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
+                    return@withContext false
+                }
+                val url =
+                    resolveHttpsFeedUrl(feedUrl, existing.feedUrl) ?: return@withContext false
+                isFeedUnchanged(url, existing.feedEtag, existing.feedLastModified)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                false
             }
-            val url =
-                resolveHttpsFeedUrl(feedUrl, existing.feedUrl) ?: return@withContext false
-            isFeedUnchanged(url, existing.feedEtag, existing.feedLastModified)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            false
         }
-    }
 
     override suspend fun optInFromFeedIfDisconnected(
         podcastIndexId: String,
@@ -128,43 +129,46 @@ class EpisodeSupplementRepository internal constructor(
         podcastImageUrl: String?,
         podcastGenre: String?,
         podcastArtist: String?,
-    ): EpisodeSupplementOutcome = withContext(Dispatchers.IO) {
-        try {
-            val parsed = fetchParsedFeed(podcastIndexId, resolvedRefreshFeedUrl(podcastIndexId, feedUrl))
-            val feedOnly = parsed.episodes.filterNot { rss ->
-                EpisodeSupplementMatcher.isPresentInBaseline(rss, baselineEpisodes)
-            }
-            val newestFeedPublished = parsed.episodes.firstOrNull()?.publishedDate ?: 0L
-            val newestBaselinePublished =
-                baselineEpisodes.maxOfOrNull { it.publishedDate } ?: 0L
-            if (!EpisodeSupplementDisconnectLogic.shouldOptIn(
-                    feedOnlyCount = feedOnly.size,
-                    newestFeedPublishedDate = newestFeedPublished,
-                    newestBaselinePublishedDate = newestBaselinePublished,
-                )
-            ) {
-                return@withContext EpisodeSupplementOutcome.NoDisconnect
-            }
-            persistParsedSupplement(
-                PersistParsedSupplementRequest(
-                    podcastIndexId = podcastIndexId,
-                    parsed = parsed,
-                    baselineEpisodes = baselineEpisodes,
-                    meta = SupplementPodcastMeta(
-                        title = podcastTitle,
-                        imageUrl = podcastImageUrl,
-                        genre = podcastGenre,
-                        artist = podcastArtist,
+    ): EpisodeSupplementOutcome =
+        withContext(Dispatchers.IO) {
+            try {
+                val parsed = fetchParsedFeed(podcastIndexId, resolvedRefreshFeedUrl(podcastIndexId, feedUrl))
+                val feedOnly =
+                    parsed.episodes.filterNot { rss ->
+                        EpisodeSupplementMatcher.isPresentInBaseline(rss, baselineEpisodes)
+                    }
+                val newestFeedPublished = parsed.episodes.firstOrNull()?.publishedDate ?: 0L
+                val newestBaselinePublished =
+                    baselineEpisodes.maxOfOrNull { it.publishedDate } ?: 0L
+                if (!EpisodeSupplementDisconnectLogic.shouldOptIn(
+                        feedOnlyCount = feedOnly.size,
+                        newestFeedPublishedDate = newestFeedPublished,
+                        newestBaselinePublishedDate = newestBaselinePublished,
+                    )
+                ) {
+                    return@withContext EpisodeSupplementOutcome.NoDisconnect
+                }
+                persistParsedSupplement(
+                    PersistParsedSupplementRequest(
+                        podcastIndexId = podcastIndexId,
+                        parsed = parsed,
+                        baselineEpisodes = baselineEpisodes,
+                        meta =
+                            SupplementPodcastMeta(
+                                title = podcastTitle,
+                                imageUrl = podcastImageUrl,
+                                genre = podcastGenre,
+                                artist = podcastArtist,
+                            ),
+                        feedOnlyOverride = feedOnly,
                     ),
-                    feedOnlyOverride = feedOnly,
-                ),
-            )
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            feedLoadFailure()
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedLoadFailure()
+            }
         }
-    }
 
     override suspend fun hasDirectFeedOptIn(podcastIndexId: String): Boolean =
         withContext(Dispatchers.IO) {
@@ -222,57 +226,66 @@ class EpisodeSupplementRepository internal constructor(
      * for a blank or `rss:` id, and may throw from the HTTP client or parser. Callers
      * that must not fail the surrounding job should catch non-cancellation exceptions.
      */
-    override suspend fun resolveNewestTipFromFeed(
-        request: EpisodeSupplementPort.NewestTipRequest,
-    ): Episode? = withContext(Dispatchers.IO) {
-        requirePiPodcastId(request.podcastIndexId)
-        val existing = dao.getSupplement(request.podcastIndexId) ?: return@withContext null
-        val resolvedUrl =
-            resolveHttpsFeedUrl(request.feedUrl, existing.feedUrl) ?: return@withContext null
-        val parsed = fetchParsedFeed(request.podcastIndexId, resolvedUrl)
-        val chosen =
-            pickMatchingFeedEpisode(
-                episodes = parsed.episodes,
-                match = request.match,
-            ) ?: return@withContext null
-        val meta =
-            SupplementPodcastMeta(
-                title = request.podcastTitle,
-                imageUrl = request.podcastImageUrl,
-                genre = request.podcastGenre,
-                artist = request.podcastArtist,
-            )
-        val tip =
-            EpisodeSupplementTipLogic.resolveNewestTip(
-                newestFeedEpisode = chosen,
-                podcastIndexId = request.podcastIndexId,
-                knownEpisodes = request.knownEpisodes,
-                podcastTitle = meta.title,
-                podcastImageUrl = meta.imageUrl,
-                podcastGenre = meta.genre,
-                podcastArtist = meta.artist,
-            )
-        val matched = EpisodeSupplementMatcher.findMatchingBaseline(chosen, request.knownEpisodes)
-        val tipItem =
-            if (matched == null) {
-                listOf(chosen.toSupplementItem(request.podcastIndexId))
-            } else {
-                emptyList()
+    override suspend fun resolveNewestTipFromFeed(request: EpisodeSupplementPort.NewestTipRequest): Episode? =
+        withContext(Dispatchers.IO) {
+            requirePiPodcastId(request.podcastIndexId)
+            val existing = dao.getSupplement(request.podcastIndexId) ?: return@withContext null
+            val resolvedUrl =
+                resolveHttpsFeedUrl(request.feedUrl, existing.feedUrl) ?: return@withContext null
+            val parsed = fetchParsedFeed(request.podcastIndexId, resolvedUrl)
+            val chosen =
+                pickMatchingFeedEpisode(
+                    episodes = parsed.episodes,
+                    match = request.match,
+                ) ?: return@withContext null
+            val meta =
+                SupplementPodcastMeta(
+                    title = request.podcastTitle,
+                    imageUrl = request.podcastImageUrl,
+                    genre = request.podcastGenre,
+                    artist = request.podcastArtist,
+                )
+            val tip =
+                EpisodeSupplementTipLogic.resolveNewestTip(
+                    newestFeedEpisode = chosen,
+                    podcastIndexId = request.podcastIndexId,
+                    knownEpisodes = request.knownEpisodes,
+                    podcastTitle = meta.title,
+                    podcastImageUrl = meta.imageUrl,
+                    podcastGenre = meta.genre,
+                    podcastArtist = meta.artist,
+                )
+            val matched = EpisodeSupplementMatcher.findMatchingBaseline(chosen, request.knownEpisodes)
+            val tipItem =
+                if (matched == null) {
+                    listOf(
+                        chosen.toSupplementItem(
+                            podcastIndexId = request.podcastIndexId,
+                            imageUrl =
+                                EpisodeSupplementArtworkLogic.resolvedImageUrl(
+                                    itemImageUrl = chosen.imageUrl,
+                                    channelImageUrl = parsed.channelImageUrl,
+                                    showImageUrl = request.podcastImageUrl,
+                                ),
+                        ),
+                    )
+                } else {
+                    emptyList()
+                }
+            runInTransaction {
+                dao.upsertSupplementAndOptionalItems(
+                    existing.copy(
+                        feedUrl = parsed.finalUrl,
+                        rssNamespaceId = parsed.rssNamespaceId,
+                        feedEtag = parsed.etag,
+                        feedLastModified = parsed.lastModified,
+                        fetchedAt = System.currentTimeMillis(),
+                    ),
+                    tipItem,
+                )
             }
-        runInTransaction {
-            dao.upsertSupplementAndOptionalItems(
-                existing.copy(
-                    feedUrl = parsed.finalUrl,
-                    rssNamespaceId = parsed.rssNamespaceId,
-                    feedEtag = parsed.etag,
-                    feedLastModified = parsed.lastModified,
-                    fetchedAt = System.currentTimeMillis(),
-                ),
-                tipItem,
-            )
+            tip
         }
-        tip
-    }
 
     override suspend fun getEpisodesForPodcast(
         podcastIndexId: String,
@@ -280,11 +293,12 @@ class EpisodeSupplementRepository internal constructor(
         podcastImageUrl: String?,
         podcastGenre: String?,
         podcastArtist: String?,
-    ): List<Episode> = withContext(Dispatchers.IO) {
-        dao.getAllNewest(podcastIndexId).map {
-            it.toEpisode(podcastTitle, podcastImageUrl, podcastGenre, podcastArtist)
+    ): List<Episode> =
+        withContext(Dispatchers.IO) {
+            dao.getAllNewest(podcastIndexId).map {
+                it.toEpisode(podcastTitle, podcastImageUrl, podcastGenre, podcastArtist)
+            }
         }
-    }
 
     override suspend fun getEpisode(
         episodeId: String,
@@ -292,14 +306,15 @@ class EpisodeSupplementRepository internal constructor(
         podcastImageUrl: String?,
         podcastGenre: String?,
         podcastArtist: String?,
-    ): Episode? = withContext(Dispatchers.IO) {
-        dao.getEpisode(episodeId)?.toEpisode(
-            podcastTitle,
-            podcastImageUrl,
-            podcastGenre,
-            podcastArtist,
-        )
-    }
+    ): Episode? =
+        withContext(Dispatchers.IO) {
+            dao.getEpisode(episodeId)?.toEpisode(
+                podcastTitle,
+                podcastImageUrl,
+                podcastGenre,
+                podcastArtist,
+            )
+        }
 
     override suspend fun search(
         podcastIndexId: String,
@@ -308,13 +323,14 @@ class EpisodeSupplementRepository internal constructor(
         podcastImageUrl: String?,
         podcastGenre: String?,
         podcastArtist: String?,
-    ): List<Episode> = withContext(Dispatchers.IO) {
-        val trimmed = query.trim()
-        if (trimmed.isEmpty()) return@withContext emptyList()
-        dao.search(podcastIndexId, trimmed.escapeForSqlLike()).map {
-            it.toEpisode(podcastTitle, podcastImageUrl, podcastGenre, podcastArtist)
+    ): List<Episode> =
+        withContext(Dispatchers.IO) {
+            val trimmed = query.trim()
+            if (trimmed.isEmpty()) return@withContext emptyList()
+            dao.search(podcastIndexId, trimmed.escapeForSqlLike()).map {
+                it.toEpisode(podcastTitle, podcastImageUrl, podcastGenre, podcastArtist)
+            }
         }
-    }
 
     private suspend fun resolvedRefreshFeedUrl(
         podcastIndexId: String,
@@ -344,29 +360,40 @@ class EpisodeSupplementRepository internal constructor(
             rssNamespaceId = rssNamespaceId,
             etag = fetched.etag,
             lastModified = fetched.lastModified,
+            channelImageUrl = parsed.imageUrl,
             episodes = parsed.episodes,
         )
     }
 
-    private suspend fun persistParsedSupplement(
-        request: PersistParsedSupplementRequest,
-    ): EpisodeSupplementOutcome.Success {
+    private suspend fun persistParsedSupplement(request: PersistParsedSupplementRequest): EpisodeSupplementOutcome.Success {
         val feedOnly =
             request.feedOnlyOverride ?: request.parsed.episodes.filterNot { rss ->
                 EpisodeSupplementMatcher.isPresentInBaseline(rss, request.baselineEpisodes)
             }
         val previousIds = dao.getAllNewest(request.podcastIndexId).map { it.episodeId }.toSet()
-        val items = feedOnly.map { it.toSupplementItem(request.podcastIndexId) }
+        val items =
+            feedOnly.map { rss ->
+                rss.toSupplementItem(
+                    podcastIndexId = request.podcastIndexId,
+                    imageUrl =
+                        EpisodeSupplementArtworkLogic.resolvedImageUrl(
+                            itemImageUrl = rss.imageUrl,
+                            channelImageUrl = request.parsed.channelImageUrl,
+                            showImageUrl = request.meta.imageUrl,
+                        ),
+                )
+            }
         dao.replaceAll(
             podcastId = request.podcastIndexId,
-            supplement = EpisodeSupplementEntity(
-                podcastId = request.podcastIndexId,
-                feedUrl = request.parsed.finalUrl,
-                rssNamespaceId = request.parsed.rssNamespaceId,
-                feedEtag = request.parsed.etag,
-                feedLastModified = request.parsed.lastModified,
-                fetchedAt = System.currentTimeMillis(),
-            ),
+            supplement =
+                EpisodeSupplementEntity(
+                    podcastId = request.podcastIndexId,
+                    feedUrl = request.parsed.finalUrl,
+                    rssNamespaceId = request.parsed.rssNamespaceId,
+                    feedEtag = request.parsed.etag,
+                    feedLastModified = request.parsed.lastModified,
+                    fetchedAt = System.currentTimeMillis(),
+                ),
             items = items,
         )
         val tip =
@@ -404,7 +431,10 @@ class EpisodeSupplementRepository internal constructor(
         }
 
         /** Prefer a request HTTPS URL; otherwise the stored supplement HTTPS URL. */
-        internal fun resolveHttpsFeedUrl(requestUrl: String, storedUrl: String): String? {
+        internal fun resolveHttpsFeedUrl(
+            requestUrl: String,
+            storedUrl: String,
+        ): String? {
             val requested = requestUrl.trim()
             if (requested.startsWith("https://", ignoreCase = true)) return requested
             val stored = storedUrl.trim()
@@ -426,8 +456,7 @@ class EpisodeSupplementRepository internal constructor(
             }
         }
 
-        private fun feedLoadFailure(): EpisodeSupplementOutcome.Failure =
-            EpisodeSupplementOutcome.Failure(FEED_LOAD_FAILED_MESSAGE)
+        private fun feedLoadFailure(): EpisodeSupplementOutcome.Failure = EpisodeSupplementOutcome.Failure(FEED_LOAD_FAILED_MESSAGE)
     }
 }
 
@@ -436,6 +465,7 @@ private data class ParsedSupplementFeed(
     val rssNamespaceId: String,
     val etag: String?,
     val lastModified: String?,
+    val channelImageUrl: String?,
     val episodes: List<RssEpisodeEntity>,
 )
 
@@ -454,23 +484,25 @@ private data class PersistParsedSupplementRequest(
     val feedOnlyOverride: List<RssEpisodeEntity>? = null,
 )
 
-private fun RssEpisodeEntity.toSupplementItem(podcastIndexId: String) =
-    EpisodeSupplementItemEntity(
-        episodeId = episodeId,
-        podcastId = podcastIndexId,
-        guid = guid,
-        title = title,
-        description = description,
-        audioUrl = audioUrl,
-        imageUrl = imageUrl,
-        duration = duration,
-        publishedDate = publishedDate,
-        chaptersUrl = chaptersUrl,
-        transcriptUrl = transcriptUrl,
-        transcripts = transcripts,
-        persons = persons,
-        seasonNumber = seasonNumber,
-        episodeNumber = episodeNumber,
-        episodeType = episodeType,
-        enclosureType = enclosureType,
-    )
+private fun RssEpisodeEntity.toSupplementItem(
+    podcastIndexId: String,
+    imageUrl: String? = this.imageUrl,
+) = EpisodeSupplementItemEntity(
+    episodeId = episodeId,
+    podcastId = podcastIndexId,
+    guid = guid,
+    title = title,
+    description = description,
+    audioUrl = audioUrl,
+    imageUrl = imageUrl,
+    duration = duration,
+    publishedDate = publishedDate,
+    chaptersUrl = chaptersUrl,
+    transcriptUrl = transcriptUrl,
+    transcripts = transcripts,
+    persons = persons,
+    seasonNumber = seasonNumber,
+    episodeNumber = episodeNumber,
+    episodeType = episodeType,
+    enclosureType = enclosureType,
+)

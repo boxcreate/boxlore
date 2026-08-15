@@ -1,8 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.feature.info.DirectFeedChipState
-
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -66,8 +63,10 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
@@ -265,6 +264,7 @@ internal fun EpisodeFeedItemRow(
     indicators: EpisodeListIndicators,
     autoScrolledEpisodeId: String?,
     onEpisodeClick: (Episode, String, Int?) -> Unit,
+    podcastImageUrl: String? = null,
 ) {
     when (feedItem) {
         is FeedItem.NormalEpisode -> {
@@ -279,6 +279,7 @@ internal fun EpisodeFeedItemRow(
                     episode = episode,
                     isLiked = indicators.likedEpisodeIds.contains(episode.id),
                     accentColor = accentColor,
+                    podcastImageUrl = podcastImageUrl,
                     // Playback State
                     isPlaying = playState?.isPlaying == true,
                     isResume = playState?.isResume == true,

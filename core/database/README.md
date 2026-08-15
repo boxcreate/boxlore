@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Owns the main Room database, entities, DAOs, type converters, and migrations for podcasts, queue items, listening history, downloads, RSS episodes, and PI episode supplements. It does not own repositories, ranking's separate Room database, playback services, download workers, or feature UI.
+Owns the main Room database, entities, DAOs, type converters, and migrations for podcasts, queue items, listening history, downloads, RSS episodes, PI episode supplements (cutover dual-read), and the first-class local episode catalog (`local_episode_feeds` / `local_episodes`). It does not own repositories, ranking's separate Room database, playback services, download workers, or feature UI.
 
 ## Public API
 
 - `BoxLoreDatabase` and its `getDatabase` factory.
-- Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity`, and `entities.QueueItem`.
-- DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, `EpisodeSupplementDao`, and `dao.QueueDao`. `PodcastDao.setFeedUrl` writes a publisher HTTPS URL after library restore. `EpisodeSupplementDao.listSupplements` is the export source for Missing episodes? opt-ins.
+- Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity`, `LocalEpisodeFeedEntity`, `LocalEpisodeEntity`, and `entities.QueueItem`.
+- DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, `EpisodeSupplementDao`, `LocalEpisodeCatalogDao`, and `dao.QueueDao`. `PodcastDao.setFeedUrl` writes a publisher HTTPS URL after library restore. `EpisodeSupplementDao.listSupplements` is the export source for Missing episodes? opt-ins during cutover. `LocalEpisodeCatalogDao` pages the first-class PI local catalog (sticky `episodeId`, unique `(podcastId, guid)`). `deleteCatalogIfExpired` rechecks `ttlExpiresAt` in the same transaction so a refresh that cleared TTL after the expiry scan is not deleted. Migration 31→32 copies extras **keeping episodeIds** and does not drop supplement tables.
 - `EpisodeSupplementDao.replaceAll` / `upsertSupplementAndOptionalItems` keep validator rows and tip items in one Room transaction.
 - `ListeningInsightsMaintenance` for rolling session/rollup maintenance (via `BoxLoreDatabase.listeningInsightsMaintenance()`).
 - `ListeningRollupMerge` for pure session→rollup merge logic.
@@ -35,6 +35,9 @@ src/main/java/cx/aswin/boxlore/core/database/
   EpisodeSupplementDao.kt
   EpisodeSupplementEntity.kt
   EpisodeSupplementItemEntity.kt
+  LocalEpisodeFeedEntity.kt
+  LocalEpisodeEntity.kt
+  LocalEpisodeCatalogDao.kt
   dao/
     QueueDao.kt
   entities/
@@ -66,6 +69,7 @@ src/main/java/cx/aswin/boxlore/core/database/
 - Unit tests live under `core/database/src/test`.
 - `PodcastDaoInMemoryTest` verifies the in-memory Room DAO path when Android resources are available to JVM tests.
 - `ListeningRollupMergeTest` covers session→rollup merge, including the empty-sessions guard.
+- `EpisodeToDomainArtworkTest` covers blank item `imageUrl` falling back to the show image on RSS and supplement `toEpisode`.
 - Prefer repository or port fakes for feature tests instead of depending on Room directly.
 
 ```bash

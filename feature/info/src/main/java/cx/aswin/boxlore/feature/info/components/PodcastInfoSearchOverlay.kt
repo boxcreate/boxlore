@@ -38,7 +38,9 @@ import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList", "LongMethod")
 fun PodcastInfoSearchOverlay(
+    podcastImageUrl: String? = null,
     query: String,
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
@@ -201,6 +203,7 @@ fun PodcastInfoSearchOverlay(
                                 episode = episode,
                                 isLiked = likedEpisodeIds.contains(episode.id),
                                 accentColor = accentColor,
+                                podcastImageUrl = podcastImageUrl,
                                 isPlaying = playState?.isPlaying == true,
                                 isResume = playState?.isResume == true,
                                 progress = playState?.progress ?: 0f,

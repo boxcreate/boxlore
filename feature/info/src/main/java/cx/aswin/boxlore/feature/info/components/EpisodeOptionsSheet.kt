@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,15 +33,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.info.logic.EpisodeArtworkLogic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList")
 fun EpisodeOptionsSheet(
     episode: Episode,
     isLiked: Boolean,
@@ -53,6 +53,7 @@ fun EpisodeOptionsSheet(
     onDownload: () -> Unit,
     onQueue: () -> Unit,
     onShare: () -> Unit,
+    podcastImageUrl: String? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -80,7 +81,7 @@ fun EpisodeOptionsSheet(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
                     OptimizedImage(
-                        url = episode.imageUrl,
+                        url = EpisodeArtworkLogic.listUrl(episode, podcastImageUrl),
                         proxyWidth = 150, // 64dp thumbnail
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),

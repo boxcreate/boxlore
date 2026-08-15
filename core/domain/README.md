@@ -12,6 +12,7 @@ Owns thin domain ports and small result types used by ViewModels, repositories, 
 - `PodcastCatalogPort`.
 - `HistoryRecommendationSource`.
 - `LocalCatalogPort` for local podcast lookup and subscribed podcast upsert.
+- `LocalEpisodeCatalogPort` for the first-class subscribed-PI episode catalog (ready gate, paged windows, sticky refresh). Not an RSS subscription and not Missing-episodes extras.
 - `EpisodeOfflineLookupPort` and `OfflineEpisodeSnapshot` for episode-detail download/history hydration.
 - `ConnectivityStatusPort` and connectivity status types.
 
@@ -26,6 +27,7 @@ src/main/java/cx/aswin/boxlore/core/domain/
     EpisodeSupplementPort.kt
     HistoryRecommendationSource.kt
     LocalCatalogPort.kt
+    LocalEpisodeCatalogPort.kt
     PodcastCatalogPort.kt
     RankingResetPort.kt
     RssSubscriptionPort.kt

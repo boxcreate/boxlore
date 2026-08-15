@@ -16,12 +16,36 @@ interface RssEpisodeDao {
     @Query(
         """
         SELECT * FROM rss_episodes
+        WHERE podcastId = :podcastId AND guid = :guid
+        LIMIT 1
+        """,
+    )
+    suspend fun getByGuid(
+        podcastId: String,
+        guid: String,
+    ): RssEpisodeEntity?
+
+    @Query(
+        """
+        SELECT episodeId, guid, audioUrl FROM rss_episodes
+        WHERE podcastId = :podcastId
+        """,
+    )
+    suspend fun listIdentities(podcastId: String): List<RssEpisodeIdentity>
+
+    @Query(
+        """
+        SELECT * FROM rss_episodes
         WHERE podcastId = :podcastId
         ORDER BY publishedDate DESC, episodeId ASC
         LIMIT :limit OFFSET :offset
         """,
     )
-    suspend fun getNewestPage(podcastId: String, limit: Int, offset: Int): List<RssEpisodeEntity>
+    suspend fun getNewestPage(
+        podcastId: String,
+        limit: Int,
+        offset: Int,
+    ): List<RssEpisodeEntity>
 
     @Query(
         """
@@ -31,7 +55,30 @@ interface RssEpisodeDao {
         LIMIT :limit OFFSET :offset
         """,
     )
-    suspend fun getOldestPage(podcastId: String, limit: Int, offset: Int): List<RssEpisodeEntity>
+    suspend fun getOldestPage(
+        podcastId: String,
+        limit: Int,
+        offset: Int,
+    ): List<RssEpisodeEntity>
+
+    @Query(
+        """
+        SELECT * FROM rss_episodes
+        WHERE podcastId = :podcastId
+          AND (
+            publishedDate < :publishedDate
+            OR (publishedDate = :publishedDate AND episodeId > :episodeId)
+          )
+        ORDER BY publishedDate DESC, episodeId ASC
+        LIMIT :limit
+        """,
+    )
+    suspend fun getNewerThan(
+        podcastId: String,
+        publishedDate: Long,
+        episodeId: String,
+        limit: Int,
+    ): List<RssEpisodeEntity>
 
     @Query(
         """
@@ -60,7 +107,10 @@ interface RssEpisodeDao {
         ORDER BY publishedDate DESC, episodeId ASC
         """,
     )
-    suspend fun search(podcastId: String, query: String): List<RssEpisodeEntity>
+    suspend fun search(
+        podcastId: String,
+        query: String,
+    ): List<RssEpisodeEntity>
 
     @Query(
         """
