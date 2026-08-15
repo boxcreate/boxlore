@@ -210,14 +210,11 @@ class PodcastRepository(
 
     private fun mapSearchFeedToPodcast(feed: cx.aswin.boxlore.core.network.model.SearchFeed): Podcast? {
         val podcastId =
-            if (feed.id != 0L) {
-                feed.id.toString()
-            } else if (feed.itunesId != null && feed.itunesId != 0L) {
-                "itunes:${feed.itunesId}"
-            } else if (!feed.url.isNullOrEmpty()) {
-                "url:${java.net.URLEncoder.encode(feed.url, "UTF-8")}"
-            } else {
-                return null
+            when {
+                feed.id != 0L -> feed.id.toString()
+                feed.itunesId != null && feed.itunesId != 0L -> "itunes:${feed.itunesId}"
+                !feed.url.isNullOrEmpty() -> "url:${java.net.URLEncoder.encode(feed.url, "UTF-8")}"
+                else -> return null
             }
         return Podcast(
             id = podcastId,

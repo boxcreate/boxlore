@@ -170,7 +170,7 @@ class SubscriptionForegroundSync(
             processSyncStarted.set(false)
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "kotlin:S107")
         fun create(
             podcastRepository: PodcastRepository,
             subscriptionRepository: SubscriptionRepository,
