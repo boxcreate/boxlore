@@ -10,6 +10,7 @@ Owns player presentation: mini player, full player sheet, queue screen UI, contr
 - The collapsed v2 mini player follows Appearance → Navigation: Floating is a 64dp pill with 32dp corners; Classic restores the 72dp legacy shape with 26dp top and 14dp bottom corners. Both retain circular artwork, a primary play/pause control, and smaller circular seek controls.
 - `v2.FullPlayerV2`, `FullPlayerV2Content`, `FullPlayerV2Sheets`, `ControlDeck`, and `ControlDeckQuickActions` provide full-player presentation pieces.
 - The expanded-player transport group gives play/pause and both seek controls the same brief, coordinated width feedback when pressed or tapped.
+- Nested scroll in the expanded sheet stops at the content top; collapsing to the mini player takes a new downward swipe from that rest position.
 - `QueueScreen`, `PlayerControls`, `ChaptersSheet`, and `TranscriptView` support player sub-surfaces.
 - `v2.logic.*` contains JVM-testable layout, control, queue-label, transcript-dialog, mini-player, and seekbar logic.
 - Player UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
@@ -62,7 +63,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 ## Testing notes
 
 - Unit tests live under `feature/player/src/test`.
-- Existing coverage includes time formatting and v2 logic for controls, layout, seekbar, queue labels, queue podcast display, transcript dialogs, mini-player dismissal, and chapter art flow.
+- Existing coverage includes time formatting and v2 logic for controls, layout, nested-scroll collapse handoff, seekbar, queue labels, queue podcast display, transcript dialogs, mini-player dismissal, and chapter art flow.
 - Compose UI test tags for player controls should remain stable when added or expanded.
 
 ```bash

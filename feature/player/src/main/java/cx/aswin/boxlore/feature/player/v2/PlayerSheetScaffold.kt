@@ -62,6 +62,7 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.feature.player.v2.logic.calculatePlayerSheetGeometry
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetGeometryInput
+import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetNestedScrollLogic
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.NonCancellable
@@ -639,6 +640,8 @@ private fun rememberPlayerSheetNestedScrollConnection(
     density: Density
 ): NestedScrollConnection = remember(sheetState, density) {
     object : NestedScrollConnection {
+        private var contentOwnsGesture = false
+
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
             return consumePlayerSheetPreScroll(sheetState, available)
         }
@@ -648,7 +651,19 @@ private fun rememberPlayerSheetNestedScrollConnection(
             available: Offset,
             source: NestedScrollSource
         ): Offset {
-            return consumePlayerSheetPostScroll(sheetState, available, source)
+            if (source == NestedScrollSource.UserInput) {
+                contentOwnsGesture =
+                    PlayerSheetNestedScrollLogic.contentOwnsGestureAfterScroll(
+                        contentOwnsGesture,
+                        consumed.y,
+                    )
+            }
+            return consumePlayerSheetPostScroll(
+                sheetState = sheetState,
+                available = available,
+                source = source,
+                contentOwnsGesture = contentOwnsGesture,
+            )
         }
 
         override suspend fun onPreFling(available: Velocity): Velocity {
@@ -656,7 +671,20 @@ private fun rememberPlayerSheetNestedScrollConnection(
         }
 
         override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-            return settlePlayerSheetPostFling(sheetState, available, density)
+            try {
+                if (
+                    !PlayerSheetNestedScrollLogic.shouldSettleSheetOnPostFling(
+                        contentOwnsGesture = contentOwnsGesture,
+                        sheetOffset = sheetState.requireOffset(),
+                        animationRunning = sheetState.isAnimationRunning,
+                    )
+                ) {
+                    return Velocity.Zero
+                }
+                return settlePlayerSheetPostFling(sheetState, available, density)
+            } finally {
+                contentOwnsGesture = false
+            }
         }
     }
 }
@@ -676,9 +704,19 @@ private fun consumePlayerSheetPreScroll(
 private fun consumePlayerSheetPostScroll(
     sheetState: AnchoredDraggableState<PlayerSheetValue>,
     available: Offset,
-    source: NestedScrollSource
+    source: NestedScrollSource,
+    contentOwnsGesture: Boolean,
 ): Offset {
-    if (source != NestedScrollSource.UserInput) return Offset.Zero
+    if (
+        !PlayerSheetNestedScrollLogic.shouldMoveSheetOnPostScroll(
+            contentOwnsGesture = contentOwnsGesture,
+            sheetOffset = sheetState.requireOffset(),
+            availableY = available.y,
+            sourceIsUserInput = source == NestedScrollSource.UserInput,
+        )
+    ) {
+        return Offset.Zero
+    }
     return Offset(0f, sheetState.dispatchRawDelta(available.y))
 }
 
