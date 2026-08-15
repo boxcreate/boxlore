@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -342,6 +343,44 @@ class PodcastRepositoryEpisodeSupplementTest {
             val tips = repository.syncSubscriptions(listOf("900020"))
 
             assertEquals("-5", tips.getValue("900020").id)
+            assertEquals(0, server.requestCount)
+        }
+
+    @Test
+    fun `getEpisodesPaginated uses local catalog only when ready`() =
+        runTest(testDispatcher) {
+            val catalog =
+                FakeLocalEpisodeCatalogPort(
+                    readyIds = setOf("900030"),
+                    episodes =
+                        mutableMapOf(
+                            "-1" to
+                                TestFixtures.episode(
+                                    id = "-1",
+                                    podcastId = "900030",
+                                    title = "Room",
+                                ),
+                        ),
+                )
+            val readyRepo =
+                PodcastRepository(
+                    baseUrl = server.url("/").toString(),
+                    publicKey = APP_KEY,
+                    context = fakeContext(),
+                    rssRepository =
+                        RssPodcastRepository.createForTests(
+                            context = fakeContext(),
+                            database = fakeDatabase(),
+                        ),
+                    episodeSupplementRepository = fakePort,
+                    localEpisodeCatalog = catalog,
+                    ioDispatcher = testDispatcher,
+                    boxLoreApi = repository.api,
+                )
+
+            val page = readyRepo.getEpisodesPaginated("900030", 20, 0, "newest")
+
+            assertEquals(listOf("-1"), page.episodes.map { it.id })
             assertEquals(0, server.requestCount)
         }
 

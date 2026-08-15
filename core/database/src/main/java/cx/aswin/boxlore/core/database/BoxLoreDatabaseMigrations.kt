@@ -108,4 +108,122 @@ object BoxLoreDatabaseMigrations {
                 "ON episode_supplement_items(podcastId, publishedDate)",
         )
     }
+
+    /**
+     * Copy-only: create the first-class local catalog and copy Missing-episodes
+     * extras **keeping episodeId**. Old supplement tables stay for dual-read.
+     */
+    fun migrate31To32(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS local_episode_feeds (
+                podcastId TEXT NOT NULL PRIMARY KEY,
+                feedUrl TEXT NOT NULL,
+                feedEtag TEXT,
+                feedLastModified TEXT,
+                fetchedAt INTEGER NOT NULL,
+                itemCount INTEGER NOT NULL,
+                feedOrder TEXT NOT NULL,
+                ttlExpiresAt INTEGER,
+                needsFullBackfill INTEGER NOT NULL,
+                copiedExtrasCount INTEGER NOT NULL,
+                ready INTEGER NOT NULL,
+                feedUrlLookupAt INTEGER NOT NULL
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS local_episodes (
+                episodeId TEXT NOT NULL PRIMARY KEY,
+                podcastId TEXT NOT NULL,
+                guid TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                audioUrl TEXT NOT NULL,
+                imageUrl TEXT,
+                duration INTEGER NOT NULL,
+                publishedDate INTEGER NOT NULL,
+                chaptersUrl TEXT,
+                transcriptUrl TEXT,
+                transcripts TEXT,
+                persons TEXT,
+                seasonNumber INTEGER,
+                episodeNumber INTEGER,
+                episodeType TEXT,
+                enclosureType TEXT
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_local_episodes_podcastId_guid " +
+                "ON local_episodes(podcastId, guid)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_local_episodes_podcastId_publishedDate_episodeId " +
+                "ON local_episodes(podcastId, publishedDate, episodeId)",
+        )
+        db.execSQL(
+            """
+            INSERT INTO local_episode_feeds (
+                podcastId, feedUrl, feedEtag, feedLastModified, fetchedAt,
+                itemCount, feedOrder, ttlExpiresAt, needsFullBackfill,
+                copiedExtrasCount, ready, feedUrlLookupAt
+            )
+            SELECT
+                s.podcastId,
+                s.feedUrl,
+                s.feedEtag,
+                s.feedLastModified,
+                s.fetchedAt,
+                (
+                    SELECT COUNT(*) FROM episode_supplement_items i
+                    WHERE i.podcastId = s.podcastId
+                ),
+                'mixed',
+                NULL,
+                1,
+                (
+                    SELECT COUNT(*) FROM episode_supplement_items i
+                    WHERE i.podcastId = s.podcastId
+                ),
+                0,
+                0
+            FROM episode_supplements s
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            INSERT INTO local_episodes (
+                episodeId, podcastId, guid, title, description, audioUrl,
+                imageUrl, duration, publishedDate, chaptersUrl, transcriptUrl,
+                transcripts, persons, seasonNumber, episodeNumber, episodeType,
+                enclosureType
+            )
+            SELECT
+                episodeId,
+                podcastId,
+                COALESCE(
+                    NULLIF(TRIM(guid), ''),
+                    NULLIF(TRIM(audioUrl), ''),
+                    'id:' || episodeId
+                ),
+                title,
+                description,
+                audioUrl,
+                imageUrl,
+                duration,
+                publishedDate,
+                chaptersUrl,
+                transcriptUrl,
+                transcripts,
+                persons,
+                seasonNumber,
+                episodeNumber,
+                episodeType,
+                enclosureType
+            FROM episode_supplement_items
+            """.trimIndent(),
+        )
+    }
 }

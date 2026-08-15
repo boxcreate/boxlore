@@ -109,6 +109,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         payloadGuid = FcmPayloadParser.guid(data),
                         subscriptionRepository = deps.subscriptionRepository,
                         episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
+                        localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
                         loadPiBaseline =
                             NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
                                 deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)

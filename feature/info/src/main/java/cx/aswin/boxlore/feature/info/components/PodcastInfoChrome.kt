@@ -265,6 +265,7 @@ internal fun EpisodeFeedItemRow(
     indicators: EpisodeListIndicators,
     autoScrolledEpisodeId: String?,
     onEpisodeClick: (Episode, String, Int?) -> Unit,
+    podcastImageUrl: String? = null,
 ) {
     when (feedItem) {
         is FeedItem.NormalEpisode -> {
@@ -279,6 +280,7 @@ internal fun EpisodeFeedItemRow(
                     episode = episode,
                     isLiked = indicators.likedEpisodeIds.contains(episode.id),
                     accentColor = accentColor,
+                    podcastImageUrl = podcastImageUrl,
                     // Playback State
                     isPlaying = playState?.isPlaying == true,
                     isResume = playState?.isResume == true,

@@ -34,6 +34,29 @@ class TrackedPodcastRtdbLogicTest {
     }
 
     @Test
+    fun attachableFeedUrlRequiresTipToSeedLastRssKey() {
+        assertNull(
+            TrackedPodcastRtdbLogic.attachableFeedUrl(
+                feedUrl = "https://feeds.example/show.xml",
+                latestEpisodeId = null,
+            ),
+        )
+        assertNull(
+            TrackedPodcastRtdbLogic.attachableFeedUrl(
+                feedUrl = "https://feeds.example/show.xml",
+                latestEpisodeId = "  ",
+            ),
+        )
+        assertEquals(
+            "https://feeds.example/show.xml",
+            TrackedPodcastRtdbLogic.attachableFeedUrl(
+                feedUrl = "https://feeds.example/show.xml",
+                latestEpisodeId = "-9",
+            ),
+        )
+    }
+
+    @Test
     fun httpsFeedUrlRejectsBlankAndHttp() {
         assertNull(TrackedPodcastRtdbLogic.httpsFeedUrl(null))
         assertNull(TrackedPodcastRtdbLogic.httpsFeedUrl("http://x"))

@@ -20,7 +20,9 @@ import android.util.Log
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.toPodcast
+import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 
 data class GlobalPreferencesBackup(
     val region: String? = null,
@@ -127,19 +129,13 @@ class LibraryBackupManager(
         } else null
 
         val rankingBackup = adaptiveRankingRepository.exportBackup()
-        val portOptIns = supplementPort()?.listDirectFeedOptIns().orEmpty()
-        val directFeedOptIns =
-            LibraryBackupDirectFeedLogic.mergeExport(
-                portOptIns = portOptIns,
-                subscriptionFeedUrls = subscriptions.associate { it.podcastId to it.feedUrl },
-            )
         val backup = BoxLoreBackup(
             version = LibraryBackupDirectFeedLogic.VERSION,
             subscriptions = subscriptions,
             history = allHistory,
             globalPreferences = globalPrefs,
             adaptiveRanking = rankingBackup,
-            directFeedOptIns = directFeedOptIns.takeIf { it.isNotEmpty() },
+            directFeedOptIns = null,
         )
         return gson.toJson(backup)
     }
@@ -544,13 +540,89 @@ class LibraryBackupManager(
     private fun supplementPort(): EpisodeSupplementPort? =
         episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
 
+    private suspend fun restoreImportedLocalCatalogs(
+        targets: List<DirectFeedOptInBackup>,
+        catalog: LocalEpisodeCatalogPort,
+    ) {
+        LibraryBackupDirectFeedRestore.restoreAndRefresh(
+            targets = targets,
+            actions =
+                DirectFeedRestoreActions(
+                    restoreStub = { _, _ -> },
+                    ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                    invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
+                    refreshFeed = { id, url ->
+                        val entity = subscriptionRepository.getPodcastEntity(id)
+                        val meta =
+                            LocalEpisodeCatalogPort.PodcastMeta(
+                                title = entity?.title,
+                                imageUrl = entity?.imageUrl,
+                                genre = entity?.genre,
+                                artist = entity?.author,
+                            )
+                        when (
+                            val outcome =
+                                catalog.refresh(
+                                    LocalEpisodeCatalogPort.RefreshRequest(
+                                        podcastIndexId = id,
+                                        feedUrl = url,
+                                        meta = meta,
+                                        loadPiBaseline = {
+                                            podcastRepository.loadPiEpisodesForBaseline(
+                                                feedId = id,
+                                                limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
+                                            )
+                                        },
+                                    ),
+                                )
+                        ) {
+                            is LocalEpisodeCatalogPort.RefreshOutcome.Success ->
+                                EpisodeSupplementOutcome.Success(
+                                    addedCount = outcome.itemCount,
+                                    totalSupplementCount = outcome.itemCount,
+                                    newestFeedEpisode = outcome.newest,
+                                )
+                            is LocalEpisodeCatalogPort.RefreshOutcome.Unchanged ->
+                                EpisodeSupplementOutcome.Success(
+                                    addedCount = 0,
+                                    totalSupplementCount = 0,
+                                    newestFeedEpisode = outcome.newest,
+                                )
+                            is LocalEpisodeCatalogPort.RefreshOutcome.Failure ->
+                                EpisodeSupplementOutcome.Failure(outcome.message)
+                        }
+                    },
+                    saveTip = { id, episode ->
+                        subscriptionRepository.updateLatestEpisode(
+                            podcastId = id,
+                            episode = episode,
+                            markAsNew = false,
+                        )
+                    },
+                    syncTrackedUrl = { id ->
+                        subscriptionRepository.getPodcastEntity(id)?.toPodcast()?.let { podcast ->
+                            subscriptionRepository.syncTrackedPodcastFeedUrl(podcast)
+                        }
+                    },
+                    onError = { id, error ->
+                        Log.e("JSON_IMPORT", "Local catalog restore failed for $id", error)
+                    },
+                ),
+        )
+    }
+
     private suspend fun restoreImportedDirectFeeds(targets: List<DirectFeedOptInBackup>) {
+        val catalog = podcastRepository.localEpisodeCatalog
+        if (catalog != null) {
+            restoreImportedLocalCatalogs(targets, catalog)
+            return
+        }
         val port = supplementPort() ?: return
         LibraryBackupDirectFeedRestore.restoreAndRefresh(
             targets = targets,
             actions =
                 DirectFeedRestoreActions(
-                    restoreStub = { id, url -> port.restoreDirectFeedOptIn(id, url) },
+                    restoreStub = { _, _ -> },
                     ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
                     invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
                     refreshFeed = { id, url ->
@@ -576,7 +648,7 @@ class LibraryBackupManager(
                         subscriptionRepository.updateLatestEpisode(
                             podcastId = id,
                             episode = episode,
-                            markAsNew = true,
+                            markAsNew = false,
                         )
                     },
                     syncTrackedUrl = { id ->

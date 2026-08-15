@@ -59,8 +59,8 @@ data class RssEpisodeEntity(
         title = title,
         description = description,
         audioUrl = audioUrl,
-        imageUrl = imageUrl ?: podcastImageUrl,
-        podcastImageUrl = podcastImageUrl,
+        imageUrl = imageUrl?.takeIf { it.isNotBlank() } ?: podcastImageUrl?.takeIf { it.isNotBlank() },
+        podcastImageUrl = podcastImageUrl?.takeIf { it.isNotBlank() },
         podcastTitle = podcastTitle,
         podcastId = podcastId,
         podcastGenre = podcastGenre,
@@ -77,3 +77,10 @@ data class RssEpisodeEntity(
         enclosureType = enclosureType,
     )
 }
+
+/** Lightweight identity map for sticky upserts on true RSS catalogs. */
+data class RssEpisodeIdentity(
+    val episodeId: String,
+    val guid: String?,
+    val audioUrl: String,
+)

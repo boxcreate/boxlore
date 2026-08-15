@@ -27,10 +27,10 @@ class LatestEpisodeTipLogicTest {
     }
 
     @Test
-    fun `same date different id replaces for PI catch-up`() {
+    fun `same date different id does not replace`() {
         val existing = TestFixtures.episode(id = "-9", publishedDate = 100L)
         val incoming = TestFixtures.episode(id = "55", publishedDate = 100L)
-        assertTrue(LatestEpisodeTipLogic.shouldReplace(existing, incoming))
+        assertFalse(LatestEpisodeTipLogic.shouldReplace(existing, incoming))
     }
 
     @Test

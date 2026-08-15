@@ -5,6 +5,8 @@ import cx.aswin.boxlore.core.catalog.logic.DirectFeedSyncOrder
 import cx.aswin.boxlore.core.catalog.logic.SubscriptionForegroundSyncLogic
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -172,6 +174,7 @@ class SubscriptionForegroundSync(
             subscriptionRepository: SubscriptionRepository,
             episodeSupplementPort: EpisodeSupplementPort,
             scope: CoroutineScope,
+            localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
             initialDelayMs: Long = DEFAULT_INITIAL_DELAY_MS,
             feedNetworkDelayMs: Long = DEFAULT_FEED_NETWORK_DELAY_MS,
             chunkSize: Int = DEFAULT_CHUNK_SIZE,
@@ -188,8 +191,15 @@ class SubscriptionForegroundSync(
                 preferredFeedPodcastId = preferred,
                 directFeedRefreshedMutable = refreshed,
                 syncAction = {
+                    val ids = subscriptionRepository.subscribedPodcastIds.first()
+                    recoverMissingFeedUrls(
+                        ids = ids,
+                        subscriptionRepository = subscriptionRepository,
+                        podcastRepository = podcastRepository,
+                        localEpisodeCatalog = localEpisodeCatalog,
+                    )
                     syncSubscribedLatestEpisodes(
-                        loadIds = { subscriptionRepository.subscribedPodcastIds.first() },
+                        loadIds = { ids },
                         loadPodcastMeta = { id ->
                             subscriptionRepository.getPodcastEntity(id)?.let { entity ->
                                 DirectFeedTipMeta(
@@ -202,23 +212,33 @@ class SubscriptionForegroundSync(
                                 )
                             }
                         },
-                        syncChunk = { ids -> podcastRepository.syncSubscriptions(ids) },
+                        syncChunk = { chunk -> podcastRepository.syncSubscriptions(chunk) },
                         saveLatest = { id, episode ->
                             subscriptionRepository.updateLatestEpisode(id, episode)
                         },
                         chunkSize = chunkSize,
                         directFeed =
                             DirectFeedSyncSeams(
-                                loadOptedInIds = { episodeSupplementPort.listOptedInPodcastIds() },
+                                loadOptedInIds = {
+                                    httpsSubscribedIds(ids, subscriptionRepository)
+                                },
+                                loadReadyIds = {
+                                    readyCatalogIds(ids, localEpisodeCatalog)
+                                },
                                 loadCachedFeedTip = { id ->
-                                    episodeSupplementPort
-                                        .getEpisodesForPodcast(id)
-                                        .maxByOrNull { it.publishedDate }
+                                    localEpisodeCatalog?.newest(
+                                        id,
+                                        LocalEpisodeCatalogPort.PodcastMeta(),
+                                    )
+                                        ?: episodeSupplementPort
+                                            .getEpisodesForPodcast(id)
+                                            .maxByOrNull { it.publishedDate }
                                 },
                                 resolveFeedTip = { id, meta ->
-                                    resolveOptedInFeedTip(
+                                    resolveLocalCatalogTip(
                                         podcastId = id,
                                         meta = meta,
+                                        localEpisodeCatalog = localEpisodeCatalog,
                                         episodeSupplementPort = episodeSupplementPort,
                                         podcastRepository = podcastRepository,
                                     )
@@ -227,7 +247,7 @@ class SubscriptionForegroundSync(
                                     subscriptionRepository.updateLatestEpisode(
                                         podcastId = id,
                                         episode = episode,
-                                        markAsNew = true,
+                                        markAsNew = false,
                                     )
                                 },
                                 feedNetworkDelayMs = feedNetworkDelayMs,
@@ -236,22 +256,81 @@ class SubscriptionForegroundSync(
                                 onFeedRefreshed = { refreshed.tryEmit(it) },
                             ),
                     )
-                    syncTrackedFeedUrlsForOptedInNotifications(
-                        episodeSupplementPort = episodeSupplementPort,
+                    syncTrackedFeedUrlsForHttpsNotifications(
+                        ids = ids,
                         subscriptionRepository = subscriptionRepository,
                     )
                 },
             )
         }
 
-        private suspend fun resolveOptedInFeedTip(
+        private suspend fun resolveLocalCatalogTip(
+            podcastId: String,
+            meta: DirectFeedTipMeta,
+            localEpisodeCatalog: LocalEpisodeCatalogPort?,
+            episodeSupplementPort: EpisodeSupplementPort,
+            podcastRepository: PodcastRepository,
+        ): DirectFeedResolveResult {
+            val catalog = localEpisodeCatalog
+            if (catalog != null) {
+                return resolveCatalogRefresh(podcastId, meta, catalog, podcastRepository)
+            }
+            return resolveLegacySupplementTip(podcastId, meta, episodeSupplementPort, podcastRepository)
+        }
+
+        private suspend fun resolveCatalogRefresh(
+            podcastId: String,
+            meta: DirectFeedTipMeta,
+            catalog: LocalEpisodeCatalogPort,
+            podcastRepository: PodcastRepository,
+        ): DirectFeedResolveResult {
+            val podcastMeta = catalogMeta(meta)
+            if (catalog.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
+                return DirectFeedResolveResult(
+                    tip = catalog.newest(podcastId, podcastMeta),
+                    persisted = false,
+                )
+            }
+            val needsBaseline = !catalog.isReady(podcastId)
+            return when (
+                val outcome =
+                    catalog.refresh(
+                        LocalEpisodeCatalogPort.RefreshRequest(
+                            podcastIndexId = podcastId,
+                            feedUrl = meta.feedUrl.orEmpty(),
+                            meta = podcastMeta,
+                            loadPiBaseline =
+                                if (needsBaseline) {
+                                    {
+                                        podcastRepository.loadPiEpisodesForBaseline(
+                                            feedId = podcastId,
+                                            limit = DIRECT_FEED_BASELINE_LIMIT,
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                        ),
+                    )
+            ) {
+                is LocalEpisodeCatalogPort.RefreshOutcome.Success ->
+                    DirectFeedResolveResult(tip = outcome.newest, persisted = true)
+                is LocalEpisodeCatalogPort.RefreshOutcome.Unchanged ->
+                    DirectFeedResolveResult(tip = outcome.newest, persisted = false)
+                is LocalEpisodeCatalogPort.RefreshOutcome.Failure -> {
+                    Log.w(TAG, "Local catalog refresh failed for $podcastId: ${outcome.message}")
+                    DirectFeedResolveResult(tip = null, persisted = false)
+                }
+            }
+        }
+
+        private suspend fun resolveLegacySupplementTip(
             podcastId: String,
             meta: DirectFeedTipMeta,
             episodeSupplementPort: EpisodeSupplementPort,
             podcastRepository: PodcastRepository,
         ): DirectFeedResolveResult {
             if (episodeSupplementPort.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
-                Log.d(TAG, "Publisher feed unchanged for $podcastId")
                 return DirectFeedResolveResult(
                     tip =
                         episodeSupplementPort
@@ -281,14 +360,20 @@ class SubscriptionForegroundSync(
             ) {
                 is EpisodeSupplementOutcome.Success ->
                     DirectFeedResolveResult(tip = outcome.newestFeedEpisode, persisted = true)
-                is EpisodeSupplementOutcome.Failure -> {
-                    Log.w(TAG, "Direct-feed refresh failed for $podcastId: ${outcome.message}")
+                is EpisodeSupplementOutcome.Failure ->
                     DirectFeedResolveResult(tip = null, persisted = false)
-                }
                 EpisodeSupplementOutcome.NoDisconnect ->
                     DirectFeedResolveResult(tip = null, persisted = false)
             }
         }
+
+        private fun catalogMeta(meta: DirectFeedTipMeta) =
+            LocalEpisodeCatalogPort.PodcastMeta(
+                title = meta.title,
+                imageUrl = meta.imageUrl,
+                genre = meta.genre,
+                artist = meta.artist,
+            )
 
         /**
          * Chunked sync body (test seam).
@@ -322,7 +407,15 @@ class SubscriptionForegroundSync(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to load direct-feed opt-ins; falling back to PI sync", e)
+                    Log.e(TAG, "Failed to load HTTPS feed ids; falling back to PI sync", e)
+                    emptySet()
+                }
+            val readyIds =
+                try {
+                    directFeed.loadReadyIds()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
                     emptySet()
                 }
 
@@ -330,7 +423,10 @@ class SubscriptionForegroundSync(
                 currentSubs.filter { id ->
                     !id.startsWith("rss:") && id in optedIn
                 }
-            val piSyncIds = (currentSubs - feedTipIds.toSet()).toList()
+            val piSyncIds =
+                currentSubs.filter { id ->
+                    id !in readyIds && id !in optedIn
+                }
 
             Log.d(
                 TAG,
@@ -405,13 +501,13 @@ class SubscriptionForegroundSync(
          * Heal: opted-in shows that already have notifications on get
          * `feedUrl` on RTDB so the checker can poll RSS without a notification toggle.
          */
-        private suspend fun syncTrackedFeedUrlsForOptedInNotifications(
-            episodeSupplementPort: EpisodeSupplementPort,
+        private suspend fun syncTrackedFeedUrlsForHttpsNotifications(
+            ids: Set<String>,
             subscriptionRepository: SubscriptionRepository,
         ) {
             try {
-                val optedIn = episodeSupplementPort.listOptedInPodcastIds()
-                for (id in optedIn) {
+                for (id in ids) {
+                    if (id.startsWith("rss:")) continue
                     val entity = subscriptionRepository.getPodcastEntity(id) ?: continue
                     subscriptionRepository.syncTrackedPodcastFeedUrl(entity.toPodcast())
                 }
@@ -420,6 +516,49 @@ class SubscriptionForegroundSync(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to sync tracked feed URLs for notifications", e)
             }
+        }
+
+        private suspend fun recoverMissingFeedUrls(
+            ids: Set<String>,
+            subscriptionRepository: SubscriptionRepository,
+            podcastRepository: PodcastRepository,
+            localEpisodeCatalog: LocalEpisodeCatalogPort?,
+        ) {
+            val now = System.currentTimeMillis()
+            for (id in ids) {
+                if (id.startsWith("rss:")) continue
+                val entity = subscriptionRepository.getPodcastEntity(id) ?: continue
+                if (TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl) != null) continue
+                val lastLookup = localEpisodeCatalog?.lastFeedUrlLookupAt(id) ?: 0L
+                if (lastLookup > 0L &&
+                    now - lastLookup < LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS
+                ) {
+                    continue
+                }
+                localEpisodeCatalog?.markFeedUrlLookup(id, now)
+                val details = runCatching { podcastRepository.getPodcastDetails(id) }.getOrNull()
+                val https = TrackedPodcastRtdbLogic.httpsFeedUrl(details?.feedUrl) ?: continue
+                subscriptionRepository.ensureHttpsFeedUrl(id, https)
+            }
+        }
+
+        private suspend fun httpsSubscribedIds(
+            ids: Set<String>,
+            subscriptionRepository: SubscriptionRepository,
+        ): Set<String> =
+            ids.filter { id ->
+                !id.startsWith("rss:") &&
+                    TrackedPodcastRtdbLogic.httpsFeedUrl(
+                        subscriptionRepository.getPodcastEntity(id)?.feedUrl,
+                    ) != null
+            }.toSet()
+
+        private suspend fun readyCatalogIds(
+            ids: Set<String>,
+            localEpisodeCatalog: LocalEpisodeCatalogPort?,
+        ): Set<String> {
+            val catalog = localEpisodeCatalog ?: return emptySet()
+            return ids.filter { id -> !id.startsWith("rss:") && catalog.isReady(id) }.toSet()
         }
 
         private suspend fun promoteCachedDirectFeedTip(
@@ -433,9 +572,7 @@ class SubscriptionForegroundSync(
                 val cached = loadCachedFeedTip(podcastId) ?: return
                 val known = meta.knownTip
                 val shouldPromote =
-                    known == null ||
-                        cached.id != known.id ||
-                        cached.publishedDate > known.publishedDate
+                    known == null || cached.publishedDate > known.publishedDate
                 if (!shouldPromote) {
                     Log.d(TAG, "Cached tip already current for $podcastId")
                     return
@@ -531,6 +668,7 @@ internal data class DirectFeedResolveResult(
 /** Direct-feed callbacks grouped so [SubscriptionForegroundSync.syncSubscribedLatestEpisodes] stays under the param limit. */
 internal data class DirectFeedSyncSeams(
     val loadOptedInIds: suspend () -> Set<String> = { emptySet() },
+    val loadReadyIds: suspend () -> Set<String> = { emptySet() },
     val loadCachedFeedTip: suspend (String) -> Episode? = { null },
     val resolveFeedTip: suspend (String, DirectFeedTipMeta) -> DirectFeedResolveResult =
         { _, _ -> DirectFeedResolveResult(tip = null, persisted = false) },

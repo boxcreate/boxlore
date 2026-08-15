@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.info.logic.EpisodeArtworkLogic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +81,7 @@ fun EpisodeOptionsSheet(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
                     OptimizedImage(
-                        url = episode.imageUrl,
+                        url = EpisodeArtworkLogic.listUrl(episode),
                         proxyWidth = 150, // 64dp thumbnail
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),

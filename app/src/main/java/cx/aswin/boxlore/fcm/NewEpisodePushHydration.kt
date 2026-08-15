@@ -4,6 +4,7 @@ import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -24,7 +25,19 @@ internal object NewEpisodePushHydration {
         episodeSupplementPort: EpisodeSupplementPort?,
         payloadGuid: String? = null,
         loadPiBaseline: (suspend (String) -> List<Episode>)? = null,
+        localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
     ): Episode? {
+        if (localEpisodeCatalog != null) {
+            return resolveFromLocalCatalog(
+                podcastId = podcastId,
+                payloadFeedUrl = payloadFeedUrl,
+                payloadEnclosureUrl = payloadEnclosureUrl,
+                payloadGuid = payloadGuid,
+                subscriptionRepository = subscriptionRepository,
+                catalog = localEpisodeCatalog,
+                loadPiBaseline = loadPiBaseline,
+            )
+        }
         val port = episodeSupplementPort ?: return null
         if (!port.hasDirectFeedOptIn(podcastId)) return null
         val entity = subscriptionRepository.getPodcastEntity(podcastId)
@@ -43,7 +56,7 @@ internal object NewEpisodePushHydration {
         val outcome = runFullRefresh(port, podcastId, meta, loadPiBaseline)
         if (outcome is EpisodeSupplementOutcome.Success) {
             outcome.newestFeedEpisode?.let { tip ->
-                subscriptionRepository.updateLatestEpisode(podcastId, tip, markAsNew = true)
+                subscriptionRepository.updateLatestEpisode(podcastId, tip, markAsNew = false)
             }
         }
 
@@ -54,15 +67,60 @@ internal object NewEpisodePushHydration {
             return picked
         }
         if (guid.isEmpty() && enclosure.isEmpty()) {
-            return picked
+            return null
         }
 
         val matched = resolveMatchedTip(port, podcastId, meta, guid, enclosure)
         if (matched != null) {
-            subscriptionRepository.updateLatestEpisode(podcastId, matched, markAsNew = true)
+            subscriptionRepository.updateLatestEpisode(podcastId, matched, markAsNew = false)
             return matched
         }
         return null
+    }
+
+    private suspend fun resolveFromLocalCatalog(
+        podcastId: String,
+        payloadFeedUrl: String?,
+        payloadEnclosureUrl: String?,
+        payloadGuid: String?,
+        subscriptionRepository: SubscriptionRepository,
+        catalog: LocalEpisodeCatalogPort,
+        loadPiBaseline: (suspend (String) -> List<Episode>)?,
+    ): Episode? {
+        val entity = subscriptionRepository.getPodcastEntity(podcastId)
+        val meta =
+            LocalEpisodeCatalogPort.PodcastMeta(
+                title = entity?.title,
+                imageUrl = entity?.imageUrl,
+                genre = entity?.genre,
+                artist = entity?.author,
+            )
+        val feedUrl = payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() }
+        val needsBaseline = !catalog.isReady(podcastId)
+        runCatching {
+            catalog.refresh(
+                LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = podcastId,
+                    feedUrl = feedUrl,
+                    meta = meta,
+                    loadPiBaseline =
+                        if (needsBaseline) {
+                            loadPiBaseline?.let { loader -> { loader(podcastId) } }
+                        } else {
+                            null
+                        },
+                ),
+            )
+        }
+        val matched =
+            catalog.findByCatalogKey(
+                podcastId = podcastId,
+                guid = payloadGuid,
+                enclosureUrl = payloadEnclosureUrl,
+                meta = meta,
+            ) ?: return null
+        subscriptionRepository.updateLatestEpisode(podcastId, matched, markAsNew = false)
+        return matched
     }
 
     private suspend fun runFullRefresh(

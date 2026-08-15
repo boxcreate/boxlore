@@ -45,4 +45,7 @@ interface QueueDao {
 
     @Query("SELECT * FROM queue_items WHERE episodeId = :episodeId LIMIT 1")
     suspend fun getQueueItemByEpisodeId(episodeId: String): QueueItem?
+
+    @Query("SELECT episodeId FROM queue_items WHERE podcastId = :podcastId")
+    suspend fun getEpisodeIdsForPodcast(podcastId: String): List<String>
 }

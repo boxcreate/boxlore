@@ -38,6 +38,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.info.logic.EpisodeArtworkLogic
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 
 @Composable
@@ -63,6 +64,7 @@ fun EpisodeListItem(
     onDownloadClick: () -> Unit,
     onMarkPlayedClick: () -> Unit,
     showMarkPlayedButton: Boolean = true,
+    podcastImageUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
     androidx.compose.material3.OutlinedCard(
@@ -95,7 +97,7 @@ fun EpisodeListItem(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         OptimizedImage(
-                            url = episode.imageUrl,
+                            url = EpisodeArtworkLogic.listUrl(episode, podcastImageUrl),
                             proxyWidth = 200, // 76dp thumbnails
                             contentDescription = episode.title,
                             modifier = Modifier.fillMaxSize(),

@@ -52,7 +52,14 @@ internal suspend fun PodcastRepository.unionCachedSupplementSearch(
 internal suspend fun PodcastRepository.loadCachedSupplements(podcastId: String): List<Episode> {
     if (podcastId.startsWith("rss:")) return emptyList()
     return try {
-        episodeSupplementRepository?.getEpisodesForPodcast(podcastId).orEmpty()
+        val local = rssRepository.getPodcast(podcastId)
+        episodeSupplementRepository?.getEpisodesForPodcast(
+            podcastIndexId = podcastId,
+            podcastTitle = local?.title,
+            podcastImageUrl = local?.imageUrl,
+            podcastGenre = local?.genre,
+            podcastArtist = local?.author,
+        ).orEmpty()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {

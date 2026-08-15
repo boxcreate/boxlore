@@ -133,6 +133,22 @@ function newestRssItem(items) {
 function applyCheck({ existing, source, newest, now = Date.now() }) {
     if (source === 'rss') {
         if (!existing || !existing.lastRssKey) {
+            const differentPi =
+                existing?.lastEpisodeId &&
+                newest.piEpisodeId &&
+                String(existing.lastEpisodeId) !== String(newest.piEpisodeId);
+            if (differentPi) {
+                return {
+                    notify: true,
+                    reason: 'rss-new-after-pi',
+                    nextState: {
+                        lastRssKey: newest.key,
+                        lastEpisodeTitle: newest.title,
+                        lastEpisodeId: newest.piEpisodeId,
+                        lastCheckedAt: now,
+                    },
+                };
+            }
             return {
                 notify: false,
                 reason: 'rss-baseline',

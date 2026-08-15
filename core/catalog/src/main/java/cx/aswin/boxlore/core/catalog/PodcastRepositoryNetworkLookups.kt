@@ -33,9 +33,21 @@ internal suspend fun PodcastRepository.searchNetworkEpisodes(feedId: String, que
 
 internal suspend fun PodcastRepository.getEpisodesImpl(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
     if (feedId.startsWith("rss:")) {
-        return@withContext getAllRssEpisodes(feedId)
+        return@withContext getRssEpisodeWindow(feedId)
+    }
+    if (isLocalCatalogReady(feedId)) {
+        return@withContext getLocalCatalogWindow(feedId, sort = "newest", aroundEpisodeId = null)
     }
     getAllNetworkEpisodes(feedId)
+}
+
+internal suspend fun PodcastRepository.getRssEpisodeWindow(feedId: String): List<Episode> = try {
+    rssRepository.getEpisodes(feedId, LOCAL_CATALOG_WINDOW_BOUND, 0, "newest")
+} catch (e: kotlinx.coroutines.CancellationException) {
+    throw e
+} catch (e: Exception) {
+    android.util.Log.e("PodcastRepository", "RSS episode window failed for $feedId", e)
+    emptyList()
 }
 
 internal suspend fun PodcastRepository.getAllRssEpisodes(feedId: String): List<Episode> = try {
@@ -66,9 +78,8 @@ internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): Li
 }
 
 internal suspend fun PodcastRepository.getEpisodeImpl(episodeId: String): Episode? = withContext(Dispatchers.IO) {
+    getLocalCatalogEpisode(episodeId)?.let { return@withContext it }
     if (episodeId.toLongOrNull()?.let { it < 0L } == true) {
-        // Prefer the PI supplement row so a colliding rss: library id cannot steal
-        // playback / deep-link resolution for a Podcast Index show.
         return@withContext getSupplementEpisode(episodeId) ?: getRssEpisode(episodeId)
     }
     getNetworkEpisode(episodeId)

@@ -2,7 +2,8 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
-import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
@@ -12,7 +13,8 @@ import kotlinx.coroutines.flow.map
 
 class SubscriptionRepository(
     private val podcastDao: PodcastDao,
-    private val episodeSupplementPort: EpisodeSupplementPort? = null,
+    private val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
+    private val lookupHttpsFeedUrl: (suspend (String) -> String?)? = null,
 ) {
 
     val subscribedPodcastIds: Flow<Set<String>> = podcastDao.getSubscribedPodcasts()
@@ -87,6 +89,10 @@ class SubscriptionRepository(
             if (target.isRss) podcastDao.deleteRssEpisodes(target.podcastId)
             if (!podcast.isRss) {
                 updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
+                localEpisodeCatalog?.setUnsubscribedTtl(
+                    podcast.id,
+                    System.currentTimeMillis() + LocalEpisodeCatalogRepository.UNSUBSCRIBE_TTL_MS,
+                )
             }
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target = FeedbackTarget(
@@ -139,6 +145,8 @@ class SubscriptionRepository(
                 linkedPodcastIndexId = podcast.linkedPodcastIndexId,
             )
             podcastDao.upsert(entity)
+            localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
+            recoverFeedUrlIfMissing(podcast)
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target = FeedbackTarget(
                     episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
@@ -210,6 +218,8 @@ class SubscriptionRepository(
                 ?: podcast.linkedPodcastIndexId,
         )
         podcastDao.upsert(entity)
+        localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
+        recoverFeedUrlIfMissing(podcast)
         if (isNewSubscription) {
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target = FeedbackTarget(
@@ -229,10 +239,13 @@ class SubscriptionRepository(
             return
         }
         podcastDao.setNotificationsEnabled(podcast.id, enabled)
+        val row = podcastDao.getPodcast(podcast.id)
         val feedUrl =
-            if (enabled && episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) == true) {
-                TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
-                    ?: TrackedPodcastRtdbLogic.httpsFeedUrl(podcastDao.getPodcast(podcast.id)?.feedUrl)
+            if (enabled) {
+                TrackedPodcastRtdbLogic.attachableFeedUrl(
+                    feedUrl = podcast.feedUrl ?: row?.feedUrl,
+                    latestEpisodeId = (podcast.latestEpisode ?: row?.latestEpisode)?.id,
+                )
             } else {
                 null
             }
@@ -248,19 +261,11 @@ class SubscriptionRepository(
         if (podcast.isRss) return
         val entity = podcastDao.getPodcast(podcast.id) ?: return
         if (!entity.notificationsEnabled) return
-        if (episodeSupplementPort?.hasDirectFeedOptIn(podcast.id) != true) {
-            updateFirebaseSubscription(
-                podcastId = podcast.id,
-                title = entity.title,
-                imageUrl = entity.imageUrl,
-                isSubscribed = true,
-                feedUrl = null,
-            )
-            return
-        }
         val feedUrl =
-            TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
-                ?: TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl)
+            TrackedPodcastRtdbLogic.attachableFeedUrl(
+                feedUrl = podcast.feedUrl ?: entity.feedUrl,
+                latestEpisodeId = (podcast.latestEpisode ?: entity.latestEpisode)?.id,
+            )
         updateFirebaseSubscription(
             podcastId = podcast.id,
             title = entity.title,
@@ -338,14 +343,16 @@ class SubscriptionRepository(
                 podcastTitle = resolvedTitle
             )
         }
-        if (enrichedEpisode != null) {
-            val existing = podcastDao.getPodcast(podcastId)?.latestEpisode
-            if (!LatestEpisodeTipLogic.shouldReplace(existing, enrichedEpisode)) {
-                return
-            }
+        val existing = podcastDao.getPodcast(podcastId)?.latestEpisode
+        if (enrichedEpisode != null &&
+            !LatestEpisodeTipLogic.shouldReplace(existing, enrichedEpisode)
+        ) {
+            return
         }
         podcastDao.updateLatestEpisode(podcastId, enrichedEpisode)
-        if (markAsNew && enrichedEpisode != null) {
+        if (enrichedEpisode != null &&
+            LatestEpisodeTipLogic.isNewerPublish(existing, enrichedEpisode)
+        ) {
             podcastDao.markHasNewEpisodes(podcastId)
         }
     }
@@ -401,9 +408,11 @@ class SubscriptionRepository(
                 "Reconciling ${podcasts.size} FCM topic subscriptions after restore",
             )
             for (entity in podcasts) {
-                val optedIn = episodeSupplementPort?.hasDirectFeedOptIn(entity.podcastId) == true
                 val feedUrl =
-                    if (optedIn) TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl) else null
+                    TrackedPodcastRtdbLogic.attachableFeedUrl(
+                        feedUrl = entity.feedUrl,
+                        latestEpisodeId = entity.latestEpisode?.id,
+                    )
                 updateFirebaseSubscription(
                     podcastId = entity.podcastId,
                     title = entity.title,
@@ -428,5 +437,14 @@ class SubscriptionRepository(
         val https = TrackedPodcastRtdbLogic.httpsFeedUrl(feedUrl) ?: return
         if (podcastDao.getPodcast(podcastId) == null) return
         podcastDao.setFeedUrl(podcastId, https)
+    }
+
+    private suspend fun recoverFeedUrlIfMissing(podcast: Podcast) {
+        if (podcast.isRss) return
+        val stored = podcastDao.getPodcast(podcast.id)?.feedUrl
+        if (TrackedPodcastRtdbLogic.httpsFeedUrl(stored) != null) return
+        if (TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl) != null) return
+        val recovered = lookupHttpsFeedUrl?.invoke(podcast.id) ?: return
+        ensureHttpsFeedUrl(podcast.id, recovered)
     }
 }

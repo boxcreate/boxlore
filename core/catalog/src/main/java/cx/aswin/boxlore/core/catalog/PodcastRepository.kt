@@ -20,6 +20,7 @@ import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
 import cx.aswin.boxlore.core.catalog.logic.mergeShowSearchResults
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
 
@@ -75,6 +76,7 @@ class PodcastRepository(
      * Null in older tests; production wires [cx.aswin.boxlore.core.rss.EpisodeSupplementRepository].
      */
     val episodeSupplementRepository: EpisodeSupplementPort? = null,
+    val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
     private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
     /**
      * Optional override for hermetic JVM/MockWebServer tests. Production leaves this null so
@@ -240,6 +242,9 @@ class PodcastRepository(
         if (feedId.startsWith("rss:")) {
             return@withContext searchRssEpisodes(feedId, query)
         }
+        if (isLocalCatalogReady(feedId)) {
+            return@withContext searchLocalCatalog(feedId, query)
+        }
         searchNetworkEpisodes(feedId, query)
     }
 
@@ -279,6 +284,9 @@ class PodcastRepository(
     ): EpisodePage = withContext(Dispatchers.IO) {
         if (feedId.startsWith("rss:")) {
             return@withContext getRssEpisodesPaginated(feedId, limit, offset, sort)
+        }
+        if (isLocalCatalogReady(feedId)) {
+            return@withContext getLocalCatalogPage(feedId, limit, offset, sort)
         }
         getNetworkEpisodesPaginated(feedId, limit, offset, sort, mergeSupplements)
     }
@@ -456,11 +464,14 @@ class PodcastRepository(
             val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
             if (podcastIndexIds.isEmpty()) return@withContext emptyMap()
 
+            val readyIds = podcastIndexIds.filter { isLocalCatalogReady(it) }.toSet()
             val optedIn = loadOptedInPodcastIds()
-            val piIds = podcastIndexIds.filterNot { it in optedIn }
+            val piIds = podcastIndexIds.filterNot { it in readyIds || it in optedIn }
             val piTips = fetchPiSyncTips(piIds)
-            val feedTips = loadCachedFeedTips(podcastIndexIds.filter { it in optedIn })
-            piTips + feedTips
+            val catalogTips = loadLocalCatalogTips(readyIds.toList())
+            val extrasTips =
+                loadCachedFeedTips(podcastIndexIds.filter { it in optedIn && it !in readyIds })
+            piTips + catalogTips + extrasTips
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -883,6 +894,21 @@ class PodcastRepository(
     }
 
     override suspend fun getEpisodes(feedId: String): List<Episode> = getEpisodesImpl(feedId)
+
+    /** Bounded window for Smart Queue / Auto — never materializes a mega-feed. */
+    suspend fun getEpisodeWindow(
+        feedId: String,
+        aroundEpisodeId: String? = null,
+        sort: String = "newest",
+    ): List<Episode> = withContext(Dispatchers.IO) {
+        if (feedId.startsWith("rss:")) {
+            return@withContext getRssEpisodeWindow(feedId)
+        }
+        if (isLocalCatalogReady(feedId)) {
+            return@withContext getLocalCatalogWindow(feedId, sort, aroundEpisodeId)
+        }
+        getAllNetworkEpisodes(feedId)
+    }
 
     override suspend fun getEpisode(episodeId: String): Episode? = getEpisodeImpl(episodeId)
 

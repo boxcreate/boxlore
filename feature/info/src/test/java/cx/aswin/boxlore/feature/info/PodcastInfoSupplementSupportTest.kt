@@ -214,6 +214,43 @@ class PodcastInfoSupplementSupportTest {
             assertTrue(!support.shouldRefreshOnOpen("999", isRss = false))
         }
 
+    @Test
+    fun `remount hides extras offer after subscribe`() =
+        runTest {
+            val port = FakePort(optedIn = mutableSetOf())
+            val support =
+                PodcastInfoSupplementSupport(
+                    episodeSupplementPort = port,
+                    loadPage = { _, _, _, _ -> error("unused") },
+                )
+            val podcast =
+                TestFixtures.podcast(id = "123").copy(
+                    feedUrl = "https://feeds.example/show.xml",
+                )
+            val hidden =
+                support.remountWithSupplements(
+                    state =
+                        PodcastInfoUiState.Success(
+                            podcast = podcast,
+                            episodes = emptyList(),
+                            isSubscribed = true,
+                        ),
+                    piEpisodes = emptyList(),
+                )
+            assertEquals(DirectFeedChipState.Hidden, hidden.directFeedChip)
+            val offer =
+                support.remountWithSupplements(
+                    state =
+                        PodcastInfoUiState.Success(
+                            podcast = podcast,
+                            episodes = emptyList(),
+                            isSubscribed = false,
+                        ),
+                    piEpisodes = emptyList(),
+                )
+            assertEquals(DirectFeedChipState.Offer, offer.directFeedChip)
+        }
+
     private class FakePort(
         var optedIn: MutableSet<String>,
     ) : EpisodeSupplementPort {

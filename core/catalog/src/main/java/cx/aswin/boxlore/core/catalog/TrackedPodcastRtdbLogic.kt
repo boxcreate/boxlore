@@ -15,6 +15,18 @@ object TrackedPodcastRtdbLogic {
         return url.takeIf { it.startsWith("https://", ignoreCase = true) }
     }
 
+    /**
+     * Attach RTDB `feedUrl` only when we have a Room tip the Action can seed
+     * `lastRssKey` from. No tip → stay on PI `lastEpisodeId`.
+     */
+    fun attachableFeedUrl(
+        feedUrl: String?,
+        latestEpisodeId: String?,
+    ): String? {
+        if (latestEpisodeId.isNullOrBlank()) return null
+        return httpsFeedUrl(feedUrl)
+    }
+
     fun payload(
         title: String,
         imageUrl: String,

@@ -227,9 +227,14 @@ class RssPodcastRepository private constructor(
                         rssCatalogStale = false,
                         rssHasNewEpisodes = false,
                     )
+                    val stickyEpisodes =
+                        StickyRssEpisodeRemap.remap(
+                            parsed = parsed.episodes,
+                            existing = episodeDao.listIdentities(podcastId),
+                        )
                     database.withTransaction {
                         podcastDao.upsert(updated)
-                        episodeDao.upsertAll(parsed.episodes)
+                        episodeDao.upsertAll(stickyEpisodes)
                     }
                     parsed.episodes.size
                 }

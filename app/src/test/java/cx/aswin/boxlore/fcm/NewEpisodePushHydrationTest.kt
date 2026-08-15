@@ -61,7 +61,7 @@ class NewEpisodePushHydrationTest {
         }
 
     @Test
-    fun promotesFeedTipWhenOptedIn() =
+    fun refreshPersistsTipButDoesNotHydrateWithoutEnclosureOrGuid() =
         runBlocking {
             subscriptionRepository.subscribe(
                 Podcast(
@@ -96,13 +96,13 @@ class NewEpisodePushHydrationTest {
                     episodeSupplementPort = port,
                     loadPiBaseline = { emptyList() },
                 )
-            assertEquals("-9", result?.id)
+            assertNull(result)
             assertEquals(1, port.refreshCalls)
             assertEquals(0, port.resolveCalls)
             assertTrue(port.baselineLoaded)
             val stored = subscriptionRepository.getPodcastEntity("123")
             assertEquals("-9", stored?.latestEpisode?.id)
-            assertTrue(stored?.rssHasNewEpisodes == true)
+            assertTrue(stored?.rssHasNewEpisodes != true)
         }
 
     @Test

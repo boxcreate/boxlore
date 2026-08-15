@@ -24,6 +24,12 @@ import kotlinx.coroutines.flow.first
 interface SmartQueueSources : HistoryRecommendationSource {
     suspend fun getEpisodes(podcastId: String): List<Episode>
 
+    /** Same-show continuation around [aroundEpisodeId], bounded to ~200. */
+    suspend fun getEpisodesAround(
+        podcastId: String,
+        aroundEpisodeId: String,
+    ): List<Episode> = getEpisodes(podcastId)
+
     /**
      * Returns a bounded newest-first slice for cross-show queue fallback.
      *
@@ -78,7 +84,12 @@ class DefaultSmartQueueSources(
 ) : SmartQueueSources {
 
     override suspend fun getEpisodes(podcastId: String): List<Episode> =
-        podcastRepository.getEpisodes(podcastId)
+        podcastRepository.getEpisodeWindow(podcastId)
+
+    override suspend fun getEpisodesAround(
+        podcastId: String,
+        aroundEpisodeId: String,
+    ): List<Episode> = podcastRepository.getEpisodeWindow(podcastId, aroundEpisodeId)
 
     override suspend fun getQueueCandidates(podcastId: String, limit: Int): List<Episode> {
         val page =

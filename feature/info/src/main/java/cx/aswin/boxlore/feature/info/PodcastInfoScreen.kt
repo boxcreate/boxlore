@@ -500,6 +500,7 @@ fun PodcastInfoScreen(
                                 indicators = episodeListIndicators,
                                 autoScrolledEpisodeId = autoScrolledEpisodeId,
                                 onEpisodeClick = onEpisodeClick,
+                                podcastImageUrl = state.podcast.imageUrl,
                             )
 
                             if (state.searchResults == null &&
@@ -599,17 +600,17 @@ fun PodcastInfoScreen(
                 if (showMissingEpisodesConfirm) {
                     AlertDialog(
                         onDismissRequest = { showMissingEpisodesConfirm = false },
-                        title = { Text("Episode list look outdated?") },
+                        title = { Text("Missing some episodes?") },
                         text = {
                             Text(
-                                "This is uncommon. For a few shows, our catalog can take " +
-                                    "longer to pick up new episodes.\n\n" +
-                                    "Subscribing already checks the show's feed and adds any " +
-                                    "missing episodes. If you're already subscribed and the " +
-                                    "list still looks behind, turn this on — we'll load " +
-                                    "episodes from the show's own feed whenever you open this " +
-                                    "page. You only need to do it once.\n\n" +
-                                    "Home and notifications may still lag until the catalog catches up.",
+                                "This list is powered by Podcast Index. For a few shows, it " +
+                                    "can lag behind the publisher. We'll check the show's own " +
+                                    "feed and add any extra episodes here. You only need to do " +
+                                    "this once per podcast.\n\n" +
+                                    "We don't do this automatically because most shows are " +
+                                    "already complete, and a full feed download can be large. " +
+                                    "Ask only when this list looks short.\n\n" +
+                                    "If you subscribe, boxlore keeps the complete list from that feed.",
                             )
                         },
                         confirmButton = {
@@ -619,7 +620,7 @@ fun PodcastInfoScreen(
                                     viewModel.loadMissingEpisodes()
                                 },
                             ) {
-                                Text("Update episode list")
+                                Text("Update list")
                             }
                         },
                         dismissButton = {
@@ -812,6 +813,7 @@ fun PodcastInfoScreen(
                     exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 },
                 ) {
                     PodcastInfoSearchOverlay(
+                        podcastImageUrl = state.podcast.imageUrl,
                         query = state.searchQuery,
                         onQueryChange = { viewModel.searchEpisodes(it) },
                         onClose = {

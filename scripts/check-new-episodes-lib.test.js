@@ -86,17 +86,29 @@ describe('check-new-episodes-lib', () => {
         );
     });
 
-    it('applyCheck RSS first see is baseline even if PI id already stored', () => {
+    it('applyCheck RSS first see with a different PI id notifies', () => {
         const result = lib.applyCheck({
             existing: { lastEpisodeId: '99', lastEpisodeTitle: 'Old PI', lastCheckedAt: 1 },
             source: 'rss',
             newest: { key: 'guid-new', title: 'New drop', piEpisodeId: '100' },
             now: 50,
         });
+        assert.equal(result.notify, true);
+        assert.equal(result.reason, 'rss-new-after-pi');
+        assert.equal(result.nextState.lastRssKey, 'guid-new');
+        assert.equal(result.nextState.lastEpisodeId, '100');
+    });
+
+    it('applyCheck RSS first see with the same PI id is a quiet baseline', () => {
+        const result = lib.applyCheck({
+            existing: { lastEpisodeId: '100', lastEpisodeTitle: 'Same', lastCheckedAt: 1 },
+            source: 'rss',
+            newest: { key: 'guid-new', title: 'Same', piEpisodeId: '100' },
+            now: 50,
+        });
         assert.equal(result.notify, false);
         assert.equal(result.reason, 'rss-baseline');
         assert.equal(result.nextState.lastRssKey, 'guid-new');
-        assert.equal(result.nextState.lastEpisodeId, '100');
     });
 
     it('applyCheck RSS notifies on key change and preserves PI id when unmatched', () => {

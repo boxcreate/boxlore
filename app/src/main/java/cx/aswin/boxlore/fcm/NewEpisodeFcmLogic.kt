@@ -36,18 +36,18 @@ internal object NewEpisodeFcmLogic {
     }
 
     /**
-     * After a full feed persist, prefer the payload enclosure in cached extras;
-     * otherwise the newest rematched tip (Library / Home Room `latestEpisode`).
+     * After a catalog persist, resolve the payload item by enclosure only.
+     * No newest-in-feed fallback — an unmatched payload must not open a different episode.
      */
     fun pickHydratedEpisode(
         extras: List<Episode>,
-        newestTip: Episode?,
+        @Suppress("UNUSED_PARAMETER") newestTip: Episode?,
         enclosureUrl: String,
     ): Episode? {
         val enclosure = enclosureUrl.trim()
         if (enclosure.isNotEmpty()) {
             extras.find { it.audioUrl.trim() == enclosure }?.let { return it }
         }
-        return newestTip ?: extras.maxByOrNull { it.publishedDate }
+        return null
     }
 }

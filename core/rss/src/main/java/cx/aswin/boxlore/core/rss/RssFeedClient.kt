@@ -92,11 +92,28 @@ class RssFeedClient(
         url: String,
         etag: String?,
         lastModified: String?,
+    ): Boolean = confirmUnchanged(url, etag, lastModified)
+
+    /**
+     * True when validators say the body is unchanged. HEAD 405/501 falls through
+     * to a conditional GET instead of treating the feed as changed.
+     */
+    suspend fun confirmUnchanged(
+        url: String,
+        etag: String?,
+        lastModified: String?,
     ): Boolean {
         if (etag.isNullOrBlank() && lastModified.isNullOrBlank()) return false
-        val request = conditionalHeadRequest(url, etag, lastModified)
+        val headCode =
+            runCatching {
+                execute(conditionalHeadRequest(url, etag, lastModified)).use { it.code }
+            }.getOrNull()
+        if (headCode != null && RssUnchangedLogic.headMeansUnchanged(headCode)) return true
+        if (!RssUnchangedLogic.headMeansTryConditionalGet(headCode)) return false
         return runCatching {
-            execute(request).use { response -> response.code == HTTP_NOT_MODIFIED }
+            execute(conditionalGetRequest(url, etag, lastModified)).use { response ->
+                RssUnchangedLogic.headMeansUnchanged(response.code)
+            }
         }.getOrDefault(false)
     }
 
@@ -597,7 +614,19 @@ class RssFeedClient(
         url: String,
         etag: String?,
         lastModified: String?,
-    ): Request {
+    ): Request = conditionalRequest(url, etag, lastModified).head().build()
+
+    private fun conditionalGetRequest(
+        url: String,
+        etag: String?,
+        lastModified: String?,
+    ): Request = conditionalRequest(url, etag, lastModified).get().build()
+
+    private fun conditionalRequest(
+        url: String,
+        etag: String?,
+        lastModified: String?,
+    ): Request.Builder {
         val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(url)
         return Request.Builder()
             .url(normalizedUrl)
@@ -607,8 +636,6 @@ class RssFeedClient(
                 if (!etag.isNullOrBlank()) header("If-None-Match", etag)
                 if (!lastModified.isNullOrBlank()) header("If-Modified-Since", lastModified)
             }
-            .head()
-            .build()
     }
 
     private fun execute(request: Request): Response {

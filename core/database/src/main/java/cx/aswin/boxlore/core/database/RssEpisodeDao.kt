@@ -16,6 +16,23 @@ interface RssEpisodeDao {
     @Query(
         """
         SELECT * FROM rss_episodes
+        WHERE podcastId = :podcastId AND guid = :guid
+        LIMIT 1
+        """,
+    )
+    suspend fun getByGuid(podcastId: String, guid: String): RssEpisodeEntity?
+
+    @Query(
+        """
+        SELECT episodeId, guid, audioUrl FROM rss_episodes
+        WHERE podcastId = :podcastId
+        """,
+    )
+    suspend fun listIdentities(podcastId: String): List<RssEpisodeIdentity>
+
+    @Query(
+        """
+        SELECT * FROM rss_episodes
         WHERE podcastId = :podcastId
         ORDER BY publishedDate DESC, episodeId ASC
         LIMIT :limit OFFSET :offset

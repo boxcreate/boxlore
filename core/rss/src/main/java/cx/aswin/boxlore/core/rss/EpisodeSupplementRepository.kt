@@ -255,7 +255,16 @@ class EpisodeSupplementRepository internal constructor(
         val matched = EpisodeSupplementMatcher.findMatchingBaseline(chosen, request.knownEpisodes)
         val tipItem =
             if (matched == null) {
-                listOf(chosen.toSupplementItem(request.podcastIndexId))
+                listOf(
+                    chosen.toSupplementItem(
+                        podcastIndexId = request.podcastIndexId,
+                        imageUrl = EpisodeSupplementArtworkLogic.resolvedImageUrl(
+                            itemImageUrl = chosen.imageUrl,
+                            channelImageUrl = parsed.channelImageUrl,
+                            showImageUrl = request.podcastImageUrl,
+                        ),
+                    ),
+                )
             } else {
                 emptyList()
             }
@@ -344,6 +353,7 @@ class EpisodeSupplementRepository internal constructor(
             rssNamespaceId = rssNamespaceId,
             etag = fetched.etag,
             lastModified = fetched.lastModified,
+            channelImageUrl = parsed.imageUrl,
             episodes = parsed.episodes,
         )
     }
@@ -356,7 +366,16 @@ class EpisodeSupplementRepository internal constructor(
                 EpisodeSupplementMatcher.isPresentInBaseline(rss, request.baselineEpisodes)
             }
         val previousIds = dao.getAllNewest(request.podcastIndexId).map { it.episodeId }.toSet()
-        val items = feedOnly.map { it.toSupplementItem(request.podcastIndexId) }
+        val items = feedOnly.map { rss ->
+            rss.toSupplementItem(
+                podcastIndexId = request.podcastIndexId,
+                imageUrl = EpisodeSupplementArtworkLogic.resolvedImageUrl(
+                    itemImageUrl = rss.imageUrl,
+                    channelImageUrl = request.parsed.channelImageUrl,
+                    showImageUrl = request.meta.imageUrl,
+                ),
+            )
+        }
         dao.replaceAll(
             podcastId = request.podcastIndexId,
             supplement = EpisodeSupplementEntity(
@@ -436,6 +455,7 @@ private data class ParsedSupplementFeed(
     val rssNamespaceId: String,
     val etag: String?,
     val lastModified: String?,
+    val channelImageUrl: String?,
     val episodes: List<RssEpisodeEntity>,
 )
 
@@ -454,8 +474,10 @@ private data class PersistParsedSupplementRequest(
     val feedOnlyOverride: List<RssEpisodeEntity>? = null,
 )
 
-private fun RssEpisodeEntity.toSupplementItem(podcastIndexId: String) =
-    EpisodeSupplementItemEntity(
+private fun RssEpisodeEntity.toSupplementItem(
+    podcastIndexId: String,
+    imageUrl: String? = this.imageUrl,
+) = EpisodeSupplementItemEntity(
         episodeId = episodeId,
         podcastId = podcastIndexId,
         guid = guid,
