@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Subscribed shows no longer hide publisher episodes that Podcast Index has not indexed yet. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - Episode artwork falls back to channel / show image when the item has no itunes:image. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - OPML import matches Podcast Index first (feed URL variants, title/feed search, then publisher-feed GUID / redirected URL) and only creates a true `rss:` row when the show is not in the catalog. Settings → Add RSS is unchanged. ([#984](https://github.com/boxcreate/boxlore/pull/984)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Subscribe catalog ingest now runs on application-scoped `SubscriptionForegroundSync`, so leaving Podcast Info does not cancel the first publisher-feed persist ([#989](https://github.com/boxcreate/boxlore/pull/989)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Unsubscribed local catalogs with a TTL are no longer treated as ready, so show pages keep using Podcast Index (including new PI episodes) ([#989](https://github.com/boxcreate/boxlore/pull/989)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Subscription launch/refresh sync now sweeps expired 14-day local catalogs ([#989](https://github.com/boxcreate/boxlore/pull/989)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Pin progressive Find-a-show results to the top in onboarding search and Explore when catalog hits prepend over local matches. ([#987](https://github.com/boxcreate/boxlore/pull/987)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Stop the expanded player from minimizing when a content swipe reaches the top; collapsing now takes a new downward swipe. ([#988](https://github.com/boxcreate/boxlore/pull/988)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
@@ -43,6 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 - Scrolling the full player back to the top no longer shrinks it to the mini player. Swipe down again when you want to minimize.
 <!-- readme-copy:end pr=988 -->
+
+<!-- readme-copy:start pr=989 -->
+### Fixes
+- Subscribing to a show keeps filling in the full episode list even if you leave the page
+- After you unsubscribe, new episodes still show up on that show’s page
+<!-- readme-copy:end pr=989 -->
 ## [v0.0.17] - 2026-08-14
 
 ### Added
