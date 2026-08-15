@@ -8,7 +8,7 @@ class LaunchSubscriptionsBackDecisionTest {
     fun launchFlagNavigatesHome() {
         assertEquals(
             LaunchSubscriptionsBackAction.NavigateHome,
-            resolveLaunchSubscriptionsBack(openedToSubscriptionsOnLaunch = true),
+            resolveLaunchSubscriptionsBack(openedToLandingOnLaunch = true),
         )
     }
 
@@ -16,7 +16,7 @@ class LaunchSubscriptionsBackDecisionTest {
     fun normalEntryPopsBackStack() {
         assertEquals(
             LaunchSubscriptionsBackAction.PopBackStack,
-            resolveLaunchSubscriptionsBack(openedToSubscriptionsOnLaunch = false),
+            resolveLaunchSubscriptionsBack(openedToLandingOnLaunch = false),
         )
     }
 }

@@ -356,18 +356,18 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/AppearanceSettingsPage.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="76" column="14" source="standard:function-naming" />
-        <error line="137" column="13" source="standard:function-naming" />
-        <error line="157" column="13" source="standard:function-naming" />
-        <error line="182" column="13" source="standard:function-naming" />
-        <error line="218" column="13" source="standard:function-naming" />
-        <error line="245" column="13" source="standard:function-naming" />
-        <error line="268" column="13" source="standard:function-naming" />
-        <error line="311" column="13" source="standard:function-naming" />
-        <error line="330" column="13" source="standard:function-naming" />
-        <error line="359" column="13" source="standard:function-naming" />
-        <error line="408" column="13" source="standard:function-naming" />
-        <error line="434" column="13" source="standard:function-naming" />
+        <error line="77" column="14" source="standard:function-naming" />
+        <error line="138" column="13" source="standard:function-naming" />
+        <error line="158" column="13" source="standard:function-naming" />
+        <error line="190" column="13" source="standard:function-naming" />
+        <error line="226" column="13" source="standard:function-naming" />
+        <error line="253" column="13" source="standard:function-naming" />
+        <error line="276" column="13" source="standard:function-naming" />
+        <error line="319" column="13" source="standard:function-naming" />
+        <error line="338" column="13" source="standard:function-naming" />
+        <error line="367" column="13" source="standard:function-naming" />
+        <error line="416" column="13" source="standard:function-naming" />
+        <error line="442" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/home/settings/pages/DownloadsSettingsPage.kt">
         <error line="21" column="14" source="standard:function-naming" />

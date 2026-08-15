@@ -186,6 +186,10 @@ class UserPreferencesRepositoryTest {
             assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.openAppToStream.first())
             assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.cachedOpenAppTo)
 
+            repository.setOpenAppTo(OpenAppTo.DOWNLOADS)
+            assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
+            assertEquals(OpenAppTo.DOWNLOADS, repository.cachedOpenAppTo)
+
             repository.setOpenAppTo("unsupported")
             assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
             assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)

@@ -22,14 +22,19 @@ private const val LAST_SEEN_EPISODE_ID_PREFIX = "last_seen_episode_id_"
 internal fun sanitizeNavigationStyle(value: String?): String =
     if (value?.trim()?.lowercase() == "classic") "classic" else "floating"
 
-/** Cold-start landing: `home` (default) or `subscriptions`. */
+/** Cold-start landing: `home` (default), `subscriptions`, or `downloads`. */
 object OpenAppTo {
     const val HOME = "home"
     const val SUBSCRIPTIONS = "subscriptions"
+    const val DOWNLOADS = "downloads"
 }
 
 internal fun sanitizeOpenAppTo(value: String?): String =
-    if (value?.trim()?.lowercase() == OpenAppTo.SUBSCRIPTIONS) OpenAppTo.SUBSCRIPTIONS else OpenAppTo.HOME
+    when (value?.trim()?.lowercase()) {
+        OpenAppTo.SUBSCRIPTIONS -> OpenAppTo.SUBSCRIPTIONS
+        OpenAppTo.DOWNLOADS -> OpenAppTo.DOWNLOADS
+        else -> OpenAppTo.HOME
+    }
 
 class UserPreferencesRepository(
     context: Context,
@@ -55,7 +60,7 @@ class UserPreferencesRepository(
     val cachedNavigationStyle: String
         get() = sanitizeNavigationStyle(syncPrefs.getString("navigation_style", null))
 
-    /** Cold-start destination: `home` | `subscriptions` (default home). */
+    /** Cold-start destination: `home` | `subscriptions` | `downloads` (default home). */
     val cachedOpenAppTo: String
         get() = sanitizeOpenAppTo(syncPrefs.getString("open_app_to", null))
 

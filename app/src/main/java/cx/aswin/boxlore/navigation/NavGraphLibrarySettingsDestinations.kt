@@ -424,9 +424,9 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
         cx.aswin.boxlore.feature.library.SubscriptionsScreen(
             viewModel = viewModel,
             onBack = {
-                when (resolveLaunchSubscriptionsBack(w.session.openedToSubscriptionsOnLaunch.value)) {
+                when (resolveLaunchSubscriptionsBack(w.session.openedToLandingOnLaunch.value)) {
                     LaunchSubscriptionsBackAction.NavigateHome -> {
-                        w.session.openedToSubscriptionsOnLaunch.value = false
+                        w.session.openedToLandingOnLaunch.value = false
                         navController.navigateHomeFromLaunchSubscriptions()
                     }
                     LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
@@ -482,7 +482,15 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             viewModel = viewModel,
             userPrefs = userPrefs,
             isOffline = !isOnline,
-            onBack = { navController.popBackStack() },
+            onBack = {
+                when (resolveLaunchSubscriptionsBack(w.session.openedToLandingOnLaunch.value)) {
+                    LaunchSubscriptionsBackAction.NavigateHome -> {
+                        w.session.openedToLandingOnLaunch.value = false
+                        navController.navigateHomeFromLaunchSubscriptions()
+                    }
+                    LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
+                }
+            },
             isPlayerActive = currentEpisode != null,
             onPodcastShowClick = { podcastId, podcastTitle ->
                 android.util.Log.d("NavHost", "onPodcastShowClick: id=$podcastId title=$podcastTitle")

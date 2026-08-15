@@ -71,13 +71,13 @@ import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
 import cx.aswin.boxlore.lifecycle.DownloadBandwidthEffect
 import cx.aswin.boxlore.navigation.BoxLoreNavHost
+import cx.aswin.boxlore.navigation.LaunchSubscriptionsBackAction
 import cx.aswin.boxlore.navigation.NavHostActions
 import cx.aswin.boxlore.navigation.NavHostSession
 import cx.aswin.boxlore.navigation.NavOpmlCallbacks
-import cx.aswin.boxlore.navigation.NavRoutes
 import cx.aswin.boxlore.navigation.NavSettingsState
 import cx.aswin.boxlore.navigation.PushTargetRouteAllowlist
-import cx.aswin.boxlore.navigation.LaunchSubscriptionsBackAction
+import cx.aswin.boxlore.navigation.isLaunchLandingBackRoute
 import cx.aswin.boxlore.navigation.navigateBottomNavTab
 import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
 import cx.aswin.boxlore.navigation.resolveBottomNavTab
@@ -200,12 +200,12 @@ fun BoxLoreAppRoot(
     }
 
     val showBottomNav = !currentRoute.startsWith("player") && currentRoute != "onboarding"
-    val openedToSubscriptionsOnLaunch = remember { mutableStateOf(false) }
+    val openedToLandingOnLaunch = remember { mutableStateOf(false) }
     val canGoBack =
         navController.previousBackStackEntry != null ||
             (
-                openedToSubscriptionsOnLaunch.value &&
-                    currentRoute.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS)
+                openedToLandingOnLaunch.value &&
+                    isLaunchLandingBackRoute(currentRoute)
             )
 
     SideEffect { onPlaybackRepositoryReady(playbackRepository) }
@@ -534,12 +534,12 @@ fun BoxLoreAppRoot(
                         onBack = {
                             when (
                                 resolveLaunchSubscriptionsBack(
-                                    openedToSubscriptionsOnLaunch.value &&
-                                        currentRoute.startsWith(NavRoutes.LIBRARY_SUBSCRIPTIONS),
+                                    openedToLandingOnLaunch.value &&
+                                        isLaunchLandingBackRoute(currentRoute),
                                 )
                             ) {
                                 LaunchSubscriptionsBackAction.NavigateHome -> {
-                                    openedToSubscriptionsOnLaunch.value = false
+                                    openedToLandingOnLaunch.value = false
                                     navController.navigateHomeFromLaunchSubscriptions()
                                 }
                                 LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
@@ -556,7 +556,7 @@ fun BoxLoreAppRoot(
                                 onInitialHomeContentReady = { isInitialHomeContentReady = true },
                                     onboardingViewModel = onboardingViewModel,
                                     hasDeepLink = hasDeepLink,
-                                    openedToSubscriptionsOnLaunch = openedToSubscriptionsOnLaunch,
+                                    openedToLandingOnLaunch = openedToLandingOnLaunch,
                                     currentEpisode = currentEpisode,
                                     miniPlayerPadding = miniPlayerPadding,
                                     showFeatureDialog = showFeatureDialog,
