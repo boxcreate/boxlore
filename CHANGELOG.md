@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Episode artwork falls back to channel / show image when the item has no itunes:image. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - OPML import matches Podcast Index first (feed URL variants, title/feed search, then publisher-feed GUID / redirected URL) and only creates a true `rss:` row when the show is not in the catalog. Settings → Add RSS is unchanged. ([#984](https://github.com/boxcreate/boxlore/pull/984)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Pin progressive Find-a-show results to the top in onboarding search and Explore when catalog hits prepend over local matches. ([#987](https://github.com/boxcreate/boxlore/pull/987)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Stop the expanded player from minimizing when a content swipe reaches the top; collapsing now takes a new downward swipe. ([#988](https://github.com/boxcreate/boxlore/pull/988)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=984 -->
 ### Fixes
@@ -37,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 - Show search stays on the best match as results fill in, so you don’t have to scroll up to find it.
 <!-- readme-copy:end pr=987 -->
+
+<!-- readme-copy:start pr=988 -->
+### Improved
+- Scrolling the full player back to the top no longer shrinks it to the mini player. Swipe down again when you want to minimize.
+<!-- readme-copy:end pr=988 -->
 ## [v0.0.17] - 2026-08-14
 
 ### Added
