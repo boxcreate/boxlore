@@ -60,4 +60,12 @@ class SubscriptionForegroundSyncLogicTest {
             ),
         )
     }
+
+    @Test
+    fun `catalog ingest skips blank and rss library ids`() {
+        assertFalse(SubscriptionForegroundSyncLogic.shouldRequestCatalogIngest(""))
+        assertFalse(SubscriptionForegroundSyncLogic.shouldRequestCatalogIngest("   "))
+        assertFalse(SubscriptionForegroundSyncLogic.shouldRequestCatalogIngest("rss:abc"))
+        assertTrue(SubscriptionForegroundSyncLogic.shouldRequestCatalogIngest("123456"))
+    }
 }

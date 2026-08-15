@@ -52,6 +52,9 @@ class FakeLocalEpisodeCatalogPort(
 ) : LocalEpisodeCatalogPort {
     var refreshCalls: Int = 0
     var refreshError: Throwable? = null
+    var sweepCalls: Int = 0
+    var sweepError: Throwable? = null
+    var lastSweepNowMs: Long? = null
 
     override suspend fun isReady(podcastId: String): Boolean = podcastId in readyIds
 
@@ -153,7 +156,11 @@ class FakeLocalEpisodeCatalogPort(
         ttlExpiresAt: Long?,
     ) = Unit
 
-    override suspend fun sweepExpired(nowMillis: Long) = Unit
+    override suspend fun sweepExpired(nowMillis: Long) {
+        lastSweepNowMs = nowMillis
+        sweepCalls++
+        sweepError?.let { throw it }
+    }
 }
 
 /** Controllable [PodcastCatalogPort] for Info / catalog ViewModel tests. */

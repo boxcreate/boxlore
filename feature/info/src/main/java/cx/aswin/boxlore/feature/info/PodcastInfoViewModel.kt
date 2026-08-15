@@ -20,6 +20,7 @@ import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -48,6 +49,7 @@ class PodcastInfoViewModel(
     private val downloadRepository = deps.downloadRepository
     private val queueManager = deps.queueManager
     private val localCatalog = deps.localCatalog
+    private val subscriptionForegroundSync = deps.subscriptionForegroundSync
     private val entryPoint = routeArgs.entryPoint
     private val genreFilter = routeArgs.genreFilter
     private val scrollDepth = routeArgs.scrollDepth
@@ -1023,17 +1025,22 @@ class PodcastInfoViewModel(
         try {
             val latest = _uiState.value as? PodcastInfoUiState.Success ?: return
             if (latest.podcast.isRss) return
-            val catalog = repository.localEpisodeCatalog
-            val entity = subscriptionRepository.getPodcastEntity(latest.podcast.id)
-            val feedUrl =
-                cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(
-                    entity?.feedUrl ?: latest.podcast.feedUrl,
-                )
-            if (catalog != null && feedUrl != null) {
-                refreshLocalCatalogAfterSubscribe(latest, catalog, feedUrl)
+            val targetPodcastId = latest.podcast.id
+            _uiState.value = latest.copy(directFeedChip = DirectFeedChipState.Fetching)
+            val sync = subscriptionForegroundSync
+            if (sync != null) {
+                coroutineScope {
+                    val finished =
+                        async {
+                            sync.catalogIngestFinished.first { it == targetPodcastId }
+                        }
+                    sync.requestCatalogIngest(targetPodcastId)
+                    finished.await()
+                }
+                applyPostSubscribeCatalogUi(targetPodcastId)
                 return
             }
-            syncPiTipAfterSubscribe(latest.podcast.id)
+            refreshLocalCatalogAfterSubscribeFallback(latest, targetPodcastId)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -1041,13 +1048,21 @@ class PodcastInfoViewModel(
         }
     }
 
-    private suspend fun refreshLocalCatalogAfterSubscribe(
+    private suspend fun refreshLocalCatalogAfterSubscribeFallback(
         latest: PodcastInfoUiState.Success,
-        catalog: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort,
-        feedUrl: String,
+        targetPodcastId: String,
     ) {
-        val targetPodcastId = latest.podcast.id
-        _uiState.value = latest.copy(directFeedChip = DirectFeedChipState.Fetching)
+        val catalog = repository.localEpisodeCatalog
+        val entity = subscriptionRepository.getPodcastEntity(targetPodcastId)
+        val feedUrl =
+            cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(
+                entity?.feedUrl ?: latest.podcast.feedUrl,
+            )
+        if (catalog == null || feedUrl == null) {
+            syncPiTipAfterSubscribe(targetPodcastId)
+            applyPostSubscribeCatalogUi(targetPodcastId)
+            return
+        }
         val meta =
             cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta(
                 title = latest.podcast.title,
@@ -1077,12 +1092,6 @@ class PodcastInfoViewModel(
                         },
                 ),
             )
-        val pageState = _uiState.value as? PodcastInfoUiState.Success ?: return
-        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId) ||
-            pageState.podcast.id != targetPodcastId
-        ) {
-            return
-        }
         val tip =
             when (outcome) {
                 is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success ->
@@ -1098,6 +1107,20 @@ class PodcastInfoViewModel(
                 episode = episode,
                 markAsNew = false,
             )
+        }
+        applyPostSubscribeCatalogUi(targetPodcastId)
+        if (tip == null) {
+            syncPiTipAfterSubscribe(targetPodcastId)
+        }
+    }
+
+    private suspend fun applyPostSubscribeCatalogUi(targetPodcastId: String) {
+        val pageState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId) ||
+            pageState.podcast.id != targetPodcastId ||
+            !pageState.isSubscribed
+        ) {
+            return
         }
         val oldest = pageState.currentSort == EpisodeSort.OLDEST
         val page =
@@ -1118,9 +1141,6 @@ class PodcastInfoViewModel(
                 hasMoreEpisodes = page.hasMore,
                 isFetchingFromFeed = false,
             )
-        if (tip == null) {
-            syncPiTipAfterSubscribe(targetPodcastId)
-        }
     }
 
     private suspend fun syncPiTipAfterSubscribe(podcastId: String) {
