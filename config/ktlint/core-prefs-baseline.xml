@@ -125,9 +125,9 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/prefs/UserPreferencesRepository.kt">
         <error line="22" column="63" source="standard:function-signature" />
-        <error line="101" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="103" column="41" source="standard:chain-method-continuation" />
-        <error line="103" column="54" source="standard:chain-method-continuation" />
-        <error line="103" column="62" source="standard:chain-method-continuation" />
+        <error line="106" column="30" source="standard:multiline-expression-wrapping" />
+        <error line="108" column="41" source="standard:chain-method-continuation" />
+        <error line="108" column="54" source="standard:chain-method-continuation" />
+        <error line="108" column="62" source="standard:chain-method-continuation" />
     </file>
 </baseline>

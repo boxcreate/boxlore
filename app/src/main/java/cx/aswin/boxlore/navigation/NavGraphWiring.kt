@@ -142,10 +142,10 @@ data class NavHostSession(
     val onboardingViewModel: cx.aswin.boxlore.feature.onboarding.OnboardingViewModel,
     val hasDeepLink: Boolean,
     /**
-     * True when cold start opened [NavRoutes.LIBRARY_SUBSCRIPTIONS] via the open-app-to pref.
+     * True when cold start opened Subscriptions or Downloads via the open-app-to pref.
      * Cleared after Back navigates to Home.
      */
-    val openedToSubscriptionsOnLaunch: androidx.compose.runtime.MutableState<Boolean>,
+    val openedToLandingOnLaunch: androidx.compose.runtime.MutableState<Boolean>,
     val currentEpisode: Episode?,
     val miniPlayerPadding: androidx.compose.ui.unit.Dp,
     val showFeatureDialog: Boolean,

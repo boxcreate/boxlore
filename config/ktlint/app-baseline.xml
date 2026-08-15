@@ -323,7 +323,7 @@
         <error line="243" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/ui/BoxLoreAppRoot.kt">
-        <error line="94" column="5" source="standard:function-naming" />
+        <error line="107" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/ui/CoilImageLoaderSetup.kt">
         <error line="15" column="27" source="standard:multiline-expression-wrapping" />

@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.selection.selectableGroup
@@ -10,6 +11,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -33,6 +35,7 @@ fun <T> ConnectedOptionSelector(
     modifier: Modifier = Modifier,
     isSelected: (option: T, selected: T) -> Boolean = { a, b -> a == b },
     labelStyle: TextStyle? = null,
+    contentPadding: PaddingValues = ToggleButtonDefaults.ContentPadding,
 ) {
     require(options.isNotEmpty()) { "ConnectedOptionSelector requires at least one option" }
     val roundedPressShape = RoundedCornerShape(12.dp)
@@ -69,6 +72,7 @@ fun <T> ConnectedOptionSelector(
                                 checkedShape = checkedShape,
                             )
                     },
+                contentPadding = contentPadding,
             ) {
                 Text(
                     text = label,

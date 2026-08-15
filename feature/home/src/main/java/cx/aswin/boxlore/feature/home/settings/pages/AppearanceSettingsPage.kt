@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -159,7 +160,11 @@ private fun OpenAppToSection(
     onSetOpenAppTo: (String) -> Unit,
 ) {
     val selected =
-        if (currentOpenAppTo == OpenAppTo.SUBSCRIPTIONS) OpenAppTo.SUBSCRIPTIONS else OpenAppTo.HOME
+        when (currentOpenAppTo) {
+            OpenAppTo.SUBSCRIPTIONS -> OpenAppTo.SUBSCRIPTIONS
+            OpenAppTo.DOWNLOADS -> OpenAppTo.DOWNLOADS
+            else -> OpenAppTo.HOME
+        }
     SettingsGroup(
         title = "Open app to",
         footer = "Choose where boxlore opens after a cold start. Applies the next time you fully relaunch the app.",
@@ -170,9 +175,12 @@ private fun OpenAppToSection(
                     listOf(
                         OpenAppTo.HOME to "Home",
                         OpenAppTo.SUBSCRIPTIONS to "Subscriptions",
+                        OpenAppTo.DOWNLOADS to "Downloads",
                     ),
                 selected = selected,
                 onSelect = onSetOpenAppTo,
+                labelStyle = MaterialTheme.typography.labelMedium,
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
             )
         }
     }
