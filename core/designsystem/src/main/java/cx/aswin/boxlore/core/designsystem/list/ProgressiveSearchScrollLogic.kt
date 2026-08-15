@@ -1,11 +1,15 @@
-package cx.aswin.boxlore.feature.onboarding
+package cx.aswin.boxlore.core.designsystem.list
 
 /**
- * Progressive show search paints local/typeahead hits first, then prepends Meili
+ * Progressive Find-a-show paints local/typeahead hits first, then prepends
  * catalog matches and may insert a Matches header. Lazy lists keep the old
  * index, which leaves the new top results off-screen.
+ *
+ * Shared by onboarding search and Explore Find-a-show. Ask-anything
+ * (semantic) waits for one complete result set behind a loader, so it does
+ * not need this pin.
  */
-internal object ProgressiveSearchScrollLogic {
+object ProgressiveSearchScrollLogic {
     data class Snapshot(
         val query: String,
         val topResultId: String?,

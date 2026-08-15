@@ -10,6 +10,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 - Shared components including `OptimizedImage` (optional `errorContent` for blank/failed art), loaders, `PillFilterChip` (onboarding/Explore genre pills), `BoxLoreLogo` (optional `height` for hero vs chrome sizes), player-control primitives used by UI modules, floating 3+1 navigation chrome, bottom-content clearance helpers, and sleep-timer chrome.
 - `PredictiveBackWrapper` peeks the NavHost (scale 1.0 → 0.9) during system Back. Progress always returns to rest after commit or cancel so a Back that replaces the start destination (cold-start Subscriptions → Home) does not leave Home scaled down.
 - Shared discovery poster cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing` (Home “Based on Your Taste” and Explore For You).
+- `ProgressiveSearchScrollLogic` decides when a progressive Find-a-show list should pin to the top (query change, new top hit, or Matches header). Used by onboarding search and Explore Find-a-show; Ask anything does not use it.
 - `share.ShareManager` for composite share cards and the system share sheet; emits glossary `share_content` via `:core:analytics`.
 - `share.ShareCardRenderer` builds the share-card bitmaps used by `ShareManager` (stories / message formats).
 
@@ -19,6 +20,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 src/main/java/cx/aswin/boxlore/core/designsystem/
   component/
   components/
+  list/
   share/
   theme/
 src/main/res/
@@ -50,6 +52,7 @@ src/main/res/
 
 - Unit tests live under `core/designsystem/src/test`.
 - `ThemeBrandTokensTest` covers brand seed and contrast helper behavior.
+- `ProgressiveSearchScrollLogicTest` covers pin-to-top when catalog hits prepend over local matches.
 - `PredictiveBackPeekTest` covers rest progress after a predictive-back gesture (scale must return to 1).
 - Screenshot goldens (optional local Roborazzi) live in feature modules (see `:feature:home`).
 

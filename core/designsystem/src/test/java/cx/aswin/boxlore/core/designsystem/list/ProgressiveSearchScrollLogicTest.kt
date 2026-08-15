@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.explore.logic
+package cx.aswin.boxlore.core.designsystem.list
 
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -45,7 +45,7 @@ class ProgressiveSearchScrollLogicTest {
     }
 
     @Test
-    fun doesNotPinWhenAlsoFoundGrowsButTopStays() {
+    fun doesNotPinWhenSnapshotUnchanged() {
         val previous =
             ProgressiveSearchScrollLogic.Snapshot(
                 query = "joe",

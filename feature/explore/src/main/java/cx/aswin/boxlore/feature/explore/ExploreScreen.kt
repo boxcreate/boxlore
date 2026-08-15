@@ -116,6 +116,7 @@ import cx.aswin.boxlore.core.designsystem.component.ExploreTabSelectorFabHeight
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
+import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 
 import cx.aswin.boxlore.core.model.Episode
@@ -137,7 +138,6 @@ import cx.aswin.boxlore.feature.explore.components.ExploreTabSelectorFab
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeChipRow
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
-import cx.aswin.boxlore.feature.explore.logic.ProgressiveSearchScrollLogic
 
 /**
  * Main Explore Screen Entry Point
