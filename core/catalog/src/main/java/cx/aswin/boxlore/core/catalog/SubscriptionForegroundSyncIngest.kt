@@ -67,7 +67,7 @@ internal object SubscriptionForegroundSyncIngest {
             )
         }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "kotlin:S107")
     suspend fun ingestSubscribedLocalCatalog(
         podcastId: String,
         isSubscribed: suspend (String) -> Boolean,

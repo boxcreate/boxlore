@@ -249,7 +249,7 @@ class SubscriptionForegroundSync(
             )
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "kotlin:S107")
         private fun subscribedSyncAction(
             podcastRepository: PodcastRepository,
             subscriptionRepository: SubscriptionRepository,
