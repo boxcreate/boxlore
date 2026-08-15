@@ -3,16 +3,17 @@ package cx.aswin.boxlore.feature.info
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import cx.aswin.boxlore.core.downloads.DownloadRepository
-import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.playback.QueueManager
-import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
+import cx.aswin.boxlore.core.downloads.DownloadRepository
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.QueueManager
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
 /** Shared deps for podcast/episode info ViewModels (keeps assembler APIs ≤7 params). */
 data class InfoSharedDeps(
@@ -22,6 +23,7 @@ data class InfoSharedDeps(
     val queueManager: QueueManager,
     val localCatalog: LocalCatalogPort,
     val episodeOfflineLookup: EpisodeOfflineLookupPort,
+    val subscriptionForegroundSync: SubscriptionForegroundSync? = null,
 )
 
 data class PodcastInfoRouteArgs(

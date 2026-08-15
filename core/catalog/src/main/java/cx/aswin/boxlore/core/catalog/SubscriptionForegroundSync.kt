@@ -41,6 +41,9 @@ import java.util.concurrent.atomic.AtomicReference
  * Feed refreshes are capped at [DEFAULT_FEED_CONCURRENCY], skip work on an
  * unchanged ETag, and still rematch against a 1000-episode PI-only baseline when
  * the feed changed. Home may [preferFeedPodcast] so the open chip is first.
+ * Subscribe calls [requestCatalogIngest] so the first publisher-feed persist
+ * survives leaving Podcast Info (cooldown does not apply). Each sync pass
+ * sweeps local catalogs whose unsubscribe TTL has elapsed.
  *
  * Call [ensureStarted] from the composition root after onboarding; Home may also
  * call it. Library Subscriptions must call [requestRefresh] on appear.
@@ -58,13 +61,25 @@ class SubscriptionForegroundSync(
     private val cooldownMs: Long = DEFAULT_REFRESH_COOLDOWN_MS,
     private val periodicIntervalMs: Long = DEFAULT_PERIODIC_INTERVAL_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
+    private val catalogIngestAction: suspend (String) -> Unit = {},
 ) {
     private val started = AtomicBoolean(false)
     private val syncInFlight = AtomicBoolean(false)
     private val lastCompletedAtMs = AtomicLong(SubscriptionForegroundSyncLogic.NEVER_COMPLETED_MS)
+    private val catalogIngestFinishedMutable: MutableSharedFlow<String> =
+        MutableSharedFlow(
+            extraBufferCapacity = 64,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
 
     /** Emits a PI podcast id after a successful publisher-feed persist (not 304 skips). */
     val directFeedRefreshed: SharedFlow<String> = directFeedRefreshedMutable.asSharedFlow()
+
+    /**
+     * Emits after a [requestCatalogIngest] attempt finishes (success, skip, or
+     * failure) so Podcast Info can remount without owning the GET.
+     */
+    val catalogIngestFinished: SharedFlow<String> = catalogIngestFinishedMutable.asSharedFlow()
 
     /** Prefer this opted-in id when ordering the feed-refresh queue (open Home chip). */
     fun preferFeedPodcast(id: String?) {
@@ -87,6 +102,27 @@ class SubscriptionForegroundSync(
             return
         }
         startSyncLoop(initialDelayMs = 0L)
+    }
+
+    /**
+     * First local-catalog ingest after Subscribe. Runs on the application scope
+     * so leaving Podcast Info cannot cancel persist. Ignores [requestRefresh]
+     * cooldown / in-flight gates.
+     */
+    fun requestCatalogIngest(podcastId: String) {
+        if (!SubscriptionForegroundSyncLogic.shouldRequestCatalogIngest(podcastId)) return
+        preferFeedPodcast(podcastId)
+        scope.launch {
+            try {
+                catalogIngestAction(podcastId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Post-subscribe catalog ingest failed for $podcastId", e)
+            } finally {
+                catalogIngestFinishedMutable.tryEmit(podcastId)
+            }
+        }
     }
 
     /** Test seam: whether the sync loop has been claimed. */
@@ -192,86 +228,117 @@ class SubscriptionForegroundSync(
                 initialDelayMs = initialDelayMs,
                 preferredFeedPodcastId = preferred,
                 directFeedRefreshedMutable = refreshed,
-                syncAction = {
-                    val ids = subscriptionRepository.subscribedPodcastIds.first()
-                    val recoveryNow = System.currentTimeMillis()
-                    recoverMissingFeedUrls(
-                        ids = ids,
-                        recoverOne = { id ->
-                            recoverOneMissingFeedUrl(
-                                id = id,
-                                now = recoveryNow,
-                                subscriptionRepository = subscriptionRepository,
-                                podcastRepository = podcastRepository,
-                                localEpisodeCatalog = localEpisodeCatalog,
-                            )
-                        },
-                    )
-                    syncSubscribedLatestEpisodes(
-                        loadIds = { ids },
-                        loadPodcastMeta = { id ->
-                            subscriptionRepository.getPodcastEntity(id)?.let { entity ->
-                                DirectFeedTipMeta(
-                                    feedUrl = entity.feedUrl,
-                                    title = entity.title,
-                                    imageUrl = entity.imageUrl,
-                                    genre = entity.genre,
-                                    artist = entity.author,
-                                    knownTip = entity.latestEpisode,
-                                )
-                            }
-                        },
-                        syncChunk = { chunk -> podcastRepository.syncSubscriptions(chunk) },
-                        saveLatest = { id, episode ->
-                            subscriptionRepository.updateLatestEpisode(id, episode)
-                        },
-                        chunkSize = chunkSize,
-                        directFeed =
-                            DirectFeedSyncSeams(
-                                loadOptedInIds = {
-                                    httpsSubscribedIds(ids, subscriptionRepository)
-                                },
-                                loadReadyIds = {
-                                    readyCatalogIds(ids, localEpisodeCatalog)
-                                },
-                                loadCachedFeedTip = { id ->
-                                    localEpisodeCatalog?.newest(
-                                        id,
-                                        LocalEpisodeCatalogPort.PodcastMeta(),
-                                    )
-                                        ?: episodeSupplementPort
-                                            .getEpisodesForPodcast(id)
-                                            .maxByOrNull { it.publishedDate }
-                                },
-                                resolveFeedTip = { id, meta ->
-                                    resolveLocalCatalogTip(
-                                        podcastId = id,
-                                        meta = meta,
-                                        localEpisodeCatalog = localEpisodeCatalog,
-                                        episodeSupplementPort = episodeSupplementPort,
-                                        podcastRepository = podcastRepository,
-                                    )
-                                },
-                                saveDirectFeedLatest = { id, episode ->
-                                    subscriptionRepository.updateLatestEpisode(
-                                        podcastId = id,
-                                        episode = episode,
-                                        markAsNew = false,
-                                    )
-                                },
-                                feedNetworkDelayMs = feedNetworkDelayMs,
-                                feedConcurrency = DEFAULT_FEED_CONCURRENCY,
-                                preferredPodcastId = { preferred.get() },
-                                onFeedRefreshed = { refreshed.tryEmit(it) },
-                            ),
-                    )
-                    syncTrackedFeedUrlsForHttpsNotifications(
-                        ids = ids,
+                catalogIngestAction =
+                    SubscriptionForegroundSyncIngest.catalogIngestAction(
+                        podcastRepository = podcastRepository,
                         subscriptionRepository = subscriptionRepository,
-                    )
-                },
+                        localEpisodeCatalog = localEpisodeCatalog,
+                        onFeedRefreshed = { refreshed.tryEmit(it) },
+                    ),
+                syncAction =
+                    subscribedSyncAction(
+                        podcastRepository = podcastRepository,
+                        subscriptionRepository = subscriptionRepository,
+                        episodeSupplementPort = episodeSupplementPort,
+                        localEpisodeCatalog = localEpisodeCatalog,
+                        preferred = preferred,
+                        refreshed = refreshed,
+                        feedNetworkDelayMs = feedNetworkDelayMs,
+                        chunkSize = chunkSize,
+                    ),
             )
         }
+
+        @Suppress("LongParameterList", "kotlin:S107")
+        private fun subscribedSyncAction(
+            podcastRepository: PodcastRepository,
+            subscriptionRepository: SubscriptionRepository,
+            episodeSupplementPort: EpisodeSupplementPort,
+            localEpisodeCatalog: LocalEpisodeCatalogPort?,
+            preferred: AtomicReference<String?>,
+            refreshed: MutableSharedFlow<String>,
+            feedNetworkDelayMs: Long,
+            chunkSize: Int,
+        ): suspend () -> Unit =
+            {
+                SubscriptionForegroundSyncIngest.sweepExpiredLocalCatalogs(localEpisodeCatalog)
+                val ids = subscriptionRepository.subscribedPodcastIds.first()
+                val recoveryNow = System.currentTimeMillis()
+                recoverMissingFeedUrls(
+                    ids = ids,
+                    recoverOne = { id ->
+                        recoverOneMissingFeedUrl(
+                            id = id,
+                            now = recoveryNow,
+                            subscriptionRepository = subscriptionRepository,
+                            podcastRepository = podcastRepository,
+                            localEpisodeCatalog = localEpisodeCatalog,
+                        )
+                    },
+                )
+                syncSubscribedLatestEpisodes(
+                    loadIds = { ids },
+                    loadPodcastMeta = { id ->
+                        subscriptionRepository.getPodcastEntity(id)?.let { entity ->
+                            DirectFeedTipMeta(
+                                feedUrl = entity.feedUrl,
+                                title = entity.title,
+                                imageUrl = entity.imageUrl,
+                                genre = entity.genre,
+                                artist = entity.author,
+                                knownTip = entity.latestEpisode,
+                            )
+                        }
+                    },
+                    syncChunk = { chunk -> podcastRepository.syncSubscriptions(chunk) },
+                    saveLatest = { id, episode ->
+                        subscriptionRepository.updateLatestEpisode(id, episode)
+                    },
+                    chunkSize = chunkSize,
+                    directFeed =
+                        DirectFeedSyncSeams(
+                            loadOptedInIds = {
+                                httpsSubscribedIds(ids, subscriptionRepository)
+                            },
+                            loadReadyIds = {
+                                readyCatalogIds(ids, localEpisodeCatalog)
+                            },
+                            loadCachedFeedTip = { id ->
+                                localEpisodeCatalog?.newest(
+                                    id,
+                                    LocalEpisodeCatalogPort.PodcastMeta(),
+                                )
+                                    ?: episodeSupplementPort
+                                        .getEpisodesForPodcast(id)
+                                        .maxByOrNull { it.publishedDate }
+                            },
+                            resolveFeedTip = { id, meta ->
+                                resolveLocalCatalogTip(
+                                    podcastId = id,
+                                    meta = meta,
+                                    localEpisodeCatalog = localEpisodeCatalog,
+                                    episodeSupplementPort = episodeSupplementPort,
+                                    podcastRepository = podcastRepository,
+                                )
+                            },
+                            saveDirectFeedLatest = { id, episode ->
+                                subscriptionRepository.updateLatestEpisode(
+                                    podcastId = id,
+                                    episode = episode,
+                                    markAsNew = false,
+                                )
+                            },
+                            feedNetworkDelayMs = feedNetworkDelayMs,
+                            feedConcurrency = DEFAULT_FEED_CONCURRENCY,
+                            preferredPodcastId = { preferred.get() },
+                            onFeedRefreshed = { refreshed.tryEmit(it) },
+                        ),
+                )
+                syncTrackedFeedUrlsForHttpsNotifications(
+                    ids = ids,
+                    subscriptionRepository = subscriptionRepository,
+                )
+            }
 
         private suspend fun resolveLocalCatalogTip(
             podcastId: String,
@@ -287,7 +354,7 @@ class SubscriptionForegroundSync(
             return resolveLegacySupplementTip(podcastId, meta, episodeSupplementPort, podcastRepository)
         }
 
-        private suspend fun resolveCatalogRefresh(
+        internal suspend fun resolveCatalogRefresh(
             podcastId: String,
             meta: DirectFeedTipMeta,
             catalog: LocalEpisodeCatalogPort,

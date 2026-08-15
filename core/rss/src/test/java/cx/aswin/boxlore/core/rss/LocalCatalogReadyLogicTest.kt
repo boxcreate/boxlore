@@ -25,6 +25,32 @@ class LocalCatalogReadyLogicTest {
     }
 
     @Test
+    fun notReadyWhenUnsubscribeTtlIsSet() {
+        assertFalse(
+            LocalCatalogReadyLogic.isReady(
+                feed(
+                    needsFullBackfill = false,
+                    itemCount = 10,
+                    copiedExtrasCount = 2,
+                    ready = true,
+                    ttlExpiresAt = 1L,
+                ),
+            ),
+        )
+        assertTrue(
+            LocalCatalogReadyLogic.isReady(
+                feed(
+                    needsFullBackfill = false,
+                    itemCount = 10,
+                    copiedExtrasCount = 2,
+                    ready = true,
+                    ttlExpiresAt = null,
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun listenerIdsResolveAllowsPositivePiAndCatalogHits() {
         assertTrue(
             LocalCatalogReadyLogic.listenerIdsResolve(
@@ -80,6 +106,7 @@ class LocalCatalogReadyLogicTest {
         itemCount: Int = 10,
         copiedExtrasCount: Int = 0,
         ready: Boolean = false,
+        ttlExpiresAt: Long? = null,
     ) = LocalEpisodeFeedEntity(
         podcastId = "1",
         feedUrl = feedUrl,
@@ -88,7 +115,7 @@ class LocalCatalogReadyLogicTest {
         fetchedAt = 1L,
         itemCount = itemCount,
         feedOrder = LocalFeedOrder.MIXED,
-        ttlExpiresAt = null,
+        ttlExpiresAt = ttlExpiresAt,
         needsFullBackfill = needsFullBackfill,
         copiedExtrasCount = copiedExtrasCount,
         ready = ready,

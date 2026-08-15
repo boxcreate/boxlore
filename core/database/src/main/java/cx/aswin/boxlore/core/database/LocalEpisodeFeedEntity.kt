@@ -9,6 +9,8 @@ import androidx.room.PrimaryKey
  *
  * No foreign key to `podcasts` — unsubscribe must not CASCADE-wipe history
  * targets. [ttlExpiresAt] is set on unsubscribe; null while subscribed.
+ * A non-null TTL means the catalog is not ready for live lists: unsubscribed
+ * reads use Podcast Index until resubscribe clears the TTL.
  */
 @Entity(tableName = "local_episode_feeds")
 data class LocalEpisodeFeedEntity(

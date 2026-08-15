@@ -9,6 +9,9 @@ object LocalCatalogReadyLogic {
         if (!feed.feedUrl.startsWith("https://", ignoreCase = true)) return false
         if (feed.needsFullBackfill) return false
         if (feed.itemCount < feed.copiedExtrasCount) return false
+        // Unsubscribe stamps a TTL; keep Room on disk for a cheap resubscribe, but
+        // do not serve that snapshot as the live list (PI stays the unsubscribed source).
+        if (feed.ttlExpiresAt != null) return false
         return feed.ready
     }
 

@@ -20,4 +20,7 @@ internal object SubscriptionForegroundSyncLogic {
         if (lastCompletedAtMs < 0L) return false
         return nowMs - lastCompletedAtMs < cooldownMs
     }
+
+    /** True RSS library rows keep their own catalog path; blank ids are not ingest targets. */
+    fun shouldRequestCatalogIngest(podcastId: String): Boolean = podcastId.isNotBlank() && !podcastId.startsWith("rss:")
 }

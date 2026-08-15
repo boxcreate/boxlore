@@ -51,13 +51,13 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoViewModel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="60" column="17" source="standard:backing-property-naming" />
-        <error line="801" column="30" source="standard:chain-method-continuation" />
-        <error line="952" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="1195" column="1" source="standard:indent" />
-        <error line="1196" column="1" source="standard:indent" />
-        <error line="1197" column="1" source="standard:indent" />
-        <error line="1198" column="1" source="standard:indent" />
+        <error line="61" column="17" source="standard:backing-property-naming" />
+        <error line="803" column="30" source="standard:chain-method-continuation" />
+        <error line="954" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="1215" column="1" source="standard:indent" />
+        <error line="1216" column="1" source="standard:indent" />
+        <error line="1217" column="1" source="standard:indent" />
+        <error line="1218" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeActionRail.kt">
         <error line="3" column="1" source="standard:import-ordering" />
