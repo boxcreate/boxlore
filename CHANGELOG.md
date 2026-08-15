@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.18] - 2026-08-15
+
 ### Added
 - First-class local episode catalog (`local_episode_feeds` / `local_episodes`) for subscribed PI shows with an HTTPS feed, with sticky `episodeId` upsert and a per-show ready gate. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - Appearance **Open app to** can land on Downloads after a cold start (Back goes to Home, same as Subscriptions) ([#990](https://github.com/boxcreate/boxlore/pull/990)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -26,38 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pin progressive Find-a-show results to the top in onboarding search and Explore when catalog hits prepend over local matches. ([#987](https://github.com/boxcreate/boxlore/pull/987)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Stop the expanded player from minimizing when a content swipe reaches the top; collapsing now takes a new downward swipe. ([#988](https://github.com/boxcreate/boxlore/pull/988)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=984 -->
-### Fixes
-- Importing your podcast list from another app now brings in catalog shows as normal shows, with notifications available, instead of tagging most of them as RSS.
-<!-- readme-copy:end pr=984 -->
-
-<!-- readme-copy:start pr=986 -->
-### Critical
-- Subscribed shows now keep a complete episode list from the publisher’s feed, including episodes our catalog had missed. Progress, downloads, and likes stay on the same episodes.
-### Improvements
-- "Missing episodes?" is for shows you haven’t subscribed to yet, once per podcast. Subscribe to keep the full list up to date.
-<!-- readme-copy:end pr=986 -->
-
-<!-- readme-copy:start pr=987 -->
-### Improved
-- Show search stays on the best match as results fill in, so you don’t have to scroll up to find it.
-<!-- readme-copy:end pr=987 -->
-
-<!-- readme-copy:start pr=988 -->
-### Improved
-- Scrolling the full player back to the top no longer shrinks it to the mini player. Swipe down again when you want to minimize.
-<!-- readme-copy:end pr=988 -->
-
-<!-- readme-copy:start pr=989 -->
-### Fixes
-- Subscribing to a show keeps filling in the full episode list even if you leave the page
-- After you unsubscribe, new episodes still show up on that show’s page
-<!-- readme-copy:end pr=989 -->
-
-<!-- readme-copy:start pr=990 -->
-### Improved
-- You can open boxlore straight to Downloads when you launch the app
-<!-- readme-copy:end pr=990 -->
 ## [v0.0.17] - 2026-08-14
 
 ### Added
