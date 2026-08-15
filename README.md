@@ -82,6 +82,7 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <ul align="left">
 <li>Show search stays on the best match as results fill in, so you don’t have to scroll up to find it. <a href="https://github.com/boxcreate/boxlore/pull/987"><img src="https://img.shields.io/badge/PR-987-6750A4?style=flat-square" alt="PR #987" height="18"/></a></li>
 <li>Scrolling the full player back to the top no longer shrinks it to the mini player. Swipe down again when you want to minimize. <a href="https://github.com/boxcreate/boxlore/pull/988"><img src="https://img.shields.io/badge/PR-988-6750A4?style=flat-square" alt="PR #988" height="18"/></a></li>
+<li>You can open boxlore straight to Downloads when you launch the app <a href="https://github.com/boxcreate/boxlore/pull/990"><img src="https://img.shields.io/badge/PR-990-6750A4?style=flat-square" alt="PR #990" height="18"/></a></li>
 </ul>
 <!-- release-upcoming:end -->
 

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - First-class local episode catalog (`local_episode_feeds` / `local_episodes`) for subscribed PI shows with an HTTPS feed, with sticky `episodeId` upsert and a per-show ready gate. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- Appearance **Open app to** can land on Downloads after a cold start (Back goes to Home, same as Subscriptions) ([#990](https://github.com/boxcreate/boxlore/pull/990)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Changed
 - Subscribe and Home sync persist the publisher feed; ready shows serve list/search/`getEpisode` from Room only. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - "Missing episodes?" remains unsubscribed extras opt-in; the confirm dialog explains Podcast Index, once-per-podcast extras, and subscribe for the complete list. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
@@ -52,6 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Subscribing to a show keeps filling in the full episode list even if you leave the page
 - After you unsubscribe, new episodes still show up on that show’s page
 <!-- readme-copy:end pr=989 -->
+
+<!-- readme-copy:start pr=990 -->
+### Improved
+- You can open boxlore straight to Downloads when you launch the app
+<!-- readme-copy:end pr=990 -->
 ## [v0.0.17] - 2026-08-14
 
 ### Added
