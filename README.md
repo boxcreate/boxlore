@@ -64,6 +64,14 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🚨 Critical:</b>
+<ul align="left">
+<li>Subscribed shows now keep a complete episode list from the publisher’s feed, including episodes our catalog had missed. Progress, downloads, and likes stay on the same episodes. <a href="https://github.com/boxcreate/boxlore/pull/986"><img src="https://img.shields.io/badge/PR-986-6750A4?style=flat-square" alt="PR #986" height="18"/></a></li>
+</ul>
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>"Missing episodes?" is for shows you haven’t subscribed to yet, once per podcast. Subscribe to keep the full list up to date. <a href="https://github.com/boxcreate/boxlore/pull/986"><img src="https://img.shields.io/badge/PR-986-6750A4?style=flat-square" alt="PR #986" height="18"/></a></li>
+</ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
 <li>Importing your podcast list from another app now brings in catalog shows as normal shows, with notifications available, instead of tagging most of them as RSS. <a href="https://github.com/boxcreate/boxlore/pull/984"><img src="https://img.shields.io/badge/PR-984-6750A4?style=flat-square" alt="PR #984" height="18"/></a></li>

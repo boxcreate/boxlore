@@ -9,13 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- First-class local episode catalog (`local_episode_feeds` / `local_episodes`) for subscribed PI shows with an HTTPS feed, with sticky `episodeId` upsert and a per-show ready gate. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+### Changed
+- Subscribe and Home sync persist the publisher feed; ready shows serve list/search/`getEpisode` from Room only. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- "Missing episodes?" remains unsubscribed extras opt-in; the confirm dialog explains Podcast Index, once-per-podcast extras, and subscribe for the complete list. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- Check New Episodes notifies on first RSS see when the PI episode id differs (`rss-new-after-pi`); same PI id stays a quiet baseline. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 ### Fixed
+- Subscribed shows no longer hide publisher episodes that Podcast Index has not indexed yet. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
+- Episode artwork falls back to channel / show image when the item has no itunes:image. ([#986](https://github.com/boxcreate/boxlore/pull/986)) <!-- impact:user-impact-critical+backend-change --> <!-- copy:locked -->
 - OPML import matches Podcast Index first (feed URL variants, title/feed search, then publisher-feed GUID / redirected URL) and only creates a true `rss:` row when the show is not in the catalog. Settings → Add RSS is unchanged. ([#984](https://github.com/boxcreate/boxlore/pull/984)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=984 -->
 ### Fixes
 - Importing your podcast list from another app now brings in catalog shows as normal shows, with notifications available, instead of tagging most of them as RSS.
 <!-- readme-copy:end pr=984 -->
+
+<!-- readme-copy:start pr=986 -->
+### Critical
+- Subscribed shows now keep a complete episode list from the publisher’s feed, including episodes our catalog had missed. Progress, downloads, and likes stay on the same episodes.
+### Improvements
+- "Missing episodes?" is for shows you haven’t subscribed to yet, once per podcast. Subscribe to keep the full list up to date.
+<!-- readme-copy:end pr=986 -->
 ## [v0.0.17] - 2026-08-14
 
 ### Added
