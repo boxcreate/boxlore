@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.Manifest
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,7 +19,6 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -43,6 +41,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -51,6 +50,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -63,10 +63,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Button
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -79,13 +75,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
@@ -500,7 +496,9 @@ fun PodcastInfoScreen(
                                 indicators = episodeListIndicators,
                                 autoScrolledEpisodeId = autoScrolledEpisodeId,
                                 onEpisodeClick = onEpisodeClick,
-                                podcastImageUrl = state.podcast.imageUrl,
+                                podcastImageUrl =
+                                    state.podcast.imageUrl.takeIf { it.isNotEmpty() }
+                                        ?: state.podcast.fallbackImageUrl,
                             )
 
                             if (state.searchResults == null &&
@@ -728,8 +726,9 @@ fun PodcastInfoScreen(
                             .align(Alignment.BottomCenter)
                             .navigationBarsPadding()
                             .padding(
-                                bottom = bottomContentPadding + 16.dp +
-                                    if (jumpPillVisible) 56.dp else 0.dp,
+                                bottom =
+                                    bottomContentPadding + 16.dp +
+                                        if (jumpPillVisible) 56.dp else 0.dp,
                             ),
                 )
 
@@ -813,7 +812,9 @@ fun PodcastInfoScreen(
                     exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 },
                 ) {
                     PodcastInfoSearchOverlay(
-                        podcastImageUrl = state.podcast.imageUrl,
+                        podcastImageUrl =
+                            state.podcast.imageUrl.takeIf { it.isNotEmpty() }
+                                ?: state.podcast.fallbackImageUrl,
                         query = state.searchQuery,
                         onQueryChange = { viewModel.searchEpisodes(it) },
                         onClose = {

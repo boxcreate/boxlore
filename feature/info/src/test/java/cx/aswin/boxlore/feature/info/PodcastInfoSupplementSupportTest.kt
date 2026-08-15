@@ -35,9 +35,10 @@ class PodcastInfoSupplementSupportTest {
                 )
             val state =
                 PodcastInfoUiState.Success(
-                    podcast = TestFixtures.podcast(id = "123").copy(
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
+                    podcast =
+                        TestFixtures.podcast(id = "123").copy(
+                            feedUrl = "https://feeds.example/show.xml",
+                        ),
                     episodes = emptyList(),
                     isSubscribed = true,
                 )
@@ -60,9 +61,10 @@ class PodcastInfoSupplementSupportTest {
                 )
             val state =
                 PodcastInfoUiState.Success(
-                    podcast = TestFixtures.podcast(id = "123").copy(
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
+                    podcast =
+                        TestFixtures.podcast(id = "123").copy(
+                            feedUrl = "https://feeds.example/show.xml",
+                        ),
                     episodes = emptyList(),
                     isSubscribed = true,
                 )
@@ -82,9 +84,10 @@ class PodcastInfoSupplementSupportTest {
                 )
             val state =
                 PodcastInfoUiState.Success(
-                    podcast = TestFixtures.podcast(id = "123").copy(
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
+                    podcast =
+                        TestFixtures.podcast(id = "123").copy(
+                            feedUrl = "https://feeds.example/show.xml",
+                        ),
                     episodes = emptyList(),
                     isSubscribed = true,
                 )
@@ -118,14 +121,15 @@ class PodcastInfoSupplementSupportTest {
                 support.unionSearch(
                     feedId = "123",
                     query = "hit",
-                    networkResults = listOf(
-                        TestFixtures.episode(
-                            id = "shared",
-                            title = "PI hit",
-                            audioUrl = "https://cdn/shared.mp3",
-                            publishedDate = 50,
+                    networkResults =
+                        listOf(
+                            TestFixtures.episode(
+                                id = "shared",
+                                title = "PI hit",
+                                audioUrl = "https://cdn/shared.mp3",
+                                publishedDate = 50,
+                            ),
                         ),
-                    ),
                     meta = PodcastListMeta("Show", null, null, null),
                     isRss = false,
                 )
@@ -151,9 +155,10 @@ class PodcastInfoSupplementSupportTest {
                 )
             val state =
                 PodcastInfoUiState.Success(
-                    podcast = TestFixtures.podcast(id = "123").copy(
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
+                    podcast =
+                        TestFixtures.podcast(id = "123").copy(
+                            feedUrl = "https://feeds.example/show.xml",
+                        ),
                     episodes = emptyList(),
                     isSubscribed = true,
                 )
@@ -190,9 +195,10 @@ class PodcastInfoSupplementSupportTest {
                 )
             val state =
                 PodcastInfoUiState.Success(
-                    podcast = TestFixtures.podcast(id = "123").copy(
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
+                    podcast =
+                        TestFixtures.podcast(id = "123").copy(
+                            feedUrl = "https://feeds.example/show.xml",
+                        ),
                     episodes = emptyList(),
                     isSubscribed = true,
                 )
@@ -251,6 +257,34 @@ class PodcastInfoSupplementSupportTest {
             assertEquals(DirectFeedChipState.Offer, offer.directFeedChip)
         }
 
+    @Test
+    fun `remount hides extras offer when local catalog is ready`() =
+        runTest {
+            val port = FakePort(optedIn = mutableSetOf())
+            val support =
+                PodcastInfoSupplementSupport(
+                    episodeSupplementPort = port,
+                    loadPage = { _, _, _, _ -> error("unused") },
+                    loadPiBaseline = { emptyList() },
+                    isCatalogReady = { true },
+                )
+            val podcast =
+                TestFixtures.podcast(id = "123").copy(
+                    feedUrl = "https://feeds.example/show.xml",
+                )
+            val hidden =
+                support.remountWithSupplements(
+                    state =
+                        PodcastInfoUiState.Success(
+                            podcast = podcast,
+                            episodes = emptyList(),
+                            isSubscribed = false,
+                        ),
+                    piEpisodes = emptyList(),
+                )
+            assertEquals(DirectFeedChipState.Hidden, hidden.directFeedChip)
+        }
+
     private class FakePort(
         var optedIn: MutableSet<String>,
     ) : EpisodeSupplementPort {
@@ -288,14 +322,11 @@ class PodcastInfoSupplementSupportTest {
             return optInOutcome
         }
 
-        override suspend fun hasDirectFeedOptIn(podcastIndexId: String): Boolean =
-            podcastIndexId in optedIn
+        override suspend fun hasDirectFeedOptIn(podcastIndexId: String): Boolean = podcastIndexId in optedIn
 
         override suspend fun listOptedInPodcastIds(): Set<String> = optedIn
 
-        override suspend fun resolveNewestTipFromFeed(
-            request: EpisodeSupplementPort.NewestTipRequest,
-        ): Episode? = null
+        override suspend fun resolveNewestTipFromFeed(request: EpisodeSupplementPort.NewestTipRequest): Episode? = null
 
         override suspend fun getEpisodesForPodcast(
             podcastIndexId: String,

@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList", "LongMethod")
 fun PodcastInfoSearchOverlay(
     podcastImageUrl: String? = null,
     query: String,

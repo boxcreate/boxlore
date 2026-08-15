@@ -264,10 +264,12 @@ class SubscriptionRepositoryTest {
             repository.updateLatestEpisode(
                 podcastId = "1258562",
                 episode = episode.copy(publishedDate = 100L),
+                markAsNew = true,
             )
             repository.updateLatestEpisode(
                 podcastId = "1258562",
                 episode = episode.copy(id = "-9002", publishedDate = 200L),
+                markAsNew = true,
             )
 
             assertTrue(podcastDao.getPodcast("1258562")!!.rssHasNewEpisodes)
@@ -307,7 +309,7 @@ class SubscriptionRepositoryTest {
             val stored = podcastDao.getPodcast("pod-tip")!!.latestEpisode!!
             assertEquals("-9", stored.id)
             assertEquals(200L, stored.publishedDate)
-            assertTrue(podcastDao.getPodcast("pod-tip")!!.rssHasNewEpisodes)
+            assertFalse(podcastDao.getPodcast("pod-tip")!!.rssHasNewEpisodes)
         }
 
     @Test
@@ -373,6 +375,39 @@ class SubscriptionRepositoryTest {
             assertEquals(
                 "https://feeds.example/recovered.xml",
                 podcastDao.getPodcast("pod-recover")!!.feedUrl,
+            )
+        }
+
+    @Test
+    fun subscribePersistsSuppliedHttpsWhenStoredFeedUrlBlank() =
+        runTest {
+            podcastDao.upsert(
+                PodcastEntity(
+                    podcastId = "pod-blank",
+                    title = "Show",
+                    author = "Artist",
+                    imageUrl = "https://example.com/pod-blank.jpg",
+                    description = "desc",
+                    isSubscribed = false,
+                    feedUrl = "",
+                ),
+            )
+            var lookups = 0
+            val recovering =
+                SubscriptionRepository(
+                    podcastDao = podcastDao,
+                    lookupHttpsFeedUrl = {
+                        lookups++
+                        "https://feeds.example/lookup.xml"
+                    },
+                )
+            recovering.subscribe(
+                podcast(id = "pod-blank", feedUrl = "https://feeds.example/supplied.xml"),
+            )
+            assertEquals(0, lookups)
+            assertEquals(
+                "https://feeds.example/supplied.xml",
+                podcastDao.getPodcast("pod-blank")!!.feedUrl,
             )
         }
 }

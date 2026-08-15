@@ -28,4 +28,29 @@ class LocalEpisodeCatalogRepositoryTest {
         assertEquals(false, stub.ready)
         assertEquals(false, LocalCatalogReadyLogic.isReady(stub))
     }
+
+    @Test
+    fun quietSkipIgnoresNeedsFullBackfillEvenWhenFresh() {
+        val now = System.currentTimeMillis()
+        assertEquals(
+            false,
+            shouldSkipQuiet(
+                LocalEpisodeCatalogRepository.stubFeed("100").copy(
+                    fetchedAt = now,
+                    needsFullBackfill = true,
+                ),
+            ),
+        )
+        assertEquals(
+            true,
+            shouldSkipQuiet(
+                LocalEpisodeCatalogRepository.stubFeed("100").copy(
+                    fetchedAt = now,
+                    needsFullBackfill = false,
+                    feedEtag = null,
+                    feedLastModified = null,
+                ),
+            ),
+        )
+    }
 }

@@ -63,12 +63,12 @@ class NewEpisodeFcmLogicTest {
             )
         assertEquals(
             "-8",
-            NewEpisodeFcmLogic.pickHydratedEpisode(
-                extras = listOf(extra, newest),
-                newestTip = newest,
-                enclosureUrl = "https://cdn.example.com/ep.mp3",
-            )
-                ?.id,
+            NewEpisodeFcmLogic
+                .pickHydratedEpisode(
+                    extras = listOf(extra, newest),
+                    newestTip = newest,
+                    enclosureUrl = "https://cdn.example.com/ep.mp3",
+                )?.id,
         )
         assertNull(
             NewEpisodeFcmLogic.pickHydratedEpisode(

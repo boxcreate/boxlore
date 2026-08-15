@@ -1,28 +1,29 @@
 package cx.aswin.boxlore.core.catalog.backup
 
-import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.rss.RssFeedClient
-import cx.aswin.boxlore.core.rss.RssPodcastRepository
-import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
-import cx.aswin.boxlore.core.catalog.SubscriptionRepository
-import cx.aswin.boxlore.core.database.PodcastEntity
-import cx.aswin.boxlore.core.database.ListeningHistoryEntity
-import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
-import cx.aswin.boxlore.core.ranking.AdaptiveRankingBackup
-import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
-import kotlinx.coroutines.flow.first
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
-import java.io.InputStream
-import android.util.Log
 import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.LOCAL_CATALOG_WINDOW_BOUND
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.catalog.toPodcast
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
+import cx.aswin.boxlore.core.ranking.AdaptiveRankingBackup
+import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
+import cx.aswin.boxlore.core.rss.RssFeedClient
+import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import kotlinx.coroutines.flow.first
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
+import java.io.InputStream
 
 data class GlobalPreferencesBackup(
     val region: String? = null,
@@ -54,7 +55,7 @@ data class GlobalPreferencesBackup(
     val smartDownloadsCleanupRule: String? = null,
     val autoDownloadWifiOnly: Boolean? = null,
     val autoDownloadMaxEpisodes: Int? = null,
-    val autoDownloadDeleteCompleted: Boolean? = null
+    val autoDownloadDeleteCompleted: Boolean? = null,
 )
 
 data class BoxLoreBackup(
@@ -68,9 +69,10 @@ data class BoxLoreBackup(
 
 data class OpmlFeed(
     val title: String,
-    val xmlUrl: String
+    val xmlUrl: String,
 )
 
+@Suppress("TooManyFunctions")
 class LibraryBackupManager(
     private val subscriptionRepository: SubscriptionRepository,
     private val listeningHistory: ListeningHistoryBackupPort,
@@ -85,58 +87,63 @@ class LibraryBackupManager(
 ) {
     private val context = context.applicationContext
     private val rssFeedClient = RssFeedClient()
-    private val gson: Gson = GsonBuilder()
-        .setPrettyPrinting()
-        .create()
+    private val gson: Gson =
+        GsonBuilder()
+            .setPrettyPrinting()
+            .create()
 
     suspend fun exportLibraryAsJson(): String {
         val subscriptions = subscriptionRepository.getAllSubscribedPodcasts().first()
         val allHistory = listeningHistory.getAllHistory().first()
-        
-        val globalPrefs = if (userPrefs != null) {
-            GlobalPreferencesBackup(
-                region = userPrefs.regionStream.first(),
-                contentLanguages = userPrefs.contentLanguagesStream.first(),
-                themeConfig = userPrefs.themeConfigStream.first(),
-                themeBrand = userPrefs.themeBrandStream.first(),
-                surfaceStyle = userPrefs.surfaceStyleStream.first(),
-                useDynamicColor = userPrefs.useDynamicColorStream.first(),
-                openAppTo = userPrefs.openAppToStream.first(),
-                subscriptionSort = userPrefs.subscriptionSortStream.first(),
-                subscriptionManualOrder = userPrefs.subscriptionManualOrderStream.first(),
-                homePinnedPodcastIds = userPrefs.homePinnedPodcastIdsStream.first(),
-                latestEpisodesSortUseSmart = userPrefs.latestEpisodesSortUseSmartStream.first(),
-                skipBehavior = userPrefs.skipBehaviorStream.first(),
-                skipBeginningMs = userPrefs.skipBeginningMsStream.first(),
-                skipEndingMs = userPrefs.skipEndingMsStream.first(),
-                seekBackwardMs = userPrefs.seekBackwardMsStream.first(),
-                seekForwardMs = userPrefs.seekForwardMsStream.first(),
-                hideCompletedInFeeds = userPrefs.hideCompletedInFeedsStream.first(),
-                hideCompletedInShowDetails = userPrefs.hideCompletedInShowDetailsStream.first(),
-                hideCompletedInHome = userPrefs.hideCompletedInHomeStream.first(),
-                hideCompletedInSubs = userPrefs.hideCompletedInSubsStream.first(),
-                restartForgottenEpisodes = userPrefs.restartForgottenEpisodesStream.first(),
-                smartDownloadsEnabled = userPrefs.smartDownloadsEnabledStream.first(),
-                smartDownloadsMaxEpisodes = userPrefs.smartDownloadsMaxEpisodesStream.first(),
-                smartDownloadsStorageBudget = userPrefs.smartDownloadsStorageBudgetStream.first(),
-                smartDownloadsWifiOnly = userPrefs.smartDownloadsWifiOnlyStream.first(),
-                smartDownloadsChargingOnly = userPrefs.smartDownloadsChargingOnlyStream.first(),
-                smartDownloadsCleanupRule = userPrefs.smartDownloadsCleanupRuleStream.first(),
-                autoDownloadWifiOnly = userPrefs.autoDownloadWifiOnlyStream.first(),
-                autoDownloadMaxEpisodes = userPrefs.autoDownloadMaxEpisodesStream.first(),
-                autoDownloadDeleteCompleted = userPrefs.autoDownloadDeleteCompletedStream.first()
-            )
-        } else null
+
+        val globalPrefs =
+            if (userPrefs != null) {
+                GlobalPreferencesBackup(
+                    region = userPrefs.regionStream.first(),
+                    contentLanguages = userPrefs.contentLanguagesStream.first(),
+                    themeConfig = userPrefs.themeConfigStream.first(),
+                    themeBrand = userPrefs.themeBrandStream.first(),
+                    surfaceStyle = userPrefs.surfaceStyleStream.first(),
+                    useDynamicColor = userPrefs.useDynamicColorStream.first(),
+                    openAppTo = userPrefs.openAppToStream.first(),
+                    subscriptionSort = userPrefs.subscriptionSortStream.first(),
+                    subscriptionManualOrder = userPrefs.subscriptionManualOrderStream.first(),
+                    homePinnedPodcastIds = userPrefs.homePinnedPodcastIdsStream.first(),
+                    latestEpisodesSortUseSmart = userPrefs.latestEpisodesSortUseSmartStream.first(),
+                    skipBehavior = userPrefs.skipBehaviorStream.first(),
+                    skipBeginningMs = userPrefs.skipBeginningMsStream.first(),
+                    skipEndingMs = userPrefs.skipEndingMsStream.first(),
+                    seekBackwardMs = userPrefs.seekBackwardMsStream.first(),
+                    seekForwardMs = userPrefs.seekForwardMsStream.first(),
+                    hideCompletedInFeeds = userPrefs.hideCompletedInFeedsStream.first(),
+                    hideCompletedInShowDetails = userPrefs.hideCompletedInShowDetailsStream.first(),
+                    hideCompletedInHome = userPrefs.hideCompletedInHomeStream.first(),
+                    hideCompletedInSubs = userPrefs.hideCompletedInSubsStream.first(),
+                    restartForgottenEpisodes = userPrefs.restartForgottenEpisodesStream.first(),
+                    smartDownloadsEnabled = userPrefs.smartDownloadsEnabledStream.first(),
+                    smartDownloadsMaxEpisodes = userPrefs.smartDownloadsMaxEpisodesStream.first(),
+                    smartDownloadsStorageBudget = userPrefs.smartDownloadsStorageBudgetStream.first(),
+                    smartDownloadsWifiOnly = userPrefs.smartDownloadsWifiOnlyStream.first(),
+                    smartDownloadsChargingOnly = userPrefs.smartDownloadsChargingOnlyStream.first(),
+                    smartDownloadsCleanupRule = userPrefs.smartDownloadsCleanupRuleStream.first(),
+                    autoDownloadWifiOnly = userPrefs.autoDownloadWifiOnlyStream.first(),
+                    autoDownloadMaxEpisodes = userPrefs.autoDownloadMaxEpisodesStream.first(),
+                    autoDownloadDeleteCompleted = userPrefs.autoDownloadDeleteCompletedStream.first(),
+                )
+            } else {
+                null
+            }
 
         val rankingBackup = adaptiveRankingRepository.exportBackup()
-        val backup = BoxLoreBackup(
-            version = LibraryBackupDirectFeedLogic.VERSION,
-            subscriptions = subscriptions,
-            history = allHistory,
-            globalPreferences = globalPrefs,
-            adaptiveRanking = rankingBackup,
-            directFeedOptIns = null,
-        )
+        val backup =
+            BoxLoreBackup(
+                version = LibraryBackupDirectFeedLogic.VERSION,
+                subscriptions = subscriptions,
+                history = allHistory,
+                globalPreferences = globalPrefs,
+                adaptiveRanking = rankingBackup,
+                directFeedOptIns = null,
+            )
         return gson.toJson(backup)
     }
 
@@ -152,9 +159,10 @@ class LibraryBackupManager(
         sb.append("    <outline text=\"Subscriptions\" title=\"Subscriptions\">\n")
         for (entity in subscriptions) {
             val title = escapeXml(entity.title)
-            val feedUrl = escapeXml(
-                entity.feedUrl ?: "${BuildConfig.BOXLORE_API_BASE_URL}/episodes?id=${entity.podcastId}"
-            )
+            val feedUrl =
+                escapeXml(
+                    entity.feedUrl ?: "${BuildConfig.BOXLORE_API_BASE_URL}/episodes?id=${entity.podcastId}",
+                )
             sb.append("      <outline type=\"rss\" text=\"$title\" title=\"$title\" xmlUrl=\"$feedUrl\" />\n")
         }
         sb.append("    </outline>\n")
@@ -165,17 +173,18 @@ class LibraryBackupManager(
 
     private fun escapeXml(input: String?): String {
         if (input.isNullOrEmpty()) return ""
-        return input.replace("&", "&amp;")
+        return input
+            .replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
             .replace("'", "&apos;")
     }
 
-    suspend fun importLibraryFromJson(jsonString: String): Pair<Int, Boolean> {
-        return try {
+    suspend fun importLibraryFromJson(jsonString: String): Pair<Int, Boolean> =
+        try {
             val backup = gson.fromJson(jsonString, BoxLoreBackup::class.java)
-            
+
             // 0. Restore global preferences
             backup.globalPreferences?.let { prefs ->
                 userPrefs?.let { up ->
@@ -206,9 +215,11 @@ class LibraryBackupManager(
                         if (enabled) {
                             val wifiOnly = prefs.smartDownloadsWifiOnly ?: true
                             val chargingOnly = prefs.smartDownloadsChargingOnly ?: false
-                            cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort.schedulePeriodicSync?.invoke(wifiOnly, chargingOnly)
+                            cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort.schedulePeriodicSync
+                                ?.invoke(wifiOnly, chargingOnly)
                         } else {
-                            cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort.cancelPeriodicSync?.invoke()
+                            cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort.cancelPeriodicSync
+                                ?.invoke()
                         }
                     }
                     prefs.smartDownloadsMaxEpisodes?.let { up.setSmartDownloadsMaxEpisodes(it) }
@@ -223,33 +234,35 @@ class LibraryBackupManager(
             }
 
             val importedIds = mutableListOf<String>()
-            
+
             // 1. Restore subscriptions
             for (entity in backup.subscriptions) {
                 if (entity.sourceType == PodcastEntity.SOURCE_RSS) {
                     val feedUrl = entity.feedUrl
-                    val rssPodcast = if (!feedUrl.isNullOrBlank()) {
-                        runCatching {
-                            rssPodcastRepository
-                                .addSubscription(feedUrl)
-                                .podcast
-                        }.onFailure { error ->
-                            Log.e(
-                                "JSON_IMPORT",
-                                "RSS restore failed for ${entity.title}; feed must be re-added",
-                                error,
-                            )
-                        }.getOrNull()
-                    } else {
-                        null
-                    }
+                    val rssPodcast =
+                        if (!feedUrl.isNullOrBlank()) {
+                            runCatching {
+                                rssPodcastRepository
+                                    .addSubscription(feedUrl)
+                                    .podcast
+                            }.onFailure { error ->
+                                Log.e(
+                                    "JSON_IMPORT",
+                                    "RSS restore failed for ${entity.title}; feed must be re-added",
+                                    error,
+                                )
+                            }.getOrNull()
+                        } else {
+                            null
+                        }
                     if (rssPodcast == null) continue
-                    val subscribedRssPodcast = rssPodcast.copy(
-                        preferredSort = entity.preferredSort,
-                        linkedPodcastIndexId = entity.linkedPodcastIndexId,
-                        skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
-                        skipEndingOverrideMs = entity.skipEndingOverrideMs,
-                    )
+                    val subscribedRssPodcast =
+                        rssPodcast.copy(
+                            preferredSort = entity.preferredSort,
+                            linkedPodcastIndexId = entity.linkedPodcastIndexId,
+                            skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
+                            skipEndingOverrideMs = entity.skipEndingOverrideMs,
+                        )
                     subscriptionRepository.subscribe(subscribedRssPodcast)
 
                     // Restore per-podcast settings & FCM registrations, same as the
@@ -273,39 +286,42 @@ class LibraryBackupManager(
                 // Assuming we have a way to save entity directly or we re-map to model
                 // Since SubscriptionRepository expects a Podcast model to subscribe,
                 // let's construct a domain Podcast model and pass it.
-                val podcast = cx.aswin.boxlore.core.model.Podcast(
-                    id = (entity.podcastId as String?) ?: "", // Cast to prevent Kotlin from optimizing out the null-check
-                    title = (entity.title as String?) ?: "Unknown",
-                    artist = (entity.author as String?) ?: "Unknown",
-                    imageUrl = (entity.imageUrl as String?) ?: "",
-                    description = entity.description,
-                    genre = entity.genre ?: "Podcast",
-                    type = (entity.type as String?) ?: "episodic",
-                    latestEpisode = entity.latestEpisode,
-                    subscribedAt = entity.subscribedAt,
-                    podcastGuid = entity.podcastGuid,
-                    fundingUrl = entity.fundingUrl,
-                    fundingMessage = entity.fundingMessage,
-                    medium = entity.medium,
-                    hasValue = entity.hasValue,
-                    updateFrequency = entity.updateFrequency,
-                    location = entity.location,
-                    license = entity.license,
-                    isLocked = entity.isLocked,
-                    preferredSort = entity.preferredSort,
-                    skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
-                    skipEndingOverrideMs = entity.skipEndingOverrideMs,
-                    sourceType = (entity.sourceType as String?)
-                        ?: PodcastEntity.SOURCE_PODCAST_INDEX,
-                    feedUrl = entity.feedUrl,
-                    rssRefreshCapability = (entity.rssRefreshCapability as String?)
-                        ?: PodcastEntity.RSS_REFRESH_MANUAL,
-                    rssCatalogStale = entity.rssCatalogStale,
-                    rssHasNewEpisodes = entity.rssHasNewEpisodes,
-                    linkedPodcastIndexId = entity.linkedPodcastIndexId,
-                )
+                val podcast =
+                    cx.aswin.boxlore.core.model.Podcast(
+                        id = (entity.podcastId as String?) ?: "", // Cast to prevent Kotlin from optimizing out the null-check
+                        title = (entity.title as String?) ?: "Unknown",
+                        artist = (entity.author as String?) ?: "Unknown",
+                        imageUrl = (entity.imageUrl as String?) ?: "",
+                        description = entity.description,
+                        genre = entity.genre ?: "Podcast",
+                        type = (entity.type as String?) ?: "episodic",
+                        latestEpisode = entity.latestEpisode,
+                        subscribedAt = entity.subscribedAt,
+                        podcastGuid = entity.podcastGuid,
+                        fundingUrl = entity.fundingUrl,
+                        fundingMessage = entity.fundingMessage,
+                        medium = entity.medium,
+                        hasValue = entity.hasValue,
+                        updateFrequency = entity.updateFrequency,
+                        location = entity.location,
+                        license = entity.license,
+                        isLocked = entity.isLocked,
+                        preferredSort = entity.preferredSort,
+                        skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
+                        skipEndingOverrideMs = entity.skipEndingOverrideMs,
+                        sourceType =
+                            (entity.sourceType as String?)
+                                ?: PodcastEntity.SOURCE_PODCAST_INDEX,
+                        feedUrl = entity.feedUrl,
+                        rssRefreshCapability =
+                            (entity.rssRefreshCapability as String?)
+                                ?: PodcastEntity.RSS_REFRESH_MANUAL,
+                        rssCatalogStale = entity.rssCatalogStale,
+                        rssHasNewEpisodes = entity.rssHasNewEpisodes,
+                        linkedPodcastIndexId = entity.linkedPodcastIndexId,
+                    )
                 subscriptionRepository.subscribe(podcast)
-                
+
                 // Restore per-podcast settings & FCM registrations
                 if (entity.notificationsEnabled) {
                     subscriptionRepository.setNotificationsEnabled(podcast, true)
@@ -330,24 +346,25 @@ class LibraryBackupManager(
                 }
                 // Reconstruct safe entity to prevent null crashes on non-nullable String fields
                 // Primitives (Long, Boolean) are safe as Gson initializes them to 0/false if missing
-                val safeEntity = cx.aswin.boxlore.core.database.ListeningHistoryEntity(
-                    episodeId = (entity.episodeId as String?) ?: "",
-                    podcastId = (entity.podcastId as String?) ?: "",
-                    episodeTitle = (entity.episodeTitle as String?) ?: "Unknown",
-                    episodeImageUrl = entity.episodeImageUrl,
-                    podcastImageUrl = entity.podcastImageUrl,
-                    episodeAudioUrl = entity.episodeAudioUrl,
-                    podcastName = (entity.podcastName as String?) ?: "Unknown",
-                    progressMs = entity.progressMs,
-                    durationMs = entity.durationMs,
-                    isCompleted = entity.isCompleted,
-                    isLiked = entity.isLiked,
-                    lastPlayedAt = entity.lastPlayedAt,
-                    isDirty = entity.isDirty,
-                    syncedAt = entity.syncedAt,
-                    enclosureType = entity.enclosureType,
-                    episodeDescription = entity.episodeDescription
-                )
+                val safeEntity =
+                    cx.aswin.boxlore.core.database.ListeningHistoryEntity(
+                        episodeId = (entity.episodeId as String?) ?: "",
+                        podcastId = (entity.podcastId as String?) ?: "",
+                        episodeTitle = (entity.episodeTitle as String?) ?: "Unknown",
+                        episodeImageUrl = entity.episodeImageUrl,
+                        podcastImageUrl = entity.podcastImageUrl,
+                        episodeAudioUrl = entity.episodeAudioUrl,
+                        podcastName = (entity.podcastName as String?) ?: "Unknown",
+                        progressMs = entity.progressMs,
+                        durationMs = entity.durationMs,
+                        isCompleted = entity.isCompleted,
+                        isLiked = entity.isLiked,
+                        lastPlayedAt = entity.lastPlayedAt,
+                        isDirty = entity.isDirty,
+                        syncedAt = entity.syncedAt,
+                        enclosureType = entity.enclosureType,
+                        episodeDescription = entity.episodeDescription,
+                    )
                 listeningHistory.upsertHistoryEntity(safeEntity)
             }
 
@@ -356,7 +373,7 @@ class LibraryBackupManager(
             backup.adaptiveRanking?.let { rankingBackup ->
                 adaptiveRankingRepository.restoreBackup(rankingBackup)
             }
-            
+
             // 4. Refresh latest episodes: restore Missing episodes? feeds first,
             // then PI /sync for everyone else, then true rss: catalogs.
             val refreshPlan =
@@ -379,17 +396,16 @@ class LibraryBackupManager(
                 },
                 refreshRss = { refreshImportedRssCatalogs(it) },
             )
-            
+
             val hasNotificationsEnabled = backup.subscriptions.any { it.notificationsEnabled || it.autoDownloadEnabled }
             Pair(importedIds.size, hasNotificationsEnabled)
         } catch (e: Exception) {
             e.printStackTrace()
             Pair(-1, false)
         }
-    }
 
-    suspend fun importFromOpml(inputStream: InputStream): Int {
-        return try {
+    suspend fun importFromOpml(inputStream: InputStream): Int =
+        try {
             parseOpmlFeeds(inputStream).count { feed ->
                 importSingleOpmlFeed(feed) != null
             }
@@ -397,7 +413,6 @@ class LibraryBackupManager(
             Log.e("OPML_IMPORT", "Failed to import OPML", e)
             -1
         }
-    }
 
     fun parseOpmlFeeds(inputStream: InputStream): List<OpmlFeed> {
         val feeds = mutableListOf<OpmlFeed>()
@@ -412,7 +427,7 @@ class LibraryBackupManager(
                 if (eventType == XmlPullParser.START_TAG && parser.name == "outline") {
                     val xmlUrl = parser.getAttributeValue(null, "xmlUrl")
                     val title = parser.getAttributeValue(null, "text") ?: parser.getAttributeValue(null, "title")
-                    
+
                     if (xmlUrl != null && title != null) {
                         feeds.add(OpmlFeed(title, xmlUrl))
                     }
@@ -459,13 +474,13 @@ class LibraryBackupManager(
             } else {
                 emptyList()
             }
-        OpmlImportLogic.catalogMatch(
-            opmlTitle = feed.title,
-            opmlXmlUrl = feed.xmlUrl,
-            urlLookup = urlLookup,
-            titleSearch = titleSearch,
-        )
-            ?.let { return it }
+        OpmlImportLogic
+            .catalogMatch(
+                opmlTitle = feed.title,
+                opmlXmlUrl = feed.xmlUrl,
+                urlLookup = urlLookup,
+                titleSearch = titleSearch,
+            )?.let { return it }
 
         val peeked = peekOpmlFeed(feed.xmlUrl) ?: return null
         val peekedLookup =
@@ -537,8 +552,7 @@ class LibraryBackupManager(
         }
     }
 
-    private fun supplementPort(): EpisodeSupplementPort? =
-        episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
+    private fun supplementPort(): EpisodeSupplementPort? = episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
 
     private suspend fun restoreImportedLocalCatalogs(
         targets: List<DirectFeedOptInBackup>,
@@ -675,16 +689,31 @@ class LibraryBackupManager(
 
     suspend fun markAllEpisodesCompleted(podcast: cx.aswin.boxlore.core.model.Podcast) {
         try {
-            // Get complete backlog of episodes (bypassing initial limit)
-            val episodes = podcastRepository.getEpisodes(podcast.id)
+            val episodes = mutableListOf<cx.aswin.boxlore.core.model.Episode>()
+            var offset = 0
+            val pageSize = LOCAL_CATALOG_WINDOW_BOUND
+            do {
+                val page =
+                    podcastRepository.getEpisodesPaginated(
+                        feedId = podcast.id,
+                        limit = pageSize,
+                        offset = offset,
+                        sort = "newest",
+                    )
+                episodes += page.episodes
+                offset += page.sourceCount
+                if (!page.hasMore || page.episodes.isEmpty()) break
+            } while (true)
             if (episodes.isNotEmpty()) {
                 listeningHistory.markAllEpisodesCompleted(
                     episodes = episodes,
                     podcastId = podcast.id,
                     podcastTitle = podcast.title,
-                    podcastImageUrl = podcast.imageUrl
+                    podcastImageUrl = podcast.imageUrl,
                 )
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("OPML_IMPORT", "Failed to mark all episodes completed for: ${podcast.title}", e)
         }

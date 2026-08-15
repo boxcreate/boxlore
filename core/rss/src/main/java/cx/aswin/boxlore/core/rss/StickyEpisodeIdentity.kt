@@ -8,7 +8,10 @@ package cx.aswin.boxlore.core.rss
  * a new row (I8). Duplicate guid on the same show is first-wins (I9).
  */
 object StickyEpisodeIdentity {
-    fun catalogKey(guid: String?, enclosureUrl: String?): String? {
+    fun catalogKey(
+        guid: String?,
+        enclosureUrl: String?,
+    ): String? {
         val fromGuid = guid?.trim()?.takeIf(String::isNotBlank)
         if (fromGuid != null) return fromGuid
         return enclosureUrl?.trim()?.takeIf(String::isNotBlank)
@@ -17,7 +20,10 @@ object StickyEpisodeIdentity {
     /**
      * @return catalog key, or null when the item must be skipped (I3).
      */
-    fun requireCatalogKey(guid: String?, enclosureUrl: String?): String? = catalogKey(guid, enclosureUrl)
+    fun requireCatalogKey(
+        guid: String?,
+        enclosureUrl: String?,
+    ): String? = catalogKey(guid, enclosureUrl)
 
     /**
      * Assigns episodeId for a feed item.

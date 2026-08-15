@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 
 @Dao
+@Suppress("TooManyFunctions")
 interface LocalEpisodeCatalogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertFeed(feed: LocalEpisodeFeedEntity)
@@ -27,7 +28,22 @@ interface LocalEpisodeCatalogDao {
         LIMIT 1
         """,
     )
-    suspend fun getByGuid(podcastId: String, guid: String): LocalEpisodeEntity?
+    suspend fun getByGuid(
+        podcastId: String,
+        guid: String,
+    ): LocalEpisodeEntity?
+
+    @Query(
+        """
+        SELECT * FROM local_episodes
+        WHERE podcastId = :podcastId AND audioUrl = :audioUrl
+        LIMIT 1
+        """,
+    )
+    suspend fun getByAudioUrl(
+        podcastId: String,
+        audioUrl: String,
+    ): LocalEpisodeEntity?
 
     @Query(
         """
@@ -45,7 +61,11 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit OFFSET :offset
         """,
     )
-    suspend fun getNewestPage(podcastId: String, limit: Int, offset: Int): List<LocalEpisodeEntity>
+    suspend fun getNewestPage(
+        podcastId: String,
+        limit: Int,
+        offset: Int,
+    ): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -55,7 +75,11 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit OFFSET :offset
         """,
     )
-    suspend fun getOldestPage(podcastId: String, limit: Int, offset: Int): List<LocalEpisodeEntity>
+    suspend fun getOldestPage(
+        podcastId: String,
+        limit: Int,
+        offset: Int,
+    ): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -71,8 +95,8 @@ interface LocalEpisodeCatalogDao {
     suspend fun count(podcastId: String): Int
 
     /**
-     * [query] must already be escaped for SQL LIKE
-     * (see [cx.aswin.boxlore.core.rss.escapeForSqlLike]).
+     * [query] must already be escaped for SQL LIKE by the caller, using `\`
+     * as the escape character.
      */
     @Query(
         """
@@ -83,7 +107,10 @@ interface LocalEpisodeCatalogDao {
         ORDER BY publishedDate DESC, episodeId ASC
         """,
     )
-    suspend fun search(podcastId: String, query: String): List<LocalEpisodeEntity>
+    suspend fun search(
+        podcastId: String,
+        query: String,
+    ): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -124,7 +151,16 @@ interface LocalEpisodeCatalogDao {
     ): List<LocalEpisodeEntity>
 
     @Query("UPDATE local_episode_feeds SET ttlExpiresAt = :ttlExpiresAt WHERE podcastId = :podcastId")
-    suspend fun setTtl(podcastId: String, ttlExpiresAt: Long?)
+    suspend fun setTtl(
+        podcastId: String,
+        ttlExpiresAt: Long?,
+    )
+
+    @Query("UPDATE local_episode_feeds SET feedUrlLookupAt = :atMillis WHERE podcastId = :podcastId")
+    suspend fun setFeedUrlLookupAt(
+        podcastId: String,
+        atMillis: Long,
+    )
 
     @Query("DELETE FROM local_episodes WHERE podcastId = :podcastId")
     suspend fun deleteEpisodes(podcastId: String)

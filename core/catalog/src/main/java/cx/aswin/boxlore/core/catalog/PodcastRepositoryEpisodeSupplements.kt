@@ -53,13 +53,14 @@ internal suspend fun PodcastRepository.loadCachedSupplements(podcastId: String):
     if (podcastId.startsWith("rss:")) return emptyList()
     return try {
         val local = rssRepository.getPodcast(podcastId)
-        episodeSupplementRepository?.getEpisodesForPodcast(
-            podcastIndexId = podcastId,
-            podcastTitle = local?.title,
-            podcastImageUrl = local?.imageUrl,
-            podcastGenre = local?.genre,
-            podcastArtist = local?.author,
-        ).orEmpty()
+        episodeSupplementRepository
+            ?.getEpisodesForPodcast(
+                podcastIndexId = podcastId,
+                podcastTitle = local?.title,
+                podcastImageUrl = local?.imageUrl,
+                podcastGenre = local?.genre,
+                podcastArtist = local?.author,
+            ).orEmpty()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -80,22 +81,28 @@ internal suspend fun PodcastRepository.loadOptedInPodcastIds(): Set<String> =
 
 internal suspend fun PodcastRepository.fetchPiSyncTips(podcastIndexIds: List<String>): Map<String, Episode> {
     if (podcastIndexIds.isEmpty()) return emptyMap()
-    val request = cx.aswin.boxlore.core.network.model.SyncRequest(podcastIndexIds)
+    val request =
+        cx.aswin.boxlore.core.network.model
+            .SyncRequest(podcastIndexIds)
     val response = api.syncSubscriptions(publicKey, request).execute()
     if (!response.isSuccessful || response.body() == null) return emptyMap()
-    return response.body()!!.items.mapNotNull { item ->
-        val ep =
-            item.latestEpisode?.let { mapToEpisode(it) }?.copy(
-                podcastId = item.id,
-            )
-        if (ep != null) item.id to ep else null
-    }.toMap()
+    return response
+        .body()!!
+        .items
+        .mapNotNull { item ->
+            val ep =
+                item.latestEpisode?.let { mapToEpisode(it) }?.copy(
+                    podcastId = item.id,
+                )
+            if (ep != null) item.id to ep else null
+        }.toMap()
 }
 
 internal suspend fun PodcastRepository.loadCachedFeedTips(podcastIndexIds: List<String>): Map<String, Episode> {
     if (podcastIndexIds.isEmpty()) return emptyMap()
-    return podcastIndexIds.mapNotNull { id ->
-        val tip = loadCachedSupplements(id).maxByOrNull { it.publishedDate } ?: return@mapNotNull null
-        id to tip
-    }.toMap()
+    return podcastIndexIds
+        .mapNotNull { id ->
+            val tip = loadCachedSupplements(id).maxByOrNull { it.publishedDate } ?: return@mapNotNull null
+            id to tip
+        }.toMap()
 }

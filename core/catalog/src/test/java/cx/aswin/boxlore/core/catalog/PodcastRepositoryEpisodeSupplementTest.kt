@@ -472,9 +472,8 @@ class PodcastRepositoryEpisodeSupplementTest {
 
         override suspend fun listOptedInPodcastIds(): Set<String> = optedIn
 
-        override suspend fun resolveNewestTipFromFeed(
-            request: EpisodeSupplementPort.NewestTipRequest,
-        ): Episode? = episodesByPodcast[request.podcastIndexId]?.maxByOrNull { it.publishedDate }
+        override suspend fun resolveNewestTipFromFeed(request: EpisodeSupplementPort.NewestTipRequest): Episode? =
+            episodesByPodcast[request.podcastIndexId]?.maxByOrNull { it.publishedDate }
 
         override suspend fun getEpisodesForPodcast(
             podcastIndexId: String,

@@ -16,8 +16,9 @@ object StickyRssEpisodeRemap {
         }
         val seen = mutableSetOf<String>()
         return parsed.mapNotNull { episode ->
-            val key = StickyEpisodeIdentity.requireCatalogKey(episode.guid, episode.audioUrl)
-                ?: return@mapNotNull null
+            val key =
+                StickyEpisodeIdentity.requireCatalogKey(episode.guid, episode.audioUrl)
+                    ?: return@mapNotNull null
             if (!StickyEpisodeIdentity.firstWinsExisting(seen, key)) return@mapNotNull null
             val stickyId = existingByKey[key] ?: episode.episodeId
             episode.copy(episodeId = stickyId)

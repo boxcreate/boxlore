@@ -50,13 +50,14 @@ internal class PodcastInfoSupplementSupport(
             repository.getEpisodesPaginated(id, limit, offset, sort)
         },
         { id ->
-            repository.getEpisodesPaginated(
-                feedId = id,
-                limit = SUPPLEMENT_BASELINE_LIMIT,
-                offset = 0,
-                sort = "oldest",
-                mergeSupplements = false,
-            ).episodes
+            repository
+                .getEpisodesPaginated(
+                    feedId = id,
+                    limit = SUPPLEMENT_BASELINE_LIMIT,
+                    offset = 0,
+                    sort = "oldest",
+                    mergeSupplements = false,
+                ).episodes
         },
         { id -> repository.localEpisodeCatalog?.isReady(id) == true },
     )
@@ -222,7 +223,10 @@ internal class PodcastInfoSupplementSupport(
         }
     }
 
-    suspend fun shouldRefreshOnOpen(podcastId: String, isRss: Boolean): Boolean =
+    suspend fun shouldRefreshOnOpen(
+        podcastId: String,
+        isRss: Boolean,
+    ): Boolean =
         !isRss &&
             !isCatalogReady(podcastId) &&
             episodeSupplementPort.hasDirectFeedOptIn(podcastId)
@@ -251,9 +255,7 @@ internal class PodcastInfoSupplementSupport(
         )
     }
 
-    private suspend fun reloadDisplayPage(
-        state: PodcastInfoUiState.Success,
-    ): PodcastRepository.EpisodePage {
+    private suspend fun reloadDisplayPage(state: PodcastInfoUiState.Success): PodcastRepository.EpisodePage {
         val oldest = state.currentSort == EpisodeSort.OLDEST
         return loadPage(
             state.podcast.id,

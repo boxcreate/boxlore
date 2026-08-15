@@ -2,31 +2,29 @@ package cx.aswin.boxlore.fcm
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.media.AudioAttributes
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.BoxLoreApplication
 import cx.aswin.boxlore.MainActivity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
-import com.google.firebase.messaging.FirebaseMessaging
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.navigation.PushTargetRouteAllowlist
 import cx.aswin.boxlore.ui.announcement.shouldSuppressWhatsNewOnPlay
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class BoxLoreFcmService : FirebaseMessagingService() {
-
     private val CHANNEL_ID = "boxlore_announcements_v2"
 
     private fun userPreferences(): UserPreferencesRepository =
@@ -41,7 +39,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         super.onNewToken(token)
         // Subscribe to the global announcements topic
         FirebaseMessaging.getInstance().subscribeToTopic("all_users")
-        
+
         // Subscribe to environment-specific topic safely by clearing the antagonist topic
         if (cx.aswin.boxlore.BuildConfig.DEBUG) {
             FirebaseMessaging.getInstance().subscribeToTopic("debug_users")
@@ -78,7 +76,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                     parsed.imageUrl,
                     parsed.actionLabel,
                     parsed.showActionInApp,
-                    parsed.category
+                    parsed.category,
                 )
             }
 
@@ -107,13 +105,16 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         payloadFeedUrl = FcmPayloadParser.feedUrl(data),
                         payloadEnclosureUrl = FcmPayloadParser.enclosureUrl(data),
                         payloadGuid = FcmPayloadParser.guid(data),
-                        subscriptionRepository = deps.subscriptionRepository,
-                        episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
-                        localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
-                        loadPiBaseline =
-                            NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
-                                deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
-                            },
+                        sources =
+                            NewEpisodePushHydration.Sources(
+                                subscriptionRepository = deps.subscriptionRepository,
+                                episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
+                                localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
+                                loadPiBaseline =
+                                    NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
+                                        deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
+                                    },
+                            ),
                     )
                 } else {
                     null
@@ -163,37 +164,42 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         val soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioAttributes = AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                .build()
-            val channel = NotificationChannel(
-                channelId,
-                "New Episodes",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Alerts for new podcast episodes"
-                setSound(soundUri, audioAttributes)
-            }
+            val audioAttributes =
+                AudioAttributes
+                    .Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .build()
+            val channel =
+                NotificationChannel(
+                    channelId,
+                    "New Episodes",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ).apply {
+                    description = "Alerts for new podcast episodes"
+                    setSound(soundUri, audioAttributes)
+                }
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
-            setPackage(packageName)
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            putExtra("from_push", true)
-            putExtra("notification_type", "new_episode")
-            putExtra("podcast_id", podcastId)
-            episodeId?.let { putExtra("episode_id", it) }
-            putExtra("target_route", route)
-        }
+        val intent =
+            Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
+                setPackage(packageName)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("from_push", true)
+                putExtra("notification_type", "new_episode")
+                putExtra("podcast_id", podcastId)
+                episodeId?.let { putExtra("episode_id", it) }
+                putExtra("target_route", route)
+            }
 
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            podcastId.hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent =
+            PendingIntent.getActivity(
+                this,
+                podcastId.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
         val bodyText =
             if (durationMinutes > 0) {
@@ -202,14 +208,16 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 "\"$episodeTitle\""
             }
 
-        val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
-            .setColor(android.graphics.Color.parseColor("#5B5BD6"))
-            .setContentTitle("New Episode • $podcastTitle")
-            .setContentText(bodyText)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .setSound(soundUri)
+        val notificationBuilder =
+            NotificationCompat
+                .Builder(this, channelId)
+                .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
+                .setColor(android.graphics.Color.parseColor("#5B5BD6"))
+                .setContentTitle("New Episode • $podcastTitle")
+                .setContentText(bodyText)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setSound(soundUri)
 
         if (!imageUrl.isNullOrBlank()) {
             try {
@@ -221,9 +229,10 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 val bitmap = android.graphics.BitmapFactory.decodeStream(connection.inputStream)
                 if (bitmap != null) {
                     notificationBuilder.setStyle(
-                        NotificationCompat.BigPictureStyle()
+                        NotificationCompat
+                            .BigPictureStyle()
                             .bigPicture(bitmap)
-                            .bigLargeIcon(null as android.graphics.Bitmap?)
+                            .bigLargeIcon(null as android.graphics.Bitmap?),
                     )
                     notificationBuilder.setLargeIcon(bitmap)
                 }
@@ -235,33 +244,51 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         notificationManager.notify(podcastId.hashCode(), notificationBuilder.build())
     }
 
-    private fun triggerAutoDownload(podcastId: String, episodeId: String) {
+    private fun triggerAutoDownload(
+        podcastId: String,
+        episodeId: String,
+    ) {
         try {
-            android.util.Log.i("BoxLore_BackgroundTrace", "[FCM] Received new_episode trigger for podcastId: $podcastId, episodeId: $episodeId")
-            
+            android.util.Log.i(
+                "BoxLore_BackgroundTrace",
+                "[FCM] Received new_episode trigger for podcastId: $podcastId, episodeId: $episodeId",
+            )
+
             CoroutineScope(Dispatchers.IO).launch {
                 val userPrefs = userPreferences()
                 val wifiOnly = userPrefs.autoDownloadWifiOnlyStream.first()
                 val requiredNetwork = if (wifiOnly) androidx.work.NetworkType.UNMETERED else androidx.work.NetworkType.CONNECTED
-                
-                android.util.Log.i("BoxLore_BackgroundTrace", "[FCM] Preparing AutoDownloadWorker. wifiOnly=$wifiOnly -> networkConstraint=$requiredNetwork")
 
-                val inputData = androidx.work.Data.Builder()
-                    .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_PODCAST_ID, podcastId)
-                    .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_EPISODE_ID, episodeId)
-                    .build()
+                android.util.Log.i(
+                    "BoxLore_BackgroundTrace",
+                    "[FCM] Preparing AutoDownloadWorker. wifiOnly=$wifiOnly -> networkConstraint=$requiredNetwork",
+                )
 
-                val workRequest = androidx.work.OneTimeWorkRequestBuilder<cx.aswin.boxlore.core.downloads.AutoDownloadWorker>()
-                    .setInputData(inputData)
-                    .setConstraints(
-                        androidx.work.Constraints.Builder()
-                            .setRequiredNetworkType(requiredNetwork)
-                            .build()
-                    )
-                    .build()
+                val inputData =
+                    androidx.work.Data
+                        .Builder()
+                        .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_PODCAST_ID, podcastId)
+                        .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_EPISODE_ID, episodeId)
+                        .build()
 
-                androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
-                android.util.Log.i("BoxLore_BackgroundTrace", "[FCM] Successfully enqueued AutoDownloadWorker into WorkManager for podcast $podcastId")
+                val workRequest =
+                    androidx.work
+                        .OneTimeWorkRequestBuilder<cx.aswin.boxlore.core.downloads.AutoDownloadWorker>()
+                        .setInputData(inputData)
+                        .setConstraints(
+                            androidx.work.Constraints
+                                .Builder()
+                                .setRequiredNetworkType(requiredNetwork)
+                                .build(),
+                        ).build()
+
+                androidx.work.WorkManager
+                    .getInstance(applicationContext)
+                    .enqueue(workRequest)
+                android.util.Log.i(
+                    "BoxLore_BackgroundTrace",
+                    "[FCM] Successfully enqueued AutoDownloadWorker into WorkManager for podcast $podcastId",
+                )
             }
         } catch (e: Exception) {
             android.util.Log.e("BoxLore_BackgroundTrace", "[FCM] Error enqueuing AutoDownloadWorker", e)
@@ -270,9 +297,13 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
     private fun triggerSmartDownloadSync() {
         try {
-            val workRequest = androidx.work.OneTimeWorkRequestBuilder<cx.aswin.boxlore.core.downloads.SmartDownloadWorker>()
-                .build()
-            androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+            val workRequest =
+                androidx.work
+                    .OneTimeWorkRequestBuilder<cx.aswin.boxlore.core.downloads.SmartDownloadWorker>()
+                    .build()
+            androidx.work.WorkManager
+                .getInstance(applicationContext)
+                .enqueue(workRequest)
             android.util.Log.d("BoxLoreFcmService", "Triggered immediate SmartDownloadWorker sync due to new episode push notification")
         } catch (e: Exception) {
             android.util.Log.e("BoxLoreFcmService", "Failed to trigger background sync", e)
@@ -280,13 +311,13 @@ class BoxLoreFcmService : FirebaseMessagingService() {
     }
 
     private fun saveInAppAnnouncement(
-        title: String, 
-        body: String, 
-        route: String?, 
-        imageUrl: String?, 
-        actionLabel: String?, 
+        title: String,
+        body: String,
+        route: String?,
+        imageUrl: String?,
+        actionLabel: String?,
         showActionInApp: Boolean,
-        category: String
+        category: String,
     ) {
         // GitHub APK "What's New" / release download CTA is meaningless on Play installs.
         if (applicationContext.shouldSuppressWhatsNewOnPlay(category)) {
@@ -299,16 +330,17 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
         val prefs = userPreferences()
         CoroutineScope(Dispatchers.IO).launch {
-            val announcement = UserPreferencesRepository.Announcement(
-                title = title,
-                body = body,
-                route = route,
-                imageUrl = imageUrl,
-                actionLabel = actionLabel,
-                showActionInApp = showActionInApp,
-                category = category,
-                timestamp = System.currentTimeMillis()
-            )
+            val announcement =
+                UserPreferencesRepository.Announcement(
+                    title = title,
+                    body = body,
+                    route = route,
+                    imageUrl = imageUrl,
+                    actionLabel = actionLabel,
+                    showActionInApp = showActionInApp,
+                    category = category,
+                    timestamp = System.currentTimeMillis(),
+                )
             prefs.setAnnouncement(announcement)
         }
     }
@@ -318,18 +350,21 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         val config = getPushChannelConfig(notification.sound)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(config.id, config.name, config.importance).apply {
-                description = "boxlore news and updates"
-                if (config.soundUri != null) {
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .build()
-                    setSound(config.soundUri, audioAttributes)
-                } else {
-                    setSound(null, null)
+            val channel =
+                NotificationChannel(config.id, config.name, config.importance).apply {
+                    description = "boxlore news and updates"
+                    if (config.soundUri != null) {
+                        val audioAttributes =
+                            AudioAttributes
+                                .Builder()
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                                .build()
+                        setSound(config.soundUri, audioAttributes)
+                    } else {
+                        setSound(null, null)
+                    }
                 }
-            }
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -340,20 +375,23 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 notification.podcastId,
                 notification.episodeId,
             )
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent =
+            PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
-        val notificationBuilder = NotificationCompat.Builder(this, config.id)
-            .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
-            .setColor(android.graphics.Color.parseColor("#5B5BD6")) // Brand purple color matching launcher icon
-            .setContentTitle(notification.title)
-            .setContentText(notification.body)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
+        val notificationBuilder =
+            NotificationCompat
+                .Builder(this, config.id)
+                .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
+                .setColor(android.graphics.Color.parseColor("#5B5BD6")) // Brand purple color matching launcher icon
+                .setContentTitle(notification.title)
+                .setContentText(notification.body)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
 
         if (config.soundUri != null) {
             notificationBuilder.setSound(config.soundUri)
@@ -368,16 +406,17 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                     notification.podcastId,
                     notification.episodeId,
                 )
-            val actionPendingIntent = PendingIntent.getActivity(
-                this,
-                route.hashCode(),
-                actionIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
+            val actionPendingIntent =
+                PendingIntent.getActivity(
+                    this,
+                    route.hashCode(),
+                    actionIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
             notificationBuilder.addAction(
                 cx.aswin.boxlore.R.drawable.ic_notification_custom,
                 notification.actionLabel,
-                actionPendingIntent
+                actionPendingIntent,
             )
         }
 
@@ -389,31 +428,33 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         val id: String,
         val name: String,
         val soundUri: Uri?,
-        val importance: Int
+        val importance: Int,
     )
 
-    private fun getPushChannelConfig(sound: String?): PushChannelConfig {
-        return when (sound) {
-            "chime" -> PushChannelConfig(
-                id = "boxlore_new_episodes_v1",
-                name = "New Episode Alerts",
-                soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime"),
-                importance = NotificationManager.IMPORTANCE_DEFAULT
-            )
-            "silent" -> PushChannelConfig(
-                id = "boxlore_silent_v1",
-                name = "Silent Notifications",
-                soundUri = null,
-                importance = NotificationManager.IMPORTANCE_LOW
-            )
-            else -> PushChannelConfig(
-                id = "boxlore_announcements_v2",
-                name = "Announcements",
-                soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_announcement_chime"),
-                importance = NotificationManager.IMPORTANCE_DEFAULT
-            )
+    private fun getPushChannelConfig(sound: String?): PushChannelConfig =
+        when (sound) {
+            "chime" ->
+                PushChannelConfig(
+                    id = "boxlore_new_episodes_v1",
+                    name = "New Episode Alerts",
+                    soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime"),
+                    importance = NotificationManager.IMPORTANCE_DEFAULT,
+                )
+            "silent" ->
+                PushChannelConfig(
+                    id = "boxlore_silent_v1",
+                    name = "Silent Notifications",
+                    soundUri = null,
+                    importance = NotificationManager.IMPORTANCE_LOW,
+                )
+            else ->
+                PushChannelConfig(
+                    id = "boxlore_announcements_v2",
+                    name = "Announcements",
+                    soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_announcement_chime"),
+                    importance = NotificationManager.IMPORTANCE_DEFAULT,
+                )
         }
-    }
 
     private fun createPushIntent(
         route: String?,
@@ -446,7 +487,10 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
-    private fun loadPushImage(builder: NotificationCompat.Builder, imageUrl: String?) {
+    private fun loadPushImage(
+        builder: NotificationCompat.Builder,
+        imageUrl: String?,
+    ) {
         if (imageUrl.isNullOrBlank()) return
         try {
             val optimizedUrl = imageUrl.optimizedImageUrl(500)
@@ -457,7 +501,8 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             val bitmap = android.graphics.BitmapFactory.decodeStream(connection.inputStream)
             if (bitmap != null) {
                 builder.setStyle(
-                    NotificationCompat.BigPictureStyle()
+                    NotificationCompat
+                        .BigPictureStyle()
                         .bigPicture(bitmap)
                         .bigLargeIcon(null as android.graphics.Bitmap?),
                 )

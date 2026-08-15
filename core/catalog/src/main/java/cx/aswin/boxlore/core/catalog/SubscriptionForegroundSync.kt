@@ -6,8 +6,8 @@ import cx.aswin.boxlore.core.catalog.logic.SubscriptionForegroundSyncLogic
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
-import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -143,6 +143,7 @@ class SubscriptionForegroundSync(
         }
     }
 
+    @Suppress("TooManyFunctions")
     companion object {
         private const val TAG = "SubscriptionForegroundSync"
         const val DEFAULT_INITIAL_DELAY_MS = 2000L
@@ -169,6 +170,7 @@ class SubscriptionForegroundSync(
             processSyncStarted.set(false)
         }
 
+        @Suppress("LongParameterList")
         fun create(
             podcastRepository: PodcastRepository,
             subscriptionRepository: SubscriptionRepository,
@@ -460,12 +462,12 @@ class SubscriptionForegroundSync(
             if (chunks.isEmpty()) return
             coroutineScope {
                 val gate = Semaphore(DEFAULT_FEED_CONCURRENCY)
-                chunks.map { chunk ->
-                    async {
-                        gate.withPermit { syncOneChunk(chunk, syncChunk, saveLatest) }
-                    }
-                }
-                    .awaitAll()
+                chunks
+                    .map { chunk ->
+                        async {
+                            gate.withPermit { syncOneChunk(chunk, syncChunk, saveLatest) }
+                        }
+                    }.awaitAll()
             }
         }
 
@@ -480,20 +482,20 @@ class SubscriptionForegroundSync(
                 DirectFeedSyncOrder.prioritize(feedTipIds, directFeed.preferredPodcastId())
             val gate = Semaphore(directFeed.feedConcurrency.coerceAtLeast(1))
             coroutineScope {
-                ordered.map { id ->
-                    async {
-                        gate.withPermit {
-                            syncOneDirectFeedTip(
-                                podcastId = id,
-                                loadPodcastMeta = loadPodcastMeta,
-                                resolveFeedTip = directFeed.resolveFeedTip,
-                                saveLatest = saveFeed,
-                                onFeedRefreshed = directFeed.onFeedRefreshed,
-                            )
+                ordered
+                    .map { id ->
+                        async {
+                            gate.withPermit {
+                                syncOneDirectFeedTip(
+                                    podcastId = id,
+                                    loadPodcastMeta = loadPodcastMeta,
+                                    resolveFeedTip = directFeed.resolveFeedTip,
+                                    saveLatest = saveFeed,
+                                    onFeedRefreshed = directFeed.onFeedRefreshed,
+                                )
+                            }
                         }
-                    }
-                }
-                    .awaitAll()
+                    }.awaitAll()
             }
         }
 
@@ -506,11 +508,12 @@ class SubscriptionForegroundSync(
             subscriptionRepository: SubscriptionRepository,
         ) {
             try {
-                for (id in ids) {
-                    if (id.startsWith("rss:")) continue
-                    val entity = subscriptionRepository.getPodcastEntity(id) ?: continue
-                    subscriptionRepository.syncTrackedPodcastFeedUrl(entity.toPodcast())
-                }
+                ids
+                    .filter { !it.startsWith("rss:") }
+                    .mapNotNull { subscriptionRepository.getPodcastEntity(it) }
+                    .forEach { entity ->
+                        subscriptionRepository.syncTrackedPodcastFeedUrl(entity.toPodcast())
+                    }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -525,33 +528,58 @@ class SubscriptionForegroundSync(
             localEpisodeCatalog: LocalEpisodeCatalogPort?,
         ) {
             val now = System.currentTimeMillis()
-            for (id in ids) {
-                if (id.startsWith("rss:")) continue
-                val entity = subscriptionRepository.getPodcastEntity(id) ?: continue
-                if (TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl) != null) continue
-                val lastLookup = localEpisodeCatalog?.lastFeedUrlLookupAt(id) ?: 0L
-                if (lastLookup > 0L &&
-                    now - lastLookup < LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS
-                ) {
-                    continue
+            ids
+                .filter { !it.startsWith("rss:") }
+                .forEach { id ->
+                    recoverOneMissingFeedUrl(
+                        id = id,
+                        now = now,
+                        subscriptionRepository = subscriptionRepository,
+                        podcastRepository = podcastRepository,
+                        localEpisodeCatalog = localEpisodeCatalog,
+                    )
                 }
-                localEpisodeCatalog?.markFeedUrlLookup(id, now)
-                val details = runCatching { podcastRepository.getPodcastDetails(id) }.getOrNull()
-                val https = TrackedPodcastRtdbLogic.httpsFeedUrl(details?.feedUrl) ?: continue
-                subscriptionRepository.ensureHttpsFeedUrl(id, https)
+        }
+
+        private suspend fun recoverOneMissingFeedUrl(
+            id: String,
+            now: Long,
+            subscriptionRepository: SubscriptionRepository,
+            podcastRepository: PodcastRepository,
+            localEpisodeCatalog: LocalEpisodeCatalogPort?,
+        ) {
+            val entity = subscriptionRepository.getPodcastEntity(id) ?: return
+            if (TrackedPodcastRtdbLogic.httpsFeedUrl(entity.feedUrl) != null) return
+            val lastLookup = localEpisodeCatalog?.lastFeedUrlLookupAt(id) ?: 0L
+            if (lastLookup > 0L &&
+                now - lastLookup < LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS
+            ) {
+                return
             }
+            localEpisodeCatalog?.markFeedUrlLookup(id, now)
+            val details =
+                try {
+                    podcastRepository.getPodcastDetails(id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+            val https = TrackedPodcastRtdbLogic.httpsFeedUrl(details?.feedUrl) ?: return
+            subscriptionRepository.ensureHttpsFeedUrl(id, https)
         }
 
         private suspend fun httpsSubscribedIds(
             ids: Set<String>,
             subscriptionRepository: SubscriptionRepository,
         ): Set<String> =
-            ids.filter { id ->
-                !id.startsWith("rss:") &&
-                    TrackedPodcastRtdbLogic.httpsFeedUrl(
-                        subscriptionRepository.getPodcastEntity(id)?.feedUrl,
-                    ) != null
-            }.toSet()
+            ids
+                .filter { id ->
+                    !id.startsWith("rss:") &&
+                        TrackedPodcastRtdbLogic.httpsFeedUrl(
+                            subscriptionRepository.getPodcastEntity(id)?.feedUrl,
+                        ) != null
+                }.toSet()
 
         private suspend fun readyCatalogIds(
             ids: Set<String>,

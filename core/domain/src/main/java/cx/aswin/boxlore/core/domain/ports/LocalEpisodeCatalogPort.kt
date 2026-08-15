@@ -102,11 +102,17 @@ interface LocalEpisodeCatalogPort {
     ): Boolean
 
     /** Record a GET /podcast feedUrl lookup time for the daily retry. */
-    suspend fun markFeedUrlLookup(podcastId: String, atMillis: Long)
+    suspend fun markFeedUrlLookup(
+        podcastId: String,
+        atMillis: Long,
+    )
 
     suspend fun lastFeedUrlLookupAt(podcastId: String): Long
 
-    suspend fun setUnsubscribedTtl(podcastId: String, ttlExpiresAt: Long?)
+    suspend fun setUnsubscribedTtl(
+        podcastId: String,
+        ttlExpiresAt: Long?,
+    )
 
     suspend fun sweepExpired(nowMillis: Long)
 }

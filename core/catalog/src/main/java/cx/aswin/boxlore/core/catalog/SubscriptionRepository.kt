@@ -3,11 +3,11 @@ package cx.aswin.boxlore.core.catalog
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
-import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -16,75 +16,77 @@ class SubscriptionRepository(
     private val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
     private val lookupHttpsFeedUrl: (suspend (String) -> String?)? = null,
 ) {
+    val subscribedPodcastIds: Flow<Set<String>> =
+        podcastDao
+            .getSubscribedPodcasts()
+            .map { list -> list.map { it.podcastId }.toSet() }
 
-    val subscribedPodcastIds: Flow<Set<String>> = podcastDao.getSubscribedPodcasts()
-        .map { list -> list.map { it.podcastId }.toSet() }
-
-    fun getAllSubscribedPodcasts(): Flow<List<PodcastEntity>> {
-        return podcastDao.getSubscribedPodcasts()
-    }
+    fun getAllSubscribedPodcasts(): Flow<List<PodcastEntity>> = podcastDao.getSubscribedPodcasts()
 
     /** Room row for tip / feed-url lookups (Home direct-feed sync). */
-    suspend fun getPodcastEntity(podcastId: String): PodcastEntity? =
-        podcastDao.getPodcast(podcastId)
+    suspend fun getPodcastEntity(podcastId: String): PodcastEntity? = podcastDao.getPodcast(podcastId)
 
-    val subscribedPodcasts: Flow<List<Podcast>> = podcastDao.getSubscribedPodcasts()
-        .map { list ->
-            list.map { entity ->
-                Podcast(
-                    id = entity.podcastId,
-                    title = entity.title,
-                    artist = entity.author,
-                    imageUrl = entity.imageUrl,
-                    fallbackImageUrl = entity.latestEpisode?.imageUrl ?: "",
-                    description = entity.description,
-                    genre = entity.genre ?: "Podcast", // Use stored genre
-                    type = entity.type,
-                    latestEpisode = entity.latestEpisode,
-                    subscribedAt = entity.subscribedAt,
-                    podcastGuid = entity.podcastGuid,
-                    fundingUrl = entity.fundingUrl,
-                    fundingMessage = entity.fundingMessage,
-                    medium = entity.medium,
-                    hasValue = entity.hasValue,
-                    updateFrequency = entity.updateFrequency,
-                    location = entity.location,
-                    license = entity.license,
-                    isLocked = entity.isLocked,
-                    preferredSort = entity.preferredSort,
-                    notificationsEnabled = entity.notificationsEnabled,
-                    autoDownloadEnabled = entity.autoDownloadEnabled,
-                    skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
-                    skipEndingOverrideMs = entity.skipEndingOverrideMs,
-                    sourceType = entity.sourceType,
-                    feedUrl = entity.feedUrl,
-                    rssRefreshCapability = entity.rssRefreshCapability,
-                    rssCatalogStale = entity.rssCatalogStale,
-                    rssHasNewEpisodes = entity.rssHasNewEpisodes,
-                    linkedPodcastIndexId = entity.linkedPodcastIndexId,
-                )
+    val subscribedPodcasts: Flow<List<Podcast>> =
+        podcastDao
+            .getSubscribedPodcasts()
+            .map { list ->
+                list.map { entity ->
+                    Podcast(
+                        id = entity.podcastId,
+                        title = entity.title,
+                        artist = entity.author,
+                        imageUrl = entity.imageUrl,
+                        fallbackImageUrl = entity.latestEpisode?.imageUrl ?: "",
+                        description = entity.description,
+                        genre = entity.genre ?: "Podcast", // Use stored genre
+                        type = entity.type,
+                        latestEpisode = entity.latestEpisode,
+                        subscribedAt = entity.subscribedAt,
+                        podcastGuid = entity.podcastGuid,
+                        fundingUrl = entity.fundingUrl,
+                        fundingMessage = entity.fundingMessage,
+                        medium = entity.medium,
+                        hasValue = entity.hasValue,
+                        updateFrequency = entity.updateFrequency,
+                        location = entity.location,
+                        license = entity.license,
+                        isLocked = entity.isLocked,
+                        preferredSort = entity.preferredSort,
+                        notificationsEnabled = entity.notificationsEnabled,
+                        autoDownloadEnabled = entity.autoDownloadEnabled,
+                        skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
+                        skipEndingOverrideMs = entity.skipEndingOverrideMs,
+                        sourceType = entity.sourceType,
+                        feedUrl = entity.feedUrl,
+                        rssRefreshCapability = entity.rssRefreshCapability,
+                        rssCatalogStale = entity.rssCatalogStale,
+                        rssHasNewEpisodes = entity.rssHasNewEpisodes,
+                        linkedPodcastIndexId = entity.linkedPodcastIndexId,
+                    )
+                }
             }
-        }
 
     suspend fun toggleSubscription(podcast: Podcast) {
         val existing = podcastDao.getPodcast(podcast.id)
-        val linkedRss = if (!podcast.isRss) {
-            podcastDao.getRssPodcastLinkedTo(podcast.id)
-        } else {
-            null
-        }
+        val linkedRss =
+            if (!podcast.isRss) {
+                podcastDao.getRssPodcastLinkedTo(podcast.id)
+            } else {
+                null
+            }
         val activeEntity = linkedRss?.takeIf { it.isSubscribed } ?: existing
         val isCurrentlySubscribed = activeEntity?.isSubscribed == true
 
         if (isCurrentlySubscribed) {
             // Unsubscribe
             val target = checkNotNull(activeEntity)
-            val updated = target.copy(
-                isSubscribed = false,
-                subscribedAt = 0L,
-                notificationsEnabled = false,
-                autoDownloadEnabled = false,
-            )
+            val updated =
+                target.copy(
+                    isSubscribed = false,
+                    subscribedAt = 0L,
+                    notificationsEnabled = false,
+                    autoDownloadEnabled = false,
+                )
             podcastDao.upsert(updated)
             if (target.isRss) podcastDao.deleteRssEpisodes(target.podcastId)
             if (!podcast.isRss) {
@@ -95,64 +97,70 @@ class SubscriptionRepository(
                 )
             }
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
-                target = FeedbackTarget(
-                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                    podcastId = podcast.id,
-                    genre = podcast.genre,
-                ),
+                target =
+                    FeedbackTarget(
+                        episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                        podcastId = podcast.id,
+                        genre = podcast.genre,
+                    ),
                 action = RankingAction.UNSUBSCRIBE,
             )
         } else {
             // Subscribe (Upsert to ensure we have data for offline/Jump Back In)
-            val entity = PodcastEntity(
-                podcastId = podcast.id,
-                title = podcast.title,
-                author = podcast.artist,
-                imageUrl = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: existing?.imageUrl ?: "",
-                description = podcast.description,
-                isSubscribed = true,
-                subscribedAt = System.currentTimeMillis(),
-                genre = podcast.genre, // Persist genre for Smart Queue matching
-                type = podcast.type,
-                lastRefreshed = System.currentTimeMillis(),
-                latestEpisode = podcast.latestEpisode?.let { ep ->
-                    ep.copy(
-                        podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
-                        podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title
-                    )
-                },
-                podcastGuid = podcast.podcastGuid,
-                fundingUrl = podcast.fundingUrl,
-                fundingMessage = podcast.fundingMessage,
-                medium = podcast.medium,
-                hasValue = podcast.hasValue,
-                updateFrequency = podcast.updateFrequency,
-                location = podcast.location,
-                license = podcast.license,
-                isLocked = podcast.isLocked,
-                preferredSort = existing?.preferredSort, // Preserve existing sort preference
-                notificationsEnabled = false, // Off by default
-                autoDownloadEnabled = false,
-                skipBeginningOverrideMs = existing?.skipBeginningOverrideMs
-                    ?: podcast.skipBeginningOverrideMs,
-                skipEndingOverrideMs = existing?.skipEndingOverrideMs
-                    ?: podcast.skipEndingOverrideMs,
-                sourceType = podcast.sourceType,
-                feedUrl = podcast.feedUrl,
-                rssRefreshCapability = podcast.rssRefreshCapability,
-                rssCatalogStale = podcast.rssCatalogStale,
-                rssHasNewEpisodes = podcast.rssHasNewEpisodes,
-                linkedPodcastIndexId = podcast.linkedPodcastIndexId,
-            )
+            val entity =
+                PodcastEntity(
+                    podcastId = podcast.id,
+                    title = podcast.title,
+                    author = podcast.artist,
+                    imageUrl = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: existing?.imageUrl ?: "",
+                    description = podcast.description,
+                    isSubscribed = true,
+                    subscribedAt = System.currentTimeMillis(),
+                    genre = podcast.genre, // Persist genre for Smart Queue matching
+                    type = podcast.type,
+                    lastRefreshed = System.currentTimeMillis(),
+                    latestEpisode =
+                        podcast.latestEpisode?.let { ep ->
+                            ep.copy(
+                                podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
+                                podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title,
+                            )
+                        },
+                    podcastGuid = podcast.podcastGuid,
+                    fundingUrl = podcast.fundingUrl,
+                    fundingMessage = podcast.fundingMessage,
+                    medium = podcast.medium,
+                    hasValue = podcast.hasValue,
+                    updateFrequency = podcast.updateFrequency,
+                    location = podcast.location,
+                    license = podcast.license,
+                    isLocked = podcast.isLocked,
+                    preferredSort = existing?.preferredSort, // Preserve existing sort preference
+                    notificationsEnabled = false, // Off by default
+                    autoDownloadEnabled = false,
+                    skipBeginningOverrideMs =
+                        existing?.skipBeginningOverrideMs
+                            ?: podcast.skipBeginningOverrideMs,
+                    skipEndingOverrideMs =
+                        existing?.skipEndingOverrideMs
+                            ?: podcast.skipEndingOverrideMs,
+                    sourceType = podcast.sourceType,
+                    feedUrl = podcast.feedUrl,
+                    rssRefreshCapability = podcast.rssRefreshCapability,
+                    rssCatalogStale = podcast.rssCatalogStale,
+                    rssHasNewEpisodes = podcast.rssHasNewEpisodes,
+                    linkedPodcastIndexId = podcast.linkedPodcastIndexId,
+                )
             podcastDao.upsert(entity)
             localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
             recoverFeedUrlIfMissing(podcast)
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
-                target = FeedbackTarget(
-                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                    podcastId = podcast.id,
-                    genre = podcast.genre,
-                ),
+                target =
+                    FeedbackTarget(
+                        episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                        podcastId = podcast.id,
+                        genre = podcast.genre,
+                    ),
                 action = RankingAction.SUBSCRIBE,
             )
         }
@@ -171,68 +179,78 @@ class SubscriptionRepository(
         val isNewSubscription = existing?.isSubscribed != true
         val preferredSortVal = existing?.preferredSort ?: if (podcast.type == "serial") "oldest" else "newest"
         val typeVal = if (preferredSortVal == "oldest" || podcast.type == "serial") "serial" else "episodic"
-        val entity = PodcastEntity(
-            podcastId = podcast.id,
-            title = podcast.title,
-            author = podcast.artist,
-            imageUrl = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: existing?.imageUrl ?: "",
-            description = podcast.description,
-            isSubscribed = true,
-            subscribedAt = if (existing?.isSubscribed == true) existing.subscribedAt else System.currentTimeMillis(),
-            genre = podcast.genre,
-            type = typeVal,
-            lastRefreshed = existing?.lastRefreshed ?: System.currentTimeMillis(),
-            latestEpisode = (podcast.latestEpisode ?: existing?.latestEpisode)?.let { ep ->
-                ep.copy(
-                    podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
-                    podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title
-                )
-            },
-            podcastGuid = existing?.podcastGuid ?: podcast.podcastGuid,
-            fundingUrl = existing?.fundingUrl ?: podcast.fundingUrl,
-            fundingMessage = existing?.fundingMessage ?: podcast.fundingMessage,
-            medium = existing?.medium ?: podcast.medium,
-            hasValue = existing?.hasValue ?: podcast.hasValue,
-            updateFrequency = existing?.updateFrequency ?: podcast.updateFrequency,
-            location = existing?.location ?: podcast.location,
-            license = existing?.license ?: podcast.license,
-            isLocked = existing?.isLocked ?: podcast.isLocked,
-            preferredSort = preferredSortVal,
-            notificationsEnabled = false, // Off by default
-            autoDownloadEnabled = false,
-            skipBeginningOverrideMs = existing?.skipBeginningOverrideMs
-                ?: podcast.skipBeginningOverrideMs,
-            skipEndingOverrideMs = existing?.skipEndingOverrideMs
-                ?: podcast.skipEndingOverrideMs,
-            sourceType = existing?.sourceType ?: podcast.sourceType,
-            feedUrl = existing?.feedUrl ?: podcast.feedUrl,
-            feedEtag = existing?.feedEtag,
-            feedLastModified = existing?.feedLastModified,
-            feedDeclaredUpdatedAt = existing?.feedDeclaredUpdatedAt,
-            rssRefreshCapability = existing?.rssRefreshCapability
-                ?: podcast.rssRefreshCapability,
-            lastRssSyncAt = existing?.lastRssSyncAt ?: 0L,
-            rssCatalogStale = existing?.rssCatalogStale ?: podcast.rssCatalogStale,
-            rssHasNewEpisodes = existing?.rssHasNewEpisodes ?: podcast.rssHasNewEpisodes,
-            linkedPodcastIndexId = existing?.linkedPodcastIndexId
-                ?: podcast.linkedPodcastIndexId,
-        )
+        val entity =
+            PodcastEntity(
+                podcastId = podcast.id,
+                title = podcast.title,
+                author = podcast.artist,
+                imageUrl = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: existing?.imageUrl ?: "",
+                description = podcast.description,
+                isSubscribed = true,
+                subscribedAt = if (existing?.isSubscribed == true) existing.subscribedAt else System.currentTimeMillis(),
+                genre = podcast.genre,
+                type = typeVal,
+                lastRefreshed = existing?.lastRefreshed ?: System.currentTimeMillis(),
+                latestEpisode =
+                    (podcast.latestEpisode ?: existing?.latestEpisode)?.let { ep ->
+                        ep.copy(
+                            podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
+                            podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title,
+                        )
+                    },
+                podcastGuid = existing?.podcastGuid ?: podcast.podcastGuid,
+                fundingUrl = existing?.fundingUrl ?: podcast.fundingUrl,
+                fundingMessage = existing?.fundingMessage ?: podcast.fundingMessage,
+                medium = existing?.medium ?: podcast.medium,
+                hasValue = existing?.hasValue ?: podcast.hasValue,
+                updateFrequency = existing?.updateFrequency ?: podcast.updateFrequency,
+                location = existing?.location ?: podcast.location,
+                license = existing?.license ?: podcast.license,
+                isLocked = existing?.isLocked ?: podcast.isLocked,
+                preferredSort = preferredSortVal,
+                notificationsEnabled = false, // Off by default
+                autoDownloadEnabled = false,
+                skipBeginningOverrideMs =
+                    existing?.skipBeginningOverrideMs
+                        ?: podcast.skipBeginningOverrideMs,
+                skipEndingOverrideMs =
+                    existing?.skipEndingOverrideMs
+                        ?: podcast.skipEndingOverrideMs,
+                sourceType = existing?.sourceType ?: podcast.sourceType,
+                feedUrl = existing?.feedUrl ?: podcast.feedUrl,
+                feedEtag = existing?.feedEtag,
+                feedLastModified = existing?.feedLastModified,
+                feedDeclaredUpdatedAt = existing?.feedDeclaredUpdatedAt,
+                rssRefreshCapability =
+                    existing?.rssRefreshCapability
+                        ?: podcast.rssRefreshCapability,
+                lastRssSyncAt = existing?.lastRssSyncAt ?: 0L,
+                rssCatalogStale = existing?.rssCatalogStale ?: podcast.rssCatalogStale,
+                rssHasNewEpisodes = existing?.rssHasNewEpisodes ?: podcast.rssHasNewEpisodes,
+                linkedPodcastIndexId =
+                    existing?.linkedPodcastIndexId
+                        ?: podcast.linkedPodcastIndexId,
+            )
         podcastDao.upsert(entity)
         localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
         recoverFeedUrlIfMissing(podcast)
         if (isNewSubscription) {
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
-                target = FeedbackTarget(
-                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                    podcastId = podcast.id,
-                    genre = podcast.genre,
-                ),
+                target =
+                    FeedbackTarget(
+                        episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                        podcastId = podcast.id,
+                        genre = podcast.genre,
+                    ),
                 action = RankingAction.SUBSCRIBE,
             )
         }
     }
 
-    suspend fun setNotificationsEnabled(podcast: Podcast, enabled: Boolean) {
+    suspend fun setNotificationsEnabled(
+        podcast: Podcast,
+        enabled: Boolean,
+    ) {
         if (podcast.isRss) {
             podcastDao.setNotificationsEnabled(podcast.id, false)
             podcastDao.setAutoDownloadEnabled(podcast.id, false)
@@ -284,14 +302,17 @@ class SubscriptionRepository(
     ) {
         try {
             if (isSubscribed) {
-                val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance()
-                    .getReference("tracked_podcasts")
-                    .child(podcastId)
-                
+                val dbRef =
+                    com.google.firebase.database.FirebaseDatabase
+                        .getInstance()
+                        .getReference("tracked_podcasts")
+                        .child(podcastId)
+
                 val data = TrackedPodcastRtdbLogic.payload(title, imageUrl, feedUrl)
                 dbRef.setValue(data)
-                
-                com.google.firebase.messaging.FirebaseMessaging.getInstance()
+
+                com.google.firebase.messaging.FirebaseMessaging
+                    .getInstance()
                     .subscribeToTopic("new_ep_$podcastId")
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
@@ -301,13 +322,16 @@ class SubscriptionRepository(
                         }
                     }
             } else {
-                val dbRef = com.google.firebase.database.FirebaseDatabase.getInstance()
-                    .getReference("tracked_podcasts")
-                    .child(podcastId)
+                val dbRef =
+                    com.google.firebase.database.FirebaseDatabase
+                        .getInstance()
+                        .getReference("tracked_podcasts")
+                        .child(podcastId)
                 // Keep the tracked node (unsubscribe does not delete it) but drop
                 // feedUrl so Check New Episodes stops polling the publisher feed.
                 dbRef.child("feedUrl").removeValue()
-                com.google.firebase.messaging.FirebaseMessaging.getInstance()
+                com.google.firebase.messaging.FirebaseMessaging
+                    .getInstance()
                     .unsubscribeFromTopic("new_ep_$podcastId")
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
@@ -331,18 +355,20 @@ class SubscriptionRepository(
          */
         markAsNew: Boolean = false,
     ) {
-        val enrichedEpisode = episode?.let { ep ->
-            val resolvedTitle = if (ep.podcastTitle.isNullOrBlank()) {
-                val podcast = podcastDao.getPodcast(podcastId)
-                podcast?.title
-            } else {
-                ep.podcastTitle
+        val enrichedEpisode =
+            episode?.let { ep ->
+                val resolvedTitle =
+                    if (ep.podcastTitle.isNullOrBlank()) {
+                        val podcast = podcastDao.getPodcast(podcastId)
+                        podcast?.title
+                    } else {
+                        ep.podcastTitle
+                    }
+                ep.copy(
+                    podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcastId,
+                    podcastTitle = resolvedTitle,
+                )
             }
-            ep.copy(
-                podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcastId,
-                podcastTitle = resolvedTitle
-            )
-        }
         val existing = podcastDao.getPodcast(podcastId)?.latestEpisode
         if (enrichedEpisode != null &&
             !LatestEpisodeTipLogic.shouldReplace(existing, enrichedEpisode)
@@ -350,7 +376,8 @@ class SubscriptionRepository(
             return
         }
         podcastDao.updateLatestEpisode(podcastId, enrichedEpisode)
-        if (enrichedEpisode != null &&
+        if (markAsNew &&
+            enrichedEpisode != null &&
             LatestEpisodeTipLogic.isNewerPublish(existing, enrichedEpisode)
         ) {
             podcastDao.markHasNewEpisodes(podcastId)
@@ -365,12 +392,18 @@ class SubscriptionRepository(
         podcastDao.clearRssNewEpisodesFlag(podcastId)
     }
 
-    suspend fun updatePreferredSort(podcastId: String, sort: String?) {
+    suspend fun updatePreferredSort(
+        podcastId: String,
+        sort: String?,
+    ) {
         val type = if (sort == "oldest") "serial" else "episodic"
         podcastDao.updatePreferredSortAndType(podcastId, sort, type)
     }
 
-    suspend fun setAutoDownloadEnabled(podcastId: String, enabled: Boolean) {
+    suspend fun setAutoDownloadEnabled(
+        podcastId: String,
+        enabled: Boolean,
+    ) {
         if (podcastDao.getPodcast(podcastId)?.isRss == true) {
             podcastDao.setAutoDownloadEnabled(podcastId, false)
             return
@@ -443,7 +476,11 @@ class SubscriptionRepository(
         if (podcast.isRss) return
         val stored = podcastDao.getPodcast(podcast.id)?.feedUrl
         if (TrackedPodcastRtdbLogic.httpsFeedUrl(stored) != null) return
-        if (TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl) != null) return
+        val supplied = TrackedPodcastRtdbLogic.httpsFeedUrl(podcast.feedUrl)
+        if (supplied != null) {
+            ensureHttpsFeedUrl(podcast.id, supplied)
+            return
+        }
         val recovered = lookupHttpsFeedUrl?.invoke(podcast.id) ?: return
         ensureHttpsFeedUrl(podcast.id, recovered)
     }

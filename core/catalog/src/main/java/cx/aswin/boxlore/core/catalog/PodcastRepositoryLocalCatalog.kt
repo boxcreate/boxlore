@@ -18,10 +18,15 @@ internal suspend fun PodcastRepository.isLocalCatalogReady(podcastId: String): B
     }
 }
 
-internal suspend fun PodcastRepository.localCatalogMeta(
-    podcastId: String,
-): LocalEpisodeCatalogPort.PodcastMeta {
-    val local = runCatching { rssRepository.getPodcast(podcastId) }.getOrNull()
+internal suspend fun PodcastRepository.localCatalogMeta(podcastId: String): LocalEpisodeCatalogPort.PodcastMeta {
+    val local =
+        try {
+            rssRepository.getPodcast(podcastId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
     return LocalEpisodeCatalogPort.PodcastMeta(
         title = local?.title,
         imageUrl = local?.imageUrl,
@@ -55,15 +60,14 @@ internal suspend fun PodcastRepository.searchLocalCatalog(
     return catalog.search(podcastId, query, localCatalogMeta(podcastId))
 }
 
-internal suspend fun PodcastRepository.loadLocalCatalogTips(
-    podcastIndexIds: List<String>,
-): Map<String, Episode> {
+internal suspend fun PodcastRepository.loadLocalCatalogTips(podcastIndexIds: List<String>): Map<String, Episode> {
     val catalog = localEpisodeCatalog ?: return emptyMap()
     if (podcastIndexIds.isEmpty()) return emptyMap()
-    return podcastIndexIds.mapNotNull { id ->
-        val tip = catalog.newest(id, localCatalogMeta(id)) ?: return@mapNotNull null
-        id to tip
-    }.toMap()
+    return podcastIndexIds
+        .mapNotNull { id ->
+            val tip = catalog.newest(id, localCatalogMeta(id)) ?: return@mapNotNull null
+            id to tip
+        }.toMap()
 }
 
 internal suspend fun PodcastRepository.getLocalCatalogWindow(

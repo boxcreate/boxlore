@@ -39,14 +39,15 @@ class LocalCatalogOrphanRematchTest {
         assertTrue(LocalCatalogOrphanRematch.shouldRematch(null))
         assertEquals(
             "-8",
-            LocalCatalogOrphanRematch.rematch(
-                resolved = null,
-                candidates = catalog,
-                guid = null,
-                enclosureUrl = "https://cdn.example.com/ep.mp3",
-                title = "Other",
-                publishedDate = 1L,
-            )?.id,
+            LocalCatalogOrphanRematch
+                .rematch(
+                    resolved = null,
+                    candidates = catalog,
+                    guid = null,
+                    enclosureUrl = "https://cdn.example.com/ep.mp3",
+                    title = "Other",
+                    publishedDate = 1L,
+                )?.id,
         )
     }
 
@@ -54,14 +55,43 @@ class LocalCatalogOrphanRematchTest {
     fun rematchFallsBackToTitleAndDate() {
         assertEquals(
             "-8",
-            LocalCatalogOrphanRematch.rematch(
-                resolved = null,
-                candidates = catalog,
-                guid = null,
-                enclosureUrl = "",
-                title = "Matched",
-                publishedDate = 100L,
-            )?.id,
+            LocalCatalogOrphanRematch
+                .rematch(
+                    resolved = null,
+                    candidates = catalog,
+                    guid = null,
+                    enclosureUrl = "",
+                    title = "Matched",
+                    publishedDate = 100L,
+                )?.id,
+        )
+    }
+
+    @Test
+    fun rematchPrefersGuidOverEnclosure() {
+        val other =
+            TestFixtures.episode(
+                id = "-7",
+                title = "Other",
+                audioUrl = "https://cdn.example.com/other.mp3",
+                publishedDate = 50L,
+            )
+        val keyed =
+            listOf(
+                LocalCatalogOrphanRematch.Candidate(other, guid = "g-other"),
+                LocalCatalogOrphanRematch.Candidate(catalog.first(), guid = "g-match"),
+            )
+        assertEquals(
+            "-8",
+            LocalCatalogOrphanRematch
+                .rematch(
+                    resolved = null,
+                    candidates = keyed,
+                    guid = "g-match",
+                    enclosureUrl = "https://cdn.example.com/other.mp3",
+                    title = "Other",
+                    publishedDate = 50L,
+                )?.id,
         )
     }
 }

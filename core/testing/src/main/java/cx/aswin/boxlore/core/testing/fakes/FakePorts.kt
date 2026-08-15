@@ -50,6 +50,9 @@ class FakeLocalEpisodeCatalogPort(
     var readyIds: Set<String> = emptySet(),
     var episodes: MutableMap<String, Episode> = mutableMapOf(),
 ) : LocalEpisodeCatalogPort {
+    var refreshCalls: Int = 0
+    var refreshError: Throwable? = null
+
     override suspend fun isReady(podcastId: String): Boolean = podcastId in readyIds
 
     override suspend fun getPage(
@@ -58,7 +61,20 @@ class FakeLocalEpisodeCatalogPort(
         offset: Int,
         sort: String,
         meta: LocalEpisodeCatalogPort.PodcastMeta,
-    ): List<Episode> = episodes.values.filter { it.podcastId == podcastId }
+    ): List<Episode> {
+        val filtered = episodes.values.filter { it.podcastId == podcastId }
+        val sorted =
+            if (sort == "oldest") {
+                filtered.sortedWith(
+                    compareBy<Episode> { it.publishedDate }.thenByDescending { it.id },
+                )
+            } else {
+                filtered.sortedWith(
+                    compareByDescending<Episode> { it.publishedDate }.thenBy { it.id },
+                )
+            }
+        return sorted.drop(offset.coerceAtLeast(0)).take(limit.coerceAtLeast(0))
+    }
 
     override suspend fun getWindow(
         podcastId: String,
@@ -66,7 +82,7 @@ class FakeLocalEpisodeCatalogPort(
         bound: Int,
         aroundEpisodeId: String?,
         meta: LocalEpisodeCatalogPort.PodcastMeta,
-    ): List<Episode> = getPage(podcastId, bound, 0, sort, meta).take(bound)
+    ): List<Episode> = getPage(podcastId, bound, 0, sort, meta)
 
     override suspend fun getEpisode(
         episodeId: String,
@@ -78,38 +94,64 @@ class FakeLocalEpisodeCatalogPort(
         guid: String?,
         enclosureUrl: String?,
         meta: LocalEpisodeCatalogPort.PodcastMeta,
-    ): Episode? =
-        episodes.values.firstOrNull {
-            it.podcastId == podcastId &&
-                (enclosureUrl.isNullOrBlank() || it.audioUrl == enclosureUrl)
+    ): Episode? {
+        val wantedGuid = guid?.trim().orEmpty()
+        val enclosure = enclosureUrl?.trim().orEmpty()
+        if (wantedGuid.isEmpty() && enclosure.isEmpty()) return null
+        return episodes.values.firstOrNull { episode ->
+            episode.podcastId == podcastId &&
+                (
+                    (wantedGuid.isNotEmpty() && episode.id == wantedGuid) ||
+                        (enclosure.isNotEmpty() && episode.audioUrl.trim() == enclosure)
+                )
         }
+    }
 
     override suspend fun search(
         podcastId: String,
         query: String,
         meta: LocalEpisodeCatalogPort.PodcastMeta,
-    ): List<Episode> = getPage(podcastId, 50, 0, "newest", meta)
+    ): List<Episode> {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return emptyList()
+        return episodes.values.filter { episode ->
+            episode.podcastId == podcastId &&
+                (
+                    episode.title.contains(trimmed, ignoreCase = true) ||
+                        episode.description.contains(trimmed, ignoreCase = true)
+                )
+        }
+    }
 
     override suspend fun newest(
         podcastId: String,
         meta: LocalEpisodeCatalogPort.PodcastMeta,
     ): Episode? = episodes.values.filter { it.podcastId == podcastId }.maxByOrNull { it.publishedDate }
 
-    override suspend fun count(podcastId: String): Int =
-        episodes.values.count { it.podcastId == podcastId }
+    override suspend fun count(podcastId: String): Int = episodes.values.count { it.podcastId == podcastId }
 
-    override suspend fun refresh(
-        request: LocalEpisodeCatalogPort.RefreshRequest,
-    ): LocalEpisodeCatalogPort.RefreshOutcome =
-        LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(newest(request.podcastIndexId))
+    override suspend fun refresh(request: LocalEpisodeCatalogPort.RefreshRequest): LocalEpisodeCatalogPort.RefreshOutcome {
+        refreshCalls += 1
+        refreshError?.let { throw it }
+        return LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(newest(request.podcastIndexId))
+    }
 
-    override suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String): Boolean = true
+    override suspend fun isPublisherFeedUnchanged(
+        podcastId: String,
+        feedUrl: String,
+    ): Boolean = true
 
-    override suspend fun markFeedUrlLookup(podcastId: String, atMillis: Long) = Unit
+    override suspend fun markFeedUrlLookup(
+        podcastId: String,
+        atMillis: Long,
+    ) = Unit
 
     override suspend fun lastFeedUrlLookupAt(podcastId: String): Long = 0L
 
-    override suspend fun setUnsubscribedTtl(podcastId: String, ttlExpiresAt: Long?) = Unit
+    override suspend fun setUnsubscribedTtl(
+        podcastId: String,
+        ttlExpiresAt: Long?,
+    ) = Unit
 
     override suspend fun sweepExpired(nowMillis: Long) = Unit
 }

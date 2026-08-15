@@ -52,8 +52,11 @@ class NewEpisodePushHydrationTest {
                     podcastId = "123",
                     payloadFeedUrl = "https://feeds.example/show.xml",
                     payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
-                    subscriptionRepository = subscriptionRepository,
-                    episodeSupplementPort = port,
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            episodeSupplementPort = port,
+                        ),
                 )
             assertNull(result)
             assertEquals(0, port.resolveCalls)
@@ -92,9 +95,12 @@ class NewEpisodePushHydrationTest {
                     podcastId = "123",
                     payloadFeedUrl = "https://feeds.example/show.xml",
                     payloadEnclosureUrl = null,
-                    subscriptionRepository = subscriptionRepository,
-                    episodeSupplementPort = port,
-                    loadPiBaseline = { emptyList() },
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            episodeSupplementPort = port,
+                            loadPiBaseline = { emptyList() },
+                        ),
                 )
             assertNull(result)
             assertEquals(1, port.refreshCalls)
@@ -132,8 +138,11 @@ class NewEpisodePushHydrationTest {
                     podcastId = "123",
                     payloadFeedUrl = "https://feeds.example/show.xml",
                     payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
-                    subscriptionRepository = subscriptionRepository,
-                    episodeSupplementPort = port,
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            episodeSupplementPort = port,
+                        ),
                 )
             assertEquals("-8", result?.id)
         }
@@ -163,8 +172,11 @@ class NewEpisodePushHydrationTest {
                     podcastId = "123",
                     payloadFeedUrl = "https://feeds.example/show.xml",
                     payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
-                    subscriptionRepository = subscriptionRepository,
-                    episodeSupplementPort = port,
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            episodeSupplementPort = port,
+                        ),
                 )
             assertNull(result)
             assertNull(subscriptionRepository.getPodcastEntity("123")?.latestEpisode)
@@ -204,8 +216,11 @@ class NewEpisodePushHydrationTest {
                     payloadFeedUrl = "https://feeds.example/show.xml",
                     payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
                     payloadGuid = "guid-ep",
-                    subscriptionRepository = subscriptionRepository,
-                    episodeSupplementPort = port,
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            episodeSupplementPort = port,
+                        ),
                 )
             assertEquals("-8", result?.id)
             assertEquals(1, port.refreshCalls)
@@ -247,8 +262,11 @@ class NewEpisodePushHydrationTest {
                     payloadFeedUrl = "https://feeds.example/show.xml",
                     payloadEnclosureUrl = null,
                     payloadGuid = "guid-ep",
-                    subscriptionRepository = subscriptionRepository,
-                    episodeSupplementPort = port,
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            episodeSupplementPort = port,
+                        ),
                 )
             assertEquals("-9", result?.id)
             assertEquals("guid-ep", port.lastMatch?.guid)
@@ -288,8 +306,11 @@ class NewEpisodePushHydrationTest {
                     payloadFeedUrl = "https://feeds.example/show.xml",
                     payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
                     payloadGuid = "guid-missing",
-                    subscriptionRepository = subscriptionRepository,
-                    episodeSupplementPort = port,
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            episodeSupplementPort = port,
+                        ),
                 )
             assertNull(result)
         }
@@ -308,6 +329,153 @@ class NewEpisodePushHydrationTest {
             loader("123")
             assertEquals("123", seenFeed)
             assertEquals(1000, seenLimit)
+        }
+
+    @Test
+    fun localCatalogMatchesEnclosureAndSkipsBlankKeys() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+            val catalog =
+                cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+                    readyIds = setOf("123"),
+                    episodes = mutableMapOf("-8" to cached),
+                )
+            val matched =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                    payloadGuid = "guid-ep",
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            localEpisodeCatalog = catalog,
+                        ),
+                )
+            assertEquals("-8", matched?.id)
+            assertEquals(1, catalog.refreshCalls)
+            val blank =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = null,
+                    payloadGuid = null,
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            localEpisodeCatalog = catalog,
+                        ),
+                )
+            assertNull(blank)
+        }
+
+    @Test
+    fun localCatalogStillResolvesAfterRefreshFailure() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+            val catalog =
+                cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+                    readyIds = setOf("123"),
+                    episodes = mutableMapOf("-8" to cached),
+                )
+            catalog.refreshError = IllegalStateException("feed down")
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            localEpisodeCatalog = catalog,
+                        ),
+                )
+            assertEquals("-8", result?.id)
+        }
+
+    @Test
+    fun localCatalogPropagatesCancellation() {
+        val catalog =
+            cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+                readyIds = setOf("123"),
+            )
+        catalog.refreshError = kotlinx.coroutines.CancellationException("cancelled")
+        val error =
+            kotlin
+                .runCatching {
+                    runBlocking {
+                        NewEpisodePushHydration.resolveLocalEpisode(
+                            podcastId = "123",
+                            payloadFeedUrl = "https://feeds.example/show.xml",
+                            payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                            sources =
+                                NewEpisodePushHydration.Sources(
+                                    subscriptionRepository = subscriptionRepository,
+                                    localEpisodeCatalog = catalog,
+                                ),
+                        )
+                    }
+                }.exceptionOrNull()
+        assertTrue(error is kotlinx.coroutines.CancellationException)
+    }
+
+    @Test
+    fun localCatalogReturnsNullWhenPayloadDoesNotMatch() =
+        runBlocking {
+            subscriptionRepository.subscribe(
+                Podcast(
+                    id = "123",
+                    title = "Show",
+                    artist = "A",
+                    imageUrl = "https://img",
+                    description = "d",
+                    genre = "News",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+            val catalog =
+                cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+                    readyIds = setOf("123"),
+                    episodes =
+                        mutableMapOf(
+                            "-8" to episode("-8", audioUrl = "https://cdn.example.com/ep.mp3"),
+                        ),
+                )
+            val result =
+                NewEpisodePushHydration.resolveLocalEpisode(
+                    podcastId = "123",
+                    payloadFeedUrl = "https://feeds.example/show.xml",
+                    payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
+                    payloadGuid = "guid-missing",
+                    sources =
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = subscriptionRepository,
+                            localEpisodeCatalog = catalog,
+                        ),
+                )
+            assertNull(result)
         }
 
     private fun episode(

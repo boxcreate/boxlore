@@ -8,11 +8,16 @@ import cx.aswin.boxlore.core.model.Episode
  * must not badge or rewrite the tip (sticky identity).
  */
 internal object LatestEpisodeTipLogic {
-    fun shouldReplace(existing: Episode?, incoming: Episode): Boolean {
+    fun shouldReplace(
+        existing: Episode?,
+        incoming: Episode,
+    ): Boolean {
         if (existing == null) return true
         return incoming.publishedDate > existing.publishedDate
     }
 
-    fun isNewerPublish(existing: Episode?, incoming: Episode): Boolean =
-        existing != null && incoming.publishedDate > existing.publishedDate
+    fun isNewerPublish(
+        existing: Episode?,
+        incoming: Episode,
+    ): Boolean = existing != null && incoming.publishedDate > existing.publishedDate
 }

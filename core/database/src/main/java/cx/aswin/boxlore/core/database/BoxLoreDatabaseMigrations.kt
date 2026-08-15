@@ -114,6 +114,12 @@ object BoxLoreDatabaseMigrations {
      * extras **keeping episodeId**. Old supplement tables stay for dual-read.
      */
     fun migrate31To32(db: SupportSQLiteDatabase) {
+        createLocalCatalogTables(db)
+        copySupplementFeedsIntoLocalCatalog(db)
+        copySupplementItemsIntoLocalCatalog(db)
+    }
+
+    private fun createLocalCatalogTables(db: SupportSQLiteDatabase) {
         db.execSQL(
             """
             CREATE TABLE IF NOT EXISTS local_episode_feeds (
@@ -163,6 +169,9 @@ object BoxLoreDatabaseMigrations {
             "CREATE INDEX IF NOT EXISTS index_local_episodes_podcastId_publishedDate_episodeId " +
                 "ON local_episodes(podcastId, publishedDate, episodeId)",
         )
+    }
+
+    private fun copySupplementFeedsIntoLocalCatalog(db: SupportSQLiteDatabase) {
         db.execSQL(
             """
             INSERT INTO local_episode_feeds (
@@ -192,6 +201,9 @@ object BoxLoreDatabaseMigrations {
             FROM episode_supplements s
             """.trimIndent(),
         )
+    }
+
+    private fun copySupplementItemsIntoLocalCatalog(db: SupportSQLiteDatabase) {
         db.execSQL(
             """
             INSERT INTO local_episodes (
@@ -203,11 +215,7 @@ object BoxLoreDatabaseMigrations {
             SELECT
                 episodeId,
                 podcastId,
-                COALESCE(
-                    NULLIF(TRIM(guid), ''),
-                    NULLIF(TRIM(audioUrl), ''),
-                    'id:' || episodeId
-                ),
+                $LOCAL_CATALOG_MIGRATION_KEY,
                 title,
                 description,
                 audioUrl,
@@ -226,4 +234,20 @@ object BoxLoreDatabaseMigrations {
             """.trimIndent(),
         )
     }
+
+    private const val LOCAL_CATALOG_MIGRATION_KEY = """
+                CASE
+                  WHEN TRIM(IFNULL(guid, '')) != '' AND (
+                    SELECT COUNT(*) FROM episode_supplement_items x
+                    WHERE x.podcastId = episode_supplement_items.podcastId
+                      AND TRIM(IFNULL(x.guid, '')) = TRIM(episode_supplement_items.guid)
+                  ) = 1 THEN TRIM(guid)
+                  WHEN TRIM(IFNULL(audioUrl, '')) != '' AND (
+                    SELECT COUNT(*) FROM episode_supplement_items x
+                    WHERE x.podcastId = episode_supplement_items.podcastId
+                      AND TRIM(IFNULL(x.audioUrl, '')) = TRIM(episode_supplement_items.audioUrl)
+                  ) = 1 THEN TRIM(audioUrl)
+                  ELSE 'id:' || episodeId
+                END
+    """
 }

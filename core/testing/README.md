@@ -8,6 +8,7 @@ Owns shared JVM test fixtures, dispatcher helpers, and architecture guards used 
 
 - `MainDispatcherExtension` installs a test main dispatcher for a test scope.
 - `TestFixtures` provides minimal podcast and episode builders.
+- `fakes.FakeLocalEpisodeCatalogPort` pages/sorts/searches in memory and returns null from `findByCatalogKey` when guid and enclosure are both blank.
 - Test dependencies such as JUnit Jupiter, coroutines-test, Turbine, and MockWebServer are exposed for modules that declare `testImplementation(projects.core.testing)`.
 - Architecture guards under `src/test` validate project structure and dependency rules.
 
@@ -17,6 +18,7 @@ Owns shared JVM test fixtures, dispatcher helpers, and architecture guards used 
 src/main/java/cx/aswin/boxlore/core/testing/
   MainDispatcherExtension.kt
   TestFixtures.kt
+  fakes/FakePorts.kt
 src/test/java/cx/aswin/boxlore/core/testing/architecture/
   ArchitectureGuardTest.kt
   GlossaryCoverageGuardTest.kt   # CSV ↔ AnalyticsGlossary ↔ emission inventory

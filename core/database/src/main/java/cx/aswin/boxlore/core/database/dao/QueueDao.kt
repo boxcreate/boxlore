@@ -36,7 +36,7 @@ interface QueueDao {
     suspend fun updateQueuePositions(items: List<QueueItem>) {
         items.forEach { updateQueueItem(it) }
     }
-    
+
     @Query("SELECT MAX(position) FROM queue_items")
     suspend fun getMaxPosition(): Int?
 

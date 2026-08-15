@@ -7,8 +7,8 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
-import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -105,10 +105,14 @@ class AppContainer(
             database = database,
             loadListenerEpisodeIds = { podcastId ->
                 val history =
-                    database.listeningHistoryDao().getHistoryForPodcast(podcastId)
+                    database
+                        .listeningHistoryDao()
+                        .getHistoryForPodcast(podcastId)
                         .map { it.episodeId }
                 val downloads =
-                    database.downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
+                    database
+                        .downloadedEpisodeDao()
+                        .getDownloadsForPodcast(podcastId)
                         .map { it.episodeId }
                 val queue = database.queueDao().getEpisodeIdsForPodcast(podcastId)
                 (history + downloads + queue).toSet()

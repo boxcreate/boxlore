@@ -88,6 +88,69 @@ class LocalEpisodeCatalogPersistTest {
         assertTrue(rows.isEmpty())
     }
 
+    @Test
+    fun enclosureOnlyStoresEnclosureAsGuid() {
+        val parsed = listOf(rssEpisode(guid = null, audioUrl = "https://cdn.example/enc.mp3"))
+        val rows =
+            LocalEpisodeCatalogPersist.toLocalEpisodes(
+                podcastIndexId = "100",
+                rssNamespaceId = namespace,
+                parsed = parsed,
+                existing = emptyList(),
+                piBaseline = null,
+                channelImageUrl = null,
+                showImageUrl = null,
+            )
+        assertEquals("https://cdn.example/enc.mp3", rows.single().guid)
+    }
+
+    @Test
+    fun guidChangeMintsNewIdAndDoesNotReuseOldRow() {
+        val parsed = listOf(rssEpisode(guid = "g2", audioUrl = "https://cdn.example/a.mp3"))
+        val existing =
+            listOf(LocalEpisodeIdentity(episodeId = "-9", guid = "g1", audioUrl = "https://cdn.example/a.mp3"))
+        val rows =
+            LocalEpisodeCatalogPersist.toLocalEpisodes(
+                podcastIndexId = "100",
+                rssNamespaceId = namespace,
+                parsed = parsed,
+                existing = existing,
+                piBaseline = null,
+                channelImageUrl = null,
+                showImageUrl = null,
+            )
+        assertEquals(1, rows.size)
+        assertTrue(rows.single().episodeId != "-9")
+        assertEquals("g2", rows.single().guid)
+    }
+
+    @Test
+    fun occupiedPiIdDoesNotStealExistingEpisodeId() {
+        val parsed =
+            listOf(rssEpisode(guid = "g-new", title = "Same", audioUrl = "https://cdn.example/match.mp3"))
+        val existing =
+            listOf(LocalEpisodeIdentity(episodeId = "77", guid = "g-old", audioUrl = "https://cdn.example/old.mp3"))
+        val baseline =
+            listOf(
+                TestFixtures.episode(
+                    id = "77",
+                    title = "Same",
+                    audioUrl = "https://cdn.example/match.mp3",
+                ),
+            )
+        val rows =
+            LocalEpisodeCatalogPersist.toLocalEpisodes(
+                podcastIndexId = "100",
+                rssNamespaceId = namespace,
+                parsed = parsed,
+                existing = existing,
+                piBaseline = baseline,
+                channelImageUrl = null,
+                showImageUrl = null,
+            )
+        assertTrue(rows.single().episodeId != "77")
+    }
+
     private fun rssEpisode(
         guid: String? = "g1",
         title: String = "Ep",

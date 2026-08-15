@@ -1,14 +1,5 @@
 package cx.aswin.boxlore.feature.info
 
-import cx.aswin.boxlore.core.playback.likedEpisodes
-import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.toggleLike
-import cx.aswin.boxlore.core.playback.toggleCompletion
-import cx.aswin.boxlore.core.playback.markAllEpisodesUncompleted
-import cx.aswin.boxlore.core.playback.removeFromQueue
-import cx.aswin.boxlore.core.playback.addToQueueNext
-import cx.aswin.boxlore.core.playback.togglePlayPause
-
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -16,6 +7,14 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.addToQueueNext
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.likedEpisodes
+import cx.aswin.boxlore.core.playback.markAllEpisodesUncompleted
+import cx.aswin.boxlore.core.playback.removeFromQueue
+import cx.aswin.boxlore.core.playback.toggleCompletion
+import cx.aswin.boxlore.core.playback.toggleLike
+import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import kotlinx.coroutines.CancellationException
@@ -798,12 +797,13 @@ class PodcastInfoViewModel(
         }
         currentOffset = page.sourceCount
         _uiState.value =
-            supplementSupport.remountWithSupplements(
-                state = latestState.copy(podcast = podcast),
-                piEpisodes = page.episodes,
-                hasMoreEpisodes = page.hasMore,
-                isLoadingMore = false,
-            ).copy(isRssRefreshing = false)
+            supplementSupport
+                .remountWithSupplements(
+                    state = latestState.copy(podcast = podcast),
+                    piEpisodes = page.episodes,
+                    hasMoreEpisodes = page.hasMore,
+                    isLoadingMore = false,
+                ).copy(isRssRefreshing = false)
     }
 
     private fun clearPullRefreshing(targetPodcastId: String) {
@@ -949,12 +949,13 @@ class PodcastInfoViewModel(
                             feedId = feedId,
                             query = query,
                             networkResults = networkResults,
-                            meta = PodcastListMeta(
-                                title = podcast.title,
-                                imageUrl = podcast.imageUrl,
-                                genre = podcast.genre,
-                                artist = podcast.artist,
-                            ),
+                            meta =
+                                PodcastListMeta(
+                                    title = podcast.title,
+                                    imageUrl = podcast.imageUrl,
+                                    genre = podcast.genre,
+                                    artist = podcast.artist,
+                                ),
                             isRss = podcast.isRss,
                         )
 
@@ -1045,6 +1046,7 @@ class PodcastInfoViewModel(
         catalog: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort,
         feedUrl: String,
     ) {
+        val targetPodcastId = latest.podcast.id
         _uiState.value = latest.copy(directFeedChip = DirectFeedChipState.Fetching)
         val meta =
             cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta(
@@ -1053,18 +1055,18 @@ class PodcastInfoViewModel(
                 genre = latest.podcast.genre,
                 artist = latest.podcast.artist,
             )
-        val needsBaseline = !catalog.isReady(latest.podcast.id)
+        val needsBaseline = !catalog.isReady(targetPodcastId)
         val outcome =
             catalog.refresh(
                 cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
-                    podcastIndexId = latest.podcast.id,
+                    podcastIndexId = targetPodcastId,
                     feedUrl = feedUrl,
                     meta = meta,
                     loadPiBaseline =
                         if (needsBaseline) {
                             {
                                 repository.loadPiEpisodesForBaseline(
-                                    feedId = latest.podcast.id,
+                                    feedId = targetPodcastId,
                                     limit =
                                         cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
                                             .DIRECT_FEED_BASELINE_LIMIT,
@@ -1075,6 +1077,12 @@ class PodcastInfoViewModel(
                         },
                 ),
             )
+        val pageState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId) ||
+            pageState.podcast.id != targetPodcastId
+        ) {
+            return
+        }
         val tip =
             when (outcome) {
                 is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success ->
@@ -1086,20 +1094,22 @@ class PodcastInfoViewModel(
             }
         tip?.let { episode ->
             subscriptionRepository.updateLatestEpisode(
-                podcastId = latest.podcast.id,
+                podcastId = targetPodcastId,
                 episode = episode,
                 markAsNew = false,
             )
         }
-        val pageState = _uiState.value as? PodcastInfoUiState.Success ?: return
         val oldest = pageState.currentSort == EpisodeSort.OLDEST
         val page =
             repository.getEpisodesPaginated(
-                feedId = latest.podcast.id,
+                feedId = targetPodcastId,
                 limit = if (oldest) 200 else PAGE_SIZE,
                 offset = 0,
                 sort = if (oldest) "oldest" else "newest",
             )
+        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+            return
+        }
         currentOffset = page.sourceCount
         _uiState.value =
             supplementSupport.remountWithSupplements(
@@ -1109,7 +1119,7 @@ class PodcastInfoViewModel(
                 isFetchingFromFeed = false,
             )
         if (tip == null) {
-            syncPiTipAfterSubscribe(latest.podcast.id)
+            syncPiTipAfterSubscribe(targetPodcastId)
         }
     }
 
@@ -1263,10 +1273,10 @@ class PodcastInfoViewModel(
                             val h = remainingSeconds / 3600
                             val m = (remainingSeconds % 3600) / 60
                             if (h > 0) {
-                                    "${h}h ${m}m left"
-                                } else {
-                                    "${m}m left"
-                                }
+                                "${h}h ${m}m left"
+                            } else {
+                                "${m}m left"
+                            }
                         } else {
                             null
                         }

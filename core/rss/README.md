@@ -32,6 +32,8 @@ src/main/java/cx/aswin/boxlore/core/rss/
   EpisodeSupplementDisconnectLogic.kt
   EpisodeSupplementListMerge.kt
   LocalEpisodeCatalogRepository.kt
+  LocalEpisodeCatalogReads.kt
+  LocalEpisodeCatalogRefresh.kt
   StickyEpisodeIdentity.kt
   LocalEpisodeCatalogPersist.kt
   StickyRssEpisodeRemap.kt
