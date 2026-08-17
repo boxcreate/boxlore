@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.playback.skipToPreviousEpisode
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.feature.widgets.WidgetPlaybackSource
 import cx.aswin.boxlore.feature.widgets.WidgetPlaybackState
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -76,8 +77,10 @@ class NowPlayingWidgetPlaybackAdapter(
     }
 
     private suspend fun restoreIfNeeded() {
-        if (playbackRepository.playerState.value.currentEpisode == null) {
-            playbackRepository.restoreLastSession()
+        withWidgetPlaybackDispatcher {
+            if (playbackRepository.playerState.value.currentEpisode == null) {
+                playbackRepository.restoreLastSession()
+            }
         }
     }
 
@@ -94,6 +97,11 @@ class NowPlayingWidgetPlaybackAdapter(
         const val CONTROLLER_WAIT_MS = 50L
     }
 }
+
+internal suspend fun <T> withWidgetPlaybackDispatcher(
+    dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    block: suspend () -> T,
+): T = withContext(dispatcher) { block() }
 
 internal fun PlayerState.toWidgetPlaybackState(): WidgetPlaybackState {
     val episode = currentEpisode

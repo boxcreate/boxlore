@@ -44,15 +44,17 @@ import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHorizontalInset
 import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationBar
-import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
+import cx.aswin.boxlore.core.designsystem.components.RepairProgressPopup
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopup
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopupDismissReason
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
@@ -287,9 +289,17 @@ fun BoxLoreAppRoot(
         }
     }
 
+    val isOnline by container.connectivityObserver.isOnlineFlow.collectAsStateWithLifecycle()
+
     LaunchedEffect(onboardingCompleted) {
         if (onboardingCompleted) {
             container.subscriptionForegroundSync.ensureStarted()
+        }
+    }
+
+    LaunchedEffect(onboardingCompleted, isOnline) {
+        if (onboardingCompleted && isOnline) {
+            container.legacyRssRepair.ensureStarted()
         }
     }
 
@@ -302,6 +312,7 @@ fun BoxLoreAppRoot(
                     if (event == Lifecycle.Event.ON_START) {
                         if (SubscriptionResumeRefreshLogic.shouldRequestRefreshOnStart(skipFirstStart)) {
                             container.subscriptionForegroundSync.requestRefresh()
+                            container.legacyRssRepair.ensureStarted()
                         }
                         skipFirstStart = false
                     }
@@ -352,12 +363,13 @@ fun BoxLoreAppRoot(
     val navigationStyle = remember(navigationStyleKey) { NavigationStyle.fromKey(navigationStyleKey) }
     val fontRoundness =
         remember(fontRoundnessKey) {
-            cx.aswin.boxlore.core.designsystem.theme.FontRoundness.axisValue(fontRoundnessKey)
+            FontRoundness.axisValue(fontRoundnessKey)
         }
     val hasSeenMarkPlayedTip by userPrefs.hasSeenMarkPlayedTip.collectAsState(initial = true)
     val hasLoggedFirstPlay by userPrefs.hasLoggedFirstPlay.collectAsState(initial = true)
     val activeAnnouncement by userPrefs.activeAnnouncementStream.collectAsState(initial = null)
     val dismissedFeatureVersion by userPrefs.dismissedFeatureVersion.collectAsState(initial = "")
+    val legacyRssRepairInProgress by container.legacyRssRepair.inProgress.collectAsStateWithLifecycle()
 
     val isPlaying by remember(playbackRepository) {
         playbackRepository.playerState.map { it.isPlaying }.distinctUntilChanged()
@@ -658,8 +670,20 @@ fun BoxLoreAppRoot(
 
             val isPlayerActive = currentEpisode != null
             val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            RepairProgressPopup(
+                visible = legacyRssRepairInProgress,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = statusBarHeight + 8.dp, start = 16.dp, end = 16.dp)
+                        .zIndex(11f),
+            )
             SleepTimerPopup(
-                visible = showLateNightNudge && isPlayerActive && !isModeSwitching,
+                visible =
+                    showLateNightNudge &&
+                        isPlayerActive &&
+                        !isModeSwitching &&
+                        !legacyRssRepairInProgress,
                 modifier =
                     Modifier
                         .align(Alignment.TopCenter)

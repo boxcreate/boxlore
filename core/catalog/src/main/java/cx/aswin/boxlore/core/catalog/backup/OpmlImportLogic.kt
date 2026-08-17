@@ -1,6 +1,18 @@
 package cx.aswin.boxlore.core.catalog.backup
 
+import cx.aswin.boxlore.core.catalog.ExactPodcastLookupResult
+import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
 import cx.aswin.boxlore.core.model.Podcast
+
+internal sealed interface OpmlCatalogDecision {
+    data class Found(
+        val podcast: Podcast,
+    ) : OpmlCatalogDecision
+
+    data object ConfirmedAbsent : OpmlCatalogDecision
+
+    data object Deferred : OpmlCatalogDecision
+}
 
 /**
  * OPML outlines carry publisher feed URLs. Matching the catalog first keeps
@@ -10,6 +22,40 @@ import cx.aswin.boxlore.core.model.Podcast
  * Settings → Add RSS does not use this path.
  */
 internal object OpmlImportLogic {
+    fun finalCatalogDecision(
+        opmlTitle: String,
+        opmlXmlUrl: String,
+        urlLookup: ExactPodcastLookupResult,
+        guidLookup: ExactPodcastLookupResult,
+        titleSearch: PodcastIndexSearchResult,
+    ): OpmlCatalogDecision {
+        if (urlLookup is ExactPodcastLookupResult.Failed ||
+            guidLookup is ExactPodcastLookupResult.Failed
+        ) {
+            return OpmlCatalogDecision.Deferred
+        }
+        val urlPodcast = (urlLookup as? ExactPodcastLookupResult.Found)?.podcast
+        val guidPodcast = (guidLookup as? ExactPodcastLookupResult.Found)?.podcast
+        if (urlPodcast != null && guidPodcast != null && urlPodcast.id != guidPodcast.id) {
+            return OpmlCatalogDecision.Deferred
+        }
+        (urlPodcast ?: guidPodcast)?.takeUnless { it.isRss }?.let {
+            return OpmlCatalogDecision.Found(it)
+        }
+        if (titleSearch is PodcastIndexSearchResult.Failed) {
+            return OpmlCatalogDecision.Deferred
+        }
+        val searchPodcasts = (titleSearch as PodcastIndexSearchResult.Success).podcasts
+        val match =
+            catalogMatch(
+                opmlTitle = opmlTitle,
+                opmlXmlUrl = opmlXmlUrl,
+                urlLookup = null,
+                titleSearch = searchPodcasts,
+            )
+        return match?.let { OpmlCatalogDecision.Found(it) } ?: OpmlCatalogDecision.ConfirmedAbsent
+    }
+
     fun catalogMatch(
         opmlTitle: String,
         opmlXmlUrl: String,

@@ -172,6 +172,23 @@ class PodcastRepository(
             searchPodcastsWithCorrection(query).podcasts
         }
 
+    internal suspend fun searchPodcastIndexForOpml(query: String): PodcastIndexSearchResult =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = api.search(publicKey, query).execute()
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    PodcastIndexSearchResult.Success(body.feeds.mapNotNull(::mapSearchFeedToPodcast))
+                } else {
+                    PodcastIndexSearchResult.Failed
+                }
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                PodcastIndexSearchResult.Failed
+            }
+        }
+
     /** Meili typeahead only (additive endpoint). */
     suspend fun searchPodcastsTypeahead(
         query: String,
@@ -494,6 +511,37 @@ class PodcastRepository(
             throw e
         } catch (e: Exception) {
             null
+        }
+
+    internal suspend fun lookupExactPodcastIndex(key: ExactPodcastLookupKey): ExactPodcastLookupResult =
+        withContext(Dispatchers.IO) {
+            try {
+                val identifier =
+                    when (key.type) {
+                        ExactPodcastLookupType.FEED_URL -> {
+                            val encoded = java.net.URLEncoder.encode(key.value, "UTF-8")
+                            "$FEED_PREFIX_URL$encoded"
+                        }
+                        ExactPodcastLookupType.PODCAST_GUID -> "$FEED_PREFIX_GUID${key.value}"
+                    }
+                val response = executeGetPodcastRequest(identifier)
+                when {
+                    response.isSuccessful -> {
+                        val feed = response.body()?.feed
+                        if (feed == null) {
+                            ExactPodcastLookupResult.NotFound
+                        } else {
+                            ExactPodcastLookupResult.Found(mapPodcastResponseFeed(feed))
+                        }
+                    }
+                    response.code() == 404 -> ExactPodcastLookupResult.NotFound
+                    else -> ExactPodcastLookupResult.Failed
+                }
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                ExactPodcastLookupResult.Failed
+            }
         }
 
     suspend fun syncSubscriptions(feedIds: List<String>): Map<String, Episode> =

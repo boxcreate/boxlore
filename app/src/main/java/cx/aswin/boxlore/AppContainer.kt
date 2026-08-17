@@ -3,6 +3,7 @@ package cx.aswin.boxlore
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
+import cx.aswin.boxlore.core.catalog.LegacyRssRepair
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
@@ -25,6 +26,7 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.playback.service.MediaDownloadService
+import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
@@ -213,6 +215,19 @@ class AppContainer(
             subscriptionRepository = subscriptionRepository,
             episodeSupplementPort = episodeSupplementRepository,
             localEpisodeCatalog = localEpisodeCatalogRepository,
+            scope = syncScope,
+        )
+    }
+
+    val legacyRssRepair: LegacyRssRepair by lazy {
+        LegacyRssRepair.create(
+            podcastDao = database.podcastDao(),
+            rssRepository = rssPodcastRepository,
+            podcastRepository = podcastRepository,
+            userPreferences = userPreferencesRepository,
+            boxcastPrefs = BoxcastPrefs(appContext),
+            adaptiveRanking = adaptiveRankingRepository,
+            isOnline = connectivityStatus::isOnline,
             scope = syncScope,
         )
     }

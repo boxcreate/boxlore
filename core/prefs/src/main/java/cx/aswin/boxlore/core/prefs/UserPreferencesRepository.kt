@@ -29,6 +29,11 @@ object OpenAppTo {
     const val DOWNLOADS = "downloads"
 }
 
+data class PendingPodcastIdRepair(
+    val oldPodcastId: String,
+    val newPodcastId: String,
+)
+
 internal fun sanitizeOpenAppTo(value: String?): String =
     when (value?.trim()?.lowercase()) {
         OpenAppTo.SUBSCRIPTIONS -> OpenAppTo.SUBSCRIPTIONS
@@ -443,6 +448,104 @@ class UserPreferencesRepository(
             if (id in prevPins) {
                 preferences[Keys.HOME_PINNED_PODCAST_IDS] =
                     PreferenceIdList.encode(prevPins.filter { it != id })
+            }
+        }
+    }
+
+    /** Versioned one-time repair gate; a failed/incomplete pass deliberately leaves this unchanged. */
+    suspend fun legacyRssRepairVersion(): Int =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.first()[Keys.LEGACY_RSS_REPAIR_VERSION] ?: 0
+
+    suspend fun markLegacyRssRepairVersion(version: Int) {
+        dataStore.edit { preferences ->
+            val current = preferences[Keys.LEGACY_RSS_REPAIR_VERSION] ?: 0
+            if (version > current) preferences[Keys.LEGACY_RSS_REPAIR_VERSION] = version
+        }
+    }
+
+    /**
+     * Journals the cross-store ID rewrite before the Room transaction. If the process stops after
+     * Room commits, the next launch can still repair Manual order, pins, and last-seen state.
+     */
+    suspend fun beginPodcastIdRepair(
+        oldPodcastId: String,
+        newPodcastId: String,
+    ) {
+        dataStore.edit { preferences ->
+            preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] = oldPodcastId
+            preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] = newPodcastId
+        }
+    }
+
+    suspend fun pendingPodcastIdRepair(): PendingPodcastIdRepair? =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.first()
+            .let { preferences ->
+                val oldId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID]
+                val newId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID]
+                if (oldId.isNullOrBlank() || newId.isNullOrBlank()) {
+                    null
+                } else {
+                    PendingPodcastIdRepair(oldId, newId)
+                }
+            }
+
+    /** Atomically rewrites every DataStore preference keyed by a podcast ID and clears the journal. */
+    suspend fun finishPodcastIdRepair(
+        oldPodcastId: String,
+        newPodcastId: String,
+    ) {
+        dataStore.edit { preferences ->
+            if (preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] != oldPodcastId ||
+                preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] != newPodcastId
+            ) {
+                return@edit
+            }
+            val manualOrder = PreferenceIdList.decode(preferences[Keys.SUBSCRIPTION_MANUAL_ORDER])
+            preferences[Keys.SUBSCRIPTION_MANUAL_ORDER] =
+                PreferenceIdList.encode(manualOrder.map { if (it == oldPodcastId) newPodcastId else it }.distinct())
+
+            val pins =
+                HomePinnedShows.sanitize(
+                    PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]),
+                )
+            preferences[Keys.HOME_PINNED_PODCAST_IDS] =
+                PreferenceIdList.encode(
+                    HomePinnedShows.sanitize(
+                        pins.map { if (it == oldPodcastId) newPodcastId else it },
+                    ),
+                )
+            if (preferences[Keys.OVERRIDDEN_REC_PODCAST_ID] == oldPodcastId) {
+                preferences[Keys.OVERRIDDEN_REC_PODCAST_ID] = newPodcastId
+            }
+
+            val oldLastSeenKey = stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$oldPodcastId")
+            val newLastSeenKey = stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$newPodcastId")
+            val oldLastSeen = preferences[oldLastSeenKey]
+            if (oldLastSeen != null && preferences[newLastSeenKey] == null) {
+                preferences[newLastSeenKey] = oldLastSeen
+            }
+            preferences.remove(oldLastSeenKey)
+            preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID)
+            preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID)
+        }
+    }
+
+    suspend fun cancelPodcastIdRepair(
+        oldPodcastId: String,
+        newPodcastId: String,
+    ) {
+        dataStore.edit { preferences ->
+            if (preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] == oldPodcastId &&
+                preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] == newPodcastId
+            ) {
+                preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID)
+                preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID)
             }
         }
     }

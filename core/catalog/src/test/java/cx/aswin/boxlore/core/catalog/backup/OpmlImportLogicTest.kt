@@ -1,13 +1,62 @@
 package cx.aswin.boxlore.core.catalog.backup
 
+import cx.aswin.boxlore.core.catalog.ExactPodcastLookupResult
+import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.testing.TestFixtures
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class OpmlImportLogicTest {
+    @Test
+    fun `transient exact lookup failure defers instead of creating RSS fallback`() {
+        val decision =
+            OpmlImportLogic.finalCatalogDecision(
+                opmlTitle = "Show",
+                opmlXmlUrl = "https://feeds.example/show.xml",
+                urlLookup = ExactPodcastLookupResult.Failed,
+                guidLookup = ExactPodcastLookupResult.NotFound,
+                titleSearch = PodcastIndexSearchResult.Success(emptyList()),
+            )
+
+        assertEquals(OpmlCatalogDecision.Deferred, decision)
+    }
+
+    @Test
+    fun `RSS fallback requires settled exact lookups and successful empty search`() {
+        val decision =
+            OpmlImportLogic.finalCatalogDecision(
+                opmlTitle = "Show",
+                opmlXmlUrl = "https://feeds.example/show.xml",
+                urlLookup = ExactPodcastLookupResult.NotFound,
+                guidLookup = ExactPodcastLookupResult.NotFound,
+                titleSearch = PodcastIndexSearchResult.Success(emptyList()),
+            )
+
+        assertEquals(OpmlCatalogDecision.ConfirmedAbsent, decision)
+    }
+
+    @Test
+    fun `exact PI identity wins even when title search fails`() {
+        val podcast = TestFixtures.podcast(id = "42")
+        val decision =
+            OpmlImportLogic.finalCatalogDecision(
+                opmlTitle = "Show",
+                opmlXmlUrl = "https://feeds.example/show.xml",
+                urlLookup = ExactPodcastLookupResult.Found(podcast),
+                guidLookup = ExactPodcastLookupResult.NotFound,
+                titleSearch = PodcastIndexSearchResult.Failed,
+            )
+
+        assertEquals(
+            podcast,
+            assertInstanceOf(OpmlCatalogDecision.Found::class.java, decision).podcast,
+        )
+    }
+
     @Test
     fun `url lookup wins over title search`() {
         val byUrl = TestFixtures.podcast(id = "pi-url", title = "Show")

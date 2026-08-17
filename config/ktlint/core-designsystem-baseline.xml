@@ -352,7 +352,7 @@
         <error line="20" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/designsystem/components/ConnectedOptionSelector.kt">
-        <error line="29" column="9" source="standard:function-naming" />
+        <error line="31" column="9" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/designsystem/components/CuratedEpisodeCard.kt">
         <error line="22" column="5" source="standard:function-naming" />

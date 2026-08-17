@@ -49,6 +49,18 @@ interface AdaptiveRankingDao {
     )
     suspend fun deleteFacet(facetType: String, facetKey: String)
 
+    @Transaction
+    suspend fun replaceFacetKey(
+        oldFacetType: String,
+        oldFacetKey: String,
+        replacement: PreferenceFacetEntity,
+    ) {
+        upsertFacet(replacement)
+        if (oldFacetType != replacement.facetType || oldFacetKey != replacement.facetKey) {
+            deleteFacet(oldFacetType, oldFacetKey)
+        }
+    }
+
     @Query("SELECT * FROM ranking_exposures WHERE exposureId = :exposureId LIMIT 1")
     suspend fun getExposure(exposureId: String): RankingExposureEntity?
 

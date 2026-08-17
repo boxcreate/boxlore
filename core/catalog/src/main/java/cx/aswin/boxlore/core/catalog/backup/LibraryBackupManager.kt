@@ -4,7 +4,11 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.ExactPodcastLookupKey
+import cx.aswin.boxlore.core.catalog.ExactPodcastLookupResult
+import cx.aswin.boxlore.core.catalog.ExactPodcastLookupType
 import cx.aswin.boxlore.core.catalog.LOCAL_CATALOG_WINDOW_BOUND
+import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
@@ -462,26 +466,32 @@ class LibraryBackupManager(
 
     suspend fun importSingleOpmlFeed(feed: OpmlFeed): cx.aswin.boxlore.core.model.Podcast? {
         try {
-            resolveOpmlCatalogPodcast(feed)?.let { catalogMatch ->
-                subscriptionRepository.subscribe(catalogMatch)
-                syncImportedCatalogLatestEpisode(catalogMatch)
-                return catalogMatch
-            }
-
-            return LibraryBackupImportLogic.runRestore(
-                block = {
-                    rssPodcastRepository
-                        .addSubscription(feed.xmlUrl)
-                        .podcast
-                },
-                onFailure = { error ->
-                    Log.w(
-                        "OPML_IMPORT",
-                        "Catalog miss and RSS import failed for ${feed.title}",
-                        error,
+            return when (val resolution = resolveOpmlCatalogPodcast(feed)) {
+                is OpmlCatalogDecision.Found -> {
+                    subscriptionRepository.subscribe(resolution.podcast)
+                    syncImportedCatalogLatestEpisode(resolution.podcast)
+                    resolution.podcast
+                }
+                OpmlCatalogDecision.ConfirmedAbsent ->
+                    LibraryBackupImportLogic.runRestore(
+                        block = {
+                            rssPodcastRepository
+                                .addSubscription(feed.xmlUrl)
+                                .podcast
+                        },
+                        onFailure = { error ->
+                            Log.w(
+                                "OPML_IMPORT",
+                                "Catalog miss and RSS import failed for ${feed.title}",
+                                error,
+                            )
+                        },
                     )
-                },
-            )
+                OpmlCatalogDecision.Deferred -> {
+                    Log.w("OPML_IMPORT", "Deferring ${feed.title}; Podcast Index lookup did not settle")
+                    null
+                }
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -490,59 +500,75 @@ class LibraryBackupManager(
         return null
     }
 
-    private suspend fun resolveOpmlCatalogPodcast(feed: OpmlFeed): cx.aswin.boxlore.core.model.Podcast? {
-        val urlLookup = lookupOpmlFeedByUrl(feed.xmlUrl)
+    private suspend fun resolveOpmlCatalogPodcast(feed: OpmlFeed): OpmlCatalogDecision {
+        val initialUrlLookup = lookupOpmlFeedByUrl(feed.xmlUrl)
+        if (initialUrlLookup is ExactPodcastLookupResult.Found) {
+            return OpmlCatalogDecision.Found(initialUrlLookup.podcast)
+        }
         val titleSearch =
-            if (urlLookup == null) {
-                runCatching { podcastRepository.searchPodcasts(feed.title) }
-                    .getOrDefault(emptyList())
-            } else {
-                emptyList()
-            }
-        OpmlImportLogic
-            .catalogMatch(
-                opmlTitle = feed.title,
-                opmlXmlUrl = feed.xmlUrl,
-                urlLookup = urlLookup,
-                titleSearch = titleSearch,
-            )?.let { return it }
+            podcastRepository.searchPodcastIndexForOpml(feed.title)
+        if (titleSearch is PodcastIndexSearchResult.Success) {
+            OpmlImportLogic
+                .catalogMatch(
+                    opmlTitle = feed.title,
+                    opmlXmlUrl = feed.xmlUrl,
+                    urlLookup = null,
+                    titleSearch = titleSearch.podcasts,
+                )?.let { return OpmlCatalogDecision.Found(it) }
+        }
 
-        val peeked = peekOpmlFeed(feed.xmlUrl) ?: return null
-        val peekedLookup =
-            lookupOpmlFeedByUrl(peeked.finalUrl)
-                ?: peeked.guid?.let { lookupOpmlFeedByGuid(it) }
-        return OpmlImportLogic.catalogMatch(
+        val peeked = peekOpmlFeed(feed.xmlUrl) ?: return OpmlCatalogDecision.Deferred
+        val redirectedUrlLookup = lookupOpmlFeedByUrl(peeked.finalUrl)
+        val urlLookup =
+            when {
+                redirectedUrlLookup is ExactPodcastLookupResult.Found -> redirectedUrlLookup
+                initialUrlLookup is ExactPodcastLookupResult.Failed ||
+                    redirectedUrlLookup is ExactPodcastLookupResult.Failed ->
+                    ExactPodcastLookupResult.Failed
+                else -> ExactPodcastLookupResult.NotFound
+            }
+        val guidLookup =
+            peeked.guid
+                ?.let { lookupOpmlFeedByGuid(it) }
+                ?: ExactPodcastLookupResult.NotFound
+        return OpmlImportLogic.finalCatalogDecision(
             opmlTitle = peeked.title.ifBlank { feed.title },
             opmlXmlUrl = peeked.finalUrl,
-            urlLookup = peekedLookup,
+            urlLookup = urlLookup,
+            guidLookup = guidLookup,
             titleSearch = titleSearch,
         )
     }
 
-    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): cx.aswin.boxlore.core.model.Podcast? {
+    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): ExactPodcastLookupResult {
+        var failed = false
         for (candidate in OpmlImportLogic.urlLookupCandidates(xmlUrl)) {
-            val hit =
-                try {
-                    val encodedUrl = java.net.URLEncoder.encode(candidate, "UTF-8")
-                    podcastRepository.getPodcastDetails("url:$encodedUrl")
-                } catch (e: Exception) {
-                    Log.e("OPML_IMPORT", "Failed URL lookup for: $candidate", e)
-                    null
-                }
-            hit?.takeUnless { it.isRss }?.let { return it }
+            when (
+                val result =
+                    podcastRepository.lookupExactPodcastIndex(
+                        ExactPodcastLookupKey(
+                            type = ExactPodcastLookupType.FEED_URL,
+                            value = candidate,
+                        ),
+                    )
+            ) {
+                is ExactPodcastLookupResult.Found -> return result
+                ExactPodcastLookupResult.Failed -> failed = true
+                ExactPodcastLookupResult.NotFound -> Unit
+            }
         }
-        return null
+        return if (failed) ExactPodcastLookupResult.Failed else ExactPodcastLookupResult.NotFound
     }
 
-    private suspend fun lookupOpmlFeedByGuid(guid: String): cx.aswin.boxlore.core.model.Podcast? {
+    private suspend fun lookupOpmlFeedByGuid(guid: String): ExactPodcastLookupResult {
         val value = guid.trim()
-        if (value.isEmpty()) return null
-        return try {
-            podcastRepository.getPodcastDetails("guid:$value")?.takeUnless { it.isRss }
-        } catch (e: Exception) {
-            Log.e("OPML_IMPORT", "Failed GUID lookup for: $value", e)
-            null
-        }
+        if (value.isEmpty()) return ExactPodcastLookupResult.NotFound
+        return podcastRepository.lookupExactPodcastIndex(
+            ExactPodcastLookupKey(
+                type = ExactPodcastLookupType.PODCAST_GUID,
+                value = value,
+            ),
+        )
     }
 
     private suspend fun peekOpmlFeed(xmlUrl: String): PeekedOpmlFeed? {

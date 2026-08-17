@@ -61,6 +61,19 @@ class BoxcastPrefsTest {
     }
 
     @Test
+    fun bylCacheClearsOnlyForMatchingPodcastIdentity() {
+        prefs.saveBylCache(episodesJson = "[1]", podcastsJson = "[2]", podcastId = "rss:old")
+
+        prefs.clearBylCacheIfPodcastId("other")
+        assertEquals("rss:old", prefs.getCachedBylPodcastId())
+
+        prefs.clearBylCacheIfPodcastId("rss:old")
+        assertNull(prefs.getCachedBylPodcastId())
+        assertNull(prefs.getCachedBylRecommendationsJson())
+        assertNull(prefs.getCachedBylPodcastsJson())
+    }
+
+    @Test
     fun learnCuriosityClearRemovesKeys() {
         prefs.setDismissedCuriosityIds(setOf("1", "2"))
         prefs.setLearnCuriosityHistoryJson("""[{"episodeId":"1"}]""")

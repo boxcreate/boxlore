@@ -35,6 +35,12 @@ interface ListeningRollupDao {
     @Query("SELECT * FROM listening_rollups WHERE episodeId = :episodeId")
     suspend fun getRollupsForEpisode(episodeId: String): List<ListeningRollupEntity>
 
+    @Query("UPDATE listening_rollups SET podcastId = :newPodcastId WHERE podcastId = :oldPodcastId")
+    suspend fun reassignPodcastId(
+        oldPodcastId: String,
+        newPodcastId: String,
+    )
+
     @Query("SELECT MIN(lastListenedAt) FROM listening_rollups")
     suspend fun getEarliestRollupListenedAt(): Long?
 
