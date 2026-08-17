@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-17T19:52:36.398Z",
+  "lastRun": "2026-08-17T20:25:24.694Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -52,6 +52,12 @@
       "lastEpisodeId": "567104661",
       "lastEpisodeTitle": "The Cemetery Shadow Man",
       "lastCheckedAt": 1782580346119
+    },
+    "386911": {
+      "lastEpisodeId": "59027782274",
+      "lastEpisodeTitle": "NerdCast 1043 - A Casa do Dragão 3: A Boa e Velha Enrabada do Norte",
+      "lastRssKey": "004371d6-9807-11f1-a484-cf3b776aeddb",
+      "lastCheckedAt": 1786998329026
     },
     "415434": {
       "lastRssKey": "479281e0-6e7b-11f1-94bf-5f7428156ac2",
@@ -128,6 +134,12 @@
       "lastEpisodeTitle": "1865 Presents American Criminal | The Murder of Medgar Evers",
       "lastEpisodeId": "40591739575",
       "lastCheckedAt": 1786559318597
+    },
+    "724143": {
+      "lastEpisodeId": "59122700600",
+      "lastEpisodeTitle": "Início da campanha eleitoral; recuperação judicial da rede Casas Bahia; suspensão de lives no Discord",
+      "lastRssKey": "a3c1df28-9a23-11f1-82e8-eb00ad7157bb",
+      "lastCheckedAt": 1786998333335
     },
     "743229": {
       "lastEpisodeId": "59109990126",
