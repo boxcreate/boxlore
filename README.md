@@ -4,7 +4,7 @@
 
 # boxlore
 
-**Free Android podcast app** — search that works, personal picks, offline listening, no ads
+**Podcast player for Android** — search that works, personal picks, offline listening, no ads
 
 <br/>
 
