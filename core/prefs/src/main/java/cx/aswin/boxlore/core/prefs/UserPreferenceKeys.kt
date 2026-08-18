@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.prefs
 
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
 internal object Keys {
@@ -18,6 +19,12 @@ internal object Keys {
     val SUBSCRIPTION_SORT = stringPreferencesKey("subscription_sort")
     val SUBSCRIPTION_MANUAL_ORDER = stringPreferencesKey("subscription_manual_order")
     val HOME_PINNED_PODCAST_IDS = stringPreferencesKey("home_pinned_podcast_ids")
+    val LEGACY_RSS_REPAIR_VERSION =
+        intPreferencesKey("legacy_rss_repair_version")
+    val LEGACY_RSS_REPAIR_PENDING_OLD_ID =
+        stringPreferencesKey("legacy_rss_repair_pending_old_id")
+    val LEGACY_RSS_REPAIR_PENDING_NEW_ID =
+        stringPreferencesKey("legacy_rss_repair_pending_new_id")
     val LATEST_EPISODES_SORT_USE_SMART = androidx.datastore.preferences.core.booleanPreferencesKey("latest_episodes_sort_use_smart")
     val SKIP_BEHAVIOR = stringPreferencesKey("skip_behavior")
     val PLAYBACK_SPEED = androidx.datastore.preferences.core.floatPreferencesKey("playback_speed")

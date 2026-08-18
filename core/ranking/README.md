@@ -7,7 +7,7 @@ Owns adaptive recommendation and candidate scoring: Bayesian facet preferences, 
 ## Public API
 
 - `AdaptiveCandidateScorer` scores podcasts and episodes for home, explore, queue, and downloads.
-- `AdaptiveRankingRepository` owns ranking state, exposure recording, facet affinities, backup, and restore.
+- `AdaptiveRankingRepository` owns ranking state, exposure recording, facet affinities, backup, restore, and exact old→new show-facet migration for catalog identity repairs.
 - `RankingFeedbackRepository` records user actions and implements `RankingResetPort`.
 - `RankingRuntimeControls` exposes runtime toggles for ranking surfaces.
 - `RankingObjective`, `RankingSurface`, and `CandidateSource` define scoring context.
@@ -30,6 +30,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
   RankingReward.kt
   RankingRuntimeControls.kt
   RankingSerialization.kt
+  ShowFacetMigrationLogic.kt
   database/
     AdaptiveRankingDao.kt
     AdaptiveRankingDatabase.kt
@@ -55,11 +56,13 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 - SharedPreferences file `adaptive_ranking_runtime` stores runtime control values.
 - Package root is `cx.aswin.boxlore.core.ranking`.
 - App backup rules exclude the adaptive database from automatic platform backup; explicit encrypted backup support is handled through ranking backup models.
+- Show facet keys follow the active podcast id; legacy RSS repair merges evidence into the PI key atomically.
 
 ## Testing notes
 
 - Unit tests live under `core/ranking/src/test`.
 - `AdaptiveRankingTest` covers cold-start blending, objective behavior, and opposite-outcome learning.
+- `ShowFacetMigrationLogicTest` covers preserving, merging, and retargeting evidence during a podcast-id repair. `AdaptiveRankingRepositoryTest` covers transactional `migrateShowFacet` into an existing target facet.
 - Recommendation reset behavior is exercised through `RankingResetPort` fakes in feature tests.
 
 ```bash

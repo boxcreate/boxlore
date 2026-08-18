@@ -79,6 +79,17 @@ class BoxcastPrefs(context: Context) {
             .apply()
     }
 
+    /** Clears a recommendation cache whose seed show moved to a different catalog identity. */
+    fun clearBylCacheIfPodcastId(podcastId: String) {
+        if (getCachedBylPodcastId() != podcastId) return
+        prefs
+            .edit()
+            .remove(KEY_CACHED_BYL_RECOMMENDATIONS)
+            .remove(KEY_CACHED_BYL_PODCASTS)
+            .remove(KEY_CACHED_BYL_PODCAST_ID)
+            .apply()
+    }
+
     // ── Learn curiosity history ─────────────────────────────────────────────
 
     fun getLearnCuriosityHistoryJson(): String? =

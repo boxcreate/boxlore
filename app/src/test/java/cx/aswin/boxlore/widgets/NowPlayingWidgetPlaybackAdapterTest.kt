@@ -2,11 +2,33 @@ package cx.aswin.boxlore.widgets
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.PlayerState
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import java.util.concurrent.Executors
 
 class NowPlayingWidgetPlaybackAdapterTest {
+    @Test
+    fun `restore work switches to the MediaController dispatcher`() =
+        runBlocking {
+            val dispatcher =
+                Executors
+                    .newSingleThreadExecutor { runnable -> Thread(runnable, "widget-media-main") }
+                    .asCoroutineDispatcher()
+            try {
+                val threadName =
+                    withWidgetPlaybackDispatcher(dispatcher) {
+                        Thread.currentThread().name
+                    }
+
+                assertEquals("widget-media-main", threadName.substringBefore(" "))
+            } finally {
+                dispatcher.close()
+            }
+        }
+
     @Test
     fun `maps episode artwork preferring episode image over podcast`() {
         val state =

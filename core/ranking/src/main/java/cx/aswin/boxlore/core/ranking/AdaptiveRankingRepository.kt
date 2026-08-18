@@ -352,6 +352,30 @@ class AdaptiveRankingRepository private constructor(
         }
     }
 
+    /** Keeps learned show affinity when a legacy `rss:` subscription adopts its PI identity. */
+    suspend fun migrateShowFacet(
+        oldPodcastId: String,
+        newPodcastId: String,
+    ) {
+        val oldKey = oldPodcastId.normalizedFacetKey()
+        val newKey = newPodcastId.normalizedFacetKey()
+        if (oldKey.isEmpty() || newKey.isEmpty() || oldKey == newKey) return
+        database.withTransaction {
+            val old = dao.getFacet(PreferenceFacetType.SHOW.name, oldKey) ?: return@withTransaction
+            val existingTarget = dao.getFacet(PreferenceFacetType.SHOW.name, newKey)
+            dao.replaceFacetKey(
+                oldFacetType = PreferenceFacetType.SHOW.name,
+                oldFacetKey = oldKey,
+                replacement =
+                    ShowFacetMigrationLogic.merge(
+                        old = old,
+                        existingTarget = existingTarget,
+                        newPodcastId = newKey,
+                    ),
+            )
+        }
+    }
+
     /**
      * Merges alias genre facets into their canonical keys and drops placeholders (e.g.
      * "Podcast") so older builds cannot orphan evidence or keep weighting invalid keys.

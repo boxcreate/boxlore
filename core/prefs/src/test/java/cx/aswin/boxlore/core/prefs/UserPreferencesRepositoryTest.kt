@@ -244,6 +244,62 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun podcastIdRepairJournalsAndAtomicallyMovesIdKeyedPreferences() =
+        runTest {
+            val oldId = "rss:old"
+            val newId = "42"
+            repository.setSubscriptionManualOrder(listOf("keep", oldId, newId))
+            repository.setHomePinnedPodcastIds(listOf(oldId, "pin"))
+            repository.setOverriddenRecPodcastId(oldId)
+            repository.setLastSeenEpisodeId(oldId, "-9")
+
+            repository.beginPodcastIdRepair(oldId, newId)
+            assertEquals(PendingPodcastIdRepair(oldId, newId), repository.pendingPodcastIdRepair())
+
+            repository.finishPodcastIdRepair(oldId, newId)
+
+            assertEquals(listOf("keep", newId), repository.subscriptionManualOrderStream.first())
+            assertEquals(listOf(newId, "pin"), repository.homePinnedPodcastIdsStream.first())
+            assertEquals(newId, repository.overriddenRecPodcastIdStream.first())
+            assertEquals(mapOf(newId to "-9"), repository.lastSeenEpisodesStream.first())
+            assertNull(repository.pendingPodcastIdRepair())
+        }
+
+    @Test
+    fun finishPodcastIdRepairIgnoresMismatchedJournal() =
+        runTest {
+            val oldId = "rss:old"
+            repository.setSubscriptionManualOrder(listOf(oldId, "keep"))
+            repository.beginPodcastIdRepair(oldId, "42")
+
+            repository.finishPodcastIdRepair(oldId, "99")
+
+            assertEquals(listOf(oldId, "keep"), repository.subscriptionManualOrderStream.first())
+            assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
+        }
+
+    @Test
+    fun cancelPodcastIdRepairClearsOnlyMatchingJournal() =
+        runTest {
+            val oldId = "rss:old"
+            repository.beginPodcastIdRepair(oldId, "42")
+            repository.cancelPodcastIdRepair(oldId, "99")
+            assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
+
+            repository.cancelPodcastIdRepair(oldId, "42")
+            assertNull(repository.pendingPodcastIdRepair())
+        }
+
+    @Test
+    fun legacyRssRepairVersionOnlyMovesForward() =
+        runTest {
+            assertEquals(0, repository.legacyRssRepairVersion())
+            repository.markLegacyRssRepairVersion(2)
+            repository.markLegacyRssRepairVersion(1)
+            assertEquals(2, repository.legacyRssRepairVersion())
+        }
+
+    @Test
     fun toggleHomePinnedPodcastIdPinsUnpinsAndLeavesListAtCapacity() =
         runTest {
             assertEquals(

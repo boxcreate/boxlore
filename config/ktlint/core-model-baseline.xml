@@ -12,6 +12,9 @@
         <error line="16" column="52" source="standard:trailing-comma-on-declaration-site" />
         <error line="22" column="20" source="standard:trailing-comma-on-declaration-site" />
     </file>
+    <file name="src/main/java/cx/aswin/boxlore/core/model/ContentRegion.kt">
+        <error line="72" column="62" source="standard:function-signature" />
+    </file>
     <file name="src/main/java/cx/aswin/boxlore/core/model/CrossPromotion.kt">
         <error line="9" column="9" source="standard:trailing-comma-on-declaration-site" />
         <error line="20" column="27" source="standard:trailing-comma-on-declaration-site" />
@@ -23,9 +26,6 @@
         <error line="14" column="36" source="standard:no-multi-spaces" />
         <error line="26" column="37" source="standard:parameter-list-spacing" />
         <error line="26" column="38" source="standard:no-multi-spaces" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/model/PlaybackEntryPoint.kt">
-        <error line="6" column="10" source="standard:trailing-comma-on-declaration-site" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/model/Podcast.kt">
         <error line="26" column="32" source="standard:parameter-list-spacing" />

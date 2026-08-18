@@ -475,4 +475,36 @@ class AdaptiveRankingRepositoryTest {
                 likedScore.finalScore > otherScore.finalScore,
             )
         }
+
+    @Test
+    fun migrateShowFacetMergesExistingTargetEvidence() =
+        runTest {
+            val dao = database.adaptiveRankingDao()
+            dao.upsertFacet(
+                PreferenceFacetEntity(
+                    facetType = PreferenceFacetType.SHOW.name,
+                    facetKey = "rss:old",
+                    positiveEvidence = 3.0,
+                    negativeEvidence = 1.0,
+                    updatedAt = 100L,
+                ),
+            )
+            dao.upsertFacet(
+                PreferenceFacetEntity(
+                    facetType = PreferenceFacetType.SHOW.name,
+                    facetKey = "42",
+                    positiveEvidence = 2.0,
+                    negativeEvidence = 4.0,
+                    updatedAt = 200L,
+                ),
+            )
+
+            repository.migrateShowFacet("rss:old", "42")
+
+            assertNull(dao.getFacet(PreferenceFacetType.SHOW.name, "rss:old"))
+            val merged = dao.getFacet(PreferenceFacetType.SHOW.name, "42")!!
+            assertEquals(5.0, merged.positiveEvidence, 0.0)
+            assertEquals(5.0, merged.negativeEvidence, 0.0)
+            assertEquals(200L, merged.updatedAt)
+        }
 }

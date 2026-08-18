@@ -42,6 +42,12 @@ interface ListeningSessionDao {
     @Query("SELECT * FROM listening_sessions WHERE episodeId = :episodeId")
     suspend fun getSessionsForEpisode(episodeId: String): List<ListeningSessionEntity>
 
+    @Query("UPDATE listening_sessions SET podcastId = :newPodcastId WHERE podcastId = :oldPodcastId")
+    suspend fun reassignPodcastId(
+        oldPodcastId: String,
+        newPodcastId: String,
+    )
+
     @Query(
         """
         DELETE FROM listening_sessions

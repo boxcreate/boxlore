@@ -46,6 +46,12 @@ class RssPodcastRepository private constructor(
     private val podcastDao = database.podcastDao()
     private val episodeDao = database.rssEpisodeDao()
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
+    val legacySubscriptionRepair =
+        LegacyRssSubscriptionRepair(
+            database = database,
+            feedClient = feedClient,
+            refreshLocks = refreshLocks,
+        )
     private val _refreshingPodcastIds = MutableStateFlow<Set<String>>(emptySet())
 
     val refreshingPodcastIds: StateFlow<Set<String>> = _refreshingPodcastIds.asStateFlow()

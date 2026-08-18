@@ -3,6 +3,10 @@ package cx.aswin.boxlore
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
+import cx.aswin.boxlore.core.catalog.LegacyRssRepair
+import cx.aswin.boxlore.core.catalog.LegacyRssRepairActivation
+import cx.aswin.boxlore.core.catalog.LegacyRssRepairCatalog
+import cx.aswin.boxlore.core.catalog.LegacyRssRepairRuntime
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
@@ -25,6 +29,7 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.playback.service.MediaDownloadService
+import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
@@ -66,6 +71,20 @@ class AppContainer(
     private val appContext = context.applicationContext
 
     private val syncScope = applicationScope
+    private val legacyRssRepairLaunchDecision =
+        runCatching {
+            @Suppress("DEPRECATION")
+            val packageInfo =
+                appContext.packageManager.getPackageInfo(
+                    appContext.packageName,
+                    0,
+                )
+            LegacyRssRepairLaunchGate.evaluate(
+                versionName = BuildConfig.VERSION_NAME,
+                firstInstallTime = packageInfo.firstInstallTime,
+                lastUpdateTime = packageInfo.lastUpdateTime,
+            )
+        }.getOrDefault(LegacyRssRepairLaunchDecision.Disabled)
 
     /** Process-scoped online/offline for NavHost offline UX. */
     val connectivityObserver: AndroidConnectivityObserver =
@@ -214,6 +233,35 @@ class AppContainer(
             episodeSupplementPort = episodeSupplementRepository,
             localEpisodeCatalog = localEpisodeCatalogRepository,
             scope = syncScope,
+        )
+    }
+
+    val legacyRssRepair: LegacyRssRepair by lazy {
+        LegacyRssRepair.create(
+            catalog =
+                LegacyRssRepairCatalog(
+                    podcastDao = database.podcastDao(),
+                    rssRepository = rssPodcastRepository,
+                    podcastRepository = podcastRepository,
+                    userPreferences = userPreferencesRepository,
+                    boxcastPrefs = BoxcastPrefs(appContext),
+                    adaptiveRanking = adaptiveRankingRepository,
+                ),
+            runtime =
+                LegacyRssRepairRuntime(
+                    isOnline = connectivityStatus::isOnline,
+                    activation =
+                        when (legacyRssRepairLaunchDecision) {
+                            LegacyRssRepairLaunchDecision.Enabled -> LegacyRssRepairActivation.ENABLED
+                            LegacyRssRepairLaunchDecision.SettleWithoutRepair ->
+                                LegacyRssRepairActivation.SETTLE_WITHOUT_REPAIR
+                            LegacyRssRepairLaunchDecision.Disabled -> LegacyRssRepairActivation.DISABLED
+                        },
+                    scope = syncScope,
+                    restoreNotifications = { podcast ->
+                        subscriptionRepository.setNotificationsEnabled(podcast, true)
+                    },
+                ),
         )
     }
 
