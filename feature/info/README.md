@@ -6,7 +6,7 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 
 ## Public API
 
-- `PodcastInfoScreen` and `PodcastInfoViewModel`. Subscribed shows expose **Pin** / **Unpin** in the overflow menu (same max-5 list as Your Shows; at capacity a snackbar explains the limit).
+- `PodcastInfoScreen` and `PodcastInfoViewModel`. Long-pressing an episode enters multi-selection; the floating toolbar can download, mark completed (or mark unplayed when every selected episode is already complete), play, or append selected episodes to the queue. Its overflow can select only cards currently visible on screen, or fetch up to 1,000 show episodes for Select all / Select older / Select newer; fetched episode metadata is retained only while selection is active. Episode sorting remains available. Subscribed shows expose **Pin to Home screen** / **Unpin from Home screen** in the overflow menu (same max-5 list as Your Shows; at capacity a snackbar explains the limit).
 - `EpisodeInfoScreen` and `EpisodeInfoViewModel` (similar episodes use prefs `content_languages` + region).
 - `InfoViewModelAssembler` for podcast and episode ViewModel factories.
 - `InfoListeningProgressItem` and supporting components/sections for detail UI.
@@ -56,7 +56,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ## Testing notes
 
 - Unit tests live under `feature/info/src/test`.
-- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, toolbar logic, HTML stripping, podcast info ViewModel logic, pull-to-refresh target (RSS vs opted-in direct feed), episode-supplement merge/eligibility, episode list artwork fallback, and `PodcastInfoSupplementSupport` refresh / PI-only baseline / auto-opt-in / search union. Home pin persistence, capacity, and unsubscribe cleanup are covered in `:core:prefs` (`HomePinnedShowsTest`, `UserPreferencesRepositoryTest`) rather than constructing `PodcastInfoViewModel`.
+- Existing coverage includes assembler behavior, catalog port behavior and errors, offline merge logic, listening-progress mapping, duration formatting, metadata chip logic, feed grouping, selection range/order logic, toolbar logic, HTML stripping, podcast info ViewModel logic, pull-to-refresh target (RSS vs opted-in direct feed), episode-supplement merge/eligibility, episode list artwork fallback, and `PodcastInfoSupplementSupport` refresh / PI-only baseline / auto-opt-in / search union. Home pin persistence, capacity, and unsubscribe cleanup are covered in `:core:prefs` (`HomePinnedShowsTest`, `UserPreferencesRepositoryTest`) rather than constructing `PodcastInfoViewModel`.
 - Catalog HTTP paths are covered in `:core:catalog` tests.
 
 ```bash

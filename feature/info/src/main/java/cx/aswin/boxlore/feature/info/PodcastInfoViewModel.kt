@@ -6,11 +6,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.addToQueue
 import cx.aswin.boxlore.core.playback.addToQueueNext
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.likedEpisodes
 import cx.aswin.boxlore.core.playback.markAllEpisodesUncompleted
+import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.removeFromQueue
 import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
@@ -33,6 +36,12 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+internal data class PodcastEpisodeSelectionWindow(
+    val episodes: List<Episode>,
+    val newestFirst: Boolean,
+    val isTruncated: Boolean,
+)
 
 @Suppress("kotlin:S6310")
 class PodcastInfoViewModel(
@@ -316,6 +325,100 @@ class PodcastInfoViewModel(
         }
     }
 
+    fun downloadEpisodes(episodes: List<Episode>) {
+        val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        val unavailableIds = downloadedEpisodeIds.value + downloadingEpisodeIds.value
+        episodes
+            .distinctBy(Episode::id)
+            .filterNot { it.id in unavailableIds }
+            .forEach { episode ->
+                downloadRepository.addDownload(episode, currentState.podcast)
+            }
+    }
+
+    fun markEpisodesCompleted(episodes: List<Episode>) {
+        val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        val targets = episodes.distinctBy(Episode::id)
+        if (targets.isEmpty()) return
+        viewModelScope.launch {
+            playbackRepository.markAllEpisodesCompleted(
+                episodes = targets,
+                podcastId = currentState.podcast.id,
+                podcastTitle = currentState.podcast.title,
+                podcastImageUrl = currentState.podcast.imageUrl,
+            )
+        }
+    }
+
+    fun markEpisodesUncompleted(episodes: List<Episode>) {
+        val targets = episodes.distinctBy(Episode::id)
+        if (targets.isEmpty()) return
+        viewModelScope.launch {
+            playbackRepository.markAllEpisodesUncompleted(episodes = targets)
+        }
+    }
+
+    fun playEpisodes(episodes: List<Episode>) {
+        val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        val targets = episodes.distinctBy(Episode::id)
+        if (targets.isEmpty()) return
+        playedEpisodes.addAll(targets.map(Episode::id))
+        viewModelScope.launch {
+            playbackRepository.playQueue(
+                episodes = targets,
+                podcast = currentState.podcast,
+                startIndex = 0,
+                entryPoint = PlaybackEntryPoint.GENERIC,
+            )
+        }
+    }
+
+    fun addEpisodesToQueue(episodes: List<Episode>) {
+        val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        viewModelScope.launch {
+            episodes.distinctBy(Episode::id).forEach { episode ->
+                val added =
+                    playbackRepository.addToQueue(
+                        episode = episode,
+                        podcast = currentState.podcast,
+                    )
+                if (added) {
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
+                        action = "add",
+                        episodeId = episode.id,
+                        podcastId = currentState.podcast.id,
+                        queueSize = playbackRepository.playerState.value.queue.size,
+                    )
+                }
+            }
+        }
+    }
+
+    internal suspend fun loadEpisodeSelectionWindow(): PodcastEpisodeSelectionWindow {
+        val currentState = _uiState.value as? PodcastInfoUiState.Success
+        val newestFirst = currentState?.currentSort != EpisodeSort.OLDEST
+        if (currentState == null) {
+            return PodcastEpisodeSelectionWindow(emptyList(), newestFirst, isTruncated = false)
+        }
+        val sort = if (newestFirst) "newest" else "oldest"
+        val page =
+            repository.getEpisodesPaginated(
+                feedId = currentPodcastId,
+                limit = MAX_SELECTION_EPISODES,
+                offset = 0,
+                sort = sort,
+            )
+        val episodes =
+            (page.episodes + currentState.episodes)
+                .distinctBy(Episode::id)
+                .take(MAX_SELECTION_EPISODES)
+        return PodcastEpisodeSelectionWindow(
+            episodes = episodes,
+            newestFirst = newestFirst,
+            isTruncated = page.hasMore,
+        )
+    }
+
     fun isDownloaded(episodeId: String): kotlinx.coroutines.flow.Flow<Boolean> = downloadRepository.isDownloaded(episodeId)
 
     fun isDownloading(episodeId: String): kotlinx.coroutines.flow.Flow<Boolean> =
@@ -329,6 +432,7 @@ class PodcastInfoViewModel(
     companion object {
         private const val TAG = "PodcastInfoViewModel"
         private const val PAGE_SIZE = 20
+        private const val MAX_SELECTION_EPISODES = 1_000
         private const val SEARCH_DEBOUNCE_MS = 500L
     }
 

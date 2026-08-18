@@ -256,15 +256,27 @@ internal data class EpisodeListIndicators(
     val completedEpisodeIds: Set<String> = emptySet(),
 )
 
+internal data class EpisodeSelectionUi(
+    val selectedEpisodeIds: Set<String> = emptySet(),
+    val isActive: Boolean = false,
+    val onToggle: (Episode) -> Unit = {},
+    val onLongPress: (Episode) -> Unit = {},
+)
+
+internal data class EpisodeFeedRowUi(
+    val accentColor: Color,
+    val indicators: EpisodeListIndicators,
+    val autoScrolledEpisodeId: String?,
+    val podcastImageUrl: String?,
+)
+
 @Composable
 internal fun EpisodeFeedItemRow(
     feedItem: FeedItem,
     viewModel: PodcastInfoViewModel,
-    accentColor: Color,
-    indicators: EpisodeListIndicators,
-    autoScrolledEpisodeId: String?,
+    ui: EpisodeFeedRowUi,
     onEpisodeClick: (Episode, String, Int?) -> Unit,
-    podcastImageUrl: String? = null,
+    selection: EpisodeSelectionUi = EpisodeSelectionUi(),
 ) {
     when (feedItem) {
         is FeedItem.NormalEpisode -> {
@@ -277,24 +289,31 @@ internal fun EpisodeFeedItemRow(
             ) { playState ->
                 EpisodeListItem(
                     episode = episode,
-                    isLiked = indicators.likedEpisodeIds.contains(episode.id),
-                    accentColor = accentColor,
-                    podcastImageUrl = podcastImageUrl,
+                    isLiked = ui.indicators.likedEpisodeIds.contains(episode.id),
+                    accentColor = ui.accentColor,
+                    podcastImageUrl = ui.podcastImageUrl,
                     // Playback State
                     isPlaying = playState?.isPlaying == true,
                     isResume = playState?.isResume == true,
                     progress = playState?.progress ?: 0f,
                     timeLeft = playState?.timeLeft,
                     // Download State
-                    isDownloaded = indicators.downloadedEpisodeIds.contains(episode.id),
-                    isDownloading = indicators.downloadingEpisodeIds.contains(episode.id),
-                    isQueued = indicators.queuedEpisodeIds.contains(episode.id),
-                    isCompleted = indicators.completedEpisodeIds.contains(episode.id),
-                    isUpNext = episode.id == autoScrolledEpisodeId,
+                    isDownloaded = ui.indicators.downloadedEpisodeIds.contains(episode.id),
+                    isDownloading = ui.indicators.downloadingEpisodeIds.contains(episode.id),
+                    isQueued = ui.indicators.queuedEpisodeIds.contains(episode.id),
+                    isCompleted = ui.indicators.completedEpisodeIds.contains(episode.id),
+                    isUpNext = episode.id == ui.autoScrolledEpisodeId,
+                    selectionActive = selection.isActive,
+                    isSelected = episode.id in selection.selectedEpisodeIds,
                     onClick = {
-                        viewModel.recordEpisodeClick(episode.id)
-                        onEpisodeClick(episode, "podcast_info_episodes_list", index)
+                        if (selection.isActive) {
+                            selection.onToggle(episode)
+                        } else {
+                            viewModel.recordEpisodeClick(episode.id)
+                            onEpisodeClick(episode, "podcast_info_episodes_list", index)
+                        }
                     },
+                    onLongClick = { selection.onLongPress(episode) },
                     onPlayClick = { viewModel.onPlayClick(episode) },
                     onToggleLike = { viewModel.onToggleLike(episode) },
                     onQueueClick = { viewModel.toggleQueue(episode) },
@@ -315,6 +334,7 @@ internal fun EpisodeFeedItemRow(
                     onEpisodeClick(ep, "podcast_info_episodes_list", globalIndex)
                 },
                 onPlayClick = { ep -> viewModel.onPlayClick(ep) },
+                selection = selection,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
@@ -327,6 +347,7 @@ internal fun EpisodeFeedItemRow(
                     onEpisodeClick(ep, "podcast_info_episodes_list", globalIndex)
                 },
                 onPlayClick = { ep -> viewModel.onPlayClick(ep) },
+                selection = selection,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
@@ -510,7 +531,7 @@ private fun PodcastInfoOverflowMenuItems(
     )
     if (actions.isSubscribed) {
         DropdownMenuItem(
-            text = { Text(if (actions.isPinnedToHome) "Unpin" else "Pin") },
+            text = { Text(if (actions.isPinnedToHome) "Unpin from Home screen" else "Pin to Home screen") },
             onClick = {
                 onDismiss()
                 actions.onToggleHomePin()
