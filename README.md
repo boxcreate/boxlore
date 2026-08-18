@@ -18,7 +18,7 @@
     <td width="16"></td>
     <td align="center" valign="middle">
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.18.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.19.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
 <!-- download-apk:end -->
     </td>
   </tr>
@@ -64,6 +64,15 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.19` · 2026-08-18
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.19 date=2026-08-18 -->
 <b>🆕 New features:</b>
 <ul align="left">
 <li>Long-press an episode to select and manage many episodes together, including older or newer episodes across long shows. <a href="https://github.com/boxcreate/boxlore/pull/997"><img src="https://img.shields.io/badge/PR-997-6750A4?style=flat-square" alt="PR #997" height="18"/></a></li>
@@ -76,33 +85,6 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <b>• High:</b>
 <ul align="left">
 <li>If you imported podcasts from another app in an older boxlore build, those shows are restored as normal catalog subscriptions. You may see a one-time repair banner; it will not loop. <a href="https://github.com/boxcreate/boxlore/pull/993"><img src="https://img.shields.io/badge/PR-993-6750A4?style=flat-square" alt="PR #993" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.18` · 2026-08-15
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.18 date=2026-08-15 -->
-<b>🚨 Critical:</b>
-<ul align="left">
-<li>Subscribed shows now keep a complete episode list from the publisher’s feed, including episodes our catalog had missed. Progress, downloads, and likes stay on the same episodes. <a href="https://github.com/boxcreate/boxlore/pull/986"><img src="https://img.shields.io/badge/PR-986-6750A4?style=flat-square" alt="PR #986" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>"Missing episodes?" is for shows you haven’t subscribed to yet, once per podcast. Subscribe to keep the full list up to date. <a href="https://github.com/boxcreate/boxlore/pull/986"><img src="https://img.shields.io/badge/PR-986-6750A4?style=flat-square" alt="PR #986" height="18"/></a></li>
-</ul>
-<b>🐛 Fixes:</b>
-<ul align="left">
-<li>Importing your podcast list from another app now brings in catalog shows as normal shows, with notifications available, instead of tagging most of them as RSS. <a href="https://github.com/boxcreate/boxlore/pull/984"><img src="https://img.shields.io/badge/PR-984-6750A4?style=flat-square" alt="PR #984" height="18"/></a></li>
-<li>Subscribing to a show keeps filling in the full episode list even if you leave the page <a href="https://github.com/boxcreate/boxlore/pull/989"><img src="https://img.shields.io/badge/PR-989-6750A4?style=flat-square" alt="PR #989" height="18"/></a></li>
-<li>After you unsubscribe, new episodes still show up on that show’s page <a href="https://github.com/boxcreate/boxlore/pull/989"><img src="https://img.shields.io/badge/PR-989-6750A4?style=flat-square" alt="PR #989" height="18"/></a></li>
-</ul>
-<b>• Improved:</b>
-<ul align="left">
-<li>Show search stays on the best match as results fill in, so you don’t have to scroll up to find it. <a href="https://github.com/boxcreate/boxlore/pull/987"><img src="https://img.shields.io/badge/PR-987-6750A4?style=flat-square" alt="PR #987" height="18"/></a></li>
-<li>Scrolling the full player back to the top no longer shrinks it to the mini player. Swipe down again when you want to minimize. <a href="https://github.com/boxcreate/boxlore/pull/988"><img src="https://img.shields.io/badge/PR-988-6750A4?style=flat-square" alt="PR #988" height="18"/></a></li>
-<li>You can open boxlore straight to Downloads when you launch the app <a href="https://github.com/boxcreate/boxlore/pull/990"><img src="https://img.shields.io/badge/PR-990-6750A4?style=flat-square" alt="PR #990" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
@@ -209,7 +191,7 @@ Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live
       </td>
       <td width="16"></td>
       <td align="center" valign="middle">
-        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.18.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.19.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
       </td>
     </tr>
   </table>

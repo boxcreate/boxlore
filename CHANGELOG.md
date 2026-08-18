@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.19] - 2026-08-18
+
 ### Added
 - Home Your Shows Daily / Offline Mix switch, persisted as `home_mix_mode`, with a 15-item unfinished-download rail and queue. ([#996](https://github.com/boxcreate/boxlore/pull/996)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Added Podcast Info episode multi-selection with bulk download, played/unplayed, playback, queue, and full-feed range actions. ([#997](https://github.com/boxcreate/boxlore/pull/997)) <!-- impact:user-impact-high --> <!-- copy:locked -->
@@ -18,21 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Now Playing widget session restore hops to the MediaController main thread. ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - After Google Backup restore, Smart Downloads toggle and periodic mixtape sync stay aligned; missing local download artwork falls back to the show image. ([#996](https://github.com/boxcreate/boxlore/pull/996)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=993 -->
-### High
-- If you imported podcasts from another app in an older boxlore build, those shows are restored as normal catalog subscriptions. You may see a one-time repair banner; it will not loop.
-<!-- readme-copy:end pr=993 -->
-
-<!-- readme-copy:start pr=996 -->
-### Improvements
-- Home now has Daily Mix and Offline Mix, so downloaded episodes are one tap away when you want to listen without data.
-- Reinstalling from a Google backup no longer leaves Smart Downloads running while the setting looks off, and download artwork should stay visible.
-<!-- readme-copy:end pr=996 -->
-
-<!-- readme-copy:start pr=997 -->
-### New features
-- Long-press an episode to select and manage many episodes together, including older or newer episodes across long shows.
-<!-- readme-copy:end pr=997 -->
 ## [v0.0.18] - 2026-08-15
 
 ### Added
