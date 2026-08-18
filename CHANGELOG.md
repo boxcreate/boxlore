@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- One-time repair migrates legacy OPML `rss:` subscriptions to Podcast Index identity on exact feed-URL or GUID matches (v0.0.18/0.0.19 upgraded installs only; never loops). ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- OPML import defers a feed on transient Podcast Index lookup failure instead of creating an RSS fallback. ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Now Playing widget session restore hops to the MediaController main thread. ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=993 -->
+### High
+- If you imported podcasts from another app in an older boxlore build, those shows are restored as normal catalog subscriptions. You may see a one-time repair banner; it will not loop.
+<!-- readme-copy:end pr=993 -->
 ## [v0.0.18] - 2026-08-15
 
 ### Added

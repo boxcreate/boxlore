@@ -64,8 +64,10 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<b>• High:</b>
+<ul align="left">
+<li>If you imported podcasts from another app in an older boxlore build, those shows are restored as normal catalog subscriptions. You may see a one-time repair banner; it will not loop. <a href="https://github.com/boxcreate/boxlore/pull/993"><img src="https://img.shields.io/badge/PR-993-6750A4?style=flat-square" alt="PR #993" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
