@@ -6,9 +6,11 @@ Owns offline download orchestration: Media3 offline cache access, download datab
 
 ## Public API
 
-- `DownloadRepository` coordinates Media3 `DownloadManager`, cache helpers, and Room download state. Download completed/failed analytics omit `file_size_mb` when Media3 length is unknown and omit `source` when Room provenance is missing (never invent `0` / `"manual"`). Briefing downloads use `EpisodeMediaCacheKey` (audio `v=`) so offline keys match playback after same-day regenerations.
+- `DownloadRepository` coordinates Media3 `DownloadManager`, cache helpers, and Room download state. Its `completedDownloadItems` flow maps every completed row to listener-facing `Episode` + `Podcast` metadata, orders by release time with download-time fallback, and exposes only local playback paths. Download completed/failed analytics omit `file_size_mb` when Media3 length is unknown and omit `source` when Room provenance is missing (never invent `0` / `"manual"`). Briefing downloads use `EpisodeMediaCacheKey` (audio `v=`) so offline keys match playback after same-day regenerations.
+- `CompletedDownloadItem` is the feature-safe model for completed offline content; filtering and deterministic ordering stay owned by this module rather than feature code.
 - `DownloadAnalyticsMapping` is the pure helper for those property decisions (including allowlisted download failure codes).
-- `SmartDownloadManager` selects and schedules automatic downloads; `smart_download_sync.completed_count` is completed-only (`STATUS_COMPLETED`), while the download loop still budgets against active+queued counts.
+- `SmartDownloadManager` selects and schedules automatic downloads; `smart_download_sync.completed_count` is completed-only (`STATUS_COMPLETED`), while the download loop still budgets against active+queued counts. `reconcileScheduleWithPreferences` aligns the DataStore toggle with the periodic `SmartDownloadSync` WorkManager job after restore (restored work turns the toggle back on; a stored-on toggle reschedules missing work). Disabled sync never runs except from an explicit manual refresh.
+- `DownloadArtworkUrls` drops missing local artwork paths after backup restore and falls back to the subscribed show's remote image. New downloads persist a remote URL when the local artwork copy fails.
 - `SmartDownloadWorker`, `AutoDownloadWorker`, and `PurgeSmartDownloadsWorker` perform background download work.
 - `DownloadsDependencies` and `DownloadsDependenciesHolder` expose application-scoped download dependencies to workers.
 - `DownloadSpeedLimiter`, `ThrottlingDataSource`, and `SmartDownloadCandidateLogic` support download I/O and candidate filtering.
@@ -20,6 +22,7 @@ Owns offline download orchestration: Media3 offline cache access, download datab
 src/main/java/cx/aswin/boxlore/core/
   downloads/
     AutoDownloadWorker.kt
+    CompletedDownloadItem.kt
     DownloadRepository.kt
     DownloadsDependencies.kt
     DownloadSpeedLimiter.kt

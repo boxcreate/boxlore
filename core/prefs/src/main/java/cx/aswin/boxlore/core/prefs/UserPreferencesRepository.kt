@@ -250,9 +250,13 @@ class UserPreferencesRepository(
             .catch { exception ->
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }.map { preferences ->
-                val config = preferences[Keys.THEME_CONFIG] ?: "system"
-                syncPrefs.edit().putString("theme_config", config).apply()
-                config
+                val stored = preferences[Keys.THEME_CONFIG]
+                if (stored != null) {
+                    syncPrefs.edit().putString("theme_config", stored).apply()
+                    stored
+                } else {
+                    cachedThemeConfig
+                }
             }.distinctUntilChanged()
 
     suspend fun setThemeConfig(themeConfig: String) {
@@ -267,9 +271,13 @@ class UserPreferencesRepository(
             .catch { exception ->
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }.map { preferences ->
-                val enabled = preferences[Keys.USE_DYNAMIC_COLOR] ?: false
-                syncPrefs.edit().putBoolean("use_dynamic_color", enabled).apply()
-                enabled
+                val stored = preferences[Keys.USE_DYNAMIC_COLOR]
+                if (stored != null) {
+                    syncPrefs.edit().putBoolean("use_dynamic_color", stored).apply()
+                    stored
+                } else {
+                    cachedUseDynamicColor
+                }
             }.distinctUntilChanged()
 
     suspend fun setUseDynamicColor(useDynamicColor: Boolean) {
@@ -284,9 +292,13 @@ class UserPreferencesRepository(
             .catch { exception ->
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }.map { preferences ->
-                val brand = preferences[Keys.THEME_BRAND] ?: "violet"
-                syncPrefs.edit().putString("theme_brand", brand).apply()
-                brand
+                val stored = preferences[Keys.THEME_BRAND]
+                if (stored != null) {
+                    syncPrefs.edit().putString("theme_brand", stored).apply()
+                    stored
+                } else {
+                    cachedThemeBrand
+                }
             }.distinctUntilChanged()
 
     suspend fun setThemeBrand(themeBrand: String) {
@@ -301,9 +313,13 @@ class UserPreferencesRepository(
             .catch { exception ->
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }.map { preferences ->
-                val style = preferences[Keys.SURFACE_STYLE] ?: "classic_dynamic"
-                syncPrefs.edit().putString("surface_style", style).apply()
-                style
+                val stored = preferences[Keys.SURFACE_STYLE]
+                if (stored != null) {
+                    syncPrefs.edit().putString("surface_style", stored).apply()
+                    stored
+                } else {
+                    cachedSurfaceStyle
+                }
             }.distinctUntilChanged()
 
     suspend fun setSurfaceStyle(surfaceStyle: String) {
@@ -318,9 +334,14 @@ class UserPreferencesRepository(
             .catch { exception ->
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }.map { preferences ->
-                val roundness = FontRoundnessAxis.sanitizeKey(preferences[Keys.FONT_ROUNDNESS])
-                syncPrefs.edit().putString(FontRoundnessAxis.PREF_KEY, roundness).apply()
-                roundness
+                val stored = preferences[Keys.FONT_ROUNDNESS]
+                if (stored != null) {
+                    val roundness = FontRoundnessAxis.sanitizeKey(stored)
+                    syncPrefs.edit().putString(FontRoundnessAxis.PREF_KEY, roundness).apply()
+                    roundness
+                } else {
+                    cachedFontRoundness
+                }
             }.distinctUntilChanged()
 
     suspend fun setFontRoundness(fontRoundness: String) {
@@ -337,9 +358,14 @@ class UserPreferencesRepository(
             .catch { exception ->
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }.map { preferences ->
-                val navigationStyle = sanitizeNavigationStyle(preferences[Keys.NAVIGATION_STYLE])
-                syncPrefs.edit().putString("navigation_style", navigationStyle).apply()
-                navigationStyle
+                val stored = preferences[Keys.NAVIGATION_STYLE]
+                if (stored != null) {
+                    val navigationStyle = sanitizeNavigationStyle(stored)
+                    syncPrefs.edit().putString("navigation_style", navigationStyle).apply()
+                    navigationStyle
+                } else {
+                    cachedNavigationStyle
+                }
             }.distinctUntilChanged()
 
     suspend fun setNavigationStyle(navigationStyle: String) {
@@ -356,9 +382,14 @@ class UserPreferencesRepository(
             .catch { exception ->
                 if (exception is IOException) emit(emptyPreferences()) else throw exception
             }.map { preferences ->
-                val openAppTo = sanitizeOpenAppTo(preferences[Keys.OPEN_APP_TO])
-                syncPrefs.edit().putString("open_app_to", openAppTo).apply()
-                openAppTo
+                val stored = preferences[Keys.OPEN_APP_TO]
+                if (stored != null) {
+                    val openAppTo = sanitizeOpenAppTo(stored)
+                    syncPrefs.edit().putString("open_app_to", openAppTo).apply()
+                    openAppTo
+                } else {
+                    cachedOpenAppTo
+                }
             }.distinctUntilChanged()
 
     suspend fun setOpenAppTo(openAppTo: String) {
@@ -366,6 +397,36 @@ class UserPreferencesRepository(
         syncPrefs.edit().putString("open_app_to", sanitized).apply()
         dataStore.edit { preferences ->
             preferences[Keys.OPEN_APP_TO] = sanitized
+        }
+    }
+
+    /**
+     * After Google Backup, SharedPreferences fast-cache can restore while DataStore does not.
+     * Copy cache values into missing DataStore keys so UI streams and workers stay aligned.
+     */
+    suspend fun hydrateMissingDataStoreFromFastCache() {
+        dataStore.edit { preferences ->
+            if (preferences[Keys.THEME_CONFIG] == null) {
+                preferences[Keys.THEME_CONFIG] = cachedThemeConfig
+            }
+            if (preferences[Keys.USE_DYNAMIC_COLOR] == null) {
+                preferences[Keys.USE_DYNAMIC_COLOR] = cachedUseDynamicColor
+            }
+            if (preferences[Keys.THEME_BRAND] == null) {
+                preferences[Keys.THEME_BRAND] = cachedThemeBrand
+            }
+            if (preferences[Keys.SURFACE_STYLE] == null) {
+                preferences[Keys.SURFACE_STYLE] = cachedSurfaceStyle
+            }
+            if (preferences[Keys.FONT_ROUNDNESS] == null) {
+                preferences[Keys.FONT_ROUNDNESS] = cachedFontRoundness
+            }
+            if (preferences[Keys.NAVIGATION_STYLE] == null) {
+                preferences[Keys.NAVIGATION_STYLE] = cachedNavigationStyle
+            }
+            if (preferences[Keys.OPEN_APP_TO] == null) {
+                preferences[Keys.OPEN_APP_TO] = cachedOpenAppTo
+            }
         }
     }
 
@@ -1303,9 +1364,28 @@ class UserPreferencesRepository(
         }
     }
 
+    /** Last listener-selected Home mix: `daily` (default) or `offline`. */
+    val homeMixModeStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                sanitizeHomeMixMode(preferences[Keys.HOME_MIX_MODE])
+            }.distinctUntilChanged()
+
+    suspend fun setHomeMixMode(mode: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.HOME_MIX_MODE] = sanitizeHomeMixMode(mode)
+        }
+    }
+
+    private fun sanitizeHomeMixMode(mode: String?): String = if (mode == HOME_MIX_MODE_OFFLINE) mode else HOME_MIX_MODE_DAILY
+
     companion object {
         const val FONT_ROUNDNESS_CRISP = FontRoundnessAxis.CRISP
         const val FONT_ROUNDNESS_SOFT = FontRoundnessAxis.SOFT
         const val FONT_ROUNDNESS_ROUND = FontRoundnessAxis.ROUND
+        private const val HOME_MIX_MODE_DAILY = "daily"
+        private const val HOME_MIX_MODE_OFFLINE = "offline"
     }
 }

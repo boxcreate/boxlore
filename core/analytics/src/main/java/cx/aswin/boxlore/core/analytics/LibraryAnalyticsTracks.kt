@@ -426,12 +426,26 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackPlayMixClicked(count: Int) {
+    fun trackPlayMixClicked(
+        count: Int,
+        mixMode: String,
+    ) {
         AnalyticsEmit.event(
             "home_surface_tapped",
             mapOf(
                 "surface_component" to "mixtape_play",
                 "items_count" to count,
+                "mix_mode" to mixMode,
+            ),
+        )
+    }
+
+    fun trackHomeMixModeChanged(mixMode: String) {
+        AnalyticsEmit.event(
+            "home_surface_tapped",
+            mapOf(
+                "surface_component" to "mixtape_mode",
+                "mix_mode" to mixMode,
             ),
         )
     }

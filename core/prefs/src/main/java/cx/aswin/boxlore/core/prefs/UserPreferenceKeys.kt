@@ -52,4 +52,5 @@ internal object Keys {
     val AUTO_DOWNLOAD_WIFI_ONLY = androidx.datastore.preferences.core.booleanPreferencesKey("auto_download_wifi_only")
     val AUTO_DOWNLOAD_MAX_EPISODES = androidx.datastore.preferences.core.intPreferencesKey("auto_download_max_episodes")
     val AUTO_DOWNLOAD_DELETE_COMPLETED = androidx.datastore.preferences.core.booleanPreferencesKey("auto_download_delete_completed")
+    val HOME_MIX_MODE = stringPreferencesKey("home_mix_mode")
 }

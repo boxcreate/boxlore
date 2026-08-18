@@ -104,6 +104,9 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
                     restoreState = true
                 }
             },
+            onNavigateToDownloads = {
+                navController.navigate(NavRoutes.LIBRARY_DOWNLOADS)
+            },
             onNavigateToLatestEpisodes = {
                 navController.navigate("library/subscriptions?tab=1")
             },

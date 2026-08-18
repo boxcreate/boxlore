@@ -39,6 +39,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 - client_surface: `phone` | `android_auto`
 - install_channel: `play_store` | `apk_github` | `share_referrer` | `unknown`
 - search_mode: `show_keyword` | `episode_semantic`
+- mix_mode: `daily` | `offline`
 - pause_reason: `user_voluntary` | `interruption` | `error` | `sleep_timer` | `app_kill` | `auto_pause`
 - subscription_count_bucket: `0` | `1_3` | `4_10` | `10_plus`
 - daypart: `morning` | `afternoon` | `evening` | `late_night`
@@ -82,7 +83,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `identity_reset` | Analytics identity cleared/reset | — | reason:string | none |
 | `app_check_status` | App Check token attempt result | token_obtained:bool; provider:string | — | none |
 | `first_episode_played` | First-ever play milestone | — | episode_id:string; podcast_id:string; entry_point:enum; hours_since_install:float | none |
-| `home_surface_tapped` | First-class Home component tap | surface_component:string | rail_intent:string; content_id:string; position_index:int | none |
+| `home_surface_tapped` | First-class Home component tap | surface_component:string | rail_intent:string; content_id:string; position_index:int; items_count:int; mix_mode:string | none |
 | `home_surface_impression` | Home rail/block became visible | surface_component:string | items_count:int | none |
 | `search_performed` | User ran show or episode search | surface:string; search_mode:enum; search_query:string; results_count:int | result_quality:enum; query_length:int | logged_by_policy |
 | `search_result_tapped` | User tapped a search result | surface:string; result_type:enum | search_mode:enum; podcast_id:string; episode_id:string; position_index:int; search_query:string | logged_by_policy |

@@ -4,7 +4,13 @@
    for more reference.
 -->
 <full-backup-content>
-    <!-- Explicitly include databases and preferences to avoid ambiguity on OEM skins -->
+    <!-- SharedPreferences + Room restore; DataStore lives under files/datastore. -->
     <include domain="database" path="." />
     <include domain="sharedpref" path="." />
+    <include domain="file" path="datastore/" />
+    <!-- Rebuild WorkManager jobs from DataStore instead of restoring stale schedules. -->
+    <exclude domain="database" path="androidx.work.workdb" />
+    <exclude domain="database" path="androidx.work.workdb-journal" />
+    <exclude domain="database" path="androidx.work.workdb-wal" />
+    <exclude domain="database" path="androidx.work.workdb-shm" />
 </full-backup-content>

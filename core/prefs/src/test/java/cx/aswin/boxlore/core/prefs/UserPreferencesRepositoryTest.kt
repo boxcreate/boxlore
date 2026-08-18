@@ -232,6 +232,18 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun homeMixModeDefaultsPersistsAndSanitizes() =
+        runTest {
+            assertEquals("daily", repository.homeMixModeStream.first())
+
+            repository.setHomeMixMode("offline")
+            assertEquals("offline", repository.homeMixModeStream.first())
+
+            repository.setHomeMixMode("unsupported")
+            assertEquals("daily", repository.homeMixModeStream.first())
+        }
+
+    @Test
     fun removePodcastIdFromManualOrderAndPinsDropsMatchingIds() =
         runTest {
             repository.setSubscriptionManualOrder(listOf("keep", "gone"))

@@ -12,7 +12,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,14 +39,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,7 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -69,17 +65,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.LocalSurfaceStyle
+import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
 import cx.aswin.boxlore.feature.home.StablePodcastList
+import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 
 val LocalLastSeenEpisodes = androidx.compose.runtime.compositionLocalOf<Map<String, String>> { emptyMap() }
 
@@ -99,10 +97,14 @@ fun YourShowsSection(
     onPodcastSelected: (String?) -> Unit,
     onPodcastClick: (Podcast) -> Unit,
     onEpisodeClick: (Episode, Podcast, String) -> Unit,
-    onPlayMix: () -> Unit,
+    onPlayMix: (HomeMixMode) -> Unit,
+    onMixModeChanged: (HomeMixMode) -> Unit,
+    selectedMixMode: HomeMixMode,
     onPlayEpisode: (Episode, Podcast, cx.aswin.boxlore.core.model.PlaybackEntryPoint) -> Unit,
     onViewLibrary: () -> Unit,
+    onViewDownloads: () -> Unit,
     downloadedEpisodeIds: Set<String> = emptySet(),
+    completedDownloads: StableCompletedDownloadList = StableCompletedDownloadList(emptyList()),
     modifier: Modifier = Modifier,
     pinnedPodcastIds: Set<String> = emptySet(),
     onTogglePin: (String) -> Unit = {},
@@ -461,14 +463,30 @@ fun YourShowsSection(
             }
         }
 
+        // Pure black/white surfaces intentionally collapse low containers into the page
+        // background, so only those styles need a quiet boundary around this module.
+        val showPureSurfaceBorder =
+            when (LocalSurfaceStyle.current) {
+                SurfaceStyles.AMOLED, SurfaceStyles.PURE_WHITE, SurfaceStyles.DYNAMIC_OLED_WHITE -> true
+                else -> false
+            }
+
         // --- Dynamic Content Area ---
-        OutlinedCard(
+        Card(
             shape = RoundedCornerShape(24.dp),
             colors =
-                CardDefaults.outlinedCardColors(
+                CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            border =
+                if (showPureSurfaceBorder) {
+                    BorderStroke(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f),
+                    )
+                } else {
+                    null
+                },
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -484,210 +502,22 @@ fun YourShowsSection(
                 modifier = Modifier.fillMaxWidth(),
             ) { isMixtapeMode ->
                 if (isMixtapeMode) {
-                    // Scenario A: Default State (More than 1 Sub, Nothing Selected)
-                    val displayList = latestEpisodes.list
-
-                    if (displayList.isNotEmpty()) {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
-                        ) {
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 18.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                // Overlapping artwork stack on the left
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .width(84.dp)
-                                            .height(44.dp),
-                                    contentAlignment = Alignment.CenterStart,
-                                ) {
-                                    val uniqueImages =
-                                        displayList
-                                            .mapNotNull { podcast ->
-                                                val url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl
-                                                url?.takeIf { it.isNotEmpty() }
-                                            }.distinct()
-                                            .take(5)
-                                    val numImages = uniqueImages.size
-                                    // Reverse so the first image (index 0) is drawn last (on top)
-                                    uniqueImages.reversed().forEachIndexed { index, imageUrl ->
-                                        val stackIndex = numImages - 1 - index
-                                        val shape =
-                                            when (stackIndex) {
-                                                0 -> ExpressiveShapes.Circle
-                                                1 -> ExpressiveShapes.Puffy
-                                                2 -> ExpressiveShapes.Diamond
-                                                3 -> ExpressiveShapes.Cookie12
-                                                else -> ExpressiveShapes.Burst
-                                            }
-                                        val xOffset = (stackIndex * 10).dp
-                                        val yOffset =
-                                            when (stackIndex) {
-                                                1 -> 2.dp
-                                                2 -> (-2).dp
-                                                3 -> 3.dp
-                                                4 -> (-3).dp
-                                                else -> 0.dp
-                                            }
-                                        val rotationVal =
-                                            when (stackIndex) {
-                                                1 -> -6f
-                                                2 -> 6f
-                                                3 -> -10f
-                                                4 -> 10f
-                                                else -> 0f
-                                            }
-                                        val scaleVal = 1f - (stackIndex * 0.06f)
-
-                                        OptimizedImage(
-                                            url = imageUrl,
-                                            proxyWidth = 88,
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Crop,
-                                            modifier =
-                                                Modifier
-                                                    .size(40.dp)
-                                                    .zIndex(5f - stackIndex)
-                                                    .graphicsLayer {
-                                                        translationX = xOffset.toPx()
-                                                        translationY = yOffset.toPx()
-                                                        rotationZ = rotationVal
-                                                        scaleX = scaleVal
-                                                        scaleY = scaleVal
-                                                    }.clip(shape)
-                                                    .border(2.dp, MaterialTheme.colorScheme.surfaceContainerLow, shape),
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    modifier =
-                                        Modifier
-                                            .height(42.dp)
-                                            .expressiveClickable(onClick = onPlayMix),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 20.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.PlayArrow,
-                                            contentDescription = "Play Mix",
-                                            tint = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "Play My Daily Mix",
-                                            style =
-                                                MaterialTheme.typography.labelLarge.copy(
-                                                    fontFamily = rememberSectionHeaderFontFamily(),
-                                                    fontWeight = FontWeight.Normal,
-                                                    letterSpacing = 0.2.sp,
-                                                ),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            androidx.compose.material3.HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                                thickness = 1.dp,
-                            )
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            val mixtapeScrollState = rememberScrollState()
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .horizontalScroll(mixtapeScrollState),
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                displayList.forEach { podcast ->
-                                    val ep = podcast.latestEpisode
-                                    if (ep != null) {
-                                        val state = episodePlaybackState.map[ep.id]
-                                        val softExpire = softExpireProgressEpisodeIds.contains(ep.id)
-                                        MixtapeEpisodeCard(
-                                            episode = ep,
-                                            podcast = podcast,
-                                            onClick = { onEpisodeClick(ep, podcast, "home_mixtape_episodes") },
-                                            onPlay = {
-                                                onPlayEpisode(
-                                                    ep,
-                                                    podcast,
-                                                    cx.aswin.boxlore.core.model.PlaybackEntryPoint.HOME_MIXTAPE,
-                                                )
-                                            },
-                                            overrideStatus =
-                                                if (softExpire) {
-                                                    cx.aswin.boxlore.core.model.EpisodeStatus.UNPLAYED
-                                                } else {
-                                                    state?.first
-                                                },
-                                            overrideProgress = if (softExpire) 0f else state?.second,
-                                            currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                            isPlaying = isPlaying,
-                                            isDownloaded = downloadedEpisodeIds.contains(ep.id),
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
-                        }
-                    } else {
-                        // Empty Mixtape Placeholder
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MusicNote,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                modifier = Modifier.size(32.dp),
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    text = "You're all caught up",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                                Text(
-                                    text = "New drops and active sessions will show up here.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
-                            }
-                        }
-                    }
+                    HomeMixModule(
+                        dailyPodcasts = latestEpisodes.list,
+                        subscribedPodcastCount = subscribedPodcasts.list.size,
+                        completedDownloads = completedDownloads,
+                        selectedMode = selectedMixMode,
+                        episodePlaybackState = episodePlaybackState,
+                        softExpireProgressEpisodeIds = softExpireProgressEpisodeIds,
+                        currentPlayingEpisodeId = currentPlayingEpisodeId,
+                        isPlaying = isPlaying,
+                        downloadedEpisodeIds = downloadedEpisodeIds,
+                        onModeChanged = onMixModeChanged,
+                        onPlayMix = onPlayMix,
+                        onEpisodeClick = onEpisodeClick,
+                        onPlayEpisode = onPlayEpisode,
+                        onViewDownloads = onViewDownloads,
+                    )
                 } else {
                     // Scenario B: Filtered State (A Specific Sub is Selected) / Scenario C: Only 1 Sub Edge Case
                     val activeId = selectedPodcastId ?: subscribedPodcasts.list.firstOrNull()?.id

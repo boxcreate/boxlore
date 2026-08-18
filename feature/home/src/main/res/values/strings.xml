@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_mix_daily_title">Daily Mix</string>
+    <string name="home_mix_offline_title">Offline Mix</string>
+    <string name="home_mix_change_mode">Change mix</string>
+    <string name="home_mix_daily_subtitle">Picked for your next listen</string>
+    <plurals name="home_mix_offline_subtitle">
+        <item quantity="one">%1$d episode ready offline</item>
+        <item quantity="other">%1$d episodes ready offline</item>
+    </plurals>
+    <string name="home_mix_play">Play</string>
+    <string name="home_mix_caught_up_title">You’re all caught up</string>
+    <string name="home_mix_caught_up_body">New drops and active sessions will show up here.</string>
+    <string name="home_mix_view_all_downloads">All downloads</string>
+</resources>

@@ -97,9 +97,13 @@ private fun YourShowsFeedContent(
                     callbacks.onEpisodeClick?.invoke(episode, podcast, entryPoint)
                 },
                 onPlayMix = callbacks.onPlayMix,
+                onMixModeChanged = callbacks.onMixModeChanged,
+                selectedMixMode = playback.player.homeMixMode,
                 onPlayEpisode = callbacks.onPlayEpisode,
                 downloadedEpisodeIds = playback.player.downloadedEpisodeIds,
+                completedDownloads = playback.player.completedDownloads,
                 onViewLibrary = { callbacks.onNavigateToLibrary?.invoke() },
+                onViewDownloads = { callbacks.onNavigateToDownloads?.invoke() },
                 pinnedPodcastIds = feedState.pinnedPodcastIds,
                 onTogglePin = callbacks.onToggleHomePin,
             )

@@ -43,7 +43,7 @@ class SmartDownloadManager(
         isForeground: Boolean,
     ): Boolean {
         val isEnabled = userPrefs.smartDownloadsEnabledStream.first()
-        if (!isEnabled && !isManual && !isForeground) {
+        if (!isEnabled && !isManual) {
             Log.d("SmartDownloadManager", "Smart downloads disabled. Sync skipped.")
             writeLogToFile(context, "Sync skipped: Smart downloads is disabled.")
             return false
@@ -76,6 +76,37 @@ class SmartDownloadManager(
             }
         }
         return true
+    }
+
+    /**
+     * Aligns DataStore and the periodic WorkManager job after restore.
+     * Restored work without a restored toggle turns Smart Downloads back on.
+     */
+    suspend fun reconcileScheduleWithPreferences() {
+        val enabled = userPrefs.smartDownloadsEnabledStream.first()
+        val hasActiveWork = hasActivePeriodicSync(context)
+        when (
+            SmartDownloadScheduleLogic.reconcile(
+                enabledInPrefs = enabled,
+                hasActiveScheduledWork = hasActiveWork,
+            )
+        ) {
+            SmartDownloadScheduleLogic.ReconcileAction.ENABLE_AND_SCHEDULE -> {
+                userPrefs.setSmartDownloadsEnabled(true)
+                schedulePeriodicSync(
+                    context = context,
+                    wifiOnly = userPrefs.smartDownloadsWifiOnlyStream.first(),
+                    chargingOnly = userPrefs.smartDownloadsChargingOnlyStream.first(),
+                )
+            }
+            SmartDownloadScheduleLogic.ReconcileAction.SCHEDULE ->
+                schedulePeriodicSync(
+                    context = context,
+                    wifiOnly = userPrefs.smartDownloadsWifiOnlyStream.first(),
+                    chargingOnly = userPrefs.smartDownloadsChargingOnlyStream.first(),
+                )
+            SmartDownloadScheduleLogic.ReconcileAction.CANCEL -> cancelPeriodicSync(context)
+        }
     }
 
     private suspend fun getAndSyncSubscriptions(): List<PodcastEntity> {
@@ -330,7 +361,12 @@ class SmartDownloadManager(
                     id = episode.podcastId ?: "0",
                     title = episode.podcastTitle?.takeIf { it.isNotBlank() } ?: "Unknown Podcast",
                     artist = episode.podcastArtist ?: "Unknown",
-                    imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl ?: "",
+                    imageUrl =
+                        DownloadArtworkUrls.remoteUrl(episode.podcastImageUrl)
+                            ?: DownloadArtworkUrls.remoteUrl(episode.imageUrl)
+                            ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
+                            ?: episode.imageUrl
+                            ?: "",
                 )
 
             Log.d(
@@ -572,7 +608,7 @@ class SmartDownloadManager(
                         .build()
 
                 androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                    "SmartDownloadSync",
+                    SmartDownloadScheduleLogic.UNIQUE_WORK_NAME,
                     androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
                     workRequest,
                 )
@@ -589,11 +625,23 @@ class SmartDownloadManager(
             }
         }
 
+        fun hasActivePeriodicSync(context: Context): Boolean =
+            try {
+                androidx.work.WorkManager
+                    .getInstance(context)
+                    .getWorkInfosForUniqueWork(SmartDownloadScheduleLogic.UNIQUE_WORK_NAME)
+                    .get()
+                    .any { info -> !info.state.isFinished }
+            } catch (e: Exception) {
+                Log.e("SmartDownloadManager", "Failed to read periodic sync work", e)
+                false
+            }
+
         fun cancelPeriodicSync(context: Context) {
             try {
                 androidx.work.WorkManager
                     .getInstance(context)
-                    .cancelUniqueWork("SmartDownloadSync")
+                    .cancelUniqueWork(SmartDownloadScheduleLogic.UNIQUE_WORK_NAME)
                 Log.d("SmartDownloadManager", "Cancelled periodic SmartDownloadWorker task.")
                 writeLogToFile(context, "WorkManager periodic task cancelled.")
             } catch (e: Exception) {
