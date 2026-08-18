@@ -62,7 +62,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 
 - Unit tests live under `core/ranking/src/test`.
 - `AdaptiveRankingTest` covers cold-start blending, objective behavior, and opposite-outcome learning.
-- `ShowFacetMigrationLogicTest` covers preserving and merging evidence during a podcast-id repair.
+- `ShowFacetMigrationLogicTest` covers preserving, merging, and retargeting evidence during a podcast-id repair. `AdaptiveRankingRepositoryTest` covers transactional `migrateShowFacet` into an existing target facet.
 - Recommendation reset behavior is exercised through `RankingResetPort` fakes in feature tests.
 
 ```bash

@@ -519,14 +519,7 @@ class LibraryBackupManager(
 
         val peeked = peekOpmlFeed(feed.xmlUrl) ?: return OpmlCatalogDecision.Deferred
         val redirectedUrlLookup = lookupOpmlFeedByUrl(peeked.finalUrl)
-        val urlLookup =
-            when {
-                redirectedUrlLookup is ExactPodcastLookupResult.Found -> redirectedUrlLookup
-                initialUrlLookup is ExactPodcastLookupResult.Failed ||
-                    redirectedUrlLookup is ExactPodcastLookupResult.Failed ->
-                    ExactPodcastLookupResult.Failed
-                else -> ExactPodcastLookupResult.NotFound
-            }
+        val urlLookup = OpmlImportLogic.preferLookup(initialUrlLookup, redirectedUrlLookup)
         val guidLookup =
             peeked.guid
                 ?.let { lookupOpmlFeedByGuid(it) }
@@ -540,25 +533,15 @@ class LibraryBackupManager(
         )
     }
 
-    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): ExactPodcastLookupResult {
-        var failed = false
-        for (candidate in OpmlImportLogic.urlLookupCandidates(xmlUrl)) {
-            when (
-                val result =
-                    podcastRepository.lookupExactPodcastIndex(
-                        ExactPodcastLookupKey(
-                            type = ExactPodcastLookupType.FEED_URL,
-                            value = candidate,
-                        ),
-                    )
-            ) {
-                is ExactPodcastLookupResult.Found -> return result
-                ExactPodcastLookupResult.Failed -> failed = true
-                ExactPodcastLookupResult.NotFound -> Unit
-            }
+    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): ExactPodcastLookupResult =
+        OpmlImportLogic.firstExactLookup(OpmlImportLogic.urlLookupCandidates(xmlUrl)) { candidate ->
+            podcastRepository.lookupExactPodcastIndex(
+                ExactPodcastLookupKey(
+                    type = ExactPodcastLookupType.FEED_URL,
+                    value = candidate,
+                ),
+            )
         }
-        return if (failed) ExactPodcastLookupResult.Failed else ExactPodcastLookupResult.NotFound
-    }
 
     private suspend fun lookupOpmlFeedByGuid(guid: String): ExactPodcastLookupResult {
         val value = guid.trim()

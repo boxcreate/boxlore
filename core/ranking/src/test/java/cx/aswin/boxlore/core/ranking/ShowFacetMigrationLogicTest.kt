@@ -31,4 +31,23 @@ class ShowFacetMigrationLogicTest {
         assertEquals(5.0, merged.negativeEvidence)
         assertEquals(200L, merged.updatedAt)
     }
+
+    @Test
+    fun `migration retargets evidence when the target facet is absent`() {
+        val old =
+            PreferenceFacetEntity(
+                facetType = PreferenceFacetType.SHOW.name,
+                facetKey = "rss:old",
+                positiveEvidence = 3.0,
+                negativeEvidence = 1.0,
+                updatedAt = 100L,
+            )
+
+        val merged = ShowFacetMigrationLogic.merge(old, null, "42")
+
+        assertEquals("42", merged.facetKey)
+        assertEquals(3.0, merged.positiveEvidence)
+        assertEquals(1.0, merged.negativeEvidence)
+        assertEquals(100L, merged.updatedAt)
+    }
 }

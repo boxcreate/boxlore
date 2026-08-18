@@ -154,4 +154,64 @@ class OpmlImportLogicTest {
         )
         assertNull(OpmlImportLogic.httpsFeedUrl("not-a-url"))
     }
+
+    @Test
+    fun `preferLookup keeps Found over Failed and Failed over NotFound`() {
+        val podcast = TestFixtures.podcast(id = "42")
+        assertEquals(
+            ExactPodcastLookupResult.Found(podcast),
+            OpmlImportLogic.preferLookup(
+                initial = ExactPodcastLookupResult.Failed,
+                redirected = ExactPodcastLookupResult.Found(podcast),
+            ),
+        )
+        assertEquals(
+            ExactPodcastLookupResult.Failed,
+            OpmlImportLogic.preferLookup(
+                initial = ExactPodcastLookupResult.Failed,
+                redirected = ExactPodcastLookupResult.NotFound,
+            ),
+        )
+        assertEquals(
+            ExactPodcastLookupResult.Failed,
+            OpmlImportLogic.preferLookup(
+                initial = ExactPodcastLookupResult.NotFound,
+                redirected = ExactPodcastLookupResult.Failed,
+            ),
+        )
+        assertEquals(
+            ExactPodcastLookupResult.NotFound,
+            OpmlImportLogic.preferLookup(
+                initial = ExactPodcastLookupResult.NotFound,
+                redirected = ExactPodcastLookupResult.NotFound,
+            ),
+        )
+    }
+
+    @Test
+    fun `collapseCandidateLookups prefers Found then Failed then NotFound`() {
+        val podcast = TestFixtures.podcast(id = "42")
+        assertEquals(
+            ExactPodcastLookupResult.Found(podcast),
+            OpmlImportLogic.collapseCandidateLookups(
+                listOf(
+                    ExactPodcastLookupResult.NotFound,
+                    ExactPodcastLookupResult.Failed,
+                    ExactPodcastLookupResult.Found(podcast),
+                ),
+            ),
+        )
+        assertEquals(
+            ExactPodcastLookupResult.Failed,
+            OpmlImportLogic.collapseCandidateLookups(
+                listOf(ExactPodcastLookupResult.NotFound, ExactPodcastLookupResult.Failed),
+            ),
+        )
+        assertEquals(
+            ExactPodcastLookupResult.NotFound,
+            OpmlImportLogic.collapseCandidateLookups(
+                listOf(ExactPodcastLookupResult.NotFound),
+            ),
+        )
+    }
 }

@@ -56,6 +56,41 @@ internal object OpmlImportLogic {
         return match?.let { OpmlCatalogDecision.Found(it) } ?: OpmlCatalogDecision.ConfirmedAbsent
     }
 
+    fun preferLookup(
+        initial: ExactPodcastLookupResult,
+        redirected: ExactPodcastLookupResult,
+    ): ExactPodcastLookupResult =
+        when {
+            redirected is ExactPodcastLookupResult.Found -> redirected
+            initial is ExactPodcastLookupResult.Found -> initial
+            initial is ExactPodcastLookupResult.Failed ||
+                redirected is ExactPodcastLookupResult.Failed ->
+                ExactPodcastLookupResult.Failed
+            else -> ExactPodcastLookupResult.NotFound
+        }
+
+    fun collapseCandidateLookups(results: List<ExactPodcastLookupResult>): ExactPodcastLookupResult {
+        results.filterIsInstance<ExactPodcastLookupResult.Found>().firstOrNull()?.let { return it }
+        return if (results.any { it is ExactPodcastLookupResult.Failed }) {
+            ExactPodcastLookupResult.Failed
+        } else {
+            ExactPodcastLookupResult.NotFound
+        }
+    }
+
+    suspend fun firstExactLookup(
+        candidates: List<String>,
+        lookup: suspend (String) -> ExactPodcastLookupResult,
+    ): ExactPodcastLookupResult {
+        val seen = ArrayList<ExactPodcastLookupResult>(candidates.size)
+        for (candidate in candidates) {
+            val result = lookup(candidate)
+            if (result is ExactPodcastLookupResult.Found) return result
+            seen += result
+        }
+        return collapseCandidateLookups(seen)
+    }
+
     fun catalogMatch(
         opmlTitle: String,
         opmlXmlUrl: String,

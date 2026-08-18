@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.rss
 
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
 import cx.aswin.boxlore.core.database.PodcastEntity
@@ -170,162 +171,197 @@ class LegacyRssSubscriptionRepair internal constructor(
 internal class LegacyRssSubscriptionUpgrader(
     private val database: BoxLoreDatabase,
 ) {
-    @Suppress("LongMethod")
     suspend fun upgrade(
         sourcePodcastId: String,
         target: Podcast,
         snapshot: LegacyRssFeedSnapshot,
     ): LegacyRssUpgradeOutcome =
         database.withTransaction {
-            val podcastDao = database.podcastDao()
-            val source = podcastDao.getPodcast(sourcePodcastId)
-            if (source?.isSubscribed != true || !source.isRss) {
-                val migrated = podcastDao.getPodcast(target.id)
-                return@withTransaction if (migrated?.isSubscribed == true && !migrated.isRss) {
-                    LegacyRssUpgradeOutcome.ALREADY_MIGRATED
-                } else {
-                    LegacyRssUpgradeOutcome.SOURCE_NOT_ELIGIBLE
-                }
-            }
+            val source =
+                eligibleSource(sourcePodcastId)
+                    ?: return@withTransaction ineligibleSourceOutcome(target.id)
             if (!LegacyRssUpgradeLogic.isExactTarget(snapshot, target)) {
                 return@withTransaction LegacyRssUpgradeOutcome.IDENTITY_MISMATCH
             }
-
             if (targetIsInUse(target.id)) {
                 return@withTransaction LegacyRssUpgradeOutcome.TARGET_ALREADY_IN_USE
             }
+            val catalog =
+                copiedCatalog(source, target, snapshot)
+                    ?: return@withTransaction LegacyRssUpgradeOutcome.INCOMPLETE_CATALOG
+            persistTargetCatalog(target, snapshot, catalog)
+            reassignListenerReferences(sourcePodcastId, catalog.targetEntity)
+            retireSource(source, target.id)
+            LegacyRssUpgradeOutcome.MIGRATED
+        }
 
-            val rssDao = database.rssEpisodeDao()
-            val stored = rssDao.getAllNewest(sourcePodcastId)
-            val refreshed =
-                StickyRssEpisodeRemap.remap(
-                    parsed = snapshot.parsed.episodes,
-                    existing = rssDao.listIdentities(sourcePodcastId),
+    private suspend fun eligibleSource(sourcePodcastId: String): PodcastEntity? {
+        val source = database.podcastDao().getPodcast(sourcePodcastId)
+        return source?.takeIf { it.isSubscribed && it.isRss }
+    }
+
+    private suspend fun ineligibleSourceOutcome(targetId: String): LegacyRssUpgradeOutcome {
+        val migrated = database.podcastDao().getPodcast(targetId)
+        return if (migrated?.isSubscribed == true && !migrated.isRss) {
+            LegacyRssUpgradeOutcome.ALREADY_MIGRATED
+        } else {
+            LegacyRssUpgradeOutcome.SOURCE_NOT_ELIGIBLE
+        }
+    }
+
+    private suspend fun copiedCatalog(
+        source: PodcastEntity,
+        target: Podcast,
+        snapshot: LegacyRssFeedSnapshot,
+    ): CopiedRssCatalog? {
+        val rssDao = database.rssEpisodeDao()
+        val stored = rssDao.getAllNewest(source.podcastId)
+        val refreshed =
+            StickyRssEpisodeRemap.remap(
+                parsed = snapshot.parsed.episodes,
+                existing = rssDao.listIdentities(source.podcastId),
+            )
+        val combined = (refreshed + stored).distinctBy(RssEpisodeEntity::episodeId)
+        val identities =
+            combined.map { row ->
+                LocalEpisodeIdentity(
+                    episodeId = row.episodeId,
+                    guid = row.guid.orEmpty(),
+                    audioUrl = row.audioUrl,
                 )
-            val combined = (refreshed + stored).distinctBy(RssEpisodeEntity::episodeId)
-            val identities =
-                combined.map { row ->
-                    LocalEpisodeIdentity(
-                        episodeId = row.episodeId,
-                        guid = row.guid.orEmpty(),
-                        audioUrl = row.audioUrl,
-                    )
-                }
-            val localRows =
-                LocalEpisodeCatalogPersist.toLocalEpisodes(
-                    podcastIndexId = target.id,
-                    rssNamespaceId = sourcePodcastId,
-                    parsed = combined,
-                    existing = identities,
-                    piBaseline = null,
-                    channelImageUrl = snapshot.parsed.imageUrl,
-                    showImageUrl = target.imageUrl.ifBlank { source.imageUrl },
-                )
-            if (localRows.isEmpty() || !snapshot.finalFeedUrl.startsWith("https://", ignoreCase = true)) {
-                return@withTransaction LegacyRssUpgradeOutcome.INCOMPLETE_CATALOG
             }
-
-            val historyDao = database.listeningHistoryDao()
-            val downloadDao = database.downloadedEpisodeDao()
-            val queueDao = database.queueDao()
-            val listenerIds =
-                (
-                    historyDao.getHistoryForPodcast(sourcePodcastId).map { it.episodeId } +
-                        downloadDao.getDownloadsForPodcast(sourcePodcastId).map { it.episodeId } +
-                        queueDao.getEpisodeIdsForPodcast(sourcePodcastId)
-                ).toSet()
-            val localIds = localRows.mapTo(mutableSetOf()) { it.episodeId }
-            if (!LegacyRssUpgradeLogic.listenerIdsResolve(localIds, listenerIds)) {
-                return@withTransaction LegacyRssUpgradeOutcome.INCOMPLETE_CATALOG
-            }
-
-            val newest = localRows.maxByOrNull { it.publishedDate }
-            val latestEpisode =
-                newest?.toEpisode(
-                    podcastTitle = target.title,
-                    podcastImageUrl = target.imageUrl.ifBlank { source.imageUrl },
-                    podcastGenre = target.genre,
-                    podcastArtist = target.artist,
-                )
-            val now = System.currentTimeMillis()
-            val targetEntity =
+        val localRows =
+            LocalEpisodeCatalogPersist.toLocalEpisodes(
+                podcastIndexId = target.id,
+                rssNamespaceId = source.podcastId,
+                parsed = combined,
+                existing = identities,
+                piBaseline = null,
+                channelImageUrl = snapshot.parsed.imageUrl,
+                showImageUrl = target.imageUrl.ifBlank { source.imageUrl },
+            )
+        if (localRows.isEmpty() || !snapshot.finalFeedUrl.startsWith("https://", ignoreCase = true)) {
+            return null
+        }
+        val listenerIds =
+            (
+                database.listeningHistoryDao().getHistoryForPodcast(source.podcastId).map { it.episodeId } +
+                    database.downloadedEpisodeDao().getDownloadsForPodcast(source.podcastId).map { it.episodeId } +
+                    database.queueDao().getEpisodeIdsForPodcast(source.podcastId)
+            ).toSet()
+        val localIds = localRows.mapTo(mutableSetOf()) { it.episodeId }
+        if (!LegacyRssUpgradeLogic.listenerIdsResolve(localIds, listenerIds)) {
+            return null
+        }
+        val newest = localRows.maxByOrNull { it.publishedDate }
+        val now = System.currentTimeMillis()
+        val latestEpisode =
+            newest?.toEpisode(
+                podcastTitle = target.title,
+                podcastImageUrl = target.imageUrl.ifBlank { source.imageUrl },
+                podcastGenre = target.genre,
+                podcastArtist = target.artist,
+            )
+        return CopiedRssCatalog(
+            localRows = localRows,
+            targetEntity =
                 LegacyRssUpgradeLogic.targetEntity(
                     source = source,
                     target = target,
                     snapshot = snapshot,
                     latestEpisode = latestEpisode,
                     nowMillis = now,
-                )
+                ),
+            nowMillis = now,
+        )
+    }
 
-            val localDao = database.localEpisodeCatalogDao()
-            localDao.deleteCatalog(target.id)
-            database.episodeSupplementDao().deleteItemsForPodcast(target.id)
-            database.episodeSupplementDao().deleteSupplement(target.id)
-            podcastDao.upsert(targetEntity)
-            localDao.upsertEpisodes(localRows)
-            localDao.upsertFeed(
-                LocalEpisodeFeedEntity(
-                    podcastId = target.id,
-                    feedUrl = snapshot.finalFeedUrl,
-                    feedEtag = snapshot.etag,
-                    feedLastModified = snapshot.lastModified,
-                    fetchedAt = now,
-                    itemCount = localRows.size,
-                    feedOrder = FeedOrderLogic.classify(snapshot.parsed.episodes.map { it.publishedDate }),
-                    ttlExpiresAt = null,
-                    needsFullBackfill = false,
-                    copiedExtrasCount = 0,
-                    ready = true,
-                    feedUrlLookupAt = now,
+    private suspend fun persistTargetCatalog(
+        target: Podcast,
+        snapshot: LegacyRssFeedSnapshot,
+        catalog: CopiedRssCatalog,
+    ) {
+        val localDao = database.localEpisodeCatalogDao()
+        localDao.deleteCatalog(target.id)
+        database.episodeSupplementDao().deleteItemsForPodcast(target.id)
+        database.episodeSupplementDao().deleteSupplement(target.id)
+        database.podcastDao().upsert(catalog.targetEntity)
+        localDao.upsertEpisodes(catalog.localRows)
+        localDao.upsertFeed(
+            LocalEpisodeFeedEntity(
+                podcastId = target.id,
+                feedUrl = snapshot.finalFeedUrl,
+                feedEtag = snapshot.etag,
+                feedLastModified = snapshot.lastModified,
+                fetchedAt = catalog.nowMillis,
+                itemCount = catalog.localRows.size,
+                feedOrder = FeedOrderLogic.classify(snapshot.parsed.episodes.map { it.publishedDate }),
+                ttlExpiresAt = null,
+                needsFullBackfill = false,
+                copiedExtrasCount = 0,
+                ready = true,
+                feedUrlLookupAt = catalog.nowMillis,
+            ),
+        )
+    }
+
+    private suspend fun reassignListenerReferences(
+        sourcePodcastId: String,
+        targetEntity: PodcastEntity,
+    ) {
+        val historyDao = database.listeningHistoryDao()
+        val downloadDao = database.downloadedEpisodeDao()
+        val queueDao = database.queueDao()
+        historyDao.getHistoryForPodcast(sourcePodcastId).forEach { row ->
+            historyDao.upsert(
+                row.copy(
+                    podcastId = targetEntity.podcastId,
+                    podcastImageUrl = targetEntity.imageUrl,
+                    podcastName = targetEntity.title,
                 ),
             )
-
-            historyDao.getHistoryForPodcast(sourcePodcastId).forEach { row ->
-                historyDao.upsert(
-                    row.copy(
-                        podcastId = target.id,
-                        podcastImageUrl = targetEntity.imageUrl,
-                        podcastName = targetEntity.title,
-                    ),
-                )
-            }
-            downloadDao.getDownloadsForPodcast(sourcePodcastId).forEach { row ->
-                downloadDao.insert(
-                    row.copy(
-                        podcastId = target.id,
-                        podcastName = targetEntity.title,
-                        podcastImageUrl = targetEntity.imageUrl,
-                    ),
-                )
-            }
-            queueDao
-                .getAllQueueItemsSync()
-                .filter { it.podcastId == sourcePodcastId }
-                .forEach { row ->
-                    queueDao.updateQueueItem(
-                        row.copy(
-                            podcastId = target.id,
-                            podcastTitle = targetEntity.title,
-                            podcastGenre = targetEntity.genre.orEmpty(),
-                            podcastArtist = targetEntity.author,
-                            podcastImageUrl = targetEntity.imageUrl,
-                        ),
-                    )
-                }
-            database.listeningSessionDao().reassignPodcastId(sourcePodcastId, target.id)
-            database.listeningRollupDao().reassignPodcastId(sourcePodcastId, target.id)
-
-            podcastDao.upsert(
-                source.copy(
-                    isSubscribed = false,
-                    subscribedAt = 0L,
-                    notificationsEnabled = false,
-                    autoDownloadEnabled = false,
-                    linkedPodcastIndexId = target.id,
-                ),
-            )
-            LegacyRssUpgradeOutcome.MIGRATED
         }
+        downloadDao.getDownloadsForPodcast(sourcePodcastId).forEach { row ->
+            downloadDao.insert(
+                row.copy(
+                    podcastId = targetEntity.podcastId,
+                    podcastName = targetEntity.title,
+                    podcastImageUrl = targetEntity.imageUrl,
+                ),
+            )
+        }
+        queueDao
+            .getAllQueueItemsSync()
+            .filter { it.podcastId == sourcePodcastId }
+            .forEach { row ->
+                queueDao.updateQueueItem(
+                    row.copy(
+                        podcastId = targetEntity.podcastId,
+                        podcastTitle = targetEntity.title,
+                        podcastGenre = targetEntity.genre.orEmpty(),
+                        podcastArtist = targetEntity.author,
+                        podcastImageUrl = targetEntity.imageUrl,
+                    ),
+                )
+            }
+        database.listeningSessionDao().reassignPodcastId(sourcePodcastId, targetEntity.podcastId)
+        database.listeningRollupDao().reassignPodcastId(sourcePodcastId, targetEntity.podcastId)
+    }
+
+    private suspend fun retireSource(
+        source: PodcastEntity,
+        targetId: String,
+    ) {
+        database.podcastDao().upsert(
+            source.copy(
+                isSubscribed = false,
+                subscribedAt = 0L,
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                linkedPodcastIndexId = targetId,
+            ),
+        )
+    }
 
     private suspend fun targetIsInUse(podcastId: String): Boolean {
         if (database.podcastDao().getPodcast(podcastId)?.isSubscribed == true) return true
@@ -334,3 +370,9 @@ internal class LegacyRssSubscriptionUpgrader(
         return database.queueDao().getEpisodeIdsForPodcast(podcastId).isNotEmpty()
     }
 }
+
+private data class CopiedRssCatalog(
+    val localRows: List<LocalEpisodeEntity>,
+    val targetEntity: PodcastEntity,
+    val nowMillis: Long,
+)

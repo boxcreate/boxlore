@@ -24,6 +24,7 @@ import kotlinx.coroutines.withContext
 class NowPlayingWidgetPlaybackAdapter(
     private val playbackRepository: PlaybackRepository,
     scope: CoroutineScope,
+    private val playbackDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
 ) : WidgetPlaybackSource {
     override val state: StateFlow<WidgetPlaybackState> =
         playbackRepository.playerState
@@ -44,8 +45,7 @@ class NowPlayingWidgetPlaybackAdapter(
     }
 
     override suspend fun togglePlayPause() {
-        // MediaController APIs must run on the application/main thread.
-        withContext(Dispatchers.Main) {
+        withWidgetPlaybackDispatcher(playbackDispatcher) {
             playbackRepository.togglePlayPause(
                 Bundle().apply { putString("entry_point", WIDGET_ENTRY_POINT) },
             )
@@ -53,31 +53,31 @@ class NowPlayingWidgetPlaybackAdapter(
     }
 
     override suspend fun previous() {
-        withContext(Dispatchers.Main) {
+        withWidgetPlaybackDispatcher(playbackDispatcher) {
             playbackRepository.skipToPreviousEpisode()
         }
     }
 
     override suspend fun next() {
-        withContext(Dispatchers.Main) {
+        withWidgetPlaybackDispatcher(playbackDispatcher) {
             playbackRepository.skipToNextEpisode()
         }
     }
 
     override suspend fun skipForward() {
-        withContext(Dispatchers.Main) {
+        withWidgetPlaybackDispatcher(playbackDispatcher) {
             playbackRepository.skipForward()
         }
     }
 
     override suspend fun skipBackward() {
-        withContext(Dispatchers.Main) {
+        withWidgetPlaybackDispatcher(playbackDispatcher) {
             playbackRepository.skipBackward()
         }
     }
 
     private suspend fun restoreIfNeeded() {
-        withWidgetPlaybackDispatcher {
+        withWidgetPlaybackDispatcher(playbackDispatcher) {
             if (playbackRepository.playerState.value.currentEpisode == null) {
                 playbackRepository.restoreLastSession()
             }

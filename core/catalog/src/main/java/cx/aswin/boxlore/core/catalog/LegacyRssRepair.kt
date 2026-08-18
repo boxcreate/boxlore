@@ -30,7 +30,25 @@ internal sealed interface ExactRepairMatch {
     data object TransientFailure : ExactRepairMatch
 }
 
+class LegacyRssRepairCatalog(
+    val podcastDao: PodcastDao,
+    val rssRepository: RssPodcastRepository,
+    val podcastRepository: PodcastRepository,
+    val userPreferences: UserPreferencesRepository,
+    val boxcastPrefs: BoxcastPrefs,
+    val adaptiveRanking: AdaptiveRankingRepository,
+)
+
+class LegacyRssRepairRuntime(
+    val isOnline: () -> Boolean,
+    val activation: LegacyRssRepairActivation,
+    val scope: CoroutineScope,
+    val restoreNotifications: suspend (Podcast) -> Unit,
+)
+
 internal object LegacyRssRepairLogic {
+    const val MAX_CONSECUTIVE_TRANSIENT_FAILURES = 3
+
     fun isEligibleSource(source: PodcastEntity): Boolean =
         source.isSubscribed &&
             source.isRss &&
@@ -42,6 +60,8 @@ internal object LegacyRssRepairLogic {
     ): Boolean = hasEligibleSources && isOnline
 
     fun shouldMarkCompleted(hasPendingIdRepair: Boolean): Boolean = !hasPendingIdRepair
+
+    fun shouldStopPass(consecutiveTransientFailures: Int): Boolean = consecutiveTransientFailures >= MAX_CONSECUTIVE_TRANSIENT_FAILURES
 
     fun selectMatch(
         urlLookup: ExactPodcastLookupResult,
@@ -90,16 +110,18 @@ enum class LegacyRssRepairActivation {
  * feed URL or podcast GUID and the RSS module can preserve the complete listener-facing catalog.
  */
 class LegacyRssRepair private constructor(
-    private val podcastDao: PodcastDao,
-    private val rssRepository: RssPodcastRepository,
-    private val userPreferences: UserPreferencesRepository,
-    private val boxcastPrefs: BoxcastPrefs,
-    private val adaptiveRanking: AdaptiveRankingRepository,
+    private val catalog: LegacyRssRepairCatalog,
+    private val runtime: LegacyRssRepairRuntime,
     private val lookup: suspend (ExactPodcastLookupKey) -> ExactPodcastLookupResult,
-    private val isOnline: () -> Boolean,
-    private val activation: LegacyRssRepairActivation,
-    private val scope: CoroutineScope,
 ) {
+    private val podcastDao get() = catalog.podcastDao
+    private val rssRepository get() = catalog.rssRepository
+    private val userPreferences get() = catalog.userPreferences
+    private val boxcastPrefs get() = catalog.boxcastPrefs
+    private val adaptiveRanking get() = catalog.adaptiveRanking
+    private val isOnline get() = runtime.isOnline
+    private val activation get() = runtime.activation
+    private val scope get() = runtime.scope
     private val running = AtomicBoolean(false)
     private val oneShotGate = LegacyRssRepairOneShotGate()
     private val progressState = MutableStateFlow(false)
@@ -169,22 +191,10 @@ class LegacyRssRepair private constructor(
 
         progressState.value = true
         try {
+            var consecutiveTransientFailures = 0
             for (source in sources) {
-                val snapshot =
-                    try {
-                        rssRepository.legacySubscriptionRepair.inspect(source.podcastId).getOrThrow()
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (_: Exception) {
-                        continue
-                    }
-                when (val match = findExactMatch(snapshot)) {
-                    ExactRepairMatch.NoMatch -> Unit
-                    ExactRepairMatch.TransientFailure -> Unit
-                    is ExactRepairMatch.Found -> {
-                        migrate(source.podcastId, match.podcast, snapshot)
-                    }
-                }
+                consecutiveTransientFailures = processSource(source.podcastId, consecutiveTransientFailures)
+                if (LegacyRssRepairLogic.shouldStopPass(consecutiveTransientFailures)) break
             }
 
             if (userPreferences.pendingPodcastIdRepair() == null) {
@@ -195,13 +205,38 @@ class LegacyRssRepair private constructor(
         }
     }
 
+    private suspend fun processSource(
+        sourcePodcastId: String,
+        consecutiveTransientFailures: Int,
+    ): Int {
+        val snapshot =
+            try {
+                rssRepository.legacySubscriptionRepair.inspect(sourcePodcastId).getOrThrow()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                return consecutiveTransientFailures + 1
+            }
+        return when (val match = findExactMatch(snapshot)) {
+            ExactRepairMatch.NoMatch -> 0
+            ExactRepairMatch.TransientFailure -> consecutiveTransientFailures + 1
+            is ExactRepairMatch.Found -> {
+                migrate(sourcePodcastId, match.podcast, snapshot)
+                0
+            }
+        }
+    }
+
     private suspend fun findExactMatch(snapshot: LegacyRssFeedSnapshot): ExactRepairMatch {
         val urlCandidates =
             (
                 OpmlImportLogic.urlLookupCandidates(snapshot.sourceFeedUrl) +
                     OpmlImportLogic.urlLookupCandidates(snapshot.finalFeedUrl)
             ).distinct()
-        val urlLookup = firstUrlMatch(urlCandidates)
+        val urlLookup =
+            OpmlImportLogic.firstExactLookup(urlCandidates) { candidate ->
+                lookup(ExactPodcastLookupKey(ExactPodcastLookupType.FEED_URL, candidate))
+            }
         val guidLookup =
             snapshot.podcastGuid
                 ?.trim()
@@ -210,26 +245,6 @@ class LegacyRssRepair private constructor(
                     lookup(ExactPodcastLookupKey(ExactPodcastLookupType.PODCAST_GUID, guid))
                 } ?: ExactPodcastLookupResult.NotFound
         return LegacyRssRepairLogic.selectMatch(urlLookup, guidLookup)
-    }
-
-    private suspend fun firstUrlMatch(candidates: List<String>): ExactPodcastLookupResult {
-        var failed = false
-        for (candidate in candidates) {
-            when (
-                val result =
-                    lookup(
-                        ExactPodcastLookupKey(
-                            type = ExactPodcastLookupType.FEED_URL,
-                            value = candidate,
-                        ),
-                    )
-            ) {
-                is ExactPodcastLookupResult.Found -> return result
-                ExactPodcastLookupResult.Failed -> failed = true
-                ExactPodcastLookupResult.NotFound -> Unit
-            }
-        }
-        return if (failed) ExactPodcastLookupResult.Failed else ExactPodcastLookupResult.NotFound
     }
 
     private suspend fun migrate(
@@ -250,6 +265,7 @@ class LegacyRssRepair private constructor(
                 LegacyRssUpgradeOutcome.ALREADY_MIGRATED,
                 -> {
                     finishIdRepair(oldPodcastId, target.id)
+                    restoreNotificationRouting(target)
                     true
                 }
                 LegacyRssUpgradeOutcome.SOURCE_NOT_ELIGIBLE,
@@ -299,32 +315,32 @@ class LegacyRssRepair private constructor(
         boxcastPrefs.clearBylCacheIfPodcastId(oldPodcastId)
     }
 
+    private suspend fun restoreNotificationRouting(target: Podcast) {
+        val row = podcastDao.getPodcast(target.id) ?: return
+        if (!row.notificationsEnabled) return
+        try {
+            runtime.restoreNotifications(
+                target.copy(feedUrl = row.feedUrl ?: target.feedUrl),
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Log.w(TAG, "Could not restore notification routing after RSS repair", error)
+        }
+    }
+
     companion object {
         private const val TAG = "LegacyRssRepair"
         private const val REPAIR_VERSION = 1
 
-        @Suppress("LongParameterList")
         fun create(
-            podcastDao: PodcastDao,
-            rssRepository: RssPodcastRepository,
-            podcastRepository: PodcastRepository,
-            userPreferences: UserPreferencesRepository,
-            boxcastPrefs: BoxcastPrefs,
-            adaptiveRanking: AdaptiveRankingRepository,
-            isOnline: () -> Boolean,
-            activation: LegacyRssRepairActivation,
-            scope: CoroutineScope,
+            catalog: LegacyRssRepairCatalog,
+            runtime: LegacyRssRepairRuntime,
         ): LegacyRssRepair =
             LegacyRssRepair(
-                podcastDao = podcastDao,
-                rssRepository = rssRepository,
-                userPreferences = userPreferences,
-                boxcastPrefs = boxcastPrefs,
-                adaptiveRanking = adaptiveRanking,
-                lookup = podcastRepository::lookupExactPodcastIndex,
-                isOnline = isOnline,
-                activation = activation,
-                scope = scope,
+                catalog = catalog,
+                runtime = runtime,
+                lookup = catalog.podcastRepository::lookupExactPodcastIndex,
             )
     }
 }

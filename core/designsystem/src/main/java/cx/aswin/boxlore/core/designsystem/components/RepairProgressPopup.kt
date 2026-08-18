@@ -24,10 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
@@ -81,13 +83,13 @@ fun RepairProgressPopup(
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
-                        text = "Library repair in progress",
+                        text = stringResource(R.string.repair_progress_title),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = GoogleSansWeight.bold,
                         color = Color.White,
                     )
                     Text(
-                        text = "Please keep boxlore open until this finishes.",
+                        text = stringResource(R.string.repair_progress_body),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.68f),
                     )

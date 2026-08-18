@@ -360,18 +360,20 @@ class AdaptiveRankingRepository private constructor(
         val oldKey = oldPodcastId.normalizedFacetKey()
         val newKey = newPodcastId.normalizedFacetKey()
         if (oldKey.isEmpty() || newKey.isEmpty() || oldKey == newKey) return
-        val old = dao.getFacet(PreferenceFacetType.SHOW.name, oldKey) ?: return
-        val existingTarget = dao.getFacet(PreferenceFacetType.SHOW.name, newKey)
-        dao.replaceFacetKey(
-            oldFacetType = PreferenceFacetType.SHOW.name,
-            oldFacetKey = oldKey,
-            replacement =
-                ShowFacetMigrationLogic.merge(
-                    old = old,
-                    existingTarget = existingTarget,
-                    newPodcastId = newKey,
-                ),
-        )
+        database.withTransaction {
+            val old = dao.getFacet(PreferenceFacetType.SHOW.name, oldKey) ?: return@withTransaction
+            val existingTarget = dao.getFacet(PreferenceFacetType.SHOW.name, newKey)
+            dao.replaceFacetKey(
+                oldFacetType = PreferenceFacetType.SHOW.name,
+                oldFacetKey = oldKey,
+                replacement =
+                    ShowFacetMigrationLogic.merge(
+                        old = old,
+                        existingTarget = existingTarget,
+                        newPodcastId = newKey,
+                    ),
+            )
+        }
     }
 
     /**

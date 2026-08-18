@@ -36,6 +36,13 @@ class LegacyRssRepairLogicTest {
     }
 
     @Test
+    fun `pass stops after consecutive transient lookup failures`() {
+        assertEquals(false, LegacyRssRepairLogic.shouldStopPass(0))
+        assertEquals(false, LegacyRssRepairLogic.shouldStopPass(2))
+        assertEquals(true, LegacyRssRepairLogic.shouldStopPass(3))
+    }
+
+    @Test
     fun `completed pass settles unless an id migration is still pending`() {
         assertEquals(true, LegacyRssRepairLogic.shouldMarkCompleted(hasPendingIdRepair = false))
         assertEquals(false, LegacyRssRepairLogic.shouldMarkCompleted(hasPendingIdRepair = true))

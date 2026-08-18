@@ -266,6 +266,31 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun finishPodcastIdRepairIgnoresMismatchedJournal() =
+        runTest {
+            val oldId = "rss:old"
+            repository.setSubscriptionManualOrder(listOf(oldId, "keep"))
+            repository.beginPodcastIdRepair(oldId, "42")
+
+            repository.finishPodcastIdRepair(oldId, "99")
+
+            assertEquals(listOf(oldId, "keep"), repository.subscriptionManualOrderStream.first())
+            assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
+        }
+
+    @Test
+    fun cancelPodcastIdRepairClearsOnlyMatchingJournal() =
+        runTest {
+            val oldId = "rss:old"
+            repository.beginPodcastIdRepair(oldId, "42")
+            repository.cancelPodcastIdRepair(oldId, "99")
+            assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
+
+            repository.cancelPodcastIdRepair(oldId, "42")
+            assertNull(repository.pendingPodcastIdRepair())
+        }
+
+    @Test
     fun legacyRssRepairVersionOnlyMovesForward() =
         runTest {
             assertEquals(0, repository.legacyRssRepairVersion())
