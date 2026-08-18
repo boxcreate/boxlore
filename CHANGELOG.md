@@ -9,15 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Home Your Shows Daily / Offline Mix switch, persisted as `home_mix_mode`, with a 15-item unfinished-download rail and queue. ([#996](https://github.com/boxcreate/boxlore/pull/996)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 ### Fixed
 - One-time repair migrates legacy OPML `rss:` subscriptions to Podcast Index identity on exact feed-URL or GUID matches (v0.0.18/0.0.19 upgraded installs only; never loops). ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - OPML import defers a feed on transient Podcast Index lookup failure instead of creating an RSS fallback. ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Now Playing widget session restore hops to the MediaController main thread. ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- After Google Backup restore, Smart Downloads toggle and periodic mixtape sync stay aligned; missing local download artwork falls back to the show image. ([#996](https://github.com/boxcreate/boxlore/pull/996)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=993 -->
 ### High
 - If you imported podcasts from another app in an older boxlore build, those shows are restored as normal catalog subscriptions. You may see a one-time repair banner; it will not loop.
 <!-- readme-copy:end pr=993 -->
+
+<!-- readme-copy:start pr=996 -->
+### Improvements
+- Home now has Daily Mix and Offline Mix, so downloaded episodes are one tap away when you want to listen without data.
+- Reinstalling from a Google backup no longer leaves Smart Downloads running while the setting looks off, and download artwork should stay visible.
+<!-- readme-copy:end pr=996 -->
 ## [v0.0.18] - 2026-08-15
 
 ### Added

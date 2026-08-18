@@ -64,6 +64,11 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>Home now has Daily Mix and Offline Mix, so downloaded episodes are one tap away when you want to listen without data. <a href="https://github.com/boxcreate/boxlore/pull/996"><img src="https://img.shields.io/badge/PR-996-6750A4?style=flat-square" alt="PR #996" height="18"/></a></li>
+<li>Reinstalling from a Google backup no longer leaves Smart Downloads running while the setting looks off, and download artwork should stay visible. <a href="https://github.com/boxcreate/boxlore/pull/996"><img src="https://img.shields.io/badge/PR-996-6750A4?style=flat-square" alt="PR #996" height="18"/></a></li>
+</ul>
 <b>• High:</b>
 <ul align="left">
 <li>If you imported podcasts from another app in an older boxlore build, those shows are restored as normal catalog subscriptions. You may see a one-time repair banner; it will not loop. <a href="https://github.com/boxcreate/boxlore/pull/993"><img src="https://img.shields.io/badge/PR-993-6750A4?style=flat-square" alt="PR #993" height="18"/></a></li>
