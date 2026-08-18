@@ -8,10 +8,37 @@ import org.junit.jupiter.api.Test
 
 class LegacyRssRepairLogicTest {
     @Test
+    fun `one shot gate admits one pass and never loops`() {
+        val gate = LegacyRssRepairOneShotGate()
+
+        assertEquals(false, gate.hasAttempted())
+        assertEquals(true, gate.tryBegin())
+        assertEquals(true, gate.hasAttempted())
+        assertEquals(false, gate.tryBegin())
+    }
+
+    @Test
+    fun `one shot gate retries only when preflight persistence fails`() {
+        val gate = LegacyRssRepairOneShotGate()
+
+        assertEquals(true, gate.tryBegin())
+        gate.resetAfterFailure()
+
+        assertEquals(false, gate.hasAttempted())
+        assertEquals(true, gate.tryBegin())
+    }
+
+    @Test
     fun `repair pass starts only for eligible work while online`() {
         assertEquals(true, LegacyRssRepairLogic.shouldStartPass(hasEligibleSources = true, isOnline = true))
         assertEquals(false, LegacyRssRepairLogic.shouldStartPass(hasEligibleSources = true, isOnline = false))
         assertEquals(false, LegacyRssRepairLogic.shouldStartPass(hasEligibleSources = false, isOnline = true))
+    }
+
+    @Test
+    fun `completed pass settles unless an id migration is still pending`() {
+        assertEquals(true, LegacyRssRepairLogic.shouldMarkCompleted(hasPendingIdRepair = false))
+        assertEquals(false, LegacyRssRepairLogic.shouldMarkCompleted(hasPendingIdRepair = true))
     }
 
     @Test

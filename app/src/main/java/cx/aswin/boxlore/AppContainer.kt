@@ -4,6 +4,7 @@ import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
 import cx.aswin.boxlore.core.catalog.LegacyRssRepair
+import cx.aswin.boxlore.core.catalog.LegacyRssRepairActivation
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
@@ -68,6 +69,20 @@ class AppContainer(
     private val appContext = context.applicationContext
 
     private val syncScope = applicationScope
+    private val legacyRssRepairLaunchDecision =
+        runCatching {
+            @Suppress("DEPRECATION")
+            val packageInfo =
+                appContext.packageManager.getPackageInfo(
+                    appContext.packageName,
+                    0,
+                )
+            LegacyRssRepairLaunchGate.evaluate(
+                versionName = BuildConfig.VERSION_NAME,
+                firstInstallTime = packageInfo.firstInstallTime,
+                lastUpdateTime = packageInfo.lastUpdateTime,
+            )
+        }.getOrDefault(LegacyRssRepairLaunchDecision.Disabled)
 
     /** Process-scoped online/offline for NavHost offline UX. */
     val connectivityObserver: AndroidConnectivityObserver =
@@ -228,6 +243,13 @@ class AppContainer(
             boxcastPrefs = BoxcastPrefs(appContext),
             adaptiveRanking = adaptiveRankingRepository,
             isOnline = connectivityStatus::isOnline,
+            activation =
+                when (legacyRssRepairLaunchDecision) {
+                    LegacyRssRepairLaunchDecision.Enabled -> LegacyRssRepairActivation.ENABLED
+                    LegacyRssRepairLaunchDecision.SettleWithoutRepair ->
+                        LegacyRssRepairActivation.SETTLE_WITHOUT_REPAIR
+                    LegacyRssRepairLaunchDecision.Disabled -> LegacyRssRepairActivation.DISABLED
+                },
             scope = syncScope,
         )
     }

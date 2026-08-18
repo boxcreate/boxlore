@@ -298,7 +298,7 @@ fun BoxLoreAppRoot(
     }
 
     LaunchedEffect(onboardingCompleted, isOnline) {
-        if (onboardingCompleted && isOnline) {
+        if (onboardingCompleted) {
             container.legacyRssRepair.ensureStarted()
         }
     }
@@ -312,7 +312,6 @@ fun BoxLoreAppRoot(
                     if (event == Lifecycle.Event.ON_START) {
                         if (SubscriptionResumeRefreshLogic.shouldRequestRefreshOnStart(skipFirstStart)) {
                             container.subscriptionForegroundSync.requestRefresh()
-                            container.legacyRssRepair.ensureStarted()
                         }
                         skipFirstStart = false
                     }

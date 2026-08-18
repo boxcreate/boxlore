@@ -41,6 +41,8 @@ internal object LegacyRssRepairLogic {
         isOnline: Boolean,
     ): Boolean = hasEligibleSources && isOnline
 
+    fun shouldMarkCompleted(hasPendingIdRepair: Boolean): Boolean = !hasPendingIdRepair
+
     fun selectMatch(
         urlLookup: ExactPodcastLookupResult,
         guidLookup: ExactPodcastLookupResult,
@@ -63,6 +65,24 @@ internal object LegacyRssRepairLogic {
     }
 }
 
+internal class LegacyRssRepairOneShotGate {
+    private val attempted = AtomicBoolean(false)
+
+    fun hasAttempted(): Boolean = attempted.get()
+
+    fun tryBegin(): Boolean = attempted.compareAndSet(false, true)
+
+    fun resetAfterFailure() {
+        attempted.set(false)
+    }
+}
+
+enum class LegacyRssRepairActivation {
+    ENABLED,
+    SETTLE_WITHOUT_REPAIR,
+    DISABLED,
+}
+
 /**
  * One-time, conservative repair for legacy OPML rows that were stored as true RSS subscriptions.
  *
@@ -77,14 +97,22 @@ class LegacyRssRepair private constructor(
     private val adaptiveRanking: AdaptiveRankingRepository,
     private val lookup: suspend (ExactPodcastLookupKey) -> ExactPodcastLookupResult,
     private val isOnline: () -> Boolean,
+    private val activation: LegacyRssRepairActivation,
     private val scope: CoroutineScope,
 ) {
     private val running = AtomicBoolean(false)
+    private val oneShotGate = LegacyRssRepairOneShotGate()
     private val progressState = MutableStateFlow(false)
 
     val inProgress: StateFlow<Boolean> = progressState.asStateFlow()
 
     fun ensureStarted() {
+        if (oneShotGate.hasAttempted()) return
+        if (activation == LegacyRssRepairActivation.SETTLE_WITHOUT_REPAIR) {
+            settleFreshInstall()
+            return
+        }
+        if (activation != LegacyRssRepairActivation.ENABLED) return
         if (!running.compareAndSet(false, true)) return
         scope.launch {
             try {
@@ -100,12 +128,26 @@ class LegacyRssRepair private constructor(
         }
     }
 
+    private fun settleFreshInstall() {
+        if (!oneShotGate.tryBegin()) return
+        scope.launch {
+            try {
+                userPreferences.markLegacyRssRepairVersion(REPAIR_VERSION)
+            } catch (error: CancellationException) {
+                oneShotGate.resetAfterFailure()
+                throw error
+            } catch (error: Exception) {
+                oneShotGate.resetAfterFailure()
+                Log.w(TAG, "Could not persist fresh-install repair exclusion", error)
+            }
+        }
+    }
+
     @Suppress("CyclomaticComplexMethod", "NestedBlockDepth")
     internal suspend fun runIfNeeded() {
         if (userPreferences.legacyRssRepairVersion() >= REPAIR_VERSION) return
         reconcilePendingRepair(userPreferences.pendingPodcastIdRepair())
 
-        var transientFailure = false
         val pendingOldId = userPreferences.pendingPodcastIdRepair()?.oldPodcastId
         val sources =
             podcastDao
@@ -113,12 +155,17 @@ class LegacyRssRepair private constructor(
                 .filter(LegacyRssRepairLogic::isEligibleSource)
                 .sortedByDescending { it.podcastId == pendingOldId }
         if (sources.isEmpty()) {
-            if (userPreferences.pendingPodcastIdRepair() == null) {
+            if (
+                LegacyRssRepairLogic.shouldMarkCompleted(
+                    hasPendingIdRepair = userPreferences.pendingPodcastIdRepair() != null,
+                )
+            ) {
                 userPreferences.markLegacyRssRepairVersion(REPAIR_VERSION)
             }
             return
         }
         if (!LegacyRssRepairLogic.shouldStartPass(sources.isNotEmpty(), isOnline())) return
+        if (!oneShotGate.tryBegin()) return
 
         progressState.value = true
         try {
@@ -129,20 +176,18 @@ class LegacyRssRepair private constructor(
                     } catch (error: CancellationException) {
                         throw error
                     } catch (_: Exception) {
-                        transientFailure = true
                         continue
                     }
                 when (val match = findExactMatch(snapshot)) {
                     ExactRepairMatch.NoMatch -> Unit
-                    ExactRepairMatch.TransientFailure -> transientFailure = true
+                    ExactRepairMatch.TransientFailure -> Unit
                     is ExactRepairMatch.Found -> {
-                        val settled = migrate(source.podcastId, match.podcast, snapshot)
-                        if (!settled) transientFailure = true
+                        migrate(source.podcastId, match.podcast, snapshot)
                     }
                 }
             }
 
-            if (!transientFailure && userPreferences.pendingPodcastIdRepair() == null) {
+            if (userPreferences.pendingPodcastIdRepair() == null) {
                 userPreferences.markLegacyRssRepairVersion(REPAIR_VERSION)
             }
         } finally {
@@ -267,6 +312,7 @@ class LegacyRssRepair private constructor(
             boxcastPrefs: BoxcastPrefs,
             adaptiveRanking: AdaptiveRankingRepository,
             isOnline: () -> Boolean,
+            activation: LegacyRssRepairActivation,
             scope: CoroutineScope,
         ): LegacyRssRepair =
             LegacyRssRepair(
@@ -277,6 +323,7 @@ class LegacyRssRepair private constructor(
                 adaptiveRanking = adaptiveRanking,
                 lookup = podcastRepository::lookupExactPodcastIndex,
                 isOnline = isOnline,
+                activation = activation,
                 scope = scope,
             )
     }
