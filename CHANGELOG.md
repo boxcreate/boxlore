@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Home Your Shows Daily / Offline Mix switch, persisted as `home_mix_mode`, with a 15-item unfinished-download rail and queue. ([#996](https://github.com/boxcreate/boxlore/pull/996)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Added Podcast Info episode multi-selection with bulk download, played/unplayed, playback, queue, and full-feed range actions. ([#997](https://github.com/boxcreate/boxlore/pull/997)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 ### Fixed
 - One-time repair migrates legacy OPML `rss:` subscriptions to Podcast Index identity on exact feed-URL or GUID matches (v0.0.18/0.0.19 upgraded installs only; never loops). ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - OPML import defers a feed on transient Podcast Index lookup failure instead of creating an RSS fallback. ([#993](https://github.com/boxcreate/boxlore/pull/993)) <!-- impact:user-impact-high --> <!-- copy:locked -->
@@ -27,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Home now has Daily Mix and Offline Mix, so downloaded episodes are one tap away when you want to listen without data.
 - Reinstalling from a Google backup no longer leaves Smart Downloads running while the setting looks off, and download artwork should stay visible.
 <!-- readme-copy:end pr=996 -->
+
+<!-- readme-copy:start pr=997 -->
+### New features
+- Long-press an episode to select and manage many episodes together, including older or newer episodes across long shows.
+<!-- readme-copy:end pr=997 -->
 ## [v0.0.18] - 2026-08-15
 
 ### Added
