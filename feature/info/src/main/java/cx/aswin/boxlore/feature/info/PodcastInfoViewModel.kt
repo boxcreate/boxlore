@@ -350,6 +350,14 @@ class PodcastInfoViewModel(
         }
     }
 
+    fun markEpisodesUncompleted(episodes: List<Episode>) {
+        val targets = episodes.distinctBy(Episode::id)
+        if (targets.isEmpty()) return
+        viewModelScope.launch {
+            playbackRepository.markAllEpisodesUncompleted(episodes = targets)
+        }
+    }
+
     fun playEpisodes(episodes: List<Episode>) {
         val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
         val targets = episodes.distinctBy(Episode::id)

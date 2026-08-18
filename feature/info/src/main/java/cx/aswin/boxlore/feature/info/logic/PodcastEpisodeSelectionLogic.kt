@@ -75,4 +75,9 @@ internal object PodcastEpisodeSelectionLogic {
         episodes: List<Episode>,
         selectedIds: Set<String>,
     ): List<Episode> = episodes.filter { it.id in selectedIds }.distinctBy(Episode::id)
+
+    fun shouldMarkUnplayed(
+        selectedEpisodes: List<Episode>,
+        completedEpisodeIds: Set<String>,
+    ): Boolean = selectedEpisodes.isNotEmpty() && selectedEpisodes.all { it.id in completedEpisodeIds }
 }

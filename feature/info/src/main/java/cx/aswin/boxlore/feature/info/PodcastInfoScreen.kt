@@ -368,6 +368,13 @@ fun PodcastInfoScreen(
                             selectedIds = selectedEpisodeIds.toSet(),
                         )
                     }
+                val markSelectionAsUnplayed =
+                    remember(selectedEpisodes, completedEpisodeIds) {
+                        PodcastEpisodeSelectionLogic.shouldMarkUnplayed(
+                            selectedEpisodes = selectedEpisodes,
+                            completedEpisodeIds = completedEpisodeIds,
+                        )
+                    }
                 val clearEpisodeSelection = {
                     selectionRequestGeneration += 1
                     selectedEpisodeIds = emptyList()
@@ -720,7 +727,7 @@ fun PodcastInfoScreen(
                                     selectedEpisodes.any {
                                         it.id !in downloadedEpisodeIds && it.id !in downloadingEpisodeIds
                                     },
-                                canMarkCompleted = selectedEpisodes.any { it.id !in completedEpisodeIds },
+                                markAsUnplayed = markSelectionAsUnplayed,
                                 canAddToQueue = selectedEpisodes.any { it.id !in queuedEpisodeIds },
                                 hasRangeAnchor =
                                     selectionAnchorEpisodeId != null &&
@@ -736,8 +743,12 @@ fun PodcastInfoScreen(
                                     viewModel.downloadEpisodes(selectedEpisodes)
                                     clearEpisodeSelection()
                                 },
-                                onMarkCompleted = {
-                                    viewModel.markEpisodesCompleted(selectedEpisodes)
+                                onToggleCompletion = {
+                                    if (markSelectionAsUnplayed) {
+                                        viewModel.markEpisodesUncompleted(selectedEpisodes)
+                                    } else {
+                                        viewModel.markEpisodesCompleted(selectedEpisodes)
+                                    }
                                     clearEpisodeSelection()
                                 },
                                 onPlay = {

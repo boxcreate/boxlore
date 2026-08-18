@@ -3,6 +3,7 @@
     <string name="episode_selection_clear">Clear selection</string>
     <string name="episode_selection_download">Download selected episodes</string>
     <string name="episode_selection_mark_completed">Mark selected episodes completed</string>
+    <string name="episode_selection_mark_unplayed">Mark selected episodes unplayed</string>
     <string name="episode_selection_play">Play selected episodes</string>
     <string name="episode_selection_add_queue">Add selected episodes to queue</string>
     <string name="episode_selection_more">More selection options</string>

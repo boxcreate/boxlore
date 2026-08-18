@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -37,7 +38,7 @@ import cx.aswin.boxlore.feature.info.R
 internal data class EpisodeSelectionToolbarState(
     val selectedCount: Int,
     val canDownload: Boolean,
-    val canMarkCompleted: Boolean,
+    val markAsUnplayed: Boolean,
     val canAddToQueue: Boolean,
     val hasRangeAnchor: Boolean,
     val isLoadingFullSelection: Boolean,
@@ -46,7 +47,7 @@ internal data class EpisodeSelectionToolbarState(
 internal data class EpisodeSelectionToolbarActions(
     val onClear: () -> Unit,
     val onDownload: () -> Unit,
-    val onMarkCompleted: () -> Unit,
+    val onToggleCompletion: () -> Unit,
     val onPlay: () -> Unit,
     val onAddToQueue: () -> Unit,
     val onSelectVisible: () -> Unit,
@@ -91,12 +92,23 @@ internal fun EpisodeSelectionToolbar(
                 )
             }
             IconButton(
-                onClick = actions.onMarkCompleted,
-                enabled = state.canMarkCompleted,
+                onClick = actions.onToggleCompletion,
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.DoneAll,
-                    contentDescription = stringResource(R.string.episode_selection_mark_completed),
+                    imageVector =
+                        if (state.markAsUnplayed) {
+                            Icons.Rounded.RadioButtonUnchecked
+                        } else {
+                            Icons.Rounded.DoneAll
+                        },
+                    contentDescription =
+                        stringResource(
+                            if (state.markAsUnplayed) {
+                                R.string.episode_selection_mark_unplayed
+                            } else {
+                                R.string.episode_selection_mark_completed
+                            },
+                        ),
                 )
             }
             FilledIconButton(onClick = actions.onPlay) {

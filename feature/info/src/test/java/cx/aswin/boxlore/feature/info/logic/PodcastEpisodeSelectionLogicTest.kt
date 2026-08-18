@@ -93,6 +93,24 @@ class PodcastEpisodeSelectionLogicTest {
         assertEquals(listOf("b", "a"), selected.map(Episode::id))
     }
 
+    @Test
+    fun `completion action becomes unplayed only when every selection is completed`() {
+        val selected = listOf(episode("a"), episode("b"))
+
+        assertEquals(
+            true,
+            PodcastEpisodeSelectionLogic.shouldMarkUnplayed(selected, setOf("a", "b", "other")),
+        )
+        assertEquals(
+            false,
+            PodcastEpisodeSelectionLogic.shouldMarkUnplayed(selected, setOf("a")),
+        )
+        assertEquals(
+            false,
+            PodcastEpisodeSelectionLogic.shouldMarkUnplayed(emptyList(), setOf("a")),
+        )
+    }
+
     private fun episode(id: String): Episode =
         Episode(
             id = id,
