@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.Executors
@@ -185,16 +186,26 @@ class DownloadRepository(
                 try {
                     android.util.Log.d("DownloadRepo", "Inserting optimistic download entity for ${episode.id}")
 
+                    val episodeArtSource =
+                        DownloadArtworkUrls.remoteUrl(episode.imageUrl)
+                            ?: DownloadArtworkUrls.remoteUrl(podcast.imageUrl)
+                    val podcastArtSource =
+                        DownloadArtworkUrls.remoteUrl(podcast.imageUrl)
+                            ?: episodeArtSource
                     val localEpisodeImg =
                         downloadArtworkLocally(
                             context,
-                            episode.imageUrl,
+                            episodeArtSource,
                             "downloaded_artworks",
                             "episode_${episode.id}.png",
-                        ) ?: episode.imageUrl
+                        ) ?: episodeArtSource
                     val localPodcastImg =
-                        downloadArtworkLocally(context, podcast.imageUrl, "downloaded_artworks", "podcast_${podcast.id}.png")
-                            ?: podcast.imageUrl
+                        downloadArtworkLocally(
+                            context,
+                            podcastArtSource,
+                            "downloaded_artworks",
+                            "podcast_${podcast.id}.png",
+                        ) ?: podcastArtSource
 
                     DownloadedEpisodeEntity(
                         episodeId = episode.id,
@@ -291,7 +302,14 @@ class DownloadRepository(
         }
     }
 
-    val downloads: Flow<List<DownloadedEpisodeEntity>> = database.downloadedEpisodeDao().getAllDownloads()
+    val downloads: Flow<List<DownloadedEpisodeEntity>> =
+        database.downloadedEpisodeDao().getAllDownloads().transform { rows ->
+            emit(withUsableArtwork(rows))
+        }
+
+    /** Completed downloads mapped for listener-facing offline playback, newest release first. */
+    val completedDownloadItems: Flow<List<CompletedDownloadItem>> =
+        downloads.map(CompletedDownloadItems::from)
 
     /** Completed download episode ids — prefer over filtering [downloads] by Room status in features. */
     val completedDownloadIds: Flow<Set<String>> =
@@ -314,6 +332,32 @@ class DownloadRepository(
     fun isDownloaded(episodeId: String): Flow<Boolean> = database.downloadedEpisodeDao().isDownloadedFlow(episodeId).map { it > 0 }
 
     fun isDownloading(episodeId: String): Flow<Boolean> = database.downloadedEpisodeDao().isDownloadingFlow(episodeId).map { it > 0 }
+
+    private suspend fun withUsableArtwork(rows: List<DownloadedEpisodeEntity>): List<DownloadedEpisodeEntity> {
+        if (rows.isEmpty()) return rows
+        val fallbacks =
+            database
+                .podcastDao()
+                .getPodcastsByIds(rows.map { it.podcastId }.distinct())
+                .associate { podcast -> podcast.podcastId to podcast.imageUrl }
+        return rows.map { row ->
+            val episodeArt =
+                DownloadArtworkUrls.resolve(
+                    stored = row.episodeImageUrl,
+                    fallback = row.podcastImageUrl ?: fallbacks[row.podcastId],
+                ) ?: fallbacks[row.podcastId]
+            val podcastArt =
+                DownloadArtworkUrls.resolve(
+                    stored = row.podcastImageUrl,
+                    fallback = fallbacks[row.podcastId],
+                ) ?: fallbacks[row.podcastId]
+            if (episodeArt == row.episodeImageUrl && podcastArt == row.podcastImageUrl) {
+                row
+            } else {
+                row.copy(episodeImageUrl = episodeArt, podcastImageUrl = podcastArt)
+            }
+        }
+    }
 
     companion object {
         @Volatile

@@ -324,6 +324,20 @@ class AnalyticsTracksFacadeTest {
         assertTrue("home_surface_tapped" in names())
     }
 
+    @Test
+    fun homeMixEventsIncludeSelectedMode() {
+        AnalyticsHelper.trackPlayMixClicked(count = 5, mixMode = "offline")
+        AnalyticsHelper.trackHomeMixModeChanged("daily")
+
+        val mixEvents =
+            recorder
+                .filter { it.first == "home_surface_tapped" }
+                .map { it.second }
+        assertEquals("offline", mixEvents.first { it["surface_component"] == "mixtape_play" }["mix_mode"])
+        assertEquals(5, mixEvents.first { it["surface_component"] == "mixtape_play" }["items_count"])
+        assertEquals("daily", mixEvents.first { it["surface_component"] == "mixtape_mode" }["mix_mode"])
+    }
+
     // ── Queue / content ────────────────────────────────────────────
 
     @Test

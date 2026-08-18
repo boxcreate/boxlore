@@ -58,9 +58,11 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.home.components.TopControlBar
+import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -80,6 +82,11 @@ data class StableEpisodeList(
 )
 
 @androidx.compose.runtime.Stable
+data class StableCompletedDownloadList(
+    val list: List<CompletedDownloadItem>,
+)
+
+@androidx.compose.runtime.Stable
 data class StableEditorialRowList(
     val list: List<HomeEditorialRow>,
 )
@@ -96,6 +103,8 @@ data class HomePlaybackUi(
     val isPlaying: Boolean,
     val isPlayerLoading: Boolean = false,
     val downloadedEpisodeIds: Set<String> = emptySet(),
+    val completedDownloads: StableCompletedDownloadList = StableCompletedDownloadList(emptyList()),
+    val homeMixMode: HomeMixMode = HomeMixMode.DAILY,
 )
 
 @androidx.compose.runtime.Stable
@@ -115,12 +124,14 @@ data class HomeFeedCallbacks(
     val onEpisodeClick: ((Episode, Podcast, String?) -> Unit)?,
     val onPlayClick: ((Podcast, android.os.Bundle?) -> Unit)?,
     val onNavigateToLibrary: (() -> Unit)?,
+    val onNavigateToDownloads: (() -> Unit)?,
     val onNavigateToExplore: ((String?, String, String?) -> Unit)?,
     val onToggleSubscription: (String) -> Unit,
     val onTogglePlayback: (android.os.Bundle?) -> Unit,
     val onSelectCategory: (String?) -> Unit,
     val onPodcastSelected: (String?) -> Unit,
-    val onPlayMix: () -> Unit,
+    val onPlayMix: (HomeMixMode) -> Unit,
+    val onMixModeChanged: (HomeMixMode) -> Unit,
     val onPlayEpisode: (Episode, Podcast, cx.aswin.boxlore.core.model.PlaybackEntryPoint) -> Unit,
     val onImportClick: () -> Unit,
     val onAiOnboardingClick: () -> Unit,
@@ -165,6 +176,7 @@ fun HomeRoute(
     onEpisodeClick: ((Episode, Podcast, String?) -> Unit)? = null, // Navigate to EpisodeInfo
     onPlayClick: ((Podcast, android.os.Bundle?) -> Unit)? = null, // Navigate directly to Player (Resume)
     onNavigateToLibrary: (() -> Unit)? = null,
+    onNavigateToDownloads: (() -> Unit)? = null,
     onNavigateToLatestEpisodes: (() -> Unit)? = null,
     onNavigateToExplore: ((String?, String, String?) -> Unit)? = null,
     onNavigateToSettings: (() -> Unit)? = null,
@@ -251,6 +263,8 @@ fun HomeRoute(
     val candidatePodcasts by viewModel.candidatePodcasts.collectAsState(initial = emptyList())
 
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState(initial = emptySet())
+    val completedDownloadItems by viewModel.completedDownloadItems.collectAsState(initial = emptyList())
+    val homeMixMode by viewModel.homeMixMode.collectAsState()
     val lastSeenEpisodes by viewModel.lastSeenEpisodes.collectAsState()
 
     val callbacks =
@@ -261,6 +275,7 @@ fun HomeRoute(
             onEpisodeClick,
             onPlayClick,
             onNavigateToLibrary,
+            onNavigateToDownloads,
             onNavigateToExplore,
             onNavigateToSettings,
             onNavigateToPlayStoreReview,
@@ -284,12 +299,14 @@ fun HomeRoute(
                         onEpisodeClick = onEpisodeClick,
                         onPlayClick = onPlayClick,
                         onNavigateToLibrary = onNavigateToLibrary,
+                        onNavigateToDownloads = onNavigateToDownloads,
                         onNavigateToExplore = onNavigateToExplore,
                         onToggleSubscription = viewModel::toggleSubscription,
                         onTogglePlayback = viewModel::togglePlayback,
                         onSelectCategory = viewModel::selectCategory,
                         onPodcastSelected = viewModel::selectPodcast,
-                        onPlayMix = viewModel::playUnplayedMix,
+                        onPlayMix = viewModel::playMix,
+                        onMixModeChanged = viewModel::setHomeMixMode,
                         onPlayEpisode = viewModel::playEpisode,
                         onImportClick = onImportClick,
                         onAiOnboardingClick = onAiOnboardingClick,
@@ -333,6 +350,8 @@ fun HomeRoute(
                     isPlaying = isPlaying,
                     isPlayerLoading = isPlayerLoading,
                     downloadedEpisodeIds = downloadedEpisodeIds,
+                    completedDownloads = StableCompletedDownloadList(completedDownloadItems),
+                    homeMixMode = homeMixMode,
                 ),
             sheets =
                 HomeSheetUi(

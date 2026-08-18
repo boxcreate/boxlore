@@ -926,7 +926,12 @@ object AnalyticsHelper : Analytics {
         previousTab: String? = null,
     ) = QueueContentAnalyticsTracks.trackNavTabClicked(tabName, previousTab)
 
-    fun trackPlayMixClicked(count: Int) = LibraryAnalyticsTracks.trackPlayMixClicked(count)
+    fun trackPlayMixClicked(
+        count: Int,
+        mixMode: String = "daily",
+    ) = LibraryAnalyticsTracks.trackPlayMixClicked(count, mixMode)
+
+    fun trackHomeMixModeChanged(mixMode: String) = LibraryAnalyticsTracks.trackHomeMixModeChanged(mixMode)
 
     fun trackHomePodcastFiltered(
         podcastId: String,

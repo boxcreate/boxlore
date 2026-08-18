@@ -25,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
 class BoxLoreApplication :
@@ -54,6 +55,9 @@ class BoxLoreApplication :
 
         // Single prefs instance shared with AppContainer (theme fast-cache + engagement).
         userPreferencesRepository = UserPreferencesRepository(this)
+        runBlocking(Dispatchers.IO) {
+            userPreferencesRepository.hydrateMissingDataStoreFromFastCache()
+        }
         container =
             AppContainer(
                 context = this,
@@ -77,6 +81,9 @@ class BoxLoreApplication :
         // fallback if Room initialization fails — same startup behavior as before, without
         // a second RankingFeedbackRepository client diverging from the container.
         container.rankingFeedbackRepository
+        applicationScope.launch {
+            container.smartDownloadManager.reconcileScheduleWithPreferences()
+        }
 
         // Live learner signal log: on by default in debug; release stays off unless the
         // user explicitly opts in via the debug-screen toggle (persisted true).

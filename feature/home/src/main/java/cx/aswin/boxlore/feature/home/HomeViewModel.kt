@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home
 
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.togglePlayPause
 
@@ -19,11 +20,14 @@ import cx.aswin.boxlore.core.catalog.content.ContentContextEngine
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.logic.FilterSelectionAction
 import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
 import cx.aswin.boxlore.feature.home.logic.HomeFilterSelectionLogic
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
+import cx.aswin.boxlore.feature.home.logic.HomeMixMode
+import cx.aswin.boxlore.feature.home.logic.HomeMixModeLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +48,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-
 @Suppress("kotlin:S6310", "LongParameterList")
 class HomeViewModel(
     application: Application,
@@ -59,13 +62,29 @@ class HomeViewModel(
     internal val userPreferencesRepository: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
 ) : AndroidViewModel(application) {
     val downloadedEpisodeIds: StateFlow<Set<String>> =
-        downloadRepository.downloads
-            .map { list -> list.map { it.episodeId }.toSet() }
+        downloadRepository.completedDownloadIds
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptySet(),
             )
+    val completedDownloadItems: StateFlow<List<cx.aswin.boxlore.core.downloads.CompletedDownloadItem>> =
+        combine(
+            downloadRepository.completedDownloadItems,
+            playbackRepository.completedEpisodeIds,
+        ) { items, completedEpisodeIds ->
+            HomeMixModeLogic.eligibleOfflineItems(
+                items = items,
+                completedEpisodeIds = completedEpisodeIds,
+            )
+        }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
+    private val _homeMixMode = MutableStateFlow(HomeMixMode.DAILY)
+    val homeMixMode: StateFlow<HomeMixMode> = _homeMixMode.asStateFlow()
     // Let's leave SubscriptionRepository as is for now, it's less critical for playback state.
     // But `playbackRepository` MUST be injected.
 
@@ -223,6 +242,11 @@ class HomeViewModel(
     val currentRegion = userPrefs.regionStream
 
     init {
+        viewModelScope.launch {
+            userPrefs.homeMixModeStream.collect { persistedMode ->
+                _homeMixMode.value = HomeMixMode.fromPersistedValue(persistedMode)
+            }
+        }
         // Collect briefing dismiss state from DataStore
         viewModelScope.launch {
             userPrefs.briefingDismissedDate.collect { dismissedDate ->
@@ -434,25 +458,50 @@ class HomeViewModel(
         }
     }
 
-    fun playUnplayedMix() {
-        val episodes = currentUnplayedEpisodes
+    fun playMix(mode: HomeMixMode) {
+        val episodes =
+            HomeMixModeLogic.queueEpisodes(
+                mode = mode,
+                dailyEpisodes = currentUnplayedEpisodes,
+                completedDownloads = completedDownloadItems.value,
+            )
         if (episodes.isEmpty()) return
 
         cx.aswin.boxlore.core.analytics.AnalyticsHelper
-            .trackPlayMixClicked(episodes.size)
+            .trackPlayMixClicked(episodes.size, mode.analyticsValue)
 
         val dummyPodcast =
             Podcast(
-                id = "unplayed_mix",
-                title = "Your Shows Mix",
+                id = if (mode == HomeMixMode.OFFLINE) "offline_mix" else "unplayed_mix",
+                title = if (mode == HomeMixMode.OFFLINE) "Offline Mix" else "Your Shows Mix",
                 artist = "Various Artists",
                 imageUrl = "",
                 fallbackImageUrl = null,
-                description = "Mixed playlist of unplayed episodes",
+                description =
+                    if (mode == HomeMixMode.OFFLINE) {
+                        "Downloaded episodes ordered by release time"
+                    } else {
+                        "Mixed playlist of unplayed episodes"
+                    },
                 genre = "Mix",
             )
         viewModelScope.launch {
-            playbackRepository.playQueue(episodes, dummyPodcast, 0)
+            playbackRepository.playQueue(
+                episodes = episodes,
+                podcast = dummyPodcast,
+                startIndex = 0,
+                entryPoint = PlaybackEntryPoint.HOME_MIXTAPE,
+            )
+        }
+    }
+
+    fun setHomeMixMode(mode: HomeMixMode) {
+        if (_homeMixMode.value == mode) return
+        _homeMixMode.value = mode
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper
+            .trackHomeMixModeChanged(mode.analyticsValue)
+        viewModelScope.launch {
+            userPrefs.setHomeMixMode(mode.analyticsValue)
         }
     }
 
