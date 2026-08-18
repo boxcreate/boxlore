@@ -56,7 +56,10 @@ fun EpisodeListItem(
     isQueued: Boolean,
     isCompleted: Boolean,
     isUpNext: Boolean = false,
+    selectionActive: Boolean = false,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     onPlayClick: () -> Unit,
     onToggleLike: () -> Unit,
     onQueueClick: () -> Unit,
@@ -70,13 +73,31 @@ fun EpisodeListItem(
         modifier =
             modifier
                 .fillMaxWidth()
-                .expressiveClickable(onClick = onClick),
+                .expressiveClickable(
+                    onLongClickLabel = "Select episode",
+                    onLongClick = onLongClick,
+                    onClick = onClick,
+                ),
         shape = MaterialTheme.shapes.large,
         colors =
             androidx.compose.material3.CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                containerColor =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainer
+                    },
             ),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        border =
+            BorderStroke(
+                width = if (isSelected) 2.dp else 0.5.dp,
+                color =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    },
+            ),
         elevation =
             androidx.compose.material3.CardDefaults
                 .outlinedCardElevation(defaultElevation = 1.dp),
@@ -104,21 +125,40 @@ fun EpisodeListItem(
                         )
                     }
 
-                    if (isCompleted) {
+                    if (isSelected || isCompleted) {
                         Box(
                             modifier =
                                 Modifier
                                     .align(Alignment.TopEnd)
                                     .padding(4.dp)
                                     .size(20.dp)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
-                                    .border(1.dp, MaterialTheme.colorScheme.onSecondaryContainer, CircleShape),
+                                    .background(
+                                        if (isSelected) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.secondaryContainer
+                                        },
+                                        CircleShape,
+                                    ).border(
+                                        1.dp,
+                                        if (isSelected) {
+                                            MaterialTheme.colorScheme.onPrimary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        },
+                                        CircleShape,
+                                    ),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Check,
-                                contentDescription = "Completed",
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                contentDescription = if (isSelected) "Selected" else "Completed",
+                                tint =
+                                    if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    },
                                 modifier = Modifier.size(14.dp),
                             )
                         }
@@ -278,55 +318,55 @@ fun EpisodeListItem(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            if (!selectionActive) {
+                Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Control Row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween, // Push play button to edge
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .animateContentSize(),
-            ) {
-                // Secondary Controls (Tonal squircle for premium feel on card)
-                cx.aswin.boxlore.core.designsystem.components.AdvancedPlayerControls(
-                    isLiked = isLiked,
-                    isDownloaded = isDownloaded,
-                    isDownloading = isDownloading,
-                    colorScheme = MaterialTheme.colorScheme,
-                    onLikeClick = onToggleLike,
-                    onDownloadClick = onDownloadClick,
-                    onQueueClick = onQueueClick,
-                    style = cx.aswin.boxlore.core.designsystem.components.ControlStyle.TonalSquircle,
-                    overrideColor = accentColor,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    showAddQueueIcon = true,
-                    isQueued = isQueued,
-                    showShareButton = false,
-                    isPlayed = isCompleted,
-                    showMarkPlayedButton = showMarkPlayedButton,
-                    onMarkPlayedClick = onMarkPlayedClick,
-                    controlSize = 40.dp,
-                )
-
-                // Play Button
-                cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton(
-                    onClick = onPlayClick,
-                    state =
-                        cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
-                            isPlaying = isPlaying,
-                            isResume = isResume,
-                            progress = progress,
-                            timeText = timeLeft,
-                        ),
-                    accentColor = accentColor,
+                // 2. Control Row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     modifier =
                         Modifier
-                            .height(44.dp)
-                            .padding(start = 16.dp)
-                            .weight(1f),
-                )
+                            .fillMaxWidth()
+                            .animateContentSize(),
+                ) {
+                    cx.aswin.boxlore.core.designsystem.components.AdvancedPlayerControls(
+                        isLiked = isLiked,
+                        isDownloaded = isDownloaded,
+                        isDownloading = isDownloading,
+                        colorScheme = MaterialTheme.colorScheme,
+                        onLikeClick = onToggleLike,
+                        onDownloadClick = onDownloadClick,
+                        onQueueClick = onQueueClick,
+                        style = cx.aswin.boxlore.core.designsystem.components.ControlStyle.TonalSquircle,
+                        overrideColor = accentColor,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        showAddQueueIcon = true,
+                        isQueued = isQueued,
+                        showShareButton = false,
+                        isPlayed = isCompleted,
+                        showMarkPlayedButton = showMarkPlayedButton,
+                        onMarkPlayedClick = onMarkPlayedClick,
+                        controlSize = 40.dp,
+                    )
+
+                    cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton(
+                        onClick = onPlayClick,
+                        state =
+                            cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
+                                isPlaying = isPlaying,
+                                isResume = isResume,
+                                progress = progress,
+                                timeText = timeLeft,
+                            ),
+                        accentColor = accentColor,
+                        modifier =
+                            Modifier
+                                .height(44.dp)
+                                .padding(start = 16.dp)
+                                .weight(1f),
+                    )
+                }
             }
         }
     }

@@ -75,6 +75,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -86,7 +87,12 @@ import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
+import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
+import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbar
+import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
+import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarState
+import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
 import cx.aswin.boxlore.feature.info.components.MarkAllEpisodesDialog
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
@@ -97,6 +103,8 @@ import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
 import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
 import cx.aswin.boxlore.feature.info.components.handleToolbarWarningAction
+import cx.aswin.boxlore.feature.info.logic.EpisodeSelectionRange
+import cx.aswin.boxlore.feature.info.logic.PodcastEpisodeSelectionLogic
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
 import cx.aswin.boxlore.feature.info.logic.resolveAutoScrollTarget
@@ -137,6 +145,13 @@ fun PodcastInfoScreen(
     var showMarkAllUnplayedDialog by remember { mutableStateOf(false) }
     var showPodcastPlaybackSettings by remember { mutableStateOf(false) }
     var showMissingEpisodesConfirm by remember { mutableStateOf(false) }
+    var selectedEpisodeIds by remember(podcastId) { mutableStateOf(emptyList<String>()) }
+    var selectionAnchorEpisodeId by remember(podcastId) { mutableStateOf<String?>(null) }
+    var selectionEpisodePool by remember(podcastId) { mutableStateOf(emptyList<Episode>()) }
+    var isLoadingFullSelection by remember(podcastId) { mutableStateOf(false) }
+    var selectionRequestGeneration by remember(podcastId) { mutableStateOf(0) }
+    val selectedEpisodeIdSet = selectedEpisodeIds.toSet()
+    val selectionActive = selectedEpisodeIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Permission Launcher for Android 13+ Notification Permission
@@ -167,6 +182,13 @@ fun PodcastInfoScreen(
     BackHandler(enabled = isSearchActive) {
         isSearchActive = false
         viewModel.searchEpisodes("") // Optional: Clear search on close? Or keep it? Let's clear for now.
+    }
+    BackHandler(enabled = selectionActive) {
+        selectionRequestGeneration += 1
+        selectedEpisodeIds = emptyList()
+        selectionAnchorEpisodeId = null
+        selectionEpisodePool = emptyList()
+        isLoadingFullSelection = false
     }
 
     TrackScreenSession(
@@ -339,6 +361,56 @@ fun PodcastInfoScreen(
                         }
                     }
                 val feedItems = remember(displayEpisodes) { groupEpisodes(displayEpisodes) }
+                val selectedEpisodes =
+                    remember(state.episodes, selectionEpisodePool, selectedEpisodeIds) {
+                        PodcastEpisodeSelectionLogic.selectedEpisodes(
+                            episodes = selectionEpisodePool + state.episodes,
+                            selectedIds = selectedEpisodeIds.toSet(),
+                        )
+                    }
+                val clearEpisodeSelection = {
+                    selectionRequestGeneration += 1
+                    selectedEpisodeIds = emptyList()
+                    selectionAnchorEpisodeId = null
+                    selectionEpisodePool = emptyList()
+                    isLoadingFullSelection = false
+                }
+                val selectionLimitMessage = stringResource(R.string.episode_selection_limit)
+                val selectFullRange: (EpisodeSelectionRange) -> Unit = { range ->
+                    selectionRequestGeneration += 1
+                    val requestGeneration = selectionRequestGeneration
+                    isLoadingFullSelection = true
+                    coroutineScope.launch {
+                        try {
+                            val window = viewModel.loadEpisodeSelectionWindow()
+                            if (requestGeneration != selectionRequestGeneration) return@launch
+                            val eligibleEpisodes =
+                                if (hideCompleted) {
+                                    window.episodes.filter { it.id !in completedEpisodeIds }
+                                } else {
+                                    window.episodes
+                                }
+                            selectionEpisodePool = eligibleEpisodes
+                            selectedEpisodeIds =
+                                PodcastEpisodeSelectionLogic
+                                    .addRange(
+                                        selectedIds = selectedEpisodeIds.toSet(),
+                                        episodes = eligibleEpisodes,
+                                        anchorEpisodeId = selectionAnchorEpisodeId,
+                                        range = range,
+                                        newestFirst = window.newestFirst,
+                                    ).toList()
+                            isLoadingFullSelection = false
+                            if (window.isTruncated) {
+                                snackbarHostState.showSnackbar(selectionLimitMessage)
+                            }
+                        } finally {
+                            if (requestGeneration == selectionRequestGeneration) {
+                                isLoadingFullSelection = false
+                            }
+                        }
+                    }
+                }
 
                 LaunchedEffect(state, completedEpisodeIds, feedItems, ongoingEpisodeIds) {
                     if (state.currentSort == EpisodeSort.OLDEST && feedItems.isNotEmpty()) {
@@ -409,7 +481,10 @@ fun PodcastInfoScreen(
                             PaddingValues(
                                 top = collapsedHeaderHeight + 16.dp,
                                 bottom =
-                                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 16.dp,
+                                    WindowInsets.navigationBars
+                                        .asPaddingValues()
+                                        .calculateBottomPadding() + bottomContentPadding +
+                                        if (selectionActive) 92.dp else 16.dp,
                             ),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
@@ -492,13 +567,39 @@ fun PodcastInfoScreen(
                             EpisodeFeedItemRow(
                                 feedItem = feedItem,
                                 viewModel = viewModel,
-                                accentColor = accentColor,
-                                indicators = episodeListIndicators,
-                                autoScrolledEpisodeId = autoScrolledEpisodeId,
+                                ui =
+                                    EpisodeFeedRowUi(
+                                        accentColor = accentColor,
+                                        indicators = episodeListIndicators,
+                                        autoScrolledEpisodeId = autoScrolledEpisodeId,
+                                        podcastImageUrl =
+                                            state.podcast.imageUrl.takeIf { it.isNotEmpty() }
+                                                ?: state.podcast.fallbackImageUrl,
+                                    ),
                                 onEpisodeClick = onEpisodeClick,
-                                podcastImageUrl =
-                                    state.podcast.imageUrl.takeIf { it.isNotEmpty() }
-                                        ?: state.podcast.fallbackImageUrl,
+                                selection =
+                                    EpisodeSelectionUi(
+                                        selectedEpisodeIds = selectedEpisodeIdSet,
+                                        isActive = selectionActive,
+                                        onToggle = { episode ->
+                                            val updated =
+                                                PodcastEpisodeSelectionLogic.toggle(
+                                                    selectedIds = selectedEpisodeIdSet,
+                                                    episodeId = episode.id,
+                                                )
+                                            selectedEpisodeIds = updated.toList()
+                                            selectionAnchorEpisodeId = episode.id.takeIf { updated.isNotEmpty() }
+                                        },
+                                        onLongPress = { episode ->
+                                            selectedEpisodeIds =
+                                                PodcastEpisodeSelectionLogic
+                                                    .toggle(
+                                                selectedIds = selectedEpisodeIdSet,
+                                                episodeId = episode.id,
+                                                    ).toList()
+                                            selectionAnchorEpisodeId = episode.id
+                                        },
+                                    ),
                             )
 
                             if (state.searchResults == null &&
@@ -574,7 +675,7 @@ fun PodcastInfoScreen(
                     context = context,
                     actions =
                         PodcastInfoTopOverlayActions(
-                            onBack = onBack,
+                            onBack = if (selectionActive) clearEpisodeSelection else onBack,
                             onMarkAllPlayed = { showMarkAllPlayedDialog = true },
                             onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
                             onToggleHideCompleted = { viewModel.toggleHideCompleted() },
@@ -594,6 +695,85 @@ fun PodcastInfoScreen(
                             },
                         ),
                 )
+
+                AnimatedVisibility(
+                    visible = selectionActive,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(
+                                start = 12.dp,
+                                end = 12.dp,
+                                bottom =
+                                    WindowInsets.navigationBars
+                                        .asPaddingValues()
+                                        .calculateBottomPadding() + bottomContentPadding + 12.dp,
+                            ),
+                    enter = slideInVertically { height -> height } + fadeIn(),
+                    exit = slideOutVertically { height -> height } + fadeOut(),
+                ) {
+                    EpisodeSelectionToolbar(
+                        state =
+                            EpisodeSelectionToolbarState(
+                                selectedCount = selectedEpisodeIds.size,
+                                canDownload =
+                                    selectedEpisodes.any {
+                                        it.id !in downloadedEpisodeIds && it.id !in downloadingEpisodeIds
+                                    },
+                                canMarkCompleted = selectedEpisodes.any { it.id !in completedEpisodeIds },
+                                canAddToQueue = selectedEpisodes.any { it.id !in queuedEpisodeIds },
+                                hasRangeAnchor =
+                                    selectionAnchorEpisodeId != null &&
+                                        (selectionEpisodePool + state.episodes).any {
+                                            it.id == selectionAnchorEpisodeId
+                                        },
+                                isLoadingFullSelection = isLoadingFullSelection,
+                            ),
+                        actions =
+                            EpisodeSelectionToolbarActions(
+                                onClear = clearEpisodeSelection,
+                                onDownload = {
+                                    viewModel.downloadEpisodes(selectedEpisodes)
+                                    clearEpisodeSelection()
+                                },
+                                onMarkCompleted = {
+                                    viewModel.markEpisodesCompleted(selectedEpisodes)
+                                    clearEpisodeSelection()
+                                },
+                                onPlay = {
+                                    viewModel.playEpisodes(selectedEpisodes)
+                                    clearEpisodeSelection()
+                                },
+                                onAddToQueue = {
+                                    viewModel.addEpisodesToQueue(selectedEpisodes)
+                                    clearEpisodeSelection()
+                                },
+                                onSelectVisible = {
+                                    val visibleItemKeys =
+                                        listState.layoutInfo.visibleItemsInfo
+                                            .mapNotNull { item -> item.key as? String }
+                                            .toSet()
+                                    val visibleEpisodes =
+                                        PodcastEpisodeSelectionLogic
+                                            .visibleEpisodes(feedItems, visibleItemKeys)
+                                            .filterNot { hideCompleted && it.id in completedEpisodeIds }
+                                    selectionEpisodePool =
+                                        (selectionEpisodePool + visibleEpisodes).distinctBy(Episode::id)
+                                    selectedEpisodeIds =
+                                        (selectedEpisodeIdSet + visibleEpisodes.map(Episode::id)).toList()
+                                },
+                                onSelectAll = {
+                                    selectFullRange(EpisodeSelectionRange.ALL)
+                                },
+                                onSelectOlder = {
+                                    selectFullRange(EpisodeSelectionRange.OLDER)
+                                },
+                                onSelectNewer = {
+                                    selectFullRange(EpisodeSelectionRange.NEWER)
+                                },
+                            ),
+                    )
+                }
 
                 if (showMissingEpisodesConfirm) {
                     AlertDialog(
@@ -718,7 +898,7 @@ fun PodcastInfoScreen(
                 }
 
                 val jumpPillVisible =
-                    targetJumpEpisode != null && !isTargetVisible && isFabVisible
+                    targetJumpEpisode != null && !isTargetVisible && isFabVisible && !selectionActive
                 SnackbarHost(
                     hostState = snackbarHostState,
                     modifier =
@@ -728,7 +908,11 @@ fun PodcastInfoScreen(
                             .padding(
                                 bottom =
                                     bottomContentPadding + 16.dp +
-                                        if (jumpPillVisible) 56.dp else 0.dp,
+                                        when {
+                                            jumpPillVisible -> 56.dp
+                                            selectionActive -> 72.dp
+                                            else -> 0.dp
+                                        },
                             ),
                 )
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="episode_selection_clear">Clear selection</string>
+    <string name="episode_selection_download">Download selected episodes</string>
+    <string name="episode_selection_mark_completed">Mark selected episodes completed</string>
+    <string name="episode_selection_play">Play selected episodes</string>
+    <string name="episode_selection_add_queue">Add selected episodes to queue</string>
+    <string name="episode_selection_more">More selection options</string>
+    <string name="episode_selection_select_visible">Select visible episodes</string>
+    <string name="episode_selection_select_all">Select all episodes</string>
+    <string name="episode_selection_select_older">Select all older episodes</string>
+    <string name="episode_selection_select_newer">Select all newer episodes</string>
+    <string name="episode_selection_limit">Selection is limited to 1,000 episodes</string>
+</resources>
