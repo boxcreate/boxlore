@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-18T11:27:55.252Z",
+  "lastRun": "2026-08-18T11:52:45.108Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -52,6 +52,11 @@
       "lastEpisodeId": "567104661",
       "lastEpisodeTitle": "The Cemetery Shadow Man",
       "lastCheckedAt": 1782580346119
+    },
+    "385117": {
+      "lastRssKey": "46fd748c-9af5-11f1-9fcf-d723e6d274d1",
+      "lastEpisodeTitle": "7AM ET 08/18/2026 Newscast",
+      "lastCheckedAt": 1787053972633
     },
     "386911": {
       "lastEpisodeId": "59027782274",
