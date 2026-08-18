@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-17T23:46:57.775Z",
+  "lastRun": "2026-08-18T01:09:06.989Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -25,10 +25,10 @@
       "lastCheckedAt": 1786636690918
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/74223286",
-      "lastEpisodeTitle": "The Catch Up: Vijay government at 100 days (17 August)",
-      "lastEpisodeId": "59093262484",
-      "lastCheckedAt": 1786996358859
+      "lastRssKey": "https://api.spreaker.com/episode/74223036",
+      "lastEpisodeTitle": "Mumbai landslide warnings, an eroding coast, and BJP's reshuffle",
+      "lastEpisodeId": "59142216576",
+      "lastCheckedAt": 1787015348445
     },
     "78573": {
       "lastRssKey": "a68b8b82-71d8-424d-94a6-99055264d796",
@@ -136,10 +136,10 @@
       "lastCheckedAt": 1786559318597
     },
     "724143": {
-      "lastEpisodeId": "59122700600",
-      "lastEpisodeTitle": "Início da campanha eleitoral; recuperação judicial da rede Casas Bahia; suspensão de lives no Discord",
-      "lastRssKey": "a3c1df28-9a23-11f1-82e8-eb00ad7157bb",
-      "lastCheckedAt": 1786998333335
+      "lastEpisodeId": "59141142051",
+      "lastEpisodeTitle": "Petróleo na Foz do Amazonas, demissões na Casas Bahia e suspensão de transmissões do Discord",
+      "lastRssKey": "80576610-9a88-11f1-b932-d303ba4ed382",
+      "lastCheckedAt": 1787015363071
     },
     "743229": {
       "lastEpisodeId": "59109990126",
@@ -148,10 +148,10 @@
       "lastCheckedAt": 1786962671258
     },
     "744587": {
-      "lastRssKey": "963f45b5-71d1-42a4-9a78-2b0d6dd2d72a",
-      "lastEpisodeTitle": "No te asomes a una Casa Embrujada",
-      "lastEpisodeId": "58814005789",
-      "lastCheckedAt": 1786765062871
+      "lastRssKey": "5cc468f6-3ad7-4976-9f60-2a5c233c2f41",
+      "lastEpisodeTitle": "Nunca Juegues al Péndulo en una Casa con Fantasmas",
+      "lastEpisodeId": "59140746617",
+      "lastCheckedAt": 1787015363672
     },
     "745392": {
       "lastRssKey": "20ad2ce9-3088-449b-8001-2e3e739b54d8",
@@ -202,10 +202,10 @@
       "lastCheckedAt": 1786981792372
     },
     "1015378": {
-      "lastRssKey": "b9acd3c5-2292-42ed-8fcb-4228ccea6dfd",
-      "lastEpisodeTitle": "Anthropic's $2T IPO, Zuck's AI Manifesto, Nvidia's $500B AI Bet, Grok's Comeback",
+      "lastRssKey": "428ae13c-11c4-4412-876b-0559528050e9",
+      "lastEpisodeTitle": "Flock CEO Garrett Langley on Controversy, \"Surveillance State\" Claims, and Privacy vs Safety",
       "lastEpisodeId": "59005385140",
-      "lastCheckedAt": 1786741145502
+      "lastCheckedAt": 1787015366200
     },
     "1047718": {
       "lastRssKey": "6a82a6d88f08bd3e82544c95",
