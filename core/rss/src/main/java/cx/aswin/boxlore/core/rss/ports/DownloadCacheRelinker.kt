@@ -11,5 +11,9 @@ package cx.aswin.boxlore.core.rss.ports
  * A no-op default is used before the container installs the real implementation.
  */
 fun interface DownloadCacheRelinker {
-    fun relink(oldEpisodeId: String, newEpisodeId: String)
+    /** True only when cached bytes were made available under [newEpisodeId]. */
+    fun relink(
+        oldEpisodeId: String,
+        newEpisodeId: String,
+    ): Boolean
 }

@@ -87,6 +87,28 @@ class LibraryBackupDirectFeedLogicTest {
     }
 
     @Test
+    fun `refreshPlan ingests subscription feed urls when backup has no opt-in list`() {
+        val plan =
+            LibraryBackupDirectFeedLogic.refreshPlan(
+                importedIds = listOf("100", "200", "rss:show"),
+                backupOptIns = null,
+                subscriptionFeedUrls =
+                    mapOf(
+                        "100" to "https://feeds.example/a.xml",
+                        "200" to null,
+                        "rss:show" to "https://feeds.example/rss.xml",
+                    ),
+            )
+
+        assertEquals(
+            listOf(DirectFeedOptInBackup("100", "https://feeds.example/a.xml")),
+            plan.directFeedTargets,
+        )
+        assertEquals(listOf("200"), plan.piSyncIds)
+        assertEquals(listOf("rss:show"), plan.rssIds)
+    }
+
+    @Test
     fun `refreshPlan restores opt-ins then pi-syncs others and refreshes rss`() =
         runTest {
             val plan =

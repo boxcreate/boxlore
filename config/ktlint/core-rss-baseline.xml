@@ -16,12 +16,7 @@
         <error line="66" column="55" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/rss/RssPodcastRepository.kt">
-        <error line="656" column="21" source="standard:property-naming" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/rss/ports/DownloadCacheRelinker.kt">
-        <error line="14" column="16" source="standard:function-signature" />
-        <error line="14" column="38" source="standard:function-signature" />
-        <error line="14" column="58" source="standard:function-signature" />
+        <error line="661" column="21" source="standard:property-naming" />
     </file>
     <file name="src/test/java/cx/aswin/boxlore/core/rss/EpisodeSupplementListMergeTest.kt">
         <error line="12" column="39" source="standard:chain-method-continuation" />
@@ -37,8 +32,5 @@
     <file name="src/test/java/cx/aswin/boxlore/core/rss/EpisodeSupplementTipLogicTest.kt">
         <error line="79" column="33" source="standard:multiline-expression-wrapping" />
         <error line="106" column="25" source="standard:chain-method-continuation" />
-    </file>
-    <file name="src/test/java/cx/aswin/boxlore/core/rss/LocalEpisodeCatalogRepositoryTest.kt">
-        <error line="240" column="82" source="standard:function-signature" />
     </file>
 </baseline>

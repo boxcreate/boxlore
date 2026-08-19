@@ -59,7 +59,12 @@ internal object NewEpisodePushHydration {
         val outcome = runFullRefresh(port, podcastId, meta, sources.loadPiBaseline)
         if (outcome is EpisodeSupplementOutcome.Success) {
             outcome.newestFeedEpisode?.let { tip ->
-                sources.subscriptionRepository.updateLatestEpisode(podcastId, tip, markAsNew = false)
+                sources.subscriptionRepository.updateLatestEpisode(
+                    podcastId = podcastId,
+                    episode = tip,
+                    markAsNew = false,
+                    publisherFeedAuthoritative = true,
+                )
             }
         }
 
@@ -75,7 +80,11 @@ internal object NewEpisodePushHydration {
 
         val matched = resolveMatchedTip(port, podcastId, meta, guid, enclosure)
         if (matched != null) {
-            sources.subscriptionRepository.updateLatestEpisode(podcastId, matched, markAsNew = false)
+            sources.subscriptionRepository.updateLatestEpisode(
+                podcastId = podcastId,
+                episode = matched,
+                markAsNew = false,
+            )
             return matched
         }
         return null
@@ -125,7 +134,11 @@ internal object NewEpisodePushHydration {
                 enclosureUrl = payloadEnclosureUrl,
                 meta = meta,
             ) ?: return null
-        sources.subscriptionRepository.updateLatestEpisode(podcastId, matched, markAsNew = false)
+        sources.subscriptionRepository.updateLatestEpisode(
+            podcastId = podcastId,
+            episode = matched,
+            markAsNew = false,
+        )
         return matched
     }
 

@@ -8,7 +8,7 @@ import kotlin.math.abs
  * stored id no longer resolves. Guid, then enclosure, then title+date.
  */
 object LocalCatalogOrphanRematch {
-    private const val DATE_WINDOW_MS = 48L * 60L * 60L * 1000L
+    private const val DATE_WINDOW_SECONDS = 48L * 60L * 60L
 
     data class Candidate(
         val episode: Episode,
@@ -45,21 +45,26 @@ object LocalCatalogOrphanRematch {
         if (!shouldRematch(resolved)) return null
         val wantedGuid = guid?.trim().orEmpty()
         if (wantedGuid.isNotEmpty()) {
-            candidates.firstOrNull { it.guid?.trim() == wantedGuid }?.let { return it.episode }
+            candidates
+                .filter { it.guid?.trim() == wantedGuid }
+                .singleOrNull()
+                ?.let { return it.episode }
         }
         val enclosure = enclosureUrl?.trim().orEmpty()
         if (enclosure.isNotEmpty()) {
-            candidates.firstOrNull { it.episode.audioUrl.trim() == enclosure }?.let {
-                return it.episode
-            }
+            candidates
+                .filter { it.episode.audioUrl.trim() == enclosure }
+                .singleOrNull()
+                ?.let { return it.episode }
         }
         val wantedTitle = title?.trim().orEmpty()
         val wantedDate = publishedDate ?: return null
         if (wantedTitle.isEmpty()) return null
         return candidates
-            .firstOrNull { candidate ->
+            .filter { candidate ->
                 candidate.episode.title.trim() == wantedTitle &&
-                    abs(candidate.episode.publishedDate - wantedDate) <= DATE_WINDOW_MS
-            }?.episode
+                    abs(candidate.episode.publishedDate - wantedDate) <= DATE_WINDOW_SECONDS
+            }.singleOrNull()
+            ?.episode
     }
 }

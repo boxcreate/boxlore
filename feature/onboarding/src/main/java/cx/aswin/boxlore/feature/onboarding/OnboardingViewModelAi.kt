@@ -562,7 +562,7 @@ internal fun OnboardingViewModel.finishAiOnboarding(onDone: () -> Unit) {
                     .distinctBy { it.id }
                     .filter { it.id in selectedIds }
             for (podcast in podcastsToSubscribe) {
-                subscriptionRepository.subscribe(podcast)
+                subscribeAndIngest(podcast)
             }
 
             userPrefs.setRegion(state.currentRegion)

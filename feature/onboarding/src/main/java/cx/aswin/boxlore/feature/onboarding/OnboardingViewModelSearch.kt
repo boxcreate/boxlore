@@ -253,7 +253,7 @@ internal fun OnboardingViewModel.completeOnboarding(onDone: () -> Unit) {
         // Subscribe to all selected podcasts accumulated across regions and search
         val podcastsToSubscribe = state.selectedPodcasts.values
         for (podcast in podcastsToSubscribe) {
-            subscriptionRepository.subscribe(podcast)
+            subscribeAndIngest(podcast)
         }
 
         // Persist the home region preference selection upon completion
@@ -314,7 +314,7 @@ internal fun OnboardingViewModel.generateRecommendationsFromSearch() {
         errorContext = "generateRecommendationsFromSearch",
         beforeApi = {
             for (podcast in selectedShows) {
-                subscriptionRepository.subscribe(podcast)
+                subscribeAndIngest(podcast)
             }
         },
     )

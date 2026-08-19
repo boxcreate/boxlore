@@ -48,6 +48,7 @@ internal object SubscriptionForegroundSyncIngest {
                         podcastId = id,
                         episode = episode,
                         markAsNew = false,
+                        publisherFeedAuthoritative = true,
                     )
                 },
                 markUnsubscribedTtl = { id ->
