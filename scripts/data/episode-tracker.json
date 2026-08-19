@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-19T21:50:40.006Z",
+  "lastRun": "2026-08-19T22:22:51.256Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "46864e8e-9c12-11f1-8c4c-17910bb02f6c",
-      "lastEpisodeTitle": "5PM ET 08/19/2026 Newscast",
+      "lastRssKey": "a80ef338-9c1a-11f1-9ac2-bf0150f3243f",
+      "lastEpisodeTitle": "Judge in Karmelo Anthony Case Removed as Defense Seeks Re-Trial",
       "lastEpisodeId": "59218331375",
-      "lastCheckedAt": 1787174652903
+      "lastCheckedAt": 1787178174609
     },
     "386911": {
       "lastEpisodeId": "59027782274",
@@ -178,10 +178,10 @@
       "lastCheckedAt": 1787125031422
     },
     "889671": {
-      "lastRssKey": "09c4b7a9-1459-48c5-aa1f-282f59c188b7",
-      "lastEpisodeTitle": "Linux Cracks 10% Desktop Usage!",
+      "lastRssKey": "e824b9d2-17e2-4722-b021-f33ad05711ae",
+      "lastEpisodeTitle": "EPIC Launcher Headed Linux & Proxmox on ARM!",
       "lastEpisodeId": "58664377266",
-      "lastCheckedAt": 1786559320338
+      "lastCheckedAt": 1787178189144
     },
     "902798": {
       "lastRssKey": "f3eca23a-8f88-4047-a6e2-62705f901d7c",
