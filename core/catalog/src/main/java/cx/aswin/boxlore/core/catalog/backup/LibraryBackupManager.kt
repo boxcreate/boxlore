@@ -378,25 +378,7 @@ class LibraryBackupManager(
             if (entity.podcastId.startsWith("rss:") && entity.podcastId !in importedIds) {
                 continue
             }
-            val safeEntity =
-                ListeningHistoryEntity(
-                    episodeId = (entity.episodeId as String?) ?: "",
-                    podcastId = (entity.podcastId as String?) ?: "",
-                    episodeTitle = (entity.episodeTitle as String?) ?: "Unknown",
-                    episodeImageUrl = entity.episodeImageUrl,
-                    podcastImageUrl = entity.podcastImageUrl,
-                    episodeAudioUrl = entity.episodeAudioUrl,
-                    podcastName = (entity.podcastName as String?) ?: "Unknown",
-                    progressMs = entity.progressMs,
-                    durationMs = entity.durationMs,
-                    isCompleted = entity.isCompleted,
-                    isLiked = entity.isLiked,
-                    lastPlayedAt = entity.lastPlayedAt,
-                    isDirty = entity.isDirty,
-                    syncedAt = entity.syncedAt,
-                    enclosureType = entity.enclosureType,
-                    episodeDescription = entity.episodeDescription,
-                )
+            val safeEntity = LibraryBackupHistoryRestore.sanitize(entity)
             listeningHistory.upsertHistoryEntity(safeEntity)
         }
     }
