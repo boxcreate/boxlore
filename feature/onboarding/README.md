@@ -13,7 +13,7 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 - Suggestions (“Designed for you”) is a **single screen**: one compact headline, a single-row scrollable taste-lane chip strip (full titles, no ellipsis; per-lane selection badges), a one-line purpose + Select all toolbar, and a 2-column select grid. Descriptions open in a Material bottom sheet. Finish CTA stays pinned. Shared by genre, AI, search, and OPML flows.
 - `AiSuggestionCards`, AI onboarding components, option icons, chat input, and chat message list logic.
 - Pure helpers including `OnboardingGenreLimits`, `OnboardingSearchBackStep`, `OnboardingCurriculumLogic`, `OnboardingSuggestionsLanes`, `OnboardingSuggestionsPresentation`, and `OnboardingDiscoveryLocale`.
-- Search / OPML → suggestions handoff: continue clears stale curriculum/charts, shows a loader while `isAiLoading` / `isSynthesizing` (via `OnboardingSuggestionsPresentation.isLoading`), subscribes seed picks, then filters those seed IDs out of similar-shows lanes so the grid only offers new shows. Seeds stay in `selectedPodcasts` for finish counting; similar shows are **not** auto-selected. Search CTA is “Continue with N”; suggestions finish uses “Start without adding” / “Add N & start”. Back to SEARCH / Welcome clears suggestion payloads but keeps picks and search query.
+- Search / OPML → suggestions handoff: continue clears stale curriculum/charts, shows a loader while `isAiLoading` / `isSynthesizing` (via `OnboardingSuggestionsPresentation.isLoading`), subscribes seed picks, then filters those seed IDs out of similar-shows lanes so the grid only offers new shows. Each PI subscription immediately requests the application-scoped publisher-feed ingest; it does not wait for Home or the first periodic foreground pass. Seeds stay in `selectedPodcasts` for finish counting; similar shows are **not** auto-selected. Search CTA is “Continue with N”; suggestions finish uses “Start without adding” / “Add N & start”. Back to SEARCH / Welcome clears suggestion payloads but keeps picks and search query.
 
 ## Internal structure
 
@@ -55,7 +55,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 
 - `OnboardingViewModel` is scoped to the onboarding route or host owner.
 - Preference completion writes go through `UserPreferencesRepository` and `BoxcastPrefs` supplied by app wiring.
-- Catalog and network actions use injected dependencies and suspend APIs.
+- Catalog and network actions use injected dependencies and suspend APIs; first publisher-feed persist is handed to application-scoped `SubscriptionForegroundSync` so navigation cannot cancel it.
 - UI runs on the main thread.
 
 ## Persistence & identity

@@ -57,6 +57,19 @@ internal object LibraryBackupDirectFeedLogic {
             .distinctBy { it.podcastId }
     }
 
+    fun subscriptionTargets(
+        importedIds: Collection<String>,
+        subscriptionFeedUrls: Map<String, String?>,
+    ): List<DirectFeedOptInBackup> =
+        importedIds
+            .mapNotNull { id ->
+                if (id.isBlank() || id.startsWith("rss:")) return@mapNotNull null
+                val url =
+                    TrackedPodcastRtdbLogic.httpsFeedUrl(subscriptionFeedUrls[id])
+                        ?: return@mapNotNull null
+                DirectFeedOptInBackup(podcastId = id, feedUrl = url)
+            }.distinctBy { it.podcastId }
+
     fun piSyncIds(
         importedIds: Collection<String>,
         restoredOptInIds: Set<String>,
@@ -65,14 +78,20 @@ internal object LibraryBackupDirectFeedLogic {
             id.isNotBlank() && !id.startsWith("rss:") && id !in restoredOptInIds
         }
 
-    fun rssRefreshIds(importedIds: Collection<String>): List<String> =
-        importedIds.filter { id -> id.startsWith("rss:") && id.isNotBlank() }
+    fun rssRefreshIds(importedIds: Collection<String>): List<String> = importedIds.filter(::isRssId)
+
+    private fun isRssId(id: String): Boolean = id.startsWith("rss:") && id.isNotBlank()
 
     fun refreshPlan(
         importedIds: Collection<String>,
         backupOptIns: List<DirectFeedOptInBackup>?,
+        subscriptionFeedUrls: Map<String, String?> = emptyMap(),
     ): LibraryBackupRefreshPlan {
-        val targets = restoreTargets(backupOptIns, importedIds)
+        val targets =
+            (
+                restoreTargets(backupOptIns, importedIds) +
+                    subscriptionTargets(importedIds, subscriptionFeedUrls)
+            ).distinctBy { it.podcastId }
         val restoredIds = targets.mapNotNull { it.podcastId }.toSet()
         return LibraryBackupRefreshPlan(
             directFeedTargets = targets,

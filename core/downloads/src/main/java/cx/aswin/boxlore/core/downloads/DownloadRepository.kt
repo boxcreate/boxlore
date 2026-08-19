@@ -443,21 +443,29 @@ class DownloadRepository(
          * the download under the new id in Media3's own index so playback and the offline
          * library keep serving the cached asset instead of silently falling back to network.
          *
-         * Safe to call for downloads that are not fully cached — it is then a no-op.
+         * Returns true only when the destination has cached spans. It is idempotent after a
+         * process death between this move and the caller's Room transaction.
          */
         fun relinkDownloadCache(
             context: Context,
             oldEpisodeId: String,
             newEpisodeId: String,
-        ) {
-            if (oldEpisodeId == newEpisodeId) return
+        ): Boolean {
+            if (oldEpisodeId == newEpisodeId) return true
             val cache = getDownloadCache(context)
             // Tracked separately from content length: ContentMetadata.getContentLength() can
             // legitimately be LENGTH_UNSET even after the spans were copied successfully.
             val movedSuccessfully =
                 runCatching {
                     val spans = cache.getCachedSpans(oldEpisodeId)
-                    if (spans.isEmpty()) return@runCatching false
+                    if (spans.isEmpty()) {
+                        // A process may have died after moving cache/index state but before the
+                        // surrounding Room transaction committed. Treat an already-populated
+                        // destination as a successful idempotent retry so the DB repair can finish.
+                        return@runCatching cache
+                            .getCachedSpans(newEpisodeId)
+                            .any { it.isCached }
+                    }
                     spans.filter { it.isCached }.forEach { span ->
                         copyCachedSpanToNewKey(cache, span, newEpisodeId)
                     }
@@ -479,12 +487,13 @@ class DownloadRepository(
                     Log.w("DownloadRepo", "Failed to move cached bytes from $oldEpisodeId to $newEpisodeId", it)
                 }.getOrDefault(false)
 
-            if (!movedSuccessfully) return
+            if (!movedSuccessfully) return false
             // Re-key the Media3 download index first, and only drop the old cache resource once
             // that succeeds, so a failure here never leaves the new key without an index entry.
             relinkDownloadIndexEntry(context, oldEpisodeId, newEpisodeId)
             runCatching { cache.removeResource(oldEpisodeId) }
                 .onFailure { Log.w("DownloadRepo", "Failed to release old cache resource $oldEpisodeId", it) }
+            return true
         }
 
         /**

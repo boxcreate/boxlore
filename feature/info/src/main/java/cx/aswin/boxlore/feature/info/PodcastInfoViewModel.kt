@@ -478,6 +478,7 @@ class PodcastInfoViewModel(
                             podcastId = latest.podcast.id,
                             episode = tip,
                             markAsNew = true,
+                            publisherFeedAuthoritative = true,
                         )
                     }
                 }
@@ -638,6 +639,7 @@ class PodcastInfoViewModel(
                                             podcastId = apiPodcastWithFallback.id,
                                             episode = tip,
                                             markAsNew = true,
+                                            publisherFeedAuthoritative = true,
                                         )
                                     }
                                 }
@@ -951,6 +953,7 @@ class PodcastInfoViewModel(
                             podcastId = targetPodcastId,
                             episode = tip,
                             markAsNew = true,
+                            publisherFeedAuthoritative = true,
                         )
                     }
                 }
@@ -1210,6 +1213,7 @@ class PodcastInfoViewModel(
                 podcastId = targetPodcastId,
                 episode = episode,
                 markAsNew = false,
+                publisherFeedAuthoritative = true,
             )
         }
         applyPostSubscribeCatalogUi(targetPodcastId)

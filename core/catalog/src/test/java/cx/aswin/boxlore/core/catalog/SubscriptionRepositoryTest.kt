@@ -313,6 +313,37 @@ class SubscriptionRepositoryTest {
         }
 
     @Test
+    fun publisherFeedAuthoritativeReplacesNewerPiCrossPromo() =
+        runTest {
+            repository.subscribe(podcast(id = "pod-tip", title = "Show"))
+            val piCrossPromo =
+                cx.aswin.boxlore.core.model.Episode(
+                    id = "99",
+                    title = "Cross promo",
+                    description = "d",
+                    audioUrl = "https://example.com/cross-promo.mp3",
+                    podcastId = "pod-tip",
+                    publishedDate = 200L,
+                )
+            val publisherTip =
+                piCrossPromo.copy(
+                    id = "-9",
+                    title = "Publisher episode",
+                    audioUrl = "https://example.com/publisher.mp3",
+                    publishedDate = 100L,
+                )
+            repository.updateLatestEpisode("pod-tip", piCrossPromo)
+
+            repository.updateLatestEpisode(
+                podcastId = "pod-tip",
+                episode = publisherTip,
+                publisherFeedAuthoritative = true,
+            )
+
+            assertEquals("-9", podcastDao.getPodcast("pod-tip")!!.latestEpisode!!.id)
+        }
+
+    @Test
     fun updateLatestEpisodeSameDateDifferentIdKeepsExisting() =
         runTest {
             repository.subscribe(podcast(id = "pod-catchup", title = "Show"))

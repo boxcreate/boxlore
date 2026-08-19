@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.LocalEpisodeCatalogDao
+import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
@@ -15,8 +16,7 @@ internal data class LocalCatalogRefreshDeps(
     val feedClient: RssFeedClient,
     val runInTransaction: suspend (suspend () -> Unit) -> Unit,
     val isFeedUnchanged: suspend (url: String, etag: String?, lastModified: String?) -> Boolean,
-    val loadListenerEpisodeIds: suspend (String) -> Set<String>,
-    val loadKnownTip: suspend (String) -> Pair<String, Long>?,
+    val reconcileListenerState: suspend (String, List<LocalEpisodeEntity>) -> Unit,
     val megaGetGate: Semaphore,
 )
 
@@ -53,6 +53,7 @@ private suspend fun publisherFeedUnchanged(
     url: String,
 ): Boolean {
     val existing = deps.dao.getFeed(podcastId) ?: return false
+    if (!LocalCatalogReadyLogic.isReady(existing)) return false
     if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
         return false
     }
@@ -70,8 +71,12 @@ private suspend fun publisherFeedUnchanged(
     }
 }
 
+internal fun shouldLoadPiBaseline(existing: LocalEpisodeFeedEntity?): Boolean =
+    existing == null || !LocalCatalogReadyLogic.isReady(existing)
+
 internal fun shouldSkipQuiet(existing: LocalEpisodeFeedEntity?): Boolean {
     if (existing == null) return false
+    if (!LocalCatalogReadyLogic.isReady(existing)) return false
     if (existing.needsFullBackfill) return false
     if (!existing.feedEtag.isNullOrBlank() || !existing.feedLastModified.isNullOrBlank()) {
         return false
@@ -98,7 +103,7 @@ private suspend fun fetchAndPersist(
                     podcastId = rssNamespaceId,
                 )
             val baseline =
-                if (existing == null || existing.needsFullBackfill) {
+                if (shouldLoadPiBaseline(existing)) {
                     request.loadPiBaseline?.invoke()
                 } else {
                     null
@@ -141,28 +146,13 @@ private suspend fun persistParsed(
             ?.takeIf { it != LocalFeedOrder.MIXED }
             ?: FeedOrderLogic.classify(parsed.episodes.map { it.publishedDate })
     val newestRow = rows.maxByOrNull { it.publishedDate }
-    val listenerIds = deps.loadListenerEpisodeIds(request.podcastIndexId)
-    val knownTip = deps.loadKnownTip(request.podcastIndexId)
     var storedCount = rows.size
     var ready = false
     deps.runInTransaction {
         deps.dao.upsertEpisodes(rows)
+        deps.reconcileListenerState(request.podcastIndexId, rows)
         storedCount = maxOf(deps.dao.count(request.podcastIndexId), rows.size)
-        val catalogIds =
-            deps.dao
-                .listIdentities(request.podcastIndexId)
-                .map { it.episodeId }
-                .toSet()
-        ready =
-            LocalCatalogReadyLogic.isReadyToFlip(
-                feedReady = storedCount >= copied,
-                catalogIds = catalogIds,
-                listenerIds = listenerIds,
-                existingTipId = knownTip?.first,
-                existingPublishedDate = knownTip?.second,
-                newTipId = newestRow?.episodeId,
-                newPublishedDate = newestRow?.publishedDate,
-            )
+        ready = LocalCatalogReadyLogic.isReadyToFlip(feedReady = storedCount >= copied)
         deps.dao.upsertFeed(
             LocalEpisodeFeedEntity(
                 podcastId = request.podcastIndexId,

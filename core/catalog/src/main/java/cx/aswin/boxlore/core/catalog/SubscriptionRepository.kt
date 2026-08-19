@@ -354,6 +354,8 @@ class SubscriptionRepository(
          * NEW badges / hero grid "NEW" use the same freshness as RSS until the tip is seen.
          */
         markAsNew: Boolean = false,
+        /** A successful full publisher-feed ingest owns the tip, even when PI cached a newer cross-promo. */
+        publisherFeedAuthoritative: Boolean = false,
     ) {
         val enrichedEpisode =
             episode?.let { ep ->
@@ -371,6 +373,7 @@ class SubscriptionRepository(
             }
         val existing = podcastDao.getPodcast(podcastId)?.latestEpisode
         if (enrichedEpisode != null &&
+            !publisherFeedAuthoritative &&
             !LatestEpisodeTipLogic.shouldReplace(existing, enrichedEpisode)
         ) {
             return

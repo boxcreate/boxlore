@@ -584,19 +584,7 @@ class HomeViewModel(
                 subscriptionRepository.toggleSubscription(podcast)
                 val isSubscribed = subscriptionRepository.isSubscribed(podcast.id)
 
-                if (isSubscribed) {
-                    // Fetch latest episodes for the newly subscribed podcast so UI updates immediately
-                    launch(kotlinx.coroutines.Dispatchers.IO) {
-                        try {
-                            val synced = podcastRepository.syncSubscriptions(listOf(podcast.id))
-                            synced[podcast.id]?.let { episode ->
-                                subscriptionRepository.updateLatestEpisode(podcast.id, episode)
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                } else {
+                if (!isSubscribed) {
                     userPrefs.removeLastSeenEpisodeId(podcastId)
                     userPrefs.removePodcastIdFromManualOrderAndPins(podcastId)
                 }
@@ -698,11 +686,8 @@ class HomeViewModel(
                 // RSS catalogs are stored at subscribe time; this tops up latest
                 // episodes cheaply (HEAD-gated) so the filter view is fresh.
                 rssRepository.refreshCatalogIfNeeded(pod.id).getOrThrow()
-            } else if (pod.latestEpisode == null) {
-                val synced = podcastRepository.syncSubscriptions(listOf(pod.id))
-                for ((podId, episode) in synced) {
-                    subscriptionRepository.updateLatestEpisode(podId, episode)
-                }
+            } else {
+                warmUpNewPiSubscription(pod)
             }
         } catch (e: CancellationException) {
             throw e
@@ -713,6 +698,21 @@ class HomeViewModel(
                 e,
             )
         }
+    }
+
+    private suspend fun warmUpNewPiSubscription(pod: Podcast) {
+        val foregroundSync =
+            SharedAppDependenciesHolder.instance?.subscriptionForegroundSync
+        if (foregroundSync != null) {
+            foregroundSync.requestCatalogIngest(pod.id)
+            return
+        }
+        if (pod.latestEpisode != null) return
+        podcastRepository
+            .syncSubscriptions(listOf(pod.id))
+            .forEach { (podId, episode) ->
+                subscriptionRepository.updateLatestEpisode(podId, episode)
+            }
     }
 
     private fun startBackgroundSync() {
@@ -759,4 +759,3 @@ class HomeViewModel(
         super.onCleared()
     }
 }
-

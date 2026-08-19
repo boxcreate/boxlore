@@ -45,21 +45,63 @@ class LocalEpisodeCatalogRepositoryTest {
         assertEquals(
             false,
             shouldSkipQuiet(
-                LocalEpisodeCatalogRepository.stubFeed("100").copy(
-                    fetchedAt = now,
-                    needsFullBackfill = true,
-                ),
+                LocalEpisodeCatalogRepository
+                    .stubFeed("100", "https://feeds.example/show.xml")
+                    .copy(
+                        fetchedAt = now,
+                        needsFullBackfill = true,
+                    ),
             ),
         )
         assertEquals(
             true,
             shouldSkipQuiet(
-                LocalEpisodeCatalogRepository.stubFeed("100").copy(
-                    fetchedAt = now,
-                    needsFullBackfill = false,
-                    feedEtag = null,
-                    feedLastModified = null,
-                ),
+                LocalEpisodeCatalogRepository
+                    .stubFeed("100", "https://feeds.example/show.xml")
+                    .copy(
+                        fetchedAt = now,
+                        needsFullBackfill = false,
+                        ready = true,
+                        feedEtag = null,
+                        feedLastModified = null,
+                    ),
+            ),
+        )
+        assertEquals(
+            false,
+            shouldSkipQuiet(
+                LocalEpisodeCatalogRepository
+                    .stubFeed("100", "https://feeds.example/show.xml")
+                    .copy(
+                        fetchedAt = now,
+                        needsFullBackfill = false,
+                        ready = false,
+                    ),
+            ),
+        )
+    }
+
+    @Test
+    fun piBaselineReloadsForExistingCatalogThatNeverBecameReady() {
+        assertTrue(shouldLoadPiBaseline(null))
+        assertTrue(
+            shouldLoadPiBaseline(
+                LocalEpisodeCatalogRepository
+                    .stubFeed("100", "https://feeds.example/show.xml")
+                    .copy(
+                        needsFullBackfill = false,
+                        ready = false,
+                    ),
+            ),
+        )
+        assertFalse(
+            shouldLoadPiBaseline(
+                LocalEpisodeCatalogRepository
+                    .stubFeed("100", "https://feeds.example/show.xml")
+                    .copy(
+                        needsFullBackfill = false,
+                        ready = true,
+                    ),
             ),
         )
     }
@@ -95,6 +137,7 @@ class LocalEpisodeCatalogRepositoryTest {
                     feedEtag = "etag-1",
                     feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
                     needsFullBackfill = false,
+                    ready = true,
                     fetchedAt = 1L,
                 )
             val repo = catalogRepo(dao = dao, isFeedUnchanged = { _, _, _ -> true })
@@ -147,6 +190,34 @@ class LocalEpisodeCatalogRepositoryTest {
         }
 
     @Test
+    fun isPublisherFeedUnchangedIsFalseWhileCatalogNeedsRepair() =
+        runTest {
+            val dao = FakeCatalogDao()
+            dao.feeds["100"] =
+                LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml").copy(
+                    feedEtag = "etag-1",
+                    feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
+                    needsFullBackfill = false,
+                    itemCount = 100,
+                    ready = false,
+                )
+            var headCalls = 0
+            val repo =
+                catalogRepo(
+                    dao = dao,
+                    isFeedUnchanged = { _, _, _ ->
+                        headCalls++
+                        true
+                    },
+                )
+
+            assertFalse(
+                repo.isPublisherFeedUnchanged("100", "https://feeds.example/show.xml"),
+            )
+            assertEquals(0, headCalls)
+        }
+
+    @Test
     fun getWindowNeverExceedsBound() =
         runTest {
             val dao = FakeCatalogDao()
@@ -190,8 +261,7 @@ class LocalEpisodeCatalogRepositoryTest {
         feedClient = feedClient,
         runInTransaction = { it() },
         isFeedUnchanged = isFeedUnchanged,
-        loadListenerEpisodeIds = { emptySet() },
-        loadKnownTip = { null },
+        reconcileListenerState = { _, _ -> },
         megaGetGate = Semaphore(1),
     )
 
@@ -226,9 +296,7 @@ class LocalEpisodeCatalogRepositoryTest {
         val episodes = mutableListOf<LocalEpisodeEntity>()
         var clearTtlAfterListingExpired = false
 
-        override suspend fun upsertFeed(feed: LocalEpisodeFeedEntity) {
-            feeds[feed.podcastId] = feed
-        }
+        override suspend fun upsertFeed(feed: LocalEpisodeFeedEntity): Unit = feeds.set(feed.podcastId, feed)
 
         override suspend fun upsertEpisodes(episodes: List<LocalEpisodeEntity>) {
             this.episodes.removeAll { stored -> episodes.any { it.episodeId == stored.episodeId } }
@@ -237,8 +305,9 @@ class LocalEpisodeCatalogRepositoryTest {
 
         override suspend fun getFeed(podcastId: String): LocalEpisodeFeedEntity? = feeds[podcastId]
 
-        override suspend fun getEpisode(episodeId: String): LocalEpisodeEntity? =
-            episodes.firstOrNull { it.episodeId == episodeId }
+        override suspend fun getEpisode(episodeId: String): LocalEpisodeEntity? = findEpisode(episodeId)
+
+        private fun findEpisode(id: String) = episodes.find { it.episodeId == id }
 
         override suspend fun getByGuid(
             podcastId: String,

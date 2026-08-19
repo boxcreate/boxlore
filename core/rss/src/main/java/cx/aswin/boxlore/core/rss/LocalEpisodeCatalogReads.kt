@@ -117,6 +117,7 @@ internal class LocalEpisodeCatalogReads(
     ): Boolean =
         withContext(Dispatchers.IO) {
             val existing = dao.getFeed(podcastId) ?: return@withContext false
+            if (!LocalCatalogReadyLogic.isReady(existing)) return@withContext false
             if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
                 return@withContext false
             }

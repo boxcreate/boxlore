@@ -326,6 +326,7 @@ class SubscriptionForegroundSync(
                                     podcastId = id,
                                     episode = episode,
                                     markAsNew = false,
+                                    publisherFeedAuthoritative = true,
                                 )
                             },
                             feedNetworkDelayMs = feedNetworkDelayMs,

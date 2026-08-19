@@ -378,25 +378,7 @@ class LibraryBackupManager(
             if (entity.podcastId.startsWith("rss:") && entity.podcastId !in importedIds) {
                 continue
             }
-            val safeEntity =
-                ListeningHistoryEntity(
-                    episodeId = (entity.episodeId as String?) ?: "",
-                    podcastId = (entity.podcastId as String?) ?: "",
-                    episodeTitle = (entity.episodeTitle as String?) ?: "Unknown",
-                    episodeImageUrl = entity.episodeImageUrl,
-                    podcastImageUrl = entity.podcastImageUrl,
-                    episodeAudioUrl = entity.episodeAudioUrl,
-                    podcastName = (entity.podcastName as String?) ?: "Unknown",
-                    progressMs = entity.progressMs,
-                    durationMs = entity.durationMs,
-                    isCompleted = entity.isCompleted,
-                    isLiked = entity.isLiked,
-                    lastPlayedAt = entity.lastPlayedAt,
-                    isDirty = entity.isDirty,
-                    syncedAt = entity.syncedAt,
-                    enclosureType = entity.enclosureType,
-                    episodeDescription = entity.episodeDescription,
-                )
+            val safeEntity = LibraryBackupHistoryRestore.sanitize(entity)
             listeningHistory.upsertHistoryEntity(safeEntity)
         }
     }
@@ -405,10 +387,15 @@ class LibraryBackupManager(
         importedIds: List<String>,
         backupOptIns: List<DirectFeedOptInBackup>?,
     ) {
+        val subscriptionFeedUrls =
+            importedIds.associateWith { id ->
+                subscriptionRepository.getPodcastEntity(id)?.feedUrl
+            }
         val refreshPlan =
             LibraryBackupDirectFeedLogic.refreshPlan(
                 importedIds = importedIds,
                 backupOptIns = backupOptIns,
+                subscriptionFeedUrls = subscriptionFeedUrls,
             )
         LibraryBackupDirectFeedLogic.runPostSubscribeRefresh(
             plan = refreshPlan,
@@ -469,7 +456,10 @@ class LibraryBackupManager(
             return when (val resolution = resolveOpmlCatalogPodcast(feed)) {
                 is OpmlCatalogDecision.Found -> {
                     subscriptionRepository.subscribe(resolution.podcast)
-                    syncImportedCatalogLatestEpisode(resolution.podcast)
+                    refreshImportedLatestEpisodes(
+                        importedIds = listOf(resolution.podcast.id),
+                        backupOptIns = null,
+                    )
                     resolution.podcast
                 }
                 OpmlCatalogDecision.ConfirmedAbsent ->
@@ -575,17 +565,6 @@ class LibraryBackupManager(
         val guid: String?,
     )
 
-    private suspend fun syncImportedCatalogLatestEpisode(podcast: cx.aswin.boxlore.core.model.Podcast) {
-        try {
-            val syncedMap = podcastRepository.syncSubscriptions(listOf(podcast.id))
-            for ((id, ep) in syncedMap) {
-                subscriptionRepository.updateLatestEpisode(id, ep)
-            }
-        } catch (e: Exception) {
-            Log.e("OPML_IMPORT", "Failed to sync episodes for: ${podcast.title}", e)
-        }
-    }
-
     private fun supplementPort(): EpisodeSupplementPort? = episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
 
     private suspend fun restoreImportedLocalCatalogs(
@@ -645,6 +624,7 @@ class LibraryBackupManager(
                             podcastId = id,
                             episode = episode,
                             markAsNew = false,
+                            publisherFeedAuthoritative = true,
                         )
                     },
                     syncTrackedUrl = { id ->
@@ -697,6 +677,7 @@ class LibraryBackupManager(
                             podcastId = id,
                             episode = episode,
                             markAsNew = false,
+                            publisherFeedAuthoritative = true,
                         )
                     },
                     syncTrackedUrl = { id ->

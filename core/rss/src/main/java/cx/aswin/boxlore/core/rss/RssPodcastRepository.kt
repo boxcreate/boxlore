@@ -42,7 +42,7 @@ class RssPodcastRepository private constructor(
     @Volatile
     private var downloadCacheRelinker: cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker =
         cx.aswin.boxlore.core.rss.ports
-            .DownloadCacheRelinker { _, _ -> }
+            .DownloadCacheRelinker { _, _ -> false }
     private val podcastDao = database.podcastDao()
     private val episodeDao = database.rssEpisodeDao()
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
@@ -557,9 +557,7 @@ class RssPodcastRepository private constructor(
                 // Move the Media3-cached bytes to the new key before the old Room row (and its
                 // reference to that cached asset) is deleted below, so the migrated download
                 // keeps playing from cache instead of silently falling back to the network.
-                if (isRekey && old.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
-                    downloadCacheRelinker.relink(old.episodeId, rssEpisode.episodeId)
-                }
+                if (isRekey && !canRekeyDownloadedEpisode(old, rssEpisode)) return@forEach
                 downloadDao.insert(
                     old.copy(
                         episodeId = rssEpisode.episodeId,
@@ -614,6 +612,13 @@ class RssPodcastRepository private constructor(
             }
         podcastDao.retireLinkedPodcastIndexSubscription(podcastIndexPodcast.podcastId)
     }
+
+    private fun canRekeyDownloadedEpisode(
+        old: DownloadedEpisodeEntity,
+        rssEpisode: RssEpisodeEntity,
+    ): Boolean =
+        old.status != DownloadedEpisodeEntity.STATUS_COMPLETED ||
+            downloadCacheRelinker.relink(old.episodeId, rssEpisode.episodeId)
 
     private fun unsubscribeFromPodcastIndexNotifications(podcastIndexId: String) {
         runCatching {

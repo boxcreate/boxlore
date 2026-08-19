@@ -51,53 +51,9 @@ class LocalCatalogReadyLogicTest {
     }
 
     @Test
-    fun listenerIdsResolveAllowsPositivePiAndCatalogHits() {
-        assertTrue(
-            LocalCatalogReadyLogic.listenerIdsResolve(
-                catalogIds = setOf("-1", "99"),
-                listenerIds = setOf("-1", "55"),
-            ),
-        )
-        assertFalse(
-            LocalCatalogReadyLogic.listenerIdsResolve(
-                catalogIds = setOf("-1"),
-                listenerIds = setOf("-9"),
-            ),
-        )
-    }
-
-    @Test
-    fun tipIsSafeWhenUnchangedOrNewerPublish() {
-        assertTrue(LocalCatalogReadyLogic.tipIsSafe("-1", 100L, "-1", 100L))
-        assertTrue(LocalCatalogReadyLogic.tipIsSafe("-1", 100L, "-2", 200L))
-        assertFalse(LocalCatalogReadyLogic.tipIsSafe("-1", 100L, "-2", 100L))
-        assertTrue(LocalCatalogReadyLogic.tipIsSafe(null, null, "-2", 100L))
-    }
-
-    @Test
-    fun isReadyToFlipRequiresCountAndListenerAndTip() {
-        assertFalse(
-            LocalCatalogReadyLogic.isReadyToFlip(
-                feedReady = false,
-                catalogIds = setOf("-1"),
-                listenerIds = setOf("-1"),
-                existingTipId = "-1",
-                existingPublishedDate = 1L,
-                newTipId = "-1",
-                newPublishedDate = 1L,
-            ),
-        )
-        assertTrue(
-            LocalCatalogReadyLogic.isReadyToFlip(
-                feedReady = true,
-                catalogIds = setOf("-1"),
-                listenerIds = setOf("-1"),
-                existingTipId = "-1",
-                existingPublishedDate = 1L,
-                newTipId = "-1",
-                newPublishedDate = 1L,
-            ),
-        )
+    fun isReadyToFlipDependsOnlyOnCompletePublisherPersist() {
+        assertFalse(LocalCatalogReadyLogic.isReadyToFlip(feedReady = false))
+        assertTrue(LocalCatalogReadyLogic.isReadyToFlip(feedReady = true))
     }
 
     private fun feed(

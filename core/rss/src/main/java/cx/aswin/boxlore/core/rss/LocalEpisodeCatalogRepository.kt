@@ -3,11 +3,13 @@ package cx.aswin.boxlore.core.rss
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.LocalEpisodeCatalogDao
+import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest
+import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -28,8 +30,7 @@ class LocalEpisodeCatalogRepository private constructor(
     constructor(
         database: BoxLoreDatabase,
         feedClient: RssFeedClient = RssFeedClient(),
-        loadListenerEpisodeIds: suspend (String) -> Set<String> = { emptySet() },
-        loadKnownTip: suspend (String) -> Pair<String, Long>? = { null },
+        downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
     ) : this(
         dao = database.localEpisodeCatalogDao(),
         feedClient = feedClient,
@@ -37,8 +38,11 @@ class LocalEpisodeCatalogRepository private constructor(
         isFeedUnchanged = { url, etag, lastModified ->
             feedClient.confirmUnchanged(url, etag, lastModified)
         },
-        loadListenerEpisodeIds = loadListenerEpisodeIds,
-        loadKnownTip = loadKnownTip,
+        reconcileListenerState =
+            LocalCatalogListenerStateReconciler(
+                database = database,
+                downloadCacheRelinker = downloadCacheRelinker,
+            )::reconcile,
         megaGetGate = Semaphore(MEGA_GET_PERMITS),
     )
 
@@ -47,8 +51,10 @@ class LocalEpisodeCatalogRepository private constructor(
         feedClient: RssFeedClient,
         runInTransaction: suspend (suspend () -> Unit) -> Unit,
         isFeedUnchanged: suspend (url: String, etag: String?, lastModified: String?) -> Boolean,
-        loadListenerEpisodeIds: suspend (String) -> Set<String>,
-        loadKnownTip: suspend (String) -> Pair<String, Long>?,
+        reconcileListenerState: suspend (
+            podcastId: String,
+            catalogRows: List<LocalEpisodeEntity>,
+        ) -> Unit,
         megaGetGate: Semaphore,
     ) : this(
         reads = LocalEpisodeCatalogReads(dao, isFeedUnchanged),
@@ -58,8 +64,7 @@ class LocalEpisodeCatalogRepository private constructor(
                 feedClient = feedClient,
                 runInTransaction = runInTransaction,
                 isFeedUnchanged = isFeedUnchanged,
-                loadListenerEpisodeIds = loadListenerEpisodeIds,
-                loadKnownTip = loadKnownTip,
+                reconcileListenerState = reconcileListenerState,
                 megaGetGate = megaGetGate,
             ),
     )
@@ -82,14 +87,12 @@ class LocalEpisodeCatalogRepository private constructor(
         fun create(
             database: BoxLoreDatabase,
             feedClient: RssFeedClient = RssFeedClient(),
-            loadListenerEpisodeIds: suspend (String) -> Set<String> = { emptySet() },
-            loadKnownTip: suspend (String) -> Pair<String, Long>? = { null },
+            downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
         ): LocalEpisodeCatalogRepository =
             LocalEpisodeCatalogRepository(
                 database = database,
                 feedClient = feedClient,
-                loadListenerEpisodeIds = loadListenerEpisodeIds,
-                loadKnownTip = loadKnownTip,
+                downloadCacheRelinker = downloadCacheRelinker,
             )
 
         internal fun resolveHttps(

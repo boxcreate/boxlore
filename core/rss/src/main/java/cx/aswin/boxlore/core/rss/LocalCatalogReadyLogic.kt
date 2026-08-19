@@ -15,37 +15,9 @@ object LocalCatalogReadyLogic {
         return feed.ready
     }
 
-    fun listenerIdsResolve(
-        catalogIds: Set<String>,
-        listenerIds: Set<String>,
-    ): Boolean =
-        listenerIds.all { id ->
-            id in catalogIds || id.toLongOrNull()?.let { it > 0L } == true
-        }
-
-    fun tipIsSafe(
-        existingTipId: String?,
-        existingPublishedDate: Long?,
-        newTipId: String?,
-        newPublishedDate: Long?,
-    ): Boolean {
-        if (existingTipId.isNullOrBlank()) return true
-        if (existingTipId == newTipId) return true
-        return newPublishedDate != null &&
-            existingPublishedDate != null &&
-            newPublishedDate > existingPublishedDate
-    }
-
-    fun isReadyToFlip(
-        feedReady: Boolean,
-        catalogIds: Set<String>,
-        listenerIds: Set<String>,
-        existingTipId: String?,
-        existingPublishedDate: Long?,
-        newTipId: String?,
-        newPublishedDate: Long?,
-    ): Boolean =
-        feedReady &&
-            listenerIdsResolve(catalogIds, listenerIds) &&
-            tipIsSafe(existingTipId, existingPublishedDate, newTipId, newPublishedDate)
+    /**
+     * A successful complete publisher-feed persist is sufficient for source cutover.
+     * Listener-state identity repair is best-effort and must never hide a valid feed.
+     */
+    fun isReadyToFlip(feedReady: Boolean): Boolean = feedReady
 }

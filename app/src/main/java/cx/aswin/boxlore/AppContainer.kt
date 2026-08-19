@@ -122,25 +122,10 @@ class AppContainer(
     val localEpisodeCatalogRepository: LocalEpisodeCatalogRepository by lazy {
         LocalEpisodeCatalogRepository.create(
             database = database,
-            loadListenerEpisodeIds = { podcastId ->
-                val history =
-                    database
-                        .listeningHistoryDao()
-                        .getHistoryForPodcast(podcastId)
-                        .map { it.episodeId }
-                val downloads =
-                    database
-                        .downloadedEpisodeDao()
-                        .getDownloadsForPodcast(podcastId)
-                        .map { it.episodeId }
-                val queue = database.queueDao().getEpisodeIdsForPodcast(podcastId)
-                (history + downloads + queue).toSet()
-            },
-            loadKnownTip = { podcastId ->
-                database.podcastDao().getPodcast(podcastId)?.latestEpisode?.let { tip ->
-                    tip.id to tip.publishedDate
-                }
-            },
+            downloadCacheRelinker =
+                DownloadCacheRelinker { oldId, newId ->
+                    DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
+                },
         )
     }
 

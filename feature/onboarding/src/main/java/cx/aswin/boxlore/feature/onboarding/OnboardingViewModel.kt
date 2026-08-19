@@ -79,6 +79,16 @@ class OnboardingViewModel(
     internal var currentStepStartMs: Long = 0L
     internal var didSwitchFromAi: Boolean = false
 
+    internal suspend fun subscribeAndIngest(podcast: Podcast) {
+        val wasSubscribed = subscriptionRepository.isSubscribed(podcast.id)
+        subscriptionRepository.subscribe(podcast)
+        if (!wasSubscribed && !podcast.isRss) {
+            cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder.instance
+                ?.subscriptionForegroundSync
+                ?.requestCatalogIngest(podcast.id)
+        }
+    }
+
     /** Total time since the onboarding flow began */
     fun getTotalOnboardingTime(): Float {
         if (onboardingStartMs == 0L) return 0f
