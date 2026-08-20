@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-20T08:36:47.798Z",
+  "lastRun": "2026-08-20T09:33:08.196Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "76d6b78e-9c6e-11f1-9adb-df2f07c1df56",
-      "lastEpisodeTitle": "4AM ET 08/20/2026 Newscast",
+      "lastRssKey": "d842c938-9c76-11f1-b966-53d79b552593",
+      "lastEpisodeTitle": "5AM ET 08/20/2026 Newscast",
       "lastEpisodeId": "59247223201",
-      "lastCheckedAt": 1787215018187
+      "lastCheckedAt": 1787218392950
     },
     "386911": {
       "lastEpisodeId": "59027782274",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1786765059294
     },
     "437685": {
-      "lastEpisodeId": "59206212171",
-      "lastEpisodeTitle": "The Surprising History of the Plow",
-      "lastRssKey": "97d068b2-8d5b-11f1-9320-7312be2b359e",
-      "lastCheckedAt": 1787131949010
+      "lastEpisodeId": "59252999139",
+      "lastEpisodeTitle": "The Florence. Cathedral",
+      "lastRssKey": "979c886c-8d5b-11f1-9320-af05fd45c937",
+      "lastCheckedAt": 1787218393697
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -178,10 +178,10 @@
       "lastCheckedAt": 1787125031422
     },
     "889671": {
-      "lastRssKey": "09c4b7a9-1459-48c5-aa1f-282f59c188b7",
-      "lastEpisodeTitle": "Linux Cracks 10% Desktop Usage!",
-      "lastEpisodeId": "58664377266",
-      "lastCheckedAt": 1787215030162
+      "lastRssKey": "e824b9d2-17e2-4722-b021-f33ad05711ae",
+      "lastEpisodeTitle": "EPIC Launcher Headed Linux & Proxmox on ARM!",
+      "lastEpisodeId": "59241576400",
+      "lastCheckedAt": 1787218398555
     },
     "902798": {
       "lastRssKey": "f3eca23a-8f88-4047-a6e2-62705f901d7c",
@@ -404,10 +404,10 @@
       "lastCheckedAt": 1786559332738
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779776",
-      "lastEpisodeTitle": "The Black Museum - Meat Juice",
+      "lastRssKey": "https://api.spreaker.com/episode/59779779",
+      "lastEpisodeTitle": "Radio City Playhouse - Strange Identity",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1787131966103
+      "lastCheckedAt": 1787218406136
     },
     "6912659": {
       "lastRssKey": "5f70ad47-a9f1-4d57-82f7-f1a2b973b7e5",
@@ -476,10 +476,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "73ab8c96-8c65-4168-9e30-a9dedb9761ce",
-      "lastEpisodeTitle": "1 John 1",
-      "lastEpisodeId": "59205813562",
-      "lastCheckedAt": 1787131969967
+      "lastRssKey": "6a452873-9e7e-4b8c-b9b4-4ef920417386",
+      "lastEpisodeTitle": "1 John 2",
+      "lastEpisodeId": "59252608535",
+      "lastCheckedAt": 1787218408213
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
