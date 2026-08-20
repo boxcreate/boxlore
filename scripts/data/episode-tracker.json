@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-20T07:48:30.348Z",
+  "lastRun": "2026-08-20T08:36:47.798Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "1807e000-9c66-11f1-b922-c70c20895ec0",
-      "lastEpisodeTitle": "3AM ET 08/20/2026 Newscast",
+      "lastRssKey": "76d6b78e-9c6e-11f1-9adb-df2f07c1df56",
+      "lastEpisodeTitle": "4AM ET 08/20/2026 Newscast",
       "lastEpisodeId": "59247223201",
-      "lastCheckedAt": 1787212114469
+      "lastCheckedAt": 1787215018187
     },
     "386911": {
       "lastEpisodeId": "59027782274",
@@ -178,10 +178,10 @@
       "lastCheckedAt": 1787125031422
     },
     "889671": {
-      "lastRssKey": "e824b9d2-17e2-4722-b021-f33ad05711ae",
-      "lastEpisodeTitle": "EPIC Launcher Headed Linux & Proxmox on ARM!",
+      "lastRssKey": "09c4b7a9-1459-48c5-aa1f-282f59c188b7",
+      "lastEpisodeTitle": "Linux Cracks 10% Desktop Usage!",
       "lastEpisodeId": "58664377266",
-      "lastCheckedAt": 1787178189144
+      "lastCheckedAt": 1787215030162
     },
     "902798": {
       "lastRssKey": "f3eca23a-8f88-4047-a6e2-62705f901d7c",
