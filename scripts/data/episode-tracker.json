@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-23T13:31:28.822Z",
+  "lastRun": "2026-08-23T14:21:27.600Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "deb6aac6-9ef3-11f1-a6c1-f72e6581e89a",
-      "lastEpisodeTitle": "President Trump reacting to Canada's plan to impose Tariffs on the U.S.",
+      "lastRssKey": "40293ca8-9efc-11f1-a1d7-0bb61e67e717",
+      "lastEpisodeTitle": "10AM ET 08/23/2026 Newscast",
       "lastEpisodeId": "59386672726",
-      "lastCheckedAt": 1787491894604
+      "lastCheckedAt": 1787494891901
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -408,6 +408,12 @@
       "lastEpisodeTitle": "bye bye !",
       "lastEpisodeId": "53696806037",
       "lastCheckedAt": 1786559332738
+    },
+    "6866732": {
+      "lastRssKey": "https://api.spreaker.com/episode/74575838",
+      "lastEpisodeTitle": "Sherlock Holmes - The Sign Of Four",
+      "lastEpisodeId": "59392396215",
+      "lastCheckedAt": 1787494907951
     },
     "6897392": {
       "lastRssKey": "https://api.spreaker.com/episode/59779789",
