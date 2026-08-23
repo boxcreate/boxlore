@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-23T08:58:55.741Z",
+  "lastRun": "2026-08-23T09:35:08.374Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "f921ddba-9ec9-11f1-a8d9-ff72af38e5ce",
-      "lastEpisodeTitle": "4AM ET 08/23/2026 Newscast",
+      "lastRssKey": "5b162302-9ed2-11f1-abd0-3bb9884a349a",
+      "lastEpisodeTitle": "5AM ET 08/23/2026 Newscast",
       "lastEpisodeId": "59386672726",
-      "lastCheckedAt": 1787473698603
+      "lastCheckedAt": 1787477713328
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1786765059294
     },
     "437685": {
-      "lastEpisodeId": "59349000790",
-      "lastEpisodeTitle": "German Americans",
-      "lastRssKey": "97257042-8d5b-11f1-9320-4352aca86eb2",
-      "lastCheckedAt": 1787391274637
+      "lastEpisodeId": "59388273557",
+      "lastEpisodeTitle": "The Doctor's Riot of 1788",
+      "lastRssKey": "9885961a-8d5b-11f1-9320-f7afb9031703",
+      "lastCheckedAt": 1787477714711
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -410,10 +410,10 @@
       "lastCheckedAt": 1786559332738
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779787",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Thelma Ibsen Matter",
+      "lastRssKey": "https://api.spreaker.com/episode/59779789",
+      "lastEpisodeTitle": "The Black Museum - The Babys Jacket",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1787391297643
+      "lastCheckedAt": 1787477735842
     },
     "6912659": {
       "lastRssKey": "5f70ad47-a9f1-4d57-82f7-f1a2b973b7e5",
@@ -482,10 +482,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "1de51a32-8207-4b73-83b4-e017596c720f",
-      "lastEpisodeTitle": "1 John 4",
-      "lastEpisodeId": "59348677886",
-      "lastCheckedAt": 1787391299369
+      "lastRssKey": "b5971505-c2d0-46ec-8698-cb846c244110",
+      "lastEpisodeTitle": "1 John 5",
+      "lastEpisodeId": "59387837507",
+      "lastCheckedAt": 1787477740579
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
