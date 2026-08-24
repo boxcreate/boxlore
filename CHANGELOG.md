@@ -9,14 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Playback **Smart queue** switch (`same_show_queue_only`; default on). Off limits auto-queue to later episodes of the current show. ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Appearance **Cleaner Home** (`home_shortcuts_in_library`; default off) moves Settings and Feedback from Home to the Library top bar. ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Queue empty state explains when Smart queue is off and offers Turn on. ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Fixed
 - Repaired publisher-feed catalog cutover after library restore by reconciling legacy listener identities and retrying incomplete catalogs. ([#1000](https://github.com/boxcreate/boxlore/pull/1000)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Added bounded direct-feed ingestion across JSON restore, OPML, onboarding, Home, and Podcast Info subscription paths. ([#1000](https://github.com/boxcreate/boxlore/pull/1000)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Turning Smart queue on from an empty queue refills via the playback service player instead of the session forwarding player. ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1000 -->
 ### Critical
 - Restored and long-used subscriptions now refresh from the publisher’s feed again, so newly released episodes no longer stay missing.
 <!-- readme-copy:end pr=1000 -->
+
+<!-- readme-copy:start pr=1001 -->
+### New features
+- Turn off Smart queue to stay on the show you’re playing. The queue only auto-adds later episodes of that show.
+- Cleaner Home moves Settings and Feedback to Library so Home can show just the logo.
+<!-- readme-copy:end pr=1001 -->
 ## [v0.0.19] - 2026-08-18
 
 ### Added

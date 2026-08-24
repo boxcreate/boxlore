@@ -68,6 +68,11 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <ul align="left">
 <li>Restored and long-used subscriptions now refresh from the publisher’s feed again, so newly released episodes no longer stay missing. <a href="https://github.com/boxcreate/boxlore/pull/1000"><img src="https://img.shields.io/badge/PR-1000-6750A4?style=flat-square" alt="PR #1000" height="18"/></a></li>
 </ul>
+<b>🆕 New features:</b>
+<ul align="left">
+<li>Turn off Smart queue to stay on the show you’re playing. The queue only auto-adds later episodes of that show. <a href="https://github.com/boxcreate/boxlore/pull/1001"><img src="https://img.shields.io/badge/PR-1001-6750A4?style=flat-square" alt="PR #1001" height="18"/></a></li>
+<li>Cleaner Home moves Settings and Feedback to Library so Home can show just the logo. <a href="https://github.com/boxcreate/boxlore/pull/1001"><img src="https://img.shields.io/badge/PR-1001-6750A4?style=flat-square" alt="PR #1001" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
