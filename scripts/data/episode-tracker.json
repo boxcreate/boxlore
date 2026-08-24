@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-24T03:53:16.635Z",
+  "lastRun": "2026-08-24T04:42:41.194Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "3ae49b8a-9f69-11f1-913c-c77f488f8bfd",
-      "lastEpisodeTitle": "11PM ET 08/23/2026 Newscast",
+      "lastRssKey": "9c85f1c4-9f71-11f1-b0ae-7b06abbb4728",
+      "lastEpisodeTitle": "12AM ET 08/24/2026 Newscast",
       "lastEpisodeId": "59418216825",
-      "lastCheckedAt": 1787543600976
+      "lastCheckedAt": 1787546570052
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -196,10 +196,10 @@
       "lastCheckedAt": 1787442329266
     },
     "928708": {
-      "lastEpisodeId": "59393371794",
-      "lastEpisodeTitle": "This Day in History - August 23, 2026",
-      "lastRssKey": "24773970-9b0e-11f1-8cc9-4b0eed5824bc",
-      "lastCheckedAt": 1787488666224
+      "lastEpisodeId": "59419736958",
+      "lastEpisodeTitle": "This Day in History - August 24, 2026",
+      "lastRssKey": "00d2060e-9f36-11f1-907b-774fa6e0e2c1",
+      "lastCheckedAt": 1787546581964
     },
     "947138": {
       "lastRssKey": "81a03110-b5cc-11f0-92f1-0bfa55afce19",
@@ -349,6 +349,11 @@
       "lastEpisodeTitle": "#172 - How We Barely Survived Our Road Trip",
       "lastEpisodeId": "59333596321",
       "lastCheckedAt": 1787360990971
+    },
+    "5146654": {
+      "lastRssKey": "b6b20bb2-d12f-41b1-a042-13d1ef9e62db",
+      "lastEpisodeTitle": "Récifs artificiels",
+      "lastCheckedAt": 1787546589978
     },
     "5377667": {
       "lastEpisodeId": "22189071",
