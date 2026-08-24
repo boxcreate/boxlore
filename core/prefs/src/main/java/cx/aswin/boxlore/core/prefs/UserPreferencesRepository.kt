@@ -1172,6 +1172,42 @@ class UserPreferencesRepository(
         }
     }
 
+    /**
+     * When true, Smart Queue only continues the current show (newer/next episodes).
+     * Other-show resume, subscription, rec, and trending fill stay off. Default false.
+     */
+    val sameShowQueueOnlyStream: Flow<Boolean> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                preferences[Keys.SAME_SHOW_QUEUE_ONLY] ?: false
+            }.distinctUntilChanged()
+
+    suspend fun setSameShowQueueOnly(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.SAME_SHOW_QUEUE_ONLY] = enabled
+        }
+    }
+
+    /**
+     * When true, Home hides Settings and Feedback; those shortcuts sit on Library instead.
+     * Default false so Home keeps the current top-bar icons.
+     */
+    val homeShortcutsInLibraryStream: Flow<Boolean> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                preferences[Keys.HOME_SHORTCUTS_IN_LIBRARY] ?: false
+            }.distinctUntilChanged()
+
+    suspend fun setHomeShortcutsInLibrary(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.HOME_SHORTCUTS_IN_LIBRARY] = enabled
+        }
+    }
+
     val overriddenRecPodcastIdStream: Flow<String?> =
         dataStore.data
             .catch { exception ->

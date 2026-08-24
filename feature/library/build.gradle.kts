@@ -58,6 +58,7 @@ dependencies {
     implementation(projects.core.downloads)
     implementation(projects.core.playback)
     implementation(projects.core.designsystem)
+    implementation(projects.core.prefs)
     implementation(projects.core.analytics)
     implementation(projects.core.ranking)
 

@@ -52,6 +52,8 @@ data class GlobalPreferencesBackup(
     val hideCompletedInHome: Boolean? = null,
     val hideCompletedInSubs: Boolean? = null,
     val restartForgottenEpisodes: Boolean? = null,
+    val sameShowQueueOnly: Boolean? = null,
+    val homeShortcutsInLibrary: Boolean? = null,
     val smartDownloadsEnabled: Boolean? = null,
     val smartDownloadsMaxEpisodes: Int? = null,
     val smartDownloadsStorageBudget: Long? = null,
@@ -125,6 +127,8 @@ class LibraryBackupManager(
                     hideCompletedInHome = userPrefs.hideCompletedInHomeStream.first(),
                     hideCompletedInSubs = userPrefs.hideCompletedInSubsStream.first(),
                     restartForgottenEpisodes = userPrefs.restartForgottenEpisodesStream.first(),
+                    sameShowQueueOnly = userPrefs.sameShowQueueOnlyStream.first(),
+                    homeShortcutsInLibrary = userPrefs.homeShortcutsInLibraryStream.first(),
                     smartDownloadsEnabled = userPrefs.smartDownloadsEnabledStream.first(),
                     smartDownloadsMaxEpisodes = userPrefs.smartDownloadsMaxEpisodesStream.first(),
                     smartDownloadsStorageBudget = userPrefs.smartDownloadsStorageBudgetStream.first(),
@@ -235,6 +239,8 @@ class LibraryBackupManager(
         prefs.hideCompletedInHome.writePref { up.setHideCompletedInHome(it) }
         prefs.hideCompletedInSubs.writePref { up.setHideCompletedInSubs(it) }
         prefs.restartForgottenEpisodes.writePref { up.setRestartForgottenEpisodes(it) }
+        prefs.sameShowQueueOnly.writePref { up.setSameShowQueueOnly(it) }
+        prefs.homeShortcutsInLibrary.writePref { up.setHomeShortcutsInLibrary(it) }
         restoreImportedSmartDownloadPrefs(prefs, up)
         prefs.autoDownloadWifiOnly.writePref { up.setAutoDownloadWifiOnly(it) }
         prefs.autoDownloadMaxEpisodes.writePref { up.setAutoDownloadMaxEpisodes(it) }

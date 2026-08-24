@@ -341,6 +341,8 @@ fun BoxLoreAppRoot(
     val hideCompletedInSubs by userPrefs.hideCompletedInSubsStream.collectAsState(initial = true)
     val hideCompletedInShowDetails by userPrefs.hideCompletedInShowDetailsStream.collectAsState(initial = false)
     val restartForgottenEpisodes by userPrefs.restartForgottenEpisodesStream.collectAsState(initial = true)
+    val sameShowQueueOnly by userPrefs.sameShowQueueOnlyStream.collectAsState(initial = false)
+    val homeShortcutsInLibrary by userPrefs.homeShortcutsInLibraryStream.collectAsState(initial = false)
     val useDynamicColor by userPrefs.useDynamicColorStream.collectAsState(
         initial = remember { userPrefs.cachedUseDynamicColor },
     )
@@ -611,6 +613,8 @@ fun BoxLoreAppRoot(
                                     hideCompletedInSubs = hideCompletedInSubs,
                                     hideCompletedInShowDetails = hideCompletedInShowDetails,
                                     restartForgottenEpisodes = restartForgottenEpisodes,
+                                    sameShowQueueOnly = sameShowQueueOnly,
+                                    homeShortcutsInLibrary = homeShortcutsInLibrary,
                                 ),
                         )
                     }

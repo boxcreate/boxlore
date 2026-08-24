@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -34,7 +35,8 @@ data class QueueSheetActions(
     val onRemoveEpisode: (Episode) -> Unit,
     val onClose: () -> Unit,
     val onMove: (fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _ -> },
-    val onDragEnd: (episodeId: String, fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _, _ -> }
+    val onDragEnd: (episodeId: String, fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _, _ -> },
+    val onEnableSmartQueue: () -> Unit = {},
 )
 
 data class QueueItemDisplay(
@@ -57,7 +59,8 @@ fun QueueSheetContent(
     currentPodcast: Podcast?,
     colorScheme: ColorScheme,
     actions: QueueSheetActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    smartQueueEnabled: Boolean = true,
 ) {
     val lazyListState = rememberLazyListState()
     val dragStartIndex = remember { mutableIntStateOf(-1) }
@@ -102,18 +105,11 @@ fun QueueSheetContent(
         )
 
         if (queue.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 64.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Queue is empty",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colorScheme.onSurfaceVariant
-                )
-            }
+            QueueEmptyState(
+                smartQueueEnabled = smartQueueEnabled,
+                colorScheme = colorScheme,
+                onEnableSmartQueue = actions.onEnableSmartQueue,
+            )
         } else {
             val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
                 actions.onMove(from.index, to.index)
@@ -150,6 +146,46 @@ fun QueueSheetContent(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QueueEmptyState(
+    smartQueueEnabled: Boolean,
+    colorScheme: ColorScheme,
+    onEnableSmartQueue: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Queue is empty",
+            style = MaterialTheme.typography.bodyLarge,
+            color = colorScheme.onSurfaceVariant,
+        )
+        if (!smartQueueEnabled) {
+            Text(
+                text = "Smart queue is off, so nothing is added automatically.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+            )
+            TextButton(
+                onClick = onEnableSmartQueue,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "Turn on",
+                    color = colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = GoogleSansWeight.medium,
+                )
             }
         }
     }

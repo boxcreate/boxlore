@@ -118,6 +118,7 @@ data class PlaybackSettings(
             hideCompletedInSubs = true,
             hideCompletedInShowDetails = false,
             restartForgottenEpisodes = true,
+            sameShowQueueOnly = false,
         ),
     val actions: PlaybackActions = PlaybackActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
 )
@@ -404,6 +405,10 @@ private fun AppearanceActions.trackedForAnalytics(): AppearanceActions =
         onSetOpenAppTo = {
             AnalyticsHelper.trackSettingsInteraction("open_app_to_changed", it)
             onSetOpenAppTo(it)
+        },
+        onSetHomeShortcutsInLibrary = {
+            AnalyticsHelper.trackSettingsInteraction("home_shortcuts_in_library_toggled", it.toString())
+            onSetHomeShortcutsInLibrary(it)
         },
     )
 

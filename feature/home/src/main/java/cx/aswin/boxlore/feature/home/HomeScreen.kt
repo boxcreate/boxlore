@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.content.pm.PackageManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -50,15 +48,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.home.components.TopControlBar
@@ -228,6 +226,7 @@ fun HomeRoute(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    val homeShortcutsInLibrary by userPreferencesRepository.homeShortcutsInLibraryStream.collectAsState(initial = false)
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(viewModel) {
         viewModel.pinFeedback.collect { message ->
@@ -343,6 +342,7 @@ fun HomeRoute(
     ) {
         HomeScreen(
             uiState = uiState,
+            showTopBarShortcuts = !homeShortcutsInLibrary,
             playback =
                 HomePlaybackUi(
                     currentPlayingPodcastId = currentPlayingPodcastId,
@@ -528,6 +528,7 @@ fun HomeScreen(
     callbacks: HomeScreenCallbacks,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
+    showTopBarShortcuts: Boolean = true,
 ) {
     // Track scroll state for collapsing top bar
     val gridState = rememberLazyStaggeredGridState()
@@ -541,6 +542,7 @@ fun HomeScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             TopControlBar(
                 scrollFractionProvider = { scrollFraction },
+                showUtilityIcons = showTopBarShortcuts,
                 onFeedbackClick = {
                     cx.aswin.boxlore.core.analytics.AnalyticsHelper
                         .trackTopControlbarInteraction("feedback_clicked", "home")

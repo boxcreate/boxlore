@@ -191,11 +191,13 @@ class SmartQueueEngineTest {
         sources: FakeSources,
         skipMemory: QueueSkipMemory? = null,
         staleRestartEnabled: Boolean = true,
+        sameShowQueueOnly: Boolean = false,
     ) = DefaultSmartQueueEngine(
         sources = sources,
         skipMemory = skipMemory,
         nowMs = { now },
         staleRestartEnabled = { staleRestartEnabled },
+        sameShowQueueOnly = { sameShowQueueOnly },
     )
 
     private fun skipMemory(): QueueSkipMemory {
@@ -358,6 +360,64 @@ class SmartQueueEngineTest {
                     currentContextSourceId = null,
                 )
             assertTrue(manualBatch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+        }
+
+    @Test
+    fun `same-show-only still continues a serial mid-show`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+            sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+
+            val batch =
+                engine(sources, sameShowQueueOnly = true).getNextEpisodes(
+                    currentItem(3),
+                    podcast("pod1", type = "serial"),
+                )
+
+            assertEquals(listOf("4", "5", "6"), batch.map { it.episode.id.toString() })
+            assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+            assertEquals(0, sources.recommendationsCalls)
+            assertEquals(0, sources.trendingCalls)
+        }
+
+    @Test
+    fun `same-show-only returns empty when the show is exhausted`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = listOf(episode(1))
+            sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+            sources.subscriptions = listOf(podcast("sub1"))
+            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+
+            val batch =
+                engine(sources, sameShowQueueOnly = true).getNextEpisodes(
+                    currentItem(1),
+                    podcast("pod1", type = "serial"),
+                )
+
+            assertTrue(batch.isEmpty())
+            assertEquals(0, sources.recommendationsCalls)
+            assertEquals(0, sources.trendingCalls)
+        }
+
+    @Test
+    fun `same-show-only does not fill after a discovery landing`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+            sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+            sources.subscriptions = listOf(podcast("sub1"))
+            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+
+            val batch =
+                engine(sources, sameShowQueueOnly = true).getNextEpisodes(
+                    currentItem(1),
+                    podcast("pod1", type = "serial"),
+                    currentContextSourceId = SmartQueueEngine.SOURCE_PERSONALIZED_REC,
+                )
+
+            assertTrue(batch.isEmpty())
         }
 
     // ── Tier 1: resume ──────────────────────────────────────────────────────

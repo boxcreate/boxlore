@@ -606,6 +606,26 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun sameShowQueueOnlyDefaultsOffAndPersists() =
+        runTest {
+            assertFalse(repository.sameShowQueueOnlyStream.first())
+            repository.setSameShowQueueOnly(true)
+            assertTrue(repository.sameShowQueueOnlyStream.first())
+            repository.setSameShowQueueOnly(false)
+            assertFalse(repository.sameShowQueueOnlyStream.first())
+        }
+
+    @Test
+    fun homeShortcutsInLibraryDefaultsOffAndPersists() =
+        runTest {
+            assertFalse(repository.homeShortcutsInLibraryStream.first())
+            repository.setHomeShortcutsInLibrary(true)
+            assertTrue(repository.homeShortcutsInLibraryStream.first())
+            repository.setHomeShortcutsInLibrary(false)
+            assertFalse(repository.homeShortcutsInLibraryStream.first())
+        }
+
+    @Test
     fun overriddenRecPodcastIdSetAndClear() =
         runTest {
             assertNull(repository.overriddenRecPodcastIdStream.first())

@@ -65,6 +65,13 @@ class LibraryViewModel(
             initialValue = emptyMap()
         )
 
+    val homeShortcutsInLibrary: StateFlow<Boolean> =
+        userPreferencesRepository.homeShortcutsInLibraryStream.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false,
+        )
+
     private val _downloadsSortOrder = MutableStateFlow(DownloadsSortOrder.RECENT)
     val downloadsSortOrder = _downloadsSortOrder.asStateFlow()
 

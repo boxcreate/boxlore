@@ -111,6 +111,8 @@ interface SmartQueueEngine {
  *
  * All tiers filter against the live queue, completed episodes, and [QueueSkipMemory];
  * podcasts with repeated skips are down-ranked in the fallback tiers.
+ * When [sameShowQueueOnly] is true, fallback tiers are skipped and the batch is
+ * same-show continuation only (possibly empty).
  */
 class DefaultSmartQueueEngine(
     private val sources: SmartQueueSources,
@@ -118,6 +120,7 @@ class DefaultSmartQueueEngine(
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val adaptiveScorer: AdaptiveCandidateScorer? = null,
     private val staleRestartEnabled: () -> Boolean = { true },
+    private val sameShowQueueOnly: () -> Boolean = { false },
 ) : SmartQueueEngine {
 
     companion object {
@@ -175,6 +178,13 @@ class DefaultSmartQueueEngine(
         tier0.forEach { exclude.add(it.episode.id.toString()) }
         if (tier0.size >= MIN_ITEMS_BEFORE_NETWORK) {
             android.util.Log.d(LOG_TAG, "Tier 0 satisfied batch with ${tier0.size} same-show episodes")
+            return tier0
+        }
+        if (sameShowQueueOnly()) {
+            android.util.Log.d(
+                LOG_TAG,
+                "Same-show queue only — skipping fallbacks (${tier0.size} continuation items)",
+            )
             return tier0
         }
 

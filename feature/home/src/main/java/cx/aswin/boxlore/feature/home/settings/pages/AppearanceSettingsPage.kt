@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,10 +31,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.BrandSeeds
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
@@ -60,6 +60,7 @@ data class AppearanceUiState(
     val currentFontRoundness: String = FontRoundness.DEFAULT_KEY,
     val currentNavigationStyle: String = NavigationStyle.Floating.key,
     val currentOpenAppTo: String = OpenAppTo.HOME,
+    val homeShortcutsInLibrary: Boolean = false,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -71,6 +72,7 @@ data class AppearanceActions(
     val onSetFontRoundness: (String) -> Unit = {},
     val onSetNavigationStyle: (String) -> Unit = {},
     val onSetOpenAppTo: (String) -> Unit = {},
+    val onSetHomeShortcutsInLibrary: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -123,6 +125,11 @@ internal fun AppearanceSettingsPage(
         OpenAppToSection(
             currentOpenAppTo = state.currentOpenAppTo,
             onSetOpenAppTo = actions.onSetOpenAppTo,
+        )
+
+        HomeChromeSection(
+            homeShortcutsInLibrary = state.homeShortcutsInLibrary,
+            onSetHomeShortcutsInLibrary = actions.onSetHomeShortcutsInLibrary,
         )
 
         ColorsSection(
@@ -434,6 +441,26 @@ private fun LetteringPreviewLine(
             fontSize = fontSizeSp.sp,
             lineHeight = lineHeightSp.sp,
             color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun HomeChromeSection(
+    homeShortcutsInLibrary: Boolean,
+    onSetHomeShortcutsInLibrary: (Boolean) -> Unit,
+) {
+    SettingsGroup(
+        title = "Home",
+        footer =
+            "When this is on, Home only shows the logo. Settings and Feedback move to the Library top bar.",
+    ) {
+        SettingsSwitchRow(
+            title = "Cleaner Home",
+            supportingText = "Move Settings and Feedback to Library",
+            checked = homeShortcutsInLibrary,
+            onCheckedChange = onSetHomeShortcutsInLibrary,
+            icon = Icons.Rounded.Home,
         )
     }
 }
