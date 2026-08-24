@@ -28,6 +28,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
@@ -348,10 +350,13 @@ internal data class PlayerQueueSheetResources(
 @OptIn(ExperimentalMaterial3Api::class)
 internal fun PlayerQueueSheet(
     playbackRepository: PlaybackRepository,
+    userPrefs: UserPreferencesRepository,
     model: PlayerQueueSheetModel,
     resources: PlayerQueueSheetResources,
     ui: FullPlayerUiState
 ) {
+    val sameShowQueueOnly by userPrefs.sameShowQueueOnlyStream
+        .collectAsStateWithLifecycle(initialValue = false)
     ModalBottomSheet(
         onDismissRequest = { ui.showQueueSheet = false },
         sheetState = resources.sheetState,
@@ -363,7 +368,16 @@ internal fun PlayerQueueSheet(
             queue = model.state.queue.drop(1),
             currentPodcast = model.podcast,
             colorScheme = model.colorScheme,
-            actions = queueSheetActions(playbackRepository, model.podcast, resources, ui)
+            smartQueueEnabled = !sameShowQueueOnly,
+            actions = queueSheetActions(
+                playbackRepository = playbackRepository,
+                podcast = model.podcast,
+                resources = resources,
+                ui = ui,
+                onEnableSmartQueue = {
+                    resources.scope.launch { userPrefs.setSameShowQueueOnly(false) }
+                },
+            ),
         )
     }
 }
@@ -371,7 +385,8 @@ internal fun queueSheetActions(
     playbackRepository: PlaybackRepository,
     podcast: Podcast,
     resources: PlayerQueueSheetResources,
-    ui: FullPlayerUiState
+    ui: FullPlayerUiState,
+    onEnableSmartQueue: () -> Unit = {},
 ) = QueueSheetActions(
     onPlayEpisode = { episode ->
         resources.scope.launch {
@@ -401,7 +416,8 @@ internal fun queueSheetActions(
                 toQueueIndex = cx.aswin.boxlore.core.playback.QueueMath.uiIndexToQueueIndex(toUi)
             )
         }
-    }
+    },
+    onEnableSmartQueue = onEnableSmartQueue,
 )
 
 internal suspend fun handleQueueRemoval(

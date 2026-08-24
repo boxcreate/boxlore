@@ -92,6 +92,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             currentFontRoundness = settingsState.fontRoundness,
                             currentNavigationStyle = settingsState.navigationStyle,
                             currentOpenAppTo = settingsState.openAppTo,
+                            homeShortcutsInLibrary = settingsState.homeShortcutsInLibrary,
                         ),
                     actions =
                         cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
@@ -102,6 +103,9 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
                             onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
                             onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },
+                            onSetHomeShortcutsInLibrary = { enabled ->
+                                scope.launch { userPrefs.setHomeShortcutsInLibrary(enabled) }
+                            },
                         ),
                 ),
             playbackSettings =
@@ -117,6 +121,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             hideCompletedInSubs = settingsState.hideCompletedInSubs,
                             hideCompletedInShowDetails = settingsState.hideCompletedInShowDetails,
                             restartForgottenEpisodes = settingsState.restartForgottenEpisodes,
+                            sameShowQueueOnly = settingsState.sameShowQueueOnly,
                         ),
                     actions =
                         cx.aswin.boxlore.feature.home.settings.pages.PlaybackActions(
@@ -138,6 +143,9 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             onSetHideCompletedInShowDetails = { hide -> scope.launch { userPrefs.setHideCompletedInShowDetails(hide) } },
                             onSetRestartForgottenEpisodes = { enabled ->
                                 scope.launch { userPrefs.setRestartForgottenEpisodes(enabled) }
+                            },
+                            onSetSameShowQueueOnly = { enabled ->
+                                scope.launch { userPrefs.setSameShowQueueOnly(enabled) }
                             },
                         ),
                 ),
@@ -309,6 +317,9 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             onNavigateToSubscriptions = { navController.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) },
             onNavigateToDownloads = { navController.navigate(NavRoutes.LIBRARY_DOWNLOADS) },
             onNavigateToHistory = { navController.navigate("library/history") },
+            onNavigateToSettings = { navController.navigate("settings?page=hub") },
+            onNavigateToDebug = { navController.navigate("debug") },
+            onFeedbackClick = { w.actions.onShowFeedbackSheet() },
         )
     }
 

@@ -53,4 +53,10 @@ internal object Keys {
     val AUTO_DOWNLOAD_MAX_EPISODES = androidx.datastore.preferences.core.intPreferencesKey("auto_download_max_episodes")
     val AUTO_DOWNLOAD_DELETE_COMPLETED = androidx.datastore.preferences.core.booleanPreferencesKey("auto_download_delete_completed")
     val HOME_MIX_MODE = stringPreferencesKey("home_mix_mode")
+    val SAME_SHOW_QUEUE_ONLY =
+        androidx.datastore.preferences.core
+            .booleanPreferencesKey("same_show_queue_only")
+    val HOME_SHORTCUTS_IN_LIBRARY =
+        androidx.datastore.preferences.core
+            .booleanPreferencesKey("home_shortcuts_in_library")
 }

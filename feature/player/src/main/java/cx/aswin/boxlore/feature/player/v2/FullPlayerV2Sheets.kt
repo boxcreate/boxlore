@@ -115,6 +115,7 @@ internal fun FullPlayerModalSheets(
     if (ui.showQueueSheet) {
         PlayerQueueSheet(
             playbackRepository = dependencies.playbackRepository,
+            userPrefs = dependencies.userPrefs,
             model = PlayerQueueSheetModel(model.state, model.podcast, model.colorScheme),
             resources = PlayerQueueSheetResources(
                 resources.scope,

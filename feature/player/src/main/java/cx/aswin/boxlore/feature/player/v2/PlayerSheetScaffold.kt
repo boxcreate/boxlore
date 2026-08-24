@@ -506,7 +506,8 @@ private fun FullPlayerLayer(
             FullPlayerV2(
                 dependencies = FullPlayerDependencies(
                     playbackRepository = resources.playbackRepository,
-                    downloadRepository = resources.downloadRepository
+                    downloadRepository = resources.downloadRepository,
+                    userPrefs = resources.userPrefs,
                 ),
                 display = FullPlayerDisplay(
                     colorScheme = content.colorScheme,

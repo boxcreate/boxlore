@@ -4,7 +4,9 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -33,7 +35,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,6 +45,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -53,6 +58,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -81,9 +88,13 @@ fun LibraryScreen(
     onNavigateToLiked: () -> Unit,
     onNavigateToSubscriptions: () -> Unit,
     onNavigateToDownloads: () -> Unit,
-    onNavigateToHistory: () -> Unit
+    onNavigateToHistory: () -> Unit,
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToDebug: () -> Unit = {},
+    onFeedbackClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val homeShortcutsInLibrary by viewModel.homeShortcutsInLibrary.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
@@ -121,7 +132,29 @@ fun LibraryScreen(
         onNavigateToHistory = {
             viewModel.hubNavigatedTo = "history"
             onNavigateToHistory()
-        }
+        },
+        showHomeShortcuts = homeShortcutsInLibrary,
+        onFeedbackClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("feedback_clicked", "library")
+            onFeedbackClick()
+        },
+        onFeedbackLongClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("feedback_long_clicked", "library")
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackSurveyNpsManualTrigger(source = "long_press")
+        },
+        onSettingsClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("settings_clicked", "library")
+            onNavigateToSettings()
+        },
+        onSettingsLongClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("avatar_long_clicked", "library")
+            onNavigateToDebug()
+        },
     )
 }
 
@@ -132,7 +165,12 @@ fun LibraryContent(
     onNavigateToLiked: () -> Unit,
     onNavigateToSubscriptions: () -> Unit,
     onNavigateToDownloads: () -> Unit,
-    onNavigateToHistory: () -> Unit
+    onNavigateToHistory: () -> Unit,
+    showHomeShortcuts: Boolean = false,
+    onFeedbackClick: () -> Unit = {},
+    onFeedbackLongClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
+    onSettingsLongClick: () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val titleStyle = lerp(
@@ -153,6 +191,23 @@ fun LibraryContent(
                         text = "Library",
                         style = titleStyle,
                     )
+                },
+                actions = {
+                    if (showHomeShortcuts) {
+                        LibraryHubShortcutButton(
+                            icon = Icons.Rounded.Feedback,
+                            contentDescription = "Send Feedback",
+                            onClick = onFeedbackClick,
+                            onLongClick = onFeedbackLongClick,
+                        )
+                        LibraryHubShortcutButton(
+                            icon = Icons.Rounded.Settings,
+                            contentDescription = "Settings",
+                            onClick = onSettingsClick,
+                            onLongClick = onSettingsLongClick,
+                            modifier = Modifier.testTag("library_settings_button"),
+                        )
+                    }
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -539,5 +594,28 @@ fun LibraryPodcastCard(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LibraryHubShortcutButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    IconButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier =
+                Modifier.combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    role = Role.Button,
+                ),
+        )
     }
 }

@@ -63,7 +63,8 @@ import kotlinx.coroutines.flow.map
  */
 data class FullPlayerDependencies(
     val playbackRepository: PlaybackRepository,
-    val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository
+    val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
+    val userPrefs: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
 )
 
 data class FullPlayerDisplay(

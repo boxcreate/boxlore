@@ -6,7 +6,7 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 
 ## Public API
 
-- `LibraryScreen` and `LibraryViewModel`.
+- `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback (the same shortcuts Home normally owns).
 - `HistoryScreen` and `HistoryViewModel`.
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`.
 - Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.

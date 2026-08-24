@@ -122,6 +122,8 @@ data class NavSettingsState(
     val hideCompletedInSubs: Boolean,
     val hideCompletedInShowDetails: Boolean,
     val restartForgottenEpisodes: Boolean,
+    val sameShowQueueOnly: Boolean,
+    val homeShortcutsInLibrary: Boolean,
 )
 
 /** Callbacks for OPML import state owned by MainActivity. */

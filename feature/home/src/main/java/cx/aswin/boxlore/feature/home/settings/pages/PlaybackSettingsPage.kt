@@ -6,6 +6,7 @@ import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ data class PlaybackUiState(
     val hideCompletedInSubs: Boolean,
     val hideCompletedInShowDetails: Boolean,
     val restartForgottenEpisodes: Boolean = true,
+    val sameShowQueueOnly: Boolean = false,
 )
 
 /** Callbacks for [PlaybackSettingsPage], grouped to keep the page's parameter count small. */
@@ -43,6 +45,7 @@ data class PlaybackActions(
     val onSetHideCompletedInSubs: (Boolean) -> Unit,
     val onSetHideCompletedInShowDetails: (Boolean) -> Unit,
     val onSetRestartForgottenEpisodes: (Boolean) -> Unit = {},
+    val onSetSameShowQueueOnly: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -151,6 +154,20 @@ internal fun PlaybackSettingsPage(
                 checked = state.restartForgottenEpisodes,
                 onCheckedChange = actions.onSetRestartForgottenEpisodes,
                 icon = Icons.Rounded.Update,
+            )
+        }
+
+        SettingsGroup(
+            title = "Queue",
+            footer =
+                "When this is off, the queue only auto-adds newer episodes of the show you’re playing, if any are available. You can always add episodes yourself.",
+        ) {
+            SettingsSwitchRow(
+                title = "Smart queue",
+                supportingText = "Fill the queue from your library and recommendations",
+                checked = !state.sameShowQueueOnly,
+                onCheckedChange = { enabled -> actions.onSetSameShowQueueOnly(!enabled) },
+                icon = Icons.Rounded.QueueMusic,
             )
         }
 

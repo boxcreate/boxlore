@@ -45,6 +45,7 @@ dependencies {
     implementation(projects.core.catalog)
     implementation(projects.core.downloads)
     implementation(projects.core.playback)
+    implementation(projects.core.prefs)
     implementation(projects.core.network)
     implementation(projects.core.designsystem)
     implementation(projects.core.analytics)

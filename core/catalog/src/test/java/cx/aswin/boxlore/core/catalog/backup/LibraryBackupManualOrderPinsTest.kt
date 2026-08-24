@@ -32,5 +32,21 @@ class LibraryBackupManualOrderPinsTest {
         assertEquals("SmartRank", parsed.subscriptionSort)
         assertNull(parsed.subscriptionManualOrder)
         assertNull(parsed.homePinnedPodcastIds)
+        assertNull(parsed.sameShowQueueOnly)
+        assertNull(parsed.homeShortcutsInLibrary)
+    }
+
+    @Test
+    fun `gson round trips same-show queue only`() {
+        val prefs = GlobalPreferencesBackup(sameShowQueueOnly = true)
+        val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)
+        assertEquals(true, parsed.sameShowQueueOnly)
+    }
+
+    @Test
+    fun `gson round trips home shortcuts in library`() {
+        val prefs = GlobalPreferencesBackup(homeShortcutsInLibrary = true)
+        val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)
+        assertEquals(true, parsed.homeShortcutsInLibrary)
     }
 }

@@ -51,6 +51,7 @@ private const val TAG = "StylizedLogo"
 fun TopControlBar(
     scrollFractionProvider: () -> Float = { 0f },
     modifier: Modifier = Modifier,
+    showUtilityIcons: Boolean = true,
     onFeedbackClick: () -> Unit = {},
     onFeedbackLongClick: () -> Unit = {},
     onAvatarClick: () -> Unit = {},
@@ -122,90 +123,92 @@ fun TopControlBar(
         cx.aswin.boxlore.core.designsystem.components
             .BoxLoreLogo()
 
-        // Right Side Controls (Toggle + Feedback + Settings)
+        // Right Side Controls (Feedback + Settings). Hidden when moved to Library.
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val feedbackInteractionSource = remember { MutableInteractionSource() }
-                val isFeedbackPressed by feedbackInteractionSource.collectIsPressedAsState()
-                val feedbackScale by animateFloatAsState(
-                    targetValue = if (isFeedbackPressed) 0.90f else 1f,
-                    animationSpec =
-                        spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessMedium,
-                        ),
-                    label = "feedbackBounce",
-                )
-
-                // Feedback
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier =
-                        Modifier
-                            .size(36.dp)
-                            .graphicsLayer {
-                                scaleX = feedbackScale
-                                scaleY = feedbackScale
-                            }.clip(CircleShape)
-                            .combinedClickable(
-                                interactionSource = feedbackInteractionSource,
-                                indication = androidx.compose.foundation.LocalIndication.current,
-                                onClick = onFeedbackClick,
-                                onLongClick = onFeedbackLongClick,
+            if (showUtilityIcons) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val feedbackInteractionSource = remember { MutableInteractionSource() }
+                    val isFeedbackPressed by feedbackInteractionSource.collectIsPressedAsState()
+                    val feedbackScale by animateFloatAsState(
+                        targetValue = if (isFeedbackPressed) 0.90f else 1f,
+                        animationSpec =
+                            spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessMedium,
                             ),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.Feedback,
-                            contentDescription = "Send Feedback",
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        label = "feedbackBounce",
+                    )
+
+                    // Feedback
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier =
+                            Modifier
+                                .size(36.dp)
+                                .graphicsLayer {
+                                    scaleX = feedbackScale
+                                    scaleY = feedbackScale
+                                }.clip(CircleShape)
+                                .combinedClickable(
+                                    interactionSource = feedbackInteractionSource,
+                                    indication = androidx.compose.foundation.LocalIndication.current,
+                                    onClick = onFeedbackClick,
+                                    onLongClick = onFeedbackLongClick,
+                                ),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Feedback,
+                                contentDescription = "Send Feedback",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
-                }
 
-                val settingsInteractionSource = remember { MutableInteractionSource() }
-                val isSettingsPressed by settingsInteractionSource.collectIsPressedAsState()
-                val settingsScale by animateFloatAsState(
-                    targetValue = if (isSettingsPressed) 0.90f else 1f,
-                    animationSpec =
-                        spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessMedium,
-                        ),
-                    label = "settingsBounce",
-                )
-
-                // Profile/Settings
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier =
-                        Modifier
-                            .size(36.dp)
-                            .testTag("home_settings_button")
-                            .graphicsLayer {
-                                scaleX = settingsScale
-                                scaleY = settingsScale
-                            }.clip(CircleShape)
-                            .combinedClickable(
-                                interactionSource = settingsInteractionSource,
-                                indication = androidx.compose.foundation.LocalIndication.current,
-                                onClick = onAvatarClick,
-                                onLongClick = onAvatarLongClick,
+                    val settingsInteractionSource = remember { MutableInteractionSource() }
+                    val isSettingsPressed by settingsInteractionSource.collectIsPressedAsState()
+                    val settingsScale by animateFloatAsState(
+                        targetValue = if (isSettingsPressed) 0.90f else 1f,
+                        animationSpec =
+                            spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessMedium,
                             ),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = "Settings",
-                            modifier = Modifier.size(22.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        label = "settingsBounce",
+                    )
+
+                    // Profile/Settings
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier =
+                            Modifier
+                                .size(36.dp)
+                                .testTag("home_settings_button")
+                                .graphicsLayer {
+                                    scaleX = settingsScale
+                                    scaleY = settingsScale
+                                }.clip(CircleShape)
+                                .combinedClickable(
+                                    interactionSource = settingsInteractionSource,
+                                    indication = androidx.compose.foundation.LocalIndication.current,
+                                    onClick = onAvatarClick,
+                                    onLongClick = onAvatarLongClick,
+                                ),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = "Settings",
+                                modifier = Modifier.size(22.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

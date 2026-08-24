@@ -94,6 +94,7 @@ open class BoxLorePlaybackService :
             skipMemory = queueSkipMemory,
             adaptiveScorer = adaptiveCandidateScorer,
             staleRestartEnabled = { cachedRestartForgottenEpisodes },
+            sameShowQueueOnly = { cachedSameShowQueueOnly },
         )
     }
     override val queueRepository by lazy {
@@ -126,6 +127,8 @@ open class BoxLorePlaybackService :
     @Volatile private var cachedSeekForwardMs = PlaybackSkipPolicy.DEFAULT_SEEK_FORWARD_MS
 
     @Volatile private var cachedRestartForgottenEpisodes = true
+
+    @Volatile private var cachedSameShowQueueOnly = false
 
     // Breaks circular lazy init between telemetry ↔ intro/outro controllers.
     private var introOutroControllerRef: PlaybackIntroOutroController? = null
@@ -244,6 +247,15 @@ open class BoxLorePlaybackService :
         serviceScope.launch {
             userPreferencesRepository.restartForgottenEpisodesStream.collectLatest { enabled ->
                 cachedRestartForgottenEpisodes = enabled
+            }
+        }
+        serviceScope.launch {
+            userPreferencesRepository.sameShowQueueOnlyStream.collectLatest { enabled ->
+                val wasRestricted = cachedSameShowQueueOnly
+                cachedSameShowQueueOnly = enabled
+                if (wasRestricted && !enabled) {
+                    refillQueueAfterSmartQueueEnabled()
+                }
             }
         }
 
@@ -591,8 +603,23 @@ open class BoxLorePlaybackService :
         player: ExoPlayer,
         reason: Int,
     ) {
+        tryStartSmartQueueRefill(player, logReason = "transition:$reason")
+    }
+
+    private fun refillQueueAfterSmartQueueEnabled() {
+        val player = exoPlayer ?: run {
+            android.util.Log.w("AutoQueue", "Smart queue turned on but player is missing")
+            return
+        }
+        tryStartSmartQueueRefill(player, logReason = "smart_queue_enabled")
+    }
+
+    private fun tryStartSmartQueueRefill(
+        player: ExoPlayer,
+        logReason: String,
+    ) {
         val remaining = player.mediaItemCount - player.currentMediaItemIndex - 1
-        android.util.Log.d("AutoQueue", "onMediaItemTransition: remaining=$remaining, reason=$reason")
+        android.util.Log.d("AutoQueue", "tryStartRefill: remaining=$remaining, reason=$logReason")
         val currentItem = player.currentMediaItem
         val isLearn = currentItem?.mediaId?.startsWith(LEARN_PREFIX) == true
         val sleepingAtEndOfEpisode =
@@ -614,7 +641,7 @@ open class BoxLorePlaybackService :
             try {
                 refillQueue(player)
             } catch (e: Exception) {
-                android.util.Log.e("AutoQueue", "Refill failed", e)
+                android.util.Log.e("AutoQueue", "Refill failed ($logReason)", e)
             } finally {
                 isRefilling = false
             }

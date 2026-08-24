@@ -11,7 +11,7 @@ Owns player presentation: mini player, full player sheet, queue screen UI, contr
 - `v2.FullPlayerV2`, `FullPlayerV2Content`, `FullPlayerV2Sheets`, `ControlDeck`, and `ControlDeckQuickActions` provide full-player presentation pieces.
 - The expanded-player transport group gives play/pause and both seek controls the same brief, coordinated width feedback when pressed or tapped.
 - Nested scroll in the expanded sheet stops at the content top; collapsing to the mini player takes a new downward swipe from that rest position.
-- `QueueScreen`, `PlayerControls`, `ChaptersSheet`, and `TranscriptView` support player sub-surfaces.
+- `QueueScreen`, `PlayerControls`, `ChaptersSheet`, and `TranscriptView` support player sub-surfaces. The queue sheet empty state stays “Queue is empty”; if Settings → Playback **Smart queue** is off, it adds a one-line note and a **Turn on** text action. The queue sheet empty state stays “Queue is empty”; if Settings → Playback **Smart queue** is off, it adds a one-line note and a **Turn on** text action.
 - `v2.logic.*` contains JVM-testable layout, control, queue-label, transcript-dialog, mini-player, and seekbar logic.
 - Player UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 
@@ -43,7 +43,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:network`, `:core:designsystem`, and `:core:analytics`.
+- Project dependencies: `:core:model`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:prefs`, `:core:network`, `:core:designsystem`, and `:core:analytics`.
 - Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3 ExoPlayer/Session/UI, Coil, Palette, smooth corner rect, reorderable, coroutines, JUnit, and Turbine.
 - Reverse-edge rule: feature modules must not depend on other feature modules or construct a second `PlaybackRepository`.
 
