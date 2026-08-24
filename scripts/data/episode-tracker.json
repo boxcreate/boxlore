@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-24T21:00:53.386Z",
+  "lastRun": "2026-08-24T21:53:39.717Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -37,10 +37,10 @@
       "lastCheckedAt": 1787067025436
     },
     "160817": {
-      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/80",
-      "lastEpisodeTitle": "All Hail Voicemail | The Launch 🚀 80",
-      "lastEpisodeId": "59234140030",
-      "lastCheckedAt": 1787181667082
+      "lastRssKey": "https://linuxunplugged.com/681",
+      "lastEpisodeTitle": "Ain’t Nothing But a Syncthing | LINUX Unplugged 681",
+      "lastEpisodeId": "59455560372",
+      "lastCheckedAt": 1787608423002
     },
     "212882": {
       "lastRssKey": "4447cd00-a7f8-11f0-954a-af8332c31865",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "b5548e78-9ff7-11f1-9e3b-c7a5171ad9a6",
-      "lastEpisodeTitle": "4PM ET 08/24/2026 Newscast",
+      "lastRssKey": "17494f80-a000-11f1-9511-232b601aa957",
+      "lastEpisodeTitle": "5PM ET 08/24/2026 Newscast",
       "lastEpisodeId": "59450327437",
-      "lastCheckedAt": 1787603338947
+      "lastCheckedAt": 1787608423502
     },
     "386911": {
       "lastEpisodeId": "59336419806",
