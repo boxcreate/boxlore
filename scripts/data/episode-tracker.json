@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-25T18:50:51.845Z",
+  "lastRun": "2026-08-25T19:30:46.430Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,10 +54,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "1fbcd1b8-a0b0-11f1-8f13-5b7a6503c5c1",
-      "lastEpisodeTitle": "2PM ET 08/25/2026 Newscast",
+      "lastRssKey": "81493d06-a0b8-11f1-89f0-0f8846e8993a",
+      "lastEpisodeTitle": "3PM ET 08/25/2026 Newscast",
       "lastEpisodeId": "59481748735",
-      "lastCheckedAt": 1787683855891
+      "lastCheckedAt": 1787686364446
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -89,10 +89,10 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "9a0bd5df-6402-4834-be1a-4346e9223f9a",
-      "lastEpisodeTitle": "Cybercab is Launching! | Tesla Time News 666",
+      "lastRssKey": "2b3fc8c9-77e3-454d-a1a4-fc86969148cb",
+      "lastEpisodeTitle": "Tesla Chinese Recall | Tesla Time News 667",
       "lastEpisodeId": "59404071439",
-      "lastCheckedAt": 1787511496978
+      "lastCheckedAt": 1787686428629
     },
     "491579": {
       "lastEpisodeId": "59496693816",
@@ -172,10 +172,10 @@
       "lastCheckedAt": 1787635858826
     },
     "808826": {
-      "lastRssKey": "6a83afb66e5b5bfda6a868fb",
-      "lastEpisodeTitle": "Lucy Decides",
+      "lastRssKey": "6a8d2cc42fe0b9d078559c12",
+      "lastEpisodeTitle": "Purple Pepple Eater",
       "lastEpisodeId": "58865121562",
-      "lastCheckedAt": 1787081175813
+      "lastCheckedAt": 1787686544139
     },
     "838740": {
       "lastRssKey": "0eabebcc-9dac-11f1-95b1-270e5d156339",
@@ -427,10 +427,10 @@
       "lastCheckedAt": 1787494907951
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779791",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Hatchet House Theft Matter",
+      "lastRssKey": "https://api.spreaker.com/episode/59780310",
+      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Cuban Jewel Matter",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1787564800084
+      "lastCheckedAt": 1787686863023
     },
     "6912659": {
       "lastRssKey": "5f70ad47-a9f1-4d57-82f7-f1a2b973b7e5",
