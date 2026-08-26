@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-26T08:41:34.023Z",
+  "lastRun": "2026-08-26T09:39:42.621Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -60,10 +60,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "750fd7b2-a125-11f1-9707-a3f952960e0d",
-      "lastEpisodeTitle": "4AM ET 08/26/2026 Newscast",
+      "lastRssKey": "d6d45d4e-a12d-11f1-9d1c-f746c7387fba",
+      "lastEpisodeTitle": "5AM ET 08/26/2026 Newscast",
       "lastEpisodeId": "59510603868",
-      "lastCheckedAt": 1787733698245
+      "lastCheckedAt": 1787737193287
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -84,10 +84,10 @@
       "lastCheckedAt": 1786765059294
     },
     "437685": {
-      "lastEpisodeId": "59478117698",
-      "lastEpisodeTitle": "The Norwegian Sovereign Wealth Fund",
-      "lastRssKey": "980396e2-8d5b-11f1-9320-c3eef0855af7",
-      "lastCheckedAt": 1787650436611
+      "lastEpisodeId": "59521749827",
+      "lastEpisodeTitle": "3000 Years of Rome",
+      "lastRssKey": "981ccbda-8d5b-11f1-9320-97641164263f",
+      "lastCheckedAt": 1787737194805
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -439,10 +439,10 @@
       "lastCheckedAt": 1787494907951
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59780310",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Cuban Jewel Matter",
+      "lastRssKey": "https://api.spreaker.com/episode/59780302",
+      "lastEpisodeTitle": "The Adventures of Maisie - Quackenbush s Universal Elixar",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1787686863023
+      "lastCheckedAt": 1787737224529
     },
     "6912659": {
       "lastRssKey": "2909e4ed-01da-4292-95a7-cafd0a3a15de",
