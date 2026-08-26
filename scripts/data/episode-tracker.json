@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-26T19:01:38.121Z",
+  "lastRun": "2026-08-26T22:23:22.369Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -13,10 +13,10 @@
       "lastCheckedAt": 1787380672754
     },
     "9926": {
+      "lastRssKey": "6353b20c-a0f6-11f1-8509-ef7ebbe55533",
+      "lastEpisodeTitle": "Conspiracy of Silence: The Town That Killed Ken Rex McElroy",
       "lastEpisodeId": "59343962292",
-      "lastEpisodeTitle": "Jimi Hendrix, Jim Morrison, and the Laurel Canyon Conspiracy",
-      "lastRssKey": "993cadb0-9b74-11f1-84a4-8fc23c8b05c9",
-      "lastCheckedAt": 1787380673089
+      "lastCheckedAt": 1787783003213
     },
     "48166": {
       "lastEpisodeId": "58782923579",
@@ -60,10 +60,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "4a11b6bc-a179-11f1-b516-4f99c7e9bfab",
-      "lastEpisodeTitle": "2PM ET 08/26/2026 Newscast",
+      "lastRssKey": "d11f6a52-a19a-11f1-a3d2-e7d6781c6c35",
+      "lastEpisodeTitle": "6PM ET 08/26/2026 Newscast",
       "lastEpisodeId": "59533316986",
-      "lastCheckedAt": 1787770905361
+      "lastCheckedAt": 1787783007046
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -99,6 +99,12 @@
       "lastEpisodeTitle": "Tesla Chinese Recall | Tesla Time News 667",
       "lastEpisodeId": "59404071439",
       "lastCheckedAt": 1787686428629
+    },
+    "490022": {
+      "lastRssKey": "01675d31-80da-47fe-a6b6-9d72ede92a05",
+      "lastEpisodeTitle": "Delusional Killer Targets Doctor Couple Thinking They’re In A Love Triangle",
+      "lastEpisodeId": "59415816099",
+      "lastCheckedAt": 1787783009697
     },
     "491579": {
       "lastEpisodeId": "59517429808",
