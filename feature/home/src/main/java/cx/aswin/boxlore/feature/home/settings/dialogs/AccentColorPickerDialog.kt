@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -35,8 +37,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.generateBrandColorScheme
+import cx.aswin.boxlore.core.designsystem.theme.toExactThemeBrandKey
 import cx.aswin.boxlore.core.designsystem.theme.toThemeBrandHex
 import kotlinx.coroutines.delay
 
@@ -48,11 +52,13 @@ internal fun AccentColorPickerDialog(
     initialColor: Color,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
+    initialExact: Boolean = false,
 ) {
     val initialHsv = remember(initialColor) { colorToHsv(initialColor) }
     var hue by remember { mutableFloatStateOf(initialHsv[0]) }
     var saturation by remember { mutableFloatStateOf(initialHsv[1]) }
     var value by remember { mutableFloatStateOf(initialHsv[2]) }
+    var useExact by remember { mutableStateOf(initialExact) }
     val selectedColor =
         remember(hue, saturation, value) {
             hsvToColor(hue, saturation, value)
@@ -84,35 +90,66 @@ internal fun AccentColorPickerDialog(
         title = { Text("Custom accent") },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = "Your color is used as a seed and matched to the closest Material 3 palette.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                ConnectedOptionSelector(
+                    options =
+                        listOf(
+                            "m3" to "Material 3",
+                            "exact" to "Exact color",
+                        ),
+                    selected = if (useExact) "exact" else "m3",
+                    onSelect = { useExact = it == "exact" },
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Text(
+                    text =
+                        if (useExact) {
+                            "Not recommended. Not tested for UI readability. " +
+                                "Conflicting colours may cause UI issues."
+                        } else {
+                            "Recommended. Your colour is a seed and matched to a Material 3 palette."
+                        },
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        if (useExact) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
+                if (useExact) {
                     ColorSwatchPreview(
-                        label = "Seed",
+                        label = "Your color",
                         color = selectedColor,
                         hex = selectedColor.toThemeBrandHex(),
                     )
-                    Text(
-                        text = "→",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    ColorSwatchPreview(
-                        label = "Material 3",
-                        color = matchedPrimary,
-                        hex = matchedPrimary.toThemeBrandHex(),
-                    )
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        ColorSwatchPreview(
+                            label = "Seed",
+                            color = selectedColor,
+                            hex = selectedColor.toThemeBrandHex(),
+                        )
+                        Text(
+                            text = "→",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        ColorSwatchPreview(
+                            label = "Material 3",
+                            color = matchedPrimary,
+                            hex = matchedPrimary.toThemeBrandHex(),
+                        )
+                    }
                 }
                 SaturationValuePanel(
                     hue = hue,
@@ -138,7 +175,17 @@ internal fun AccentColorPickerDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(selectedColor.toThemeBrandHex()) }) {
+            Button(
+                onClick = {
+                    val key =
+                        if (useExact) {
+                            selectedColor.toExactThemeBrandKey()
+                        } else {
+                            selectedColor.toThemeBrandHex()
+                        }
+                    onConfirm(key)
+                },
+            ) {
                 Text("Apply")
             }
         },

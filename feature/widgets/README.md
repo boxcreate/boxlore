@@ -29,7 +29,7 @@ Does **not** construct `PlaybackRepository` or talk to Media3 / Room directly �
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/widgets/
-  NowPlayingWidget*.kt / WidgetArtworkLoader / WidgetPalette / WidgetTextBitmapRenderer
+  NowPlayingWidget*.kt / WidgetArtworkLoader / WidgetPalette / WidgetChrome / WidgetTextBitmapRenderer
   LibraryWidget*.kt / LibraryWidgetRemoteViewsService.kt
   logic/NowPlayingWidgetLogic.kt
   logic/LibraryWidgetLogic.kt
@@ -45,7 +45,7 @@ src/main/res/
 
 ## Dependencies
 
-- → `:core:model`, `:core:designsystem` (Google Sans Flex font), `:core:prefs` (`FontRoundnessAxis` / ROND)
+- → `:core:model`, `:core:designsystem` (Google Sans Flex font + Appearance chrome ARGB), `:core:prefs` (`FontRoundnessAxis` / ROND, `WidgetAppearance`)
 - Libraries: AndroidX Core, Material, Coil (disk cache for widget artwork), Kotlin coroutines, kotlinx.serialization JSON.
 - Forbidden: feature → feature; constructing `PlaybackRepository` / `SubscriptionRepository` in this module.
 
@@ -59,7 +59,7 @@ src/main/res/
 - Dependency holders expose `instance` with an `internal` setter — only `configure*` installs them.
 - `:app`’s `WidgetLibrarySourceAdapter` enriches/sorts subscribed podcasts with history + `AdaptiveCandidateScorer` to match Library → Subscriptions.
 - Lettering: playback episode/podcast titles use RemoteViews `TextView`s; empty-state labels may use `WidgetTextBitmapRenderer`.
-- Widget chrome uses system Material You colors (`system_neutral*` / `system_accent*` via `widget_*` resources) for light and dark UI — not artwork-seeded palettes. Colors are applied with `RemoteViews.setColor(resource)` so accents re-resolve; `WidgetThemeSync` also re-pushes widgets on configuration changes.
+- Widget chrome defaults to the in-app Appearance theme (Theme, Background, Colors, including wallpaper colors and a chosen accent) via `WidgetChrome` baking ARGB from `boxlore_theme_fast_cache`. Settings → Appearance → Widgets can switch to **System**, which keeps `RemoteViews.setColor(resource)` Material You (`system_neutral*` / `system_accent*`). `WidgetThemeSync` re-pushes widgets on configuration changes; `:app` also refreshes when those prefs change.
 
 ## Persistence & identity
 
@@ -78,7 +78,7 @@ The playback widget families are an independent RemoteViews implementation of th
 
 ## Testing notes
 
-Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, and mapper/update policy for playback widgets.
+Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, and widget chrome (App theme vs System).
 
 ```bash
 ./gradlew :feature:widgets:testDebugUnitTest

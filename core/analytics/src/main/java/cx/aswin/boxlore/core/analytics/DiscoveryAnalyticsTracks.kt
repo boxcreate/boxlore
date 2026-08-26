@@ -106,6 +106,57 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
+    fun trackVideoSpotlightImpression(
+        itemsCount: Int,
+        podcastIds: List<String>,
+    ) {
+        AnalyticsEmit.event(
+            "home_surface_impression",
+            mapOf(
+                "surface_component" to "video_spotlight",
+                "items_count" to itemsCount,
+                "podcast_ids" to podcastIds,
+            ),
+        )
+    }
+
+    fun trackVideoSpotlightPodcastTapped(
+        podcastId: String,
+        podcastName: String,
+        positionIndex: Int,
+        clickTarget: String,
+    ) {
+        AnalyticsEmit.event(
+            "home_surface_tapped",
+            mapOf(
+                "surface_component" to "video_spotlight",
+                "content_id" to podcastId,
+                "podcast_id" to podcastId,
+                "podcast_name" to podcastName,
+                "position_index" to positionIndex,
+                "click_target" to clickTarget,
+            ),
+        )
+    }
+
+    fun trackVideoSpotlightPlayInitiated(
+        podcastId: String,
+        podcastName: String,
+        episodeId: String,
+        episodeTitle: String?,
+    ) {
+        val props =
+            mutableMapOf<String, Any>(
+                "surface_component" to "video_spotlight_play",
+                "content_id" to episodeId,
+                "podcast_id" to podcastId,
+                "podcast_name" to podcastName,
+                "episode_id" to episodeId,
+            )
+        episodeTitle?.let { props["episode_title"] = it }
+        AnalyticsEmit.event("home_surface_tapped", props)
+    }
+
     fun trackHomeRecommendationsImpression(
         recommendationsCount: Int,
         episodeIds: List<String>,

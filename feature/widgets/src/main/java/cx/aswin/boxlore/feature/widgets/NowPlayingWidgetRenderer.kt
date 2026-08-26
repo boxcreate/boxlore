@@ -119,6 +119,7 @@ object NowPlayingWidgetRenderer {
         configureGridCardSize(views, variant, widthDp, heightDp)
         configureCompactCardHeight(views, variant)
 
+        val chrome = WidgetChrome.resolve(context)
         val artwork =
             snapshot.artworkCachePath
                 ?.takeIf(String::isNotBlank)
@@ -127,11 +128,11 @@ object NowPlayingWidgetRenderer {
             views,
             R.id.widget_surface_background,
             WidgetPalette.surface,
-            context,
+            chrome,
         )
 
         if (!snapshot.hasEpisode) {
-            bindEmptyState(context, views, widthDp, variant)
+            bindEmptyState(context, views, widthDp, variant, chrome)
             return
         }
 
@@ -144,9 +145,9 @@ object NowPlayingWidgetRenderer {
         }
 
         if (variant != WidgetVariant.CONTROLS) {
-            bindMetadata(context, views, snapshot)
+            bindMetadata(context, views, snapshot, chrome)
         }
-        bindTransport(context, views, appWidgetId, snapshot, variant)
+        bindTransport(context, views, appWidgetId, snapshot, variant, chrome)
         views.setOnClickPendingIntent(R.id.widget_root, WidgetActionIntents.openApp(context))
     }
 
@@ -155,6 +156,7 @@ object NowPlayingWidgetRenderer {
         views: RemoteViews,
         widthDp: Int,
         variant: WidgetVariant,
+        chrome: WidgetChrome,
     ) {
         views.setViewVisibility(R.id.widget_playing_container, View.GONE)
         views.setViewVisibility(R.id.widget_empty_container, View.VISIBLE)
@@ -163,7 +165,7 @@ object NowPlayingWidgetRenderer {
                 views,
                 R.id.widget_empty_surface_background,
                 WidgetPalette.surface,
-                context,
+                chrome,
             )
         }
         views.setOnClickPendingIntent(R.id.widget_empty_container, WidgetActionIntents.openApp(context))
@@ -183,7 +185,7 @@ object NowPlayingWidgetRenderer {
                         maxLines = 1,
                         alignment = Layout.Alignment.ALIGN_CENTER,
                     ),
-                color = WidgetRemoteViewsColors.resolve(context, WidgetPalette.onSurface),
+                color = chrome.argb(WidgetPalette.onSurface),
             ),
         )
         views.setImageViewBitmap(
@@ -201,7 +203,7 @@ object NowPlayingWidgetRenderer {
                         maxLines = 1,
                         alignment = Layout.Alignment.ALIGN_CENTER,
                     ),
-                color = WidgetRemoteViewsColors.resolve(context, WidgetPalette.primary),
+                color = chrome.argb(WidgetPalette.primary),
             ),
         )
     }
@@ -210,20 +212,21 @@ object NowPlayingWidgetRenderer {
         context: Context,
         views: RemoteViews,
         snapshot: NowPlayingWidgetSnapshot,
+        chrome: WidgetChrome,
     ) {
         views.setTextViewText(R.id.widget_episode_title, snapshot.episodeTitle)
         WidgetRemoteViewsColors.setTextColor(
             views,
             R.id.widget_episode_title,
             WidgetPalette.onSurface,
-            context,
+            chrome,
         )
         views.setTextViewText(R.id.widget_podcast_title, snapshot.podcastTitle)
         WidgetRemoteViewsColors.setTextColor(
             views,
             R.id.widget_podcast_title,
             WidgetPalette.onSurfaceVariant,
-            context,
+            chrome,
         )
     }
 
@@ -233,6 +236,7 @@ object NowPlayingWidgetRenderer {
         appWidgetId: Int,
         snapshot: NowPlayingWidgetSnapshot,
         variant: WidgetVariant,
+        chrome: WidgetChrome,
     ) {
         val playBackground =
             if (variant == WidgetVariant.CONTROLS || snapshot.isPlaying) {
@@ -245,7 +249,7 @@ object NowPlayingWidgetRenderer {
             views,
             R.id.widget_play_pause_background,
             WidgetPalette.primary,
-            context,
+            chrome,
         )
         views.setImageViewResource(
             R.id.widget_play_pause_icon,
@@ -255,7 +259,7 @@ object NowPlayingWidgetRenderer {
             views,
             R.id.widget_play_pause_icon,
             WidgetPalette.onPrimary,
-            context,
+            chrome,
         )
         views.setContentDescription(
             R.id.widget_play_pause_icon,
@@ -275,6 +279,7 @@ object NowPlayingWidgetRenderer {
             backgroundId = R.id.widget_skip_back_background,
             iconId = R.id.widget_skip_back_icon,
             control = WidgetControl.SKIP_BACK,
+            chrome = chrome,
         )
         bindSecondaryButton(
             context = context,
@@ -284,6 +289,7 @@ object NowPlayingWidgetRenderer {
             backgroundId = R.id.widget_skip_forward_background,
             iconId = R.id.widget_skip_forward_icon,
             control = WidgetControl.SKIP_FORWARD,
+            chrome = chrome,
         )
 
         if (variant == WidgetVariant.NOW_PLAYING) {
@@ -295,6 +301,7 @@ object NowPlayingWidgetRenderer {
                 backgroundId = R.id.widget_previous_background,
                 iconId = R.id.widget_previous_icon,
                 control = WidgetControl.PREVIOUS,
+                chrome = chrome,
             )
             bindSecondaryButton(
                 context = context,
@@ -304,6 +311,7 @@ object NowPlayingWidgetRenderer {
                 backgroundId = R.id.widget_next_background,
                 iconId = R.id.widget_next_icon,
                 control = WidgetControl.NEXT,
+                chrome = chrome,
             )
         }
     }
@@ -316,18 +324,19 @@ object NowPlayingWidgetRenderer {
         backgroundId: Int,
         iconId: Int,
         control: WidgetControl,
+        chrome: WidgetChrome,
     ) {
         WidgetRemoteViewsColors.setColorFilter(
             views,
             backgroundId,
             WidgetPalette.secondaryContainer,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setColorFilter(
             views,
             iconId,
             WidgetPalette.onSecondaryContainer,
-            context,
+            chrome,
         )
         views.setOnClickPendingIntent(
             containerId,

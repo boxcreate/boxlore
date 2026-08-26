@@ -6,7 +6,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 
 ## Public API
 
-- `BoxLoreTheme` and theme helpers such as expressive shapes, motion, typography, and dynamic color utilities. `Modifier.expressiveClickable` has a long-press overload (`onLongClick`) used by Downloads multi-select. Pass `shape` so press-shrink stays rounded; `pressScaleEnabled = false` while a drag overlay owns scale.
+- `BoxLoreTheme` and theme helpers such as expressive shapes, motion, typography, and dynamic color utilities. `resolveBoxLoreColorScheme` / `resolveBoxLoreChromeColors` / `darkThemeFromConfig` expose the same Appearance ColorScheme as ARGB for non-Compose chrome (home-screen widgets). Custom `theme_brand` may be a named seed, `#RRGGBB` (Material 3 palette from that seed), or `exact:#RRGGBB` (pins primary to that RGB; not recommended for readability). `Modifier.expressiveClickable` has a long-press overload (`onLongClick`) used by Downloads multi-select. Pass `shape` so press-shrink stays rounded; `pressScaleEnabled = false` while a drag overlay owns scale.
 - Shared components including `OptimizedImage` (optional `errorContent` for blank/failed art), loaders, `PillFilterChip` (onboarding/Explore genre pills), `BoxLoreLogo` (optional `height` for hero vs chrome sizes), player-control primitives used by UI modules, floating 3+1 navigation chrome, bottom-content clearance helpers, sleep-timer chrome, and the non-dismissible `RepairProgressPopup` for app-shell foreground repair status.
 - `PredictiveBackWrapper` peeks the NavHost (scale 1.0 → 0.9) during system Back. Progress always returns to rest after commit or cancel so a Back that replaces the start destination (cold-start Subscriptions → Home) does not leave Home scaled down.
 - Shared discovery poster cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing` (Home “Based on Your Taste” and Explore For You).
@@ -51,7 +51,7 @@ src/main/res/
 ## Testing notes
 
 - Unit tests live under `core/designsystem/src/test`.
-- `ThemeBrandTokensTest` covers brand seed and contrast helper behavior.
+- `ThemeBrandTokensTest` covers brand seed, contrast helper, and scheme-resolution behavior.
 - `ProgressiveSearchScrollLogicTest` covers pin-to-top when catalog hits prepend over local matches.
 - `PredictiveBackPeekTest` covers rest progress after a predictive-back gesture (scale must return to 1).
 - Screenshot goldens (optional local Roborazzi) live in feature modules (see `:feature:home`).

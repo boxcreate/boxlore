@@ -39,9 +39,14 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.customThemeBrandHex
 import cx.aswin.boxlore.core.designsystem.theme.isCustomThemeBrand
+import cx.aswin.boxlore.core.designsystem.theme.isExactThemeBrand
 import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
+import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.OpenAppTo
+import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
+import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.feature.home.settings.components.AccentSwatchGrid
 import cx.aswin.boxlore.feature.home.settings.components.SettingsChoiceRow
 import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
@@ -61,6 +66,9 @@ data class AppearanceUiState(
     val currentNavigationStyle: String = NavigationStyle.Floating.key,
     val currentOpenAppTo: String = OpenAppTo.HOME,
     val homeShortcutsInLibrary: Boolean = false,
+    val currentWidgetAppearance: String = WidgetAppearance.APP,
+    val currentExploreDefaultTab: String = ExploreDefaultTab.FOR_YOU,
+    val currentSubscriptionsDefaultTab: String = SubscriptionsDefaultTab.SHOWS,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -73,6 +81,9 @@ data class AppearanceActions(
     val onSetNavigationStyle: (String) -> Unit = {},
     val onSetOpenAppTo: (String) -> Unit = {},
     val onSetHomeShortcutsInLibrary: (Boolean) -> Unit = {},
+    val onSetWidgetAppearance: (String) -> Unit = {},
+    val onSetExploreDefaultTab: (String) -> Unit = {},
+    val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
 )
 
 @Composable
@@ -112,6 +123,13 @@ internal fun AppearanceSettingsPage(
             },
         )
 
+        ColorsSection(
+            isDynamicColorEnabled = state.isDynamicColorEnabled,
+            onToggleDynamicColor = actions.onToggleDynamicColor,
+            currentThemeBrand = state.currentThemeBrand,
+            onSetThemeBrand = actions.onSetThemeBrand,
+        )
+
         LetteringSection(
             currentFontRoundness = state.currentFontRoundness,
             onSetFontRoundness = actions.onSetFontRoundness,
@@ -127,16 +145,21 @@ internal fun AppearanceSettingsPage(
             onSetOpenAppTo = actions.onSetOpenAppTo,
         )
 
+        DefaultTabsSection(
+            currentExploreDefaultTab = state.currentExploreDefaultTab,
+            onSetExploreDefaultTab = actions.onSetExploreDefaultTab,
+            currentSubscriptionsDefaultTab = state.currentSubscriptionsDefaultTab,
+            onSetSubscriptionsDefaultTab = actions.onSetSubscriptionsDefaultTab,
+        )
+
         HomeChromeSection(
             homeShortcutsInLibrary = state.homeShortcutsInLibrary,
             onSetHomeShortcutsInLibrary = actions.onSetHomeShortcutsInLibrary,
         )
 
-        ColorsSection(
-            isDynamicColorEnabled = state.isDynamicColorEnabled,
-            onToggleDynamicColor = actions.onToggleDynamicColor,
-            currentThemeBrand = state.currentThemeBrand,
-            onSetThemeBrand = actions.onSetThemeBrand,
+        WidgetsSection(
+            currentWidgetAppearance = state.currentWidgetAppearance,
+            onSetWidgetAppearance = actions.onSetWidgetAppearance,
         )
     }
 }
@@ -190,6 +213,68 @@ private fun OpenAppToSection(
                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun DefaultTabsSection(
+    currentExploreDefaultTab: String,
+    onSetExploreDefaultTab: (String) -> Unit,
+    currentSubscriptionsDefaultTab: String,
+    onSetSubscriptionsDefaultTab: (String) -> Unit,
+) {
+    SettingsGroup(
+        title = "Default tabs",
+        footer = "Used when you open Explore or Subscriptions. Links that pick a tab still go there.",
+    ) {
+        SettingsContent {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                DefaultTabPicker(
+                    label = "Explore",
+                    options =
+                        listOf(
+                            ExploreDefaultTab.FOR_YOU to "For You",
+                            ExploreDefaultTab.TOP to "Top",
+                        ),
+                    selected = ExploreDefaultTab.sanitize(currentExploreDefaultTab),
+                    onSelect = onSetExploreDefaultTab,
+                )
+                DefaultTabPicker(
+                    label = "Subscriptions",
+                    options =
+                        listOf(
+                            SubscriptionsDefaultTab.SHOWS to "Shows",
+                            SubscriptionsDefaultTab.NEW_EPISODES to "New episodes",
+                        ),
+                    selected = SubscriptionsDefaultTab.sanitize(currentSubscriptionsDefaultTab),
+                    onSelect = onSetSubscriptionsDefaultTab,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DefaultTabPicker(
+    label: String,
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = GoogleSansWeight.medium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        ConnectedOptionSelector(
+            options = options,
+            selected = selected,
+            onSelect = onSelect,
+            labelStyle = MaterialTheme.typography.labelMedium,
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+        )
     }
 }
 
@@ -446,6 +531,31 @@ private fun LetteringPreviewLine(
 }
 
 @Composable
+private fun WidgetsSection(
+    currentWidgetAppearance: String,
+    onSetWidgetAppearance: (String) -> Unit,
+) {
+    SettingsGroup(
+        title = "Widgets",
+        footer =
+            "App theme uses the same Theme, Background, and Colors as boxlore. " +
+                "System uses the launcher’s light/dark and wallpaper accents.",
+    ) {
+        SettingsContent {
+            ConnectedOptionSelector(
+                options =
+                    listOf(
+                        WidgetAppearance.APP to "App theme",
+                        WidgetAppearance.SYSTEM to "System",
+                    ),
+                selected = WidgetAppearance.sanitize(currentWidgetAppearance),
+                onSelect = onSetWidgetAppearance,
+            )
+        }
+    }
+}
+
+@Composable
 private fun HomeChromeSection(
     homeShortcutsInLibrary: Boolean,
     onSetHomeShortcutsInLibrary: (Boolean) -> Unit,
@@ -475,6 +585,8 @@ private fun ColorsSection(
     var showColorPicker by remember { mutableStateOf(false) }
     val customSelected = isCustomThemeBrand(currentThemeBrand)
     val customPreview = resolveThemeSeedColor(currentThemeBrand)
+    val customHex = customThemeBrandHex(currentThemeBrand)
+    val exactSelected = isExactThemeBrand(currentThemeBrand)
 
     SettingsGroup(
         title = "Colors",
@@ -509,10 +621,11 @@ private fun ColorsSection(
                 SettingsChoiceRow(
                     title = "Custom color",
                     supportingText =
-                        if (customSelected) {
-                            currentThemeBrand
-                        } else {
-                            "Pick any accent with the full color picker"
+                        when {
+                            exactSelected && customHex != null ->
+                                "$customHex · exact, not recommended"
+                            customSelected && customHex != null -> customHex
+                            else -> "Pick any accent with the full color picker"
                         },
                     selected = customSelected,
                     onClick = { showColorPicker = true },
@@ -536,6 +649,7 @@ private fun ColorsSection(
     if (showColorPicker) {
         AccentColorPickerDialog(
             initialColor = customPreview,
+            initialExact = exactSelected,
             onConfirm = { hex ->
                 onSetThemeBrand(hex)
                 showColorPicker = false

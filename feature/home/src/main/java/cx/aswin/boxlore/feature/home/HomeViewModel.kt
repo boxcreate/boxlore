@@ -28,6 +28,7 @@ import cx.aswin.boxlore.feature.home.logic.HomeFilterSelectionLogic
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import cx.aswin.boxlore.feature.home.logic.HomeMixModeLogic
+import cx.aswin.boxlore.feature.home.logic.featuredVideoPodcasts
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -176,6 +177,11 @@ class HomeViewModel(
             )
     internal val userPrefs = userPreferencesRepository
     internal val boxcastPrefs = BoxcastPrefs(application)
+    private val _featuredVideoPodcasts = MutableStateFlow(featuredVideoPodcasts())
+    val featuredVideoPodcasts: StateFlow<List<Podcast>> = _featuredVideoPodcasts.asStateFlow()
+    private val _featuredVideoShowcaseDismissed =
+        MutableStateFlow(boxcastPrefs.isFeaturedVideoShowcaseDismissed())
+    val featuredVideoShowcaseDismissed: StateFlow<Boolean> = _featuredVideoShowcaseDismissed.asStateFlow()
 
     internal val allHomeHistory: Flow<List<HomeListeningHistoryItem>> =
         playbackRepository
@@ -741,6 +747,11 @@ class HomeViewModel(
         viewModelScope.launch {
             userPrefs.dismissBriefingForever()
         }
+    }
+
+    fun dismissFeaturedVideoShowcaseForever() {
+        boxcastPrefs.dismissFeaturedVideoShowcaseForever()
+        _featuredVideoShowcaseDismissed.value = true
     }
 
     private val _pinFeedback = MutableSharedFlow<String>(extraBufferCapacity = 1)

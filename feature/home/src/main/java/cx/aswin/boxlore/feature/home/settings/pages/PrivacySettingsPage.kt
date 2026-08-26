@@ -495,30 +495,28 @@ private fun AnalyticsCardHeader(
     icon: ImageVector,
     colors: AnalyticsCardColors,
 ) {
-    Row(
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        SettingsIconContainer(
-            icon = icon,
-            containerColor = colors.iconContainer,
-            contentColor = colors.iconContent,
-        )
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            SettingsIconContainer(
+                icon = icon,
+                containerColor = colors.iconContainer,
+                contentColor = colors.iconContent,
+            )
             Text(
                 text = title,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = GoogleSansWeight.semiBold,
             )
-            Text(
-                text = body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onContainer.copy(alpha = 0.85f),
-            )
         }
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onContainer.copy(alpha = 0.85f),
+        )
     }
 }
 

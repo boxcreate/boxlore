@@ -21,7 +21,7 @@ Launch enrichment (subscription bucket, onboarding status) goes on **person prop
 
 ### entry_point
 
-`home_hero_resume`, `home_hero_jump_back_in`, `home_hero_new_episodes`, `home_hero_spotlight`, `home_mixtape`, `home_adaptive_*`, `home_because_you_like`, `home_discover_grid`, `home_recommendations`, `briefing`, `explore_for_you`, `explore_trending`, `explore_category`, `explore_search_shows`, `explore_search_episodes`, `learn`, `podcast_detail`, `episode_detail`, `queue`, `downloads`, `history`, `liked`, `notification`, `deep_link`, `share`, `install_referrer`, `android_auto`, `android_auto_continue`, `android_auto_queue`, `android_auto_new_episodes`, `android_auto_mixtape`, `android_auto_downloads`, `android_auto_liked`, `android_auto_history`, `android_auto_discover`, `android_auto_voice`, `android_auto_play_all`, `mini_player`, `session_restore`, `player_up_next`, `smart_queue`, `onboarding_suggestion`, `unknown`
+`home_hero_resume`, `home_hero_jump_back_in`, `home_hero_new_episodes`, `home_hero_spotlight`, `home_mixtape`, `home_adaptive_*`, `home_because_you_like`, `home_discover_grid`, `home_video_spotlight`, `home_recommendations`, `briefing`, `explore_for_you`, `explore_trending`, `explore_category`, `explore_search_shows`, `explore_search_episodes`, `learn`, `podcast_detail`, `episode_detail`, `queue`, `downloads`, `history`, `liked`, `notification`, `deep_link`, `share`, `install_referrer`, `android_auto`, `android_auto_continue`, `android_auto_queue`, `android_auto_new_episodes`, `android_auto_mixtape`, `android_auto_downloads`, `android_auto_liked`, `android_auto_history`, `android_auto_discover`, `android_auto_voice`, `android_auto_play_all`, `mini_player`, `session_restore`, `player_up_next`, `smart_queue`, `onboarding_suggestion`, `unknown`
 
 Aliases (normalized in app; do not add as new enum values): `learn_history` → `learn`. Brief audio play tags `briefing` on `playback_*` (interactions remain on `daily_briefing_action`).
 
@@ -83,8 +83,8 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `identity_reset` | Analytics identity cleared/reset | — | reason:string | none |
 | `app_check_status` | App Check token attempt result | token_obtained:bool; provider:string | — | none |
 | `first_episode_played` | First-ever play milestone | — | episode_id:string; podcast_id:string; entry_point:enum; hours_since_install:float | none |
-| `home_surface_tapped` | First-class Home component tap | surface_component:string | rail_intent:string; content_id:string; position_index:int; items_count:int; mix_mode:string | none |
-| `home_surface_impression` | Home rail/block became visible | surface_component:string | items_count:int | none |
+| `home_surface_tapped` | First-class Home component tap | surface_component:string | rail_intent:string; content_id:string; position_index:int; items_count:int; mix_mode:string; podcast_id:string; podcast_name:string; episode_id:string; episode_title:string; click_target:string | none |
+| `home_surface_impression` | Home rail/block became visible | surface_component:string | items_count:int; podcast_ids:list | none |
 | `search_performed` | User ran show or episode search | surface:string; search_mode:enum; search_query:string; results_count:int | result_quality:enum; query_length:int | logged_by_policy |
 | `search_result_tapped` | User tapped a search result | surface:string; result_type:enum | search_mode:enum; podcast_id:string; episode_id:string; position_index:int; search_query:string | logged_by_policy |
 | `learn_card_action` | User acted on a Learn card | action:string; episode_id:string; podcast_id:string | position_index:int | none |

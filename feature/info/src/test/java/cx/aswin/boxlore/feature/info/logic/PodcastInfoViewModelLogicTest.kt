@@ -11,6 +11,16 @@ import org.junit.jupiter.api.Test
 
 class PodcastInfoViewModelLogicTest {
     @Test
+    fun `playback source retains only Video Spotlight attribution`() {
+        assertEquals(
+            "home_video_spotlight",
+            PodcastInfoPlaybackSourceLogic.retainedEntryPoint("home_video_spotlight"),
+        )
+        assertNull(PodcastInfoPlaybackSourceLogic.retainedEntryPoint("home_discover_grid"))
+        assertNull(PodcastInfoPlaybackSourceLogic.retainedEntryPoint(null))
+    }
+
+    @Test
     fun `resolveInitialSort prefers explicit preferredSort`() {
         assertEquals(EpisodeSort.OLDEST, PodcastInfoSortLogic.resolveInitialSort("oldest", "episodic"))
         assertEquals(EpisodeSort.NEWEST, PodcastInfoSortLogic.resolveInitialSort("newest", "serial"))

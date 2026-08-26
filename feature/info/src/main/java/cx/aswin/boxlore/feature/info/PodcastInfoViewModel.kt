@@ -1433,17 +1433,40 @@ class PodcastInfoViewModel(
         android.util.Log.d("PodcastInfoViewModel", "onPlayClick triggered for: ${episode.title} (ID: ${episode.id})")
         playedEpisodes.add(episode.id)
         val currentState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        val playerState = playbackRepository.playerState.value
+        val startsPlayback = playerState.currentEpisode?.id != episode.id || !playerState.isPlaying
+        val retainedEntryPoint =
+            cx.aswin.boxlore.feature.info.logic.PodcastInfoPlaybackSourceLogic
+                .retainedEntryPoint(entryPoint)
+        val entryPointContext =
+            retainedEntryPoint?.let { source ->
+                android.os.Bundle().apply { putString("entry_point", source) }
+            }
+
+        if (startsPlayback && retainedEntryPoint != null) {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackVideoSpotlightPlayInitiated(
+                podcastId = currentState.podcast.id,
+                podcastName = currentState.podcast.title,
+                episodeId = episode.id,
+                episodeTitle = episode.title,
+            )
+        }
 
         viewModelScope.launch {
             if (playbackRepository.playerState.value.currentEpisode
                     ?.id == episode.id
             ) {
                 android.util.Log.d("PodcastInfoViewModel", "Episode already active, toggling play/pause")
-                playbackRepository.togglePlayPause()
+                playbackRepository.togglePlayPause(entryPointContext)
             } else {
                 android.util.Log.d("PodcastInfoViewModel", "Starting new playback via queueManager")
                 val sortOrder = if (currentState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
-                queueManager.playEpisode(episode, currentState.podcast, sortOrder)
+                queueManager.playEpisode(
+                    episode,
+                    currentState.podcast,
+                    sortOrder,
+                    entryPointContext = entryPointContext,
+                )
             }
         }
     }

@@ -34,6 +34,9 @@ class LibraryBackupManualOrderPinsTest {
         assertNull(parsed.homePinnedPodcastIds)
         assertNull(parsed.sameShowQueueOnly)
         assertNull(parsed.homeShortcutsInLibrary)
+        assertNull(parsed.widgetAppearance)
+        assertNull(parsed.exploreDefaultTab)
+        assertNull(parsed.subscriptionsDefaultTab)
     }
 
     @Test
@@ -48,5 +51,24 @@ class LibraryBackupManualOrderPinsTest {
         val prefs = GlobalPreferencesBackup(homeShortcutsInLibrary = true)
         val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)
         assertEquals(true, parsed.homeShortcutsInLibrary)
+    }
+
+    @Test
+    fun `gson round trips widget appearance`() {
+        val prefs = GlobalPreferencesBackup(widgetAppearance = "system")
+        val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)
+        assertEquals("system", parsed.widgetAppearance)
+    }
+
+    @Test
+    fun `gson round trips default landing tabs`() {
+        val prefs =
+            GlobalPreferencesBackup(
+                exploreDefaultTab = "top",
+                subscriptionsDefaultTab = "new_episodes",
+            )
+        val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)
+        assertEquals("top", parsed.exploreDefaultTab)
+        assertEquals("new_episodes", parsed.subscriptionsDefaultTab)
     }
 }

@@ -49,6 +49,7 @@ internal class LibraryWidgetRemoteViewsFactory(
 ) : RemoteViewsService.RemoteViewsFactory {
     private var shows: List<WidgetShowRow> = emptyList()
     private var episodes: List<WidgetEpisodeRow> = emptyList()
+    private var chrome: WidgetChrome = WidgetChrome.resolve(context)
 
     override fun onCreate() = Unit
 
@@ -56,6 +57,7 @@ internal class LibraryWidgetRemoteViewsFactory(
         val snapshot = LibraryWidgetSnapshotStore(context).read() ?: LibraryWidgetSnapshot()
         shows = snapshot.subscriptions
         episodes = snapshot.newEpisodes
+        chrome = WidgetChrome.resolve(context)
     }
 
     override fun onDestroy() {
@@ -75,7 +77,7 @@ internal class LibraryWidgetRemoteViewsFactory(
             views,
             R.id.widget_row_bg,
             WidgetPalette.secondaryContainer,
-            context,
+            chrome,
         )
 
         val deepLink: String
@@ -88,13 +90,13 @@ internal class LibraryWidgetRemoteViewsFactory(
                     views,
                     R.id.widget_row_title,
                     WidgetPalette.onSecondaryContainer,
-                    context,
+                    chrome,
                 )
                 WidgetRemoteViewsColors.setTextColor(
                     views,
                     R.id.widget_row_subtitle,
                     WidgetPalette.onSurfaceVariant,
-                    context,
+                    chrome,
                 )
                 views.setViewVisibility(
                     R.id.widget_row_new_dot,
@@ -105,7 +107,7 @@ internal class LibraryWidgetRemoteViewsFactory(
                         views,
                         R.id.widget_row_new_dot,
                         WidgetPalette.primary,
-                        context,
+                        chrome,
                     )
                 }
                 bindArt(views, row.artworkCachePath)
@@ -119,13 +121,13 @@ internal class LibraryWidgetRemoteViewsFactory(
                     views,
                     R.id.widget_row_title,
                     WidgetPalette.onSecondaryContainer,
-                    context,
+                    chrome,
                 )
                 WidgetRemoteViewsColors.setTextColor(
                     views,
                     R.id.widget_row_subtitle,
                     WidgetPalette.onSurfaceVariant,
-                    context,
+                    chrome,
                 )
                 views.setViewVisibility(R.id.widget_row_new_dot, View.GONE)
                 bindArt(views, row.artworkCachePath)
@@ -148,9 +150,19 @@ internal class LibraryWidgetRemoteViewsFactory(
     override fun getItemId(position: Int): Long =
         when (kind) {
             LibraryWidgetKind.SUBSCRIPTIONS ->
-                shows.getOrNull(position)?.podcastId?.hashCode()?.toLong() ?: position.toLong()
+                shows
+                    .getOrNull(position)
+                    ?.podcastId
+                    ?.hashCode()
+                    ?.toLong()
+                    ?: position.toLong()
             LibraryWidgetKind.NEW_EPISODES ->
-                episodes.getOrNull(position)?.episodeId?.hashCode()?.toLong() ?: position.toLong()
+                episodes
+                    .getOrNull(position)
+                    ?.episodeId
+                    ?.hashCode()
+                    ?.toLong()
+                    ?: position.toLong()
         }
 
     override fun hasStableIds(): Boolean = true

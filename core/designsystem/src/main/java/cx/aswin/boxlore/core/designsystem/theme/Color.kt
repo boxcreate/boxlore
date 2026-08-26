@@ -34,18 +34,37 @@ val BrandSeeds: LinkedHashMap<String, Pair<String, Color>> = linkedMapOf(
     "rust" to ("Rust" to Color(0xFF8B3A2F))
 )
 
-/** True when [themeBrand] is a custom hex seed (e.g. `#5B5BD6`). */
-fun isCustomThemeBrand(themeBrand: String): Boolean =
-    themeBrand.startsWith("#") && themeBrand.length in 7..9
+/** Prefix for a custom accent that pins primary to the hex as-is. */
+const val EXACT_THEME_BRAND_PREFIX = "exact:"
+
+fun isCustomHexSeed(value: String): Boolean = value.startsWith("#") && value.length in 7..9
+
+/** True when [themeBrand] pins the picked hex as primary instead of a Material 3 seed. */
+fun isExactThemeBrand(themeBrand: String): Boolean {
+    if (!themeBrand.startsWith(EXACT_THEME_BRAND_PREFIX, ignoreCase = true)) return false
+    return isCustomHexSeed(themeBrand.substring(EXACT_THEME_BRAND_PREFIX.length))
+}
+
+/** True when [themeBrand] is a custom hex seed or an exact hex (e.g. `#5B5BD6`, `exact:#5B5BD6`). */
+fun isCustomThemeBrand(themeBrand: String): Boolean = isExactThemeBrand(themeBrand) || isCustomHexSeed(themeBrand)
+
+/** Hex body of a custom brand (`#RRGGBB`), or null for named palettes. */
+fun customThemeBrandHex(themeBrand: String): String? =
+    when {
+        isExactThemeBrand(themeBrand) -> themeBrand.substring(EXACT_THEME_BRAND_PREFIX.length)
+        isCustomHexSeed(themeBrand) -> themeBrand
+        else -> null
+    }
 
 /**
  * Resolves a theme brand key or custom hex into a seed [Color] for scheme generation.
  */
 fun resolveThemeSeedColor(themeBrand: String): Color {
     BrandSeeds[themeBrand]?.second?.let { return it }
-    if (isCustomThemeBrand(themeBrand)) {
+    val hex = customThemeBrandHex(themeBrand)
+    if (hex != null) {
         return runCatching {
-            Color(android.graphics.Color.parseColor(themeBrand))
+            Color(android.graphics.Color.parseColor(hex))
         }.getOrElse {
             BrandSeeds["violet"]!!.second
         }
@@ -53,11 +72,14 @@ fun resolveThemeSeedColor(themeBrand: String): Color {
     return BrandSeeds["violet"]!!.second
 }
 
-/** Stores a custom accent as `#RRGGBB` in the theme-brand preference. */
+/** Stores a custom accent as `#RRGGBB` in the theme-brand preference (Material 3 seed). */
 fun Color.toThemeBrandHex(): String {
     val rgb = toArgb() and 0xFFFFFF
     return String.format("#%06X", rgb)
 }
+
+/** Stores a custom accent that keeps this RGB as [ColorScheme.primary]. */
+fun Color.toExactThemeBrandKey(): String = EXACT_THEME_BRAND_PREFIX + toThemeBrandHex()
 
 // Light Theme Fallbacks (Generated from #6750A4 seed)
 val md_theme_light_primary = Color(0xFF6750A4)

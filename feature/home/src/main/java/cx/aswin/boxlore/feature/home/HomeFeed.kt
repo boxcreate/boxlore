@@ -84,6 +84,7 @@ internal fun PodcastFeed(
     loadingState: PodcastFeedLoadingState,
     playback: PodcastFeedPlayback,
     callbacks: HomeFeedCallbacks,
+    featuredVideos: HomeFeaturedVideoState,
     layout: PodcastFeedLayout,
 ) {
     val context = LocalContext.current
@@ -102,6 +103,7 @@ internal fun PodcastFeed(
         curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState)
         discoveryGreetingItem(feedState, callbacks)
         editorialFeedItems(content, loadingState, callbacks)
+        featuredVideoPodcastsItem(featuredVideos, callbacks)
         discoverFeedItems(feedState, derivedState, callbacks)
     }
 }

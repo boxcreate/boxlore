@@ -69,11 +69,23 @@ class UserPreferencesRepository(
     val cachedOpenAppTo: String
         get() = sanitizeOpenAppTo(syncPrefs.getString("open_app_to", null))
 
+    /** Explore landing tab: `for_you` (default) or `top`. */
+    val cachedExploreDefaultTab: String
+        get() = ExploreDefaultTab.sanitize(syncPrefs.getString(ExploreDefaultTab.PREF_KEY, null))
+
+    /** Subscriptions landing tab: `shows` (default) or `new_episodes`. */
+    val cachedSubscriptionsDefaultTab: String
+        get() = SubscriptionsDefaultTab.sanitize(syncPrefs.getString(SubscriptionsDefaultTab.PREF_KEY, null))
+
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
 
     val cachedUseDynamicColor: Boolean
         get() = syncPrefs.getBoolean("use_dynamic_color", false)
+
+    /** Widget chrome: `app` (default, match Appearance) or `system` (launcher Material You). */
+    val cachedWidgetAppearance: String
+        get() = WidgetAppearance.sanitize(syncPrefs.getString(WidgetAppearance.PREF_KEY, null))
 
     private fun normalizeRegionCode(region: String): String = ContentRegions.canonicalize(region)
 
@@ -108,10 +120,14 @@ class UserPreferencesRepository(
                     throw exception
                 }
             }.map { preferences ->
-                val region = preferences[Keys.REGION]?.let { normalizeRegionCode(it) }
-                    ?: ContentRegions.localeDefaultRegion(
-                        java.util.Locale.getDefault().country.lowercase(),
-                    )
+                val region =
+                    preferences[Keys.REGION]?.let { normalizeRegionCode(it) }
+                        ?: ContentRegions.localeDefaultRegion(
+                            java.util.Locale
+                                .getDefault()
+                                .country
+                                .lowercase(),
+                        )
                 val stored = ContentRegions.decodeLanguages(preferences[Keys.CONTENT_LANGUAGES])
                 ContentRegions.normalizeLanguages(stored, region)
             }.distinctUntilChanged()
@@ -400,6 +416,52 @@ class UserPreferencesRepository(
         }
     }
 
+    val exploreDefaultTabStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                val stored = preferences[Keys.EXPLORE_DEFAULT_TAB]
+                if (stored != null) {
+                    val tab = ExploreDefaultTab.sanitize(stored)
+                    syncPrefs.edit().putString(ExploreDefaultTab.PREF_KEY, tab).apply()
+                    tab
+                } else {
+                    cachedExploreDefaultTab
+                }
+            }.distinctUntilChanged()
+
+    suspend fun setExploreDefaultTab(tab: String) {
+        val sanitized = ExploreDefaultTab.sanitize(tab)
+        syncPrefs.edit().putString(ExploreDefaultTab.PREF_KEY, sanitized).apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.EXPLORE_DEFAULT_TAB] = sanitized
+        }
+    }
+
+    val subscriptionsDefaultTabStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                val stored = preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB]
+                if (stored != null) {
+                    val tab = SubscriptionsDefaultTab.sanitize(stored)
+                    syncPrefs.edit().putString(SubscriptionsDefaultTab.PREF_KEY, tab).apply()
+                    tab
+                } else {
+                    cachedSubscriptionsDefaultTab
+                }
+            }.distinctUntilChanged()
+
+    suspend fun setSubscriptionsDefaultTab(tab: String) {
+        val sanitized = SubscriptionsDefaultTab.sanitize(tab)
+        syncPrefs.edit().putString(SubscriptionsDefaultTab.PREF_KEY, sanitized).apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = sanitized
+        }
+    }
+
     /**
      * After Google Backup, SharedPreferences fast-cache can restore while DataStore does not.
      * Copy cache values into missing DataStore keys so UI streams and workers stay aligned.
@@ -426,6 +488,15 @@ class UserPreferencesRepository(
             }
             if (preferences[Keys.OPEN_APP_TO] == null) {
                 preferences[Keys.OPEN_APP_TO] = cachedOpenAppTo
+            }
+            if (preferences[Keys.EXPLORE_DEFAULT_TAB] == null) {
+                preferences[Keys.EXPLORE_DEFAULT_TAB] = cachedExploreDefaultTab
+            }
+            if (preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] == null) {
+                preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = cachedSubscriptionsDefaultTab
+            }
+            if (preferences[Keys.WIDGET_APPEARANCE] == null) {
+                preferences[Keys.WIDGET_APPEARANCE] = cachedWidgetAppearance
             }
         }
     }
@@ -1205,6 +1276,33 @@ class UserPreferencesRepository(
     suspend fun setHomeShortcutsInLibrary(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.HOME_SHORTCUTS_IN_LIBRARY] = enabled
+        }
+    }
+
+    /**
+     * Widget chrome source: [WidgetAppearance.APP] (default) or [WidgetAppearance.SYSTEM].
+     * Mirrored in theme fast-cache so RemoteViews can read it without DataStore.
+     */
+    val widgetAppearanceStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                val stored = preferences[Keys.WIDGET_APPEARANCE]
+                if (stored != null) {
+                    val appearance = WidgetAppearance.sanitize(stored)
+                    syncPrefs.edit().putString(WidgetAppearance.PREF_KEY, appearance).apply()
+                    appearance
+                } else {
+                    cachedWidgetAppearance
+                }
+            }.distinctUntilChanged()
+
+    suspend fun setWidgetAppearance(appearance: String) {
+        val sanitized = WidgetAppearance.sanitize(appearance)
+        syncPrefs.edit().putString(WidgetAppearance.PREF_KEY, sanitized).apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.WIDGET_APPEARANCE] = sanitized
         }
     }
 

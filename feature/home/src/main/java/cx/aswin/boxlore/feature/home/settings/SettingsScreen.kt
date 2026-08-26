@@ -410,6 +410,18 @@ private fun AppearanceActions.trackedForAnalytics(): AppearanceActions =
             AnalyticsHelper.trackSettingsInteraction("home_shortcuts_in_library_toggled", it.toString())
             onSetHomeShortcutsInLibrary(it)
         },
+        onSetWidgetAppearance = {
+            AnalyticsHelper.trackSettingsInteraction("widget_appearance_changed", it)
+            onSetWidgetAppearance(it)
+        },
+        onSetExploreDefaultTab = {
+            AnalyticsHelper.trackSettingsInteraction("explore_default_tab_changed", it)
+            onSetExploreDefaultTab(it)
+        },
+        onSetSubscriptionsDefaultTab = {
+            AnalyticsHelper.trackSettingsInteraction("subscriptions_default_tab_changed", it)
+            onSetSubscriptionsDefaultTab(it)
+        },
     )
 
 @Composable
