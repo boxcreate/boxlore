@@ -179,6 +179,35 @@ class LockedChangelogFlowTest(unittest.TestCase):
         self.assertIn("Critical", upcoming)
         self.assertNotIn("AI-generated summary", upcoming)
 
+    def test_locked_readme_copy_orders_higher_impact_before_older_prs(self) -> None:
+        changelog = """# Changelog
+
+## [Unreleased]
+
+### Added
+- Existing feature ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium -->
+- Requested widget theme ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical -->
+
+<!-- readme-copy:start pr=1001 -->
+### New features
+- Existing feature
+<!-- readme-copy:end pr=1001 -->
+
+<!-- readme-copy:start pr=1002 -->
+### New features
+- Requested widget theme
+- Preferred default tabs
+<!-- readme-copy:end pr=1002 -->
+"""
+
+        groups, locked_prs = uc._locked_readme_groups_from_changelog(changelog)
+
+        self.assertEqual(locked_prs, {1001, 1002})
+        new_features = next(group["bullets"] for group in groups if group["heading"] == "New features")
+        self.assertIn("Requested widget theme", new_features[0])
+        self.assertIn("Preferred default tabs", new_features[1])
+        self.assertIn("Existing feature", new_features[2])
+
     def test_promote_changelog_strips_readme_copy_blocks(self) -> None:
         changelog, _ = uc._update_changelog(
             MINIMAL_CHANGELOG,

@@ -94,6 +94,77 @@ class ReadmeReleaseMarkersTest(unittest.TestCase):
         self.assertGreaterEqual(len(bullets), 1)
         self.assertTrue(any("Typo-tolerant" in b for b in bullets))
 
+    def test_notification_body_only_labels_ai_generated_notes(self) -> None:
+        version = pr.AppVersion("0.0.13", 13)
+        direct_whats = uc._render_whats_new_inner(
+            "v0.0.13",
+            "2026-07-29",
+            SAMPLE_WHATS_NEW_BODY,
+            include_ai_notice=False,
+        )
+        direct_readme = _readme_with_notes(
+            upcoming=uc.EMPTY_UPCOMING_TEXT,
+            whats_new_inner=direct_whats,
+        )
+        self.assertNotIn("AI-generated summary", pr.notification_body(direct_readme, version))
+
+        ai_whats = uc._render_whats_new_inner(
+            "v0.0.13",
+            "2026-07-29",
+            SAMPLE_WHATS_NEW_BODY,
+            include_ai_notice=True,
+        )
+        ai_readme = _readme_with_notes(
+            upcoming=uc.EMPTY_UPCOMING_TEXT,
+            whats_new_inner=ai_whats,
+        )
+        self.assertIn("AI-generated summary", pr.notification_body(ai_readme, version))
+
+    def test_direct_notification_keeps_every_reviewed_readme_item(self) -> None:
+        version = pr.AppVersion("0.0.13", 13)
+        six_items = "<ul>" + "".join(
+            f"<li>Reviewed change {index}</li>" for index in range(1, 7)
+        ) + "</ul>"
+        direct_whats = uc._render_whats_new_inner(
+            "v0.0.13",
+            "2026-07-29",
+            six_items,
+            include_ai_notice=False,
+        )
+        direct_readme = _readme_with_notes(
+            upcoming=uc.EMPTY_UPCOMING_TEXT,
+            whats_new_inner=direct_whats,
+        )
+        self.assertEqual(6, len(pr.notification_bullets(direct_readme, version)))
+
+        ai_whats = uc._render_whats_new_inner(
+            "v0.0.13",
+            "2026-07-29",
+            six_items,
+            include_ai_notice=True,
+        )
+        ai_readme = _readme_with_notes(
+            upcoming=uc.EMPTY_UPCOMING_TEXT,
+            whats_new_inner=ai_whats,
+        )
+        self.assertEqual(5, len(pr.notification_bullets(ai_readme, version)))
+
+    def test_release_note_source_supports_direct_readme_path(self) -> None:
+        self.assertEqual(
+            "readme-upcoming",
+            pr.resolve_notes_source(skip_notify=False, use_readme_upcoming=True),
+        )
+        self.assertEqual(
+            "reconciled",
+            pr.resolve_notes_source(skip_notify=False, use_readme_upcoming=False),
+        )
+        self.assertEqual(
+            "artifacts-only",
+            pr.resolve_notes_source(skip_notify=True, use_readme_upcoming=False),
+        )
+        with self.assertRaisesRegex(ValueError, "cannot be combined"):
+            pr.resolve_notes_source(skip_notify=True, use_readme_upcoming=True)
+
     def test_download_apk_marker_updates(self) -> None:
         whats = uc._render_whats_new_inner("v0.0.12", "2026-07-25", SAMPLE_WHATS_NEW_BODY)
         readme = _readme_with_notes(upcoming=uc.EMPTY_UPCOMING_TEXT, whats_new_inner=whats)

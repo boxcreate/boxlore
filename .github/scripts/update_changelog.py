@@ -1042,7 +1042,18 @@ def _sections_excluding_prs(
 def _locked_readme_groups_from_changelog(
     content: str,
 ) -> tuple[list[dict[str, list[str]]], set[int]]:
-    grouped: dict[str, list[str]] = defaultdict(list)
+    impact_scores: dict[int, int] = {}
+    for bullets in _parse_unreleased_sections(_unreleased_raw(content)).values():
+        for bullet in bullets:
+            pr_number = _extract_pr_number(bullet)
+            impact, _ = _extract_impact_tags(bullet)
+            if pr_number is not None:
+                impact_scores[pr_number] = max(
+                    impact_scores.get(pr_number, 0),
+                    USER_IMPACT_SCORE.get(impact or "", 0),
+                )
+
+    grouped: dict[str, list[tuple[int, int, str]]] = defaultdict(list)
     locked_prs: set[int] = set()
     for match in README_COPY_BLOCK_RE.finditer(_unreleased_raw(content)):
         pr_number = int(match.group(1))
@@ -1050,9 +1061,28 @@ def _locked_readme_groups_from_changelog(
         for group in _parse_readme_copy_inner(match.group(2)):
             heading = group["heading"]
             for bullet in group["bullets"]:
-                grouped[heading].append(_format_readme_bullet(bullet, pr_number))
+                grouped[heading].append(
+                    (
+                        impact_scores.get(pr_number, 0),
+                        pr_number,
+                        _format_readme_bullet(bullet, pr_number),
+                    )
+                )
     groups = _sort_readme_groups(
-        [{"heading": heading, "bullets": bullets} for heading, bullets in grouped.items() if bullets]
+        [
+            {
+                "heading": heading,
+                "bullets": [
+                    bullet
+                    for _, _, bullet in sorted(
+                        bullets,
+                        key=lambda item: (-item[0], -item[1]),
+                    )
+                ],
+            }
+            for heading, bullets in grouped.items()
+            if bullets
+        ]
     )
     return groups, locked_prs
 

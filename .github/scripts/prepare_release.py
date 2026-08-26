@@ -718,15 +718,33 @@ def write_outputs(values: dict[str, str | int]) -> None:
             output.write(f"{key}<<{delimiter}\n{text}\n{delimiter}\n")
 
 
+def resolve_notes_source(*, skip_notify: bool, use_readme_upcoming: bool) -> str:
+    if skip_notify and use_readme_upcoming:
+        fail("--use-readme-upcoming cannot be combined with --skip-notify")
+    if skip_notify:
+        return "artifacts-only"
+    if use_readme_upcoming:
+        return "readme-upcoming"
+    return "reconciled"
+
+
 def prepare_release(args: argparse.Namespace) -> None:
     repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     skip_notify = bool(getattr(args, "skip_notify", False))
+    use_readme_upcoming = bool(getattr(args, "use_readme_upcoming", False))
+    notes_source = resolve_notes_source(
+        skip_notify=skip_notify,
+        use_readme_upcoming=use_readme_upcoming,
+    )
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not repository or not token:
         fail("GITHUB_REPOSITORY and GITHUB_TOKEN are required")
-    if not skip_notify and not api_key:
-        fail("GROQ_API_KEY is required unless --skip-notify is set")
+    if notes_source == "reconciled" and not api_key:
+        fail(
+            "GROQ_API_KEY is required unless --skip-notify or "
+            "--use-readme-upcoming is set"
+        )
 
     current = read_app_version()
     validate_baseline(current, args.latest_tag, skip_notify=skip_notify)
@@ -751,13 +769,14 @@ def prepare_release(args: argparse.Namespace) -> None:
             encoding="utf-8",
         )
     else:
-        processed = reconcile_changelog(
-            repository,
-            token,
-            api_key,
-            args.latest_tag,
-            args.head_sha,
-        )
+        if notes_source == "reconciled":
+            processed = reconcile_changelog(
+                repository,
+                token,
+                api_key,
+                args.latest_tag,
+                args.head_sha,
+            )
         changelog_original = require_file(CHANGELOG_PATH)
         readme_original = require_file(README_PATH)
         CHANGELOG_PATH.write_text(
@@ -783,6 +802,7 @@ def prepare_release(args: argparse.Namespace) -> None:
             "release_date": release_date,
             "reconciled_pr_count": len(processed),
             "skip_notify": "true" if skip_notify else "false",
+            "notes_source": notes_source,
         }
     )
 
@@ -1086,6 +1106,7 @@ def notification_bullets(content: str, version: AppVersion) -> list[str]:
             fail(f"README.md has no What's New block for {version.tag}")
         release_body = release_match.group(1)
 
+    is_ai_generated = "AI-generated summary; may contain mistakes." in release_body
     candidates = [
         plain_text(item)
         for item in re.findall(
@@ -1114,11 +1135,24 @@ def notification_bullets(content: str, version: AppVersion) -> list[str]:
         ):
             continue
         bullets.append(shorten_notification_line(candidate))
-        if len(bullets) == 5:
+        if is_ai_generated and len(bullets) == 5:
             break
     if not bullets:
         fail(f"README What's New block for {version.tag} has no notification text")
     return bullets
+
+
+def notification_body(content: str, version: AppVersion) -> str:
+    bullets = notification_bullets(content, version)
+    body = "\n".join(f"- {bullet}" for bullet in bullets)
+    release_body = update_changelog._extract_marked_region(
+        content,
+        update_changelog.RELEASE_WHATS_NEW_START,
+        update_changelog.RELEASE_WHATS_NEW_END,
+    )
+    if release_body and "AI-generated summary; may contain mistakes." in release_body:
+        body += "\n\n*AI-generated summary; may contain mistakes.*"
+    return body
 
 
 def write_notification_outputs() -> None:
@@ -1129,14 +1163,11 @@ def write_notification_outputs() -> None:
     ).strip()
     if not repository or "/" not in repository:
         fail("GITHUB_REPOSITORY is malformed")
-    bullets = notification_bullets(require_file(README_PATH), current)
+    readme = require_file(README_PATH)
     write_outputs(
         {
             "notification_title": f"boxlore {current.tag} is here",
-            "notification_body": (
-                "\n".join(f"- {bullet}" for bullet in bullets)
-                + "\n\n*AI-generated summary; may contain mistakes.*"
-            ),
+            "notification_body": notification_body(readme, current),
             "notification_route": (
                 release_apk_url(repository, current)
             ),
@@ -1283,6 +1314,14 @@ def main() -> None:
         help=(
             "Artifacts-only prepare: bump Gradle version only; "
             "skip CHANGELOG/README promotion and in-app notify on publish"
+        ),
+    )
+    prepare_parser.add_argument(
+        "--use-readme-upcoming",
+        action="store_true",
+        help=(
+            "Skip AI reconciliation and promote the reviewed README Upcoming "
+            "region verbatim into What's New and the release notification"
         ),
     )
 

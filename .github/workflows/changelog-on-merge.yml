@@ -27,6 +27,14 @@ on:
           - patch
           - minor
           - major
+      release_notes_source:
+        description: Release-note source for prepare-release
+        required: true
+        default: reconcile-with-ai
+        type: choice
+        options:
+          - reconcile-with-ai
+          - readme-upcoming
       skip_notify:
         description: >-
           Artifacts only — bump version, rewrite README APK download URL, publish
@@ -185,12 +193,16 @@ jobs:
           GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
           BUMP: ${{ github.event.inputs.bump }}
           LATEST_TAG: ${{ steps.latest.outputs.tag }}
+          RELEASE_NOTES_SOURCE: ${{ github.event.inputs.release_notes_source }}
           SKIP_NOTIFY: ${{ github.event.inputs.skip_notify }}
         run: |
           head_sha="$(git rev-parse HEAD)"
           extra_args=()
           if [[ "$SKIP_NOTIFY" == "true" ]]; then
             extra_args+=(--skip-notify)
+          fi
+          if [[ "$RELEASE_NOTES_SOURCE" == "readme-upcoming" ]]; then
+            extra_args+=(--use-readme-upcoming)
           fi
           python3 .github/scripts/prepare_release.py prepare \
             --bump "$BUMP" \
@@ -268,6 +280,7 @@ jobs:
           NEW_CODE: ${{ steps.release.outputs.new_code }}
           RELEASE_DATE: ${{ steps.release.outputs.release_date }}
           RECONCILED_PRS: ${{ steps.release.outputs.reconciled_pr_count }}
+          NOTES_SOURCE: ${{ steps.release.outputs.notes_source }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
           AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
           SKIP_NOTIFY: ${{ steps.release.outputs.skip_notify }}
@@ -296,18 +309,22 @@ jobs:
           EOF
           )"
           else
+            if [[ "$NOTES_SOURCE" == "readme-upcoming" ]]; then
+              notes_message="README Upcoming is promoted verbatim into What's New and the in-app notification; AI reconciliation is skipped."
+            else
+              notes_message="Changelog and README use author-written release-copy when present; remaining notes are reconciled before promotion."
+            fi
             title="release: ${TAG} [skip changelog]"
             body="$(cat <<EOF
           ## Release
           - Version: \`${CURRENT_VERSION} (${CURRENT_CODE}) → ${NEW_VERSION} (${NEW_CODE})\`
           - Date: \`${RELEASE_DATE}\`
           - Reconciled PRs since the latest release: \`${RECONCILED_PRS}\`
+          - Release-note source: \`${NOTES_SOURCE}\`
           - APK asset: \`${APK_ASSET}\`
           - AAB asset: \`${AAB_ASSET}\`
 
-          > Changelog and README use author-written **release-copy** from the PR when
-          > those regions are filled; otherwise they are AI-generated and may contain
-          > mistakes. Verify them against the linked pull requests before merging.
+          > ${notes_message}
 
           ## On merge
           The protected release job will rebuild this exact merge commit, verify versions and signing identity, then publish the signed APK and AAB with checksums.
