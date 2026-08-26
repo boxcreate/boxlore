@@ -10,9 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added App theme and System appearance modes for all RemoteViews widget families, backed by shared boxlore color-scheme resolution. ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Added a dismissible Home Video Spotlight with bundled video podcast metadata, TED HD/SD feeds, and PostHog funnel attribution through playback start. ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Added configurable default tabs for Explore and Subscriptions, including backup/restore and fast-cache hydration. ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Playback **Smart queue** switch (`same_show_queue_only`; default on). Off limits auto-queue to later episodes of the current show. ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance **Cleaner Home** (`home_shortcuts_in_library`; default off) moves Settings and Feedback from Home to the Library top bar. ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Queue empty state explains when Smart queue is off and offers Turn on. ([#1001](https://github.com/boxcreate/boxlore/pull/1001)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+### Changed
+- Custom accents can now use a Material 3 seed or pin the selected RGB as the exact primary color. ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Refined shared Settings and Privacy layout spacing and alignment. ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Reordered README Upcoming by listener priority and removed the stale PR #1000 entry from README only. ([#1002](https://github.com/boxcreate/boxlore/pull/1002)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 ### Fixed
 - Repaired publisher-feed catalog cutover after library restore by reconciling legacy listener identities and retrying incomplete catalogs. ([#1000](https://github.com/boxcreate/boxlore/pull/1000)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Added bounded direct-feed ingestion across JSON restore, OPML, onboarding, Home, and Podcast Info subscription paths. ([#1000](https://github.com/boxcreate/boxlore/pull/1000)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -28,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Turn off Smart queue to stay on the show you’re playing. The queue only auto-adds later episodes of that show.
 - Cleaner Home moves Settings and Feedback to Library so Home can show just the logo.
 <!-- readme-copy:end pr=1001 -->
+
+<!-- readme-copy:start pr=1002 -->
+### Critical
+- Home now features a dismissible Video Spotlight led by TED Talks Daily, with hand-picked video podcasts, dedicated TED HD/SD choices, and no extra loading delay.
+### New features
+- Home-screen widgets can now match boxlore’s Theme, Background, and Colors, or continue following your launcher’s system colors.
+- Choose which tab opens by default in Explore (For You or Top) and Subscriptions (Shows or New episodes). Direct links still open the tab they specify.
+- The custom color picker can build a balanced Material 3 palette or keep the exact accent color you selected.
+### Improvements
+- Appearance and Privacy settings use clearer spacing and alignment, making options easier to scan.
+<!-- readme-copy:end pr=1002 -->
 ## [v0.0.19] - 2026-08-18
 
 ### Added
