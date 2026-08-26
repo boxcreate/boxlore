@@ -64,12 +64,9 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-<b>🚨 Critical:</b>
-<ul align="left">
-<li>Home now features a dismissible Video Spotlight led by TED Talks Daily, with hand-picked video podcasts, dedicated TED HD/SD choices, and no extra loading delay. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
-</ul>
 <b>🆕 New features:</b>
 <ul align="left">
+<li>Home now features a dismissible Video Spotlight led by TED Talks Daily, with hand-picked video podcasts, dedicated TED HD/SD choices, and no extra loading delay. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
 <li>Home-screen widgets can now match boxlore’s Theme, Background, and Colors, or continue following your launcher’s system colors. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
 <li>Choose which tab opens by default in Explore (For You or Top) and Subscriptions (Shows or New episodes). Direct links still open the tab they specify. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
 <li>The custom color picker can build a balanced Material 3 palette or keep the exact accent color you selected. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
