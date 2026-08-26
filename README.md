@@ -18,7 +18,7 @@
     <td width="16"></td>
     <td align="center" valign="middle">
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.19.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.20.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
 <!-- download-apk:end -->
     </td>
   </tr>
@@ -64,6 +64,15 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.20` · 2026-08-26
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.20 date=2026-08-26 -->
 <b>🆕 New features:</b>
 <ul align="left">
 <li>Home-screen widgets can now match boxlore’s Theme, Background, and Colors, or continue following your launcher’s system colors. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
@@ -77,26 +86,6 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Appearance and Privacy settings use clearer spacing and alignment, making options easier to scan. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.19` · 2026-08-18
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.19 date=2026-08-18 -->
-<b>🆕 New features:</b>
-<ul align="left">
-<li>Long-press an episode to select and manage many episodes together, including older or newer episodes across long shows. <a href="https://github.com/boxcreate/boxlore/pull/997"><img src="https://img.shields.io/badge/PR-997-6750A4?style=flat-square" alt="PR #997" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>Home now has Daily Mix and Offline Mix, so downloaded episodes are one tap away when you want to listen without data. <a href="https://github.com/boxcreate/boxlore/pull/996"><img src="https://img.shields.io/badge/PR-996-6750A4?style=flat-square" alt="PR #996" height="18"/></a></li>
-<li>Reinstalling from a Google backup no longer leaves Smart Downloads running while the setting looks off, and download artwork should stay visible. <a href="https://github.com/boxcreate/boxlore/pull/996"><img src="https://img.shields.io/badge/PR-996-6750A4?style=flat-square" alt="PR #996" height="18"/></a></li>
-</ul>
-<b>• High:</b>
-<ul align="left">
-<li>If you imported podcasts from another app in an older boxlore build, those shows are restored as normal catalog subscriptions. You may see a one-time repair banner; it will not loop. <a href="https://github.com/boxcreate/boxlore/pull/993"><img src="https://img.shields.io/badge/PR-993-6750A4?style=flat-square" alt="PR #993" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
@@ -203,7 +192,7 @@ Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live
       </td>
       <td width="16"></td>
       <td align="center" valign="middle">
-        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.19.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.20.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
       </td>
     </tr>
   </table>
