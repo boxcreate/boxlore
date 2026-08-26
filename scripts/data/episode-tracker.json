@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-26T01:13:57.522Z",
+  "lastRun": "2026-08-26T02:46:49.477Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -36,6 +36,12 @@
       "lastEpisodeId": "59170256685",
       "lastCheckedAt": 1787067025436
     },
+    "83316": {
+      "lastEpisodeId": "59407301336",
+      "lastEpisodeTitle": "Why Christians Never Fight Alone | Fight The Good Fight | Pastor Josh Howerton",
+      "lastRssKey": "4e7b3552-9f12-11f1-9d73-b76bbbad48f6",
+      "lastCheckedAt": 1787712410953
+    },
     "160817": {
       "lastRssKey": "https://linuxunplugged.com/681",
       "lastEpisodeTitle": "Ain’t Nothing But a Syncthing | LINUX Unplugged 681",
@@ -54,10 +60,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "ccbcbd6c-a0ea-11f1-b067-1f49b678af1e",
-      "lastEpisodeTitle": "9PM ET 08/25/2026 Newscast",
+      "lastRssKey": "2a4dbe1a-a0f3-11f1-b683-2b92e0134657",
+      "lastEpisodeTitle": "10PM ET 08/25/2026 Newscast",
       "lastEpisodeId": "59481748735",
-      "lastCheckedAt": 1787706841635
+      "lastCheckedAt": 1787712413000
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -142,10 +148,10 @@
       "lastCheckedAt": 1786559318597
     },
     "724143": {
-      "lastEpisodeId": "59488893188",
-      "lastEpisodeTitle": "Início das sabatinas dos presidenciáveis na CBN; aumento da estimativa do salário mínimo; penduricalho no STF",
-      "lastRssKey": "58798658-a06b-11f1-a40b-3ffdb806dc5f",
-      "lastCheckedAt": 1787672438724
+      "lastEpisodeId": "59508301631",
+      "lastEpisodeTitle": "TikTok multado, falência da Oi decretada e a morte da cantora Dolly Parton.",
+      "lastRssKey": "2df27e16-a0d5-11f1-8fa4-cf5d5011ba25",
+      "lastCheckedAt": 1787712419837
     },
     "743229": {
       "lastEpisodeId": "59478907222",
@@ -302,6 +308,12 @@
       "lastEpisodeId": "58711221307",
       "lastCheckedAt": 1787301552701
     },
+    "4051326": {
+      "lastEpisodeId": "4818953989",
+      "lastEpisodeTitle": "Ep 5 | Premarital Sex, Boundaries & Redemption",
+      "lastRssKey": "b6442bc6-8b50-4e71-b25c-d965e79d9795",
+      "lastCheckedAt": 1787712428218
+    },
     "4112681": {
       "lastRssKey": "Buzzsprout-19690847",
       "lastEpisodeTitle": "#149 - The 11 largest Sleep Myths",
@@ -439,10 +451,10 @@
       "lastCheckedAt": 1787131966570
     },
     "6956562": {
-      "lastEpisodeId": "59463906770",
-      "lastEpisodeTitle": "Can a “miracle drug” change how we work?",
-      "lastRssKey": "c30a1e0d-5bc0-4de2-9258-dab528aa0d27",
-      "lastCheckedAt": 1787625513791
+      "lastEpisodeId": "59507692432",
+      "lastEpisodeTitle": "India can’t find a sweet spot for its sugar policy",
+      "lastRssKey": "92389515-4d11-4f01-8385-c87ecca8fb69",
+      "lastCheckedAt": 1787712434305
     },
     "7045713": {
       "lastRssKey": "sonsofpatriarchy.podbean.com/8c867280-f689-387b-acd9-e385184f81ee",
