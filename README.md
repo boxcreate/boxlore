@@ -70,8 +70,8 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 </ul>
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Choose which tab opens by default in Explore (For You or Top) and Subscriptions (Shows or New episodes). Direct links still open the tab they specify.</li>
 <li>Home-screen widgets can now match boxlore’s Theme, Background, and Colors, or continue following your launcher’s system colors.</li>
+<li>Choose which tab opens by default in Explore (For You or Top) and Subscriptions (Shows or New episodes). Direct links still open the tab they specify.</li>
 <li>The custom color picker can build a balanced Material 3 palette or keep the exact accent color you selected.</li>
 <li>Turn off Smart queue when you want to stay with one show; boxlore will only continue with newer episodes from that podcast. <a href="https://github.com/boxcreate/boxlore/pull/1001"><img src="https://img.shields.io/badge/PR-1001-6750A4?style=flat-square" alt="PR #1001" height="18"/></a></li>
 <li>Cleaner Home moves Settings and Feedback into Library, leaving a quieter Home top bar. <a href="https://github.com/boxcreate/boxlore/pull/1001"><img src="https://img.shields.io/badge/PR-1001-6750A4?style=flat-square" alt="PR #1001" height="18"/></a></li>
