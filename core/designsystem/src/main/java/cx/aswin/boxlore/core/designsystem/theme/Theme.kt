@@ -76,6 +76,47 @@ fun computeEffectiveDarkTheme(surfaceStyle: String, darkTheme: Boolean): Boolean
     else -> darkTheme
 }
 
+/**
+ * Whether [themeConfig] (`system` / `light` / `dark`) should render as dark, before
+ * [computeEffectiveDarkTheme] applies a locked background style.
+ */
+fun darkThemeFromConfig(context: android.content.Context, themeConfig: String): Boolean {
+    val systemDark =
+        (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+    return when (themeConfig) {
+        "light" -> false
+        "dark" -> true
+        else -> systemDark
+    }
+}
+
+/**
+ * Same ColorScheme resolution as [BoxLoreTheme], for non-Compose readers such as widgets.
+ */
+fun resolveBoxLoreColorScheme(
+    context: android.content.Context,
+    darkTheme: Boolean,
+    dynamicColor: Boolean,
+    themeBrand: String,
+    surfaceStyle: String,
+): ColorScheme {
+    val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
+    return if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val baseScheme =
+            if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        applySurfaceStyle(baseScheme, effectiveDarkTheme, surfaceStyle)
+    } else {
+        val seed = resolveThemeSeedColor(themeBrand)
+        val scheme = generateBrandColorScheme(seed, effectiveDarkTheme, surfaceStyle)
+        if (isExactThemeBrand(themeBrand)) {
+            scheme.withPinnedPrimary(seed)
+        } else {
+            scheme
+        }
+    }
+}
+
 @Composable
 fun BoxLoreTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -89,22 +130,14 @@ fun BoxLoreTheme(
     val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
     val context = LocalContext.current
 
-    // Determine effective dynamicColor. All themes support dynamic accent coloring if enabled.
-    val effectiveDynamicColor = dynamicColor
-
     val colorScheme =
-        when {
-            effectiveDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val baseScheme =
-                    if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-                // Apply surface style overrides to dynamic colors
-                applySurfaceStyle(baseScheme, effectiveDarkTheme, surfaceStyle)
-            }
-            else -> {
-                val seedColor = resolveThemeSeedColor(themeBrand)
-                generateBrandColorScheme(seedColor, effectiveDarkTheme, surfaceStyle)
-            }
-        }
+        resolveBoxLoreColorScheme(
+            context = context,
+            darkTheme = darkTheme,
+            dynamicColor = dynamicColor,
+            themeBrand = themeBrand,
+            surfaceStyle = surfaceStyle,
+        )
 
     val typography = remember(context, fontRoundness) { buildBoxLoreTypography(context, fontRoundness) }
 
@@ -239,6 +272,13 @@ private fun Color.saturate(factor: Float): Color {
     hsl[1] = (hsl[1] * factor).coerceIn(0f, 1f)
     return Color(androidx.core.graphics.ColorUtils.HSLToColor(hsl))
 }
+
+/** Pins [ColorScheme.primary] to [seedColor] and picks a contrasting on-primary. */
+fun ColorScheme.withPinnedPrimary(seedColor: Color): ColorScheme =
+    copy(
+        primary = seedColor,
+        onPrimary = seedColor.contrastColor(),
+    )
 
 /**
  * Generates a complete Material 3 color scheme algorithmically from a single semantic seed color.

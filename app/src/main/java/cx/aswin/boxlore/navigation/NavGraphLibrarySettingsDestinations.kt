@@ -93,6 +93,9 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             currentNavigationStyle = settingsState.navigationStyle,
                             currentOpenAppTo = settingsState.openAppTo,
                             homeShortcutsInLibrary = settingsState.homeShortcutsInLibrary,
+                            currentWidgetAppearance = settingsState.widgetAppearance,
+                            currentExploreDefaultTab = settingsState.exploreDefaultTab,
+                            currentSubscriptionsDefaultTab = settingsState.subscriptionsDefaultTab,
                         ),
                     actions =
                         cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
@@ -105,6 +108,15 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                             onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },
                             onSetHomeShortcutsInLibrary = { enabled ->
                                 scope.launch { userPrefs.setHomeShortcutsInLibrary(enabled) }
+                            },
+                            onSetWidgetAppearance = { appearance ->
+                                scope.launch { userPrefs.setWidgetAppearance(appearance) }
+                            },
+                            onSetExploreDefaultTab = { tab ->
+                                scope.launch { userPrefs.setExploreDefaultTab(tab) }
+                            },
+                            onSetSubscriptionsDefaultTab = { tab ->
+                                scope.launch { userPrefs.setSubscriptionsDefaultTab(tab) }
                             },
                         ),
                 ),
@@ -405,7 +417,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             listOf(
                 navArgument("tab") {
                     type = NavType.IntType
-                    defaultValue = 0
+                    defaultValue = cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab.NAV_USE_PREF
                 },
             ),
         deepLinks =
@@ -416,7 +428,14 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                 navDeepLink { uriPattern = "boxcast://library/subscriptions" },
             ),
     ) { backStackEntry ->
-        val initialTab = (backStackEntry.arguments?.getInt("tab") ?: 0).coerceIn(0, 1)
+        val navTab =
+            backStackEntry.arguments?.getInt("tab")
+                ?: cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab.NAV_USE_PREF
+        val initialTab =
+            cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab.resolveIndex(
+                navTab = navTab,
+                preferred = userPrefs.cachedSubscriptionsDefaultTab,
+            )
         val viewModel =
             androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.LibraryViewModel>(
                 factory =

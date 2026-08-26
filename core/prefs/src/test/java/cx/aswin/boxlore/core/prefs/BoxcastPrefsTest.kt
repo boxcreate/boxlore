@@ -52,6 +52,13 @@ class BoxcastPrefsTest {
     }
 
     @Test
+    fun featuredVideoShowcaseDismissalPersistsForever() {
+        assertFalse(prefs.isFeaturedVideoShowcaseDismissed())
+        prefs.dismissFeaturedVideoShowcaseForever()
+        assertTrue(prefs.isFeaturedVideoShowcaseDismissed())
+    }
+
+    @Test
     fun bylCacheRoundTrip() {
         assertNull(prefs.getCachedBylPodcastId())
         prefs.saveBylCache(episodesJson = "[]", podcastsJson = "[]", podcastId = "42")

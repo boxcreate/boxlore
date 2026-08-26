@@ -124,6 +124,9 @@ data class NavSettingsState(
     val restartForgottenEpisodes: Boolean,
     val sameShowQueueOnly: Boolean,
     val homeShortcutsInLibrary: Boolean,
+    val widgetAppearance: String,
+    val exploreDefaultTab: String,
+    val subscriptionsDefaultTab: String,
 )
 
 /** Callbacks for OPML import state owned by MainActivity. */

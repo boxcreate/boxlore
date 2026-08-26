@@ -42,7 +42,8 @@ object LibraryWidgetRenderer {
         kind: LibraryWidgetKind,
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.library_widget_list)
-        applyChrome(context, views)
+        val chrome = WidgetChrome.resolve(context)
+        applyChrome(views, chrome)
 
         val headerRes =
             when (kind) {
@@ -93,6 +94,7 @@ object LibraryWidgetRenderer {
             bindEmpty(
                 context,
                 views,
+                chrome,
                 appWidgetId,
                 when (kind) {
                     LibraryWidgetKind.SUBSCRIPTIONS -> R.string.subscriptions_widget_empty_title
@@ -105,7 +107,7 @@ object LibraryWidgetRenderer {
                 openListUri,
             )
         } else {
-            bindPopulated(context, views, appWidgetId, count, openListUri)
+            bindPopulated(context, views, chrome, appWidgetId, count, openListUri)
         }
 
         return views
@@ -114,6 +116,7 @@ object LibraryWidgetRenderer {
     private fun bindPopulated(
         context: Context,
         views: RemoteViews,
+        chrome: WidgetChrome,
         appWidgetId: Int,
         count: Int,
         openListUri: String,
@@ -125,25 +128,25 @@ object LibraryWidgetRenderer {
             views,
             R.id.widget_count_chip_text,
             WidgetPalette.onSecondaryContainer,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setColorFilter(
             views,
             R.id.widget_count_chip_bg,
             WidgetPalette.secondaryContainer,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setColorFilter(
             views,
             R.id.widget_footer_bg,
             WidgetPalette.secondaryContainer,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setTextColor(
             views,
             R.id.widget_footer_text,
             WidgetPalette.onSecondaryContainer,
-            context,
+            chrome,
         )
         val open =
             WidgetActionIntents.openDeepLink(
@@ -184,6 +187,7 @@ object LibraryWidgetRenderer {
     private fun bindEmpty(
         context: Context,
         views: RemoteViews,
+        chrome: WidgetChrome,
         appWidgetId: Int,
         titleRes: Int,
         ctaRes: Int,
@@ -198,19 +202,19 @@ object LibraryWidgetRenderer {
             views,
             R.id.widget_empty_title,
             WidgetPalette.onSurface,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setTextColor(
             views,
             R.id.widget_empty_cta,
             WidgetPalette.onSecondaryContainer,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setColorFilter(
             views,
             R.id.widget_empty_cta_bg,
             WidgetPalette.secondaryContainer,
-            context,
+            chrome,
         )
         val open =
             WidgetActionIntents.openDeepLink(
@@ -224,20 +228,20 @@ object LibraryWidgetRenderer {
     }
 
     private fun applyChrome(
-        context: Context,
         views: RemoteViews,
+        chrome: WidgetChrome,
     ) {
         WidgetRemoteViewsColors.setColorFilter(
             views,
             R.id.widget_surface_background,
             WidgetPalette.surface,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setTextColor(
             views,
             R.id.widget_list_header,
             WidgetPalette.onSurface,
-            context,
+            chrome,
         )
     }
 

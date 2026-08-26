@@ -14,7 +14,7 @@ Owns analytics event capture and non-fatal error reporting for Boxlore. The modu
 - `PlayerSessionAggregator` batches per-episode player interaction events.
 - Event names and property expectations are documented in [`docs/ANALYTICS_EVENT_GLOSSARY.md`](../../docs/ANALYTICS_EVENT_GLOSSARY.md).
 - `AnalyticsGlossary.normalizeEntryPoint` maps legacy/free-form strings onto the glossary sheet without renaming dashboard events (`learn_history` → `learn`; `briefing` stays `briefing`).
-- Glossary façades include growth/session (`trackOnboardingAbandoned`, `trackSessionRestorePrompt`), library ops (`trackDownloadRequested`, `trackShareContent`, `trackBackupRestoreResult`, `trackQueueModified`), Home mix interactions (`trackPlayMixClicked`, `trackHomeMixModeChanged` with `mix_mode=daily|offline`), discovery (`trackExploreSearchPerformed` with `search_mode`, `trackSearchResultTapped`), and onboarding (`trackOnboardingStepViewed` with optional `step_index`).
+- Glossary façades include growth/session (`trackOnboardingAbandoned`, `trackSessionRestorePrompt`), library ops (`trackDownloadRequested`, `trackShareContent`, `trackBackupRestoreResult`, `trackQueueModified`), Home mix interactions (`trackPlayMixClicked`, `trackHomeMixModeChanged` with `mix_mode=daily|offline`), Video Spotlight funnel events (`trackVideoSpotlightImpression`, `trackVideoSpotlightPodcastTapped`, `trackVideoSpotlightPlayInitiated`), discovery (`trackExploreSearchPerformed` with `search_mode`, `trackSearchResultTapped`), and onboarding (`trackOnboardingStepViewed` with optional `step_index`).
 
 ## Internal structure
 

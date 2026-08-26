@@ -24,25 +24,26 @@ class WidgetRemoteViewsColorsTest {
 
     @Test
     fun setColorFilterAppliesWithoutThrowing() {
+        val chrome = WidgetChrome.resolve(context)
         val views = RemoteViews(context.packageName, R.layout.library_widget_list)
         WidgetRemoteViewsColors.setColorFilter(
             views,
             R.id.widget_surface_background,
             WidgetPalette.surface,
-            context,
+            chrome,
         )
         WidgetRemoteViewsColors.setTextColor(
             views,
             R.id.widget_list_header,
             WidgetPalette.onSurface,
-            context,
+            chrome,
         )
         views.apply(context, FrameLayout(context))
     }
 
     @Test
     fun resolveReturnsNonTransparentColor() {
-        val color = WidgetRemoteViewsColors.resolve(context, WidgetPalette.primary)
+        val color = WidgetRemoteViewsColors.resolve(WidgetChrome.resolve(context), WidgetPalette.primary)
         assertEquals(0xFF000000.toInt(), color and 0xFF000000.toInt())
     }
 }

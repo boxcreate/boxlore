@@ -34,6 +34,9 @@ class UserPreferencesRestoreHydrationTest {
             fontRoundness = "crisp",
             navigationStyle = "classic",
             openAppTo = OpenAppTo.DOWNLOADS,
+            widgetAppearance = WidgetAppearance.SYSTEM,
+            exploreDefaultTab = ExploreDefaultTab.TOP,
+            subscriptionsDefaultTab = SubscriptionsDefaultTab.NEW_EPISODES,
         )
         repository = UserPreferencesRepository(context)
     }
@@ -54,6 +57,9 @@ class UserPreferencesRestoreHydrationTest {
             assertEquals("crisp", repository.fontRoundnessStream.first())
             assertEquals("classic", repository.navigationStyleStream.first())
             assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
+            assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
+            assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
+            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
             assertEquals("dark", repository.cachedThemeConfig)
         }
 
@@ -69,6 +75,9 @@ class UserPreferencesRestoreHydrationTest {
             assertEquals("crisp", repository.fontRoundnessStream.first())
             assertEquals("classic", repository.navigationStyleStream.first())
             assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
+            assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
+            assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
+            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
         }
 
     private fun seedThemeCache(
@@ -79,6 +88,9 @@ class UserPreferencesRestoreHydrationTest {
         fontRoundness: String,
         navigationStyle: String,
         openAppTo: String,
+        widgetAppearance: String,
+        exploreDefaultTab: String,
+        subscriptionsDefaultTab: String,
     ) {
         context
             .getSharedPreferences(PrefsFileMigrator.Files.THEME_FAST_CACHE, Context.MODE_PRIVATE)
@@ -90,6 +102,9 @@ class UserPreferencesRestoreHydrationTest {
             .putString(FontRoundnessAxis.PREF_KEY, fontRoundness)
             .putString("navigation_style", navigationStyle)
             .putString("open_app_to", openAppTo)
+            .putString(WidgetAppearance.PREF_KEY, widgetAppearance)
+            .putString(ExploreDefaultTab.PREF_KEY, exploreDefaultTab)
+            .putString(SubscriptionsDefaultTab.PREF_KEY, subscriptionsDefaultTab)
             .commit()
     }
 

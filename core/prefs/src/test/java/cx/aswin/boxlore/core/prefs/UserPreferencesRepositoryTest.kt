@@ -196,12 +196,33 @@ class UserPreferencesRepositoryTest {
         }
 
     @Test
+    fun exploreAndSubscriptionsDefaultTabsPersistAndSanitize() =
+        runTest {
+            assertEquals(ExploreDefaultTab.FOR_YOU, repository.exploreDefaultTabStream.first())
+            assertEquals(SubscriptionsDefaultTab.SHOWS, repository.subscriptionsDefaultTabStream.first())
+
+            repository.setExploreDefaultTab(ExploreDefaultTab.TOP)
+            assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
+            assertEquals(ExploreDefaultTab.TOP, repository.cachedExploreDefaultTab)
+            repository.setExploreDefaultTab("unknown")
+            assertEquals(ExploreDefaultTab.FOR_YOU, repository.exploreDefaultTabStream.first())
+
+            repository.setSubscriptionsDefaultTab(SubscriptionsDefaultTab.NEW_EPISODES)
+            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
+            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.cachedSubscriptionsDefaultTab)
+            repository.setSubscriptionsDefaultTab("unknown")
+            assertEquals(SubscriptionsDefaultTab.SHOWS, repository.subscriptionsDefaultTabStream.first())
+        }
+
+    @Test
     fun cachedGettersReturnDefaultsBeforeAnyWrite() {
         assertEquals("system", repository.cachedThemeConfig)
         assertEquals("classic_dynamic", repository.cachedSurfaceStyle)
         assertEquals("violet", repository.cachedThemeBrand)
         assertEquals("round", repository.cachedFontRoundness)
         assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
+        assertEquals(ExploreDefaultTab.FOR_YOU, repository.cachedExploreDefaultTab)
+        assertEquals(SubscriptionsDefaultTab.SHOWS, repository.cachedSubscriptionsDefaultTab)
         assertFalse(repository.cachedUseDynamicColor)
     }
 
@@ -623,6 +644,17 @@ class UserPreferencesRepositoryTest {
             assertTrue(repository.homeShortcutsInLibraryStream.first())
             repository.setHomeShortcutsInLibrary(false)
             assertFalse(repository.homeShortcutsInLibraryStream.first())
+        }
+
+    @Test
+    fun widgetAppearanceDefaultsToAppAndPersists() =
+        runTest {
+            assertEquals(WidgetAppearance.APP, repository.widgetAppearanceStream.first())
+            repository.setWidgetAppearance(WidgetAppearance.SYSTEM)
+            assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
+            assertEquals(WidgetAppearance.SYSTEM, repository.cachedWidgetAppearance)
+            repository.setWidgetAppearance("unknown")
+            assertEquals(WidgetAppearance.APP, repository.widgetAppearanceStream.first())
         }
 
     @Test

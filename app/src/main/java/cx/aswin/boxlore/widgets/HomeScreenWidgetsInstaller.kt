@@ -12,6 +12,7 @@ import cx.aswin.boxlore.feature.widgets.NowPlayingWidgetDependencies
 import cx.aswin.boxlore.feature.widgets.configureLibraryWidgets
 import cx.aswin.boxlore.feature.widgets.configureNowPlayingWidget
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -52,9 +53,18 @@ object HomeScreenWidgetsInstaller {
                     )
             },
         )
-        // Widget RemoteViews apply ROND from theme fast-cache; re-render when lettering changes.
+        // Re-render when widget chrome source, Appearance theme, or lettering changes.
         scope.launch {
-            userPreferencesRepository.fontRoundnessStream.collect {
+            combine(
+                combine(
+                    userPreferencesRepository.widgetAppearanceStream,
+                    userPreferencesRepository.themeConfigStream,
+                    userPreferencesRepository.useDynamicColorStream,
+                    userPreferencesRepository.themeBrandStream,
+                    userPreferencesRepository.surfaceStyleStream,
+                ) { _, _, _, _, _ -> Unit },
+                userPreferencesRepository.fontRoundnessStream,
+            ) { _, _ -> Unit }.collect {
                 NowPlayingWidgetCoordinator.requestRefresh(context)
                 LibraryWidgetCoordinator.requestRefresh(context)
             }

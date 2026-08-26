@@ -3,9 +3,8 @@ package cx.aswin.boxlore.feature.widgets
 import androidx.annotation.ColorRes
 
 /**
- * Widget chrome color **resource** roles ([R.color.widget_*] → `system_neutral*` /
- * `system_accent*` on API 31+). Pass these to [WidgetRemoteViewsColors] so accents
- * re-resolve; do not bake ARGB ints into RemoteViews on API 31+.
+ * Widget chrome color **resource** roles ([R.color.widget_*]). [WidgetChrome]
+ * maps these to the in-app Appearance scheme or keeps system Material You resources.
  */
 internal object WidgetPalette {
     @ColorRes val surface: Int = R.color.widget_surface

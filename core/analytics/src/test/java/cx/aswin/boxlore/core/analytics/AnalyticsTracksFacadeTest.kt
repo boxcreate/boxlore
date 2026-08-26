@@ -123,10 +123,38 @@ class AnalyticsTracksFacadeTest {
         AnalyticsHelper.trackExploreRecommendationsImpression(2, listOf("e1"))
         AnalyticsHelper.trackExploreRecommendationCardTapped("e1", "Title", "p1", "Pod", 1)
         AnalyticsHelper.trackExploreRecommendationCardTapped("e1", null, "p1", null, 1)
+        AnalyticsHelper.trackVideoSpotlightImpression(14, listOf("p1", "p2"))
+        AnalyticsHelper.trackVideoSpotlightPodcastTapped("p1", "Pod", 0, "hd")
+        AnalyticsHelper.trackVideoSpotlightPlayInitiated("p1", "Pod", "e1", "Episode")
 
         assertTrue("home_surface_impression" in names())
         assertTrue("home_surface_tapped" in names())
         assertTrue("explore_recommendation_tapped" in names())
+        val spotlightImpression =
+            recorder
+                .first {
+                    it.first == "home_surface_impression" &&
+                        it.second["surface_component"] == "video_spotlight"
+                }.second
+        assertEquals(14, spotlightImpression["items_count"])
+        assertEquals(listOf("p1", "p2"), spotlightImpression["podcast_ids"])
+
+        val spotlightTap =
+            recorder
+                .first {
+                    it.first == "home_surface_tapped" &&
+                        it.second["surface_component"] == "video_spotlight"
+                }.second
+        assertEquals("p1", spotlightTap["podcast_id"])
+        assertEquals("hd", spotlightTap["click_target"])
+
+        val spotlightPlay =
+            recorder
+                .first {
+                    it.first == "home_surface_tapped" &&
+                        it.second["surface_component"] == "video_spotlight_play"
+                }.second
+        assertEquals("e1", spotlightPlay["episode_id"])
     }
 
     @Test

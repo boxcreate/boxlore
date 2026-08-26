@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SearchResult
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
@@ -113,6 +114,13 @@ class ExploreViewModel(
     initialTab: String? = null,
 ) : androidx.lifecycle.AndroidViewModel(application) {
 
+    private val initialSelectedTab =
+        ExploreDefaultTab.resolveIndex(
+            navTab = initialTab,
+            hasCategory = initialCategory != null,
+            preferred = userPrefs.cachedExploreDefaultTab,
+        )
+
     private val _uiState = MutableStateFlow<ExploreUiState>(
         ExploreUiState.Success(
             trending = emptyList(),
@@ -126,7 +134,7 @@ class ExploreViewModel(
             currentVibe = null,
             suggestedVibes = emptyList(),
             isLoadingMore = false,
-            selectedTab = if (initialCategory != null || initialTab == "trending") 0 else 1,
+            selectedTab = initialSelectedTab,
             isRecommendationsLoading = false,
             isRecommendationsFallback = true,
             searchTab = SearchTab.SHOWS,
@@ -145,7 +153,7 @@ class ExploreViewModel(
     private val _currentCategory = MutableStateFlow(initialCategory ?: "All") // Use it here
     private val _trendingPodcasts = MutableStateFlow<List<Podcast>>(emptyList())
     private val _searchResults = MutableStateFlow<List<Podcast>>(emptyList())
-    private val _selectedTab = MutableStateFlow(if (initialCategory != null || initialTab == "trending") 0 else 1)
+    private val _selectedTab = MutableStateFlow(initialSelectedTab)
     private val _recommendations = MutableStateFlow<List<Episode>>(emptyList())
     private val _isRecommendationsLoading = MutableStateFlow(false)
     private val _isRecommendationsFallback = MutableStateFlow(true)

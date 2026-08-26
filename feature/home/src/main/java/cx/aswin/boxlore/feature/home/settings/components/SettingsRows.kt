@@ -55,6 +55,8 @@ import kotlin.math.roundToInt
 private val CategoryCardHeight = 104.dp
 private val SettingsRowHeight = 72.dp
 private val SettingsRowHeightCompact = 56.dp
+private val SettingsLeadingIconSize = 40.dp
+private val SettingsRowItemGap = 12.dp
 
 @Composable
 internal fun SettingsCategoryCard(
@@ -93,13 +95,7 @@ internal fun SettingsCategoryCard(
                 shape = MaterialTheme.shapes.large,
             )
             Spacer(Modifier.width(14.dp))
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                verticalArrangement = Arrangement.Center,
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
@@ -116,7 +112,6 @@ internal fun SettingsCategoryCard(
                     color = contentColor.copy(alpha = 0.78f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    minLines = 2,
                 )
             }
             Spacer(Modifier.width(8.dp))
@@ -148,7 +143,7 @@ internal fun SettingsGroup(
         if (title != null) {
             Text(
                 text = title,
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier.padding(start = 16.dp),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -171,7 +166,7 @@ internal fun SettingsGroup(
         if (footer != null) {
             Text(
                 text = footer,
-                modifier = Modifier.padding(horizontal = 12.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -198,7 +193,10 @@ internal fun SettingsInfoTip(
             Icon(
                 imageVector = Icons.Rounded.Info,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier =
+                    Modifier
+                        .padding(top = 1.dp)
+                        .size(20.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
@@ -255,63 +253,60 @@ internal fun SettingsDurationSliderRow(
             .coerceIn(value.range.first, value.range.last)
     val valueLabel = if (snappedSeconds == 0) zeroLabel else "$snappedSeconds seconds"
 
-    Row(
+    Column(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        if (icon != null) {
-            SettingsIconContainer(
-                icon = icon.image,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                size = 40.dp,
-                shape = MaterialTheme.shapes.medium,
-                mirrorIcon = icon.mirrored,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SettingsRowItemGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (icon != null) {
+                SettingsIconContainer(
+                    icon = icon.image,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    size = SettingsLeadingIconSize,
+                    shape = MaterialTheme.shapes.medium,
+                    mirrorIcon = icon.mirrored,
+                )
+            }
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = GoogleSansWeight.medium,
+            )
+            Text(
+                text = valueLabel,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
             )
         }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = GoogleSansWeight.medium,
-                )
-                Text(
-                    text = valueLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            if (supportingText != null) {
-                Text(
-                    text = supportingText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Slider(
-                value = pendingValue,
-                onValueChange = { pendingValue = it },
-                onValueChangeFinished = { onValueCommitted(snappedSeconds) },
-                valueRange = value.range.first.toFloat()..value.range.last.toFloat(),
-                steps = 0,
-                modifier =
-                    Modifier.semantics {
+        if (supportingText != null) {
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Slider(
+            value = pendingValue,
+            onValueChange = { pendingValue = it },
+            onValueChangeFinished = { onValueCommitted(snappedSeconds) },
+            valueRange = value.range.first.toFloat()..value.range.last.toFloat(),
+            steps = 0,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics {
                         contentDescription = "$title, $valueLabel"
                     },
-            )
-        }
+        )
     }
 }
 
@@ -405,7 +400,7 @@ internal fun SettingsChoiceRow(
                 .expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(SettingsRowItemGap),
     ) {
         if (leading != null) {
             leading()
@@ -542,13 +537,14 @@ private fun SettingsRowScaffold(
                 ).expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(SettingsRowItemGap),
     ) {
         if (icon != null) {
             SettingsIconContainer(
                 icon = icon.icon,
                 containerColor = icon.containerColor,
                 contentColor = icon.contentColor,
+                size = SettingsLeadingIconSize,
             )
         }
         Column(
@@ -656,7 +652,7 @@ internal fun SettingsIconContainer(
     containerColor: Color,
     contentColor: Color,
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp,
+    size: Dp = SettingsLeadingIconSize,
     shape: Shape = MaterialTheme.shapes.medium,
     mirrorIcon: Boolean = false,
 ) {

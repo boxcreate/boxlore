@@ -116,6 +116,12 @@ data class HomeSheetUi(
 )
 
 @androidx.compose.runtime.Stable
+data class HomeFeaturedVideoState(
+    val podcasts: StablePodcastList = StablePodcastList(emptyList()),
+    val isDismissed: Boolean = false,
+)
+
+@androidx.compose.runtime.Stable
 data class HomeFeedCallbacks(
     val onPodcastClick: (Podcast, String, String?, Int?) -> Unit,
     val onHeroArrowClick: (SmartHeroItem, Int) -> Unit,
@@ -139,6 +145,7 @@ data class HomeFeedCallbacks(
     val onDismissBriefingForever: () -> Unit,
     val onFeedbackClick: () -> Unit,
     val onToggleHomePin: (String) -> Unit = {},
+    val onDismissFeaturedVideoShowcaseForever: () -> Unit = {},
 )
 
 @androidx.compose.runtime.Stable
@@ -265,6 +272,8 @@ fun HomeRoute(
     val completedDownloadItems by viewModel.completedDownloadItems.collectAsState(initial = emptyList())
     val homeMixMode by viewModel.homeMixMode.collectAsState()
     val lastSeenEpisodes by viewModel.lastSeenEpisodes.collectAsState()
+    val featuredVideoPodcasts by viewModel.featuredVideoPodcasts.collectAsState()
+    val featuredVideoShowcaseDismissed by viewModel.featuredVideoShowcaseDismissed.collectAsState()
 
     val callbacks =
         remember(
@@ -315,6 +324,7 @@ fun HomeRoute(
                         onDismissBriefingForever = viewModel::dismissBriefingForever,
                         onFeedbackClick = viewModel::triggerFeedback,
                         onToggleHomePin = viewModel::toggleHomePin,
+                        onDismissFeaturedVideoShowcaseForever = viewModel::dismissFeaturedVideoShowcaseForever,
                     ),
                 onNavigateToSettings = onNavigateToSettings,
                 onForceReviewPrompt = viewModel::forceReviewPrompt,
@@ -361,6 +371,11 @@ fun HomeRoute(
                     showFeedback = showFeedback,
                     candidatePodcasts = candidatePodcasts,
                 ),
+            featuredVideos =
+                HomeFeaturedVideoState(
+                    podcasts = StablePodcastList(featuredVideoPodcasts),
+                    isDismissed = featuredVideoShowcaseDismissed,
+                ),
             callbacks = callbacks,
             snackbarHostState = snackbarHostState,
             modifier = modifier,
@@ -383,6 +398,7 @@ private fun HomeScreenFeedContent(
     uiState: HomeUiState,
     gridState: LazyStaggeredGridState,
     playback: HomePlaybackUi,
+    featuredVideos: HomeFeaturedVideoState,
     callbacks: HomeFeedCallbacks,
     onChangePodcastClick: () -> Unit,
 ) {
@@ -438,6 +454,7 @@ private fun HomeScreenFeedContent(
                 softExpireProgressEpisodeIds = uiState.softExpireProgressEpisodeIds,
             ),
         callbacks = callbacks,
+        featuredVideos = featuredVideos,
         layout = PodcastFeedLayout(gridState = gridState),
     )
 }
@@ -526,6 +543,7 @@ fun HomeScreen(
     playback: HomePlaybackUi,
     sheets: HomeSheetUi,
     callbacks: HomeScreenCallbacks,
+    featuredVideos: HomeFeaturedVideoState = HomeFeaturedVideoState(),
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = SnackbarHostState(),
     showTopBarShortcuts: Boolean = true,
@@ -570,6 +588,7 @@ fun HomeScreen(
                     uiState = uiState,
                     gridState = gridState,
                     playback = playback,
+                    featuredVideos = featuredVideos,
                     callbacks = callbacks.feed,
                     onChangePodcastClick = { showChangePodcastSheet = true },
                 )

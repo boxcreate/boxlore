@@ -469,6 +469,35 @@ object AnalyticsHelper : Analytics {
         vibeIds: List<String>,
     ) = DiscoveryAnalyticsTracks.trackCuratedBlockImpression(blockTitle, vibeIds)
 
+    fun trackVideoSpotlightImpression(
+        itemsCount: Int,
+        podcastIds: List<String>,
+    ) = DiscoveryAnalyticsTracks.trackVideoSpotlightImpression(itemsCount, podcastIds)
+
+    fun trackVideoSpotlightPodcastTapped(
+        podcastId: String,
+        podcastName: String,
+        positionIndex: Int,
+        clickTarget: String,
+    ) = DiscoveryAnalyticsTracks.trackVideoSpotlightPodcastTapped(
+        podcastId,
+        podcastName,
+        positionIndex,
+        clickTarget,
+    )
+
+    fun trackVideoSpotlightPlayInitiated(
+        podcastId: String,
+        podcastName: String,
+        episodeId: String,
+        episodeTitle: String?,
+    ) = DiscoveryAnalyticsTracks.trackVideoSpotlightPlayInitiated(
+        podcastId,
+        podcastName,
+        episodeId,
+        episodeTitle,
+    )
+
     fun trackHomeRecommendationsImpression(
         recommendationsCount: Int,
         episodeIds: List<String>,

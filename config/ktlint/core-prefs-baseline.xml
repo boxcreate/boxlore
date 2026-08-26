@@ -12,18 +12,19 @@
         <error line="48" column="58" source="standard:function-signature" />
         <error line="48" column="77" source="standard:function-signature" />
         <error line="49" column="14" source="standard:chain-method-continuation" />
-        <error line="61" column="53" source="standard:function-signature" />
-        <error line="64" column="46" source="standard:function-signature" />
-        <error line="67" column="43" source="standard:function-signature" />
-        <error line="75" column="14" source="standard:chain-method-continuation" />
-        <error line="95" column="50" source="standard:function-signature" />
-        <error line="100" column="31" source="standard:if-else-wrapping" />
-        <error line="100" column="31" source="standard:multiline-if-else" />
-        <error line="101" column="18" source="standard:if-else-wrapping" />
-        <error line="101" column="18" source="standard:multiline-if-else" />
-        <error line="106" column="50" source="standard:function-signature" />
-        <error line="114" column="14" source="standard:chain-method-continuation" />
-        <error line="122" column="65" source="standard:function-signature" />
+        <error line="61" column="54" source="standard:function-signature" />
+        <error line="70" column="53" source="standard:function-signature" />
+        <error line="73" column="46" source="standard:function-signature" />
+        <error line="76" column="43" source="standard:function-signature" />
+        <error line="84" column="14" source="standard:chain-method-continuation" />
+        <error line="104" column="50" source="standard:function-signature" />
+        <error line="109" column="31" source="standard:if-else-wrapping" />
+        <error line="109" column="31" source="standard:multiline-if-else" />
+        <error line="110" column="18" source="standard:if-else-wrapping" />
+        <error line="110" column="18" source="standard:multiline-if-else" />
+        <error line="115" column="50" source="standard:function-signature" />
+        <error line="123" column="14" source="standard:chain-method-continuation" />
+        <error line="131" column="65" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/prefs/HomePinnedShows.kt">
         <error line="13" column="51" source="standard:function-expression-body" />
@@ -97,37 +98,33 @@
     <file name="src/main/java/cx/aswin/boxlore/core/prefs/UserPreferenceKeys.kt">
         <error line="1" column="1" source="standard:filename" />
         <error line="10" column="64" source="standard:chain-method-continuation" />
-        <error line="16" column="73" source="standard:chain-method-continuation" />
-        <error line="17" column="81" source="standard:chain-method-continuation" />
-        <error line="18" column="71" source="standard:chain-method-continuation" />
-        <error line="28" column="77" source="standard:chain-method-continuation" />
-        <error line="30" column="61" source="standard:chain-method-continuation" />
-        <error line="31" column="64" source="standard:chain-method-continuation" />
+        <error line="18" column="73" source="standard:chain-method-continuation" />
+        <error line="19" column="81" source="standard:chain-method-continuation" />
+        <error line="20" column="71" source="standard:chain-method-continuation" />
+        <error line="30" column="77" source="standard:chain-method-continuation" />
         <error line="32" column="61" source="standard:chain-method-continuation" />
-        <error line="33" column="63" source="standard:chain-method-continuation" />
-        <error line="34" column="62" source="standard:chain-method-continuation" />
-        <error line="35" column="70" source="standard:chain-method-continuation" />
-        <error line="36" column="77" source="standard:chain-method-continuation" />
-        <error line="37" column="69" source="standard:chain-method-continuation" />
-        <error line="38" column="69" source="standard:chain-method-continuation" />
-        <error line="40" column="44" source="standard:chain-method-continuation" />
-        <error line="41" column="79" source="standard:chain-method-continuation" />
-        <error line="43" column="73" source="standard:chain-method-continuation" />
-        <error line="45" column="70" source="standard:chain-method-continuation" />
-        <error line="46" column="75" source="standard:chain-method-continuation" />
-        <error line="47" column="77" source="standard:chain-method-continuation" />
-        <error line="48" column="72" source="standard:chain-method-continuation" />
-        <error line="49" column="76" source="standard:chain-method-continuation" />
-        <error line="51" column="77" source="standard:chain-method-continuation" />
-        <error line="52" column="70" source="standard:chain-method-continuation" />
-        <error line="53" column="73" source="standard:chain-method-continuation" />
-        <error line="54" column="77" source="standard:chain-method-continuation" />
+        <error line="33" column="64" source="standard:chain-method-continuation" />
+        <error line="34" column="61" source="standard:chain-method-continuation" />
+        <error line="35" column="63" source="standard:chain-method-continuation" />
+        <error line="36" column="62" source="standard:chain-method-continuation" />
+        <error line="37" column="70" source="standard:chain-method-continuation" />
+        <error line="38" column="77" source="standard:chain-method-continuation" />
+        <error line="39" column="69" source="standard:chain-method-continuation" />
+        <error line="40" column="69" source="standard:chain-method-continuation" />
+        <error line="42" column="44" source="standard:chain-method-continuation" />
+        <error line="43" column="79" source="standard:chain-method-continuation" />
+        <error line="45" column="73" source="standard:chain-method-continuation" />
+        <error line="47" column="70" source="standard:chain-method-continuation" />
+        <error line="48" column="75" source="standard:chain-method-continuation" />
+        <error line="49" column="77" source="standard:chain-method-continuation" />
+        <error line="50" column="72" source="standard:chain-method-continuation" />
+        <error line="51" column="76" source="standard:chain-method-continuation" />
+        <error line="53" column="77" source="standard:chain-method-continuation" />
+        <error line="54" column="70" source="standard:chain-method-continuation" />
+        <error line="55" column="73" source="standard:chain-method-continuation" />
+        <error line="56" column="77" source="standard:chain-method-continuation" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/prefs/UserPreferencesRepository.kt">
         <error line="22" column="63" source="standard:function-signature" />
-        <error line="111" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="113" column="41" source="standard:chain-method-continuation" />
-        <error line="113" column="54" source="standard:chain-method-continuation" />
-        <error line="113" column="62" source="standard:chain-method-continuation" />
     </file>
 </baseline>

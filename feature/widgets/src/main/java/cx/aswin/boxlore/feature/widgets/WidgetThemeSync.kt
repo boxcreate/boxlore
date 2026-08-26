@@ -6,8 +6,9 @@ import android.content.res.Configuration
 
 /**
  * Re-pushes widget RemoteViews when system UI configuration changes (Material You
- * accent, night mode, density, etc.). Needed for empty-state bitmaps that bake
- * ARGB, and as a belt-and-suspenders refresh alongside [WidgetRemoteViewsColors].
+ * accent, night mode, density, etc.). Needed for System widget appearance, App-theme
+ * widgets whose Theme is System, and empty-state bitmaps that bake ARGB. Pref-driven
+ * Appearance changes are collected in `:app` and request a separate refresh.
  */
 internal object WidgetThemeSync {
     @Volatile

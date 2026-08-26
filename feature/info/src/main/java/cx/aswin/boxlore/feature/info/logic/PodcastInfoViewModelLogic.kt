@@ -4,6 +4,13 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.EpisodeSort
 
+object PodcastInfoPlaybackSourceLogic {
+    fun retainedEntryPoint(entryPoint: String?): String? =
+        entryPoint?.takeIf {
+            it == cx.aswin.boxlore.core.analytics.AnalyticsGlossary.VIDEO_SPOTLIGHT_ENTRY_POINT
+        }
+}
+
 object PodcastInfoSortLogic {
     fun resolveInitialSort(
         preferredSort: String?,

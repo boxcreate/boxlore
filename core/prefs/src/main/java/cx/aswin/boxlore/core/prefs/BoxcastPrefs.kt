@@ -56,6 +56,15 @@ class BoxcastPrefs(context: Context) {
         prefs.edit().putString(KEY_CACHED_RECOMMENDATIONS, serializedJson).apply()
     }
 
+    // ── Home featured video showcase ────────────────────────────────────────
+
+    fun isFeaturedVideoShowcaseDismissed(): Boolean =
+        prefs.getBoolean(KEY_FEATURED_VIDEO_SHOWCASE_DISMISSED, false)
+
+    fun dismissFeaturedVideoShowcaseForever() {
+        prefs.edit().putBoolean(KEY_FEATURED_VIDEO_SHOWCASE_DISMISSED, true).apply()
+    }
+
     // ── Because-you-like cache ──────────────────────────────────────────────
 
     fun getCachedBylRecommendationsJson(): String? =
@@ -149,6 +158,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_USER_GENRES = "user_genres"
         const val KEY_CACHED_RECOMMENDATIONS = "cached_recommendations"
         const val KEY_IS_RECOMMENDATIONS_FALLBACK = "is_recommendations_fallback"
+        const val KEY_FEATURED_VIDEO_SHOWCASE_DISMISSED = "featured_video_showcase_dismissed"
         const val KEY_CACHED_BYL_RECOMMENDATIONS = "cached_byl_recommendations"
         const val KEY_CACHED_BYL_PODCASTS = "cached_byl_podcasts"
         const val KEY_CACHED_BYL_PODCAST_ID = "cached_byl_podcast_id"

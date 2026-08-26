@@ -361,6 +361,15 @@ fun BoxLoreAppRoot(
     val openAppToKey by userPrefs.openAppToStream.collectAsState(
         initial = remember { userPrefs.cachedOpenAppTo },
     )
+    val widgetAppearance by userPrefs.widgetAppearanceStream.collectAsState(
+        initial = remember { userPrefs.cachedWidgetAppearance },
+    )
+    val exploreDefaultTab by userPrefs.exploreDefaultTabStream.collectAsState(
+        initial = remember { userPrefs.cachedExploreDefaultTab },
+    )
+    val subscriptionsDefaultTab by userPrefs.subscriptionsDefaultTabStream.collectAsState(
+        initial = remember { userPrefs.cachedSubscriptionsDefaultTab },
+    )
     val navigationStyle = remember(navigationStyleKey) { NavigationStyle.fromKey(navigationStyleKey) }
     val fontRoundness =
         remember(fontRoundnessKey) {
@@ -615,6 +624,9 @@ fun BoxLoreAppRoot(
                                     restartForgottenEpisodes = restartForgottenEpisodes,
                                     sameShowQueueOnly = sameShowQueueOnly,
                                     homeShortcutsInLibrary = homeShortcutsInLibrary,
+                                    widgetAppearance = widgetAppearance,
+                                    exploreDefaultTab = exploreDefaultTab,
+                                    subscriptionsDefaultTab = subscriptionsDefaultTab,
                                 ),
                         )
                     }

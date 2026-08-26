@@ -7,6 +7,7 @@ package cx.aswin.boxlore.core.analytics
 object AnalyticsGlossary {
     /** Person-property `$set` is allowed alongside glossary event names. */
     const val PERSON_SET_EVENT = "\$set"
+    const val VIDEO_SPOTLIGHT_ENTRY_POINT = "home_video_spotlight"
 
     /** Canonical Phase A ∪ Phase B event names (includes A/B `search_performed`). */
     val PHASE_A_UNION_B: Set<String> =
@@ -168,6 +169,7 @@ object AnalyticsGlossary {
             "home_mixtape",
             "home_because_you_like",
             "home_discover_grid",
+            VIDEO_SPOTLIGHT_ENTRY_POINT,
             "home_recommendations",
             "briefing",
             "explore_for_you",

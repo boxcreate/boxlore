@@ -54,6 +54,9 @@ data class GlobalPreferencesBackup(
     val restartForgottenEpisodes: Boolean? = null,
     val sameShowQueueOnly: Boolean? = null,
     val homeShortcutsInLibrary: Boolean? = null,
+    val widgetAppearance: String? = null,
+    val exploreDefaultTab: String? = null,
+    val subscriptionsDefaultTab: String? = null,
     val smartDownloadsEnabled: Boolean? = null,
     val smartDownloadsMaxEpisodes: Int? = null,
     val smartDownloadsStorageBudget: Long? = null,
@@ -129,6 +132,9 @@ class LibraryBackupManager(
                     restartForgottenEpisodes = userPrefs.restartForgottenEpisodesStream.first(),
                     sameShowQueueOnly = userPrefs.sameShowQueueOnlyStream.first(),
                     homeShortcutsInLibrary = userPrefs.homeShortcutsInLibraryStream.first(),
+                    widgetAppearance = userPrefs.widgetAppearanceStream.first(),
+                    exploreDefaultTab = userPrefs.exploreDefaultTabStream.first(),
+                    subscriptionsDefaultTab = userPrefs.subscriptionsDefaultTabStream.first(),
                     smartDownloadsEnabled = userPrefs.smartDownloadsEnabledStream.first(),
                     smartDownloadsMaxEpisodes = userPrefs.smartDownloadsMaxEpisodesStream.first(),
                     smartDownloadsStorageBudget = userPrefs.smartDownloadsStorageBudgetStream.first(),
@@ -241,6 +247,9 @@ class LibraryBackupManager(
         prefs.restartForgottenEpisodes.writePref { up.setRestartForgottenEpisodes(it) }
         prefs.sameShowQueueOnly.writePref { up.setSameShowQueueOnly(it) }
         prefs.homeShortcutsInLibrary.writePref { up.setHomeShortcutsInLibrary(it) }
+        prefs.widgetAppearance.writePref { up.setWidgetAppearance(it) }
+        prefs.exploreDefaultTab.writePref { up.setExploreDefaultTab(it) }
+        prefs.subscriptionsDefaultTab.writePref { up.setSubscriptionsDefaultTab(it) }
         restoreImportedSmartDownloadPrefs(prefs, up)
         prefs.autoDownloadWifiOnly.writePref { up.setAutoDownloadWifiOnly(it) }
         prefs.autoDownloadMaxEpisodes.writePref { up.setAutoDownloadMaxEpisodes(it) }
