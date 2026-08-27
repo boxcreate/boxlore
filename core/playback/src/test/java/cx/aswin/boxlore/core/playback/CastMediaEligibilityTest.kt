@@ -20,6 +20,10 @@ class CastMediaEligibilityTest {
         assertFalse(CastMediaEligibility.isCastable("http://localhost:8080/episode.mp3"))
         assertFalse(CastMediaEligibility.isCastable("http://192.168.1.4/episode.mp3"))
         assertFalse(CastMediaEligibility.isCastable("http://172.20.0.2/episode.mp3"))
+        assertFalse(CastMediaEligibility.isCastable("http://[::1]/episode.mp3"))
+        assertFalse(CastMediaEligibility.isCastable("http://[fe80::1]/episode.mp3"))
+        assertFalse(CastMediaEligibility.isCastable("http://[fc00::1]/episode.mp3"))
+        assertFalse(CastMediaEligibility.isCastable("http://2130706433/episode.mp3"))
         assertFalse(CastMediaEligibility.isCastable("not a uri"))
         assertFalse(CastMediaEligibility.isCastable(null))
     }

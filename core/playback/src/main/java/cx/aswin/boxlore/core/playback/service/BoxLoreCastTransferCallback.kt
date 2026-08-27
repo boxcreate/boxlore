@@ -56,12 +56,10 @@ internal object CastTransferPolicy {
         var currentItemWasFiltered = false
 
         mediaItems.forEachIndexed { index, mediaItem ->
-            if (isPlayable(mediaItem)) {
-                playableItems += mediaItem
-            } else if (index < currentIndex) {
-                adjustedIndex--
-            } else if (index == currentIndex) {
-                currentItemWasFiltered = true
+            when {
+                isPlayable(mediaItem) -> playableItems += mediaItem
+                index < currentIndex -> adjustedIndex--
+                index == currentIndex -> currentItemWasFiltered = true
             }
         }
 

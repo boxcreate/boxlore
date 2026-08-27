@@ -5,9 +5,10 @@ import androidx.media3.cast.DefaultMediaItemConverter
 import androidx.media3.cast.MediaItemConverter
 import androidx.media3.common.MediaItem
 import com.google.android.gms.cast.MediaQueueItem
+import java.net.InetAddress
 
 internal object CastMediaMetadata {
-    private const val REMOTE_URI_KEY = "boxlore.cast.remote_uri"
+    internal const val REMOTE_URI_KEY = "boxlore.cast.remote_uri"
 
     fun queueTitle(title: CharSequence?): String? = title?.toString()?.trim()?.takeIf(String::isNotEmpty)
 
@@ -25,6 +26,12 @@ internal object CastMediaMetadata {
         mediaItem.mediaMetadata.extras
             ?.getString(REMOTE_URI_KEY)
             ?.takeIf(CastMediaEligibility::isCastable)
+
+    fun effectiveUri(mediaItem: MediaItem): String? =
+        remoteUri(mediaItem)
+            ?: mediaItem.localConfiguration?.uri?.toString()
+
+    fun isAnalyticsSafeExtra(key: String): Boolean = key != REMOTE_URI_KEY
 }
 
 /**
@@ -36,6 +43,10 @@ internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
 
     override fun toMediaQueueItem(mediaItem: MediaItem): MediaQueueItem {
         val remoteUri = CastMediaMetadata.remoteUri(mediaItem)
+        val effectiveUri = CastMediaMetadata.effectiveUri(mediaItem)
+        require(CastMediaEligibility.isCastable(effectiveUri)) {
+            "Cast media URI must be public HTTP(S)"
+        }
         val castItem =
             if (remoteUri == null) {
                 mediaItem
@@ -54,25 +65,31 @@ object CastMediaEligibility {
         val parsed = runCatching { java.net.URI(uri) }.getOrNull() ?: return false
         val scheme = parsed.scheme?.lowercase()
         val host = parsed.host?.lowercase() ?: return false
-        return (scheme == "http" || scheme == "https") && !isDeviceLocalHost(host)
+        return (scheme == "http" || scheme == "https") && isPublicHost(host)
     }
 
-    private fun isDeviceLocalHost(host: String): Boolean {
-        if (
-            host == "localhost" ||
-            host == "0.0.0.0" ||
-            host == "::1" ||
-            host.endsWith(".local") ||
-            host.startsWith("127.") ||
-            host.startsWith("10.") ||
-            host.startsWith("192.168.") ||
-            host.startsWith("169.254.")
-        ) {
-            return true
-        }
-        val octets = host.split('.')
-        if (octets.size != 4 || octets[0] != "172") return false
-        val secondOctet = octets[1].toIntOrNull() ?: return false
-        return secondOctet in 16..31
+    private fun isPublicHost(rawHost: String): Boolean {
+        val host = rawHost.removePrefix("[").removeSuffix("]")
+        if (host == "localhost" || host.endsWith(".local")) return false
+        if (!host.contains('.') && !host.contains(':')) return false
+        val literalAddress = parseLiteralAddress(host) ?: return true
+        return !literalAddress.isAnyLocalAddress &&
+            !literalAddress.isLoopbackAddress &&
+            !literalAddress.isLinkLocalAddress &&
+            !literalAddress.isSiteLocalAddress &&
+            !literalAddress.isMulticastAddress &&
+            !literalAddress.isUniqueLocalIpv6()
+    }
+
+    private fun parseLiteralAddress(host: String): InetAddress? {
+        val isIpv4Literal = host.all { it.isDigit() || it == '.' }
+        val isIpv6Literal = ':' in host
+        if (!isIpv4Literal && !isIpv6Literal) return null
+        return runCatching { InetAddress.getByName(host) }.getOrNull()
+    }
+
+    private fun InetAddress.isUniqueLocalIpv6(): Boolean {
+        val bytes = address
+        return bytes.size == 16 && (bytes[0].toInt() and 0xFE) == 0xFC
     }
 }

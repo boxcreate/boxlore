@@ -19,12 +19,31 @@ internal object PlaybackRouteResolver {
             } else {
                 null
             }
+        return resolveState(
+            isRemote = isRemote,
+            deviceName = deviceName,
+            volume = volume,
+            minimumVolume = deviceInfo.minVolume,
+            maximumVolume = deviceInfo.maxVolume,
+            isMuted = isMuted,
+        )
+    }
+
+    internal fun resolveState(
+        isRemote: Boolean,
+        deviceName: String?,
+        volume: Int,
+        minimumVolume: Int,
+        maximumVolume: Int,
+        isMuted: Boolean,
+    ): PlaybackRouteState {
+        val normalizedMaximum = maximumVolume.coerceAtLeast(minimumVolume)
         return PlaybackRouteState(
             isRemote = isRemote,
             deviceName = deviceName,
-            volume = volume.coerceAtLeast(deviceInfo.minVolume),
-            minimumVolume = deviceInfo.minVolume,
-            maximumVolume = deviceInfo.maxVolume,
+            volume = volume.coerceIn(minimumVolume, normalizedMaximum),
+            minimumVolume = minimumVolume,
+            maximumVolume = normalizedMaximum,
             isMuted = isMuted,
         )
     }

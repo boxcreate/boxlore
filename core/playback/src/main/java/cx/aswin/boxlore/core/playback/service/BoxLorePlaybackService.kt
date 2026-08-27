@@ -776,9 +776,8 @@ open class BoxLorePlaybackService :
         val existing = database.listeningHistoryDao().getHistoryItem(episodeId)
         if (existing?.isCompleted == true && existing.progressMs == 0L) return
         val resolvedDurationMs =
-            durationMs.takeIf { it > 0L }
-                ?: existing?.durationMs
-                ?: 0L
+            existing?.let { durationMs.takeIf { it > 0L } ?: it.durationMs }
+                ?: durationMs.coerceAtLeast(0L)
         val completed =
             if (existing != null) {
                 existing.copy(

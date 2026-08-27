@@ -185,7 +185,7 @@ fun BecauseYouLikeSection(
                             onClick = { onPodcastClick(suggestedPodcast) },
                             showSubtitle = false,
                             density = FeedMediaCardDensity.Rail,
-                            modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction),
+                            modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION),
                         )
                     }
                 }
@@ -223,7 +223,7 @@ fun BecauseYouLikeSection(
                             episode = episode,
                             onClick = { onEpisodeClick(episode, parentPodcast) },
                             showSubtitle = false,
-                            modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction),
+                            modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION),
                         )
                     }
                 }

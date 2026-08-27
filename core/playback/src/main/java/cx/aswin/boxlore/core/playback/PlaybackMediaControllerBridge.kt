@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.media3.common.DeviceInfo
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
@@ -43,6 +45,7 @@ internal class PlaybackMediaControllerBridge(
 ) : Player.Listener {
     private var pendingSaveJob: Job? = null
     private var lastReportedRemote: Boolean? = null
+    private var pendingCastTransition: PendingCastTransition? = null
 
     fun syncPlaybackRoute() {
         val controller = mediaHandle.controller ?: return
@@ -245,9 +248,12 @@ internal class PlaybackMediaControllerBridge(
     }
 
     override fun onMediaItemTransition(
-        mediaItem: androidx.media3.common.MediaItem?,
+        mediaItem: MediaItem?,
         reason: Int,
     ) {
+        if (mediaItem != null && pendingCastTransition?.mediaId != mediaItem.mediaId) {
+            pendingCastTransition = null
+        }
         if (mediaHandle.controller?.isPlaying == true) {
             setActivePlaybackStartTimeMs(System.currentTimeMillis())
         } else {
@@ -310,8 +316,16 @@ internal class PlaybackMediaControllerBridge(
                                 "PlaybackRepo",
                                 "Deferring transition for $episodeId until Cast metadata is available",
                             )
+                            if (mediaHandle.controller?.currentMediaItem?.mediaId == mediaItem.mediaId) {
+                                pendingCastTransition =
+                                    PendingCastTransition(
+                                        mediaId = mediaItem.mediaId,
+                                        reason = reason,
+                                    )
+                            }
                             return@launch
                         }
+                        pendingCastTransition = null
                         val resolvedPodcastId = findPodcastIdForEpisode(episodeId) ?: ""
                         Episode(
                             id = episodeId,
@@ -345,6 +359,7 @@ internal class PlaybackMediaControllerBridge(
                 finalSlotIndex = slotIndex
             }
 
+            pendingCastTransition = null
             var newEpisode = finalQueue[finalSlotIndex]
             // Enrich only when URLs are missing; present ones may carry server signatures
             if (newEpisode.id.startsWith("briefing_") &&
@@ -483,6 +498,25 @@ internal class PlaybackMediaControllerBridge(
         }
     }
 
+    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+        val pending = pendingCastTransition ?: return
+        val currentItem = mediaHandle.controller?.currentMediaItem ?: return
+        if (
+            !DeferredCastTransitionPolicy.shouldRetry(
+                pendingMediaId = pending.mediaId,
+                currentMediaId = currentItem.mediaId,
+                title = mediaMetadata.title,
+            )
+        ) {
+            return
+        }
+        pendingCastTransition = null
+        onMediaItemTransition(
+            mediaItem = currentItem.buildUpon().setMediaMetadata(mediaMetadata).build(),
+            reason = pending.reason,
+        )
+    }
+
     override fun onTimelineChanged(
         timeline: androidx.media3.common.Timeline,
         reason: Int,
@@ -494,4 +528,17 @@ internal class PlaybackMediaControllerBridge(
             reconcileQueueWithController()
         }
     }
+}
+
+private data class PendingCastTransition(
+    val mediaId: String,
+    val reason: Int,
+)
+
+internal object DeferredCastTransitionPolicy {
+    fun shouldRetry(
+        pendingMediaId: String,
+        currentMediaId: String,
+        title: CharSequence?,
+    ): Boolean = pendingMediaId == currentMediaId && CastMediaMetadata.queueTitle(title) != null
 }

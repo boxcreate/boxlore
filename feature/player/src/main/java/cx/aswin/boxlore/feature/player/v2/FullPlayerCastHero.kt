@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.playback.PlaybackRouteState
+import kotlin.math.roundToInt
 
 internal enum class CastHeroDisplayMode {
     ARTWORK,
@@ -54,6 +55,22 @@ internal fun resolveCastHeroDisplayMode(
     }
 
 internal fun canSkipFromCastHero(nextEpisodeId: String?): Boolean = !nextEpisodeId.isNullOrBlank()
+
+internal fun shouldShowVideoModeButtons(
+    isVideo: Boolean,
+    heroMode: CastHeroDisplayMode,
+): Boolean = isVideo && heroMode == CastHeroDisplayMode.ARTWORK
+
+internal fun castVolumeSliderSteps(
+    minimumVolume: Int,
+    maximumVolume: Int,
+): Int = (maximumVolume - minimumVolume - 1).coerceAtLeast(0)
+
+internal fun snapCastVolume(
+    value: Float,
+    minimumVolume: Int,
+    maximumVolume: Int,
+): Int = value.roundToInt().coerceIn(minimumVolume, maximumVolume)
 
 internal data class FullPlayerCastHeroModel(
     val route: PlaybackRouteState,
@@ -161,11 +178,23 @@ internal fun FullPlayerCastHero(
                             )
                             Slider(
                                 value = pendingVolume,
-                                onValueChange = { pendingVolume = it },
+                                onValueChange = {
+                                    pendingVolume =
+                                        snapCastVolume(
+                                            value = it,
+                                            minimumVolume = model.route.minimumVolume,
+                                            maximumVolume = model.route.maximumVolume,
+                                        ).toFloat()
+                                },
                                 onValueChangeFinished = {
-                                    actions.onVolumeChange(pendingVolume.toInt())
+                                    actions.onVolumeChange(pendingVolume.roundToInt())
                                 },
                                 valueRange = model.route.minimumVolume.toFloat()..model.route.maximumVolume.toFloat(),
+                                steps =
+                                    castVolumeSliderSteps(
+                                        minimumVolume = model.route.minimumVolume,
+                                        maximumVolume = model.route.maximumVolume,
+                                    ),
                                 modifier = Modifier.weight(1f),
                             )
                             Icon(

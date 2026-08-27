@@ -254,6 +254,10 @@ class ArchitectureGuardTest {
                         "MessageDigest",
                         "WorkManager",
                         "androidx\\.work\\.WorkManager",
+                        "MediaRouter",
+                        "androidx\\.mediarouter\\.media\\.MediaRouter",
+                        "MediaRouter2",
+                        "android\\.media\\.MediaRouter2",
                         "FirebaseDatabase",
                         "FirebaseMessaging",
                         "FirebaseAppCheck",
@@ -313,7 +317,7 @@ class ArchitectureGuardTest {
         assertTrue(
             violations.isEmpty(),
             "getInstance outside allowlist (AppContainer, companion installers, " +
-                "Room DB files, WorkManager/Calendar/MessageDigest/Firebase):\n" +
+                "Room DB files, WorkManager/MediaRouter/Calendar/MessageDigest/Firebase):\n" +
                 violations.joinToString("\n"),
         )
     }

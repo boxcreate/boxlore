@@ -35,6 +35,12 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.delay
 
+internal data class PlayerTopBarActions(
+    val onSwipeMinimizeTipDismissed: () -> Unit,
+    val onCollapse: () -> Unit,
+    val onShare: () -> Unit,
+)
+
 @Composable
 internal fun PlayerTopBar(
     colorScheme: ColorScheme,
@@ -42,9 +48,7 @@ internal fun PlayerTopBar(
     isExpanded: Boolean,
     isCasting: Boolean,
     canCast: Boolean,
-    onSwipeMinimizeTipDismissed: () -> Unit,
-    onCollapse: () -> Unit,
-    onShare: () -> Unit,
+    actions: PlayerTopBarActions,
 ) {
     Row(
         modifier =
@@ -71,7 +75,7 @@ internal fun PlayerTopBar(
                 tipVisible = true
                 delay(3500)
                 tipVisible = false
-                onSwipeMinimizeTipDismissed()
+                actions.onSwipeMinimizeTipDismissed()
             } else {
                 tipVisible = false
             }
@@ -80,7 +84,7 @@ internal fun PlayerTopBar(
             modifier =
                 Modifier
                     .weight(1f)
-                    .clickable(onClick = onCollapse),
+                    .clickable(onClick = actions.onCollapse),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedContent(
@@ -111,7 +115,7 @@ internal fun PlayerTopBar(
                     .size(42.dp)
                     .clip(CircleShape)
                     .background(colorScheme.onSurface.copy(alpha = 0.1f))
-                    .clickable(onClick = onShare),
+                    .clickable(onClick = actions.onShare),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

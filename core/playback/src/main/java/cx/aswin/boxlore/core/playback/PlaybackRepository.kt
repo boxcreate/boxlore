@@ -722,12 +722,27 @@ class PlaybackRepository internal constructor(
 
     fun setOutputVolume(volume: Int) {
         val route = playerStateFlow.value.playbackRoute
-        if (!route.canControlVolume) return
         val controller = mediaHandle.controller ?: return
-        if (!controller.isCommandAvailable(Player.COMMAND_SET_DEVICE_VOLUME_WITH_FLAGS)) return
+        val targetVolume =
+            PlaybackOutputVolumePolicy.targetVolume(
+                requestedVolume = volume,
+                route = route,
+                commandAvailable = controller.isCommandAvailable(Player.COMMAND_SET_DEVICE_VOLUME_WITH_FLAGS),
+            ) ?: return
         controller.setDeviceVolume(
-            volume.coerceIn(route.minimumVolume, route.maximumVolume),
+            targetVolume,
             C.VOLUME_FLAG_SHOW_UI,
         )
+    }
+}
+
+internal object PlaybackOutputVolumePolicy {
+    fun targetVolume(
+        requestedVolume: Int,
+        route: PlaybackRouteState,
+        commandAvailable: Boolean,
+    ): Int? {
+        if (!route.canControlVolume || !commandAvailable) return null
+        return requestedVolume.coerceIn(route.minimumVolume, route.maximumVolume)
     }
 }

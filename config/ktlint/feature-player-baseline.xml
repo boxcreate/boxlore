@@ -495,25 +495,31 @@
         <error line="618" column="28" source="standard:trailing-comma-on-call-site" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerCastControls.kt">
-        <error line="59" column="14" source="standard:function-naming" />
-        <error line="85" column="14" source="standard:function-naming" />
-        <error line="267" column="13" source="standard:function-naming" />
-        <error line="292" column="13" source="standard:function-naming" />
-        <error line="373" column="13" source="standard:function-naming" />
-        <error line="402" column="13" source="standard:function-naming" />
+        <error line="58" column="14" source="standard:function-naming" />
+        <error line="84" column="14" source="standard:function-naming" />
+        <error line="245" column="13" source="standard:function-naming" />
+        <error line="325" column="13" source="standard:function-naming" />
+        <error line="350" column="13" source="standard:function-naming" />
+        <error line="431" column="13" source="standard:function-naming" />
+        <error line="460" column="13" source="standard:function-naming" />
+        <error line="486" column="1" source="standard:no-consecutive-blank-lines" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerCastHero.kt">
-        <error line="73" column="14" source="standard:function-naming" />
+        <error line="90" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerTopBar.kt">
-        <error line="39" column="14" source="standard:function-naming" />
+        <error line="45" column="14" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerV2.kt">
         <error line="146" column="5" source="standard:function-naming" />
         <error line="308" column="13" source="standard:function-naming" />
-        <error line="381" column="13" source="standard:function-naming" />
-        <error line="484" column="13" source="standard:function-naming" />
-        <error line="630" column="13" source="standard:function-naming" />
+        <error line="384" column="13" source="standard:function-naming" />
+        <error line="485" column="13" source="standard:function-naming" />
+        <error line="569" column="13" source="standard:function-naming" />
+        <error line="639" column="13" source="standard:function-naming" />
+        <error line="667" column="13" source="standard:function-naming" />
+        <error line="683" column="13" source="standard:function-naming" />
+        <error line="697" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerV2Content.kt">
         <error line="3" column="1" source="standard:import-ordering" />

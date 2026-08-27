@@ -156,4 +156,29 @@ class CastRoutePickerLogicTest {
         assertFalse(canSkipFromCastHero(""))
         assertFalse(canSkipFromCastHero(null))
     }
+
+    @Test
+    fun castVolumeUsesDiscreteIntegerPositions() {
+        assertEquals(9, castVolumeSliderSteps(minimumVolume = 0, maximumVolume = 10))
+        assertEquals(0, castVolumeSliderSteps(minimumVolume = 4, maximumVolume = 5))
+        assertEquals(0, snapCastVolume(value = -1f, minimumVolume = 0, maximumVolume = 10))
+        assertEquals(6, snapCastVolume(value = 5.6f, minimumVolume = 0, maximumVolume = 10))
+        assertEquals(10, snapCastVolume(value = 11f, minimumVolume = 0, maximumVolume = 10))
+    }
+
+    @Test
+    fun remoteArtworkDoesNotExposeLocalVideoModeButtons() {
+        assertFalse(
+            shouldShowVideoModeButtons(
+                isVideo = false,
+                heroMode = CastHeroDisplayMode.ARTWORK,
+            ),
+        )
+        assertTrue(
+            shouldShowVideoModeButtons(
+                isVideo = true,
+                heroMode = CastHeroDisplayMode.ARTWORK,
+            ),
+        )
+    }
 }

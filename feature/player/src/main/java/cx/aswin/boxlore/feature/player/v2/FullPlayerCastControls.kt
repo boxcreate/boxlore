@@ -49,7 +49,6 @@ import androidx.media3.cast.Cast
 import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
-import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.framework.CastContext
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import kotlinx.coroutines.delay
@@ -79,7 +78,6 @@ internal fun BoxLoreCastRouteButton(
         )
     }
 }
-
 @Composable
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
 internal fun CastRoutePickerSheet(
@@ -89,13 +87,66 @@ internal fun CastRoutePickerSheet(
     val context = LocalContext.current
     val mediaRouter = remember(context) { MediaRouter.getInstance(context) }
     val routeSelector = remember(context) { resolveCastRouteSelector(context) }
-    var routes by remember(mediaRouter, routeSelector) {
-        mutableStateOf(availableCastRoutes(mediaRouter, routeSelector))
-    }
+    val routes = rememberAvailableCastRoutes(mediaRouter, routeSelector)
     var connectingRouteId by rememberSaveable { mutableStateOf<String?>(null) }
     var connectingRouteName by rememberSaveable { mutableStateOf<String?>(null) }
     var hasConnectedCastSession by remember { mutableStateOf(false) }
 
+    val connectionComplete =
+        routes.any { route ->
+            isCastConnectionComplete(
+                pendingRouteId = connectingRouteId,
+                routeId = route.id,
+                isSelected = route.isSelected,
+                hasActiveCastSession = isCasting || hasConnectedCastSession,
+            )
+        }
+    dismissConnectedCastRoute(
+        connectionComplete = connectionComplete,
+        onDismiss = onDismiss,
+    )
+    monitorPendingCastConnection(
+        context = context,
+        connectingRouteId = connectingRouteId,
+        onConnectionChanged = { hasConnectedCastSession = it },
+        onTimeout = {
+            connectingRouteId = null
+            connectingRouteName = null
+        },
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = MaterialTheme.shapes.extraLarge,
+    ) {
+        CastRoutePickerContent(
+            isCasting = isCasting,
+            routes = routes,
+            connectingRouteId = connectingRouteId,
+            connectingRouteName = connectingRouteName,
+            onStopCasting = {
+                Cast.getSingletonInstance(context).endCurrentSession(true)
+                onDismiss()
+            },
+            onRouteSelected = { route ->
+                connectingRouteId = route.id
+                connectingRouteName = route.name
+                route.select()
+            },
+        )
+    }
+}
+
+@Composable
+private fun rememberAvailableCastRoutes(
+    mediaRouter: MediaRouter,
+    routeSelector: MediaRouteSelector,
+): List<MediaRouter.RouteInfo> {
+    var routes by remember(mediaRouter, routeSelector) {
+        mutableStateOf(availableCastRoutes(mediaRouter, routeSelector))
+    }
     DisposableEffect(mediaRouter, routeSelector) {
         fun refreshRoutes() {
             routes = availableCastRoutes(mediaRouter, routeSelector)
@@ -139,127 +190,133 @@ internal fun CastRoutePickerSheet(
         refreshRoutes()
         onDispose { mediaRouter.removeCallback(callback) }
     }
+    return routes
+}
 
-    val connectionComplete =
-        routes.any { route ->
-            isCastConnectionComplete(
-                pendingRouteId = connectingRouteId,
-                routeId = route.id,
-                isSelected = route.isSelected,
-                hasActiveCastSession = isCasting || hasConnectedCastSession,
-            )
-        }
+@Composable
+private fun dismissConnectedCastRoute(
+    connectionComplete: Boolean,
+    onDismiss: () -> Unit,
+) {
     LaunchedEffect(connectionComplete) {
         if (connectionComplete) {
             delay(250L)
             onDismiss()
         }
     }
-    LaunchedEffect(connectingRouteId) {
-        if (connectingRouteId != null) {
-            repeat(60) {
-                hasConnectedCastSession =
-                    runCatching {
-                        CastContext
-                            .getSharedInstance(context)
-                            .sessionManager
-                            .currentCastSession
-                            ?.isConnected == true
-                    }.getOrDefault(false)
-                if (hasConnectedCastSession) return@LaunchedEffect
-                delay(250L)
-            }
-            connectingRouteId = null
-            connectingRouteName = null
-        } else {
-            hasConnectedCastSession = false
-        }
-    }
+}
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = MaterialTheme.shapes.extraLarge,
+@Composable
+private fun monitorPendingCastConnection(
+    context: android.content.Context,
+    connectingRouteId: String?,
+    onConnectionChanged: (Boolean) -> Unit,
+    onTimeout: () -> Unit,
+) {
+    LaunchedEffect(connectingRouteId) {
+        if (connectingRouteId == null) {
+            onConnectionChanged(false)
+            return@LaunchedEffect
+        }
+        val connected = awaitActiveCastSession(context)
+        onConnectionChanged(connected)
+        if (!connected) onTimeout()
+    }
+}
+
+private suspend fun awaitActiveCastSession(context: android.content.Context): Boolean {
+    repeat(60) {
+        val connected =
+            runCatching {
+                CastContext
+                    .getSharedInstance(context)
+                    .sessionManager
+                    .currentCastSession
+                    ?.isConnected == true
+            }.getOrDefault(false)
+        if (connected) return true
+        delay(250L)
+    }
+    return false
+}
+
+@Composable
+private fun CastRoutePickerContent(
+    isCasting: Boolean,
+    routes: List<MediaRouter.RouteInfo>,
+    connectingRouteId: String?,
+    connectingRouteName: String?,
+    onStopCasting: () -> Unit,
+    onRouteSelected: (MediaRouter.RouteInfo) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .navigationBarsPadding()
-                    .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
-        ) {
-            CastPickerHeader()
+        CastPickerHeader()
+        Spacer(modifier = Modifier.height(18.dp))
+        if (connectingRouteName != null) {
+            CastConnectingIndicator(deviceName = connectingRouteName)
             Spacer(modifier = Modifier.height(18.dp))
-            if (connectingRouteName != null) {
-                CastConnectingIndicator(deviceName = connectingRouteName.orEmpty())
-                Spacer(modifier = Modifier.height(18.dp))
-            }
-            Text(
-                text = "AVAILABLE DEVICES",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            if (isCasting) {
-                CastRouteRow(
-                    title = "This phone",
-                    subtitle = "Move playback back here",
-                    selected = false,
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Rounded.PhoneAndroid,
-                            contentDescription = null,
-                        )
-                    },
-                    onClick = {
-                        Cast.getSingletonInstance(context).endCurrentSession(true)
-                        onDismiss()
-                    },
-                )
-            }
-            routes.forEach { route ->
-                val isPending = route.id == connectingRouteId
-                CastRouteRow(
-                    title = route.name,
-                    subtitle =
-                        castRouteSubtitle(
-                            isSelected = route.isSelected,
-                            isConnecting =
-                                isPending ||
-                                    route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTING,
-                            description = route.description,
-                        ),
-                    selected = route.isSelected,
-                    enabled = connectingRouteId == null,
-                    connecting = isPending,
-                    icon = {
-                        Icon(
-                            imageVector = if (route.isSelected) Icons.Rounded.CastConnected else Icons.Rounded.Tv,
-                            contentDescription = null,
-                        )
-                    },
-                    onClick = {
-                        connectingRouteId = route.id
-                        connectingRouteName = route.name
-                        route.select()
-                    },
-                )
-            }
-            if (routes.isEmpty()) {
-                CastRouteEmptyState()
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Text(
-                text = "Devices must be on the same Wi‑Fi network.",
-                modifier = Modifier.padding(top = 14.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        }
+        Text(
+            text = "AVAILABLE DEVICES",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        if (isCasting) {
+            CastRouteRow(
+                title = "This phone",
+                subtitle = "Move playback back here",
+                selected = false,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Rounded.PhoneAndroid,
+                        contentDescription = null,
+                    )
+                },
+                onClick = onStopCasting,
             )
         }
+        routes.forEach { route ->
+            val isPending = route.id == connectingRouteId
+            CastRouteRow(
+                title = route.name,
+                subtitle =
+                    castRouteSubtitle(
+                        isSelected = route.isSelected,
+                        isConnecting =
+                            isPending ||
+                                route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTING,
+                        description = route.description,
+                    ),
+                selected = route.isSelected,
+                enabled = connectingRouteId == null,
+                connecting = isPending,
+                icon = {
+                    Icon(
+                        imageVector = if (route.isSelected) Icons.Rounded.CastConnected else Icons.Rounded.Tv,
+                        contentDescription = null,
+                    )
+                },
+                onClick = { onRouteSelected(route) },
+            )
+        }
+        if (routes.isEmpty()) CastRouteEmptyState()
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Text(
+            text = "Devices must be on the same Wi‑Fi network.",
+            modifier = Modifier.padding(top = 14.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -424,59 +481,3 @@ private fun CastRouteEmptyState() {
         )
     }
 }
-
-private fun availableCastRoutes(
-    mediaRouter: MediaRouter,
-    selector: MediaRouteSelector,
-): List<MediaRouter.RouteInfo> =
-    mediaRouter.routes
-        .filter { route ->
-            shouldShowCastRoute(
-                isEnabled = route.isEnabled,
-                isDefault = route.isDefault,
-                isBluetooth = route.isBluetooth,
-                matchesSelector = route.matchesSelector(selector),
-            )
-        }.sortedBy { it.name.lowercase() }
-
-@Suppress("DEPRECATION")
-private fun resolveCastRouteSelector(context: android.content.Context): MediaRouteSelector =
-    runCatching {
-        CastContext
-            .getSharedInstance(context)
-            .mergedSelector
-    }.getOrNull()
-        ?.takeUnless(MediaRouteSelector::isEmpty)
-        ?: MediaRouteSelector
-            .Builder()
-            .addControlCategory(
-                CastMediaControlIntent.categoryForCast(
-                    CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID,
-                ),
-            ).build()
-
-internal fun shouldShowCastRoute(
-    isEnabled: Boolean,
-    isDefault: Boolean,
-    isBluetooth: Boolean,
-    matchesSelector: Boolean,
-): Boolean = isEnabled && !isDefault && !isBluetooth && matchesSelector
-
-internal fun castRouteSubtitle(
-    isSelected: Boolean,
-    isConnecting: Boolean,
-    description: String?,
-): String =
-    when {
-        isSelected -> "Connected"
-        isConnecting -> "Connecting…"
-        !description.isNullOrBlank() -> description
-        else -> "Ready to cast"
-    }
-
-internal fun isCastConnectionComplete(
-    pendingRouteId: String?,
-    routeId: String,
-    isSelected: Boolean,
-    hasActiveCastSession: Boolean,
-): Boolean = pendingRouteId == routeId && isSelected && hasActiveCastSession

@@ -337,13 +337,16 @@ private fun FullPlayerBody(
                 isExpanded = display.isExpanded,
                 isCasting = model.state.playbackRoute.isRemote,
                 canCast = CastMediaEligibility.isCastable(model.episode.audioUrl),
-                onSwipeMinimizeTipDismissed = actions.onSwipeMinimizeTipDismissed,
-                onCollapse = {
-                    cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
-                        .logAction("collapsed")
-                    actions.onCollapse()
-                },
-                onShare = { ui.showShareSheet = true },
+                actions =
+                    PlayerTopBarActions(
+                        onSwipeMinimizeTipDismissed = actions.onSwipeMinimizeTipDismissed,
+                        onCollapse = {
+                            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
+                                .logAction("collapsed")
+                            actions.onCollapse()
+                        },
+                        onShare = { ui.showShareSheet = true },
+                    ),
             )
             Box(
                 modifier =
@@ -412,7 +415,6 @@ private fun FullPlayerScrollableContent(
                     podcast = model.podcast,
                     nextEpisode = model.nextEpisode,
                     isVideo = model.isVideo,
-                    isVideoPodcast = model.isVideoPodcast,
                     dimensions = resources.layout.dimensions,
                 ),
             positionFlow = flows.position,
@@ -461,7 +463,6 @@ private data class FullPlayerHeroModel(
     val podcast: Podcast,
     val nextEpisode: Episode?,
     val isVideo: Boolean,
-    val isVideoPodcast: Boolean,
     val dimensions: HeroDimensions,
 )
 
@@ -491,11 +492,21 @@ private fun FullPlayerHeroSection(
     isCompact: Boolean,
 ) {
     val isRemote = model.state.playbackRoute.isRemote
+    val bindings =
+        FullPlayerHeroBindings(
+            positionFlow = positionFlow,
+            playbackRepository = playbackRepository,
+            display = display,
+            actions = actions,
+            ui = ui,
+            isCompact = isCompact,
+        )
     var showCastControls by rememberSaveable { mutableStateOf(isRemote) }
     var showCastRoutePicker by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(isRemote) {
         showCastControls = isRemote
         if (!isRemote) showCastRoutePicker = false
+        if (isRemote) actions.onFullscreenVideoChange(false)
     }
     val heroMode =
         resolveCastHeroDisplayMode(
@@ -518,112 +529,168 @@ private fun FullPlayerHeroSection(
             label = "playerHeroMode",
             modifier = Modifier.fillMaxWidth(),
         ) { mode ->
-            when (mode) {
-                CastHeroDisplayMode.TRANSCRIPT ->
-                    InlineTranscriptHero(
-                        content =
-                            InlineTranscriptContent(
-                                transcript = model.state.currentTranscript,
-                                positionFlow = positionFlow,
-                                transcriptUrl = model.episode.transcriptUrl,
-                                artworkUrl =
-                                    model.episode.imageUrl?.takeIf { it.isNotBlank() }
-                                        ?: model.podcast.imageUrl,
-                            ),
-                        colorScheme = display.colorScheme,
-                        isSyncEnabled = ui.isSyncEnabled,
-                        actions =
-                            InlineTranscriptActions(
-                                onSyncEnabledChange = { ui.isSyncEnabled = it },
-                                onSeek = { seekPosition ->
-                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                                        .setSeekSource("transcript_tap")
-                                    playbackRepository.seekTo(seekPosition)
-                                },
-                                onShowArtwork = { ui.showInlineTranscript = false },
-                                onFullscreen = { ui.showFullscreenTranscript = true },
-                            ),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(maxOf(model.dimensions.height, if (isCompact) 220.dp else 250.dp)),
-                    )
-
-                CastHeroDisplayMode.CAST_CONTROLS ->
-                    FullPlayerCastHero(
-                        model =
-                            FullPlayerCastHeroModel(
-                                route = model.state.playbackRoute,
-                                dimensions = model.dimensions,
-                                canSkipNext = canSkipFromCastHero(model.nextEpisode?.id),
-                                colorScheme = display.colorScheme,
-                            ),
-                        actions =
-                            FullPlayerCastHeroActions(
-                                onVolumeChange = playbackRepository::setOutputVolume,
-                                onChangeDevice = { showCastRoutePicker = true },
-                                onSkipNext = {
-                                    cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
-                                        .logAction("skip_next_episode")
-                                    playbackRepository.skipToNextEpisode()
-                                },
-                                onStopCasting = playbackRepository::stopCasting,
-                            ),
-                    )
-
-                CastHeroDisplayMode.ARTWORK ->
-                    ArtworkPlayerHero(model, positionFlow, playbackRepository, display)
-            }
+            FullPlayerHeroModeContent(
+                mode = mode,
+                model = model,
+                bindings = bindings,
+                onChangeCastDevice = { showCastRoutePicker = true },
+            )
         }
-        if (isRemote && heroMode != CastHeroDisplayMode.TRANSCRIPT) {
-            Surface(
+        CastHeroModeToggle(
+            visible = isRemote && heroMode != CastHeroDisplayMode.TRANSCRIPT,
+            showCastControls = showCastControls,
+            colorScheme = display.colorScheme,
+            onToggle = { showCastControls = !showCastControls },
+            modifier = Modifier.align(Alignment.TopEnd),
+        )
+    }
+    CastRoutePickerOverlay(
+        visible = showCastRoutePicker,
+        isRemote = isRemote,
+        colorScheme = display.colorScheme,
+        onDismiss = { showCastRoutePicker = false },
+    )
+    RemoteAwareVideoModeButtons(
+        visible = shouldShowVideoModeButtons(model.isVideo, heroMode),
+        bindings = bindings,
+    )
+}
+
+private data class FullPlayerHeroBindings(
+    val positionFlow: Flow<Long>,
+    val playbackRepository: PlaybackRepository,
+    val display: FullPlayerDisplay,
+    val actions: FullPlayerActions,
+    val ui: FullPlayerUiState,
+    val isCompact: Boolean,
+)
+
+@Composable
+private fun FullPlayerHeroModeContent(
+    mode: CastHeroDisplayMode,
+    model: FullPlayerHeroModel,
+    bindings: FullPlayerHeroBindings,
+    onChangeCastDevice: () -> Unit,
+) {
+    when (mode) {
+        CastHeroDisplayMode.TRANSCRIPT ->
+            InlineTranscriptHero(
+                content =
+                    InlineTranscriptContent(
+                        transcript = model.state.currentTranscript,
+                        positionFlow = bindings.positionFlow,
+                        transcriptUrl = model.episode.transcriptUrl,
+                        artworkUrl =
+                            model.episode.imageUrl?.takeIf { it.isNotBlank() }
+                                ?: model.podcast.imageUrl,
+                    ),
+                colorScheme = bindings.display.colorScheme,
+                isSyncEnabled = bindings.ui.isSyncEnabled,
+                actions =
+                    InlineTranscriptActions(
+                        onSyncEnabledChange = { bindings.ui.isSyncEnabled = it },
+                        onSeek = { seekPosition ->
+                            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                                .setSeekSource("transcript_tap")
+                            bindings.playbackRepository.seekTo(seekPosition)
+                        },
+                        onShowArtwork = { bindings.ui.showInlineTranscript = false },
+                        onFullscreen = { bindings.ui.showFullscreenTranscript = true },
+                    ),
                 modifier =
                     Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-8).dp, y = 8.dp),
-                shape = CircleShape,
-                color = display.colorScheme.surfaceContainerHigh,
-                contentColor = display.colorScheme.onSurface,
-                shadowElevation = 4.dp,
-            ) {
-                IconButton(
-                    onClick = { showCastControls = !showCastControls },
-                    modifier = Modifier.size(40.dp),
-                ) {
-                    Icon(
-                        imageVector =
-                            if (showCastControls) {
-                                Icons.Rounded.Image
-                            } else {
-                                Icons.Rounded.CastConnected
-                            },
-                        contentDescription =
-                            if (showCastControls) {
-                                "Show artwork"
-                            } else {
-                                "Show Cast controls"
-                            },
-                    )
-                }
-            }
-        }
+                        .fillMaxWidth()
+                        .height(maxOf(model.dimensions.height, if (bindings.isCompact) 220.dp else 250.dp)),
+            )
+
+        CastHeroDisplayMode.CAST_CONTROLS ->
+            FullPlayerCastHero(
+                model =
+                    FullPlayerCastHeroModel(
+                        route = model.state.playbackRoute,
+                        dimensions = model.dimensions,
+                        canSkipNext = canSkipFromCastHero(model.nextEpisode?.id),
+                        colorScheme = bindings.display.colorScheme,
+                    ),
+                actions =
+                    FullPlayerCastHeroActions(
+                        onVolumeChange = bindings.playbackRepository::setOutputVolume,
+                        onChangeDevice = onChangeCastDevice,
+                        onSkipNext = {
+                            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
+                                .logAction("skip_next_episode")
+                            bindings.playbackRepository.skipToNextEpisode()
+                        },
+                        onStopCasting = bindings.playbackRepository::stopCasting,
+                    ),
+            )
+
+        CastHeroDisplayMode.ARTWORK ->
+            ArtworkPlayerHero(
+                model = model,
+                positionFlow = bindings.positionFlow,
+                playbackRepository = bindings.playbackRepository,
+                display = bindings.display,
+            )
     }
-    if (showCastRoutePicker) {
-        MaterialTheme(colorScheme = display.colorScheme) {
-            CastRoutePickerSheet(
-                isCasting = isRemote,
-                onDismiss = { showCastRoutePicker = false },
+}
+
+@Composable
+private fun CastHeroModeToggle(
+    visible: Boolean,
+    showCastControls: Boolean,
+    colorScheme: ColorScheme,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!visible) return
+    Surface(
+        modifier = modifier.offset(x = (-8).dp, y = 8.dp),
+        shape = CircleShape,
+        color = colorScheme.surfaceContainerHigh,
+        contentColor = colorScheme.onSurface,
+        shadowElevation = 4.dp,
+    ) {
+        IconButton(
+            onClick = onToggle,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = if (showCastControls) Icons.Rounded.Image else Icons.Rounded.CastConnected,
+                contentDescription = if (showCastControls) "Show artwork" else "Show Cast controls",
             )
         }
     }
-    if (model.isVideoPodcast && heroMode == CastHeroDisplayMode.ARTWORK) {
-        VideoModeButtons(
-            isAudioOnly = ui.isAudioOnly,
-            colorScheme = display.colorScheme,
-            onAudioOnlyChange = { ui.isAudioOnly = it },
-            onFullscreenClick = { actions.onFullscreenVideoChange(true) },
+}
+
+@Composable
+private fun CastRoutePickerOverlay(
+    visible: Boolean,
+    isRemote: Boolean,
+    colorScheme: ColorScheme,
+    onDismiss: () -> Unit,
+) {
+    if (!visible) return
+    MaterialTheme(colorScheme = colorScheme) {
+        CastRoutePickerSheet(
+            isCasting = isRemote,
+            onDismiss = onDismiss,
         )
     }
+}
+
+@Composable
+private fun RemoteAwareVideoModeButtons(
+    visible: Boolean,
+    bindings: FullPlayerHeroBindings,
+) {
+    if (!visible) return
+    VideoModeButtons(
+        isAudioOnly = bindings.ui.isAudioOnly,
+        colorScheme = bindings.display.colorScheme,
+        onAudioOnlyChange = { bindings.ui.isAudioOnly = it },
+        onFullscreenClick = { bindings.actions.onFullscreenVideoChange(true) },
+    )
 }
 
 @Composable
