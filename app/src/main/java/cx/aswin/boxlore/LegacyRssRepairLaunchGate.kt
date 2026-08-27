@@ -7,7 +7,7 @@ internal enum class LegacyRssRepairLaunchDecision {
 }
 
 internal object LegacyRssRepairLaunchGate {
-    private val allowedVersions = setOf("0.0.18", "0.0.19")
+    private val allowedVersions = setOf("0.0.18", "0.0.19", "0.0.21", "0.0.22")
 
     fun evaluate(
         versionName: String,

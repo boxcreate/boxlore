@@ -5,31 +5,27 @@ import org.junit.jupiter.api.Test
 
 class LegacyRssRepairLaunchGateTest {
     @Test
-    fun `upgraded installs enable repair only on versions 18 and 19`() {
-        assertEquals(
-            LegacyRssRepairLaunchDecision.Enabled,
-            LegacyRssRepairLaunchGate.evaluate(
-                versionName = "0.0.18",
-                firstInstallTime = 100L,
-                lastUpdateTime = 200L,
-            ),
-        )
-        assertEquals(
-            LegacyRssRepairLaunchDecision.Enabled,
-            LegacyRssRepairLaunchGate.evaluate(
-                versionName = "0.0.19",
-                firstInstallTime = 100L,
-                lastUpdateTime = 200L,
-            ),
-        )
-        assertEquals(
-            LegacyRssRepairLaunchDecision.Disabled,
-            LegacyRssRepairLaunchGate.evaluate(
-                versionName = "0.0.20",
-                firstInstallTime = 100L,
-                lastUpdateTime = 200L,
-            ),
-        )
+    fun `upgraded installs enable repair only on versions 18, 19, 21, and 22`() {
+        for (versionName in listOf("0.0.18", "0.0.19", "0.0.21", "0.0.22")) {
+            assertEquals(
+                LegacyRssRepairLaunchDecision.Enabled,
+                LegacyRssRepairLaunchGate.evaluate(
+                    versionName = versionName,
+                    firstInstallTime = 100L,
+                    lastUpdateTime = 200L,
+                ),
+            )
+        }
+        for (versionName in listOf("0.0.20", "0.0.23")) {
+            assertEquals(
+                LegacyRssRepairLaunchDecision.Disabled,
+                LegacyRssRepairLaunchGate.evaluate(
+                    versionName = versionName,
+                    firstInstallTime = 100L,
+                    lastUpdateTime = 200L,
+                ),
+            )
+        }
     }
 
     @Test
@@ -42,14 +38,16 @@ class LegacyRssRepairLaunchGateTest {
                 lastUpdateTime = 100L,
             ),
         )
-        assertEquals(
-            LegacyRssRepairLaunchDecision.SettleWithoutRepair,
-            LegacyRssRepairLaunchGate.evaluate(
-                versionName = "0.0.19",
-                firstInstallTime = 100L,
-                lastUpdateTime = 100L,
-            ),
-        )
+        for (versionName in listOf("0.0.19", "0.0.21", "0.0.22")) {
+            assertEquals(
+                LegacyRssRepairLaunchDecision.SettleWithoutRepair,
+                LegacyRssRepairLaunchGate.evaluate(
+                    versionName = versionName,
+                    firstInstallTime = 100L,
+                    lastUpdateTime = 100L,
+                ),
+            )
+        }
     }
 
     @Test
