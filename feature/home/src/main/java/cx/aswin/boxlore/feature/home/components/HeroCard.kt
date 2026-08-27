@@ -39,6 +39,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
+import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
 @Composable
 fun HeroCard(
@@ -47,6 +48,7 @@ fun HeroCard(
     onArrowClick: () -> Unit,
     onToggleSubscription: () -> Unit,
     currentPlayingPodcastId: String? = null,
+    currentPlayingEpisodeId: String? = null,
     isPlaying: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -159,8 +161,14 @@ fun HeroCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         // Leading Button (Play/Resume/Pause) - Rounded Left, Flat Right
-                        val isCurrentPodcast = currentPlayingPodcastId == item.podcast.id
-                        val showPause = isCurrentPodcast && isPlaying
+                        val isCurrentEpisode =
+                            HomePlaybackStateLogic.isHeroItemCurrent(
+                                itemEpisodeId = item.podcast.latestEpisode?.id,
+                                itemPodcastId = item.podcast.id,
+                                currentPlayingEpisodeId = currentPlayingEpisodeId,
+                                currentPlayingPodcastId = currentPlayingPodcastId,
+                            )
+                        val showPause = isPlaying && isCurrentEpisode
 
                         Surface(
                             color = MaterialTheme.colorScheme.primary,
@@ -194,7 +202,7 @@ fun HeroCard(
                                         if (showPause) {
                                             "Pause"
                                         } else if (item.type == HeroType.RESUME ||
-                                            isCurrentPodcast
+                                            isCurrentEpisode
                                         ) {
                                             "Resume"
                                         } else {

@@ -47,6 +47,34 @@ internal object HomePlaybackStateLogic {
         return episodePlaybackState
     }
 
+    fun isHeroItemCurrent(
+        itemEpisodeId: String?,
+        itemPodcastId: String,
+        currentPlayingEpisodeId: String?,
+        currentPlayingPodcastId: String?,
+    ): Boolean {
+        val episodeId = itemEpisodeId?.takeIf { it.isNotBlank() }
+        if (episodeId != null) {
+            return episodeId == currentPlayingEpisodeId
+        }
+        return itemPodcastId.isNotBlank() && itemPodcastId == currentPlayingPodcastId
+    }
+
+    fun isHeroItemPlaying(
+        itemEpisodeId: String?,
+        itemPodcastId: String,
+        currentPlayingEpisodeId: String?,
+        currentPlayingPodcastId: String?,
+        isPlaying: Boolean,
+    ): Boolean =
+        isPlaying &&
+            isHeroItemCurrent(
+                itemEpisodeId = itemEpisodeId,
+                itemPodcastId = itemPodcastId,
+                currentPlayingEpisodeId = currentPlayingEpisodeId,
+                currentPlayingPodcastId = currentPlayingPodcastId,
+            )
+
     fun isBriefingDisplayedInResume(
         heroList: List<SmartHeroItem>,
         briefingPodcastId: String,

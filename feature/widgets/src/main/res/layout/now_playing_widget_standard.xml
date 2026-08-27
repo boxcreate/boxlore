@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Compact 4×2 card: beige chrome hugs art + controls (wrap_content), centered in the
+  Compact 4×2 card: 100dp chrome fits the provider minimum exactly, centered in the
   host cell. Transparent root shows wallpaper in unused cell space — no tall empty bands.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -29,18 +29,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="10dp">
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="5dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
+                android:layout_height="48dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <FrameLayout
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:background="@drawable/widget_art_tile_shape"
                     android:clipToOutline="true">
 
@@ -71,33 +71,33 @@
                         android:includeFontPadding="false"
                         android:maxLines="2"
                         android:textColor="@color/widget_on_surface"
-                        android:textSize="15sp" />
+                        android:textSize="14sp" />
 
                     <TextView
                         android:id="@+id/widget_podcast_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="1dp"
                         android:ellipsize="end"
                         android:fontFamily="sans-serif"
                         android:includeFontPadding="false"
                         android:maxLines="1"
                         android:textColor="@color/widget_on_surface_variant"
-                        android:textSize="13sp" />
+                        android:textSize="11sp" />
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="8dp"
+                android:layout_height="38dp"
+                android:layout_marginTop="4dp"
                 android:gravity="center"
                 android:orientation="horizontal">
 
                 <FrameLayout
                     android:id="@+id/widget_previous"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="38dp"
                     android:layout_weight="1">
 
                     <ImageView
@@ -121,8 +121,8 @@
                 <FrameLayout
                     android:id="@+id/widget_skip_back"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="4dp"
                     android:layout_weight="1">
 
                     <ImageView
@@ -146,8 +146,8 @@
                 <FrameLayout
                     android:id="@+id/widget_play_pause"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="4dp"
                     android:layout_weight="1">
 
                     <ImageView
@@ -171,8 +171,8 @@
                 <FrameLayout
                     android:id="@+id/widget_skip_forward"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="4dp"
                     android:layout_weight="1">
 
                     <ImageView
@@ -196,8 +196,8 @@
                 <FrameLayout
                     android:id="@+id/widget_next"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="4dp"
                     android:layout_weight="1">
 
                     <ImageView

@@ -16,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
@@ -36,7 +35,6 @@ fun HistoryScreen(
     onExploreClick: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val showTrackingNotice by viewModel.showTrackingNotice.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
     var showOverflow by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -87,7 +85,6 @@ fun HistoryScreen(
     }
 
     HistoryScreenDialogs(
-        showTrackingNotice = showTrackingNotice,
         showClearDialog = showClearDialog,
         showDatePicker = showDatePicker,
         viewModel = viewModel,

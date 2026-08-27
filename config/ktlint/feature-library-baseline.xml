@@ -83,16 +83,13 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/HistoryScreen.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="19" column="1" source="standard:no-unused-imports" />
-        <error line="32" column="5" source="standard:function-naming" />
+        <error line="31" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/HistoryViewModel.kt">
+        <error line="65" column="17" source="standard:backing-property-naming" />
+        <error line="66" column="17" source="standard:backing-property-naming" />
         <error line="67" column="17" source="standard:backing-property-naming" />
         <error line="68" column="17" source="standard:backing-property-naming" />
-        <error line="69" column="17" source="standard:backing-property-naming" />
-        <error line="70" column="17" source="standard:backing-property-naming" />
-        <error line="86" column="64" source="standard:chain-method-continuation" />
-        <error line="244" column="60" source="standard:chain-method-continuation" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/LibraryScreen.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -193,57 +190,55 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/LibraryViewModel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="37" column="1" source="standard:blank-line-before-declaration" />
         <error line="38" column="1" source="standard:blank-line-before-declaration" />
-        <error line="42" column="5" source="standard:blank-line-before-declaration" />
-        <error line="48" column="67" source="standard:trailing-comma-on-declaration-site" />
-        <error line="50" column="5" source="standard:blank-line-before-declaration" />
-        <error line="50" column="22" source="standard:class-signature" />
-        <error line="50" column="41" source="standard:class-signature" />
-        <error line="60" column="1" source="standard:no-empty-first-line-in-class-body" />
-        <error line="61" column="60" source="standard:multiline-expression-wrapping" />
-        <error line="65" column="38" source="standard:trailing-comma-on-call-site" />
-        <error line="89" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="143" column="44" source="standard:multiline-expression-wrapping" />
-        <error line="147" column="32" source="standard:trailing-comma-on-call-site" />
-        <error line="160" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="184" column="51" source="standard:multiline-expression-wrapping" />
-        <error line="188" column="32" source="standard:trailing-comma-on-call-site" />
-        <error line="199" column="46" source="standard:multiline-expression-wrapping" />
-        <error line="206" column="1" source="standard:indent" />
+        <error line="39" column="1" source="standard:blank-line-before-declaration" />
+        <error line="43" column="5" source="standard:blank-line-before-declaration" />
+        <error line="49" column="67" source="standard:trailing-comma-on-declaration-site" />
+        <error line="51" column="5" source="standard:blank-line-before-declaration" />
+        <error line="51" column="22" source="standard:class-signature" />
+        <error line="51" column="41" source="standard:class-signature" />
+        <error line="61" column="1" source="standard:no-empty-first-line-in-class-body" />
+        <error line="62" column="60" source="standard:multiline-expression-wrapping" />
+        <error line="66" column="38" source="standard:trailing-comma-on-call-site" />
+        <error line="90" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="144" column="44" source="standard:multiline-expression-wrapping" />
+        <error line="148" column="32" source="standard:trailing-comma-on-call-site" />
+        <error line="161" column="22" source="standard:multiline-expression-wrapping" />
+        <error line="185" column="51" source="standard:multiline-expression-wrapping" />
+        <error line="189" column="32" source="standard:trailing-comma-on-call-site" />
+        <error line="200" column="46" source="standard:multiline-expression-wrapping" />
         <error line="207" column="1" source="standard:indent" />
         <error line="208" column="1" source="standard:indent" />
         <error line="209" column="1" source="standard:indent" />
         <error line="210" column="1" source="standard:indent" />
-        <error line="214" column="32" source="standard:multiline-expression-wrapping" />
-        <error line="225" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="226" column="25" source="standard:multiline-if-else" />
-        <error line="227" column="26" source="standard:if-else-wrapping" />
-        <error line="227" column="26" source="standard:multiline-if-else" />
-        <error line="230" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="237" column="64" source="standard:trailing-comma-on-call-site" />
-        <error line="245" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="247" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="260" column="33" source="standard:chain-method-continuation" />
-        <error line="265" column="51" source="standard:trailing-comma-on-call-site" />
-        <error line="289" column="36" source="standard:trailing-comma-on-call-site" />
-        <error line="295" column="50" source="standard:trailing-comma-on-call-site" />
-        <error line="329" column="56" source="standard:chain-method-continuation" />
-        <error line="343" column="59" source="standard:trailing-comma-on-call-site" />
-        <error line="355" column="60" source="standard:trailing-comma-on-call-site" />
-        <error line="367" column="60" source="standard:trailing-comma-on-call-site" />
-        <error line="389" column="21" source="standard:function-signature" />
-        <error line="389" column="39" source="standard:function-signature" />
-        <error line="389" column="55" source="standard:function-signature" />
-        <error line="395" column="20" source="standard:function-signature" />
-        <error line="395" column="38" source="standard:function-signature" />
-        <error line="395" column="54" source="standard:function-signature" />
-        <error line="401" column="24" source="standard:function-signature" />
-        <error line="401" column="42" source="standard:function-signature" />
-        <error line="401" column="58" source="standard:function-signature" />
-        <error line="407" column="19" source="standard:function-signature" />
-        <error line="407" column="44" source="standard:function-signature" />
-        <error line="407" column="60" source="standard:function-signature" />
+        <error line="211" column="1" source="standard:indent" />
+        <error line="215" column="32" source="standard:multiline-expression-wrapping" />
+        <error line="226" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="227" column="25" source="standard:multiline-if-else" />
+        <error line="228" column="26" source="standard:if-else-wrapping" />
+        <error line="228" column="26" source="standard:multiline-if-else" />
+        <error line="231" column="66" source="standard:trailing-comma-on-call-site" />
+        <error line="238" column="64" source="standard:trailing-comma-on-call-site" />
+        <error line="246" column="30" source="standard:multiline-expression-wrapping" />
+        <error line="248" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="287" column="36" source="standard:trailing-comma-on-call-site" />
+        <error line="293" column="50" source="standard:trailing-comma-on-call-site" />
+        <error line="327" column="56" source="standard:chain-method-continuation" />
+        <error line="341" column="59" source="standard:trailing-comma-on-call-site" />
+        <error line="353" column="60" source="standard:trailing-comma-on-call-site" />
+        <error line="365" column="60" source="standard:trailing-comma-on-call-site" />
+        <error line="387" column="21" source="standard:function-signature" />
+        <error line="387" column="39" source="standard:function-signature" />
+        <error line="387" column="55" source="standard:function-signature" />
+        <error line="393" column="20" source="standard:function-signature" />
+        <error line="393" column="38" source="standard:function-signature" />
+        <error line="393" column="54" source="standard:function-signature" />
+        <error line="399" column="24" source="standard:function-signature" />
+        <error line="399" column="42" source="standard:function-signature" />
+        <error line="399" column="58" source="standard:function-signature" />
+        <error line="405" column="19" source="standard:function-signature" />
+        <error line="405" column="44" source="standard:function-signature" />
+        <error line="405" column="60" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/LikedEpisodesScreen.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -1083,11 +1078,11 @@
         <error line="3" column="1" source="standard:import-ordering" />
         <error line="35" column="1" source="standard:no-unused-imports" />
         <error line="51" column="5" source="standard:function-naming" />
-        <error line="144" column="5" source="standard:function-naming" />
-        <error line="214" column="13" source="standard:function-naming" />
-        <error line="255" column="13" source="standard:function-naming" />
-        <error line="308" column="13" source="standard:function-naming" />
-        <error line="365" column="5" source="standard:function-naming" />
+        <error line="148" column="5" source="standard:function-naming" />
+        <error line="222" column="13" source="standard:function-naming" />
+        <error line="263" column="13" source="standard:function-naming" />
+        <error line="316" column="13" source="standard:function-naming" />
+        <error line="373" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/history/HistoryDialogs.kt">
         <error line="19" column="14" source="standard:function-naming" />
@@ -1099,18 +1094,17 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/history/HistoryInsightCarousel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="34" column="1" source="standard:no-unused-imports" />
-        <error line="65" column="5" source="standard:function-naming" />
-        <error line="227" column="13" source="standard:function-naming" />
-        <error line="244" column="13" source="standard:function-naming" />
-        <error line="324" column="13" source="standard:function-naming" />
+        <error line="54" column="5" source="standard:function-naming" />
+        <error line="222" column="13" source="standard:function-naming" />
+        <error line="284" column="13" source="standard:function-naming" />
+        <error line="303" column="13" source="standard:function-naming" />
+        <error line="327" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/history/HistoryListItems.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="38" column="1" source="standard:no-unused-imports" />
-        <error line="50" column="5" source="standard:function-naming" />
-        <error line="70" column="5" source="standard:function-naming" />
-        <error line="113" column="5" source="standard:function-naming" />
+        <error line="48" column="5" source="standard:function-naming" />
+        <error line="68" column="5" source="standard:function-naming" />
+        <error line="111" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/history/HistoryScreenBody.kt">
         <error line="16" column="14" source="standard:function-naming" />
@@ -1121,18 +1115,14 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/history/HistoryStatsCards.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="16" column="1" source="standard:no-unused-imports" />
-        <error line="25" column="1" source="standard:no-unused-imports" />
-        <error line="26" column="1" source="standard:no-unused-imports" />
-        <error line="27" column="1" source="standard:no-unused-imports" />
-        <error line="28" column="1" source="standard:no-unused-imports" />
-        <error line="42" column="5" source="standard:function-naming" />
-        <error line="64" column="5" source="standard:function-naming" />
-        <error line="130" column="13" source="standard:function-naming" />
-        <error line="179" column="13" source="standard:function-naming" />
+        <error line="36" column="5" source="standard:function-naming" />
+        <error line="58" column="5" source="standard:function-naming" />
+        <error line="115" column="13" source="standard:function-naming" />
+        <error line="151" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/history/HistorySuccessList.kt">
-        <error line="31" column="14" source="standard:function-naming" />
+        <error line="32" column="14" source="standard:function-naming" />
+        <error line="148" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/library/history/HistoryTopBar.kt">
         <error line="37" column="14" source="standard:function-naming" />

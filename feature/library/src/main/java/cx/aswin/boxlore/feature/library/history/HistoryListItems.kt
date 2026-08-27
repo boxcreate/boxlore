@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,8 +22,8 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -35,8 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
@@ -147,6 +145,8 @@ fun HistoryTimelineItem(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.errorContainer)
                         .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
@@ -159,45 +159,63 @@ fun HistoryTimelineItem(
             }
         },
     ) {
-        ListItem(
-            headlineContent = {
-                Text(
-                    text = item.episodeTitle,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = GoogleSansWeight.medium,
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onClick),
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OptimizedImage(
+                    url = item.episodeImageUrl ?: item.podcastImageUrl,
+                    proxyWidth = 128,
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(14.dp)),
                 )
-            },
-            supportingContent = {
-                Column {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     Text(
-                        text = "${item.podcastName} · $status",
+                        text = item.episodeTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 3,
+                        fontWeight = GoogleSansWeight.semiBold,
+                    )
+                    Text(
+                        text = item.podcastName,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2,
                     )
                     if (!item.isCompleted && item.durationMs > 0) {
-                        Spacer(modifier = Modifier.height(6.dp))
                         LinearProgressIndicator(
                             progress = { progress },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.semiBold,
+                        color =
+                            if (item.isCompleted) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    )
                 }
-            },
-            leadingContent = {
-                OptimizedImage(
-                    url = item.episodeImageUrl ?: item.podcastImageUrl,
-                    proxyWidth = 112,
-                    contentDescription = null,
-                    modifier =
-                        Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                )
-            },
-            modifier = Modifier.clickable(onClick = onClick),
-        )
+            }
+        }
     }
 }

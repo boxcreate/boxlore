@@ -119,6 +119,31 @@ class HomeShowsOrderLogicTest {
     }
 
     @Test
+    fun `first pass follows scores not subscribe time`() {
+        val nowMs = 1_700_000_000_000L
+        val subs =
+            listOf(
+                TestFixtures.podcast(
+                    id = "fresh",
+                    title = "Fresh",
+                    subscribedAt = nowMs - 2L * 3_600_000L,
+                ),
+                TestFixtures.podcast(
+                    id = "old",
+                    title = "Old",
+                    subscribedAt = nowMs - 200L * 24 * 3_600_000L,
+                ),
+            )
+        val order =
+            HomeShowsOrderLogic.computeStableShowsOrder(
+                previousOrder = null,
+                subs = subs,
+                scores = mapOf("fresh" to 0.72, "old" to 0.95),
+            )
+        assertEquals(listOf("old", "fresh"), order)
+    }
+
+    @Test
     fun `mixtape cache invalidates only when signature changes after first build`() {
         assertFalse(HomeShowsOrderLogic.shouldInvalidateMixtapeCache(null, setOf("a")))
         assertFalse(HomeShowsOrderLogic.shouldInvalidateMixtapeCache(setOf("a"), setOf("a")))

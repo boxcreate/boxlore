@@ -5,15 +5,14 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,22 +20,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.library.R
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import kotlin.math.min
 
 @Composable
 fun HistoryPeriodSelector(
@@ -76,50 +70,41 @@ fun ListeningTimeCard(
         color = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     ) {
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-        ) {
-            val valueSp = listeningTimeValueSp(durationText, maxWidth.value)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 30.dp, y = (-38).dp)
+                        .size(132.dp)
+                        .rotate(12f)
+                        .clip(ExpressiveShapes.Puffy)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)),
+            )
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = stringResource(R.string.history_time_title),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.semiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.primary,
                 )
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = durationText,
-                        style =
-                            MaterialTheme.typography.displayMedium.copy(
-                                fontSize = valueSp,
-                                lineHeight = valueSp * 1.05f,
-                            ),
-                        fontWeight = GoogleSansWeight.bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.End,
-                    )
-                    ListeningTimeMetaChips(
-                        precise = precise,
-                        streakDays = insights.streakDays,
-                        deltaLabel = deltaLabel,
-                    )
-                }
+                Text(
+                    text = durationText,
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = GoogleSansWeight.bold,
+                    maxLines = 1,
+                )
+                ListeningTimeMetaChips(
+                    precise = precise,
+                    streakDays = insights.streakDays,
+                    deltaLabel = deltaLabel,
+                )
             }
         }
     }
@@ -160,19 +145,6 @@ private fun listeningTimeDeltaLabel(insights: ListeningInsightSummary): String? 
     val delta = insights.totalConsumedMs - insights.previousPeriodConsumedMs
     val sign = if (delta >= 0) "+" else "-"
     return "$sign${formatDuration(abs(delta))}"
-}
-
-private fun listeningTimeValueSp(
-    durationText: String,
-    maxWidthDp: Float,
-) = run {
-    val lengthFactor =
-        when {
-            durationText.length <= 2 -> 0.28f
-            durationText.length <= 5 -> 0.22f
-            else -> 0.16f
-        }
-    min(maxWidthDp * lengthFactor, 68f).coerceAtLeast(40f).sp
 }
 
 @Composable

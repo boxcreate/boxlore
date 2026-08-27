@@ -39,10 +39,19 @@ class AdaptiveCandidateScorer private constructor(
         nowMs: Long = System.currentTimeMillis(),
     ): Map<String, Double> {
         if (podcasts.isEmpty()) return emptyMap()
+        if (objective == RankingObjective.YOUR_SHOWS) {
+            return YourShowsScorer.score(
+                podcasts = podcasts,
+                history = history,
+                includeAutoDownloadBoost = includeAutoDownloadBoost,
+                nowMs = nowMs,
+            )
+        }
         val legacy = PodcastScoring.calculateScores(
             podcasts = podcasts,
             allHistory = history,
             includeAutoDownloadBoost = includeAutoDownloadBoost,
+            nowMs = nowMs,
         )
         if (!runtimeControls.isAdaptiveEnabled(objective, surface)) return legacy
         val normalizedPriors = normalizePriors(legacy)
@@ -92,9 +101,7 @@ class AdaptiveCandidateScorer private constructor(
                 )
             },
         )
-        val adaptive = podcasts.mapIndexed { index, podcast ->
-            podcast.id to scores[index].finalScore
-        }.toMap()
+        val adaptive = podcasts.associateIndexedScores(scores)
         recordShadowComparison(objective, legacy, adaptive)
         return adaptive
     }
@@ -325,6 +332,13 @@ class AdaptiveCandidateScorer private constructor(
         }
         return ranked
     }
+
+    private fun List<ScorablePodcast>.associateIndexedScores(
+        scores: List<RankingScore>,
+    ): Map<String, Double> =
+        mapIndexed { index, podcast ->
+            podcast.id to scores[index].finalScore
+        }.toMap()
 
     private fun normalizePriors(scores: Map<String, Double>): Map<String, Double> {
         val finite = scores.filterValues { it.isFinite() && it >= 0.0 }

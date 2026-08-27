@@ -6,7 +6,7 @@ Owns adaptive recommendation and candidate scoring: Bayesian facet preferences, 
 
 ## Public API
 
-- `AdaptiveCandidateScorer` scores podcasts and episodes for home, explore, queue, and downloads.
+- `AdaptiveCandidateScorer` scores podcasts and episodes for home, explore, queue, and downloads. `YOUR_SHOWS` bypasses the bandit and delegates to deterministic `YourShowsScorer` on every surface: log-normalized `PodcastScoring` signals plus a bounded three-day subscribe-recency floor. Home, Library Smart, widgets, and Auto therefore share one order without requiring exposure training or forcing slot 1 over stronger habits.
 - `AdaptiveRankingRepository` owns ranking state, exposure recording, facet affinities, backup, restore, and exact old→new show-facet migration for catalog identity repairs.
 - `RankingFeedbackRepository` records user actions and implements `RankingResetPort`.
 - `RankingRuntimeControls` exposes runtime toggles for ranking surfaces.
@@ -31,6 +31,8 @@ src/main/java/cx/aswin/boxlore/core/ranking/
   RankingRuntimeControls.kt
   RankingSerialization.kt
   ShowFacetMigrationLogic.kt
+  YourShowsScorer.kt
+  YourShowsSubscriptionRecency.kt
   database/
     AdaptiveRankingDao.kt
     AdaptiveRankingDatabase.kt
@@ -62,6 +64,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 
 - Unit tests live under `core/ranking/src/test`.
 - `AdaptiveRankingTest` covers cold-start blending, objective behavior, and opposite-outcome learning.
+- `YourShowsScorerTest` covers normalized deterministic ordering, and `YourShowsSubscriptionRecencyTest` covers the bounded three-day floor. `AdaptiveCandidateScorerTest` verifies Home and Library receive identical Your Shows scores even when an adaptive model exists.
 - `ShowFacetMigrationLogicTest` covers preserving, merging, and retargeting evidence during a podcast-id repair. `AdaptiveRankingRepositoryTest` covers transactional `migrateShowFacet` into an existing target facet.
 - Recommendation reset behavior is exercised through `RankingResetPort` fakes in feature tests.
 

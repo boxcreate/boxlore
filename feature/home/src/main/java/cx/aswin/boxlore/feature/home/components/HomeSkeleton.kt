@@ -104,7 +104,7 @@ fun RisingSkeleton() {
                 Box(
                     modifier =
                         Modifier
-                            .width(HomeFeedSpacing.RailCardWidth)
+                            .fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction)
                             .height(200.dp)
                             .clip(MaterialTheme.shapes.large)
                             .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.large),
@@ -336,7 +336,7 @@ fun EditorialRowsSkeleton(modifier: Modifier = Modifier) {
                         Box(
                             modifier =
                                 Modifier
-                                    .width(HomeFeedSpacing.RailCardWidth)
+                                    .fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction)
                                     .height(214.dp)
                                     .clip(MaterialTheme.shapes.large)
                                     .m3Shimmer(

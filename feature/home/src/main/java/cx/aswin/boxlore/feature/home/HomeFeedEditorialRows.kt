@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
@@ -111,7 +110,7 @@ private fun EditorialRow(
                         )
                     },
                     showSubtitle = false,
-                    modifier = Modifier.width(HomeFeedSpacing.RailCardWidth),
+                    modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction),
                 )
             }
         }

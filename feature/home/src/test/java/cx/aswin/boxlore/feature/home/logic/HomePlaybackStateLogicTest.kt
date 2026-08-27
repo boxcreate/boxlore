@@ -40,6 +40,54 @@ class HomePlaybackStateLogicTest {
     }
 
     @Test
+    fun `hero playing chrome matches the episode not the show`() {
+        assertTrue(
+            HomePlaybackStateLogic.isHeroItemPlaying(
+                itemEpisodeId = "ep-1",
+                itemPodcastId = "show-a",
+                currentPlayingEpisodeId = "ep-1",
+                currentPlayingPodcastId = "show-a",
+                isPlaying = true,
+            ),
+        )
+        assertFalse(
+            HomePlaybackStateLogic.isHeroItemCurrent(
+                itemEpisodeId = "ep-2",
+                itemPodcastId = "show-a",
+                currentPlayingEpisodeId = "ep-1",
+                currentPlayingPodcastId = "show-a",
+            ),
+        )
+        assertFalse(
+            HomePlaybackStateLogic.isHeroItemPlaying(
+                itemEpisodeId = "ep-1",
+                itemPodcastId = "show-a",
+                currentPlayingEpisodeId = "ep-1",
+                currentPlayingPodcastId = "show-a",
+                isPlaying = false,
+            ),
+        )
+        assertTrue(
+            HomePlaybackStateLogic.isHeroItemPlaying(
+                itemEpisodeId = null,
+                itemPodcastId = "show-a",
+                currentPlayingEpisodeId = null,
+                currentPlayingPodcastId = "show-a",
+                isPlaying = true,
+            ),
+        )
+        assertFalse(
+            HomePlaybackStateLogic.isHeroItemPlaying(
+                itemEpisodeId = null,
+                itemPodcastId = "show-b",
+                currentPlayingEpisodeId = null,
+                currentPlayingPodcastId = "show-a",
+                isPlaying = true,
+            ),
+        )
+    }
+
+    @Test
     fun `should show briefing hides completed dismissed or resume displayed`() {
         val briefing =
             Briefing(

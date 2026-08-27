@@ -17,26 +17,12 @@ import java.time.ZoneOffset
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HistoryScreenDialogs(
-    showTrackingNotice: Boolean,
     showClearDialog: Boolean,
     showDatePicker: Boolean,
     viewModel: HistoryViewModel,
     onDismissClearDialog: () -> Unit,
     onDismissDatePicker: () -> Unit,
 ) {
-    if (showTrackingNotice) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissTrackingNotice,
-            title = { Text(stringResource(R.string.history_tracking_notice_title)) },
-            text = { Text(stringResource(R.string.history_tracking_notice_body)) },
-            confirmButton = {
-                TextButton(onClick = viewModel::dismissTrackingNotice) {
-                    Text(stringResource(R.string.history_tracking_notice_confirm))
-                }
-            },
-        )
-    }
-
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = onDismissClearDialog,

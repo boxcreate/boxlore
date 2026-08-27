@@ -2,29 +2,30 @@ package cx.aswin.boxlore.feature.home.components
 
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Subscriptions
-import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -47,68 +48,119 @@ fun BecauseYouLikeSection(
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
-        // --- Seed Podcast Card (Matching OutlinedCard Bento style) ---
-        OutlinedCard(
-            shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        // Editorial seed stamp: the tilted cover and heart badge give this rail a distinct identity.
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .heightIn(min = 88.dp)
                     .expressiveClickable(onClick = { onPodcastClick(podcast) }),
         ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OptimizedImage(
-                    url = podcast.imageUrl,
-                    proxyWidth = 120,
-                    contentDescription = null,
+            Box {
+                Box(
                     modifier =
                         Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.mood_heart_24),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp),
-                        )
+                            .matchParentSize()
+                            .clip(MaterialTheme.shapes.extraLarge),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 20.dp, y = (-34).dp)
+                                .size(104.dp)
+                                .rotate(10f)
+                                .clip(ExpressiveShapes.SoftBurst)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.055f)),
+                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomStart)
+                                .offset(x = 78.dp, y = 38.dp)
+                                .size(84.dp)
+                                .rotate(-12f)
+                                .clip(ExpressiveShapes.Cookie6)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.055f)),
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Box(modifier = Modifier.size(64.dp)) {
+                        Surface(
+                            shape = MaterialTheme.shapes.large,
+                            shadowElevation = 3.dp,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .size(56.dp)
+                                    .rotate(-3f),
+                        ) {
+                            OptimizedImage(
+                                url = podcast.imageUrl,
+                                proxyWidth = 120,
+                                contentDescription = null,
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(MaterialTheme.shapes.large),
+                            )
+                        }
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            shadowElevation = 2.dp,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(24.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.mood_heart_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "BECAUSE YOU LIKE",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = GoogleSansWeight.bold,
-                            letterSpacing = 0.5.sp,
+                            letterSpacing = 0.7.sp,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = podcast.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = GoogleSansWeight.bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = podcast.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                IconButton(
-                    onClick = onChangePodcastClick,
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Tune,
-                        contentDescription = "Change seed podcast",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
+                    IconButton(
+                        onClick = onChangePodcastClick,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SwapHoriz,
+                            contentDescription = "Change seed podcast",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
                 }
             }
         }
@@ -133,7 +185,7 @@ fun BecauseYouLikeSection(
                             onClick = { onPodcastClick(suggestedPodcast) },
                             showSubtitle = false,
                             density = FeedMediaCardDensity.Rail,
-                            modifier = Modifier.width(HomeFeedSpacing.RailCardWidth),
+                            modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction),
                         )
                     }
                 }
@@ -171,7 +223,7 @@ fun BecauseYouLikeSection(
                             episode = episode,
                             onClick = { onEpisodeClick(episode, parentPodcast) },
                             showSubtitle = false,
-                            modifier = Modifier.width(HomeFeedSpacing.RailCardWidth),
+                            modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction),
                         )
                     }
                 }

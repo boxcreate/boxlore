@@ -5,7 +5,7 @@
     android:minWidth="245dp"
     android:minHeight="180dp"
     android:minResizeWidth="245dp"
-    android:minResizeHeight="140dp"
+    android:minResizeHeight="180dp"
     android:previewLayout="@layout/widget_preview_new_episodes"
     android:resizeMode="vertical|horizontal"
     android:targetCellWidth="4"

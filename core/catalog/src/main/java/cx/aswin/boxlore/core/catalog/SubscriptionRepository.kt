@@ -172,11 +172,38 @@ class SubscriptionRepository(
     }
 
     suspend fun subscribe(podcast: Podcast) {
+        subscribeInternal(podcast, restoredSubscribedAt = null, recordFeedback = true)
+    }
+
+    /**
+     * Restores a subscription without making the import look like a new listener action.
+     *
+     * Valid historical timestamps are preserved. Missing or future timestamps fall back
+     * to the current time for compatibility with older or malformed backups.
+     */
+    internal suspend fun restoreSubscription(
+        podcast: Podcast,
+        subscribedAt: Long,
+    ) {
+        subscribeInternal(
+            podcast = podcast,
+            restoredSubscribedAt = subscribedAt,
+            recordFeedback = false,
+        )
+    }
+
+    private suspend fun subscribeInternal(
+        podcast: Podcast,
+        restoredSubscribedAt: Long?,
+        recordFeedback: Boolean,
+    ) {
         if (!podcast.isRss && podcastDao.getRssPodcastLinkedTo(podcast.id)?.isSubscribed == true) {
             return
         }
+        val now = System.currentTimeMillis()
         val existing = podcastDao.getPodcast(podcast.id)
         val isNewSubscription = existing?.isSubscribed != true
+        val validRestoredSubscribedAt = restoredSubscribedAt?.takeIf { it in 1..now }
         val preferredSortVal = existing?.preferredSort ?: if (podcast.type == "serial") "oldest" else "newest"
         val typeVal = if (preferredSortVal == "oldest" || podcast.type == "serial") "serial" else "episodic"
         val entity =
@@ -187,10 +214,13 @@ class SubscriptionRepository(
                 imageUrl = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: existing?.imageUrl ?: "",
                 description = podcast.description,
                 isSubscribed = true,
-                subscribedAt = if (existing?.isSubscribed == true) existing.subscribedAt else System.currentTimeMillis(),
+                subscribedAt =
+                    validRestoredSubscribedAt
+                        ?: existing?.takeIf { it.isSubscribed }?.subscribedAt
+                        ?: now,
                 genre = podcast.genre,
                 type = typeVal,
-                lastRefreshed = existing?.lastRefreshed ?: System.currentTimeMillis(),
+                lastRefreshed = existing?.lastRefreshed ?: now,
                 latestEpisode =
                     (podcast.latestEpisode ?: existing?.latestEpisode)?.let { ep ->
                         ep.copy(
@@ -234,7 +264,7 @@ class SubscriptionRepository(
         podcastDao.upsert(entity)
         localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
         recoverFeedUrlIfMissing(podcast)
-        if (isNewSubscription) {
+        if (isNewSubscription && recordFeedback) {
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target =
                     FeedbackTarget(

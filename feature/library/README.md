@@ -7,7 +7,7 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 ## Public API
 
 - `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback (the same shortcuts Home normally owns).
-- `HistoryScreen` and `HistoryViewModel`.
+- `HistoryScreen` and `HistoryViewModel`. History uses a compact period-first hierarchy: a full-width listening-time hero, content-sized highlights, listening-pattern cards, then the filtered episode timeline. Highlights use a compact top-show row and explicit two-column metric grid instead of fixed-height carousel pages; paired cards match the tallest cell in their row, while an odd final metric spans the row as a featured card with a large tonal icon. The hero flows vertically so narrow phones do not sacrifice labels or leave split-column dead space; timeline rows allow longer episode/show copy. The one-time tracking-reset notice no longer appears.
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`.
 - Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.
 - `SmartDownloadsSettingsScreen` and `AutoDownloadSettingsScreen`.
@@ -31,13 +31,13 @@ src/main/java/cx/aswin/boxlore/feature/library/
   SubscriptionsScreen.kt
   history/
     HistoryActivityGraphs.kt      — weekly activity + time-of-day charts, day filter chips
-    HistoryDialogs.kt           — tracking notice, clear-all, date-picker dialogs
+    HistoryDialogs.kt           — clear-all and date-picker dialogs
     HistoryEmptyState.kt          — zero-history empty state
-    HistoryInsightCarousel.kt     — swipeable insight metric cards
+    HistoryInsightCarousel.kt     — compact top-show highlight + two-column metric grid
     HistoryListItems.kt           — timeline rows, status filter (`ConnectedOptionSelector`), date headers
     HistoryScreenBody.kt          — loading / empty / success body switch
     HistoryScreenEffects.kt       — lifecycle, analytics, undo snackbar
-    HistoryStatsCards.kt          — period selector (`ConnectedOptionSelector`), listening-time hero card
+    HistoryStatsCards.kt          — period selector (`ConnectedOptionSelector`), vertically flowing listening-time hero
     HistorySuccessList.kt         — success-state LazyColumn (stats + timeline)
     HistoryTopBar.kt              — collapsible top app bar + overflow menu
   subscriptions/
@@ -48,12 +48,13 @@ src/main/java/cx/aswin/boxlore/feature/library/
     SubscriptionListRowParts.kt   — list artwork, title column, pin badge
   logic/
     SubscriptionManualOrderLogic.kt — Manual sort apply / drag move / drop; skips non-podcast drag keys
+    SubscriptionSmartOrderLogic.kt — Smart sort: score desc, then title
 ```
 
 ## Subscriptions UX contracts
 
 - Route: `library/subscriptions?tab={0|1}` (`0` = Shows, `1` = New Episodes). Omitting `tab` (Library hub, Open app to Subscriptions) uses Appearance **Default tabs** (`shows` / `new_episodes`). Explicit `tab` still wins (Home Latest, widgets).
-- Shows: image-only 3-column grid (default) or richer list; Explore-style `PillFilterChip` genres **with icons**; sort menu in the top bar (Smart / Recently Updated / A–Z / Most Listened / Manual); long-press-drag artwork on the unfiltered Shows list (genre All, empty search) to reorder — covers keep the usual shrink-bounce on tap and stay rounded while dragging; the first drop seeds `subscription_manual_order` from the visible list and switches `subscription_sort` to Manual; drag state stores ordered ids and re-reads current `Podcast` objects so artwork/episode badges stay fresh; new shows append A–Z at the end of Manual; unsubscribe drops that id from Manual order (and Home pins); a circular pin badge marks Home-pinned shows; NEW badge uses shared `isLatestEpisodeNew` (Room `rssHasNewEpisodes` for true-RSS and PI direct-feed tips, else 48h); broken/missing art shows podcast title on the cover.
+- Shows: image-only 3-column grid (default) or richer list; Explore-style `PillFilterChip` genres **with icons**; sort menu in the top bar (Smart / Recently Updated / A–Z / Most Listened / Manual); Smart shares Home Your Shows' deterministic score (log-normalized listening signals plus a bounded three-day subscribe-recency floor, not a front-of-list slice); long-press-drag artwork on the unfiltered Shows list (genre All, empty search) to reorder — covers keep the usual shrink-bounce on tap and stay rounded while dragging; the first drop seeds `subscription_manual_order` from the visible list and switches `subscription_sort` to Manual; drag state stores ordered ids and re-reads current `Podcast` objects so artwork/episode badges stay fresh; new shows append A–Z at the end of Manual; unsubscribe drops that id from Manual order (and Home pins); a circular pin badge marks Home-pinned shows; NEW badge uses shared `isLatestEpisodeNew` (Room `rssHasNewEpisodes` for true-RSS and PI direct-feed tips, else 48h); broken/missing art shows podcast title on the cover.
 - New Episodes: latest episode per show from Room `latestEpisode` (PI tip, or publisher-feed tip when opted into **Missing episodes?**); the screen calls `SubscriptionForegroundSync.requestRefresh` on appear so this is a live `/sync` (including **Open app to** Subscriptions), not a cache-only paint from a previous session. Same icon genre pills; Smart vs Chronological sort plus **Hide played episodes** checkbox in the Sort menu; denser play rows; quieter sticky date headers; Play All FAB.
 - Search stays in the top bar without removing the tab switcher. No glance/summary strip. Genre row is pills-only (sort/hide are not on that row).
 - Genre icon/label catalog in `subscriptions/SubscriptionGenreCatalog.kt` mirrors Explore (no feature→feature import).
@@ -85,6 +86,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - `HistoryFilterTest` covers history filtering behavior.
 - `SubscriptionSortTest` covers subscription ordering, including Manual name round-trip.
 - `SubscriptionManualOrderLogicTest` covers seed/move/append/drop, ignoring unknown ids, and skipping non-podcast drag keys (genre header).
+- `SubscriptionSmartOrderLogicTest` covers Smart score-then-title order without a recency band.
 - `SubscriptionFilterLogicTest` covers genre extract/filter, sort labels, and chronological header buckets.
 - `DownloadModelsTest` covers download entity mapping, size/date formatting, and long-press multi-select (`longPressDownloadSelection`).
 

@@ -1,10 +1,12 @@
 package cx.aswin.boxlore.feature.widgets
 
 import android.content.Context
+import android.view.View
 import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -113,5 +115,41 @@ class LibraryWidgetRemoteViewsTest {
             )
         assertEquals(R.layout.library_widget_list, views.layoutId)
         views.apply(context, FrameLayout(context))
+    }
+
+    @Test
+    fun populatedListResizeFloorLeavesRoomForACompleteRow() {
+        val views =
+            LibraryWidgetRenderer.build(
+                context = context,
+                appWidgetId = 3,
+                snapshot =
+                    LibraryWidgetSnapshot(
+                        subscriptions =
+                            listOf(
+                                WidgetShowRow(
+                                    podcastId = "p1",
+                                    title = "A show with a long title",
+                                    subtitle = "Publisher",
+                                    deepLinkUri = "boxlore://podcast/p1",
+                                ),
+                            ),
+                    ),
+                kind = LibraryWidgetKind.SUBSCRIPTIONS,
+            )
+        val root = views.apply(context, FrameLayout(context))
+        val density = context.resources.displayMetrics.density
+        root.measure(
+            View.MeasureSpec.makeMeasureSpec((245 * density).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((180 * density).toInt(), View.MeasureSpec.EXACTLY),
+        )
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+
+        val minimumRowHeight = (56 * density).toInt()
+        val listHeight = root.findViewById<View>(R.id.widget_list_content).height
+        assertTrue(
+            "list content was ${listHeight}px; expected at least ${minimumRowHeight}px",
+            listHeight >= minimumRowHeight,
+        )
     }
 }

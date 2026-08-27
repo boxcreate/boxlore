@@ -3,39 +3,33 @@ package cx.aswin.boxlore.feature.library.history
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PageSize
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningTimeBucket
@@ -46,10 +40,8 @@ private sealed interface InsightCard {
         val label: String,
         val value: String,
         val detail: String? = null,
-    ) : InsightCard {
-        val detailHasNumber: Boolean
-            get() = detail?.any { it.isDigit() } == true
-    }
+        val icon: ImageVector,
+    ) : InsightCard
 
     data class TopShow(
         val name: String,
@@ -57,9 +49,6 @@ private sealed interface InsightCard {
         val imageUrl: String?,
     ) : InsightCard
 }
-
-private val InsightCardWidth = 280.dp
-private val InsightCardHeight = 156.dp
 
 @Composable
 fun HistoryInsightCarousel(
@@ -70,33 +59,34 @@ fun HistoryInsightCarousel(
 
     if (cards.isEmpty()) return
 
-    val pagerState = rememberPagerState { cards.size }
-    val horizontalOverscrollLock =
-        remember {
-            object : NestedScrollConnection {
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource,
-                ): Offset = Offset(x = available.x, y = 0f)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        cards.filterIsInstance<InsightCard.TopShow>().forEach { card ->
+            TopShowCardBody(card)
+        }
+        val metrics = cards.filterIsInstance<InsightCard.Metric>()
+        metrics.chunked(2).forEach { rowCards ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                rowCards.forEach { card ->
+                    MetricCardBody(
+                        card = card,
+                        wide = rowCards.size == 1,
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                    )
+                }
             }
         }
-
-    HorizontalPager(
-        state = pagerState,
-        pageSize = PageSize.Fixed(InsightCardWidth),
-        contentPadding = PaddingValues(end = 48.dp),
-        pageSpacing = 12.dp,
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(InsightCardHeight)
-                .nestedScroll(horizontalOverscrollLock),
-    ) { index ->
-        InsightSwipeCard(
-            card = cards[index],
-            modifier = Modifier.fillMaxSize(),
-        )
     }
 }
 
@@ -170,6 +160,7 @@ private fun MutableList<InsightCard>.addMetricCards(
             label = stringResource(R.string.history_card_active_days),
             value = insights.activeDaysInPeriod.toString(),
             detail = stringResource(R.string.history_active_days_detail),
+            icon = Icons.Rounded.CalendarMonth,
         ),
     )
     add(
@@ -181,6 +172,7 @@ private fun MutableList<InsightCard>.addMetricCards(
                     R.string.history_completion_in_progress,
                     insights.inProgressCount,
                 ),
+            icon = Icons.Rounded.CheckCircle,
         ),
     )
     add(
@@ -197,6 +189,7 @@ private fun MutableList<InsightCard>.addMetricCards(
                         )
                     else -> null
                 },
+            icon = Icons.Rounded.Schedule,
         ),
     )
     if (insights.streakDays > 0) {
@@ -205,6 +198,7 @@ private fun MutableList<InsightCard>.addMetricCards(
                 label = stringResource(R.string.history_stat_streak),
                 value = insights.streakDays.toString(),
                 detail = null,
+                icon = Icons.Rounded.LocalFireDepartment,
             ),
         )
     }
@@ -218,167 +212,163 @@ private fun MutableList<InsightCard>.addMetricCards(
                         R.string.history_sessions_longest,
                         formatDuration(insights.longestSessionMs),
                     ),
+                icon = Icons.Rounded.Headphones,
             ),
         )
     }
 }
 
 @Composable
-private fun InsightSwipeCard(
-    card: InsightCard,
+private fun MetricCardBody(
+    card: InsightCard.Metric,
+    wide: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        when (card) {
-            is InsightCard.TopShow -> TopShowCardBody(card)
-            is InsightCard.Metric -> MetricCardBody(card)
+        if (wide) {
+            Row(
+                modifier = Modifier.padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                MetricCardText(
+                    card = card,
+                    modifier = Modifier.weight(1f),
+                )
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ) {
+                    Icon(
+                        imageVector = card.icon,
+                        contentDescription = null,
+                        modifier = Modifier.padding(16.dp).size(28.dp),
+                    )
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = card.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = GoogleSansWeight.semiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Icon(
+                        imageVector = card.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                MetricValueAndDetail(card)
+            }
         }
     }
 }
 
 @Composable
-private fun MetricCardBody(card: InsightCard.Metric) {
-    BoxWithConstraints(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
+private fun MetricCardText(
+    card: InsightCard.Metric,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        val heightPx = maxHeight.value
-        val lengthFactor =
-            when {
-                card.value.length <= 2 -> 0.62f
-                card.value.length <= 4 -> 0.48f
-                card.value.length <= 8 -> 0.34f
-                else -> 0.24f
-            }
-        val valueSp =
-            (heightPx * lengthFactor).coerceIn(36f, 72f).sp
+        Text(
+            text = card.label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = GoogleSansWeight.semiBold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        MetricValueAndDetail(card)
+    }
+}
 
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = card.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = GoogleSansWeight.semiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (!card.detailHasNumber) {
-                    card.detail?.let { detail ->
-                        Text(
-                            text = detail,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = card.value,
-                    style =
-                        MaterialTheme.typography.displayMedium.copy(
-                            fontSize = valueSp,
-                            lineHeight = valueSp * 1.05f,
-                        ),
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.End,
-                )
-                if (card.detailHasNumber) {
-                    Text(
-                        text = card.detail.orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.End,
-                    )
-                }
-            }
-        }
+@Composable
+private fun MetricValueAndDetail(card: InsightCard.Metric) {
+    Text(
+        text = card.value,
+        style =
+            if (card.value.length > 10) {
+                MaterialTheme.typography.titleLarge
+            } else {
+                MaterialTheme.typography.headlineMedium
+            },
+        fontWeight = GoogleSansWeight.bold,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 2,
+    )
+    card.detail?.let { detail ->
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+        )
     }
 }
 
 @Composable
 private fun TopShowCardBody(card: InsightCard.TopShow) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        if (!card.imageUrl.isNullOrBlank()) {
-            OptimizedImage(
-                url = card.imageUrl,
-                proxyWidth = 200,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier
-                        .fillMaxHeight()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(20.dp)),
-            )
-        }
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceBetween,
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.history_card_top_show),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = GoogleSansWeight.semiBold,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            if (!card.imageUrl.isNullOrBlank()) {
+                OptimizedImage(
+                    url = card.imageUrl,
+                    proxyWidth = 160,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(18.dp)),
+                )
+            }
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
+                    text = stringResource(R.string.history_card_top_show),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = GoogleSansWeight.semiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
                     text = card.name,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = GoogleSansWeight.bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
                 )
                 Text(
                     text = card.detail,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 2,
                 )
             }
         }

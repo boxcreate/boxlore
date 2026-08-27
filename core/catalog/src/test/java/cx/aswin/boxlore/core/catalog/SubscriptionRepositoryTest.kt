@@ -75,8 +75,42 @@ class SubscriptionRepositoryTest {
 
             val stored = podcastDao.getPodcast("pod-1")!!
             assertTrue(stored.isSubscribed)
+            assertTrue(stored.subscribedAt > 0L)
             assertEquals("Show", stored.title)
             assertTrue(repository.isSubscribed("pod-1"))
+        }
+
+    @Test
+    fun restoreSubscriptionPreservesOriginalSubscribedAt() =
+        runTest {
+            val originalSubscribedAt = 1_600_000_000_000L
+
+            repository.restoreSubscription(podcast(), originalSubscribedAt)
+
+            assertEquals(originalSubscribedAt, podcastDao.getPodcast("pod-1")!!.subscribedAt)
+        }
+
+    @Test
+    fun restoreSubscriptionRepairsTimestampOnExistingImportedRow() =
+        runTest {
+            repository.subscribe(podcast())
+            val originalSubscribedAt = 1_600_000_000_000L
+
+            repository.restoreSubscription(podcast(), originalSubscribedAt)
+
+            assertEquals(originalSubscribedAt, podcastDao.getPodcast("pod-1")!!.subscribedAt)
+        }
+
+    @Test
+    fun restoreSubscriptionRejectsFutureSubscribedAt() =
+        runTest {
+            val beforeRestore = System.currentTimeMillis()
+
+            repository.restoreSubscription(podcast(), Long.MAX_VALUE)
+
+            val restoredAt = podcastDao.getPodcast("pod-1")!!.subscribedAt
+            assertTrue(restoredAt >= beforeRestore)
+            assertTrue(restoredAt <= System.currentTimeMillis())
         }
 
     @Test

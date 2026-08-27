@@ -21,6 +21,7 @@ import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
+import cx.aswin.boxlore.feature.library.logic.SubscriptionSmartOrderLogic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
@@ -257,13 +258,10 @@ class LibraryViewModel(
                     emptyMap()
                 }
 
-                enrichedPodcasts.map { pod ->
-                    val fallbackScore = pod.latestEpisode?.let { it.publishedDate.toDouble() } ?: 0.0
-                    pod to (podScoresMap[pod.id] ?: fallbackScore)
-                }.sortedWith(
-                    compareByDescending<Pair<Podcast, Double>> { it.second }
-                        .thenBy { it.first.title }
-                ).map { it.first }
+                SubscriptionSmartOrderLogic.sort(
+                    podcasts = enrichedPodcasts,
+                    scores = podScoresMap,
+                )
             }
             SubscriptionSort.RecentlyUpdated -> {
                 enrichedPodcasts.sortedByDescending { it.latestEpisode?.publishedDate ?: 0L }

@@ -45,6 +45,7 @@ import cx.aswin.boxlore.core.designsystem.components.drawOutline
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
 private val sessionSeed = kotlin.random.Random.nextInt()
 
@@ -75,6 +76,7 @@ fun HeroGridCard(
     mode: HeroGridMode,
     onCellClick: (Podcast) -> Unit,
     currentPlayingPodcastId: String? = null,
+    currentPlayingEpisodeId: String? = null,
     isPlaying: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -127,9 +129,15 @@ fun HeroGridCard(
                             podcast = podcast,
                             mode = mode,
                             onClick = onCellClick,
-                            isNowPlaying = mode == HeroGridMode.Resume &&
-                                podcast.id == currentPlayingPodcastId &&
-                                isPlaying,
+                            isNowPlaying =
+                                mode == HeroGridMode.Resume &&
+                                    HomePlaybackStateLogic.isHeroItemPlaying(
+                                        itemEpisodeId = podcast.latestEpisode?.id,
+                                        itemPodcastId = podcast.id,
+                                        currentPlayingEpisodeId = currentPlayingEpisodeId,
+                                        currentPlayingPodcastId = currentPlayingPodcastId,
+                                        isPlaying = isPlaying,
+                                    ),
                             modifier = cellModifier,
                         )
                     }

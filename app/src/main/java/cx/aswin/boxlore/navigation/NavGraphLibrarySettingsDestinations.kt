@@ -344,7 +344,6 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
                             cx.aswin.boxlore.feature.library.HistoryViewModel(
                                 playbackRepository,
-                                userPrefs,
                             ) as T
                     },
             )

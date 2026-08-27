@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.library.HistorySuccessState
 import cx.aswin.boxlore.feature.library.HistoryViewModel
@@ -53,7 +54,7 @@ internal fun HistorySuccessList(
                 top = 8.dp,
                 bottom = bottomInset + 24.dp,
             ),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             HistoryPeriodSelector(
@@ -62,10 +63,16 @@ internal fun HistorySuccessList(
             )
         }
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ListeningTimeCard(insights = success.insights)
-                HistoryInsightCarousel(insights = success.insights)
-            }
+            ListeningTimeCard(insights = success.insights)
+        }
+        item {
+            HistorySectionTitle(stringResource(R.string.history_section_highlights))
+        }
+        item {
+            HistoryInsightCarousel(insights = success.insights)
+        }
+        item {
+            HistorySectionTitle(stringResource(R.string.history_section_patterns))
         }
         item {
             HistoryActivityGraph(dailyActivity = success.insights.dailyActivity)
@@ -74,18 +81,21 @@ internal fun HistorySuccessList(
             HistoryTimeOfDayGraph(insights = success.insights)
         }
         item {
-            HistoryDayChips(
-                activeDays = success.activeDays,
-                selectedDate = success.selectedFilterDate,
-                onSelectDate = viewModel::setFilterDate,
-                onPickOlderDate = onPickOlderDate,
-            )
+            HistorySectionTitle(stringResource(R.string.history_section_timeline))
         }
         item {
-            HistoryStatusFilterSelector(
-                selected = success.selectedHistoryFilter,
-                onSelect = viewModel::setHistoryFilter,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                HistoryDayChips(
+                    activeDays = success.activeDays,
+                    selectedDate = success.selectedFilterDate,
+                    onSelectDate = viewModel::setFilterDate,
+                    onPickOlderDate = onPickOlderDate,
+                )
+                HistoryStatusFilterSelector(
+                    selected = success.selectedHistoryFilter,
+                    onSelect = viewModel::setHistoryFilter,
+                )
+            }
         }
         if (success.timelineEmpty) {
             item {
@@ -132,4 +142,13 @@ internal fun HistorySuccessList(
             }
         }
     }
+}
+
+@Composable
+private fun HistorySectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = GoogleSansWeight.semiBold,
+    )
 }

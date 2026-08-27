@@ -192,6 +192,7 @@ private fun SmartHeroCarousel(
     HeroCarousel(
         heroItems = heroItems,
         currentPlayingPodcastId = playback.currentPlayingPodcastId,
+        currentPlayingEpisodeId = playback.currentPlayingEpisodeId,
         isPlaying = playback.isPlaying,
         onPlayClick = { podcast, bundle -> callbacks.onPlayClick?.invoke(podcast, bundle) },
         onDetailsClick = { podcast -> handleHeroDetailsClick(podcast, callbacks) },

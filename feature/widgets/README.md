@@ -4,11 +4,11 @@
 
 Owns home-screen widgets built with `AppWidgetProvider` + `RemoteViews` (no Glance):
 
-- **Now playing** — 4×2 compact card (`wrap_content` height, centered in the host cell) with a 64dp artwork tile, metadata, and previous / seek-back / play-pause / seek-forward / next. Beige chrome hugs content; unused cell space stays transparent instead of tall empty bands.
-- **Now playing bar** — compact 4×1 card (`wrap_content` height, centered in the host cell). Fixed 44dp art / 40dp square seek controls; titles fill the middle. Does not stretch to fill a tall launcher row.
+- **Now playing** — 4×2 compact card (`wrap_content` height, centered in the host cell) with a 48dp artwork tile, two-line bounded episode metadata, and previous / seek-back / play-pause / seek-forward / next. Its 100dp content height matches the provider minimum, so long titles cannot displace or clip transport controls.
+- **Now playing bar** — compact 4×1 card (`wrap_content` height, centered in the host cell). Fixed 40dp art / 36dp square seek controls; titles fill the middle. Playing and empty states both fit the provider's 48dp minimum instead of stretching or clipping.
 - **Playback controls** — centered square 2×2 artwork / play-pause / seek-back / seek-forward tile grid.
-- **Subscriptions** — 4×3 scrollable `ListView` of subscribed shows (cap 50); same sort prefs as Library → Subscriptions → Shows. Row tap opens `boxlore://podcast/{id}`.
-- **New episodes** — 4×3 scrollable `ListView` of latest episodes from subscriptions (cap 50); same filters as Library → Subscriptions → Latest (`hideCompletedInSubs`, smart/recency sort). Row tap opens the episode deep link.
+- **Subscriptions** — 4×3 scrollable `ListView` of subscribed shows (cap 50); same sort prefs as Library → Subscriptions → Shows. Its 180dp resize floor preserves the header, one complete row, and footer. Row tap opens `boxlore://podcast/{id}`.
+- **New episodes** — 4×3 scrollable `ListView` of latest episodes from subscriptions (cap 50); same filters as Library → Subscriptions → Latest (`hideCompletedInSubs`, smart/recency sort). It uses the same 180dp safe resize floor. Row tap opens the episode deep link.
 
 Compact playback surfaces expose seek only; the wider 4×2 adds previous/next around seek. There is no shuffle or repeat on widgets. Library list widgets do not play audio from the home screen.
 

@@ -124,18 +124,7 @@
         <error line="50" column="1" source="standard:no-blank-line-in-list" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/database/PodcastScoring.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="13" column="37" source="standard:trailing-comma-on-declaration-site" />
-        <error line="20" column="49" source="standard:trailing-comma-on-declaration-site" />
-        <error line="33" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="41" column="34" source="standard:multiline-expression-wrapping" />
-        <error line="55" column="35" source="standard:multiline-expression-wrapping" />
-        <error line="70" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="70" column="28" source="standard:function-signature" />
-        <error line="75" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="78" column="34" source="standard:multiline-expression-wrapping" />
-        <error line="78" column="34" source="standard:function-signature" />
-        <error line="83" column="46" source="standard:trailing-comma-on-call-site" />
+        <error line="82" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/database/entities/QueueItem.kt">
         <error line="11" column="1" source="standard:no-blank-line-in-list" />

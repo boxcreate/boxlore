@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -62,34 +61,15 @@ sealed interface HistoryUiState {
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(
     private val listeningHistoryPort: ListeningHistoryPort,
-    private val userPreferencesRepository: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
 ) : ViewModel() {
     private val _expandedDates = MutableStateFlow<Set<LocalDate>>(emptySet())
     private val _selectedFilterDate = MutableStateFlow<LocalDate?>(null)
     private val _selectedHistoryFilter = MutableStateFlow(HistoryFilter.ALL)
     private val _selectedPeriod = MutableStateFlow(ListeningPeriod.DAYS_30)
-    private val _showTrackingNotice = MutableStateFlow(false)
     private var hasInitializedExpansions = false
-
-    val showTrackingNotice: StateFlow<Boolean> = _showTrackingNotice
 
     private val eventsChannel = Channel<HistoryUiEvent>(Channel.BUFFERED)
     val events = eventsChannel.receiveAsFlow()
-
-    init {
-        viewModelScope.launch {
-            val seen = userPreferencesRepository.hasSeenListeningHistoryTrackingNotice.first()
-            if (seen) return@launch
-            val hasEpisodeHistory = listeningHistoryPort.observeHistoryTimeline().first().isNotEmpty()
-            if (hasEpisodeHistory) {
-                _showTrackingNotice.value = true
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibraryHistoryTrackingNotice("shown")
-            } else {
-                // New installs never had the old estimate-based insights.
-                userPreferencesRepository.markListeningHistoryTrackingNoticeSeen()
-            }
-        }
-    }
 
     private val insightsFlow =
         _selectedPeriod.flatMapLatest { period ->
@@ -233,15 +213,6 @@ class HistoryViewModel(
             listeningHistoryPort.clearHistory()
             itemsDeletedCount++
             eventsChannel.send(HistoryUiEvent.HistoryCleared)
-        }
-    }
-
-    fun dismissTrackingNotice() {
-        if (!_showTrackingNotice.value) return
-        _showTrackingNotice.value = false
-        viewModelScope.launch {
-            userPreferencesRepository.markListeningHistoryTrackingNoticeSeen()
-            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibraryHistoryTrackingNotice("dismissed")
         }
     }
 

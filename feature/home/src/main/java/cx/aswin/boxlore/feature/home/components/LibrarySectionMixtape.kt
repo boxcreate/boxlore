@@ -388,7 +388,7 @@ private fun HomeMixHeader(
             Button(
                 onClick = onPlay,
                 enabled = playEnabled,
-                shape = RoundedCornerShape(14.dp),
+                shape = CircleShape,
                 modifier = Modifier.height(44.dp),
             ) {
                 Icon(

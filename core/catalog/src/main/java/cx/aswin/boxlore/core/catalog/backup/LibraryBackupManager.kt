@@ -322,7 +322,10 @@ class LibraryBackupManager(
                 skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
                 skipEndingOverrideMs = entity.skipEndingOverrideMs,
             )
-        subscriptionRepository.subscribe(subscribedRssPodcast)
+        subscriptionRepository.restoreSubscription(
+            podcast = subscribedRssPodcast,
+            subscribedAt = entity.subscribedAt,
+        )
         return subscribedRssPodcast
     }
 
@@ -361,7 +364,10 @@ class LibraryBackupManager(
                 rssHasNewEpisodes = entity.rssHasNewEpisodes,
                 linkedPodcastIndexId = entity.linkedPodcastIndexId,
             )
-        subscriptionRepository.subscribe(podcast)
+        subscriptionRepository.restoreSubscription(
+            podcast = podcast,
+            subscribedAt = entity.subscribedAt,
+        )
         return podcast
     }
 

@@ -150,7 +150,7 @@ class AdaptiveCandidateScorerTest {
                 scorer.scorePodcasts(
                     podcasts = podcasts,
                     history = listOf(history(podcastId = "pod-1", isLiked = true)),
-                    objective = RankingObjective.YOUR_SHOWS,
+                    objective = RankingObjective.CONTINUATION,
                     surface = RankingSurface.EXPLORE,
                     nowMs = nowMs,
                 )
@@ -178,7 +178,7 @@ class AdaptiveCandidateScorerTest {
                 scorer.scorePodcasts(
                     podcasts = podcasts,
                     history = history,
-                    objective = RankingObjective.YOUR_SHOWS,
+                    objective = RankingObjective.CONTINUATION,
                     surface = RankingSurface.HOME,
                     includeAutoDownloadBoost = true,
                     nowMs = nowMs,
@@ -367,5 +367,154 @@ class AdaptiveCandidateScorerTest {
                     nowMs = nowMs,
                 )
             assertTrue(ranked.size <= 2)
+        }
+
+    @Test
+    fun scorePodcastsUsesSameDeterministicYourShowsScoresAcrossSurfaces() =
+        runTest {
+            val ignoredFeatures =
+                CandidateFeatureBuilder.build(
+                    CandidateSignals(
+                        showAffinity = 0.5,
+                        isSubscribed = true,
+                        isUnplayed = true,
+                        serialMatch = 1.0,
+                        hoursSinceSubscription = 24.0 * 120,
+                        ageHours = 24.0 * 60,
+                    ),
+                )
+            repeat(60) { index ->
+                val exposureId =
+                    repository.recordExposure(
+                        RankingExposure(
+                            episodeId = "skip-$index",
+                            podcastId = "ignored-$index",
+                            objective = RankingObjective.YOUR_SHOWS,
+                            surface = RankingSurface.HOME,
+                            source = CandidateSource.SUBSCRIPTION,
+                            features = ignoredFeatures,
+                            online = true,
+                            shownAt = nowMs - index,
+                        ),
+                    )
+                assertTrue(repository.resolveExposure(exposureId, reward = -0.85, listenSeconds = 8))
+            }
+
+            val dayMs = 24L * 60 * 60 * 1000
+            val favoriteHistory =
+                (1..40).map { index ->
+                    history(
+                        episodeId = "fav-ep-$index",
+                        podcastId = "fav",
+                        progressMs = 40 * 60 * 1000L,
+                        isCompleted = true,
+                        isLiked = index <= 5,
+                        lastPlayedAt = nowMs - 60_000L,
+                    )
+                }
+            val scores =
+                scorer.scorePodcasts(
+                    podcasts =
+                        listOf(
+                            scorable(
+                                id = "fresh",
+                                subscribedAt = nowMs,
+                                latest =
+                                    episode(
+                                        id = "fresh-ep",
+                                        podcastId = "fresh",
+                                        publishedSeconds = nowMs / 1_000 - 3_600,
+                                    ),
+                            ),
+                            scorable(
+                                id = "ignored",
+                                subscribedAt = nowMs - 120 * dayMs,
+                                latest =
+                                    episode(
+                                        id = "ignored-ep",
+                                        podcastId = "ignored",
+                                        publishedSeconds = nowMs / 1_000 - 60 * 24 * 3_600,
+                                    ),
+                            ),
+                            scorable(
+                                id = "fav",
+                                subscribedAt = nowMs - 200 * dayMs,
+                                latest =
+                                    episode(
+                                        id = "fav-ep-40",
+                                        podcastId = "fav",
+                                        publishedSeconds = nowMs / 1_000 - 3_600,
+                                    ),
+                            ),
+                        ),
+                    history =
+                        favoriteHistory +
+                            history(
+                                episodeId = "ignored-ep",
+                                podcastId = "ignored",
+                                isCompleted = true,
+                                lastPlayedAt = nowMs - 90 * dayMs,
+                            ),
+                    objective = RankingObjective.YOUR_SHOWS,
+                    surface = RankingSurface.LIBRARY,
+                    nowMs = nowMs,
+                )
+            val homeScores =
+                scorer.scorePodcasts(
+                    podcasts =
+                        listOf(
+                            scorable(
+                                id = "fresh",
+                                subscribedAt = nowMs,
+                                latest =
+                                    episode(
+                                        id = "fresh-ep",
+                                        podcastId = "fresh",
+                                        publishedSeconds = nowMs / 1_000 - 3_600,
+                                    ),
+                            ),
+                            scorable(
+                                id = "ignored",
+                                subscribedAt = nowMs - 120 * dayMs,
+                                latest =
+                                    episode(
+                                        id = "ignored-ep",
+                                        podcastId = "ignored",
+                                        publishedSeconds = nowMs / 1_000 - 60 * 24 * 3_600,
+                                    ),
+                            ),
+                            scorable(
+                                id = "fav",
+                                subscribedAt = nowMs - 200 * dayMs,
+                                latest =
+                                    episode(
+                                        id = "fav-ep-40",
+                                        podcastId = "fav",
+                                        publishedSeconds = nowMs / 1_000 - 3_600,
+                                    ),
+                            ),
+                        ),
+                    history =
+                        favoriteHistory +
+                            history(
+                                episodeId = "ignored-ep",
+                                podcastId = "ignored",
+                                isCompleted = true,
+                                lastPlayedAt = nowMs - 90 * dayMs,
+                            ),
+                    objective = RankingObjective.YOUR_SHOWS,
+                    surface = RankingSurface.HOME,
+                    nowMs = nowMs,
+                )
+
+            assertEquals(scores, homeScores)
+            assertTrue(
+                "fresh=${scores["fresh"]} ignored=${scores["ignored"]}",
+                scores.getValue("fresh") > scores.getValue("ignored"),
+            )
+            assertTrue(
+                "fresh=${scores["fresh"]} should stay in the recency floor band",
+                scores.getValue("fresh") >= 0.94,
+            )
         }
 }

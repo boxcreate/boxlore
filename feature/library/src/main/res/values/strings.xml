@@ -18,6 +18,9 @@
     <string name="history_filter_in_progress">In progress</string>
     <string name="history_filter_completed">Done</string>
     <string name="history_time_title">Time listened</string>
+    <string name="history_section_highlights">Highlights</string>
+    <string name="history_section_patterns">Listening patterns</string>
+    <string name="history_section_timeline">Recent listens</string>
     <string name="history_time_estimated_short">Estimated</string>
     <string name="history_time_vs_previous_short">vs last period</string>
     <string name="history_time_streak">%1$d-day streak</string>

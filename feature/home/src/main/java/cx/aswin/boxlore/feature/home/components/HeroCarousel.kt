@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
+import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,6 +25,7 @@ fun HeroCarousel(
     onToggleSubscription: (String) -> Unit,
     onTogglePlayback: (android.os.Bundle?) -> Unit,
     currentPlayingPodcastId: String? = null,
+    currentPlayingEpisodeId: String? = null,
     isPlaying: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -79,6 +81,7 @@ fun HeroCarousel(
                     onPlayClick(podcast, bundle)
                 },
                 currentPlayingPodcastId = currentPlayingPodcastId,
+                currentPlayingEpisodeId = currentPlayingEpisodeId,
                 isPlaying = isPlaying,
                 modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
             )
@@ -89,6 +92,7 @@ fun HeroCarousel(
                 mode = HeroGridMode.NewEpisodes,
                 onCellClick = onDetailsClick,
                 currentPlayingPodcastId = currentPlayingPodcastId,
+                currentPlayingEpisodeId = currentPlayingEpisodeId,
                 isPlaying = isPlaying,
                 modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
             )
@@ -102,7 +106,14 @@ fun HeroCarousel(
                             putInt("ep_carousel_position", i)
                             putString("ep_layout_type", "full_card")
                         }
-                    if (currentPlayingPodcastId == item.podcast.id && isPlaying) {
+                    if (HomePlaybackStateLogic.isHeroItemPlaying(
+                            itemEpisodeId = item.podcast.latestEpisode?.id,
+                            itemPodcastId = item.podcast.id,
+                            currentPlayingEpisodeId = currentPlayingEpisodeId,
+                            currentPlayingPodcastId = currentPlayingPodcastId,
+                            isPlaying = isPlaying,
+                        )
+                    ) {
                         onTogglePlayback(bundle)
                     } else {
                         onPlayClick(item.podcast, bundle)
@@ -111,6 +122,7 @@ fun HeroCarousel(
                 onArrowClick = { onArrowClick(item, i) },
                 onToggleSubscription = { onToggleSubscription(item.podcast.id) },
                 currentPlayingPodcastId = currentPlayingPodcastId,
+                currentPlayingEpisodeId = currentPlayingEpisodeId,
                 isPlaying = isPlaying,
                 modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
             )

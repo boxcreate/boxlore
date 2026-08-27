@@ -158,6 +158,9 @@ object NowPlayingWidgetRenderer {
         variant: WidgetVariant,
         chrome: WidgetChrome,
     ) {
+        val compactBar = variant == WidgetVariant.BAR
+        val titleHeightDp = if (compactBar) 24 else 40
+        val ctaHeightDp = if (compactBar) 16 else 28
         views.setViewVisibility(R.id.widget_playing_container, View.GONE)
         views.setViewVisibility(R.id.widget_empty_container, View.VISIBLE)
         if (variant != WidgetVariant.CONTROLS) {
@@ -178,9 +181,9 @@ object NowPlayingWidgetRenderer {
                     WidgetTextBitmapRenderer.Spec(
                         text = context.getString(R.string.widget_empty_title),
                         widthDp = textWidth,
-                        heightDp = 40,
-                        preferredSizeSp = 22f,
-                        minSizeSp = 16f,
+                        heightDp = titleHeightDp,
+                        preferredSizeSp = if (compactBar) 15f else 22f,
+                        minSizeSp = if (compactBar) 11f else 16f,
                         weight = TITLE_WEIGHT,
                         maxLines = 1,
                         alignment = Layout.Alignment.ALIGN_CENTER,
@@ -196,9 +199,9 @@ object NowPlayingWidgetRenderer {
                     WidgetTextBitmapRenderer.Spec(
                         text = context.getString(R.string.widget_empty_cta),
                         widthDp = textWidth,
-                        heightDp = 28,
-                        preferredSizeSp = 17f,
-                        minSizeSp = 14f,
+                        heightDp = ctaHeightDp,
+                        preferredSizeSp = if (compactBar) 12f else 17f,
+                        minSizeSp = if (compactBar) 9f else 14f,
                         weight = BODY_WEIGHT,
                         maxLines = 1,
                         alignment = Layout.Alignment.ALIGN_CENTER,
@@ -369,9 +372,9 @@ object NowPlayingWidgetRenderer {
     ) {
         val heightDp =
             when (variant) {
-                // 64 art + 8 gap + 40 controls + 20 vertical padding
+                // 48 art + 4 gap + 38 controls + 10 vertical padding
                 WidgetVariant.NOW_PLAYING -> STANDARD_CARD_HEIGHT_DP
-                // 44 art + 16 vertical padding
+                // 40 art + 8 vertical padding
                 WidgetVariant.BAR -> BAR_CARD_HEIGHT_DP
                 WidgetVariant.CONTROLS -> return
             }
@@ -401,8 +404,8 @@ object NowPlayingWidgetRenderer {
         val density = context.resources.displayMetrics.density
         val targetSizeDp =
             when (variant) {
-                WidgetVariant.NOW_PLAYING -> 64
-                WidgetVariant.BAR -> 44
+                WidgetVariant.NOW_PLAYING -> 48
+                WidgetVariant.BAR -> 40
                 WidgetVariant.CONTROLS ->
                     ((minOf(widthDp, heightDp) - GRID_INSETS_DP) / 2)
                         .coerceAtLeast(GRID_MIN_ART_DP)
@@ -454,6 +457,6 @@ object NowPlayingWidgetRenderer {
     private const val GRID_MIN_ART_DP = 36
     private const val GRID_CONTROL_ICON_RATIO = 0.14f
     private const val GRID_PLAY_ICON_RATIO = 0.16f
-    private const val STANDARD_CARD_HEIGHT_DP = 132
-    private const val BAR_CARD_HEIGHT_DP = 60
+    private const val STANDARD_CARD_HEIGHT_DP = 100
+    private const val BAR_CARD_HEIGHT_DP = 48
 }
