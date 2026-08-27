@@ -77,6 +77,7 @@ fun PlaybackRepository.stopCasting() {
     if (plan.stopRemotePlayback) {
         controller?.takeIf { it.isConnected }?.stop()
     }
+    synchronizeCastSession(isActive = false)
     repositoryScope.launch {
         if (plan.stopRemotePlayback) delay(CastStopPolicy.REMOTE_STOP_GRACE_MS)
         endCurrentCastSession(stopReceiverApplication = true)
@@ -88,15 +89,17 @@ fun PlaybackRepository.stopCasting() {
  * remote [androidx.media3.common.DeviceInfo] briefly after a failed wake/reconnect; an explicit
  * inactive session must win so the phone does not remain in a disabled Cast UI.
  */
-fun PlaybackRepository.synchronizeCastSession(isActive: Boolean) {
+fun PlaybackRepository.synchronizeCastSession(isActive: Boolean?) {
     hasActiveCastSession = isActive
-    if (!isActive) {
+    if (isActive == false) {
         playerStateFlow.value =
             playerStateFlow.value.copy(
                 playbackRoute = PlaybackRouteState(),
             )
         return
     }
+    if (isActive == null) return
+
     repositoryScope.launch {
         delay(CastSessionSyncPolicy.ROUTE_REFRESH_DELAY_MS)
         controllerBridge?.syncPlaybackRoute()

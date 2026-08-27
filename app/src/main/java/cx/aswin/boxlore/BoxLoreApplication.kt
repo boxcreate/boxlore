@@ -21,22 +21,28 @@ import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.network.NetworkModule
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.playback.synchronizeCastSession
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 class BoxLoreApplication :
     Application(),
     Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var castSessionGeneration = 0L
+
     private val castSessionListener =
         object : SessionManagerListener<CastSession> {
             override fun onSessionStarting(session: CastSession) {
@@ -54,7 +60,7 @@ class BoxLoreApplication :
                 session: CastSession,
                 error: Int,
             ) {
-                syncCastSession(isActive = false)
+                deferCastSessionClear()
             }
 
             override fun onSessionEnding(session: CastSession) = Unit
@@ -63,7 +69,7 @@ class BoxLoreApplication :
                 session: CastSession,
                 error: Int,
             ) {
-                syncCastSession(isActive = false)
+                deferCastSessionClear()
             }
 
             override fun onSessionResuming(
@@ -84,7 +90,7 @@ class BoxLoreApplication :
                 session: CastSession,
                 error: Int,
             ) {
-                syncCastSession(isActive = false)
+                deferCastSessionClear()
             }
 
             override fun onSessionSuspended(
@@ -250,15 +256,43 @@ class BoxLoreApplication :
         runCatching {
             val sessionManager = CastContext.getSharedInstance(this).sessionManager
             sessionManager.addSessionManagerListener(castSessionListener, CastSession::class.java)
-            syncCastSession(sessionManager.currentCastSession?.isConnected == true)
+            if (sessionManager.currentCastSession?.isConnected == true) {
+                syncCastSession(isActive = true)
+            } else {
+                // Cast restores asynchronously after process recreation. Keep the route
+                // undecided until the resume callbacks arrive instead of forcing it local.
+                syncCastSession(isActive = null)
+                deferCastSessionClear()
+            }
         }.onFailure { exception ->
             android.util.Log.w("BoxLoreApplication", "Unable to observe Cast sessions", exception)
         }
     }
 
-    private fun syncCastSession(isActive: Boolean) {
+    private fun syncCastSession(isActive: Boolean?) {
+        castSessionGeneration += 1
         if (::container.isInitialized) {
             container.playbackRepository.synchronizeCastSession(isActive)
+        }
+    }
+
+    private fun deferCastSessionClear() {
+        val generation = castSessionGeneration + 1
+        castSessionGeneration = generation
+        applicationScope.launch {
+            delay(CAST_SESSION_RECHECK_DELAY_MS)
+            withContext(Dispatchers.Main.immediate) {
+                if (generation != castSessionGeneration) return@withContext
+                val isConnected =
+                    runCatching {
+                        CastContext
+                            .getSharedInstance(this@BoxLoreApplication)
+                            .sessionManager
+                            .currentCastSession
+                            ?.isConnected == true
+                    }.getOrDefault(false)
+                syncCastSession(isActive = isConnected)
+            }
         }
     }
 
@@ -338,3 +372,5 @@ class BoxLoreApplication :
         }
     }
 }
+
+private const val CAST_SESSION_RECHECK_DELAY_MS = 15_000L
