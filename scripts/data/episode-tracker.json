@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-26T22:23:22.369Z",
+  "lastRun": "2026-08-27T03:26:49.053Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -25,10 +25,10 @@
       "lastCheckedAt": 1786636690918
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/74701240",
-      "lastEpisodeTitle": "The Catch Up: 100 dead in deadly Nepal flash floods (26 August)",
-      "lastEpisodeId": "59539935718",
-      "lastCheckedAt": 1787770899740
+      "lastRssKey": "https://api.spreaker.com/episode/74701216",
+      "lastEpisodeTitle": "Maha anti-conversion law, personalised cancer vaccine, a trans athlete's win",
+      "lastEpisodeId": "59552061704",
+      "lastCheckedAt": 1787801210756
     },
     "78573": {
       "lastRssKey": "0195552c-df5b-40b0-8f3d-6257e4b82056",
@@ -43,10 +43,10 @@
       "lastCheckedAt": 1787712410953
     },
     "160817": {
-      "lastRssKey": "https://linuxunplugged.com/681",
-      "lastEpisodeTitle": "Ain’t Nothing But a Syncthing | LINUX Unplugged 681",
-      "lastEpisodeId": "59455560372",
-      "lastCheckedAt": 1787608423002
+      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/81",
+      "lastEpisodeTitle": "Not In My Back Yard | The Launch 🚀 81",
+      "lastEpisodeId": "59549885535",
+      "lastCheckedAt": 1787801213133
     },
     "212882": {
       "lastRssKey": "4447cd00-a7f8-11f0-954a-af8332c31865",
@@ -60,10 +60,10 @@
       "lastCheckedAt": 1782580346119
     },
     "385117": {
-      "lastRssKey": "d11f6a52-a19a-11f1-a3d2-e7d6781c6c35",
-      "lastEpisodeTitle": "6PM ET 08/26/2026 Newscast",
+      "lastRssKey": "b6a8cd9c-a1c4-11f1-b105-d3d44188e661",
+      "lastEpisodeTitle": "11PM ET 08/26/2026 Newscast",
       "lastEpisodeId": "59533316986",
-      "lastCheckedAt": 1787783007046
+      "lastCheckedAt": 1787801213486
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -101,10 +101,10 @@
       "lastCheckedAt": 1787686428629
     },
     "490022": {
-      "lastRssKey": "01675d31-80da-47fe-a6b6-9d72ede92a05",
-      "lastEpisodeTitle": "Delusional Killer Targets Doctor Couple Thinking They’re In A Love Triangle",
-      "lastEpisodeId": "59415816099",
-      "lastCheckedAt": 1787783009697
+      "lastRssKey": "d574ba20-4d57-43e5-bb30-129d2ad335b1",
+      "lastEpisodeTitle": "She Wanted To Steal Her Victim's Life - The Female Killer On the FBI's Top 10 Most Wanted List",
+      "lastEpisodeId": "59550341858",
+      "lastCheckedAt": 1787801215782
     },
     "491579": {
       "lastEpisodeId": "59517429808",
@@ -154,16 +154,22 @@
       "lastCheckedAt": 1786559318597
     },
     "724143": {
-      "lastEpisodeId": "59531201860",
-      "lastEpisodeTitle": "Lula, Alcolumbre e Motta juntos; suspensão de vistos para os EUA; longevidade de pessoas com HIV",
-      "lastRssKey": "42b930ae-a136-11f1-bbb2-1f3665ce3667",
-      "lastCheckedAt": 1787759976798
+      "lastEpisodeId": "59553605255",
+      "lastEpisodeTitle": "Avalanche destruidora nos Himalaias, acordo bilionário contra vício nas redes sociais e Habib's em recuperação judicial",
+      "lastRssKey": "c729fab0-a197-11f1-965c-bfeed53a9938",
+      "lastCheckedAt": 1787801220044
     },
     "743229": {
       "lastEpisodeId": "59524008775",
       "lastEpisodeTitle": "The Stunning Rise of the Democratic Socialists of America",
       "lastRssKey": "1806d36e-b3f7-4e4f-a1cf-6d59aef89517",
       "lastCheckedAt": 1787740459104
+    },
+    "743322": {
+      "lastEpisodeId": "51557400761",
+      "lastEpisodeTitle": "Goshawk | Ep. 30",
+      "lastRssKey": "9c39ba2a-1c63-11f1-b26d-b3f48439fc7f",
+      "lastCheckedAt": 1787801220675
     },
     "744587": {
       "lastRssKey": "a8895003-e611-4e6a-a031-66c1d27bbf91",
@@ -196,10 +202,10 @@
       "lastCheckedAt": 1787730276112
     },
     "889671": {
-      "lastRssKey": "e824b9d2-17e2-4722-b021-f33ad05711ae",
-      "lastEpisodeTitle": "EPIC Launcher Headed Linux & Proxmox on ARM!",
+      "lastRssKey": "97d62fe1-b592-4b7b-8c98-c17735536a10",
+      "lastEpisodeTitle": "30 Years of Steam and UEFI For Raspberry Pi!",
       "lastEpisodeId": "59241576400",
-      "lastCheckedAt": 1787218398555
+      "lastCheckedAt": 1787801222606
     },
     "902798": {
       "lastRssKey": "2281e3d7-8874-4ec0-9e21-e6c53ff060a0",
@@ -226,10 +232,10 @@
       "lastCheckedAt": 1787759980483
     },
     "1015378": {
-      "lastRssKey": "64b534f7-b272-4bb8-9238-96055f4fa858",
-      "lastEpisodeTitle": "Michael Kratsios: Trump's Science Agenda, Anti-Science Claims, Fauci's Damage, DEI & China",
-      "lastEpisodeId": "59005385140",
-      "lastCheckedAt": 1787615209528
+      "lastRssKey": "83789c12-210d-431c-9b7e-8796293414a7",
+      "lastEpisodeTitle": "Eric Weinstein: The State of American Science, Breakthrough Coverups, and the Danger of Physics",
+      "lastEpisodeId": "59549413310",
+      "lastCheckedAt": 1787801225571
     },
     "1047718": {
       "lastRssKey": "6a8d36ac8f0879bfdefa8ceb",
@@ -421,10 +427,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "bd574722-9fd0-11f1-b714-cfc25372273d",
-      "lastEpisodeTitle": "Richard Has The Perfect Show For Prince Harry",
+      "lastRssKey": "275513c2-a13c-11f1-9c45-5bedc4ca6b99",
+      "lastEpisodeTitle": "Kayne, Katseye & Jamiroquai's Hat",
       "lastEpisodeId": "58885847730",
-      "lastCheckedAt": 1787613710979
+      "lastCheckedAt": 1787801231985
     },
     "6764080": {
       "lastRssKey": "fa421d6b-1e75-46fb-b1f6-b4b000886ca8",
@@ -457,10 +463,10 @@
       "lastCheckedAt": 1787733718592
     },
     "6956562": {
-      "lastEpisodeId": "59507692432",
-      "lastEpisodeTitle": "India can’t find a sweet spot for its sugar policy",
-      "lastRssKey": "92389515-4d11-4f01-8385-c87ecca8fb69",
-      "lastCheckedAt": 1787712434305
+      "lastEpisodeId": "59553962613",
+      "lastEpisodeTitle": "SEBI finds fraud in the cloud",
+      "lastRssKey": "c302d085-305a-43e5-b243-2cb64cb2f342",
+      "lastCheckedAt": 1787801233281
     },
     "7045713": {
       "lastRssKey": "sonsofpatriarchy.podbean.com/8c867280-f689-387b-acd9-e385184f81ee",
@@ -505,10 +511,10 @@
       "lastCheckedAt": 1786559337402
     },
     "7587315": {
-      "lastRssKey": "d224c31a-9d68-11f1-8904-77de999fc1f0",
-      "lastEpisodeTitle": "Space Elevators, Skyhooks, and Space Fountains",
+      "lastRssKey": "8d52495a-9fad-11f1-bfd9-779e6201a90d",
+      "lastEpisodeTitle": "Can Language Change What You Smell?",
       "lastEpisodeId": "58798183213",
-      "lastCheckedAt": 1787520047124
+      "lastCheckedAt": 1787801235075
     },
     "7634730": {
       "lastRssKey": "d2cdf2d7-f2df-4fc5-92d3-6d81c8e08cd6",
