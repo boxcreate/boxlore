@@ -64,8 +64,10 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<b>🆕 New features:</b>
+<ul align="left">
+<li>Listen on Chromecast from the expanded player while your queue, progress, and controls stay in sync. <a href="https://github.com/boxcreate/boxlore/pull/1004"><img src="https://img.shields.io/badge/PR-1004-6750A4?style=flat-square" alt="PR #1004" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
