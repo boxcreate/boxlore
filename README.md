@@ -18,7 +18,7 @@
     <td width="16"></td>
     <td align="center" valign="middle">
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.20.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.21.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
 <!-- download-apk:end -->
     </td>
   </tr>
@@ -64,30 +64,18 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-<b>🆕 New features:</b>
-<ul align="left">
-<li>Listen on Chromecast from the expanded player while your queue, progress, and controls stay in sync. <a href="https://github.com/boxcreate/boxlore/pull/1004"><img src="https://img.shields.io/badge/PR-1004-6750A4?style=flat-square" alt="PR #1004" height="18"/></a></li>
-</ul>
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
 
 
-### What's New · `v0.0.20` · 2026-08-26
+### What's New · `v0.0.21` · 2026-08-27
 
 <!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.20 date=2026-08-26 -->
+<!-- release-meta: version=v0.0.21 date=2026-08-27 -->
 <b>🆕 New features:</b>
 <ul align="left">
-<li>Home-screen widgets can now match boxlore’s Theme, Background, and Colors, or continue following your launcher’s system colors. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
-<li>Choose which tab opens by default in Explore (For You or Top) and Subscriptions (Shows or New episodes). Direct links still open the tab they specify. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
-<li>Home now features a dismissible Video Spotlight with hand-picked video podcasts
-<a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
-<li>The custom color picker can build a balanced Material 3 palette or keep the exact accent color you selected. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
-<li>Turn off Smart queue when you want to stay with one show; boxlore will only continue with newer episodes from that podcast. <a href="https://github.com/boxcreate/boxlore/pull/1001"><img src="https://img.shields.io/badge/PR-1001-6750A4?style=flat-square" alt="PR #1001" height="18"/></a></li>
-<li>Cleaner Home moves Settings and Feedback into Library, leaving a quieter Home top bar. <a href="https://github.com/boxcreate/boxlore/pull/1001"><img src="https://img.shields.io/badge/PR-1001-6750A4?style=flat-square" alt="PR #1001" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>Appearance and Privacy settings use clearer spacing and alignment, making options easier to scan. <a href="https://github.com/boxcreate/boxlore/pull/1002"><img src="https://img.shields.io/badge/PR-1002-6750A4?style=flat-square" alt="PR #1002" height="18"/></a></li>
+<li>Listen on Chromecast from the expanded player while your queue, progress, and controls stay in sync. <a href="https://github.com/boxcreate/boxlore/pull/1004"><img src="https://img.shields.io/badge/PR-1004-6750A4?style=flat-square" alt="PR #1004" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
@@ -194,7 +182,7 @@ Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live
       </td>
       <td width="16"></td>
       <td align="center" valign="middle">
-        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.20.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.21.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
       </td>
     </tr>
   </table>

@@ -9,15 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.21] - 2026-08-27
+
 ### Added
 - Add Chromecast playback with active route discovery, synchronized queue transfer, remote volume, and integrated expanded-player controls. ([#1004](https://github.com/boxcreate/boxlore/pull/1004)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 ### Fixed
 - Preserve Cast queue metadata and recover sender controls across connection, sleep/wake, and disconnect transitions. ([#1004](https://github.com/boxcreate/boxlore/pull/1004)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=1004 -->
-### New features
-- Listen on Chromecast from the expanded player while your queue, progress, and controls stay in sync.
-<!-- readme-copy:end pr=1004 -->
 ## [v0.0.20] - 2026-08-26
 
 ### Added
