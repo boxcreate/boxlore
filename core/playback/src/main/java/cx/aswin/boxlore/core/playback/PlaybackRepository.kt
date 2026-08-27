@@ -2,7 +2,9 @@ package cx.aswin.boxlore.core.playback
 
 import android.content.ComponentName
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
@@ -63,6 +65,7 @@ data class PlayerState(
     val autoTranscriptState: AutoTranscriptState = AutoTranscriptState.NONE,
     val autoChaptersState: AutoTranscriptState = AutoTranscriptState.NONE,
     val autoTranscriptLimitLeft: Int? = null,
+    val playbackRoute: PlaybackRouteState = PlaybackRouteState(),
 )
 
 object SleepTimerHolder {
@@ -132,6 +135,18 @@ class PlaybackRepository internal constructor(
 
     internal val mediaHandle = PlaybackMediaControllerHandle()
     val controller: MediaController? get() = mediaHandle.controller
+    internal var controllerBridge: PlaybackMediaControllerBridge? = null
+    internal var hasActiveCastSession: Boolean? = null
+
+    internal fun endCurrentCastSession(stopReceiverApplication: Boolean) {
+        runCatching {
+            androidx.media3.cast.Cast
+                .getSingletonInstance(context)
+                .endCurrentSession(stopReceiverApplication)
+        }.onFailure { exception ->
+            android.util.Log.e("PlaybackRepo", "Unable to end Cast session", exception)
+        }
+    }
 
     internal val repositoryScope = historyStore.playerDeps.scope
     internal val playerStateFlow: MutableStateFlow<PlayerState> = historyStore.playerDeps.playerStateFlow
@@ -306,7 +321,7 @@ class PlaybackRepository internal constructor(
                 }
                 playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = savedSpeed)
             }
-            mediaHandle.controller?.addListener(
+            controllerBridge =
                 PlaybackMediaControllerBridge(
                     context = context,
                     scope = repositoryScope,
@@ -327,8 +342,12 @@ class PlaybackRepository internal constructor(
                         historyStore.markEpisodeAsCompleted(episode, podcast)
                     },
                     findPodcastIdForEpisode = { historyStore.findPodcastIdForEpisode(it) },
-                ),
-            )
+                    hasActiveCastSession = { hasActiveCastSession },
+                )
+            controllerBridge?.let { bridge ->
+                mediaHandle.controller?.addListener(bridge)
+                bridge.syncPlaybackRoute()
+            }
 
             // Sync state from MediaController (handles app coming back from background)
             syncStateFromMediaController()
@@ -398,6 +417,7 @@ class PlaybackRepository internal constructor(
                             playbackSpeed = controller.playbackParameters.speed,
                             queue = playerStateFlow.value.queue, // Preserve queue
                             isLiked = lastSession.isLiked,
+                            playbackRoute = playerStateFlow.value.playbackRoute,
                         )
                     if (isPlaying) startProgressTicker()
                 }
@@ -698,5 +718,31 @@ class PlaybackRepository internal constructor(
 
         // Save state on seek (do not update lastPlayedAt to prevent reordering on scrub)
         repositoryScope.launch { saveCurrentState(updateLastPlayedAt = false) }
+    }
+
+    fun setOutputVolume(volume: Int) {
+        val route = playerStateFlow.value.playbackRoute
+        val controller = mediaHandle.controller ?: return
+        val targetVolume =
+            PlaybackOutputVolumePolicy.targetVolume(
+                requestedVolume = volume,
+                route = route,
+                commandAvailable = controller.isCommandAvailable(Player.COMMAND_SET_DEVICE_VOLUME_WITH_FLAGS),
+            ) ?: return
+        controller.setDeviceVolume(
+            targetVolume,
+            C.VOLUME_FLAG_SHOW_UI,
+        )
+    }
+}
+
+internal object PlaybackOutputVolumePolicy {
+    fun targetVolume(
+        requestedVolume: Int,
+        route: PlaybackRouteState,
+        commandAvailable: Boolean,
+    ): Int? {
+        if (!route.canControlVolume || !commandAvailable) return null
+        return requestedVolume.coerceIn(route.minimumVolume, route.maximumVolume)
     }
 }

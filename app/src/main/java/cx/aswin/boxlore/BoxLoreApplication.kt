@@ -5,7 +5,13 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import androidx.media3.cast.Cast
 import androidx.work.Configuration
+import com.google.android.gms.cast.SessionState
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastSession
+import com.google.android.gms.cast.framework.SessionManagerListener
+import com.google.android.gms.cast.framework.SessionTransferCallback
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
@@ -17,6 +23,7 @@ import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.network.NetworkModule
+import cx.aswin.boxlore.core.playback.synchronizeCastSession
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
@@ -24,14 +31,116 @@ import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 class BoxLoreApplication :
     Application(),
     Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var castSessionGeneration = 0L
+
+    private val castSessionListener =
+        object : SessionManagerListener<CastSession> {
+            override fun onSessionStarting(session: CastSession) {
+                handleCastSessionEvent(CastSessionEvent.STARTING)
+            }
+
+            override fun onSessionStarted(
+                session: CastSession,
+                sessionId: String,
+            ) {
+                handleCastSessionEvent(CastSessionEvent.STARTED)
+            }
+
+            override fun onSessionStartFailed(
+                session: CastSession,
+                error: Int,
+            ) {
+                handleCastSessionEvent(CastSessionEvent.START_FAILED)
+            }
+
+            override fun onSessionEnding(session: CastSession) {
+                handleCastSessionEvent(CastSessionEvent.ENDING)
+            }
+
+            override fun onSessionEnded(
+                session: CastSession,
+                error: Int,
+            ) {
+                handleCastSessionEvent(CastSessionEvent.ENDED)
+            }
+
+            override fun onSessionResuming(
+                session: CastSession,
+                sessionId: String,
+            ) {
+                handleCastSessionEvent(CastSessionEvent.RESUMING)
+            }
+
+            override fun onSessionResumed(
+                session: CastSession,
+                wasSuspended: Boolean,
+            ) {
+                handleCastSessionEvent(CastSessionEvent.RESUMED)
+            }
+
+            override fun onSessionResumeFailed(
+                session: CastSession,
+                error: Int,
+            ) {
+                handleCastSessionEvent(CastSessionEvent.RESUME_FAILED)
+            }
+
+            override fun onSessionSuspended(
+                session: CastSession,
+                reason: Int,
+            ) {
+                // Keep the Cast route while the framework's reconnection service reattaches.
+                handleCastSessionEvent(CastSessionEvent.SUSPENDED)
+            }
+        }
+
+    private val castSessionTransferCallback =
+        object : SessionTransferCallback() {
+            override fun onTransferring(transferType: Int) {
+                handleCastSessionAction(
+                    CastSessionTransferPolicy.action(
+                        isRemoteToLocal = transferType == SessionTransferCallback.TRANSFER_TYPE_FROM_REMOTE_TO_LOCAL,
+                        outcome = CastTransferOutcome.TRANSFERRING,
+                    ),
+                )
+            }
+
+            override fun onTransferred(
+                transferType: Int,
+                sessionState: SessionState,
+            ) {
+                handleCastSessionAction(
+                    CastSessionTransferPolicy.action(
+                        isRemoteToLocal = transferType == SessionTransferCallback.TRANSFER_TYPE_FROM_REMOTE_TO_LOCAL,
+                        outcome = CastTransferOutcome.TRANSFERRED,
+                    ),
+                )
+            }
+
+            override fun onTransferFailed(
+                transferType: Int,
+                transferFailedReason: Int,
+            ) {
+                handleCastSessionAction(
+                    CastSessionTransferPolicy.action(
+                        isRemoteToLocal = transferType == SessionTransferCallback.TRANSFER_TYPE_FROM_REMOTE_TO_LOCAL,
+                        outcome = CastTransferOutcome.FAILED,
+                    ),
+                )
+            }
+        }
 
     lateinit var container: AppContainer
         private set
@@ -53,6 +162,10 @@ class BoxLoreApplication :
     override fun onCreate() {
         super.onCreate()
 
+        // Load the manifest-backed boxlore receiver before playback or Cast UI
+        // creates remote resources, avoiding a selector initialization race.
+        Cast.getSingletonInstance(this).initialize()
+
         // Single prefs instance shared with AppContainer (theme fast-cache + engagement).
         userPreferencesRepository = UserPreferencesRepository(this)
         runBlocking(Dispatchers.IO) {
@@ -66,6 +179,7 @@ class BoxLoreApplication :
                 sharedUserPreferences = userPreferencesRepository,
                 applicationScope = applicationScope,
             )
+        setupCastSessionTracking()
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
         HomeScreenWidgetsInstaller.install(
@@ -178,6 +292,65 @@ class BoxLoreApplication :
         }
     }
 
+    private fun setupCastSessionTracking() {
+        runCatching {
+            val castContext = CastContext.getSharedInstance(this)
+            val sessionManager = castContext.sessionManager
+            sessionManager.addSessionManagerListener(castSessionListener, CastSession::class.java)
+            castContext.addSessionTransferCallback(castSessionTransferCallback)
+            if (sessionManager.currentCastSession?.isConnected == true) {
+                syncCastSession(isActive = true)
+            } else {
+                // Cast restores asynchronously after process recreation. Keep the route
+                // undecided until the resume callbacks arrive instead of forcing it local.
+                syncCastSession(isActive = null)
+                deferCastSessionClear()
+            }
+        }.onFailure { exception ->
+            android.util.Log.w("BoxLoreApplication", "Unable to observe Cast sessions", exception)
+        }
+    }
+
+    private fun syncCastSession(isActive: Boolean?) {
+        castSessionGeneration += 1
+        if (::container.isInitialized) {
+            container.playbackRepository.synchronizeCastSession(isActive)
+        }
+    }
+
+    private fun handleCastSessionEvent(event: CastSessionEvent) {
+        handleCastSessionAction(CastSessionLifecyclePolicy.action(event))
+    }
+
+    private fun handleCastSessionAction(action: CastSessionAction) {
+        when (action) {
+            CastSessionAction.KEEP_ACTIVE -> syncCastSession(isActive = true)
+            CastSessionAction.CLEAR_NOW -> syncCastSession(isActive = false)
+            CastSessionAction.DEFER_CLEAR -> deferCastSessionClear()
+            CastSessionAction.NONE -> Unit
+        }
+    }
+
+    private fun deferCastSessionClear() {
+        val generation = castSessionGeneration + 1
+        castSessionGeneration = generation
+        applicationScope.launch {
+            delay(CAST_SESSION_RECHECK_DELAY_MS)
+            withContext(Dispatchers.Main.immediate) {
+                if (generation != castSessionGeneration) return@withContext
+                val isConnected =
+                    runCatching {
+                        CastContext
+                            .getSharedInstance(this@BoxLoreApplication)
+                            .sessionManager
+                            .currentCastSession
+                            ?.isConnected == true
+                    }.getOrDefault(false)
+                syncCastSession(isActive = isConnected)
+            }
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
     private fun reportAdaptiveRankingStatus() {
         applicationScope.launch {
@@ -254,3 +427,63 @@ class BoxLoreApplication :
         }
     }
 }
+
+internal enum class CastSessionEvent {
+    STARTING,
+    STARTED,
+    START_FAILED,
+    ENDING,
+    ENDED,
+    RESUMING,
+    RESUMED,
+    RESUME_FAILED,
+    SUSPENDED,
+}
+
+internal enum class CastSessionAction {
+    KEEP_ACTIVE,
+    CLEAR_NOW,
+    DEFER_CLEAR,
+    NONE,
+}
+
+internal object CastSessionLifecyclePolicy {
+    fun action(event: CastSessionEvent): CastSessionAction =
+        when (event) {
+            CastSessionEvent.STARTING,
+            CastSessionEvent.STARTED,
+            CastSessionEvent.RESUMING,
+            CastSessionEvent.RESUMED,
+            CastSessionEvent.SUSPENDED,
+            -> CastSessionAction.KEEP_ACTIVE
+
+            CastSessionEvent.START_FAILED,
+            CastSessionEvent.ENDED,
+            CastSessionEvent.RESUME_FAILED,
+            -> CastSessionAction.DEFER_CLEAR
+
+            CastSessionEvent.ENDING -> CastSessionAction.NONE
+        }
+}
+
+internal enum class CastTransferOutcome {
+    TRANSFERRING,
+    TRANSFERRED,
+    FAILED,
+}
+
+internal object CastSessionTransferPolicy {
+    fun action(
+        isRemoteToLocal: Boolean,
+        outcome: CastTransferOutcome,
+    ): CastSessionAction {
+        if (!isRemoteToLocal) return CastSessionAction.NONE
+        return when (outcome) {
+            CastTransferOutcome.TRANSFERRING -> CastSessionAction.KEEP_ACTIVE
+            CastTransferOutcome.TRANSFERRED -> CastSessionAction.CLEAR_NOW
+            CastTransferOutcome.FAILED -> CastSessionAction.DEFER_CLEAR
+        }
+    }
+}
+
+private const val CAST_SESSION_RECHECK_DELAY_MS = 15_000L

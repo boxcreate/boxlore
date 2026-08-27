@@ -22,11 +22,9 @@ fun PlaybackRepository.skipToNextEpisode() = transportHelper.skipToNextEpisode()
 
 fun PlaybackRepository.skipToPreviousEpisode() = transportHelper.skipToPreviousEpisode()
 
-fun PlaybackRepository.isShuffleEnabled(): Boolean =
-    controller?.takeIf { it.isConnected }?.shuffleModeEnabled == true
+fun PlaybackRepository.isShuffleEnabled(): Boolean = controller?.takeIf { it.isConnected }?.shuffleModeEnabled == true
 
-fun PlaybackRepository.currentRepeatMode(): Int =
-    controller?.takeIf { it.isConnected }?.repeatMode ?: Player.REPEAT_MODE_OFF
+fun PlaybackRepository.currentRepeatMode(): Int = controller?.takeIf { it.isConnected }?.repeatMode ?: Player.REPEAT_MODE_OFF
 
 fun PlaybackRepository.toggleShuffle(): Boolean {
     val mediaController = controller?.takeIf { it.isConnected } ?: return false

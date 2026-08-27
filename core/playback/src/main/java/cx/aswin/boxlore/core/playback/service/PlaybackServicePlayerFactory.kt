@@ -5,6 +5,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.media3.cast.CastPlayer
+import androidx.media3.cast.RemoteCastPlayer
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
@@ -19,6 +21,7 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.SessionCommand
 import cx.aswin.boxlore.core.downloads.DownloadRepository
+import cx.aswin.boxlore.core.playback.BoxLoreCastMediaItemConverter
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseContract
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
@@ -99,11 +102,25 @@ internal class PlaybackServicePlayerFactory(
             .build()
     }
 
+    fun createCastPlayer(localPlayer: ExoPlayer): CastPlayer {
+        val remotePlayer =
+            RemoteCastPlayer
+                .Builder(context)
+                .setMediaItemConverter(BoxLoreCastMediaItemConverter())
+                .build()
+        return CastPlayer
+            .Builder(context)
+            .setLocalPlayer(localPlayer)
+            .setRemotePlayer(remotePlayer)
+            .setTransferCallback(BoxLoreCastTransferCallback())
+            .build()
+    }
+
     fun createForwardingPlayer(
-        player: ExoPlayer,
+        player: Player,
         seekForwardMs: () -> Long,
         seekBackMs: () -> Long,
-        onSeekByConfiguredIncrement: (ExoPlayer, Long, String) -> Unit,
+        onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
         onSkipNext: () -> Unit,
     ): ForwardingPlayer =
         object : ForwardingPlayer(player) {
@@ -232,10 +249,10 @@ internal class PlaybackServicePlayerFactory(
 
     fun assembleSession(
         service: androidx.media3.session.MediaLibraryService,
-        player: ExoPlayer,
+        player: Player,
         seekForwardMs: () -> Long,
         seekBackMs: () -> Long,
-        onSeekByConfiguredIncrement: (ExoPlayer, Long, String) -> Unit,
+        onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
         onSkipNext: () -> Unit,
         callback: AutoBrowseLibraryCallback,
         seekBackwardMs: Long,

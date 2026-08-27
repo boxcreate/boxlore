@@ -110,7 +110,7 @@ private fun EditorialRow(
                         )
                     },
                     showSubtitle = false,
-                    modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RailCardWidthFraction),
+                    modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION),
                 )
             }
         }

@@ -23,7 +23,9 @@ navigationCompose = "2.8.5"
 coil = "2.6.0"
 retrofit = "2.9.0"
 serialization = "1.6.3"
-media3 = "1.5.0"
+media3 = "1.10.1"
+mediaRouter = "1.8.1"
+castFramework = "22.3.1"
 palette = "1.0.0"
 material = "1.12.0"
 posthog = "3.45.0"
@@ -111,6 +113,9 @@ androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplaye
 androidx-media3-exoplayer-hls = { group = "androidx.media3", name = "media3-exoplayer-hls", version.ref = "media3" }
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 androidx-media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
+androidx-media3-cast = { group = "androidx.media3", name = "media3-cast", version.ref = "media3" }
+androidx-mediarouter = { group = "androidx.mediarouter", name = "mediarouter", version.ref = "mediaRouter" }
+google-cast-framework = { group = "com.google.android.gms", name = "play-services-cast-framework", version.ref = "castFramework" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

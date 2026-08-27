@@ -4,15 +4,15 @@ import android.net.Uri
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.media3.exoplayer.ExoPlayer
-import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.playback.QueueRepository
-import cx.aswin.boxlore.core.playback.SmartQueueEngine
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.EpisodeItem
+import cx.aswin.boxlore.core.playback.QueueRepository
+import cx.aswin.boxlore.core.playback.SmartQueueEngine
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -29,7 +29,7 @@ class SmartQueueRefillCoordinator(
     private val queueMaxSize: Int,
     private val mediaIdPrefixStripper: (String) -> String,
 ) {
-    suspend fun refillQueue(player: ExoPlayer) {
+    suspend fun refillQueue(player: Player) {
         val currentItem = player.currentMediaItem ?: return
         // Extract episode info — strip any prefix for consistent ID format
         val episodeId = mediaIdPrefixStripper(currentItem.mediaId)
@@ -146,32 +146,30 @@ class SmartQueueRefillCoordinator(
             }
         }
 
-        val refilledEpisodeIds = mutableListOf<String>()
-        val recommendationSources = mutableListOf<String>()
+        val refilledEpisodeIds = entriesToAdd.map { it.episode.id.toString() }
+        val recommendationSources = entriesToAdd.map { it.source }
 
-        // Add to player queue on main thread
+        // Submit one playlist mutation. RemoteCastPlayer sequence numbers are asynchronous;
+        // issuing one add per item races the receiver and produces INVALID_REQUEST responses.
         withContext(mainDispatcher) {
-            entriesToAdd.forEach { entry ->
-                val ep = entry.episode
-                val pod = entry.podcast
-                val epIdStr = ep.id.toString()
+            val mediaItems =
+                entriesToAdd.map { entry ->
+                    val ep = entry.episode
+                    val pod = entry.podcast
+                    val finalImageUrl = ep.image ?: ep.feedImage ?: pod.imageUrl
 
-                val finalImageUrl = ep.image ?: ep.feedImage ?: pod.imageUrl
-                val artworkUri = finalImageUrl.let { Uri.parse(it) }
-
-                // Use raw ID — same format as PlaybackRepository (L1 fix)
-                val mediaItem =
                     MediaItem
                         .Builder()
-                        .setMediaId(epIdStr)
+                        .setMediaId(ep.id.toString())
                         .setUri(ep.enclosureUrl ?: "")
+                        .setMimeType(ep.enclosureType?.takeIf { it.isNotBlank() })
                         .setMediaMetadata(
                             MediaMetadata
                                 .Builder()
                                 .setTitle(ep.title)
                                 .setSubtitle(pod.title)
                                 .setArtist(pod.artist)
-                                .setArtworkUri(artworkUri)
+                                .setArtworkUri(Uri.parse(finalImageUrl))
                                 .setDisplayTitle(ep.title)
                                 .setGenre(pod.genre)
                                 .setIsPlayable(true)
@@ -179,11 +177,8 @@ class SmartQueueRefillCoordinator(
                                 .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
                                 .build(),
                         ).build()
-
-                player.addMediaItem(mediaItem)
-                refilledEpisodeIds.add(epIdStr)
-                recommendationSources.add(entry.source)
-            }
+                }
+            player.addMediaItems(mediaItems)
             Log.d("AutoQueue", "Added ${refilledEpisodeIds.size} items. Queue now: ${player.mediaItemCount}")
         }
 

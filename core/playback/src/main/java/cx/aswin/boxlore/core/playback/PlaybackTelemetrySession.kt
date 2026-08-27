@@ -1,18 +1,18 @@
 package cx.aswin.boxlore.core.playback
 
+import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
-import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.playback.QueueMath
-import cx.aswin.boxlore.core.playback.QueueSkipMemory
-import cx.aswin.boxlore.core.catalog.SubscriptionRepository
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.analytics.PendingEntryPoint
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.playback.QueueMath
+import cx.aswin.boxlore.core.playback.QueueSkipMemory
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
@@ -130,23 +130,14 @@ internal class PlaybackTelemetrySession(
         podcastGenre = genre
 
         val extras = currentItem?.mediaMetadata?.extras
-        val bundleMap = mutableMapOf<String, Any>()
-
         val pendingEntryPoint = PendingEntryPoint.consume()
         if (pendingEntryPoint != null) {
             entryPoint = pendingEntryPoint["entry_point"] as? String
             val contextMap = pendingEntryPoint.filterKeys { it != "entry_point" }
             entryPointContext = contextMap.ifEmpty { null }
         } else {
-            extras?.keySet()?.forEach { key ->
-                @Suppress("DEPRECATION")
-                val value = extras.get(key)
-                if (value != null && key != "entry_point") {
-                    bundleMap[key] = value
-                }
-            }
             entryPoint = extras?.getString("entry_point")
-            entryPointContext = if (bundleMap.isNotEmpty()) bundleMap else null
+            entryPointContext = analyticsEntryPointContext(extras)
         }
 
         if (entryPoint == null) {
@@ -512,7 +503,7 @@ internal class PlaybackTelemetrySession(
         lastPositionSampleMs = now
     }
 
-    fun dispatchHeartbeatTelemetry(player: ExoPlayer) {
+    fun dispatchHeartbeatTelemetry(player: Player) {
         val episodeId = episodeId ?: return
         if (!player.isPlaying) return
 
@@ -625,4 +616,17 @@ internal class PlaybackTelemetrySession(
             episodeTitle = episodeTitle,
         )
     }
+}
+
+internal fun analyticsEntryPointContext(extras: Bundle?): Map<String, Any>? {
+    if (extras == null) return null
+    val context = mutableMapOf<String, Any>()
+    extras.keySet().forEach { key ->
+        @Suppress("DEPRECATION")
+        val value = extras.get(key)
+        if (value != null && key != "entry_point" && CastMediaMetadata.isAnalyticsSafeExtra(key)) {
+            context[key] = value
+        }
+    }
+    return context.ifEmpty { null }
 }

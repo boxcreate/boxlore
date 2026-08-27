@@ -145,7 +145,7 @@ object NowPlayingWidgetRenderer {
         }
 
         if (variant != WidgetVariant.CONTROLS) {
-            bindMetadata(context, views, snapshot, chrome)
+            bindMetadata(views, snapshot, chrome)
         }
         bindTransport(context, views, appWidgetId, snapshot, variant, chrome)
         views.setOnClickPendingIntent(R.id.widget_root, WidgetActionIntents.openApp(context))
@@ -212,7 +212,6 @@ object NowPlayingWidgetRenderer {
     }
 
     private fun bindMetadata(
-        context: Context,
         views: RemoteViews,
         snapshot: NowPlayingWidgetSnapshot,
         chrome: WidgetChrome,

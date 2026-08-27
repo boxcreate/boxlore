@@ -110,6 +110,13 @@ class PlaybackControlSyncTest {
                 currentEpisode = sampleEpisode,
                 sleepTimerEnd = 99L,
                 sleepAtEndOfEpisode = true,
+                playbackRoute =
+                    PlaybackRouteState(
+                        isRemote = true,
+                        deviceName = "Living room",
+                        volume = 8,
+                        maximumVolume = 20,
+                    ),
             )
 
         val cleared =
@@ -125,6 +132,8 @@ class PlaybackControlSyncTest {
         assertFalse(cleared.isPlaying)
         assertNull(cleared.sleepTimerEnd)
         assertFalse(cleared.sleepAtEndOfEpisode)
+        assertTrue(cleared.playbackRoute.isRemote)
+        assertEquals("Living room", cleared.playbackRoute.deviceName)
     }
 
     @Test

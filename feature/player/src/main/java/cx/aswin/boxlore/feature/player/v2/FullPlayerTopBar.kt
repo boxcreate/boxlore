@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -10,8 +8,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,18 +30,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.delay
+
+internal data class PlayerTopBarActions(
+    val onSwipeMinimizeTipDismissed: () -> Unit,
+    val onCollapse: () -> Unit,
+    val onShare: () -> Unit,
+)
 
 @Composable
 internal fun PlayerTopBar(
     colorScheme: ColorScheme,
     showSwipeMinimizeTip: Boolean,
     isExpanded: Boolean,
-    onSwipeMinimizeTipDismissed: () -> Unit,
-    onCollapse: () -> Unit,
-    onShare: () -> Unit,
+    isCasting: Boolean,
+    canCast: Boolean,
+    actions: PlayerTopBarActions,
 ) {
     Row(
         modifier =
@@ -52,23 +57,17 @@ internal fun PlayerTopBar(
                 .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.onSurface.copy(alpha = 0.1f))
-                    .clickable(onClick = onCollapse),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Rounded.KeyboardArrowDown,
-                contentDescription = "Collapse",
-                tint = colorScheme.onSurface,
+        MaterialTheme(colorScheme = colorScheme) {
+            BoxLoreCastRouteButton(
+                enabled = canCast || isCasting,
+                isCasting = isCasting,
+                modifier =
+                    Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.onSurface.copy(alpha = 0.1f)),
             )
         }
-
-        Spacer(modifier = Modifier.weight(1f))
 
         var tipVisible by remember { mutableStateOf(showSwipeMinimizeTip) }
         LaunchedEffect(showSwipeMinimizeTip, isExpanded) {
@@ -76,25 +75,39 @@ internal fun PlayerTopBar(
                 tipVisible = true
                 delay(3500)
                 tipVisible = false
-                onSwipeMinimizeTipDismissed()
+                actions.onSwipeMinimizeTipDismissed()
             } else {
                 tipVisible = false
             }
         }
-        AnimatedContent(
-            targetState = tipVisible && isExpanded,
-            transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
-            label = "topBarLabel",
-        ) { isShowingTip ->
-            Text(
-                text = if (isShowingTip) "↓ Swipe down to minimize" else "Now Playing",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = GoogleSansWeight.semiBold,
-                color = if (isShowingTip) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurface.copy(alpha = 0.7f),
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clickable(onClick = actions.onCollapse),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AnimatedContent(
+                targetState = tipVisible && isExpanded,
+                transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                label = "topBarLabel",
+            ) { isShowingTip ->
+                Text(
+                    text = if (isShowingTip) "Swipe down to minimize" else "Now Playing",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = GoogleSansWeight.semiBold,
+                    color = if (isShowingTip) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurface.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = Icons.Rounded.KeyboardArrowDown,
+                contentDescription = "Collapse player",
+                tint = colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.size(20.dp),
             )
         }
-
-        Spacer(modifier = Modifier.weight(1f))
 
         Box(
             modifier =
@@ -102,7 +115,7 @@ internal fun PlayerTopBar(
                     .size(42.dp)
                     .clip(CircleShape)
                     .background(colorScheme.onSurface.copy(alpha = 0.1f))
-                    .clickable(onClick = onShare),
+                    .clickable(onClick = actions.onShare),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

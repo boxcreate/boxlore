@@ -16,6 +16,8 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - `PlaybackMediaIdPolicy.customCacheKey` (via `:core:model` `EpisodeMediaCacheKey`) appends briefing audio `v=` so Media3 does not keep playing a same-day regenerated brief from a stale SimpleCache entry.
 - `PlaybackSkipPolicy` also owns intent-aware stale resume: when Settings → Playback → **Restart forgotten episodes** is on (default), implicit plays (queue / mixtape / Smart Queue / casual) soft-expire mid-episode seek after 7 days without `lastPlayedAt`; Jump Back In (`home_hero_resume*`) and History (`library_history`) always seek. Progress is never wiped — seek policy only. Mixtape/SQ still *select* unfinished episodes within the 30-day suggestion band; chrome follows soft-expire (mixtape hides progress / “Xm left”; Smart Queue stamps `resume_stale` → queue label “Starting over”).
 - `PlaybackControlSync` keeps UI playback speed / seek sizes aligned with Media3 when a session is cleared or a new queue starts, and sanitizes user-requested speeds before apply/persist.
+- `BoxLorePlaybackService` owns one Media3 `CastPlayer` over the existing local `ExoPlayer`. Queue, position, speed, sleep timer, intro/outro policy, completion persistence, smart refill, notification, widgets, and Android Auto therefore follow the active local or Cast route without constructing a second playback graph. Smart Queue submits each refill as one playlist mutation so asynchronous Cast queue sequence numbers cannot race; reconciliation preserves the complete app queue during a brief partial transfer snapshot, then accepts a stable receiver subset after unsupported local-only items are sanitized. Metadata-less remote transitions retry when matching Cast metadata arrives instead of inventing placeholder or “Unknown Episode” records.
+- `PlaybackRouteState` mirrors remote-device name/volume into `PlayerState`; `PlaybackRepository.setOutputVolume` controls the active route. Cast-framework lifecycle sync treats asynchronous process restore as an undecided route, refreshes Media3 after reconnect, and rejects stale remote `DeviceInfo` only once an ended or failed session remains disconnected past the recovery grace period. `PlaybackRepository.stopCasting` clears that route immediately while stopping remote playback before terminating the receiver session, preventing hidden TV audio even while Media3's route flag is briefly stale. `BoxLoreCastTransferCallback` removes receiver placeholders without playback URIs before a remote-to-local transfer, preventing ExoPlayer crashes during disconnect. `CastMediaEligibility` admits public HTTP(S) sources and rejects local/private IP literals; `BoxLoreCastMediaItemConverter` validates every effective receiver URL, replaces device-local download URIs with their original stream URL, and keeps that internal URL out of analytics context.
 - `HistoryRecommendationLogic`, `AutoVoiceSearchLogic`, `SmartQueueRefillPolicy`, `MixtapeResumePolicy`, `PlaybackEntryPointResolve`, `NightWindowLogic`, and `ListeningHistoryUpsertLogic` are JVM-testable playback helpers. `PlaybackEntryPointResolve` maps fine-grained source-context `entry_point` strings (`home_mixtape`, `learn`/`learn_history`, `briefing`) to coarse `PlaybackEntryPoint` for queue/mixtape policy while the raw string still attributes `playback_*`.
 - `AutoArtworkFetchLogic` and `AutoCollageFreshnessLogic` encode Android Auto artwork fetch / collage cache policy for hermetic tests.
 - `AutoCollagePrewarmPolicy` and `AutoCollageFolderLogic` encode prewarm throttle and aligned image/key folder inputs for hermetic tests.
@@ -33,6 +35,8 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 ```text
 src/main/java/cx/aswin/boxlore/core/playback/
   PlaybackRepository.kt              # session core; delegates ListeningHistory* ports
+  PlaybackRouteState.kt              # active local/Cast route UI state
+  CastMediaItemConverter.kt           # receiver-safe stream mapping + eligibility
   PlaybackHistoryStore.kt            # history ports only; implements history ports
   PlaybackHistoryStoreApi.kt         # non-port history helpers (extensions)
   PlaybackHistoryMappings.kt         # history entity ↔ model mappers
@@ -40,6 +44,7 @@ src/main/java/cx/aswin/boxlore/core/playback/
   PlaybackSleepController.kt         # sleep timer + late-night nudge
   PlaybackRepositoryQueueApi.kt      # queue extension API
   PlaybackRepositoryTransportApi.kt  # transport / seek / speed extension API (+ [isTransportReady])
+  PlaybackRepositoryCastApi.kt       # Cast session / stop extension API and policies
   PlaybackRepositoryHistoryApi.kt    # non-port history extension API
   PlaybackRepositorySleepApi.kt      # sleep / nudge extension API
   PlaybackRepositoryChaptersApi.kt   # chapters / transcript extension API
@@ -68,13 +73,13 @@ Files under `core/data/service` are compatibility stubs for old service class na
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:network`, `:core:database`, `:core:catalog`, `:core:downloads`, `:core:ranking`, `:core:analytics`, and `:core:prefs`.
-- Libraries: Media3 ExoPlayer, Media3 Session, Media3 UI, Coil, Palette, Gson, OkHttp, coroutines, and AndroidX core.
+- Libraries: Media3 ExoPlayer/Session/UI/Cast, Google Cast framework, Coil, Palette, Gson, OkHttp, coroutines, and AndroidX core.
 - Reverse-edge rule: catalog and downloads must not depend back on playback. Downloads launch `MediaDownloadService` through the app-installed launcher port.
 
 ## Threading / lifecycle
 
 - `PlaybackRepository`, `QueueRepository`, and `QueueManager` are application-scoped through `AppContainer`.
-- `BoxLorePlaybackService` is a Media3 `MediaLibraryService` and resolves shared dependencies lazily after application startup.
+- `BoxLorePlaybackService` is a Media3 `MediaLibraryService`; it resolves shared dependencies lazily after application startup and keeps its local and remote players service-scoped so transfers continue while the Activity is absent.
 - Player callbacks run on the main thread; database, artwork, and recommendation work use coroutine scopes and background dispatchers.
 
 ## Persistence & identity
@@ -89,7 +94,7 @@ Files under `core/data/service` are compatibility stubs for old service class na
 ## Testing notes
 
 - Unit tests live under `core/playback/src/test`.
-- Existing coverage includes skip policy (including stale-resume intent × flag × freshness), media ID policy, artwork resolution, control sync (speed/seek preserve on clear), history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue (including feed-supplement merge + negative-id continuation), playback session mapping, Auto artwork fetch/content-type policy, collage freshness signatures, and Auto artwork source-store durability.
+- Existing coverage includes Cast eligibility and route-preserving session clear, skip policy (including stale-resume intent × flag × freshness), media ID policy, artwork resolution, control sync, history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue, playback session mapping, Auto artwork fetch/content-type policy, collage freshness signatures, and Auto artwork source-store durability.
 - Service-level tests must install shared dependency holders before exercising service code.
 
 ```bash

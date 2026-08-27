@@ -109,7 +109,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `settings_interaction` | Settings screen view or control | action:string | setting_key:string | none |
 | `feature_announcement_action` | In-app/feature announcement viewed/dismissed/acted | action:string | feature_id:string; category:string | none |
 | `offline_mode_entered` | App detected offline / offline UI | — | reason:string | none |
-| `player_chrome_interaction` | Mini/full player or control bar action | surface:string; action:string | — | none |
+| `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |
 | `daily_briefing_action` | Briefing impression or interaction | action:string; region:string; date:string | content_id:string; source:string; chapter_index:int; chapter_title:string; method:string; playback_status:string; previous_region:string; episode_id:string; episode_title:string; podcast_id:string; podcast_title:string | none |
 | `home_import_banner_action` | Import banner shown/clicked/dismissed | action:string | — | none |
 | `library_history_tracking_notice` | One-time listening-history tracking reset notice shown/dismissed | action:string | — | none |

@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.core.playback.service.auto
 
 import androidx.media3.common.MediaItem
+import cx.aswin.boxlore.core.playback.CastMediaEligibility
+import cx.aswin.boxlore.core.playback.CastMediaMetadata
 import cx.aswin.boxlore.core.playback.PlaybackMediaIdPolicy
 
 /**
@@ -27,16 +29,19 @@ internal class AutoMediaResolver(
         val download = host.database.downloadedEpisodeDao().getDownload(episodeId)
         val historyItem = host.database.listeningHistoryDao().getHistoryItem(episodeId)
         val queueItem = host.queueRepository.getQueueItemByEpisodeId(episodeId)
-        val resolvedAudioUrl =
-            download
-                ?.takeIf {
-                    it.status ==
-                        cx.aswin.boxlore.core.database.DownloadedEpisodeEntity.STATUS_COMPLETED
-                }?.let { resolveDownloadRequestUri(episodeId) }
-                ?: historyItem
-                    ?.episodeAudioUrl
-                    ?.takeIf { it.isNotBlank() }
-                ?: queueItem?.audioUrl?.takeIf { it.isNotBlank() }
+        val downloadCompleted =
+            download?.status ==
+                cx.aswin.boxlore.core.database.DownloadedEpisodeEntity.STATUS_COMPLETED
+        val source =
+            AutoMediaResolutionPolicy.resolve(
+                downloadCompleted = downloadCompleted,
+                downloadUri = if (downloadCompleted) resolveDownloadRequestUri(episodeId) else null,
+                historyAudioUrl = historyItem?.episodeAudioUrl,
+                queueAudioUrl = queueItem?.audioUrl,
+                historyMimeType = historyItem?.enclosureType,
+                queueMimeType = queueItem?.enclosureType,
+            )
+        val resolvedAudioUrl = source.playbackUri
         if (resolvedAudioUrl != null) {
             val histArtworkUriStr = historyItem?.episodeImageUrl ?: historyItem?.podcastImageUrl
             android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved from history: '$histArtworkUriStr'")
@@ -44,6 +49,7 @@ internal class AutoMediaResolver(
                 .Builder()
                 .setMediaId(item.mediaId)
                 .setUri(resolvedAudioUrl)
+                .setMimeType(source.mimeType)
                 .setCustomCacheKey(
                     PlaybackMediaIdPolicy.customCacheKey(episodeId, resolvedAudioUrl),
                 ).setMediaMetadata(
@@ -57,23 +63,26 @@ internal class AutoMediaResolver(
                                 histArtworkUriStr ?: queueItem?.imageUrl ?: queueItem?.podcastImageUrl,
                             ),
                         ).setExtras(
-                            AutoBrowseContract.mergeExtras(
-                                item.mediaMetadata.extras,
-                                AutoBrowseContract.itemExtras(
-                                    source =
-                                        item.mediaMetadata.extras
-                                            ?.getString(AutoBrowseContract.EXTRA_SOURCE)
-                                            ?: AutoBrowseContract.SOURCE_DISCOVER,
-                                    downloadStatus =
-                                        if (
-                                            download?.status ==
-                                            cx.aswin.boxlore.core.database.DownloadedEpisodeEntity.STATUS_COMPLETED
-                                        ) {
-                                            androidx.media3.session.MediaConstants.EXTRAS_VALUE_STATUS_DOWNLOADED
-                                        } else {
-                                            null
-                                        },
-                                ),
+                            CastMediaMetadata.extrasWithRemoteUri(
+                                existing =
+                                    AutoBrowseContract.mergeExtras(
+                                        item.mediaMetadata.extras,
+                                        AutoBrowseContract.itemExtras(
+                                            source =
+                                                item.mediaMetadata.extras
+                                                    ?.getString(AutoBrowseContract.EXTRA_SOURCE)
+                                                    ?: AutoBrowseContract.SOURCE_DISCOVER,
+                                            downloadStatus =
+                                                if (
+                                                    downloadCompleted
+                                                ) {
+                                                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_STATUS_DOWNLOADED
+                                                } else {
+                                                    null
+                                                },
+                                        ),
+                                    ),
+                                remoteUri = source.castRemoteUri,
                             ),
                         ).build(),
                 ).build()
@@ -87,6 +96,7 @@ internal class AutoMediaResolver(
                 .Builder()
                 .setMediaId(item.mediaId)
                 .setUri(episode.audioUrl)
+                .setMimeType(episode.enclosureType)
                 .setCustomCacheKey(
                     PlaybackMediaIdPolicy.customCacheKey(episodeId, episode.audioUrl),
                 ).setMediaMetadata(
@@ -98,6 +108,11 @@ internal class AutoMediaResolver(
                             AutoArtworkRepository.remoteUri(
                                 host.asContext(),
                                 episode.imageUrl ?: episode.podcastImageUrl,
+                            ),
+                        ).setExtras(
+                            CastMediaMetadata.extrasWithRemoteUri(
+                                existing = item.mediaMetadata.extras,
+                                remoteUri = episode.audioUrl,
                             ),
                         ).build(),
                 ).build()
@@ -177,4 +192,31 @@ internal class AutoMediaResolver(
                 it,
             )
         }.getOrNull()
+}
+
+internal data class AutoMediaSource(
+    val playbackUri: String?,
+    val castRemoteUri: String?,
+    val mimeType: String?,
+)
+
+internal object AutoMediaResolutionPolicy {
+    fun resolve(
+        downloadCompleted: Boolean,
+        downloadUri: String?,
+        historyAudioUrl: String?,
+        queueAudioUrl: String?,
+        historyMimeType: String?,
+        queueMimeType: String?,
+    ): AutoMediaSource {
+        val remoteUri =
+            historyAudioUrl?.takeIf { it.isNotBlank() }
+                ?: queueAudioUrl?.takeIf { it.isNotBlank() }
+        val localUri = downloadUri.takeIf { downloadCompleted && !it.isNullOrBlank() }
+        return AutoMediaSource(
+            playbackUri = localUri ?: remoteUri,
+            castRemoteUri = remoteUri?.takeIf(CastMediaEligibility::isCastable),
+            mimeType = historyMimeType ?: queueMimeType,
+        )
+    }
 }

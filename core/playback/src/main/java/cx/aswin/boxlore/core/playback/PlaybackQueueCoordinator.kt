@@ -16,6 +16,8 @@ import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
@@ -52,6 +54,9 @@ internal class PlaybackQueueCoordinator(
     private val saveCurrentState: suspend (updateLastPlayedAt: Boolean) -> Unit,
     private val stopProgressTicker: () -> Unit,
 ) {
+    private val castQueueSnapshotPolicy = CastQueueSnapshotPolicy()
+    private var castQueueRecheckJob: Job? = null
+
     suspend fun syncQueueToDb() {
         try {
             val currentQueue = playerStateFlow.value.queue
@@ -123,11 +128,31 @@ internal class PlaybackQueueCoordinator(
         val idsNow = controllerNow.upcomingEpisodeIds()
         val latestQueue = playerStateFlow.value.queue
         if (idsNow == latestQueue.map { it.id }) return
+        if (
+            castQueueSnapshotPolicy.shouldPreserveLocalQueue(
+                remoteIds = idsNow,
+                localIds = latestQueue.map(Episode::id),
+                nowMs = android.os.SystemClock.elapsedRealtime(),
+            )
+        ) {
+            android.util.Log.d(
+                "PlaybackRepo",
+                "Ignoring partial Cast queue snapshot (${idsNow.size}/${latestQueue.size}) while receiver connects",
+            )
+            if (castQueueRecheckJob?.isActive != true) {
+                castQueueRecheckJob =
+                    scope.launch {
+                        delay(CastQueueSnapshotPolicy.STABILITY_WINDOW_MS)
+                        reconcileQueueSnapshot(idsNow)
+                    }
+            }
+            return
+        }
 
         val known = latestQueue.associateBy { it.id }
         val newQueue =
             idsNow
-                .mapIndexed { offset, id ->
+                .mapIndexedNotNull { offset, id ->
                     val currentEpisode = known[id]
                     val persistedEpisode = dbItems[id]
                     when {
@@ -154,11 +179,12 @@ internal class PlaybackQueueCoordinator(
     fun buildEpisodeFromMediaItem(
         item: MediaItem,
         episodeId: String,
-    ): Episode {
+    ): Episode? {
         val metadata = item.mediaMetadata
+        val title = CastMediaMetadata.queueTitle(metadata.title) ?: return null
         return Episode(
             id = episodeId,
-            title = metadata.title?.toString() ?: "Episode",
+            title = title,
             description = "",
             audioUrl = item.localConfiguration?.uri?.toString() ?: "",
             imageUrl = metadata.artworkUri?.toString(),
@@ -202,6 +228,7 @@ internal class PlaybackQueueCoordinator(
             MediaItem
                 .Builder()
                 .setUri(episode.audioUrl)
+                .setMimeType(episode.enclosureType)
                 .setMediaMetadata(metadata)
                 .setMediaId(mediaId)
                 .setCustomCacheKey(
@@ -346,6 +373,7 @@ internal class PlaybackQueueCoordinator(
                 MediaItem
                     .Builder()
                     .setUri(episode.audioUrl)
+                    .setMimeType(episode.enclosureType)
                     .setMediaMetadata(metadata)
                     .setMediaId(mediaId)
                     .setCustomCacheKey(
@@ -407,6 +435,7 @@ internal class PlaybackQueueCoordinator(
                 MediaItem
                     .Builder()
                     .setUri(episode.audioUrl)
+                    .setMimeType(episode.enclosureType)
                     .setMediaMetadata(metadata)
                     .setMediaId(episode.id)
                     .setCustomCacheKey(
@@ -597,6 +626,7 @@ internal class PlaybackQueueCoordinator(
             MediaItem
                 .Builder()
                 .setUri(episode.audioUrl)
+                .setMimeType(episode.enclosureType)
                 .setMediaMetadata(metadata)
                 .setMediaId(mediaId)
                 .setCustomCacheKey(
@@ -780,5 +810,35 @@ internal class PlaybackQueueCoordinator(
 
         // Reload into Media3 with the sliced queue
         playQueue(slicedQueue, podcast, 0)
+    }
+}
+
+internal class CastQueueSnapshotPolicy {
+    private var candidateIds: List<String>? = null
+    private var candidateFirstSeenAtMs: Long = 0L
+
+    fun shouldPreserveLocalQueue(
+        remoteIds: List<String>,
+        localIds: List<String>,
+        nowMs: Long,
+    ): Boolean {
+        val isStrictSubset =
+            remoteIds.isNotEmpty() &&
+                remoteIds.size < localIds.size &&
+                remoteIds.all(localIds::contains)
+        if (!isStrictSubset) {
+            candidateIds = null
+            return false
+        }
+        if (remoteIds != candidateIds) {
+            candidateIds = remoteIds
+            candidateFirstSeenAtMs = nowMs
+            return true
+        }
+        return nowMs - candidateFirstSeenAtMs < STABILITY_WINDOW_MS
+    }
+
+    companion object {
+        const val STABILITY_WINDOW_MS = 1_000L
     }
 }

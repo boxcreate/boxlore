@@ -44,7 +44,7 @@ src/test/java/cx/aswin/boxlore/core/testing/architecture/
 ## Testing notes
 
 - Run this module to execute architecture guards.
-- Guards cover feature isolation, selected singleton allowlists, catalog-to-designsystem boundaries, direct database access restrictions, and README presence for included app/core/feature modules.
+- Guards cover feature isolation, selected singleton allowlists (including Android framework entry points such as `MediaRouter`), catalog-to-designsystem boundaries, direct database access restrictions, and README presence for included app/core/feature modules.
 - `GlossaryCoverageGuardTest` asserts every `docs/analytics/event_glossary.csv` name is in `AnalyticsGlossary`, and every name has a row in `docs/analytics/glossary_emission_coverage.csv` with mode `emission:*`, `sdk_backed:*`, or `person_props_only` (opens/installs must not be dual-counted as custom emits).
 - Do **not** add `api(projects.core.analytics)` here — `:core:analytics` already `testImplementation`s this module (cycle risk). Emission suites live in `:core:analytics`.
 

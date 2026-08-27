@@ -7,7 +7,7 @@ import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 /** Shared Home discovery spacing — rails, grids, and card feet. */
 internal object HomeFeedSpacing {
     /** Two complete cards plus a clear preview of card three on every phone width. */
-    val RailCardWidthFraction = 0.41f
+    const val RAIL_CARD_WIDTH_FRACTION = 0.41f
     val RailItemGap = 16.dp
     val GridGap = FeedPosterSpacing.GridGap
 

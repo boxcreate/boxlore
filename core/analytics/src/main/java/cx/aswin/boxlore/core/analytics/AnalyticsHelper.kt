@@ -818,6 +818,11 @@ object AnalyticsHelper : Analytics {
         screen: String,
     ) = LibraryAnalyticsTracks.trackTopControlbarInteraction(action, screen)
 
+    fun trackPlaybackRouteChanged(
+        isRemote: Boolean,
+        volumeControlAvailable: Boolean,
+    ) = LibraryAnalyticsTracks.trackPlaybackRouteChanged(isRemote, volumeControlAvailable)
+
     fun trackSettingsScreenViewed(sourceEntryPoint: String) = LibraryAnalyticsTracks.trackSettingsScreenViewed(sourceEntryPoint)
 
     fun trackSettingsInteraction(

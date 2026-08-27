@@ -46,6 +46,12 @@ android {
 
     val resolvedApiBaseUrl = localProps.dual("BOXLORE_API_BASE_URL", "BOXCAST_API_BASE_URL")
     val resolvedPublicKey = localProps.dual("BOXLORE_PUBLIC_KEY", "BOXCAST_PUBLIC_KEY")
+    val resolvedCastReceiverId =
+        localProps
+            .getProperty("BOXLORE_CAST_RECEIVER_ID")
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: "2518A753"
 
     defaultConfig {
         applicationId = "cx.aswin.boxlore"
@@ -64,6 +70,7 @@ android {
         buildConfigField("String", "BOXLORE_PUBLIC_KEY", "\"$resolvedPublicKey\"")
         buildConfigField("String", "BOXCAST_API_BASE_URL", "\"$resolvedApiBaseUrl\"")
         buildConfigField("String", "BOXCAST_PUBLIC_KEY", "\"$resolvedPublicKey\"")
+        buildConfigField("String", "BOXLORE_CAST_RECEIVER_ID", "\"$resolvedCastReceiverId\"")
         buildConfigField("String", "POSTHOG_API_KEY", "\"${localProps.getProperty("posthog.apiKey", "")}\"")
         buildConfigField("String", "POSTHOG_HOST", "\"${localProps.getProperty("posthog.host", "")}\"")
     }
@@ -132,6 +139,7 @@ dependencies {
     implementation(projects.core.network)
     implementation(projects.core.analytics)
     implementation(projects.core.ranking)
+    implementation(libs.androidx.media3.cast)
     implementation(projects.core.rss)
     implementation(projects.feature.home)
     implementation(project(":feature:player"))

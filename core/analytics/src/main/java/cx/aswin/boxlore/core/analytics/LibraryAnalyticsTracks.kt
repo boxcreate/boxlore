@@ -149,6 +149,20 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
+    fun trackPlaybackRouteChanged(
+        isRemote: Boolean,
+        volumeControlAvailable: Boolean,
+    ) {
+        AnalyticsEmit.event(
+            "player_chrome_interaction",
+            mapOf(
+                "surface" to "playback_session",
+                "action" to if (isRemote) "cast_connected" else "cast_disconnected",
+                "volume_control_available" to volumeControlAvailable,
+            ),
+        )
+    }
+
     fun trackSettingsScreenViewed(sourceEntryPoint: String) {
         AnalyticsEmit.event(
             "settings_interaction",
