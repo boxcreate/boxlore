@@ -5,7 +5,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import androidx.media3.cast.Cast
 import androidx.work.Configuration
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastSession
+import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
@@ -18,6 +22,7 @@ import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.core.playback.synchronizeCastSession
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
@@ -32,6 +37,64 @@ class BoxLoreApplication :
     Application(),
     Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val castSessionListener =
+        object : SessionManagerListener<CastSession> {
+            override fun onSessionStarting(session: CastSession) {
+                syncCastSession(isActive = true)
+            }
+
+            override fun onSessionStarted(
+                session: CastSession,
+                sessionId: String,
+            ) {
+                syncCastSession(isActive = true)
+            }
+
+            override fun onSessionStartFailed(
+                session: CastSession,
+                error: Int,
+            ) {
+                syncCastSession(isActive = false)
+            }
+
+            override fun onSessionEnding(session: CastSession) = Unit
+
+            override fun onSessionEnded(
+                session: CastSession,
+                error: Int,
+            ) {
+                syncCastSession(isActive = false)
+            }
+
+            override fun onSessionResuming(
+                session: CastSession,
+                sessionId: String,
+            ) {
+                syncCastSession(isActive = true)
+            }
+
+            override fun onSessionResumed(
+                session: CastSession,
+                wasSuspended: Boolean,
+            ) {
+                syncCastSession(isActive = true)
+            }
+
+            override fun onSessionResumeFailed(
+                session: CastSession,
+                error: Int,
+            ) {
+                syncCastSession(isActive = false)
+            }
+
+            override fun onSessionSuspended(
+                session: CastSession,
+                reason: Int,
+            ) {
+                // Keep the Cast route while the framework's reconnection service reattaches.
+                syncCastSession(isActive = true)
+            }
+        }
 
     lateinit var container: AppContainer
         private set
@@ -53,6 +116,10 @@ class BoxLoreApplication :
     override fun onCreate() {
         super.onCreate()
 
+        // Load the manifest-backed boxlore receiver before playback or Cast UI
+        // creates remote resources, avoiding a selector initialization race.
+        Cast.getSingletonInstance(this).initialize()
+
         // Single prefs instance shared with AppContainer (theme fast-cache + engagement).
         userPreferencesRepository = UserPreferencesRepository(this)
         runBlocking(Dispatchers.IO) {
@@ -66,6 +133,7 @@ class BoxLoreApplication :
                 sharedUserPreferences = userPreferencesRepository,
                 applicationScope = applicationScope,
             )
+        setupCastSessionTracking()
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
         HomeScreenWidgetsInstaller.install(
@@ -175,6 +243,22 @@ class BoxLoreApplication :
                 e,
                 "Failed to register connectivity observer",
             )
+        }
+    }
+
+    private fun setupCastSessionTracking() {
+        runCatching {
+            val sessionManager = CastContext.getSharedInstance(this).sessionManager
+            sessionManager.addSessionManagerListener(castSessionListener, CastSession::class.java)
+            syncCastSession(sessionManager.currentCastSession?.isConnected == true)
+        }.onFailure { exception ->
+            android.util.Log.w("BoxLoreApplication", "Unable to observe Cast sessions", exception)
+        }
+    }
+
+    private fun syncCastSession(isActive: Boolean) {
+        if (::container.isInitialized) {
+            container.playbackRepository.synchronizeCastSession(isActive)
         }
     }
 

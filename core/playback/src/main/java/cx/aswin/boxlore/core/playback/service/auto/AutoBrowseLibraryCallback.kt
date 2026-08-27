@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
@@ -34,7 +33,7 @@ internal class AutoBrowseLibraryCallback(
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<MediaItem>>): Boolean = size > 8
         }
 
-    private val ROOT_ID = AutoBrowseContract.ROOT_ID
+    private val rootId = AutoBrowseContract.ROOT_ID
     private val HOME_ID = AutoBrowseContract.HOME_ID
     private val LIBRARY_ID = AutoBrowseContract.LIBRARY_ID
     private val DOWNLOADS_ID = AutoBrowseContract.DOWNLOADS_ID
@@ -48,7 +47,7 @@ internal class AutoBrowseLibraryCallback(
     private val PLAY_ALL_NEW_EPISODES_ID = AutoBrowseContract.PLAY_ALL_NEW_ID
     private val SUBSCRIPTION_PREFIX = AutoBrowseContract.SUBSCRIPTION_PREFIX
 
-    private val SEEK_BACK_CMD = androidx.media3.session.SessionCommand("SEEK_BACK", Bundle.EMPTY)
+    private val seekBackCommand = androidx.media3.session.SessionCommand("SEEK_BACK", Bundle.EMPTY)
     private val SEEK_FORWARD_CMD = androidx.media3.session.SessionCommand("SEEK_FORWARD", Bundle.EMPTY)
     private val MARK_COMPLETED_SKIP_CMD = androidx.media3.session.SessionCommand("MARK_COMPLETED_SKIP", Bundle.EMPTY)
     private val TOGGLE_LIKE_CMD =
@@ -56,12 +55,12 @@ internal class AutoBrowseLibraryCallback(
             AutoBrowseContract.COMMAND_TOGGLE_LIKE,
             Bundle.EMPTY,
         )
-    private val ADD_TO_QUEUE_CMD =
+    private val addToQueueCommand =
         androidx.media3.session.SessionCommand(
             AutoBrowseContract.COMMAND_ADD_TO_QUEUE,
             Bundle.EMPTY,
         )
-    private val MARK_COMPLETE_CMD =
+    private val markCompleteCommand =
         androidx.media3.session.SessionCommand(
             AutoBrowseContract.COMMAND_MARK_COMPLETE,
             Bundle.EMPTY,
@@ -77,12 +76,12 @@ internal class AutoBrowseLibraryCallback(
         val sessionCommands =
             defaultResult.availableSessionCommands
                 .buildUpon()
-                .add(SEEK_BACK_CMD)
+                .add(seekBackCommand)
                 .add(SEEK_FORWARD_CMD)
                 .add(MARK_COMPLETED_SKIP_CMD)
                 .add(TOGGLE_LIKE_CMD)
-                .add(ADD_TO_QUEUE_CMD)
-                .add(MARK_COMPLETE_CMD)
+                .add(addToQueueCommand)
+                .add(markCompleteCommand)
                 .build()
         return MediaSession.ConnectionResult
             .AcceptedResultBuilder(session)
@@ -305,7 +304,7 @@ internal class AutoBrowseLibraryCallback(
         val rootItem =
             MediaItem
                 .Builder()
-                .setMediaId(ROOT_ID)
+                .setMediaId(rootId)
                 .setMediaMetadata(
                     MediaMetadata
                         .Builder()
@@ -336,7 +335,7 @@ internal class AutoBrowseLibraryCallback(
             try {
                 val items =
                     when {
-                        parentId == ROOT_ID -> treeBuilder.getRootChildren().take(rootChildLimits[browser] ?: 4)
+                        parentId == rootId -> treeBuilder.getRootChildren().take(rootChildLimits[browser] ?: 4)
                         parentId == HOME_ID -> treeBuilder.getHomeChildren()
                         parentId == HOME_CONTINUE_LISTENING_ID -> treeBuilder.getContinueListeningChildren()
                         parentId == HOME_QUEUE_ID -> treeBuilder.getQueueChildren()
@@ -479,7 +478,7 @@ internal class AutoBrowseLibraryCallback(
     ) {
         host.serviceScope.launch {
             try {
-                val player = mediaSession.player as? ExoPlayer ?: return@launch
+                val player = mediaSession.player
                 // Wait briefly for the selected episode to become the current item so
                 // the engine refills relative to it (playback start is asynchronous).
                 var attempts = 0

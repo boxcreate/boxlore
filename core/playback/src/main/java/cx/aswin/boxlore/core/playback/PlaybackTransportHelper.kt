@@ -2,10 +2,10 @@ package cx.aswin.boxlore.core.playback
 
 import android.util.Log
 import androidx.media3.common.MediaItem
-import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.PlayerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -88,6 +88,7 @@ internal class PlaybackTransportHelper(
                             MediaItem
                                 .Builder()
                                 .setUri(episode.audioUrl)
+                                .setMimeType(episode.enclosureType)
                                 .setMediaMetadata(metadata)
                                 .setMediaId(episode.id)
                                 .setCustomCacheKey(
@@ -119,6 +120,7 @@ internal class PlaybackTransportHelper(
                         MediaItem
                             .Builder()
                             .setUri(currentEpisode.audioUrl)
+                            .setMimeType(currentEpisode.enclosureType)
                             .setMediaMetadata(metadata)
                             .setMediaId(currentEpisode.id)
                             .setCustomCacheKey(
@@ -232,7 +234,10 @@ internal class PlaybackTransportHelper(
             }
             android.util.Log.e("PlaybackRepo", "skipToEpisode: mediaId=${targetEpisode.id} NOT found in Media3!")
         } else {
-            android.util.Log.e("PlaybackRepo", "skipToEpisode: index $index out of bounds for queue size ${playerStateFlow.value.queue.size}!")
+            android.util.Log.e(
+                "PlaybackRepo",
+                "skipToEpisode: index $index out of bounds for queue size ${playerStateFlow.value.queue.size}!",
+            )
         }
     }
 

@@ -19,6 +19,7 @@ object PlaybackControlSync {
             playbackSpeed = resolvePlaybackSpeed(controllerSpeed, previous.playbackSpeed),
             seekBackwardMs = previous.seekBackwardMs,
             seekForwardMs = previous.seekForwardMs,
+            playbackRoute = previous.playbackRoute,
         )
 
     /**

@@ -1,10 +1,10 @@
 package cx.aswin.boxlore.core.playback
 
 import android.util.Log
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.Player
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
-import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
@@ -21,7 +21,7 @@ internal class PlaybackProgressCoordinator(
     private val isEffectiveEndLatched: () -> Boolean,
     private val effectiveSkipEndingMs: (Long) -> Long,
     private val updateConsumedAudio: (androidx.media3.common.Player) -> Unit,
-    private val dispatchHeartbeatTelemetry: (ExoPlayer) -> Unit,
+    private val dispatchHeartbeatTelemetry: (Player) -> Unit,
 ) {
     var activePlaybackStartTimeMs: Long = 0L
     private var lastProgressAnomalyEpisodeId: String? = null
@@ -30,7 +30,7 @@ internal class PlaybackProgressCoordinator(
      * Periodically saves playback position and dispatches heartbeat telemetry (runs on Dispatchers.Main).
      * Also checks and enforces sleep timer expiration continuously while the foreground service is active.
      */
-    suspend fun startPlaybackTicker(player: ExoPlayer) {
+    suspend fun startPlaybackTicker(player: Player) {
         var tickCount = 0
         while (true) {
             delay(1_000)
@@ -54,7 +54,7 @@ internal class PlaybackProgressCoordinator(
     }
 
     /** Saves the current playback position to DB once. */
-    suspend fun saveProgressOnce(player: ExoPlayer) {
+    suspend fun saveProgressOnce(player: Player) {
         if (isEffectiveEndLatched()) return
         try {
             val currentItem = withContext(mainDispatcher) { player.currentMediaItem }

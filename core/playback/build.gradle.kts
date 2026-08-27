@@ -70,6 +70,8 @@ dependencies {
     api(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.cast)
+    implementation(libs.google.cast.framework)
 
     // Artwork for session / Auto collages
     implementation(libs.coil)

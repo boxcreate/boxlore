@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.playback
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.media3.common.DeviceInfo
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
@@ -38,8 +39,72 @@ internal class PlaybackMediaControllerBridge(
     private val reconcileQueueWithController: () -> Unit,
     private val markEpisodeAsCompleted: suspend (Episode, Podcast?) -> Unit,
     private val findPodcastIdForEpisode: suspend (String) -> String?,
+    private val hasActiveCastSession: () -> Boolean?,
 ) : Player.Listener {
     private var pendingSaveJob: Job? = null
+    private var lastReportedRemote: Boolean? = null
+
+    fun syncPlaybackRoute() {
+        val controller = mediaHandle.controller ?: return
+        updatePlaybackRoute(
+            deviceInfo = controller.deviceInfo,
+            volume = controller.deviceVolume,
+            isMuted = controller.isDeviceMuted,
+        )
+    }
+
+    override fun onDeviceInfoChanged(deviceInfo: DeviceInfo) {
+        val controller = mediaHandle.controller ?: return
+        updatePlaybackRoute(
+            deviceInfo = deviceInfo,
+            volume = controller.deviceVolume,
+            isMuted = controller.isDeviceMuted,
+        )
+    }
+
+    override fun onDeviceVolumeChanged(
+        volume: Int,
+        muted: Boolean,
+    ) {
+        val controller = mediaHandle.controller ?: return
+        updatePlaybackRoute(
+            deviceInfo = controller.deviceInfo,
+            volume = volume,
+            isMuted = muted,
+        )
+    }
+
+    private fun updatePlaybackRoute(
+        deviceInfo: DeviceInfo,
+        volume: Int,
+        isMuted: Boolean,
+    ) {
+        val resolvedRoute =
+            PlaybackRouteResolver.resolve(
+                context = context,
+                deviceInfo = deviceInfo,
+                volume = volume,
+                isMuted = isMuted,
+            )
+        val route =
+            if (resolvedRoute.isRemote &&
+                !CastSessionSyncPolicy.shouldAcceptRemoteRoute(hasActiveCastSession())
+            ) {
+                PlaybackRouteState()
+            } else {
+                resolvedRoute
+            }
+        playerStateFlow.value = playerStateFlow.value.copy(playbackRoute = route)
+        if (lastReportedRemote != route.isRemote) {
+            if (lastReportedRemote != null || route.isRemote) {
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPlaybackRouteChanged(
+                    isRemote = route.isRemote,
+                    volumeControlAvailable = route.canControlVolume,
+                )
+            }
+            lastReportedRemote = route.isRemote
+        }
+    }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         Log.d("PlaybackRepo", "onIsPlayingChanged: isPlaying=$isPlaying, currentPos=${mediaHandle.controller?.currentPosition}")
@@ -163,10 +228,16 @@ internal class PlaybackMediaControllerBridge(
 
         scope.launch {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                val message =
+                    if (playerStateFlow.value.playbackRoute.isRemote) {
+                        "That episode could not play on this Cast device."
+                    } else {
+                        "Stream unavailable, skipping…"
+                    }
                 android.widget.Toast
                     .makeText(
                         context,
-                        "Stream unavailable, skipping...",
+                        message,
                         android.widget.Toast.LENGTH_SHORT,
                     ).show()
             }
@@ -232,12 +303,19 @@ internal class PlaybackMediaControllerBridge(
                     if (dbSlotIndex != -1) {
                         dbQueue[dbSlotIndex]
                     } else {
-                        // Fallback: construct Episode directly from mediaItem's MediaMetadata
                         val metadata = mediaItem.mediaMetadata
+                        val title = CastMediaMetadata.queueTitle(metadata.title)
+                        if (title == null) {
+                            android.util.Log.w(
+                                "PlaybackRepo",
+                                "Deferring transition for $episodeId until Cast metadata is available",
+                            )
+                            return@launch
+                        }
                         val resolvedPodcastId = findPodcastIdForEpisode(episodeId) ?: ""
                         Episode(
                             id = episodeId,
-                            title = metadata.title?.toString() ?: "Unknown Episode",
+                            title = title,
                             description = "",
                             audioUrl = mediaItem.localConfiguration?.uri?.toString() ?: "",
                             imageUrl = metadata.artworkUri?.toString(),

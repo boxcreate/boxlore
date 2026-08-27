@@ -8,6 +8,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import cx.aswin.boxlore.core.catalog.content.CuratedMoods
+import cx.aswin.boxlore.core.playback.CastMediaMetadata
 import cx.aswin.boxlore.core.playback.PlaybackIntroOutroController
 import cx.aswin.boxlore.core.playback.PlaybackProgressCoordinator
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
@@ -38,7 +39,8 @@ open class BoxLorePlaybackService :
 
     override var mediaSession: MediaLibrarySession? = null
         protected set
-    private var exoPlayer: ExoPlayer? = null
+    private var localExoPlayer: ExoPlayer? = null
+    private var playbackPlayer: Player? = null
     override lateinit var seekBackAction: androidx.media3.session.CommandButton
         protected set
     override lateinit var seekForwardAction: androidx.media3.session.CommandButton
@@ -213,8 +215,10 @@ open class BoxLorePlaybackService :
     override fun onCreate() {
         super.onCreate()
 
-        val player = playerFactory.createExoPlayer()
-        this.exoPlayer = player
+        val localPlayer = playerFactory.createExoPlayer()
+        val player = playerFactory.createCastPlayer(localPlayer)
+        localExoPlayer = localPlayer
+        playbackPlayer = player
         serviceScope.launch {
             userPreferencesRepository.playbackSpeedStream.collectLatest { savedSpeed ->
                 player.setPlaybackSpeed(savedSpeed.coerceIn(0.5f, 3.0f))
@@ -259,7 +263,7 @@ open class BoxLorePlaybackService :
             }
         }
 
-        player.addAnalyticsListener(
+        localPlayer.addAnalyticsListener(
             object : androidx.media3.exoplayer.analytics.AnalyticsListener {
                 override fun onPlayerError(
                     eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,
@@ -353,6 +357,23 @@ open class BoxLorePlaybackService :
 
         player.addListener(
             object : Player.Listener {
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    if (player.deviceInfo.playbackType == androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE) {
+                        android.util.Log.e("BoxCastPlayer", "Remote playback error: ${error.errorCodeName}", error)
+                        telemetrySession.trackPlayerError(error)
+                    }
+                }
+
+                override fun onPositionDiscontinuity(
+                    oldPosition: Player.PositionInfo,
+                    newPosition: Player.PositionInfo,
+                    reason: Int,
+                ) {
+                    if (player.deviceInfo.playbackType == androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE) {
+                        handleRemotePositionDiscontinuity(player, oldPosition, newPosition, reason)
+                    }
+                }
+
                 override fun onMediaItemTransition(
                     mediaItem: androidx.media3.common.MediaItem?,
                     reason: Int,
@@ -390,6 +411,13 @@ open class BoxLorePlaybackService :
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (player.deviceInfo.playbackType == androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE) {
+                        if (playbackState == Player.STATE_BUFFERING) {
+                            telemetrySession.onBufferingStarted()
+                        } else if (playbackState == Player.STATE_READY) {
+                            telemetrySession.onBufferingEnded()
+                        }
+                    }
                     when (playbackState) {
                         Player.STATE_READY -> {
                             introOutroController.onReadyOrPlaying(player)
@@ -496,7 +524,7 @@ open class BoxLorePlaybackService :
     }
 
     private fun seekByConfiguredIncrement(
-        player: ExoPlayer,
+        player: Player,
         deltaMs: Long,
         source: String,
     ) {
@@ -508,10 +536,47 @@ open class BoxLorePlaybackService :
         android.util.Log.d("BoxCastPlayer", "$source to ${target}ms")
     }
 
+    private fun handleRemotePositionDiscontinuity(
+        player: Player,
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int,
+    ) {
+        telemetrySession.noteSeekPosition(newPosition.positionMs)
+        if (reason != Player.DISCONTINUITY_REASON_SEEK) return
+        telemetrySession.updateHeartbeatsForPosition(
+            newPosition.positionMs,
+            telemetrySession.totalDurationMs,
+        )
+        val source =
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .consumeSeekSource()
+        val seekResult =
+            introOutroController.onSeekDiscontinuity(
+                newPositionMs = newPosition.positionMs,
+                durationMs = player.duration,
+                source = source,
+            )
+        val episodeId = telemetrySession.episodeId
+        if (!seekResult.isLifecycleSeek && episodeId != null) {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPlaybackSeeked(
+                podcastId = telemetrySession.podcastId,
+                podcastName = telemetrySession.podcastName,
+                episodeId = episodeId,
+                episodeTitle = telemetrySession.episodeTitle,
+                fromPositionSeconds = oldPosition.positionMs / 1000f,
+                toPositionSeconds = newPosition.positionMs / 1000f,
+                totalDurationSeconds = telemetrySession.totalDurationMs / 1000f,
+                seekSource = source,
+                entryPoint = telemetrySession.entryPoint,
+            )
+        }
+    }
+
     private fun lifecycleEpisodeId(item: MediaItem?): String? = item?.mediaId?.stripEpisodePrefix()
 
     private fun handleMediaItemTransition(
-        player: ExoPlayer,
+        player: Player,
         mediaItem: MediaItem?,
         reason: Int,
     ) {
@@ -564,7 +629,7 @@ open class BoxLorePlaybackService :
     }
 
     private fun restoreLifecycleAfterSleepTransition(
-        player: ExoPlayer,
+        player: Player,
         mediaItem: MediaItem?,
     ): Boolean {
         if (!sleepRestoreInProgress) return false
@@ -574,7 +639,7 @@ open class BoxLorePlaybackService :
     }
 
     private fun updateTransitionPlaybackSession(
-        player: ExoPlayer,
+        player: Player,
         mediaItem: MediaItem?,
         reason: Int,
         wasServiceOwnedNaturalAdvance: Boolean,
@@ -600,22 +665,23 @@ open class BoxLorePlaybackService :
     }
 
     private fun maybeRefillQueueAfterTransition(
-        player: ExoPlayer,
+        player: Player,
         reason: Int,
     ) {
         tryStartSmartQueueRefill(player, logReason = "transition:$reason")
     }
 
     private fun refillQueueAfterSmartQueueEnabled() {
-        val player = exoPlayer ?: run {
-            android.util.Log.w("AutoQueue", "Smart queue turned on but player is missing")
-            return
-        }
+        val player =
+            playbackPlayer ?: run {
+                android.util.Log.w("AutoQueue", "Smart queue turned on but player is missing")
+                return
+            }
         tryStartSmartQueueRefill(player, logReason = "smart_queue_enabled")
     }
 
     private fun tryStartSmartQueueRefill(
-        player: ExoPlayer,
+        player: Player,
         logReason: String,
     ) {
         val remaining = player.mediaItemCount - player.currentMediaItemIndex - 1
@@ -649,7 +715,7 @@ open class BoxLorePlaybackService :
     }
 
     private fun enforceEndOfEpisodeSleepAfterTransition(
-        player: ExoPlayer,
+        player: Player,
         completedDurationMs: Long,
     ) {
         clearEndOfEpisodeSleep()
@@ -678,7 +744,7 @@ open class BoxLorePlaybackService :
         val fallbackPodcastName = telemetrySession.podcastName
         val fallbackEpisodeTitle = telemetrySession.episodeTitle
         val fallbackMediaItem =
-            exoPlayer
+            playbackPlayer
                 ?.currentMediaItem
                 ?.takeIf { lifecycleEpisodeId(it) == episodeId }
         val resolvedDurationMs =
@@ -736,14 +802,21 @@ open class BoxLorePlaybackService :
                     podcastId.takeIf { it.isNotBlank() }?.let {
                         runCatching { database.podcastDao().getPodcast(it) }.getOrNull()
                     }
+                val episodeTitle =
+                    CastMediaMetadata.queueTitle(queueItem?.title)
+                        ?: CastMediaMetadata.queueTitle(fallbackEpisodeTitle)
+                        ?: CastMediaMetadata.queueTitle(fallbackMediaItem?.mediaMetadata?.title)
+                if (episodeTitle == null) {
+                    android.util.Log.w(
+                        "BoxCastPlayer",
+                        "Skipping completion row for $episodeId until episode metadata is available",
+                    )
+                    return
+                }
                 cx.aswin.boxlore.core.database.ListeningHistoryEntity(
                     episodeId = episodeId,
                     podcastId = podcastId,
-                    episodeTitle =
-                        queueItem?.title
-                            ?: fallbackEpisodeTitle
-                            ?: fallbackMediaItem?.mediaMetadata?.title?.toString()
-                            ?: "Unknown Episode",
+                    episodeTitle = episodeTitle,
                     episodeImageUrl =
                         queueItem?.imageUrl
                             ?: fallbackMediaItem?.mediaMetadata?.artworkUri?.toString(),
@@ -815,6 +888,8 @@ open class BoxLorePlaybackService :
             release()
             mediaSession = null
         }
+        playbackPlayer = null
+        localExoPlayer = null
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -853,7 +928,7 @@ open class BoxLorePlaybackService :
      * (same podcast → resume → scored subscriptions → server recs → region trending).
      * Works independently of the app UI being open.
      */
-    override suspend fun refillQueue(player: ExoPlayer) {
+    override suspend fun refillQueue(player: Player) {
         smartQueueRefillCoordinator.refillQueue(player)
     }
 
@@ -869,7 +944,7 @@ open class BoxLorePlaybackService :
     }
 
     private fun markCurrentEpisodeCompleted() {
-        val player = exoPlayer ?: return
+        val player = playbackPlayer ?: return
         val currentItem = player.currentMediaItem
         val durationMs = player.duration
         val episodeId = currentItem?.mediaId?.stripEpisodePrefix()
@@ -905,7 +980,7 @@ open class BoxLorePlaybackService :
     }
 
     private fun handleSkipNext() {
-        val player = exoPlayer ?: return
+        val player = playbackPlayer ?: return
         serviceScope.launch {
             val skipBehavior =
                 try {
@@ -932,7 +1007,7 @@ open class BoxLorePlaybackService :
     override fun markCurrentEpisodeCompletedAndSkip(session: MediaSession) {
         markCurrentEpisodeCompleted()
         serviceScope.launch {
-            val player = exoPlayer ?: return@launch
+            val player = playbackPlayer ?: return@launch
             if (player.hasNextMediaItem()) {
                 player.seekToNextMediaItem()
             } else {

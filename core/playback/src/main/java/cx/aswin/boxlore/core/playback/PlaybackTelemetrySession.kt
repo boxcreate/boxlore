@@ -4,15 +4,14 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
-import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.playback.QueueMath
-import cx.aswin.boxlore.core.playback.QueueSkipMemory
-import cx.aswin.boxlore.core.catalog.SubscriptionRepository
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.analytics.PendingEntryPoint
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.playback.QueueMath
+import cx.aswin.boxlore.core.playback.QueueSkipMemory
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
@@ -512,7 +511,7 @@ internal class PlaybackTelemetrySession(
         lastPositionSampleMs = now
     }
 
-    fun dispatchHeartbeatTelemetry(player: ExoPlayer) {
+    fun dispatchHeartbeatTelemetry(player: Player) {
         val episodeId = episodeId ?: return
         if (!player.isPlaying) return
 

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
@@ -18,8 +16,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -31,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.rounded.CastConnected
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
@@ -59,7 +58,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -67,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.player.v2.logic.ConfirmationVisibility
@@ -78,6 +77,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
 data class MiniPlayerContent(
     val episode: Episode,
     val podcastTitle: String,
@@ -88,23 +88,25 @@ data class MiniPlayerContent(
     val duration: Long,
     val seekBackwardSeconds: Int = 10,
     val seekForwardSeconds: Int = 30,
+    val isCasting: Boolean = false,
+    val castDeviceName: String? = null,
 )
 
 data class MiniPlayerColors(
     val colorScheme: ColorScheme,
-    val backgroundColor: Color
+    val backgroundColor: Color,
 )
 
 data class MiniPlayerActions(
     val onPlayPause: () -> Unit,
     val onReplay: () -> Unit,
     val onForward: () -> Unit,
-    val onDismiss: () -> Unit
+    val onDismiss: () -> Unit,
 )
 
 data class MiniPlayerSwipeTip(
     val visible: Boolean = false,
-    val onDismissed: () -> Unit = {}
+    val onDismissed: () -> Unit = {},
 )
 
 @Stable
@@ -121,7 +123,11 @@ private class MiniSwipeState {
         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 
-    fun onDrag(scope: CoroutineScope, dragAmount: Float, threshold: Float) {
+    fun onDrag(
+        scope: CoroutineScope,
+        dragAmount: Float,
+        threshold: Float,
+    ) {
         scope.launch {
             offsetX.snapTo(offsetX.value + dragAmount)
             when (confirmationVisibility(offsetX.value, threshold, showConfirmPill)) {
@@ -138,7 +144,11 @@ private class MiniSwipeState {
         }
     }
 
-    fun onDragEnd(scope: CoroutineScope, threshold: Float, haptics: HapticFeedback) {
+    fun onDragEnd(
+        scope: CoroutineScope,
+        threshold: Float,
+        haptics: HapticFeedback,
+    ) {
         scope.launch {
             if (shouldConfirmDismiss(offsetX.value, threshold)) {
                 revealConfirmation(scope, threshold, haptics)
@@ -152,7 +162,10 @@ private class MiniSwipeState {
         scope.launch { hideConfirmation() }
     }
 
-    fun confirmDismiss(haptics: HapticFeedback, onDismiss: () -> Unit) {
+    fun confirmDismiss(
+        haptics: HapticFeedback,
+        onDismiss: () -> Unit,
+    ) {
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         autoHideJob?.cancel()
         onDismiss()
@@ -161,34 +174,37 @@ private class MiniSwipeState {
     private suspend fun revealConfirmation(
         scope: CoroutineScope,
         threshold: Float,
-        haptics: HapticFeedback
+        haptics: HapticFeedback,
     ) {
         direction = dismissDirection(offsetX.value)
         showConfirmPill = true
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         offsetX.animateTo(
             targetValue = confirmationTarget(offsetX.value, threshold),
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium
-            )
-        )
-        autoHideJob = scope.launch {
-            delay(3000)
-            hideConfirmation(
+            animationSpec =
                 spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
+                    stiffness = Spring.StiffnessMedium,
+                ),
+        )
+        autoHideJob =
+            scope.launch {
+                delay(3000)
+                hideConfirmation(
+                    spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    ),
                 )
-            )
-        }
+            }
     }
 
     private suspend fun hideConfirmation(
-        animationSpec: androidx.compose.animation.core.AnimationSpec<Float> = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        )
+        animationSpec: androidx.compose.animation.core.AnimationSpec<Float> =
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium,
+            ),
     ) {
         showConfirmPill = false
         offsetX.animateTo(0f, animationSpec)
@@ -206,7 +222,7 @@ fun MiniPlayerV2(
     colors: MiniPlayerColors,
     actions: MiniPlayerActions,
     swipeTip: MiniPlayerSwipeTip = MiniPlayerSwipeTip(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val haptics = LocalHapticFeedback.current
@@ -220,7 +236,7 @@ fun MiniPlayerV2(
         MiniSwipeTipOverlay(
             visible = swipeTip.visible && !content.isPlaying,
             onDismissed = swipeTip.onDismissed,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }
@@ -229,41 +245,43 @@ fun MiniPlayerV2(
 private fun MiniDismissConfirmation(
     swipeState: MiniSwipeState,
     haptics: HapticFeedback,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AnimatedVisibility(
         visible = swipeState.showConfirmPill,
         enter = fadeIn(tween(200)),
         exit = fadeOut(tween(150)),
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(0f)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .zIndex(0f),
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = if (swipeState.direction > 0) Alignment.CenterStart else Alignment.CenterEnd
+            contentAlignment = if (swipeState.direction > 0) Alignment.CenterStart else Alignment.CenterEnd,
         ) {
             Row(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.errorContainer)
-                    .clickable { swipeState.confirmDismiss(haptics, onDismiss) }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier =
+                    Modifier
+                        .padding(horizontal = 16.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .clickable { swipeState.confirmDismiss(haptics, onDismiss) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     Icons.Rounded.Close,
                     contentDescription = "Dismiss",
                     tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
                 Text(
                     "Dismiss",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = GoogleSansWeight.semiBold,
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
         }
@@ -278,17 +296,18 @@ private fun MiniPlayerCard(
     swipeState: MiniSwipeState,
     scope: CoroutineScope,
     haptics: HapticFeedback,
-    dismissThreshold: Float
+    dismissThreshold: Float,
 ) {
     val shape = RoundedCornerShape(32.dp)
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(1f)
-            .offset { IntOffset(swipeState.offsetX.value.toInt(), 0) }
-            .background(color = colors.backgroundColor, shape = shape)
-            .clip(shape)
-            .miniSwipeGesture(content.isPlaying, swipeState, scope, haptics, dismissThreshold)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .zIndex(1f)
+                .offset { IntOffset(swipeState.offsetX.value.toInt(), 0) }
+                .background(color = colors.backgroundColor, shape = shape)
+                .clip(shape)
+                .miniSwipeGesture(content.isPlaying, swipeState, scope, haptics, dismissThreshold),
     ) {
         MiniPlayerRow(content, colors.colorScheme, actions)
     }
@@ -299,31 +318,33 @@ private fun Modifier.miniSwipeGesture(
     swipeState: MiniSwipeState,
     scope: CoroutineScope,
     haptics: HapticFeedback,
-    dismissThreshold: Float
-): Modifier = pointerInput(isPlaying) {
-    if (isPlaying) return@pointerInput
-    detectHorizontalDragGestures(
-        onDragStart = { swipeState.onDragStart(haptics) },
-        onDragEnd = { swipeState.onDragEnd(scope, dismissThreshold, haptics) },
-        onDragCancel = { swipeState.onDragCancel(scope) },
-        onHorizontalDrag = { _, dragAmount ->
-            swipeState.onDrag(scope, dragAmount, dismissThreshold)
-        }
-    )
-}
+    dismissThreshold: Float,
+): Modifier =
+    pointerInput(isPlaying) {
+        if (isPlaying) return@pointerInput
+        detectHorizontalDragGestures(
+            onDragStart = { swipeState.onDragStart(haptics) },
+            onDragEnd = { swipeState.onDragEnd(scope, dismissThreshold, haptics) },
+            onDragCancel = { swipeState.onDragCancel(scope) },
+            onHorizontalDrag = { _, dragAmount ->
+                swipeState.onDrag(scope, dragAmount, dismissThreshold)
+            },
+        )
+    }
 
 @Composable
 private fun MiniPlayerRow(
     content: MiniPlayerContent,
     colorScheme: ColorScheme,
-    actions: MiniPlayerActions
+    actions: MiniPlayerActions,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         MiniPlayerArtwork(content, colorScheme)
         Spacer(modifier = Modifier.width(11.dp))
@@ -344,22 +365,27 @@ private fun MiniPlayerRow(
 }
 
 @Composable
-private fun MiniPlayerArtwork(content: MiniPlayerContent, colorScheme: ColorScheme) {
+private fun MiniPlayerArtwork(
+    content: MiniPlayerContent,
+    colorScheme: ColorScheme,
+) {
     val imageUrl = content.episode.imageUrl?.takeIf { it.isNotBlank() } ?: content.podcastImageUrl
     Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(colorScheme.surfaceVariant)
+        modifier =
+            Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(colorScheme.surfaceVariant),
     ) {
         OptimizedImage(
             url = imageUrl,
             proxyWidth = 160,
             contentDescription = "Episode artwork",
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = if (content.isLoading) 0.62f else 1f }
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = if (content.isLoading) 0.62f else 1f },
         )
     }
 }
@@ -368,47 +394,72 @@ private fun MiniPlayerArtwork(content: MiniPlayerContent, colorScheme: ColorSche
 private fun MiniPlayerMetadata(
     content: MiniPlayerContent,
     colorScheme: ColorScheme,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(1.dp)) {
         Text(
             text = content.episode.title.replace("+", " "),
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontSize = 14.sp,
-                fontWeight = GoogleSansWeight.bold,
-                letterSpacing = (-0.15).sp
-            ),
+            style =
+                MaterialTheme.typography.titleSmall.copy(
+                    fontSize = 14.sp,
+                    fontWeight = GoogleSansWeight.bold,
+                    letterSpacing = (-0.15).sp,
+                ),
             color = colorScheme.onPrimaryContainer,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
-        Text(
-            text = content.podcastTitle.replace("+", " "),
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontSize = 12.sp,
-                letterSpacing = 0.sp
-            ),
-            color = colorScheme.onPrimaryContainer.copy(alpha = 0.68f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (content.isCasting) {
+                Icon(
+                    imageVector = Icons.Rounded.CastConnected,
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+            Text(
+                text =
+                    if (content.isCasting) {
+                        "Casting to ${content.castDeviceName ?: "Cast device"}"
+                    } else {
+                        content.podcastTitle.replace("+", " ")
+                    },
+                style =
+                    MaterialTheme.typography.labelMedium.copy(
+                        fontSize = 12.sp,
+                        letterSpacing = 0.sp,
+                    ),
+                color = colorScheme.onPrimaryContainer.copy(alpha = 0.68f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         MiniPlayerProgress(content.position, content.duration, colorScheme)
     }
 }
 
 @Composable
-private fun MiniPlayerProgress(position: Long, duration: Long, colorScheme: ColorScheme) {
+private fun MiniPlayerProgress(
+    position: Long,
+    duration: Long,
+    colorScheme: ColorScheme,
+) {
     if (duration <= 0) return
     val progress = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
     Spacer(modifier = Modifier.height(3.dp))
     androidx.compose.material3.LinearProgressIndicator(
         progress = { progress },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(3.dp)
-            .clip(RoundedCornerShape(2.dp)),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(3.dp)
+                .clip(RoundedCornerShape(2.dp)),
         color = colorScheme.primary,
-        trackColor = colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
+        trackColor = colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
     )
 }
 
@@ -416,7 +467,7 @@ private fun MiniPlayerProgress(position: Long, duration: Long, colorScheme: Colo
 private fun MiniSwipeTipOverlay(
     visible: Boolean,
     onDismissed: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(visible = visible, modifier = modifier.fillMaxWidth().zIndex(2f)) {
         SwipeDismissTip(onDismissed = onDismissed)
@@ -426,11 +477,12 @@ private fun MiniSwipeTipOverlay(
 @Composable
 private fun SwipeDismissTip(
     onDismissed: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var tipVisible by remember { mutableStateOf(true) }
     var dismissalReported by remember { mutableStateOf(false) }
     val currentOnDismissed = rememberUpdatedState(onDismissed)
+
     fun reportDismissal() {
         if (!dismissalReported) {
             dismissalReported = true
@@ -450,7 +502,7 @@ private fun SwipeDismissTip(
         visible = tipVisible,
         enter = fadeIn(tween(300)),
         exit = fadeOut(tween(500)),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
@@ -458,9 +510,10 @@ private fun SwipeDismissTip(
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = GoogleSansWeight.medium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                modifier =
+                    Modifier
+                        .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
             )
         }
     }
@@ -501,28 +554,29 @@ private fun MiniPlayButton(
     isPlaying: Boolean,
     isLoading: Boolean,
     colorScheme: ColorScheme,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(colorScheme.primary)
-            .expressiveClickable(
-                shape = CircleShape,
-                indication = ripple(bounded = false),
-                enabled = !isLoading
-            ) {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
-            },
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(colorScheme.primary)
+                .expressiveClickable(
+                    shape = CircleShape,
+                    indication = ripple(bounded = false),
+                    enabled = !isLoading,
+                ) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
+        contentAlignment = Alignment.Center,
     ) {
         Crossfade(
             targetState = isLoading,
             animationSpec = tween(220),
-            label = "miniLoading"
+            label = "miniLoading",
         ) { loading ->
             MiniPlayButtonContent(loading, isPlaying, colorScheme)
         }
@@ -533,26 +587,26 @@ private fun MiniPlayButton(
 private fun MiniPlayButtonContent(
     isLoading: Boolean,
     isPlaying: Boolean,
-    colorScheme: ColorScheme
+    colorScheme: ColorScheme,
 ) {
     if (isLoading) {
         BoxLoreLoader.CircularWavy(
             modifier = Modifier.size(24.dp),
             color = colorScheme.onPrimary,
-            trackColor = colorScheme.onPrimary.copy(alpha = 0.24f)
+            trackColor = colorScheme.onPrimary.copy(alpha = 0.24f),
         )
         return
     }
     Crossfade(
         targetState = isPlaying,
         animationSpec = tween(180),
-        label = "miniPlayPause"
+        label = "miniPlayPause",
     ) { playing ->
         Icon(
             if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
             contentDescription = if (playing) "Pause" else "Play",
             tint = colorScheme.onPrimary,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
         )
     }
 }

@@ -3,12 +3,11 @@ package cx.aswin.boxlore.core.playback
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
-import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
-import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
+import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -99,18 +98,18 @@ internal class PlaybackIntroOutroController(
     }
 
     fun onMediaActivated(
-        player: ExoPlayer,
+        player: Player,
         mediaItem: MediaItem?,
     ) {
         reset(mediaItem, player.currentPosition)
         refreshActiveSkipConfiguration(player, preferenceChanged = false)
     }
 
-    fun onSkipPreferencesChanged(player: ExoPlayer) {
+    fun onSkipPreferencesChanged(player: Player) {
         refreshActiveSkipConfiguration(player, preferenceChanged = true)
     }
 
-    fun onReadyOrPlaying(player: ExoPlayer) {
+    fun onReadyOrPlaying(player: Player) {
         maybeApplyPendingIntro(player)
         refreshOutroBoundary(player, preferenceChanged = false)
     }
@@ -147,7 +146,7 @@ internal class PlaybackIntroOutroController(
         automaticSeekSource = source
     }
 
-    fun maybeApplyPendingIntro(player: ExoPlayer) {
+    fun maybeApplyPendingIntro(player: Player) {
         if (!canApplyPendingIntro(player)) return
         val durationMs = player.duration
         if (durationMs <= 0L || durationMs == C.TIME_UNSET) return
@@ -172,12 +171,12 @@ internal class PlaybackIntroOutroController(
         performAutomaticSeek(player, clampedTargetMs, source ?: "resume")
     }
 
-    private fun canApplyPendingIntro(player: ExoPlayer): Boolean {
+    private fun canApplyPendingIntro(player: Player): Boolean {
         if (introApplied || introCancelledByUser || !introTargetResolved) return false
         return player.playbackState == Player.STATE_READY
     }
 
-    fun startOutroMonitor(player: ExoPlayer) {
+    fun startOutroMonitor(player: Player) {
         if (outroMonitorJob?.isActive == true) return
         outroMonitorJob =
             scope.launch {
@@ -193,7 +192,7 @@ internal class PlaybackIntroOutroController(
         outroMonitorJob = null
     }
 
-    fun onNaturalStateEnded(player: ExoPlayer) {
+    fun onNaturalStateEnded(player: Player) {
         val episodeId = activeLifecycleEpisodeId ?: return
         claimNaturalCompletion(episodeId, player.duration)
         if (SleepTimerHolder.sleepAtEndOfEpisode) {
@@ -245,7 +244,7 @@ internal class PlaybackIntroOutroController(
     fun trueEndSeekTarget(durationMs: Long): Long = (durationMs - TRUE_END_SEEK_MARGIN_MS).coerceAtLeast(0L)
 
     private fun refreshActiveSkipConfiguration(
-        player: ExoPlayer,
+        player: Player,
         preferenceChanged: Boolean,
     ) {
         val episodeId = activeLifecycleEpisodeId ?: return
@@ -347,7 +346,7 @@ internal class PlaybackIntroOutroController(
     }
 
     private fun performAutomaticSeek(
-        player: ExoPlayer,
+        player: Player,
         targetMs: Long,
         source: String,
     ) {
@@ -357,7 +356,7 @@ internal class PlaybackIntroOutroController(
     }
 
     private fun refreshOutroBoundary(
-        player: ExoPlayer,
+        player: Player,
         preferenceChanged: Boolean,
     ) {
         val durationMs = player.duration
@@ -418,7 +417,7 @@ internal class PlaybackIntroOutroController(
         lastOutroPositionMs = positionMs
     }
 
-    private fun checkOutroCrossing(player: ExoPlayer) {
+    private fun checkOutroCrossing(player: Player) {
         if (effectiveEndLatch) return
         val durationMs = player.duration
         if (durationMs != activeLifecycleDurationMs) {
@@ -443,7 +442,7 @@ internal class PlaybackIntroOutroController(
         lastOutroPositionMs = positionMs
     }
 
-    private fun finishAtEffectiveEnd(player: ExoPlayer) {
+    private fun finishAtEffectiveEnd(player: Player) {
         if (effectiveEndLatch) return
         effectiveEndLatch = true
         stopOutroMonitor()
