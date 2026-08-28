@@ -18,7 +18,7 @@
     <td width="16"></td>
     <td align="center" valign="middle">
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.21.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.23.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
 <!-- download-apk:end -->
     </td>
   </tr>
@@ -64,21 +64,19 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.23` · 2026-08-28
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.23 date=2026-08-28 -->
 <b>• Improved:</b>
 <ul align="left">
 <li>boxlore now does less unnecessary background work during playback and downloads, helping reduce avoidable battery use. <a href="https://github.com/boxcreate/boxlore/pull/1006"><img src="https://img.shields.io/badge/PR-1006-6750A4?style=flat-square" alt="PR #1006" height="18"/></a></li>
 <li>Your Shows stays visually stable while you browse and refreshes gracefully when you return, matching your listening habits more consistently. <a href="https://github.com/boxcreate/boxlore/pull/1006"><img src="https://img.shields.io/badge/PR-1006-6750A4?style=flat-square" alt="PR #1006" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.21` · 2026-08-27
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.21 date=2026-08-27 -->
-<b>🆕 New features:</b>
-<ul align="left">
-<li>Listen on Chromecast from the expanded player while your queue, progress, and controls stay in sync. <a href="https://github.com/boxcreate/boxlore/pull/1004"><img src="https://img.shields.io/badge/PR-1004-6750A4?style=flat-square" alt="PR #1004" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
@@ -185,7 +183,7 @@ Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live
       </td>
       <td width="16"></td>
       <td align="center" valign="middle">
-        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.21.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.23.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
       </td>
     </tr>
   </table>
