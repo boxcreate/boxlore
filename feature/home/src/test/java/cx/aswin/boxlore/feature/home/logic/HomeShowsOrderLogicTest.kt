@@ -144,6 +144,79 @@ class HomeShowsOrderLogicTest {
     }
 
     @Test
+    fun `foreground refresh moves only meaningfully stronger shows`() {
+        val subs =
+            listOf(
+                TestFixtures.podcast(id = "a", title = "A"),
+                TestFixtures.podcast(id = "b", title = "B"),
+                TestFixtures.podcast(id = "c", title = "C"),
+            )
+
+        val order =
+            HomeShowsOrderLogic.computeStableShowsOrder(
+                previousOrder = listOf("a", "b", "c"),
+                subs = subs,
+                scores = mapOf("a" to 0.40, "b" to 0.43, "c" to 0.90),
+                refreshFromScores = true,
+            )
+
+        assertEquals(listOf("c", "a", "b"), order)
+    }
+
+    @Test
+    fun `foreground refresh preserves tiny score differences`() {
+        val subs =
+            listOf(
+                TestFixtures.podcast(id = "a", title = "A"),
+                TestFixtures.podcast(id = "b", title = "B"),
+            )
+
+        val order =
+            HomeShowsOrderLogic.computeStableShowsOrder(
+                previousOrder = listOf("a", "b"),
+                subs = subs,
+                scores =
+                    mapOf(
+                        "a" to 0.50,
+                        "b" to 0.50 + HomeShowsOrderLogic.SCORE_MOVE_THRESHOLD,
+                    ),
+                refreshFromScores = true,
+            )
+
+        assertEquals(listOf("a", "b"), order)
+    }
+
+    @Test
+    fun `Home requests at most one refresh after snapshot grace`() {
+        val createdAt = 1_000L
+
+        assertFalse(
+            HomeShowsRefreshPolicy.shouldRequestRefresh(
+                hasStableOrder = true,
+                hasPendingRequest = false,
+                snapshotCreatedAtMs = createdAt,
+                nowMs = createdAt + HomeShowsRefreshPolicy.MIN_SNAPSHOT_AGE_MS - 1L,
+            ),
+        )
+        assertTrue(
+            HomeShowsRefreshPolicy.shouldRequestRefresh(
+                hasStableOrder = true,
+                hasPendingRequest = false,
+                snapshotCreatedAtMs = createdAt,
+                nowMs = createdAt + HomeShowsRefreshPolicy.MIN_SNAPSHOT_AGE_MS,
+            ),
+        )
+        assertFalse(
+            HomeShowsRefreshPolicy.shouldRequestRefresh(
+                hasStableOrder = true,
+                hasPendingRequest = true,
+                snapshotCreatedAtMs = createdAt,
+                nowMs = createdAt + HomeShowsRefreshPolicy.MIN_SNAPSHOT_AGE_MS,
+            ),
+        )
+    }
+
+    @Test
     fun `mixtape cache invalidates only when signature changes after first build`() {
         assertFalse(HomeShowsOrderLogic.shouldInvalidateMixtapeCache(null, setOf("a")))
         assertFalse(HomeShowsOrderLogic.shouldInvalidateMixtapeCache(setOf("a"), setOf("a")))

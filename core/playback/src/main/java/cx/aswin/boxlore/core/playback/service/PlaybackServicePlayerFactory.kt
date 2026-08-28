@@ -22,6 +22,7 @@ import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.SessionCommand
 import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.playback.BoxLoreCastMediaItemConverter
+import cx.aswin.boxlore.core.playback.PlaybackPowerPolicy
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseContract
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
@@ -100,6 +101,13 @@ internal class PlaybackServicePlayerFactory(
             .setSeekForwardIncrementMs(PlaybackSkipPolicy.DEFAULT_SEEK_FORWARD_MS)
             .setSeekBackIncrementMs(PlaybackSkipPolicy.DEFAULT_SEEK_BACKWARD_MS)
             .build()
+            .apply {
+                trackSelectionParameters =
+                    trackSelectionParameters
+                        .buildUpon()
+                        .setAudioOffloadPreferences(PlaybackPowerPolicy.audioOffloadPreferences())
+                        .build()
+            }
     }
 
     fun createCastPlayer(localPlayer: ExoPlayer): CastPlayer {

@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback.service
 
 import android.content.Intent
 import androidx.annotation.VisibleForTesting
+import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -10,9 +11,11 @@ import androidx.media3.session.MediaSession
 import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.playback.CastMediaMetadata
 import cx.aswin.boxlore.core.playback.PlaybackIntroOutroController
+import cx.aswin.boxlore.core.playback.PlaybackPowerPolicy
 import cx.aswin.boxlore.core.playback.PlaybackProgressCoordinator
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
 import cx.aswin.boxlore.core.playback.PlaybackTelemetrySession
+import cx.aswin.boxlore.core.playback.PlaybackUiVisibility
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseContract
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryHost
@@ -20,8 +23,10 @@ import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -41,6 +46,7 @@ open class BoxLorePlaybackService :
         protected set
     private var localExoPlayer: ExoPlayer? = null
     private var playbackPlayer: Player? = null
+    private var pausedIdleTeardownJob: Job? = null
     override lateinit var seekBackAction: androidx.media3.session.CommandButton
         protected set
     override lateinit var seekForwardAction: androidx.media3.session.CommandButton
@@ -219,6 +225,11 @@ open class BoxLorePlaybackService :
         val player = playerFactory.createCastPlayer(localPlayer)
         localExoPlayer = localPlayer
         playbackPlayer = player
+        serviceScope.launch {
+            PlaybackUiVisibility.isForeground.collectLatest {
+                reconcilePausedIdleTeardown(player)
+            }
+        }
         serviceScope.launch {
             userPreferencesRepository.playbackSpeedStream.collectLatest { savedSpeed ->
                 player.setPlaybackSpeed(savedSpeed.coerceIn(0.5f, 3.0f))
@@ -400,6 +411,11 @@ open class BoxLorePlaybackService :
                             "onPlayWhenReadyChanged: playWhenReady=false, reason=$reason, pauseReason=$pauseReason",
                         )
                     }
+                    reconcilePausedIdleTeardown(player)
+                }
+
+                override fun onDeviceInfoChanged(deviceInfo: DeviceInfo) {
+                    reconcilePausedIdleTeardown(player)
                 }
 
                 override fun onPlaybackSuppressionReasonChanged(reason: Int) {
@@ -428,6 +444,7 @@ open class BoxLorePlaybackService :
                                 introOutroController.reset(null, 0L)
                             }
                     }
+                    reconcilePausedIdleTeardown(player)
                 }
 
                 override fun onTimelineChanged(
@@ -483,6 +500,7 @@ open class BoxLorePlaybackService :
                             progressCoordinator.activePlaybackStartTimeMs = 0L
                         }
                     }
+                    reconcilePausedIdleTeardown(player)
                 }
             },
         )
@@ -878,7 +896,45 @@ open class BoxLorePlaybackService :
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 
+    private fun reconcilePausedIdleTeardown(player: Player) {
+        val shouldSchedule =
+            PlaybackPowerPolicy.shouldSchedulePausedLocalTeardown(
+                isUiForeground = PlaybackUiVisibility.isForeground.value,
+                isRemote = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE,
+                isPlaying = player.isPlaying,
+                playWhenReady = player.playWhenReady,
+            )
+        if (!shouldSchedule) {
+            pausedIdleTeardownJob?.cancel()
+            pausedIdleTeardownJob = null
+            return
+        }
+        if (pausedIdleTeardownJob?.isActive == true) return
+
+        pausedIdleTeardownJob =
+            serviceScope.launch {
+                delay(PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS)
+                val remainsIdle =
+                    PlaybackPowerPolicy.shouldSchedulePausedLocalTeardown(
+                        isUiForeground = PlaybackUiVisibility.isForeground.value,
+                        isRemote = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE,
+                        isPlaying = player.isPlaying,
+                        playWhenReady = player.playWhenReady,
+                    )
+                if (remainsIdle) {
+                    progressCoordinator.saveProgressOnce(player)
+                    telemetrySession.end(forceCompleted = false)
+                    introOutroController.reset(null, 0L)
+                    player.pause()
+                    stopSelf()
+                }
+                pausedIdleTeardownJob = null
+            }
+    }
+
     override fun onDestroy() {
+        pausedIdleTeardownJob?.cancel()
+        pausedIdleTeardownJob = null
         telemetrySession.end(forceCompleted = false)
         introOutroController.reset(null, 0L)
         clearEndOfEpisodeSleep()

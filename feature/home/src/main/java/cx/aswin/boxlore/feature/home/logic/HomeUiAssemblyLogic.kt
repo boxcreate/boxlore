@@ -83,6 +83,7 @@ internal object HomeUiAssemblyLogic {
         staleRestartEnabled: Boolean = true,
         nowMs: Long = System.currentTimeMillis(),
         pinnedPodcastIds: List<String> = emptyList(),
+        refreshShowsOrderFromScores: Boolean = false,
     ): HomeUiAssemblyResult {
         val completedCount = allHistory.count { it.isCompleted }
         val catchUp =
@@ -98,6 +99,7 @@ internal object HomeUiAssemblyLogic {
                 subs = subs,
                 scores = podcastScores,
                 pinnedIds = pinnedPodcastIds,
+                refreshFromScores = refreshShowsOrderFromScores,
             )
         val sortedSubs = HomeShowsOrderLogic.orderedSubs(orderToUse, subs)
 

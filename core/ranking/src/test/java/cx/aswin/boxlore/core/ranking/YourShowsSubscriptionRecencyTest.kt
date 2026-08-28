@@ -14,13 +14,16 @@ class YourShowsSubscriptionRecencyTest {
             YourShowsSubscriptionRecency.floor(nowMs - 24L * 3_600_000L, nowMs)
         val threeDayFloor =
             YourShowsSubscriptionRecency.floor(nowMs - 72L * 3_600_000L, nowMs)
+        val fiveDayFloor =
+            YourShowsSubscriptionRecency.floor(nowMs - 5L * 24L * 3_600_000L, nowMs)
         val weekFloor =
             YourShowsSubscriptionRecency.floor(nowMs - 7L * 24L * 3_600_000L, nowMs)
 
         assertEquals(YourShowsSubscriptionRecency.PEAK_FLOOR, nowFloor, 1e-9)
         assertTrue(dayFloor > 0.95)
         assertEquals(YourShowsSubscriptionRecency.WINDOW_END_FLOOR, threeDayFloor, 1e-9)
-        assertTrue(weekFloor < 0.40)
+        assertTrue(fiveDayFloor < 0.35)
+        assertTrue(weekFloor < 0.13)
         assertTrue(nowFloor > dayFloor)
         assertTrue(dayFloor > threeDayFloor)
     }

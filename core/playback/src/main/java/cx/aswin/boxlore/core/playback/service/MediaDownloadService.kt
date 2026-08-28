@@ -13,7 +13,7 @@ import cx.aswin.boxlore.core.catalog.R
 open class MediaDownloadService :
     DownloadService(
         FOREGROUND_NOTIFICATION_ID,
-        DEFAULT_FOREGROUND_NOTIFICATION_UPDATE_INTERVAL,
+        FOREGROUND_NOTIFICATION_UPDATE_INTERVAL_MS,
         CHANNEL_ID,
         R.string.download_notification_channel_name,
         R.string.download_notification_channel_description,
@@ -91,6 +91,7 @@ open class MediaDownloadService :
     companion object {
         const val JOB_ID = 1
         const val FOREGROUND_NOTIFICATION_ID = 1
+        const val FOREGROUND_NOTIFICATION_UPDATE_INTERVAL_MS = 5_000L
         const val CHANNEL_ID = "download_channel"
     }
 }

@@ -177,12 +177,16 @@ internal class PlaybackIntroOutroController(
     }
 
     fun startOutroMonitor(player: Player) {
+        if (!PlaybackPowerPolicy.shouldMonitorOutro(player.isPlaying, effectiveSkipEndingMs)) {
+            stopOutroMonitor()
+            return
+        }
         if (outroMonitorJob?.isActive == true) return
         outroMonitorJob =
             scope.launch {
-                while (player.isPlaying) {
+                while (PlaybackPowerPolicy.shouldMonitorOutro(player.isPlaying, effectiveSkipEndingMs)) {
                     checkOutroCrossing(player)
-                    delay(200L)
+                    delay(PlaybackPowerPolicy.OUTRO_POLL_INTERVAL_MS)
                 }
             }
     }
@@ -269,6 +273,7 @@ internal class PlaybackIntroOutroController(
             }
 
             refreshOutroBoundary(player, preferenceChanged)
+            startOutroMonitor(player)
             maybeApplyPendingIntro(player)
         }
     }

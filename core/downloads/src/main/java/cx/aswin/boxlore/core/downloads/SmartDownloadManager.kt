@@ -391,6 +391,20 @@ class SmartDownloadManager(
         Log.d("SmartDownloadManager", "Starting smart downloads sync. isManual=$isManual, isForeground=$isForeground")
         writeLogToFile(context, "Starting sync. isManual=$isManual, isForeground=$isForeground")
 
+        val nowMs = System.currentTimeMillis()
+        val lastSuccessfulSyncMs = userPrefs.smartDownloadsLastSyncTimeStream.first()
+        if (
+            !SmartDownloadScheduleLogic.shouldRunSync(
+                isManual = isManual,
+                lastSuccessfulSyncMs = lastSuccessfulSyncMs,
+                nowMs = nowMs,
+            )
+        ) {
+            Log.d("SmartDownloadManager", "Automatic sync skipped because the daily cadence is already satisfied.")
+            writeLogToFile(context, "Sync skipped: automatic daily cadence already satisfied.")
+            return true
+        }
+
         if (!checkSyncConstraints(isManual, isForeground)) {
             return false
         }
@@ -404,8 +418,6 @@ class SmartDownloadManager(
 
             val allHistory = database.listeningHistoryDao().getRecentHistoryList(limit = 200)
             val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds()
-            val nowMs = System.currentTimeMillis()
-
             val resolvedSerial = resolveOldestSerialNextEpisodes(subs, allHistory, completedEpisodeIds)
 
             val historyByEpisode = allHistory.associateBy { it.episodeId }

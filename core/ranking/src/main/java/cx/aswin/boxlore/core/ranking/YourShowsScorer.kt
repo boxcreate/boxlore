@@ -8,9 +8,9 @@ import kotlin.math.ln
 /**
  * Deterministic subscription ranking shared by Home, Library, widgets, and Auto.
  *
- * The raw, interpretable [PodcastScoring] signals are log-normalized before a
- * bounded subscribe-recency floor is applied. This keeps a genuinely new show
- * near the top without requiring an untrained adaptive model or forcing slot 1.
+ * The raw, interpretable [PodcastScoring] listening signals are log-normalized
+ * before the single bounded subscribe-recency floor is applied. This keeps a
+ * genuinely new show near the top without counting subscription age twice.
  */
 internal object YourShowsScorer {
     fun score(
@@ -25,6 +25,7 @@ internal object YourShowsScorer {
                 podcasts = podcasts,
                 allHistory = history,
                 includeAutoDownloadBoost = includeAutoDownloadBoost,
+                includeSubscriptionRecency = false,
                 nowMs = nowMs,
             )
         val normalized = normalize(priors)

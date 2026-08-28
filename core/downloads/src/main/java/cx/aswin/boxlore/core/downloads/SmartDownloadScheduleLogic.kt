@@ -6,6 +6,7 @@ package cx.aswin.boxlore.core.downloads
  */
 internal object SmartDownloadScheduleLogic {
     const val UNIQUE_WORK_NAME = "SmartDownloadSync"
+    const val AUTOMATIC_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1_000L
 
     enum class ReconcileAction {
         ENABLE_AND_SCHEDULE,
@@ -22,4 +23,13 @@ internal object SmartDownloadScheduleLogic {
             enabledInPrefs -> ReconcileAction.SCHEDULE
             else -> ReconcileAction.CANCEL
         }
+
+    fun shouldRunSync(
+        isManual: Boolean,
+        lastSuccessfulSyncMs: Long,
+        nowMs: Long,
+    ): Boolean {
+        if (isManual || lastSuccessfulSyncMs <= 0L) return true
+        return nowMs - lastSuccessfulSyncMs >= AUTOMATIC_SYNC_INTERVAL_MS
+    }
 }

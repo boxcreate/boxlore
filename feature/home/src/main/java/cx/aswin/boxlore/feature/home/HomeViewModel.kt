@@ -28,6 +28,7 @@ import cx.aswin.boxlore.feature.home.logic.HomeFilterSelectionLogic
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import cx.aswin.boxlore.feature.home.logic.HomeMixModeLogic
+import cx.aswin.boxlore.feature.home.logic.HomeShowsRefreshPolicy
 import cx.aswin.boxlore.feature.home.logic.featuredVideoPodcasts
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
@@ -193,7 +194,17 @@ class HomeViewModel(
     internal var cachedForYouTrending: List<Podcast> = emptyList()
     internal var cachedHeroItems: List<SmartHeroItem> = emptyList()
     internal var cachedLatestEpisodes: List<Podcast> = emptyList()
+
+    @Volatile
     internal var stablePodcastOrder: List<String>? = null
+
+    @Volatile
+    internal var stablePodcastOrderCreatedAtMs: Long = 0L
+
+    @Volatile
+    internal var appliedShowsOrderRefreshGeneration: Long = 0L
+
+    internal val showsOrderRefreshGeneration = MutableStateFlow(0L)
     internal var stableMixtapePodcasts: List<Podcast>? = null
     internal var stableMixtapeCount: Int? = null
     internal var stableCurrentUnplayedEpisodes: List<Episode>? = null
@@ -203,6 +214,21 @@ class HomeViewModel(
     // subscribed/unsubscribed so new shows appear promptly.
     internal var stableMixtapeSubSignature: Set<String>? = null
     internal var stableMixtapeStaleRestartEnabled: Boolean? = null
+
+    fun onHomeStarted(nowMs: Long = System.currentTimeMillis()) {
+        val hasPendingRequest =
+            showsOrderRefreshGeneration.value > appliedShowsOrderRefreshGeneration
+        if (
+            HomeShowsRefreshPolicy.shouldRequestRefresh(
+                hasStableOrder = stablePodcastOrder != null,
+                hasPendingRequest = hasPendingRequest,
+                snapshotCreatedAtMs = stablePodcastOrderCreatedAtMs,
+                nowMs = nowMs,
+            )
+        ) {
+            showsOrderRefreshGeneration.update { it + 1L }
+        }
+    }
 
     // Subscription IDs we've already eagerly warmed episodes for (once per session).
     private val eagerlyLoadedSubIds =

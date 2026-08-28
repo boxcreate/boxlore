@@ -351,7 +351,7 @@ If there was no exposure (e.g. deep link), **facets still update** so taste isnâ
 
 ### Scoring
 
-`AdaptiveCandidateScorer` builds features, `scoreBatch`es the bandit, and normalizes heavy-tailed API priors with log1p. `YOUR_SHOWS` is deliberately deterministic on every surface: `YourShowsScorer` log-normalizes `PodcastScoring` signals and applies a bounded three-day subscribe-recency floor. Other objectives fall back to their prior / `PodcastScoring` when adaptive ranking is gated off.
+`AdaptiveCandidateScorer` builds features, `scoreBatch`es the bandit, and normalizes heavy-tailed API priors with log1p. `YOUR_SHOWS` is deliberately deterministic on every surface: `YourShowsScorer` log-normalizes `PodcastScoring` with its legacy subscription-recency term disabled, then applies one bounded three-day subscribe-recency floor. That floor decays smoothly with a 48-hour time constant after day three. Other objectives retain their prior / `PodcastScoring` behavior when adaptive ranking is gated off.
 
 ### Diversification
 
@@ -389,7 +389,7 @@ This engine remains available for catalog-driven ungrouped composition and optio
 |-----------|-------------|-------------|
 | `DISCOVERY` | yes (after threshold) | Home recommendations, Explore, Lore |
 | `CONTINUATION` | limited | Mixtape, Smart Queue |
-| `YOUR_SHOWS` | no | Home Your Shows, Library Subscriptions Smart, widgets, and Auto share one deterministic score. Genuine new subscriptions receive a bounded three-day floor; stronger habits can still rank above it. |
+| `YOUR_SHOWS` | no | Home Your Shows, Library Subscriptions Smart, widgets, and Auto share one deterministic score. Genuine new subscriptions receive one bounded three-day floor with faster post-window decay; stronger habits can still rank above it. Home presents a stable snapshot and only applies meaningful score movement on a later entry after a 30-minute grace period. |
 | `OFFLINE` | no | Downloads |
 
 `RankingRuntimeControls` can disable adaptive re-ranking per (objective, surface) without breaking priors. Home is the only surface enabled by default. `YOUR_SHOWS` bypasses these adaptive controls because it does not use the bandit.

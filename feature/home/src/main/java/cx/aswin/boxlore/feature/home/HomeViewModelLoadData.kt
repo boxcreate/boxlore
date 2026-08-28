@@ -307,14 +307,17 @@ internal fun HomeViewModel.loadData() {
                     _editorialRows,
                     _isEditorialRowsLoading,
                     userPrefs.homePinnedPodcastIdsStream,
-                ) { wrapper, editorialRows, isEditorialRowsLoading, pinnedIds ->
+                    showsOrderRefreshGeneration,
+                ) { wrapper, editorialRows, isEditorialRowsLoading, pinnedIds, refreshGeneration ->
                     wrapper.copy(
                         editorialRows = editorialRows,
                         isEditorialRowsLoading = isEditorialRowsLoading,
                         pinnedPodcastIds = pinnedIds,
+                        showsOrderRefreshGeneration = refreshGeneration,
                     )
                 }.debounce(100L).collect { wrapper ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                        val rankingNowMs = System.currentTimeMillis()
                         val allHistory = wrapper.history
                         val scoringHistory = playbackRepository.getAllHistory().first()
                         val subscribedIds = wrapper.subs.map(Podcast::id).toSet()
@@ -411,13 +414,18 @@ internal fun HomeViewModel.loadData() {
                             userPrefs.markNpsSurveyPending(completedCount)
                         }
 
+                        val refreshShowsOrder =
+                            wrapper.showsOrderRefreshGeneration >
+                                appliedShowsOrderRefreshGeneration
+                        val previousShowsOrder = stablePodcastOrder
                         val podScoresMap =
-                            if (stablePodcastOrder == null || stableMixtapePodcasts == null) {
+                            if (previousShowsOrder == null || stableMixtapePodcasts == null || refreshShowsOrder) {
                                 adaptiveScorer.scorePodcasts(
                                     podcasts = wrapper.subs.map { it.toScorable() },
                                     history = scoringHistory,
                                     objective = RankingObjective.YOUR_SHOWS,
                                     surface = RankingSurface.HOME,
+                                    nowMs = rankingNowMs,
                                 )
                             } else {
                                 emptyMap()
@@ -469,10 +477,17 @@ internal fun HomeViewModel.loadData() {
                                 briefingDismissedDate = wrapper.briefingDismissedDate,
                                 briefingDismissedForever = wrapper.briefingDismissedForever,
                                 staleRestartEnabled = staleRestartEnabled,
+                                nowMs = rankingNowMs,
                                 pinnedPodcastIds = wrapper.pinnedPodcastIds,
+                                refreshShowsOrderFromScores = refreshShowsOrder,
                             )
 
                         stablePodcastOrder = assembled.stablePodcastOrder
+                        if (previousShowsOrder == null || refreshShowsOrder) {
+                            stablePodcastOrderCreatedAtMs = rankingNowMs
+                            appliedShowsOrderRefreshGeneration =
+                                wrapper.showsOrderRefreshGeneration
+                        }
                         assembled.mixtapeCache?.let { cache ->
                             stableMixtapePodcasts = cache.podcasts
                             stableMixtapeCount = cache.unplayedCount

@@ -38,6 +38,7 @@ data class HomeDataWrapper(
     val editorialRows: List<HomeEditorialRow> = emptyList(),
     val isEditorialRowsLoading: Boolean = true,
     val pinnedPodcastIds: List<String> = emptyList(),
+    val showsOrderRefreshGeneration: Long = 0L,
 )
 
 internal data class HomeCoreSlice(
