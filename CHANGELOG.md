@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Reduced background playback polling, paused-service lifetime, outro polling, and download notification wakeups while preserving active playback and Cast behavior. ([#1006](https://github.com/boxcreate/boxlore/pull/1006)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Unified Your Shows scoring around one subscription-recency policy and added stable, lifecycle-aware Home order refreshes. ([#1006](https://github.com/boxcreate/boxlore/pull/1006)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=1006 -->
+### Improved
+- boxlore now does less unnecessary background work during playback and downloads, helping reduce avoidable battery use.
+- Your Shows stays visually stable while you browse and refreshes gracefully when you return, matching your listening habits more consistently.
+<!-- readme-copy:end pr=1006 -->
 ## [v0.0.21] - 2026-08-27
 
 ### Added

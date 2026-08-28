@@ -64,8 +64,11 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<b>• Improved:</b>
+<ul align="left">
+<li>boxlore now does less unnecessary background work during playback and downloads, helping reduce avoidable battery use. <a href="https://github.com/boxcreate/boxlore/pull/1006"><img src="https://img.shields.io/badge/PR-1006-6750A4?style=flat-square" alt="PR #1006" height="18"/></a></li>
+<li>Your Shows stays visually stable while you browse and refreshes gracefully when you return, matching your listening habits more consistently. <a href="https://github.com/boxcreate/boxlore/pull/1006"><img src="https://img.shields.io/badge/PR-1006-6750A4?style=flat-square" alt="PR #1006" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
