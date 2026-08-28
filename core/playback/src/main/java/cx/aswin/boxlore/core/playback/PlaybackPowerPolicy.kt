@@ -31,6 +31,17 @@ object PlaybackPowerPolicy {
         effectiveSkipEndingMs: Long,
     ): Boolean = isPlaying && effectiveSkipEndingMs > 0L
 
+    suspend fun persistThenTearDownIfStillIdle(
+        persistProgress: suspend () -> Unit,
+        isStillIdle: () -> Boolean,
+        tearDown: () -> Unit,
+    ) {
+        persistProgress()
+        if (isStillIdle()) {
+            tearDown()
+        }
+    }
+
     fun audioOffloadPreferences(): TrackSelectionParameters.AudioOffloadPreferences =
         TrackSelectionParameters.AudioOffloadPreferences
             .Builder()

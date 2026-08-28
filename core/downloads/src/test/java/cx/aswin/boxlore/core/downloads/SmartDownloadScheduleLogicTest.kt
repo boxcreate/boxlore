@@ -85,4 +85,24 @@ class SmartDownloadScheduleLogicTest {
             ),
         )
     }
+
+    @Test
+    fun `future and invalid stored timestamps do not suppress automatic sync`() {
+        assertEquals(
+            true,
+            SmartDownloadScheduleLogic.shouldRunSync(
+                isManual = false,
+                lastSuccessfulSyncMs = 20_000L,
+                nowMs = 10_000L,
+            ),
+        )
+        assertEquals(
+            true,
+            SmartDownloadScheduleLogic.shouldRunSync(
+                isManual = false,
+                lastSuccessfulSyncMs = -1L,
+                nowMs = 10_000L,
+            ),
+        )
+    }
 }

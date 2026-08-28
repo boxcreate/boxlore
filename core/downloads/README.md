@@ -10,7 +10,7 @@ Owns offline download orchestration: Media3 offline cache access, download datab
 - `DownloadRepository.relinkDownloadCache` reports whether cached spans reached a replacement episode id and recognizes an already-populated destination on retry after process death. RSS/catalog identity repair changes the Room download row only after that success; a missing/failed move or conflicting incomplete destination keeps the legacy completed-download row and bytes intact.
 - `CompletedDownloadItem` is the feature-safe model for completed offline content; filtering and deterministic ordering stay owned by this module rather than feature code.
 - `DownloadAnalyticsMapping` is the pure helper for those property decisions (including allowlisted download failure codes).
-- `SmartDownloadManager` selects and schedules automatic downloads; `smart_download_sync.completed_count` is completed-only (`STATUS_COMPLETED`), while the download loop still budgets against active+queued counts. Automatic launch catch-up and periodic WorkManager runs share the persisted last-success time and admit at most one sync per 24-hour cadence, preventing a delayed worker from recycling downloads shortly after launch. Explicit manual refresh bypasses the cadence. `reconcileScheduleWithPreferences` aligns the DataStore toggle with the periodic `SmartDownloadSync` WorkManager job after restore (restored work turns the toggle back on; a stored-on toggle reschedules missing work). Disabled sync never runs except from an explicit manual refresh.
+- `SmartDownloadManager` selects and schedules automatic downloads; `smart_download_sync.completed_count` is completed-only (`STATUS_COMPLETED`), while the download loop still budgets against active+queued counts. `SmartDownloadSyncGate` serializes cadence admission and reconciliation, so overlapping launch catch-up and WorkManager calls cannot both recycle downloads. Automatic runs share the persisted last-success time and admit at most one sync per 24-hour cadence; future/restored timestamps fail open, while explicit manual refresh bypasses cadence but remains serialized. `reconcileScheduleWithPreferences` aligns the DataStore toggle with the periodic `SmartDownloadSync` WorkManager job after restore (restored work turns the toggle back on; a stored-on toggle reschedules missing work). Disabled sync never runs except from an explicit manual refresh.
 - `DownloadArtworkUrls` drops missing local artwork paths after backup restore and falls back to the subscribed show's remote image. New downloads persist a remote URL when the local artwork copy fails.
 - `SmartDownloadWorker`, `AutoDownloadWorker`, and `PurgeSmartDownloadsWorker` perform background download work.
 - `DownloadsDependencies` and `DownloadsDependenciesHolder` expose application-scoped download dependencies to workers.
@@ -30,6 +30,7 @@ src/main/java/cx/aswin/boxlore/core/
     PurgeSmartDownloadsWorker.kt
     SmartDownloadCandidateLogic.kt
     SmartDownloadManager.kt
+    SmartDownloadSyncGate.kt
     SmartDownloadWorker.kt
     ThrottlingDataSource.kt
     ports/

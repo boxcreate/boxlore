@@ -1,6 +1,9 @@
 package cx.aswin.boxlore.core.playback
 
 import androidx.media3.common.TrackSelectionParameters
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -100,4 +103,32 @@ class PlaybackPowerPolicyTest {
         )
         assertTrue(preferences.isSpeedChangeSupportRequired)
     }
+
+    @Test
+    fun `resumed playback is not torn down after suspended progress persistence`() =
+        runTest {
+            val persistenceStarted = CompletableDeferred<Unit>()
+            val allowPersistenceToFinish = CompletableDeferred<Unit>()
+            var isIdle = true
+            var wasTornDown = false
+
+            val teardown =
+                launch {
+                    PlaybackPowerPolicy.persistThenTearDownIfStillIdle(
+                        persistProgress = {
+                            persistenceStarted.complete(Unit)
+                            allowPersistenceToFinish.await()
+                        },
+                        isStillIdle = { isIdle },
+                        tearDown = { wasTornDown = true },
+                    )
+                }
+
+            persistenceStarted.await()
+            isIdle = false
+            allowPersistenceToFinish.complete(Unit)
+            teardown.join()
+
+            assertFalse(wasTornDown)
+        }
 }

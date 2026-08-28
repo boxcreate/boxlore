@@ -897,13 +897,7 @@ open class BoxLorePlaybackService :
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 
     private fun reconcilePausedIdleTeardown(player: Player) {
-        val shouldSchedule =
-            PlaybackPowerPolicy.shouldSchedulePausedLocalTeardown(
-                isUiForeground = PlaybackUiVisibility.isForeground.value,
-                isRemote = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE,
-                isPlaying = player.isPlaying,
-                playWhenReady = player.playWhenReady,
-            )
+        val shouldSchedule = isPausedLocalTeardownEligible(player)
         if (!shouldSchedule) {
             pausedIdleTeardownJob?.cancel()
             pausedIdleTeardownJob = null
@@ -914,23 +908,27 @@ open class BoxLorePlaybackService :
         pausedIdleTeardownJob =
             serviceScope.launch {
                 delay(PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS)
-                val remainsIdle =
-                    PlaybackPowerPolicy.shouldSchedulePausedLocalTeardown(
-                        isUiForeground = PlaybackUiVisibility.isForeground.value,
-                        isRemote = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE,
-                        isPlaying = player.isPlaying,
-                        playWhenReady = player.playWhenReady,
-                    )
-                if (remainsIdle) {
-                    progressCoordinator.saveProgressOnce(player)
-                    telemetrySession.end(forceCompleted = false)
-                    introOutroController.reset(null, 0L)
-                    player.pause()
-                    stopSelf()
-                }
+                PlaybackPowerPolicy.persistThenTearDownIfStillIdle(
+                    persistProgress = { progressCoordinator.saveProgressOnce(player) },
+                    isStillIdle = { isPausedLocalTeardownEligible(player) },
+                    tearDown = {
+                        telemetrySession.end(forceCompleted = false)
+                        introOutroController.reset(null, 0L)
+                        player.pause()
+                        stopSelf()
+                    },
+                )
                 pausedIdleTeardownJob = null
             }
     }
+
+    private fun isPausedLocalTeardownEligible(player: Player): Boolean =
+        PlaybackPowerPolicy.shouldSchedulePausedLocalTeardown(
+            isUiForeground = PlaybackUiVisibility.isForeground.value,
+            isRemote = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE,
+            isPlaying = player.isPlaying,
+            playWhenReady = player.playWhenReady,
+        )
 
     override fun onDestroy() {
         pausedIdleTeardownJob?.cancel()

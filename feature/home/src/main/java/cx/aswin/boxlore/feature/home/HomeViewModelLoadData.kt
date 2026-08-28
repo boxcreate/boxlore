@@ -482,12 +482,12 @@ internal fun HomeViewModel.loadData() {
                                 refreshShowsOrderFromScores = refreshShowsOrder,
                             )
 
-                        stablePodcastOrder = assembled.stablePodcastOrder
                         if (previousShowsOrder == null || refreshShowsOrder) {
                             stablePodcastOrderCreatedAtMs = rankingNowMs
                             appliedShowsOrderRefreshGeneration =
                                 wrapper.showsOrderRefreshGeneration
                         }
+                        stablePodcastOrder = assembled.stablePodcastOrder
                         assembled.mixtapeCache?.let { cache ->
                             stableMixtapePodcasts = cache.podcasts
                             stableMixtapeCount = cache.unplayedCount

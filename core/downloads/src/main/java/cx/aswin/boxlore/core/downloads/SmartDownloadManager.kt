@@ -38,6 +38,8 @@ class SmartDownloadManager(
     private val userPrefs: UserPreferencesRepository,
     private val adaptiveScorer: AdaptiveCandidateScorer,
 ) {
+    private val syncGate = SmartDownloadSyncGate()
+
     private suspend fun checkSyncConstraints(
         isManual: Boolean,
         isForeground: Boolean,
@@ -383,27 +385,34 @@ class SmartDownloadManager(
         }
     }
 
-    @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun performSync(
         isManual: Boolean = false,
         isForeground: Boolean = false,
+    ): Boolean =
+        syncGate.run(
+            isManual = isManual,
+            lastSuccessfulSyncMs = { userPrefs.smartDownloadsLastSyncTimeStream.first() },
+            onAutomaticCadenceSatisfied = {
+                Log.d("SmartDownloadManager", "Automatic sync skipped because the daily cadence is already satisfied.")
+                writeLogToFile(context, "Sync skipped: automatic daily cadence already satisfied.")
+            },
+            sync = { nowMs ->
+                performAdmittedSync(
+                    isManual = isManual,
+                    isForeground = isForeground,
+                    nowMs = nowMs,
+                )
+            },
+        )
+
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    private suspend fun performAdmittedSync(
+        isManual: Boolean,
+        isForeground: Boolean,
+        nowMs: Long,
     ): Boolean {
         Log.d("SmartDownloadManager", "Starting smart downloads sync. isManual=$isManual, isForeground=$isForeground")
         writeLogToFile(context, "Starting sync. isManual=$isManual, isForeground=$isForeground")
-
-        val nowMs = System.currentTimeMillis()
-        val lastSuccessfulSyncMs = userPrefs.smartDownloadsLastSyncTimeStream.first()
-        if (
-            !SmartDownloadScheduleLogic.shouldRunSync(
-                isManual = isManual,
-                lastSuccessfulSyncMs = lastSuccessfulSyncMs,
-                nowMs = nowMs,
-            )
-        ) {
-            Log.d("SmartDownloadManager", "Automatic sync skipped because the daily cadence is already satisfied.")
-            writeLogToFile(context, "Sync skipped: automatic daily cadence already satisfied.")
-            return true
-        }
 
         if (!checkSyncConstraints(isManual, isForeground)) {
             return false
@@ -560,6 +569,8 @@ class SmartDownloadManager(
                 isForeground = isForeground,
             )
             return true
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
         } catch (e: Exception) {
             Log.e("SmartDownloadManager", "Error running smart downloads sync", e)
             writeLogToFile(context, "Sync failed with error: ${e.message}")

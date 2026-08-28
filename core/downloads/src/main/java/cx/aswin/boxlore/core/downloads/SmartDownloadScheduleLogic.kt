@@ -30,6 +30,7 @@ internal object SmartDownloadScheduleLogic {
         nowMs: Long,
     ): Boolean {
         if (isManual || lastSuccessfulSyncMs <= 0L) return true
+        if (lastSuccessfulSyncMs > nowMs) return true
         return nowMs - lastSuccessfulSyncMs >= AUTOMATIC_SYNC_INTERVAL_MS
     }
 }
