@@ -45,6 +45,34 @@ class PodcastScoringTest {
         assertEquals(0.0, scores.getValue("none"), 1e-9)
     }
 
+    @Test
+    fun `caller can exclude subscription recency without losing listening signals`() {
+        val scores =
+            PodcastScoring.calculateScores(
+                podcasts = listOf(scorable("fresh", nowMs)),
+                allHistory =
+                    listOf(
+                        ListeningHistoryEntity(
+                            episodeId = "episode",
+                            podcastId = "fresh",
+                            episodeTitle = "Episode",
+                            episodeImageUrl = null,
+                            podcastImageUrl = null,
+                            episodeAudioUrl = null,
+                            podcastName = "Fresh",
+                            progressMs = 1_000L,
+                            durationMs = 10_000L,
+                            isCompleted = false,
+                            lastPlayedAt = nowMs,
+                        ),
+                    ),
+                includeSubscriptionRecency = false,
+                nowMs = nowMs,
+            )
+
+        assertEquals(262.0, scores.getValue("fresh"), 1e-9)
+    }
+
     private fun scorable(
         id: String,
         subscribedAt: Long,

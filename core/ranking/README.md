@@ -6,7 +6,7 @@ Owns adaptive recommendation and candidate scoring: Bayesian facet preferences, 
 
 ## Public API
 
-- `AdaptiveCandidateScorer` scores podcasts and episodes for home, explore, queue, and downloads. `YOUR_SHOWS` bypasses the bandit and delegates to deterministic `YourShowsScorer` on every surface: log-normalized `PodcastScoring` signals plus a bounded three-day subscribe-recency floor. Home, Library Smart, widgets, and Auto therefore share one order without requiring exposure training or forcing slot 1 over stronger habits.
+- `AdaptiveCandidateScorer` scores podcasts and episodes for home, explore, queue, and downloads. `YOUR_SHOWS` has one canonical deterministic path on every surface: `YourShowsScorer` log-normalizes listening/freshness/preference signals with legacy subscription recency disabled, then applies one bounded subscribe-recency floor. The floor stays near the top for three days and decays with a 48-hour time constant afterward, letting listening habits take over quickly without a hard cliff. Home, Library Smart, widgets, and Auto therefore share one score without exposure-training volatility or double-counting subscription age.
 - `AdaptiveRankingRepository` owns ranking state, exposure recording, facet affinities, backup, restore, and exact old→new show-facet migration for catalog identity repairs.
 - `RankingFeedbackRepository` records user actions and implements `RankingResetPort`.
 - `RankingRuntimeControls` exposes runtime toggles for ranking surfaces.
@@ -64,7 +64,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 
 - Unit tests live under `core/ranking/src/test`.
 - `AdaptiveRankingTest` covers cold-start blending, objective behavior, and opposite-outcome learning.
-- `YourShowsScorerTest` covers normalized deterministic ordering, and `YourShowsSubscriptionRecencyTest` covers the bounded three-day floor. `AdaptiveCandidateScorerTest` verifies Home and Library receive identical Your Shows scores even when an adaptive model exists.
+- `YourShowsScorerTest` covers normalized deterministic ordering and single recency application, while `YourShowsSubscriptionRecencyTest` covers the bounded three-day floor and faster post-window decay. `AdaptiveCandidateScorerTest` verifies Home and Library receive identical Your Shows scores even when an adaptive model exists.
 - `ShowFacetMigrationLogicTest` covers preserving, merging, and retargeting evidence during a podcast-id repair. `AdaptiveRankingRepositoryTest` covers transactional `migrateShowFacet` into an existing target facet.
 - Recommendation reset behavior is exercised through `RankingResetPort` fakes in feature tests.
 

@@ -6,6 +6,7 @@ import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -101,6 +102,8 @@ internal class PlaybackProgressCoordinator(
                     }
                 }
             }
+        } catch (error: CancellationException) {
+            throw error
         } catch (e: Exception) {
             Log.e("AutoProgress", "Error saving progress once", e)
         }

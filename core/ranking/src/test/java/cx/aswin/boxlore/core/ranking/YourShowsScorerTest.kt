@@ -51,6 +51,24 @@ class YourShowsScorerTest {
         )
     }
 
+    @Test
+    fun `subscription age is applied once after listening normalization`() {
+        val scores =
+            YourShowsScorer.score(
+                podcasts =
+                    listOf(
+                        podcast("fresh", nowMs),
+                        podcast("old", nowMs - 200L * dayMs),
+                    ),
+                history = emptyList(),
+                includeAutoDownloadBoost = true,
+                nowMs = nowMs,
+            )
+
+        assertEquals(YourShowsSubscriptionRecency.PEAK_FLOOR, scores.getValue("fresh"), 1e-9)
+        assertEquals(0.0, scores.getValue("old"), 1e-9)
+    }
+
     private fun podcast(
         id: String,
         subscribedAt: Long,

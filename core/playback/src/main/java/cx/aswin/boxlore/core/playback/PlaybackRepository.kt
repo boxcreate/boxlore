@@ -80,7 +80,7 @@ object PlaybackLifecycleSignals {
     @Volatile var effectiveSkipEndingMs: Long? = null
 }
 
-@Suppress("LongParameterList") // historyStore is required for `by` delegation; public ctor stays at 9 args
+@Suppress("LongParameterList", "TooManyFunctions")
 class PlaybackRepository internal constructor(
     private val context: Context,
     private val listeningHistoryDao: cx.aswin.boxlore.core.database.ListeningHistoryDao,
@@ -151,6 +151,33 @@ class PlaybackRepository internal constructor(
     internal val repositoryScope = historyStore.playerDeps.scope
     internal val playerStateFlow: MutableStateFlow<PlayerState> = historyStore.playerDeps.playerStateFlow
     val playerState = playerStateFlow.asStateFlow()
+
+    fun setUiForeground(isForeground: Boolean) {
+        PlaybackUiVisibility.setForeground(isForeground)
+        if (isForeground) {
+            val controllerNow = mediaHandle.controller
+            if (controllerNow != null) {
+                playerStateFlow.value =
+                    playerStateFlow.value.copy(
+                        position = controllerNow.currentPosition,
+                        bufferedPosition = controllerNow.bufferedPosition,
+                        duration = controllerNow.duration.coerceAtLeast(0L),
+                    )
+            }
+            if (
+                controllerNow != null &&
+                PlaybackPowerPolicy.shouldRunUiPositionTicker(
+                    isUiForeground = true,
+                    isPlaying = controllerNow.isPlaying,
+                    isLoading = controllerNow.isLoading,
+                )
+            ) {
+                startProgressTicker()
+            }
+        } else {
+            stopProgressTicker()
+        }
+    }
 
     // Preferences for session state
     private val prefs =
@@ -437,40 +464,30 @@ class PlaybackRepository internal constructor(
         }
     }
 
-    private var lastProgressSaveMs = 0L
     private var activePlaybackStartTimeMs = 0L
 
     private fun startProgressTicker() {
         stopProgressTicker()
-        lastProgressSaveMs = System.currentTimeMillis() // Reset so first ticker save is 10s from now
+        if (!PlaybackUiVisibility.isForeground.value) return
         progressJob =
             repositoryScope.launch {
-                while (true) {
-                    mediaHandle.controller?.let { controller ->
-                        if (controller.isPlaying || controller.isLoading) {
-                            val currentPos = controller.currentPosition
-                            val bufferedPos = controller.bufferedPosition
-                            val currentDur = controller.duration.coerceAtLeast(0)
-
-                            playerStateFlow.value =
-                                playerStateFlow.value.copy(
-                                    position = currentPos,
-                                    bufferedPosition = bufferedPos,
-                                    duration = currentDur,
-                                )
-
-                            // Save progress every 10 seconds (deterministic)
-                            val now = System.currentTimeMillis()
-                            if (now - lastProgressSaveMs > 10_000) {
-                                val hasBeenPlayingFor10s =
-                                    activePlaybackStartTimeMs > 0 &&
-                                        (now - activePlaybackStartTimeMs >= 10_000)
-                                saveCurrentState(updateLastPlayedAt = hasBeenPlayingFor10s)
-                                lastProgressSaveMs = now
-                            }
-                        }
-                    }
-                    kotlinx.coroutines.delay(500) // Update every 500ms
+                var controllerNow = mediaHandle.controller
+                while (
+                    controllerNow != null &&
+                    PlaybackPowerPolicy.shouldRunUiPositionTicker(
+                        isUiForeground = PlaybackUiVisibility.isForeground.value,
+                        isPlaying = controllerNow.isPlaying,
+                        isLoading = controllerNow.isLoading,
+                    )
+                ) {
+                    playerStateFlow.value =
+                        playerStateFlow.value.copy(
+                            position = controllerNow.currentPosition,
+                            bufferedPosition = controllerNow.bufferedPosition,
+                            duration = controllerNow.duration.coerceAtLeast(0),
+                        )
+                    kotlinx.coroutines.delay(PlaybackPowerPolicy.UI_POSITION_POLL_INTERVAL_MS)
+                    controllerNow = mediaHandle.controller
                 }
             }
     }

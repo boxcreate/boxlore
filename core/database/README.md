@@ -6,7 +6,7 @@ Owns the main Room database, entities, DAOs, type converters, and migrations for
 
 ## Public API
 
-- `PodcastScoring` (legacy Your Shows prior, including subscribe recency of `600 / (1 + hours/24)`).
+- `PodcastScoring` provides interpretable listening, like, freshness, preference, and optional subscription-recency signals. Canonical Your Shows ranking disables its legacy subscription-recency term so `:core:ranking` can apply one bounded recency policy after normalization; other callers retain the existing `600 / (1 + hours/24)` default.
 - `BoxLoreDatabase` and its `getDatabase` factory.
 - Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity`, `LocalEpisodeFeedEntity`, `LocalEpisodeEntity`, and `entities.QueueItem`.
 - DAOs: `PodcastDao`, `ListeningHistoryDao`, `ListeningSessionDao`, `ListeningRollupDao`, `DownloadedEpisodeDao`, `RssEpisodeDao`, `EpisodeSupplementDao`, `LocalEpisodeCatalogDao`, and `dao.QueueDao`. `PodcastDao.setFeedUrl` writes a publisher HTTPS URL after library restore. Listening sessions can reassign an episode id while preserving stable session UUIDs; catalog restore repair merges rollup primary-key collisions before deleting the legacy episode id. Session/rollup DAOs can also reassign a podcast id for the exact legacy RSS repair. `EpisodeSupplementDao.listSupplements` is the export source for Missing episodes? opt-ins during cutover. `LocalEpisodeCatalogDao` pages the first-class PI local catalog (sticky `episodeId`, unique `(podcastId, guid)`). Unsubscribe sets `ttlExpiresAt`; a non-null TTL is not catalog-ready for live lists. `deleteCatalogIfExpired` rechecks `ttlExpiresAt` in the same transaction so a refresh that cleared TTL after the expiry scan is not deleted. Migration 31→32 copies extras **keeping episodeIds** and does not drop supplement tables.
@@ -70,7 +70,7 @@ src/main/java/cx/aswin/boxlore/core/database/
 - Unit tests live under `core/database/src/test`.
 - `PodcastDaoInMemoryTest` verifies the in-memory Room DAO path when Android resources are available to JVM tests.
 - `ListeningRollupMergeTest` covers session→rollup merge, including the empty-sessions guard.
-- `PodcastScoringTest` covers subscribe-recency priors (peak, 72h decay, missing `subscribedAt`).
+- `PodcastScoringTest` covers subscribe-recency priors (peak, 72h decay, missing `subscribedAt`) and the recency-free listening prior used by canonical Your Shows scoring.
 - `EpisodeToDomainArtworkTest` covers blank item `imageUrl` falling back to the show image on RSS and supplement `toEpisode`.
 - Prefer repository or port fakes for feature tests instead of depending on Room directly.
 

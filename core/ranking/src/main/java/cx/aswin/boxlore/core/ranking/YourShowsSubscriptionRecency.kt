@@ -14,7 +14,7 @@ object YourShowsSubscriptionRecency {
     const val PEAK_FLOOR = 0.97
     const val WINDOW_END_FLOOR = 0.94
     const val WINDOW_HOURS = 72.0
-    const val POST_WINDOW_DECAY_HOURS = 108.0
+    const val POST_WINDOW_DECAY_HOURS = 48.0
 
     fun apply(
         score: Double,

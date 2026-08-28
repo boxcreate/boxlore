@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -177,14 +178,25 @@ internal class PlaybackIntroOutroController(
     }
 
     fun startOutroMonitor(player: Player) {
+        if (!PlaybackPowerPolicy.shouldMonitorOutro(player.isPlaying, effectiveSkipEndingMs)) {
+            stopOutroMonitor()
+            return
+        }
         if (outroMonitorJob?.isActive == true) return
-        outroMonitorJob =
-            scope.launch {
-                while (player.isPlaying) {
+        val monitorJob =
+            scope.launch(start = CoroutineStart.LAZY) {
+                while (PlaybackPowerPolicy.shouldMonitorOutro(player.isPlaying, effectiveSkipEndingMs)) {
                     checkOutroCrossing(player)
-                    delay(200L)
+                    delay(PlaybackPowerPolicy.OUTRO_POLL_INTERVAL_MS)
                 }
             }
+        outroMonitorJob = monitorJob
+        monitorJob.invokeOnCompletion {
+            if (outroMonitorJob === monitorJob) {
+                outroMonitorJob = null
+            }
+        }
+        monitorJob.start()
     }
 
     fun stopOutroMonitor() {
@@ -269,6 +281,7 @@ internal class PlaybackIntroOutroController(
             }
 
             refreshOutroBoundary(player, preferenceChanged)
+            startOutroMonitor(player)
             maybeApplyPendingIntro(player)
         }
     }

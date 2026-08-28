@@ -496,13 +496,12 @@
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerCastControls.kt">
         <error line="58" column="14" source="standard:function-naming" />
-        <error line="84" column="14" source="standard:function-naming" />
-        <error line="245" column="13" source="standard:function-naming" />
-        <error line="325" column="13" source="standard:function-naming" />
-        <error line="350" column="13" source="standard:function-naming" />
-        <error line="431" column="13" source="standard:function-naming" />
-        <error line="460" column="13" source="standard:function-naming" />
-        <error line="486" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="85" column="14" source="standard:function-naming" />
+        <error line="246" column="13" source="standard:function-naming" />
+        <error line="326" column="13" source="standard:function-naming" />
+        <error line="351" column="13" source="standard:function-naming" />
+        <error line="432" column="13" source="standard:function-naming" />
+        <error line="461" column="13" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/v2/FullPlayerCastHero.kt">
         <error line="90" column="14" source="standard:function-naming" />

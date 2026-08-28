@@ -19,6 +19,7 @@ object PodcastScoring {
         podcasts: List<ScorablePodcast>,
         allHistory: List<ListeningHistoryEntity>,
         includeAutoDownloadBoost: Boolean = true,
+        includeSubscriptionRecency: Boolean = true,
         nowMs: Long = System.currentTimeMillis(),
     ): Map<String, Double> {
         val historyByPodcast = allHistory.groupBy { it.podcastId }
@@ -59,7 +60,7 @@ object PodcastScoring {
                 }
 
             val subRecencyScore =
-                if (pod.subscribedAt > 0L) {
+                if (includeSubscriptionRecency && pod.subscribedAt > 0L) {
                     val hoursSinceSubscribed =
                         (nowMs - pod.subscribedAt).toDouble() / (1000.0 * 3600.0)
                     SUBSCRIBE_RECENCY_PEAK / (1.0 + hoursSinceSubscribed.coerceAtLeast(0.0) / 24.0)
@@ -79,7 +80,7 @@ object PodcastScoring {
                     subRecencyScore +
                     notificationsBoost +
                     autoDownloadBoost
-                )
+            )
         }
     }
 }

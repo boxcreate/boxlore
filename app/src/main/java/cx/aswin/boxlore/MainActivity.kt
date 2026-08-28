@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.posthog.PostHog
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -108,8 +109,14 @@ class MainActivity : ComponentActivity() {
         playAppUpdateHelper.resumeInProgressUpdate()
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStart() {
+        super.onStart()
+        playbackRepositoryRef?.setUiForeground(true)
+    }
+
+    override fun onStop() {
+        playbackRepositoryRef?.setUiForeground(false)
+        super.onStop()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -144,7 +151,10 @@ class MainActivity : ComponentActivity() {
                 expandPlayerTrigger = expandPlayerTrigger,
                 intentState = intentState,
                 warmStartIntent = warmStartIntent,
-                onPlaybackRepositoryReady = { playbackRepositoryRef = it },
+                onPlaybackRepositoryReady = {
+                    playbackRepositoryRef = it
+                    it.setUiForeground(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+                },
             )
         }
     }

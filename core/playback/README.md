@@ -21,8 +21,8 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - `HistoryRecommendationLogic`, `AutoVoiceSearchLogic`, `SmartQueueRefillPolicy`, `MixtapeResumePolicy`, `PlaybackEntryPointResolve`, `NightWindowLogic`, and `ListeningHistoryUpsertLogic` are JVM-testable playback helpers. `PlaybackEntryPointResolve` maps fine-grained source-context `entry_point` strings (`home_mixtape`, `learn`/`learn_history`, `briefing`) to coarse `PlaybackEntryPoint` for queue/mixtape policy while the raw string still attributes `playback_*`.
 - `AutoArtworkFetchLogic` and `AutoCollageFreshnessLogic` encode Android Auto artwork fetch / collage cache policy for hermetic tests.
 - `AutoCollagePrewarmPolicy` and `AutoCollageFolderLogic` encode prewarm throttle and aligned image/key folder inputs for hermetic tests.
-- `PlaybackIntroOutroController` manages intro-skip and outro-trim playback lifecycle.
-- `service.BoxLorePlaybackService`, `service.MediaDownloadService`, and `service.AutoCollageProvider` are manifest-facing services.
+- `PlaybackIntroOutroController` manages intro-skip and outro-trim playback lifecycle. Natural completion remains event-driven; ending-trim polling runs only during active playback with a real trim, clears completed monitor jobs, and uses a 500 ms cadence.
+- `service.BoxLorePlaybackService`, `service.MediaDownloadService`, and `service.AutoCollageProvider` are manifest-facing services. The download foreground notification refreshes at a five-second cadence to avoid per-second notification wakeups while retaining useful progress.
 - `service.SmartQueueRefillCoordinator`, `service.CoilBitmapLoader`, and `service.auto.*` support service internals and Android Auto.
 - Android Auto browse artwork:
   - `AutoArtworkRepository` + `AutoArtworkSourceStore` register remote/local sources into an in-memory map immediately and `commit` prefs on a background thread before/while returning `content://…/art|local|collage/…` URIs.
@@ -41,6 +41,7 @@ src/main/java/cx/aswin/boxlore/core/playback/
   PlaybackHistoryStoreApi.kt         # non-port history helpers (extensions)
   PlaybackHistoryMappings.kt         # history entity ↔ model mappers
   PlaybackHistoryDeps.kt             # player + data deps for HistoryStore ctors
+  PlaybackPowerPolicy.kt             # UI polling, offload, outro, paused-idle policy
   PlaybackSleepController.kt         # sleep timer + late-night nudge
   PlaybackRepositoryQueueApi.kt      # queue extension API
   PlaybackRepositoryTransportApi.kt  # transport / seek / speed extension API (+ [isTransportReady])
@@ -79,7 +80,9 @@ Files under `core/data/service` are compatibility stubs for old service class na
 ## Threading / lifecycle
 
 - `PlaybackRepository`, `QueueRepository`, and `QueueManager` are application-scoped through `AppContainer`.
-- `BoxLorePlaybackService` is a Media3 `MediaLibraryService`; it resolves shared dependencies lazily after application startup and keeps its local and remote players service-scoped so transfers continue while the Activity is absent.
+- `PlaybackRepository` polls MediaController position only while app UI is foregrounded; the playback service remains the sole owner of periodic persistence and telemetry, avoiding duplicate background Room writes while refreshing the exact controller position when UI returns.
+- `BoxLorePlaybackService` is a Media3 `MediaLibraryService`; it resolves shared dependencies lazily after application startup and keeps its local and remote players service-scoped so transfers continue while the Activity is absent. A local session that stays paused and backgrounded for 15 minutes saves progress, rechecks eligibility after persistence, and stops the service; resumed playback, cancellation, buffering intent, foreground UI, and Cast sessions bypass that teardown.
+- The local ExoPlayer opportunistically enables platform audio offload only when the device can preserve playback-speed behavior. `WAKE_MODE_NETWORK` remains enabled for reliable screen-off streaming.
 - Player callbacks run on the main thread; database, artwork, and recommendation work use coroutine scopes and background dispatchers.
 
 ## Persistence & identity

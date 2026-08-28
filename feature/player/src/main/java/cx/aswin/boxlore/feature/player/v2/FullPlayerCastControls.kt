@@ -78,8 +78,10 @@ internal fun BoxLoreCastRouteButton(
         )
     }
 }
+
 @Composable
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
+@OptIn(UnstableApi::class)
 internal fun CastRoutePickerSheet(
     isCasting: Boolean,
     onDismiss: () -> Unit,
