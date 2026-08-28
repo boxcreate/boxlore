@@ -21,7 +21,7 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 - `HistoryRecommendationLogic`, `AutoVoiceSearchLogic`, `SmartQueueRefillPolicy`, `MixtapeResumePolicy`, `PlaybackEntryPointResolve`, `NightWindowLogic`, and `ListeningHistoryUpsertLogic` are JVM-testable playback helpers. `PlaybackEntryPointResolve` maps fine-grained source-context `entry_point` strings (`home_mixtape`, `learn`/`learn_history`, `briefing`) to coarse `PlaybackEntryPoint` for queue/mixtape policy while the raw string still attributes `playback_*`.
 - `AutoArtworkFetchLogic` and `AutoCollageFreshnessLogic` encode Android Auto artwork fetch / collage cache policy for hermetic tests.
 - `AutoCollagePrewarmPolicy` and `AutoCollageFolderLogic` encode prewarm throttle and aligned image/key folder inputs for hermetic tests.
-- `PlaybackIntroOutroController` manages intro-skip and outro-trim playback lifecycle. Natural completion remains event-driven; ending-trim polling runs only during active playback with a real trim and uses a 500 ms cadence.
+- `PlaybackIntroOutroController` manages intro-skip and outro-trim playback lifecycle. Natural completion remains event-driven; ending-trim polling runs only during active playback with a real trim, clears completed monitor jobs, and uses a 500 ms cadence.
 - `service.BoxLorePlaybackService`, `service.MediaDownloadService`, and `service.AutoCollageProvider` are manifest-facing services. The download foreground notification refreshes at a five-second cadence to avoid per-second notification wakeups while retaining useful progress.
 - `service.SmartQueueRefillCoordinator`, `service.CoilBitmapLoader`, and `service.auto.*` support service internals and Android Auto.
 - Android Auto browse artwork:
