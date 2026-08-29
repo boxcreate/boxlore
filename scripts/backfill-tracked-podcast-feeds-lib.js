@@ -1,7 +1,66 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
+
 const BACKFILL_USER_AGENT = 'boxlore-rtdb-feed-backfill/1.0';
 const REQUEST_TIMEOUT_MS = 20_000;
+const WEEKLY_BACKUP_LIMIT = 10;
+const WEEKLY_BACKUP_NAME = /^\d{4}-W\d{2}\.json$/;
+
+function utcIsoWeekName(now = new Date()) {
+    const date =
+        new Date(
+            Date.UTC(
+                now.getUTCFullYear(),
+                now.getUTCMonth(),
+                now.getUTCDate(),
+            ),
+        );
+    const day = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - day);
+    const weekYear = date.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(weekYear, 0, 1));
+    const week = Math.ceil((((date - yearStart) / 86_400_000) + 1) / 7);
+    return `${weekYear}-W${String(week).padStart(2, '0')}.json`;
+}
+
+function sortJson(value) {
+    if (Array.isArray(value)) return value.map(sortJson);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(
+        Object.keys(value)
+            .sort()
+            .map((key) => [key, sortJson(value[key])]),
+    );
+}
+
+function writeWeeklyTrackedPodcastBackup({
+    directory,
+    trackedPodcasts,
+    now = new Date(),
+    limit = WEEKLY_BACKUP_LIMIT,
+}) {
+    if (!Number.isInteger(limit) || limit < 1) {
+        throw new Error('Weekly backup limit must be a positive integer');
+    }
+    fs.mkdirSync(directory, { recursive: true });
+    const filename = utcIsoWeekName(now);
+    fs.writeFileSync(
+        path.join(directory, filename),
+        `${JSON.stringify(sortJson(trackedPodcasts || {}), null, 2)}\n`,
+    );
+    const weeklyFiles =
+        fs.readdirSync(directory)
+            .filter((name) => WEEKLY_BACKUP_NAME.test(name))
+            .sort()
+            .reverse();
+    const removed = weeklyFiles.slice(limit);
+    for (const name of removed) {
+        fs.unlinkSync(path.join(directory, name));
+    }
+    return { filename, removed };
+}
 
 function usableHttpsFeedUrl(raw) {
     const value = String(raw || '').trim();
@@ -132,5 +191,7 @@ module.exports = {
     exactItunesFeedUrl,
     missingTrackedPodcasts,
     resolveTrackedPodcastFeed,
+    utcIsoWeekName,
     usableHttpsFeedUrl,
+    writeWeeklyTrackedPodcastBackup,
 };

@@ -1,10 +1,12 @@
 'use strict';
 
 const admin = require('firebase-admin');
+const path = require('node:path');
 const {
     missingTrackedPodcasts,
     resolveTrackedPodcastFeed,
     usableHttpsFeedUrl,
+    writeWeeklyTrackedPodcastBackup,
 } = require('./backfill-tracked-podcast-feeds-lib');
 
 const DATABASE_URL = 'https://boxcasts-default-rtdb.asia-southeast1.firebasedatabase.app';
@@ -31,9 +33,13 @@ async function mapWithConcurrency(items, limit, worker) {
 }
 
 async function main() {
+    const mode = process.argv[2] || '--backup-and-repair';
+    if (!['--backup-only', '--repair-only', '--backup-and-repair'].includes(mode)) {
+        throw new Error(`Unsupported mode: ${mode}`);
+    }
     const apiBaseUrl = String(process.env.BOXLORE_API_BASE_URL || '').trim();
     const appKey = String(process.env.APP_SECRET_KEY || '').trim();
-    if (!apiBaseUrl || !appKey) {
+    if (mode !== '--backup-only' && (!apiBaseUrl || !appKey)) {
         throw new Error('BOXLORE_API_BASE_URL and APP_SECRET_KEY are required');
     }
 
@@ -44,6 +50,18 @@ async function main() {
     const trackedRef = admin.database().ref('tracked_podcasts');
     const snapshot = await trackedRef.once('value');
     const trackedPodcasts = snapshot.val() || {};
+    if (mode !== '--repair-only') {
+        const backup =
+            writeWeeklyTrackedPodcastBackup({
+                directory: path.join(__dirname, 'data', 'tracked-podcasts-backups'),
+                trackedPodcasts,
+            });
+        console.log(
+            `Saved pre-repair RTDB backup ${backup.filename}; pruned ${backup.removed.length} expired backup(s).`,
+        );
+    }
+    if (mode === '--backup-only') return;
+
     const missing = missingTrackedPodcasts(trackedPodcasts);
     console.log(`Found ${missing.length} tracked podcasts without a valid HTTPS feedUrl.`);
     if (missing.length === 0) return;
