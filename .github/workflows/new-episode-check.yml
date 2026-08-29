@@ -6,6 +6,10 @@ on:
     - cron: '*/30 * * * *'
   workflow_dispatch: # Allow manual triggering
 
+concurrency:
+  group: tracked-podcast-rtdb-maintenance
+  cancel-in-progress: false
+
 jobs:
   check-episodes:
     runs-on: ubuntu-latest

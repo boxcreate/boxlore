@@ -1,0 +1,50 @@
+name: Repair Tracked Podcast Feed URLs
+
+on:
+  schedule:
+    - cron: '17 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tracked-podcast-rtdb-maintenance
+  cancel-in-progress: false
+
+jobs:
+  repair-feed-urls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix scripts
+
+      - name: Test repair logic
+        run: node --test scripts/backfill-tracked-podcast-feeds-lib.test.js
+
+      - name: Authenticate GCP/Firebase
+        env:
+          FCM_SERVICE_ACCOUNT_KEY: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
+        run: |
+          printf '%s' "$FCM_SERVICE_ACCOUNT_KEY" > "$RUNNER_TEMP/gcp-key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-key.json" >> "$GITHUB_ENV"
+
+      - name: Repair missing feed URLs
+        run: node scripts/backfill-tracked-podcast-feeds.js
+        env:
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+          BOXLORE_API_BASE_URL: https://api.aswin.cx
+
+      - name: Remove service-account file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gcp-key.json"
