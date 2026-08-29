@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-29T18:45:15.969Z",
+  "lastRun": "2026-08-29T21:31:01.076Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -65,6 +65,12 @@
       "lastEpisodeTitle": "The Cemetery Shadow Man",
       "lastCheckedAt": 1782580346119
     },
+    "318297": {
+      "lastEpisodeId": "59659787710",
+      "lastEpisodeTitle": "TNB Tech Minute: Andreessen Horowitz Launches AI Hardware Fund",
+      "lastRssKey": "E66DD6DA-86B6-4186-8AF1-7873FFC225F4",
+      "lastCheckedAt": 1788039067479
+    },
     "331078": {
       "lastEpisodeId": "59641750935",
       "lastEpisodeTitle": "Anthropic Is Street Legal Again",
@@ -72,10 +78,10 @@
       "lastCheckedAt": 1787998748354
     },
     "385117": {
-      "lastRssKey": "c6773206-a3d4-11f1-9224-af08db38743a",
-      "lastEpisodeTitle": "2PM ET 08/29/2026 Newscast",
+      "lastRssKey": "eecf6b1a-a3ed-11f1-b13b-e3eea44f0231",
+      "lastEpisodeTitle": "5PM ET 08/29/2026 Newscast",
       "lastEpisodeId": "59676744498",
-      "lastCheckedAt": 1788029121522
+      "lastCheckedAt": 1788039067894
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -178,10 +184,10 @@
       "lastCheckedAt": 1786559318597
     },
     "593004": {
-      "lastRssKey": "763124a2-9e9b-11f1-91cb-2f0f0fe374f1",
-      "lastEpisodeTitle": "China's LOVES This Garbage Movie",
+      "lastRssKey": "b6fcdc88-a3eb-11f1-8e0d-27ae5df7fad6",
+      "lastEpisodeTitle": "ICE's Biggest Fan Just Got Deported",
       "lastEpisodeId": "59396147606",
-      "lastCheckedAt": 1788029128574
+      "lastCheckedAt": 1788039088805
     },
     "724143": {
       "lastEpisodeId": "59645590634",
@@ -254,6 +260,12 @@
       "lastEpisodeTitle": "This Day in History - August 29, 2026",
       "lastEpisodeId": "59673372610",
       "lastCheckedAt": 1788029132517
+    },
+    "946758": {
+      "lastEpisodeId": "59193386502",
+      "lastEpisodeTitle": "Excerpt from The Nudge, by Night Vale co-creator Joseph Fink",
+      "lastRssKey": "9285537e-9b5f-11f1-a818-1fff51333641",
+      "lastCheckedAt": 1788039094297
     },
     "947138": {
       "lastRssKey": "81b5c28c-b5cc-11f0-92f1-27dac81c3eb6",
