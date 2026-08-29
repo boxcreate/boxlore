@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-29T03:14:50.968Z",
+  "lastRun": "2026-08-29T10:19:01.782Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -65,11 +65,17 @@
       "lastEpisodeTitle": "The Cemetery Shadow Man",
       "lastCheckedAt": 1782580346119
     },
+    "331078": {
+      "lastEpisodeId": "59641750935",
+      "lastEpisodeTitle": "Anthropic Is Street Legal Again",
+      "lastRssKey": "4aa2cf56-97e9-11f1-ac15-ffabd1bf872c",
+      "lastCheckedAt": 1787998748354
+    },
     "385117": {
-      "lastRssKey": "0ef59a8c-a357-11f1-b8b4-e34bd3c1e18c",
-      "lastEpisodeTitle": "11PM ET 08/28/2026 Newscast",
+      "lastRssKey": "bb39a204-a391-11f1-8869-eff7f80793ac",
+      "lastEpisodeTitle": "6AM ET 08/29/2026 Newscast",
       "lastEpisodeId": "59638056478",
-      "lastCheckedAt": 1787973295200
+      "lastCheckedAt": 1787998748477
     },
     "386911": {
       "lastEpisodeId": "59336419806",
@@ -90,10 +96,10 @@
       "lastCheckedAt": 1786765059294
     },
     "437685": {
-      "lastEpisodeId": "59615376928",
-      "lastEpisodeTitle": "The Life of Helen Keller",
-      "lastRssKey": "9763c586-8d5b-11f1-9320-2777002b0297",
-      "lastCheckedAt": 1787910205950
+      "lastEpisodeId": "59662705617",
+      "lastEpisodeTitle": "Confucianism",
+      "lastRssKey": "9744de32-8d5b-11f1-9320-373a9fdb14fa",
+      "lastCheckedAt": 1787998750302
     },
     "444331": {
       "lastRssKey": "02afc47a-a247-11f1-9ebf-ab411a102f28",
@@ -262,10 +268,10 @@
       "lastCheckedAt": 1787910216773
     },
     "1076260": {
-      "lastRssKey": "dee1b440-6df1-4c24-985f-b4ad01122529",
-      "lastEpisodeTitle": "Noa Vahle, Charles Groenhuijsen & Teun de Nooijer",
+      "lastRssKey": "aa3ed194-534b-4e1e-a28d-b4b40111958f",
+      "lastEpisodeTitle": "Pepijn Schoneveld, Nazmiye Oral & Laurens Dassen",
       "lastEpisodeId": "57423685615",
-      "lastCheckedAt": 1787387310044
+      "lastCheckedAt": 1787998770150
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -292,10 +298,10 @@
       "lastCheckedAt": 1786559324862
     },
     "1388001": {
-      "lastEpisodeId": "59615574558",
-      "lastEpisodeTitle": "Chronique géopolitique par Nicolas Poincaré",
-      "lastRssKey": "55590169-8364-45f1-b06b-8a4a905a9efc",
-      "lastCheckedAt": 1787910217922
+      "lastEpisodeId": "59661776920",
+      "lastEpisodeTitle": "La détention de deux détenus français au Togo pose question",
+      "lastRssKey": "ce883edb-74ed-43db-a6ad-94b802676477",
+      "lastCheckedAt": 1787998771852
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33432",
@@ -304,9 +310,9 @@
       "lastCheckedAt": 1787117327064
     },
     "2407094": {
-      "lastRssKey": "6a91bc47ab0813c72a4b01bc",
-      "lastEpisodeTitle": "Trump menace le Canada, qui riposte (28/08)",
-      "lastCheckedAt": 1787951206797
+      "lastRssKey": "6a91bef4d0f8ed9457b96e86",
+      "lastEpisodeTitle": "(Pop) Comment 700 programmes d’OpenAI se sont coordonnés pour attaquer l’entreprise Hugging Face en juillet… HugoDécrypte",
+      "lastCheckedAt": 1787998773161
     },
     "2574026": {
       "lastRssKey": "8ad6f416-a24e-11f1-b5ac-cf3d62e6c65c",
@@ -435,10 +441,10 @@
       "lastCheckedAt": 1787951211054
     },
     "5930143": {
-      "lastRssKey": "55590169-8364-45f1-b06b-8a4a905a9efc",
-      "lastEpisodeTitle": "Chronique géopolitique par Nicolas Poincaré",
+      "lastRssKey": "ce883edb-74ed-43db-a6ad-94b802676477",
+      "lastEpisodeTitle": "La détention de deux détenus français au Togo pose question",
       "lastEpisodeId": "59564116173",
-      "lastCheckedAt": 1787910224500
+      "lastCheckedAt": 1787998779259
     },
     "5945547": {
       "lastRssKey": "610bddc6-ee79-45ae-8c2b-3bd9258193f7",
@@ -501,10 +507,10 @@
       "lastCheckedAt": 1787494907951
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59780289",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Village Scene Matter",
+      "lastRssKey": "https://api.spreaker.com/episode/59780282",
+      "lastEpisodeTitle": "Nightbeat - Lorainne Adams Execution",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1787910227092
+      "lastCheckedAt": 1787998782930
     },
     "6912659": {
       "lastRssKey": "2909e4ed-01da-4292-95a7-cafd0a3a15de",
@@ -560,10 +566,10 @@
       "lastCheckedAt": 1787973329166
     },
     "7424167": {
-      "lastEpisodeId": "59334878744",
-      "lastEpisodeTitle": "Inside Report Fraud",
-      "lastRssKey": "urn:bbc:podcast:m0030241",
-      "lastCheckedAt": 1787366103825
+      "lastEpisodeId": "59659286509",
+      "lastEpisodeTitle": "QR Code Scams",
+      "lastRssKey": "urn:bbc:podcast:m0030cbr",
+      "lastCheckedAt": 1787998787437
     },
     "7437277": {
       "lastRssKey": "8e91ed9b-3b3e-41ea-bf85-99ba71348a40",
@@ -602,10 +608,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "7864a871-6bf9-41a4-b616-a214fe1c704f",
-      "lastEpisodeTitle": "Revelation 2",
-      "lastEpisodeId": "59614485854",
-      "lastCheckedAt": 1787910229952
+      "lastRssKey": "9efcc64d-f460-4703-905e-fece5716bfa3",
+      "lastEpisodeTitle": "Revelation 3",
+      "lastEpisodeId": "59661877076",
+      "lastCheckedAt": 1787998788788
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
