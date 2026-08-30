@@ -178,6 +178,8 @@ class ReadmeReleaseMarkersTest(unittest.TestCase):
         )
         assert inner is not None
         self.assertIn("boxlore-v0.0.13.apk", inner)
+        self.assertIn("docs/images/button_github_v8.svg", inner)
+        self.assertIn('width="224" height="60"', inner)
 
     def test_skip_notify_expected_files_include_readme_url(self) -> None:
         self.assertEqual(

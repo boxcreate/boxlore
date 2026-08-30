@@ -1,34 +1,25 @@
 <div align="center" id="top">
 
-<img src="docs/images/featured_image.png" width="960" alt="boxlore screens showing podcast discovery, playback, and the daily briefing"/>
-
 # boxlore
 
-**A focused podcast player for Android.**
+**Find podcasts. Follow your favorites. Listen anywhere.**
 
-Find shows and episodes, get personal recommendations, listen offline, and watch video podcasts.
+Search by name or topic, get recommendations, listen offline, watch video episodes, and keep up with new episodes.
 
-<table align="center">
-  <tr>
-    <td align="center" valign="middle">
+<p>
 <!-- download-play:start -->
-<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="docs/images/card_playstore_v7.svg" width="260" height="80" alt="Get it on Google Play"/></a>
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="docs/images/button_playstore_v8.svg" width="224" height="60" alt="Get boxlore on Google Play"/></a>
 <!-- download-play:end -->
-    </td>
-    <td width="16"></td>
-    <td align="center" valign="middle">
+&nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.23.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.23.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
-    </td>
-  </tr>
-</table>
+</p>
 
-<br/>
-
-<a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="PolyForm Strict License"/></a>
 <a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=6750A4" alt="GitHub latest release"/></a>
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20Store%20version&amp;color=6750A4&amp;style=flat-square" alt="Google Play Store version"/></a>
 <img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total GitHub downloads"/>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="PolyForm Strict License"/></a>
 
 <br/><br/>
 
@@ -36,8 +27,11 @@ Find shows and episodes, get personal recommendations, listen offline, and watch
 **[Features](#features)** ·
 **[Release notes](#release-notes)** ·
 **[Screenshots](#screenshots)** ·
-**[Install](#install)** ·
-**[For developers](#for-developers)**
+**[Install](#install)**
+
+<br/>
+
+<img src="docs/images/featured_image.png" width="960" alt="boxlore screens showing podcast discovery, playback, and the daily briefing"/>
 
 <img src="docs/images/m3/divider.svg" width="820" alt=""/>
 
@@ -47,9 +41,9 @@ Find shows and episodes, get personal recommendations, listen offline, and watch
 
 <a id="about"></a>
 
-boxlore helps you find something worth listening to and keeps the rest simple. Search for a show even when the spelling is imperfect, or describe a topic to find relevant shows and episodes.
+boxlore is an Android app for finding, following, and playing podcasts. Search for a show even when the spelling is imperfect, or describe a subject to find relevant shows and episodes.
 
-As you listen, Home adapts to your taste on your device. Subscriptions, downloads, history, and likes stay together in the Library, while the queue keeps what you want to hear next.
+The app uses your listening activity—such as what you play, skip, and like—to suggest more podcasts. This personalization is processed on your device. You can listen online or offline, build a queue, and keep subscriptions, downloads, history, and likes in one library.
 
 ## Features
 
@@ -57,15 +51,16 @@ As you listen, Home adapts to your taste on your device. Subscriptions, download
 
 | Feature | What it does |
 | :--- | :--- |
-| **Search and discovery** | Find podcasts by name, including misspellings, or search by topic to discover related shows and episodes. |
-| **Personal Home** | Get listening suggestions, time-aware picks, Because You Like recommendations, and a daily mix that improves as you listen. |
-| **Audio and video playback** | Play audio and video podcasts with speed controls, a sleep timer, chapters, transcripts, intro skipping, and a full queue. |
-| **Library and offline listening** | Keep subscriptions, new episodes, downloads, likes, and listening history together. Smart Downloads can prepare episodes for offline listening. |
-| **Notifications and widgets** | Turn on new-episode alerts for individual shows. Home-screen widgets provide playback controls, subscriptions, and new episodes. |
-| **Cast and Android Auto** | Continue listening on supported TVs and speakers with Google Cast, or use boxlore through Android Auto. |
-| **Lore and daily briefing** | Swipe through curiosity cards or listen to an optional news briefing with sources and chapters. |
-| **Import and backup** | Bring subscriptions from another app with OPML, then export OPML or a full library backup whenever needed. |
-| **No app ads** | boxlore has no banner ads or paid feature tier. Podcasts may still contain ads placed by their publishers. |
+| **Find podcasts** | Search by show name, even with a misspelling, or describe a topic to find podcasts and individual episodes about it. |
+| **Recommendations** | Get suggestions based on what you play, skip, and like. These suggestions are calculated on your device. |
+| **Automatic queue** | When the list of episodes waiting to play runs low, Smart Queue can add more from the current show, unfinished listening, subscriptions, and recommendations. |
+| **Audio and video player** | Play audio and video episodes with speed controls, a sleep timer, chapters, transcripts, intro skipping, and a queue you can reorder. |
+| **Downloads and library** | Keep subscriptions, new episodes, downloads, likes, and listening history together. Smart Downloads can prepare episodes for offline listening. |
+| **Alerts and widgets** | Choose which shows can send new-episode alerts. Home-screen widgets show playback controls, subscriptions, or new episodes. |
+| **TV and car playback** | Send playback to supported TVs and speakers with Google Cast, or listen through Android Auto. |
+| **More ways to discover** | Browse short question cards that lead to related episodes, or play an optional daily news briefing with sources and chapters. |
+| **Import and backup** | Import a subscription file (OPML) from another podcast app, then export your subscriptions or a full library backup whenever needed. |
+| **No app ads** | boxlore has no banner ads and does not charge to unlock features. Podcasts may still contain ads placed by their publishers. |
 
 <!-- upcoming-changes:start -->
 
@@ -114,7 +109,7 @@ As you listen, Home adapts to your taste on your device. Subscriptions, download
   <tr>
     <td align="center" width="33%">
       <img src="docs/images/homescreen.png" width="240" alt="boxlore Home with listening suggestions and Your Shows"/><br/>
-      <b>Home</b><br/><sub>Your shows and personal picks</sub>
+      <b>Home</b><br/><sub>Continue listening and see suggestions</sub>
     </td>
     <td align="center" width="33%">
       <img src="docs/images/semantic_search.png" width="240" alt="boxlore search showing topic-based podcast results"/><br/>
@@ -122,13 +117,13 @@ As you listen, Home adapts to your taste on your device. Subscriptions, download
     </td>
     <td align="center" width="33%">
       <img src="docs/images/player.png" width="240" alt="boxlore full podcast player with playback and queue controls"/><br/>
-      <b>Player</b><br/><sub>Playback, chapters, transcripts, and queue</sub>
+      <b>Player</b><br/><sub>Controls, chapters, transcripts, and queue</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="33%">
       <img src="docs/images/recommendation_engine.png" width="240" alt="boxlore personalized podcast recommendations"/><br/>
-      <b>For You</b><br/><sub>Suggestions shaped by your listening</sub>
+      <b>Recommendations</b><br/><sub>Suggestions based on what you listen to</sub>
     </td>
     <td align="center" width="33%">
       <img src="docs/images/library.png" width="240" alt="boxlore Library with subscriptions, likes, downloads, and history"/><br/>
@@ -150,27 +145,6 @@ As you listen, Home adapts to your taste on your device. Subscriptions, download
 - **[GitHub Releases](https://github.com/boxcreate/boxlore/releases/latest)** provides the latest APK for sideloading.
 
 Android may ask you to allow installation from your browser or file manager when sideloading.
-
-## For developers
-
-<a id="for-developers"></a>
-
-<details>
-<summary><b>Build from source</b></summary>
-
-**Requirements:** Android Studio Ladybug or newer, Android SDK 35+, and JDK 17.
-
-```bash
-git clone https://github.com/boxcreate/boxlore.git
-cd boxlore
-./gradlew assembleDebug
-```
-
-</details>
-
-Built with Kotlin, Jetpack Compose, Material 3, Room, and Media3.
-
-Read the [architecture guide](ARCHITECTURE.md), [testing guide](docs/TESTING.md), or [agent notes](AGENTS.md).
 
 ## Project
 
