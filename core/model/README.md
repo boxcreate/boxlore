@@ -8,7 +8,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 
 - Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.
 - `EpisodeMediaCacheKey`: Media3 `customCacheKey` helper — briefing keys append audio URL `v=` so same-day regenerations bust the local audio cache.
-- `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping.
+- `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping that preserves the explicit `global` briefing tab.
 - `ContentLanguageSelection`: pure language-chip toggle rules (English lock, max languages, BCP47 normalization) for settings/onboarding pickers.
 - `PlaybackEntryPoint`, `ShareTarget`, and `ShareLinkBuilder`.
 - `PlaybackEntryPoint` coarse values: `GENERIC`, `HOME_MIXTAPE`, `LEARN`, `BRIEFING`

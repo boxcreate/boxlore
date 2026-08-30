@@ -46,6 +46,8 @@ class ContentRegionsTest {
     @Test
     fun briefingMarket_mapsNonCoreToGlobal() {
         assertEquals("global", ContentRegions.briefingMarket("de"))
+        assertEquals("global", ContentRegions.briefingMarket("global"))
+        assertEquals("global", ContentRegions.briefingMarket(" GLOBAL "))
         assertEquals("gb", ContentRegions.briefingMarket("uk"))
     }
 }
