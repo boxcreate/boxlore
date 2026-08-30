@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package cx.aswin.boxlore.core.designsystem.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -36,8 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -46,7 +48,7 @@ import cx.aswin.boxlore.core.model.ShareTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("FunctionName")
+@Suppress("LongMethod", "LongParameterList")
 fun ShareBottomSheet(
     id: String,
     type: String, // "podcast" or "episode"
@@ -312,7 +314,6 @@ fun ShareBottomSheet(
 }
 
 @Composable
-@Suppress("FunctionName")
 private fun SharePrimaryAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
@@ -370,7 +371,6 @@ private fun SharePrimaryAction(
 }
 
 @Composable
-@Suppress("FunctionName")
 private fun ShareSecondaryAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,

@@ -15,6 +15,7 @@ import android.widget.RemoteViews
 import cx.aswin.boxlore.feature.widgets.actions.WidgetActionIntents
 import cx.aswin.boxlore.feature.widgets.logic.WidgetSemantics
 
+@Suppress("TooManyFunctions")
 object NowPlayingWidgetRenderer {
     fun updateAll(
         context: Context,
