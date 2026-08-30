@@ -14,7 +14,7 @@ Search by name or topic, get recommendations, listen offline, watch video episod
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.23.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.24.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 </p>
 
@@ -67,6 +67,15 @@ The app uses your listening activity—such as what you play, skip, and like—t
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.24` · 2026-08-30
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.24 date=2026-08-30 -->
 <b>🚨 Critical:</b>
 <ul align="left">
 <li>Episodes now reliably resume from your latest listening position after overnight or background playback, and restored players show progress as soon as boxlore opens. <a href="https://github.com/boxcreate/boxlore/pull/1012"><img src="https://img.shields.io/badge/PR-1012-6750A4?style=flat-square" alt="PR #1012" height="18"/></a></li>
@@ -82,18 +91,6 @@ The app uses your listening activity—such as what you play, skip, and like—t
 <li>Briefing market now keeps the explicit global market setting, ensuring you see the right content for your region. <a href="https://github.com/boxcreate/boxlore/pull/1008"><img src="https://img.shields.io/badge/PR-1008-6750A4?style=flat-square" alt="PR #1008" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.23` · 2026-08-28
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.23 date=2026-08-28 -->
-<b>• Improved:</b>
-<ul align="left">
-<li>boxlore now does less unnecessary background work during playback and downloads, helping reduce avoidable battery use. <a href="https://github.com/boxcreate/boxlore/pull/1006"><img src="https://img.shields.io/badge/PR-1006-6750A4?style=flat-square" alt="PR #1006" height="18"/></a></li>
-<li>Your Shows stays visually stable while you browse and refreshes gracefully when you return, matching your listening habits more consistently. <a href="https://github.com/boxcreate/boxlore/pull/1006"><img src="https://img.shields.io/badge/PR-1006-6750A4?style=flat-square" alt="PR #1006" height="18"/></a></li>
-</ul>
 <!-- release-whats-new:end -->
 
 <!-- upcoming-changes:end -->
