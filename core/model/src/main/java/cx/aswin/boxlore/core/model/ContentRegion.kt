@@ -153,11 +153,15 @@ object ContentRegions {
         }
     }
 
-    fun briefingMarket(region: String): String =
-        when (canonicalize(region)) {
+    fun briefingMarket(region: String): String {
+        val normalized = region.trim().lowercase()
+        if (normalized == "global") return "global"
+
+        return when (canonicalize(normalized)) {
             "us" -> "us"
             "in" -> "in"
             "gb" -> "gb"
             else -> "global"
         }
+    }
 }
