@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.widgets
 import android.content.Context
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -151,5 +152,69 @@ class LibraryWidgetRemoteViewsTest {
             "list content was ${listHeight}px; expected at least ${minimumRowHeight}px",
             listHeight >= minimumRowHeight,
         )
+    }
+
+    @Test
+    fun newEpisodeRowsAllowTwoTitleLinesWithoutChangingSubscriptionRows() {
+        val store = LibraryWidgetSnapshotStore(context)
+        store.write(
+            LibraryWidgetSnapshot(
+                subscriptions =
+                    listOf(
+                        WidgetShowRow(
+                            podcastId = "p1",
+                            title = "A subscription title that remains on one line",
+                            subtitle = "Publisher",
+                            deepLinkUri = "boxlore://podcast/p1",
+                        ),
+                    ),
+                newEpisodes =
+                    listOf(
+                        WidgetEpisodeRow(
+                            episodeId = "e1",
+                            episodeTitle =
+                                "An exceptionally long episode title that needs a second line " +
+                                    "before it is truncated",
+                            podcastId = "p1",
+                            podcastTitle = "A show name",
+                            deepLinkUri = "boxlore://episode/e1",
+                        ),
+                    ),
+            ),
+        )
+
+        val episodeFactory =
+            LibraryWidgetRemoteViewsFactory(context, LibraryWidgetKind.NEW_EPISODES).apply {
+                onDataSetChanged()
+            }
+        val episodeViews = episodeFactory.getViewAt(0)
+        val episodeRoot = episodeViews.apply(context, FrameLayout(context))
+        val density = context.resources.displayMetrics.density
+        episodeRoot.measure(
+            View.MeasureSpec.makeMeasureSpec((245 * density).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((68 * density).toInt(), View.MeasureSpec.EXACTLY),
+        )
+        episodeRoot.layout(0, 0, episodeRoot.measuredWidth, episodeRoot.measuredHeight)
+
+        val episodeTitle = episodeRoot.findViewById<TextView>(R.id.widget_row_title)
+        val episodeSubtitle = episodeRoot.findViewById<TextView>(R.id.widget_row_subtitle)
+        val episodeMetadata = episodeRoot.findViewById<View>(R.id.widget_row_metadata)
+        assertEquals(R.layout.library_widget_episode_list_item, episodeViews.layoutId)
+        assertEquals(2, episodeTitle.maxLines)
+        assertTrue(episodeTitle.top >= 0)
+        assertTrue(episodeSubtitle.bottom <= episodeMetadata.height)
+
+        val subscriptionFactory =
+            LibraryWidgetRemoteViewsFactory(context, LibraryWidgetKind.SUBSCRIPTIONS).apply {
+                onDataSetChanged()
+            }
+        val subscriptionViews = subscriptionFactory.getViewAt(0)
+        val subscriptionRoot = subscriptionViews.apply(context, FrameLayout(context))
+        assertEquals(R.layout.library_widget_list_item, subscriptionViews.layoutId)
+        assertEquals(1, subscriptionRoot.findViewById<TextView>(R.id.widget_row_title).maxLines)
+
+        episodeFactory.onDestroy()
+        subscriptionFactory.onDestroy()
+        store.clear()
     }
 }

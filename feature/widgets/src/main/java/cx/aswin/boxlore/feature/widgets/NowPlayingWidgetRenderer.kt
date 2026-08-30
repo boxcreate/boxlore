@@ -92,6 +92,7 @@ object NowPlayingWidgetRenderer {
                 WidgetVariant.NOW_PLAYING -> R.layout.now_playing_widget_standard
                 WidgetVariant.BAR -> R.layout.now_playing_widget_bar
                 WidgetVariant.CONTROLS -> R.layout.playback_controls_widget
+                WidgetVariant.CONTROLS_NEXT -> R.layout.playback_controls_widget
             }
         return RemoteViews(context.packageName, layoutId).also { views ->
             bind(
@@ -144,7 +145,7 @@ object NowPlayingWidgetRenderer {
             views.setImageViewBitmap(R.id.widget_artwork, artwork)
         }
 
-        if (variant != WidgetVariant.CONTROLS) {
+        if (!variant.isControlsGrid()) {
             bindMetadata(views, snapshot, chrome)
         }
         bindTransport(context, views, appWidgetId, snapshot, variant, chrome)
@@ -158,12 +159,9 @@ object NowPlayingWidgetRenderer {
         variant: WidgetVariant,
         chrome: WidgetChrome,
     ) {
-        val compactBar = variant == WidgetVariant.BAR
-        val titleHeightDp = if (compactBar) 24 else 40
-        val ctaHeightDp = if (compactBar) 16 else 28
         views.setViewVisibility(R.id.widget_playing_container, View.GONE)
         views.setViewVisibility(R.id.widget_empty_container, View.VISIBLE)
-        if (variant != WidgetVariant.CONTROLS) {
+        if (!variant.isControlsGrid()) {
             WidgetRemoteViewsColors.setColorFilter(
                 views,
                 R.id.widget_empty_surface_background,
@@ -171,8 +169,102 @@ object NowPlayingWidgetRenderer {
                 chrome,
             )
         }
+        val appIcon = context.applicationInfo.icon
+        if (appIcon != 0) {
+            views.setImageViewResource(R.id.widget_empty_icon, appIcon)
+        }
         views.setOnClickPendingIntent(R.id.widget_empty_container, WidgetActionIntents.openApp(context))
-        val textWidth = (widthDp - EMPTY_HORIZONTAL_PADDING_DP).coerceAtLeast(MIN_TEXT_WIDTH_DP)
+
+        when (variant) {
+            WidgetVariant.NOW_PLAYING -> bindStandardEmptyState(context, views, widthDp, chrome)
+            WidgetVariant.BAR -> bindBarEmptyState(context, views, widthDp, chrome)
+            WidgetVariant.CONTROLS,
+            WidgetVariant.CONTROLS_NEXT,
+            -> bindControlsEmptyState(context, views, widthDp, chrome)
+        }
+    }
+
+    private fun bindStandardEmptyState(
+        context: Context,
+        views: RemoteViews,
+        widthDp: Int,
+        chrome: WidgetChrome,
+    ) {
+        val metadataWidth = (widthDp - STANDARD_EMPTY_METADATA_INSETS_DP).coerceAtLeast(MIN_TEXT_WIDTH_DP)
+        views.setImageViewBitmap(
+            R.id.widget_empty_title,
+            WidgetTextBitmapRenderer.renderColor(
+                context = context,
+                spec =
+                    WidgetTextBitmapRenderer.Spec(
+                        text = context.getString(R.string.widget_empty_title),
+                        widthDp = metadataWidth,
+                        heightDp = 40,
+                        preferredSizeSp = 17f,
+                        minSizeSp = 13f,
+                        weight = TITLE_WEIGHT,
+                        maxLines = 2,
+                        alignment = Layout.Alignment.ALIGN_CENTER,
+                    ),
+                color = chrome.argb(WidgetPalette.onSurface),
+            ),
+        )
+        views.setImageViewBitmap(
+            R.id.widget_empty_subtitle,
+            WidgetTextBitmapRenderer.renderColor(
+                context = context,
+                spec =
+                    WidgetTextBitmapRenderer.Spec(
+                        text = context.getString(R.string.widget_empty_subtitle),
+                        widthDp = metadataWidth,
+                        heightDp = 18,
+                        preferredSizeSp = 11f,
+                        minSizeSp = 9f,
+                        weight = BODY_WEIGHT,
+                        maxLines = 1,
+                        alignment = Layout.Alignment.ALIGN_CENTER,
+                    ),
+                color = chrome.argb(WidgetPalette.onSurfaceVariant),
+            ),
+        )
+    }
+
+    private fun bindBarEmptyState(
+        context: Context,
+        views: RemoteViews,
+        widthDp: Int,
+        chrome: WidgetChrome,
+    ) {
+        val textWidth = (widthDp - BAR_EMPTY_CONTENT_INSETS_DP).coerceAtLeast(MIN_TEXT_WIDTH_DP)
+        views.setImageViewBitmap(
+            R.id.widget_empty_title,
+            WidgetTextBitmapRenderer.renderColor(
+                context = context,
+                spec =
+                    WidgetTextBitmapRenderer.Spec(
+                        text = context.getString(R.string.widget_empty_bar_title),
+                        widthDp = textWidth,
+                        heightDp = 24,
+                        preferredSizeSp = 14f,
+                        minSizeSp = 11f,
+                        weight = TITLE_WEIGHT,
+                        maxLines = 1,
+                        alignment = Layout.Alignment.ALIGN_CENTER,
+                    ),
+                color = chrome.argb(WidgetPalette.onSurface),
+            ),
+        )
+    }
+
+    private fun bindControlsEmptyState(
+        context: Context,
+        views: RemoteViews,
+        widthDp: Int,
+        chrome: WidgetChrome,
+    ) {
+        val textWidth =
+            (widthDp - GRID_EMPTY_HORIZONTAL_PADDING_DP)
+                .coerceAtLeast(GRID_MIN_TEXT_WIDTH_DP)
         views.setImageViewBitmap(
             R.id.widget_empty_title,
             WidgetTextBitmapRenderer.renderColor(
@@ -181,32 +273,14 @@ object NowPlayingWidgetRenderer {
                     WidgetTextBitmapRenderer.Spec(
                         text = context.getString(R.string.widget_empty_title),
                         widthDp = textWidth,
-                        heightDp = titleHeightDp,
-                        preferredSizeSp = if (compactBar) 15f else 22f,
-                        minSizeSp = if (compactBar) 11f else 16f,
+                        heightDp = 28,
+                        preferredSizeSp = 11f,
+                        minSizeSp = 9f,
                         weight = TITLE_WEIGHT,
-                        maxLines = 1,
+                        maxLines = 2,
                         alignment = Layout.Alignment.ALIGN_CENTER,
                     ),
                 color = chrome.argb(WidgetPalette.onSurface),
-            ),
-        )
-        views.setImageViewBitmap(
-            R.id.widget_empty_cta,
-            WidgetTextBitmapRenderer.renderColor(
-                context = context,
-                spec =
-                    WidgetTextBitmapRenderer.Spec(
-                        text = context.getString(R.string.widget_empty_cta),
-                        widthDp = textWidth,
-                        heightDp = ctaHeightDp,
-                        preferredSizeSp = if (compactBar) 12f else 17f,
-                        minSizeSp = if (compactBar) 9f else 14f,
-                        weight = BODY_WEIGHT,
-                        maxLines = 1,
-                        alignment = Layout.Alignment.ALIGN_CENTER,
-                    ),
-                color = chrome.argb(WidgetPalette.primary),
             ),
         )
     }
@@ -241,7 +315,7 @@ object NowPlayingWidgetRenderer {
         chrome: WidgetChrome,
     ) {
         val playBackground =
-            if (variant == WidgetVariant.CONTROLS || snapshot.isPlaying) {
+            if (variant.isControlsGrid() || snapshot.isPlaying) {
                 R.drawable.widget_button_pause
             } else {
                 R.drawable.widget_button_play
@@ -272,7 +346,32 @@ object NowPlayingWidgetRenderer {
             WidgetActionIntents.broadcast(context, appWidgetId, WidgetControl.TOGGLE),
         )
 
-        // Compact surfaces: seek only. 4×2 adds previous/next around seek.
+        val leadingControl =
+            if (variant == WidgetVariant.CONTROLS_NEXT) {
+                WidgetControl.NEXT
+            } else {
+                WidgetControl.SKIP_BACK
+            }
+        views.setImageViewResource(
+            R.id.widget_skip_back_icon,
+            if (leadingControl == WidgetControl.NEXT) {
+                R.drawable.ic_widget_next
+            } else {
+                R.drawable.ic_widget_skip_back
+            },
+        )
+        views.setContentDescription(
+            R.id.widget_skip_back_icon,
+            context.getString(
+                if (leadingControl == WidgetControl.NEXT) {
+                    R.string.widget_next
+                } else {
+                    R.string.widget_skip_back
+                },
+            ),
+        )
+
+        // Compact surfaces use seek-back by default; the alternate grid uses next.
         bindSecondaryButton(
             context = context,
             views = views,
@@ -280,7 +379,7 @@ object NowPlayingWidgetRenderer {
             containerId = R.id.widget_skip_back,
             backgroundId = R.id.widget_skip_back_background,
             iconId = R.id.widget_skip_back_icon,
-            control = WidgetControl.SKIP_BACK,
+            control = leadingControl,
             chrome = chrome,
         )
         bindSecondaryButton(
@@ -352,7 +451,7 @@ object NowPlayingWidgetRenderer {
         widthDp: Int,
         heightDp: Int,
     ) {
-        if (variant != WidgetVariant.CONTROLS) return
+        if (!variant.isControlsGrid()) return
         val sideDp = minOf(widthDp, heightDp).coerceAtLeast(GRID_MIN_SIDE_DP)
         views.setViewLayoutWidth(R.id.widget_grid_card, sideDp.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
         views.setViewLayoutHeight(R.id.widget_grid_card, sideDp.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
@@ -371,11 +470,13 @@ object NowPlayingWidgetRenderer {
     ) {
         val heightDp =
             when (variant) {
-                // 48 art + 4 gap + 38 controls + 10 vertical padding
+                // 48 metadata + 4 gap + 38 controls + 10 vertical padding
                 WidgetVariant.NOW_PLAYING -> STANDARD_CARD_HEIGHT_DP
                 // 40 art + 8 vertical padding
                 WidgetVariant.BAR -> BAR_CARD_HEIGHT_DP
-                WidgetVariant.CONTROLS -> return
+                WidgetVariant.CONTROLS,
+                WidgetVariant.CONTROLS_NEXT,
+                -> return
             }
         views.setViewLayoutHeight(
             R.id.widget_playing_container,
@@ -405,7 +506,9 @@ object NowPlayingWidgetRenderer {
             when (variant) {
                 WidgetVariant.NOW_PLAYING -> 48
                 WidgetVariant.BAR -> 40
-                WidgetVariant.CONTROLS ->
+                WidgetVariant.CONTROLS,
+                WidgetVariant.CONTROLS_NEXT,
+                ->
                     ((minOf(widthDp, heightDp) - GRID_INSETS_DP) / 2)
                         .coerceAtLeast(GRID_MIN_ART_DP)
             }
@@ -449,8 +552,11 @@ object NowPlayingWidgetRenderer {
 
     private const val TITLE_WEIGHT = 600
     private const val BODY_WEIGHT = 400
-    private const val EMPTY_HORIZONTAL_PADDING_DP = 32
     private const val MIN_TEXT_WIDTH_DP = 72
+    private const val GRID_MIN_TEXT_WIDTH_DP = 48
+    private const val STANDARD_EMPTY_METADATA_INSETS_DP = 104
+    private const val BAR_EMPTY_CONTENT_INSETS_DP = 70
+    private const val GRID_EMPTY_HORIZONTAL_PADDING_DP = 20
     private const val GRID_MIN_SIDE_DP = 110
     private const val GRID_INSETS_DP = 38
     private const val GRID_MIN_ART_DP = 36
@@ -458,4 +564,7 @@ object NowPlayingWidgetRenderer {
     private const val GRID_PLAY_ICON_RATIO = 0.16f
     private const val STANDARD_CARD_HEIGHT_DP = 100
     private const val BAR_CARD_HEIGHT_DP = 48
+
+    private fun WidgetVariant.isControlsGrid(): Boolean =
+        this == WidgetVariant.CONTROLS || this == WidgetVariant.CONTROLS_NEXT
 }

@@ -34,6 +34,21 @@ class NowPlayingWidgetRemoteViewsTest {
     }
 
     @Test
+    fun standardEmptyStateUsesThemedBoxloreIdentity() {
+        val root =
+            renderAtMinimumSize(
+                variant = WidgetVariant.NOW_PLAYING,
+                widthDp = 245,
+                heightDp = 100,
+                snapshot = NowPlayingWidgetSnapshot(),
+            )
+
+        assertFullyInside(root, R.id.widget_empty_icon)
+        assertFullyInside(root, R.id.widget_empty_title)
+        assertFullyInside(root, R.id.widget_empty_subtitle)
+    }
+
+    @Test
     fun playingSnapshotUsesStandardLayoutForDefaultOptions() {
         val views =
             NowPlayingWidgetRenderer.buildRemoteViews(
@@ -66,7 +81,7 @@ class NowPlayingWidgetRemoteViewsTest {
     }
 
     @Test
-    fun longEpisodeTitleKeepsStandardControlsInsideMinimumHeight() {
+    fun longEpisodeTitleEllipsizesWithoutDisplacingStandardControls() {
         val root =
             renderAtMinimumSize(
                 variant = WidgetVariant.NOW_PLAYING,
@@ -80,7 +95,11 @@ class NowPlayingWidgetRemoteViewsTest {
                     ),
             )
 
-        assertEquals(2, root.findViewById<TextView>(R.id.widget_episode_title).maxLines)
+        assertEquals(1, root.findViewById<TextView>(R.id.widget_episode_title).maxLines)
+        val metadata = root.findViewById<View>(R.id.widget_metadata_container)
+        assertEquals(1, root.findViewById<TextView>(R.id.widget_episode_title).lineCount)
+        assertFullyInside(metadata, R.id.widget_episode_title)
+        assertFullyInside(metadata, R.id.widget_podcast_title)
         assertFullyInside(root, R.id.widget_previous)
         assertFullyInside(root, R.id.widget_skip_back)
         assertFullyInside(root, R.id.widget_play_pause)
@@ -95,9 +114,16 @@ class NowPlayingWidgetRemoteViewsTest {
                 variant = WidgetVariant.BAR,
                 widthDp = 245,
                 heightDp = 48,
-                snapshot = playingSnapshot(),
+                snapshot =
+                    playingSnapshot().copy(
+                        episodeTitle = "A long episode title that must truncate cleanly",
+                        podcastTitle = "A long publisher name that must also truncate cleanly",
+                    ),
             )
 
+        val metadata = root.findViewById<View>(R.id.widget_metadata_container)
+        assertFullyInside(metadata, R.id.widget_episode_title)
+        assertFullyInside(metadata, R.id.widget_podcast_title)
         assertFullyInside(root, R.id.widget_skip_back)
         assertFullyInside(root, R.id.widget_play_pause)
         assertFullyInside(root, R.id.widget_skip_forward)
@@ -113,8 +139,8 @@ class NowPlayingWidgetRemoteViewsTest {
                 snapshot = NowPlayingWidgetSnapshot(),
             )
 
+        assertFullyInside(root, R.id.widget_empty_icon)
         assertFullyInside(root, R.id.widget_empty_title)
-        assertFullyInside(root, R.id.widget_empty_cta)
     }
 
     @Test
@@ -184,6 +210,49 @@ class NowPlayingWidgetRemoteViewsTest {
             )
 
         assertEquals(R.layout.playback_controls_widget, views.layoutId)
+    }
+
+    @Test
+    fun emptyControlsGridUsesCompactBoxloreIdentity() {
+        val root =
+            renderAtMinimumSize(
+                variant = WidgetVariant.CONTROLS,
+                widthDp = 110,
+                heightDp = 110,
+                snapshot = NowPlayingWidgetSnapshot(),
+            )
+
+        assertFullyInside(root, R.id.widget_empty_icon)
+        assertFullyInside(root, R.id.widget_empty_title)
+    }
+
+    @Test
+    fun nextControlsVariantBindsNextAndSeekForwardGrid() {
+        val views =
+            NowPlayingWidgetRenderer.buildRemoteViews(
+                context = context,
+                appWidgetId = 7,
+                snapshot = playingSnapshot(),
+                options = defaultOptions(),
+                variant = WidgetVariant.CONTROLS_NEXT,
+            )
+        val root = views.apply(context, FrameLayout(context))
+
+        assertEquals(R.layout.playback_controls_widget, views.layoutId)
+        assertEquals(
+            context.getString(R.string.widget_next),
+            root.findViewById<View>(R.id.widget_skip_back_icon).contentDescription,
+        )
+        assertEquals(
+            context.getString(R.string.widget_skip_forward),
+            root.findViewById<View>(R.id.widget_skip_forward_icon).contentDescription,
+        )
+        assertTrue(
+            WidgetProviders.all.any {
+                it.receiverClass == PlaybackNextControlsWidgetReceiver::class.java &&
+                    it.variant == WidgetVariant.CONTROLS_NEXT
+            },
+        )
     }
 
     private fun playingSnapshot() =

@@ -189,22 +189,33 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="4dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp">
 
             <ImageView
-                android:id="@+id/widget_empty_title"
-                android:layout_width="match_parent"
-                android:layout_height="24dp"
+                android:id="@+id/widget_empty_icon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:contentDescription="@null"
-                android:scaleType="fitCenter" />
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_widget_play" />
 
-            <ImageView
-                android:id="@+id/widget_empty_cta"
-                android:layout_width="match_parent"
-                android:layout_height="16dp"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter" />
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:id="@+id/widget_empty_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter" />
+            </FrameLayout>
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

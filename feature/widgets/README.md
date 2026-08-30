@@ -4,19 +4,21 @@
 
 Owns home-screen widgets built with `AppWidgetProvider` + `RemoteViews` (no Glance):
 
-- **Now playing** — 4×2 compact card (`wrap_content` height, centered in the host cell) with a 48dp artwork tile, two-line bounded episode metadata, and previous / seek-back / play-pause / seek-forward / next. Its 100dp content height matches the provider minimum, so long titles cannot displace or clip transport controls.
-- **Now playing bar** — compact 4×1 card (`wrap_content` height, centered in the host cell). Fixed 40dp art / 36dp square seek controls; titles fill the middle. Playing and empty states both fit the provider's 48dp minimum instead of stretching or clipping.
-- **Playback controls** — centered square 2×2 artwork / play-pause / seek-back / seek-forward tile grid.
+- **Now playing** — 4×2 compact card (`wrap_content` height, centered in the host cell) with a 48dp artwork tile, one-line episode and show labels, and previous / seek-back / play-pause / seek-forward / next. Its 100dp content height matches the provider minimum, so long titles ellipsize without displacing or clipping the 38dp transport controls.
+- **Now playing bar** — compact 4×1 card (`wrap_content` height, centered in the host cell). Fixed 40dp art / 36dp square seek controls; one-line episode and show labels fill the middle. Playing and empty states both fit the provider's 48dp minimum instead of stretching or clipping.
+- **Playback controls** — centered square 2×2 tile grids with artwork and play-pause. The original uses seek-back / seek-forward; the alternate uses next episode / seek-forward.
 - **Subscriptions** — 4×3 scrollable `ListView` of subscribed shows (cap 50); same sort prefs as Library → Subscriptions → Shows. Its 180dp resize floor preserves the header, one complete row, and footer. Row tap opens `boxlore://podcast/{id}`.
-- **New episodes** — 4×3 scrollable `ListView` of latest episodes from subscriptions (cap 50); same filters as Library → Subscriptions → Latest (`hideCompletedInSubs`, smart/recency sort). It uses the same 180dp safe resize floor. Row tap opens the episode deep link.
+- **New episodes** — 4×3 scrollable `ListView` of latest episodes from subscriptions (cap 50); same filters as Library → Subscriptions → Latest (`hideCompletedInSubs`, smart/recency sort). Its dedicated 68dp rows allow two episode-title lines above a one-line show name while retaining the 180dp safe resize floor. Row tap opens the episode deep link.
 
-Compact playback surfaces expose seek only; the wider 4×2 adds previous/next around seek. There is no shuffle or repeat on widgets. Library list widgets do not play audio from the home screen.
+The compact bar exposes seek only; the alternate 2×2 controls grid replaces seek-back with next episode. The wider 4×2 adds previous/next around seek. There is no shuffle or repeat on widgets. Library list widgets do not play audio from the home screen.
+
+When playback is dismissed, every playback widget becomes a clean branded launch surface instead of showing disabled transport: the boxlore icon sits beside centered “Ready when you are” copy in the 4×2 and bar, while both 2×2 grids stack the same identity treatment to fit their square footprint. There are no decorative shapes or separate CTA buttons; the whole themed surface opens boxlore.
 
 Does **not** construct `PlaybackRepository` or talk to Media3 / Room directly — `:app` installs narrow ports via `configureNowPlayingWidget` and `configureLibraryWidgets`.
 
 ## Public API
 
-- `NowPlayingWidgetReceiver`, `NowPlayingBarWidgetReceiver`, `PlaybackControlsWidgetReceiver` — picker-visible playback providers.
+- `NowPlayingWidgetReceiver`, `NowPlayingBarWidgetReceiver`, `PlaybackControlsWidgetReceiver`, `PlaybackNextControlsWidgetReceiver` — picker-visible playback providers.
 - `SubscriptionsWidgetReceiver`, `NewEpisodesWidgetReceiver` — picker-visible library list providers.
 - `WidgetControlReceiver` — one explicit, non-exported action endpoint shared by playback providers.
 - `NowPlayingWidgetDependencies` + `configureNowPlayingWidget(...)` / `WidgetPlaybackSource`.
@@ -24,6 +26,7 @@ Does **not** construct `PlaybackRepository` or talk to Media3 / Room directly �
 - `NowPlayingWidgetSnapshotStore` — SharedPreferences file `boxlore_now_playing_widget`.
 - `LibraryWidgetSnapshotStore` — SharedPreferences file `boxlore_library_widget`.
 - Coordinators collect Flows, persist snapshots, render RemoteViews, and load artwork without blocking metadata.
+- Picker labels are grouped as Now Playing, Playback Controls, New Episodes, and Your Shows; preview layouts mirror each live variant.
 
 ## Internal structure
 
@@ -37,7 +40,7 @@ src/main/java/cx/aswin/boxlore/feature/widgets/
   actions/WidgetActionHandler.kt
   actions/WidgetControlReceiver.kt
 src/main/res/
-  layout/now_playing_*.xml / playback_controls_widget.xml / library_widget_list*.xml
+  layout/now_playing_*.xml / playback_controls_widget.xml / library_widget_*list*.xml
   layout/widget_preview_*.xml — picker previews use themed surfaces (not white tint bases),
     rounded clipped mock covers, and mock episode/show titles matching live chrome.
   xml/*_widget_info.xml
@@ -68,7 +71,7 @@ src/main/res/
 | SharedPreferences files | `boxlore_now_playing_widget`, `boxlore_library_widget` |
 | Snapshot keys | `snapshot` (JSON) |
 | Artwork cache dir | `{cacheDir}/widget_artwork/` |
-| Receiver FQCNs | Now Playing / bar / controls / Subscriptions / New Episodes under `cx.aswin.boxlore.feature.widgets` |
+| Receiver FQCNs | Now Playing / bar / seek controls / next controls / Subscriptions / New Episodes under `cx.aswin.boxlore.feature.widgets` |
 | RemoteViewsService | `LibraryWidgetRemoteViewsService` (not exported; `BIND_REMOTEVIEWS`) |
 | Widget info | All providers use `updatePeriodMillis=0` |
 

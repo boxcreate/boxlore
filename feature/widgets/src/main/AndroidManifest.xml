@@ -50,6 +50,19 @@
         </receiver>
 
         <receiver
+            android:name=".PlaybackNextControlsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/playback_next_controls_widget_label"
+            android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/playback_next_controls_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".SubscriptionsWidgetReceiver"
             android:exported="true"
             android:label="@string/subscriptions_widget_label"

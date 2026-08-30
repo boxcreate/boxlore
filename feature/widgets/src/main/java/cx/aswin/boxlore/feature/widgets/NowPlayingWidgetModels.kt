@@ -46,6 +46,7 @@ enum class WidgetVariant {
     NOW_PLAYING,
     BAR,
     CONTROLS,
+    CONTROLS_NEXT,
 }
 
 enum class WidgetControl {
