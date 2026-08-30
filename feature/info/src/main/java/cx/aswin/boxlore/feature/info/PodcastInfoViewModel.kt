@@ -765,45 +765,42 @@ class PodcastInfoViewModel(
         localPodcast: Podcast?,
     ) {
         try {
-            val meta = repository.getPodcastMeta(podcastId)
-            if (meta != null) {
-                val state = _uiState.value
-                if (state is PodcastInfoUiState.Success && (state.podcast.id == podcastId || state.podcast.id == apiPodcastId)) {
-                    val enrichedPodcast =
-                        state.podcast.copy(
-                            location = meta.location,
-                            license = meta.license,
-                            isLocked = meta.locked == 1,
-                            updateFrequency = meta.updateFrequency,
-                            podroll =
-                                meta.podroll?.map {
-                                    cx.aswin.boxlore.core.model.PodrollItem(
-                                        title = it.title,
-                                        url = it.url,
-                                        uuid = it.uuid,
-                                    )
-                                },
-                        )
-                    _uiState.value = state.copy(podcast = enrichedPodcast)
+            val meta = repository.getPodcastMeta(podcastId) ?: return
+            val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+            if (state.podcast.id != podcastId && state.podcast.id != apiPodcastId) return
 
-                    if (state.isSubscribed) {
-                        val preferredSortVal = localPodcast?.preferredSort ?: "newest"
-                        val typeVal = if (preferredSortVal == "oldest") "serial" else "episodic"
-                        localCatalog.upsertSubscribedPodcast(
-                            enrichedPodcast.copy(
-                                imageUrl =
-                                    enrichedPodcast.imageUrl.ifEmpty {
-                                        localPodcast?.imageUrl.orEmpty()
-                                    },
-                                type = typeVal,
-                                preferredSort = preferredSortVal,
-                                notificationsEnabled = localPodcast?.notificationsEnabled ?: false,
-                                autoDownloadEnabled = localPodcast?.autoDownloadEnabled ?: false,
-                            ),
-                        )
-                    }
-                }
-            }
+            val enrichedPodcast =
+                state.podcast.copy(
+                    location = meta.location,
+                    license = meta.license,
+                    isLocked = meta.locked == 1,
+                    updateFrequency = meta.updateFrequency,
+                    podroll =
+                        meta.podroll?.map {
+                            cx.aswin.boxlore.core.model.PodrollItem(
+                                title = it.title,
+                                url = it.url,
+                                uuid = it.uuid,
+                            )
+                        },
+                )
+            _uiState.value = state.copy(podcast = enrichedPodcast)
+            if (!state.isSubscribed) return
+
+            val preferredSortVal = localPodcast?.preferredSort ?: "newest"
+            val typeVal = if (preferredSortVal == "oldest") "serial" else "episodic"
+            localCatalog.upsertSubscribedPodcast(
+                enrichedPodcast.copy(
+                    imageUrl =
+                        enrichedPodcast.imageUrl.ifEmpty {
+                            localPodcast?.imageUrl.orEmpty()
+                        },
+                    type = typeVal,
+                    preferredSort = preferredSortVal,
+                    notificationsEnabled = localPodcast?.notificationsEnabled ?: false,
+                    autoDownloadEnabled = localPodcast?.autoDownloadEnabled ?: false,
+                ),
+            )
         } catch (e: Exception) {
             e.printStackTrace()
         }
