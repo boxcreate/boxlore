@@ -44,6 +44,10 @@
     "imageUrl": "https://storage.buzzsprout.com/kex68tltnmpd3x3gcycj8s9ca2g1?.jpg",
     "title": "Yaqeen Podcast"
   },
+  "318297": {
+    "imageUrl": "https://image.simplecastcdn.com/images/2c92a2cd-3a2f-45b3-921e-47761cbb22bf/99e743e1-d816-4864-ae44-8498e62cc791/3000x3000/wsjpodcasttechnewsbriefing.jpg?aid=rss_feed",
+    "title": "WSJ Tech News Briefing"
+  },
   "331078": {
     "feedUrl": "https://feeds.megaphone.fm/ridehome",
     "imageUrl": "https://megaphone.imgix.net/podcasts/de2eda0a-6caf-11f0-b957-cb9efc7ef063/image/5f654e3697eab991cefe3a98fc543911.png?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
@@ -99,6 +103,11 @@
     "imageUrl": "https://assets.flightcast.com/workspaces/edpmsc3wdznn1aa2txug5e3p/podcasts/xmsftuzjjykcmqwolaqn6mdn/cs9v0tiwz4lv6yfo3vt6q6dx.png",
     "title": "The Diary Of A CEO with Steven Bartlett"
   },
+  "509873": {
+    "feedUrl": "https://podcastfeeds.nbcnews.com/msnbc-rachel-maddow",
+    "imageUrl": "https://image.simplecastcdn.com/images/6849796f-ae40-4c61-8e06-138baa787cd1/5e771443-5214-4065-9650-0daad3c1908c/3000x3000/ms-20now-20rebrand-rachelmaddowshow-update-3000x3000.jpg?aid=rss_feed",
+    "title": "The Rachel Maddow Show"
+  },
   "511104": {
     "feedUrl": "https://librivox.org/rss/7149",
     "imageUrl": "https://archive.org/download/LibrivoxCdCoverArt33/interpretationdreams_1401.jpg",
@@ -120,9 +129,13 @@
     "title": "Darknet Diaries"
   },
   "585994": {
-    "feedUrl": "https://rss.art19.com/1865",
     "imageUrl": "https://content.production.cdn.art19.com/images/9e/c9/9a/8b/9ec99a8b-8d4a-4f74-a94d-dbc6765e0608/80bfc0e797c170f50120e2c8777deeb2d836f45b2efc6680dd4b5a96677c58fea5f8d8fe6acbbaafa6bc9f5fd30f3824d5ee6d8c8b976875e21c66a1f6c7e93b.jpeg",
     "title": "1865"
+  },
+  "593004": {
+    "feedUrl": "https://feeds.megaphone.fm/weeklyweirdnews",
+    "imageUrl": "https://megaphone.imgix.net/podcasts/963e8cb2-7863-11eb-9fde-cb3594894940/image/WWN_Podcast.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+    "title": "Weekly Weird News"
   },
   "724143": {
     "feedUrl": "https://feeds.megaphone.fm/GLOBO1083791815",
@@ -145,7 +158,6 @@
     "title": "Relatos de la Noche"
   },
   "745392": {
-    "feedUrl": "https://feeds.simplecast.com/xl36XBC2",
     "imageUrl": "https://image.simplecastcdn.com/images/420025f0-46ea-493d-bf27-5999548228e9/8b898b7b-d448-41c7-ac51-e1c677e75e04/3000x3000/nyt-serialprod-album-400.jpg?aid=rss_feed",
     "title": "Serial"
   },
@@ -170,14 +182,22 @@
     "title": "Linux Weekly Daily Wednesday"
   },
   "902798": {
-    "feedUrl": "https://anchor.fm/s/f5347ab0/podcast/rss",
     "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/41038572/d208170bf962469d.jpg",
     "title": "Raj Shamani's Figuring Out"
+  },
+  "906591": {
+    "feedUrl": "https://feeds.megaphone.fm/internettoday",
+    "imageUrl": "https://megaphone.imgix.net/podcasts/86335b6a-7884-11eb-b2f1-b79e93070251/image/IT_Twitter_Logo_1400.png?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+    "title": "Internet Today"
   },
   "928708": {
     "feedUrl": "https://feeds.megaphone.fm/this-day-in-history",
     "imageUrl": "https://megaphone.imgix.net/podcasts/728734cc-3607-11ee-9d3c-57b7391b1873/image/image.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "This Day in History"
+  },
+  "946758": {
+    "imageUrl": "https://megaphone.imgix.net/podcasts/83c028bc-3b63-11f0-86bb-17a55ed91a19/image/d6f0573de211e3ccc3403f81c80687d3.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+    "title": "Welcome to Night Vale"
   },
   "947138": {
     "feedUrl": "https://feeds.megaphone.fm/STU4418364045",
@@ -290,7 +310,6 @@
     "title": "The Matt Walker Podcast"
   },
   "4150268": {
-    "feedUrl": "https://rss.art19.com/suspect",
     "imageUrl": "https://content.production.cdn.art19.com/images/bc/4a/73/19/bc4a7319-c007-4faa-b49e-5c388f45fbf9/c45c410dd02ede44d5c3d80b48517e54c8970bb7a1ad20bba4148f453e92b7019cdb587b5380e8f7dc1f6662c18f23bd1e6431ca1dec095060880d5943f609ed.jpeg",
     "title": "Suspect"
   },
@@ -505,7 +524,6 @@
     "title": "Crimes Reais Revelados"
   },
   "7901923": {
-    "feedUrl": "https://feeds.megaphone.fm/ESP6782400517",
     "imageUrl": "https://megaphone.imgix.net/podcasts/3cf9a3ea-ca3d-11f0-94a7-47022200159e/image/30615dec9ed36e07572b6bb4dbdde6e9.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "The Snare"
   },
