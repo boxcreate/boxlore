@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-30T21:22:13.168Z",
+  "lastRun": "2026-08-30T23:41:51.523Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -43,10 +43,10 @@
       "lastCheckedAt": 1788114324945
     },
     "160817": {
-      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/81",
-      "lastEpisodeTitle": "Not In My Back Yard | The Launch 🚀 81",
-      "lastEpisodeId": "59549885535",
-      "lastCheckedAt": 1787801213133
+      "lastRssKey": "https://linuxunplugged.com/682",
+      "lastEpisodeTitle": "Oops! All Shells! | LINUX Unplugged 682",
+      "lastEpisodeId": "59724278109",
+      "lastCheckedAt": 1788133315911
     },
     "212882": {
       "lastRssKey": "446b5e1e-a7f8-11f0-954a-0b4e7901ba58",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1787998748354
     },
     "385117": {
-      "lastRssKey": "159cde3e-a4b7-11f1-b128-3b8aa108d5b4",
-      "lastEpisodeTitle": "5PM ET 08/30/2026 Newscast",
+      "lastRssKey": "dc7ea176-a4c7-11f1-8a20-d317826fc2b9",
+      "lastEpisodeTitle": "7PM ET 08/30/2026 Newscast",
       "lastEpisodeId": "59709069997",
-      "lastCheckedAt": 1788124941344
+      "lastCheckedAt": 1788133318021
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -131,10 +131,10 @@
       "lastCheckedAt": 1788114332974
     },
     "491579": {
+      "lastRssKey": "6a94614bee851f3f31b69d2c",
+      "lastEpisodeTitle": "The Match Ball: Leeds United 1-1 Brentford",
       "lastEpisodeId": "59632622099",
-      "lastEpisodeTitle": "Phil Hay: I want to punch someone in the face! | The West Stand",
-      "lastRssKey": "6a90bfb8ee57b9ffdfb6d59c",
-      "lastCheckedAt": 1787951191260
+      "lastCheckedAt": 1788133322123
     },
     "499394": {
       "lastEpisodeId": "59623763403",
