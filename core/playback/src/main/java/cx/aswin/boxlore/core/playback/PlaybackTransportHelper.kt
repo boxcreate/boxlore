@@ -20,7 +20,10 @@ internal class PlaybackTransportHelper(
     private val mediaHandle: PlaybackMediaControllerHandle,
     private val storePendingEntryPoint: (android.os.Bundle?) -> Unit,
     private val resolveInitialSeekMs: suspend (episodeId: String, entryPointKey: String?) -> Long,
-    private val resolvePersistedResumePositionMs: suspend (episodeId: String) -> Long?,
+    private val resolvePersistedResumePositionMs: suspend (
+        episodeId: String,
+        entryPointKey: String?,
+    ) -> Long?,
     private val playQueue: suspend (
         episodes: List<Episode>,
         podcast: Podcast,
@@ -61,7 +64,11 @@ internal class PlaybackTransportHelper(
             scope.launch {
                 val savedPosition =
                     PlaybackControllerStatePolicy.resolveResumePositionMs(
-                        persistedPositionMs = resolvePersistedResumePositionMs(currentEpisode.id),
+                        persistedPositionMs =
+                            resolvePersistedResumePositionMs(
+                                currentEpisode.id,
+                                entryPointContext?.getString("entry_point"),
+                            ),
                         restoredStatePositionMs =
                             playerStateFlow.value
                                 .takeIf { it.currentEpisode?.id == currentEpisode.id }

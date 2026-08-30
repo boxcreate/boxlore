@@ -102,4 +102,15 @@ class PlaybackControllerStatePolicyTest {
             ),
         )
     }
+
+    @Test
+    fun `policy-selected restart takes precedence over stale restored progress`() {
+        assertEquals(
+            0L,
+            PlaybackControllerStatePolicy.resolveResumePositionMs(
+                persistedPositionMs = 0L,
+                restoredStatePositionMs = 3_600_000L,
+            ),
+        )
+    }
 }

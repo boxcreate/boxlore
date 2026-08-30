@@ -10,6 +10,8 @@ import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.playback.CastMediaMetadata
+import cx.aswin.boxlore.core.playback.PlaybackHistorySeedPolicy
+import cx.aswin.boxlore.core.playback.PlaybackHistorySeedSource
 import cx.aswin.boxlore.core.playback.PlaybackIntroOutroController
 import cx.aswin.boxlore.core.playback.PlaybackPowerPolicy
 import cx.aswin.boxlore.core.playback.PlaybackProgressCoordinator
@@ -22,6 +24,8 @@ import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseContract
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryHost
 import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
+import cx.aswin.boxlore.core.playback.toPlaybackHistorySeedSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -869,10 +873,8 @@ open class BoxLorePlaybackService :
                 ),
             )
         }
-        val completionDurationMs =
-            durationMs.takeIf { it > 0L }
-                ?: dao.getHistoryItem(episodeId)?.durationMs
-                ?: resolvedDurationMs
+        val persisted = existing ?: dao.getHistoryItem(episodeId) ?: return
+        val completionDurationMs = durationMs.takeIf { it > 0L } ?: persisted.durationMs
         dao.completeFromPlayback(
             episodeId = episodeId,
             durationMs = completionDurationMs,
@@ -885,146 +887,56 @@ open class BoxLorePlaybackService :
         requestAutoCollageRefresh(force = true)
     }
 
-    @Suppress("LongMethod", "CyclomaticComplexMethod", "ComplexCondition")
     private suspend fun buildMissingProgressHistory(
         snapshot: PlaybackProgressSnapshot,
     ): cx.aswin.boxlore.core.database.ListeningHistoryEntity? {
-        val queueItem =
-            runCatching {
-                queueRepository.getQueueItemByEpisodeId(snapshot.episodeId)
-            }.getOrNull()
-        val localEpisode =
-            if (queueItem == null) {
-                runCatching {
-                    database.localEpisodeCatalogDao().getEpisode(snapshot.episodeId)
-                }.getOrNull()
-            } else {
-                null
-            }
-        val rssEpisode =
-            if (queueItem == null && localEpisode == null) {
-                runCatching {
-                    database.rssEpisodeDao().getEpisode(snapshot.episodeId)
-                }.getOrNull()
-            } else {
-                null
-            }
-        val supplementEpisode =
-            if (queueItem == null && localEpisode == null && rssEpisode == null) {
-                runCatching {
-                    database.episodeSupplementDao().getEpisode(snapshot.episodeId)
-                }.getOrNull()
-            } else {
-                null
-            }
-        val download =
-            if (queueItem == null &&
-                localEpisode == null &&
-                rssEpisode == null &&
-                supplementEpisode == null
-            ) {
-                runCatching {
-                    database.downloadedEpisodeDao().getDownload(snapshot.episodeId)
-                }.getOrNull()
-            } else {
-                null
-            }
-        val telemetryMatches = telemetrySession.episodeId == snapshot.episodeId
-        val podcastId =
-            queueItem?.podcastId
-                ?: localEpisode?.podcastId
-                ?: rssEpisode?.podcastId
-                ?: supplementEpisode?.podcastId
-                ?: download?.podcastId
-                ?: if (telemetryMatches) telemetrySession.podcastId.orEmpty() else ""
+        val sources = loadHistorySeedSources(snapshot.episodeId)
+        val telemetry = telemetryHistorySeedSource(snapshot)
+        val podcastId = PlaybackHistorySeedPolicy.resolvePodcastId(sources, telemetry)
         val podcast =
-            podcastId
-                .takeIf { it.isNotBlank() }
-                ?.let { id ->
-                    runCatching {
-                        database.podcastDao().getPodcast(id)
-                    }.getOrNull()
-                }
-        val episodeTitle =
-            CastMediaMetadata.queueTitle(queueItem?.title)
-                ?: CastMediaMetadata.queueTitle(localEpisode?.title)
-                ?: CastMediaMetadata.queueTitle(rssEpisode?.title)
-                ?: CastMediaMetadata.queueTitle(supplementEpisode?.title)
-                ?: CastMediaMetadata.queueTitle(download?.episodeTitle)
-                ?: CastMediaMetadata.queueTitle(snapshot.episodeTitle)
-                ?: if (telemetryMatches) {
-                    CastMediaMetadata.queueTitle(telemetrySession.episodeTitle)
-                } else {
-                    null
-                }
-                ?: return null
-        val durationMs =
-            snapshot.durationMs.takeIf { it > 0L }
-                ?: queueItem
-                    ?.duration
-                    ?.toLong()
-                    ?.times(1_000L)
-                    ?.takeIf { it > 0L }
-                ?: localEpisode
-                    ?.duration
-                    ?.toLong()
-                    ?.times(1_000L)
-                    ?.takeIf { it > 0L }
-                ?: rssEpisode
-                    ?.duration
-                    ?.toLong()
-                    ?.times(1_000L)
-                    ?.takeIf { it > 0L }
-                ?: supplementEpisode
-                    ?.duration
-                    ?.toLong()
-                    ?.times(1_000L)
-                    ?.takeIf { it > 0L }
-                ?: download?.durationMs?.takeIf { it > 0L }
-                ?: 0L
-        return cx.aswin.boxlore.core.database.ListeningHistoryEntity(
-            episodeId = snapshot.episodeId,
-            podcastId = podcastId,
-            episodeTitle = episodeTitle,
-            episodeImageUrl =
-                queueItem?.imageUrl
-                    ?: localEpisode?.imageUrl
-                    ?: rssEpisode?.imageUrl
-                    ?: supplementEpisode?.imageUrl
-                    ?: download?.episodeImageUrl
-                    ?: snapshot.episodeImageUrl,
-            podcastImageUrl =
-                queueItem?.podcastImageUrl
-                    ?: download?.podcastImageUrl
-                    ?: podcast?.imageUrl,
-            episodeAudioUrl =
-                queueItem?.audioUrl
-                    ?: localEpisode?.audioUrl
-                    ?: rssEpisode?.audioUrl
-                    ?: supplementEpisode?.audioUrl
-                    ?: snapshot.episodeAudioUrl,
-            podcastName =
-                queueItem?.podcastTitle
-                    ?: download?.podcastName
-                    ?: podcast?.title
-                    ?: snapshot.podcastName
-                    ?: if (telemetryMatches) telemetrySession.podcastName.orEmpty() else "",
-            progressMs = snapshot.positionMs.coerceAtLeast(0L),
-            durationMs = durationMs,
-            isCompleted = false,
-            lastPlayedAt = System.currentTimeMillis(),
-            enclosureType =
-                queueItem?.enclosureType
-                    ?: localEpisode?.enclosureType
-                    ?: rssEpisode?.enclosureType
-                    ?: supplementEpisode?.enclosureType
-                    ?: snapshot.enclosureType,
-            episodeDescription =
-                queueItem?.description
-                    ?: localEpisode?.description
-                    ?: rssEpisode?.description
-                    ?: supplementEpisode?.description
-                    ?: download?.episodeDescription,
+            podcastId.takeIf(String::isNotBlank)?.let { id ->
+                runCatching { database.podcastDao().getPodcast(id) }.getOrNull()
+            }
+        return PlaybackHistorySeedPolicy.build(
+            snapshot = snapshot,
+            sources = sources,
+            podcast =
+                podcast?.let {
+                    PlaybackHistorySeedSource(
+                        podcastImageUrl = it.imageUrl,
+                        podcastName = it.title,
+                    )
+                },
+            telemetry = telemetry,
+            nowMs = System.currentTimeMillis(),
+        )
+    }
+
+    private suspend fun loadHistorySeedSources(episodeId: String): List<PlaybackHistorySeedSource> {
+        runCatching { queueRepository.getQueueItemByEpisodeId(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        runCatching { database.localEpisodeCatalogDao().getEpisode(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        runCatching { database.rssEpisodeDao().getEpisode(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        runCatching { database.episodeSupplementDao().getEpisode(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        return runCatching { database.downloadedEpisodeDao().getDownload(episodeId) }
+            .getOrNull()
+            ?.let { listOf(it.toPlaybackHistorySeedSource()) }
+            .orEmpty()
+    }
+
+    private fun telemetryHistorySeedSource(snapshot: PlaybackProgressSnapshot): PlaybackHistorySeedSource? {
+        if (telemetrySession.episodeId != snapshot.episodeId) return null
+        return PlaybackHistorySeedSource(
+            podcastId = telemetrySession.podcastId,
+            episodeTitle = telemetrySession.episodeTitle,
+            podcastName = telemetrySession.podcastName,
         )
     }
 
@@ -1192,63 +1104,81 @@ open class BoxLorePlaybackService :
         val player = playbackPlayer ?: return
         val currentItem = player.currentMediaItem
         val durationMs = player.duration
-        val episodeId = currentItem?.mediaId?.stripEpisodePrefix()
-        if (episodeId != null) {
-            val progressSnapshot =
-                progressCoordinator.captureProgressSnapshot(
-                    player = player,
-                    allowZeroPosition = true,
+        val episodeId = currentItem?.mediaId?.stripEpisodePrefix() ?: return
+        val progressSnapshot =
+            progressCoordinator.captureProgressSnapshot(
+                player = player,
+                allowZeroPosition = true,
+            )
+        observeManualCompletion(episodeId)
+        val persistenceJob =
+            serviceScope.launch {
+                persistManualCompletion(
+                    episodeId = episodeId,
+                    playerDurationMs = durationMs,
+                    progressSnapshot = progressSnapshot,
                 )
-            observeManualCompletion(episodeId)
-            val persistenceJob =
-                serviceScope.launch {
-                    try {
-                        val dao = database.listeningHistoryDao()
-                        var existing = dao.getHistoryItem(episodeId)
-                        if (existing == null && progressSnapshot != null) {
-                            val seed = buildMissingProgressHistory(progressSnapshot)
-                            if (seed != null) {
-                                dao.insertIfAbsent(seed)
-                                dao.enrichMetadataIfMissing(
-                                    episodeId = seed.episodeId,
-                                    podcastId = seed.podcastId,
-                                    episodeTitle = seed.episodeTitle,
-                                    episodeImageUrl = seed.episodeImageUrl,
-                                    podcastImageUrl = seed.podcastImageUrl,
-                                    episodeAudioUrl = seed.episodeAudioUrl,
-                                    podcastName = seed.podcastName,
-                                    durationMs = seed.durationMs,
-                                    enclosureType = seed.enclosureType,
-                                    episodeDescription = seed.episodeDescription,
-                                )
-                                existing = dao.getHistoryItem(episodeId)
-                            }
-                        }
-                        if (existing != null) {
-                            dao.completeFromPlayback(
-                                episodeId = episodeId,
-                                durationMs = if (durationMs > 0) durationMs else existing.durationMs,
-                                lastPlayedAt = System.currentTimeMillis(),
-                                isManualCompletion = true,
-                            )
-                            android.util.Log.d("BoxLorePlaybackService", "Marked current episode completed: $episodeId")
-                            requestAutoCollageRefresh(force = true)
-
-                            telemetrySession.trackManualCompletion(
-                                episodeId = episodeId,
-                                totalDurationSeconds =
-                                    (if (durationMs > 0) durationMs else existing.durationMs) / 1000f,
-                            )
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("BoxLorePlaybackService", "Failed to mark current episode completed", e)
-                    }
-                }
-            manualCompletionPersistenceJobs += persistenceJob
-            persistenceJob.invokeOnCompletion {
-                manualCompletionPersistenceJobs -= persistenceJob
             }
+        manualCompletionPersistenceJobs += persistenceJob
+        persistenceJob.invokeOnCompletion {
+            manualCompletionPersistenceJobs -= persistenceJob
         }
+    }
+
+    private suspend fun persistManualCompletion(
+        episodeId: String,
+        playerDurationMs: Long,
+        progressSnapshot: PlaybackProgressSnapshot?,
+    ) {
+        try {
+            val existing = loadOrSeedManualCompletionHistory(episodeId, progressSnapshot) ?: return
+            val completionDurationMs =
+                playerDurationMs.takeIf { it > 0L }
+                    ?: existing.durationMs
+            database.listeningHistoryDao().completeFromPlayback(
+                episodeId = episodeId,
+                durationMs = completionDurationMs,
+                lastPlayedAt = System.currentTimeMillis(),
+                isManualCompletion = true,
+            )
+            android.util.Log.d("BoxLorePlaybackService", "Marked current episode completed: $episodeId")
+            requestAutoCollageRefresh(force = true)
+            telemetrySession.trackManualCompletion(
+                episodeId = episodeId,
+                totalDurationSeconds = completionDurationMs / 1000f,
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            android.util.Log.e(
+                "BoxLorePlaybackService",
+                "Failed to mark current episode completed",
+                error,
+            )
+        }
+    }
+
+    private suspend fun loadOrSeedManualCompletionHistory(
+        episodeId: String,
+        progressSnapshot: PlaybackProgressSnapshot?,
+    ): cx.aswin.boxlore.core.database.ListeningHistoryEntity? {
+        val dao = database.listeningHistoryDao()
+        dao.getHistoryItem(episodeId)?.let { return it }
+        val seed = progressSnapshot?.let { buildMissingProgressHistory(it) } ?: return null
+        dao.insertIfAbsent(seed)
+        dao.enrichMetadataIfMissing(
+            episodeId = seed.episodeId,
+            podcastId = seed.podcastId,
+            episodeTitle = seed.episodeTitle,
+            episodeImageUrl = seed.episodeImageUrl,
+            podcastImageUrl = seed.podcastImageUrl,
+            episodeAudioUrl = seed.episodeAudioUrl,
+            podcastName = seed.podcastName,
+            durationMs = seed.durationMs,
+            enclosureType = seed.enclosureType,
+            episodeDescription = seed.episodeDescription,
+        )
+        return dao.getHistoryItem(episodeId)
     }
 
     private fun handleSkipNext() {

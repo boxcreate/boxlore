@@ -29,7 +29,7 @@ interface ListeningHistoryDao {
         WHERE episodeId = :episodeId
         """,
     )
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "kotlin:S107")
     suspend fun enrichMetadataIfMissing(
         episodeId: String,
         podcastId: String,

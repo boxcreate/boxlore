@@ -94,6 +94,11 @@ object PlaybackLifecycleSignals {
     }
 }
 
+private fun entryPointBundle(entryPointKey: String?): android.os.Bundle? =
+    entryPointKey?.let { key ->
+        android.os.Bundle().apply { putString("entry_point", key) }
+    }
+
 @Suppress("LongParameterList", "TooManyFunctions")
 class PlaybackRepository internal constructor(
     private val context: Context,
@@ -292,17 +297,13 @@ class PlaybackRepository internal constructor(
                     startEpisodeId = episodeId,
                     initialPositionMs = null,
                     entryPoint = PlaybackEntryPoint.GENERIC,
-                    sourceContext =
-                        entryPointKey?.let { key ->
-                            android.os.Bundle().apply { putString("entry_point", key) }
-                        },
+                    sourceContext = entryPointBundle(entryPointKey),
                 ).first
             },
-            resolvePersistedResumePositionMs = { episodeId ->
-                listeningHistoryDao
-                    .getHistoryItem(episodeId)
-                    ?.takeUnless { it.isCompleted }
-                    ?.progressMs
+            resolvePersistedResumePositionMs = { episodeId, entryPointKey ->
+                listeningHistoryDao.getHistoryItem(episodeId)?.let {
+                    checkSavedProgress(episodeId, null, PlaybackEntryPoint.GENERIC, entryPointBundle(entryPointKey)).first
+                }
             },
             playQueue = { episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext ->
                 queueCoordinator.playQueue(

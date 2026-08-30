@@ -23,15 +23,11 @@ internal object PodcastInfoPullRefreshLogic {
             else -> Target.PI_CATALOG
         }
 
-    fun shouldApply(
-        currentPodcastId: String,
-        targetPodcastId: String,
-    ): Boolean = currentPodcastId == targetPodcastId
+    fun shouldApply(currentPodcastId: String, targetPodcastId: String): Boolean =
+        currentPodcastId == targetPodcastId
 
-    fun shouldPersistLibraryTip(
-        isSubscribed: Boolean,
-        hasTip: Boolean,
-    ): Boolean = isSubscribed && hasTip
+    fun shouldPersistLibraryTip(isSubscribed: Boolean, hasTip: Boolean): Boolean =
+        isSubscribed && hasTip
 }
 
 /** Keeps a late async refresh from restoring subscription state captured before a toggle. */
