@@ -6,6 +6,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.media3.cast.Cast
+import androidx.media3.common.util.UnstableApi
 import androidx.work.Configuration
 import com.google.android.gms.cast.SessionState
 import com.google.android.gms.cast.framework.CastContext
@@ -159,6 +160,7 @@ class BoxLoreApplication :
                 .setWorkerFactory(LegacyWorkerFactory())
                 .build()
 
+    @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
 
