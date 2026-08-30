@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-30T03:50:03.789Z",
+  "lastRun": "2026-08-30T09:45:59.869Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1787998748354
     },
     "385117": {
-      "lastRssKey": "3940b8ca-a420-11f1-b939-9792bc4f05e6",
-      "lastEpisodeTitle": "11PM ET 08/29/2026 Newscast",
-      "lastEpisodeId": "59691321104",
-      "lastCheckedAt": 1788061810927
+      "lastRssKey": "1eca54a4-a44a-11f1-83a5-ab9d73ab13de",
+      "lastEpisodeTitle": "4AM ET 08/30/2026 Newscast",
+      "lastEpisodeId": "59700927840",
+      "lastCheckedAt": 1788083170314
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -102,10 +102,10 @@
       "lastCheckedAt": 1786765059294
     },
     "437685": {
-      "lastEpisodeId": "59662705617",
-      "lastEpisodeTitle": "Confucianism",
-      "lastRssKey": "9744de32-8d5b-11f1-9320-373a9fdb14fa",
-      "lastCheckedAt": 1787998750302
+      "lastRssKey": "98a03966-8d5b-11f1-9320-c397d7151959",
+      "lastEpisodeTitle": "The Origin of Words and Phrases: Nautical (Encore)",
+      "lastEpisodeId": "59701365977",
+      "lastCheckedAt": 1788083173090
     },
     "444331": {
       "lastRssKey": "02afc47a-a247-11f1-9ebf-ab411a102f28",
@@ -256,10 +256,10 @@
       "lastCheckedAt": 1788029131426
     },
     "928708": {
-      "lastRssKey": "c5bc618e-a234-11f1-a595-7fb449133a1e",
-      "lastEpisodeTitle": "This Day in History - August 29, 2026",
+      "lastRssKey": "942f2c9e-a236-11f1-9398-bb72462ed62a",
+      "lastEpisodeTitle": "This Day in History - August 30, 2026",
       "lastEpisodeId": "59673372610",
-      "lastCheckedAt": 1788029132517
+      "lastCheckedAt": 1788083184661
     },
     "946758": {
       "lastEpisodeId": "59193386502",
@@ -274,10 +274,10 @@
       "lastCheckedAt": 1787910215018
     },
     "980370": {
-      "lastRssKey": "6a8f4df46634e0e9bac690e1",
-      "lastEpisodeTitle": "The art of the novel | Ann Patchett",
-      "lastEpisodeId": "59638423303",
-      "lastCheckedAt": 1788016267788
+      "lastRssKey": "6a8f4e680c15e359f99673e7",
+      "lastEpisodeTitle": "Sunday Pick: How to quit (and why it matters) with Anthony Klotz | from Fixable",
+      "lastEpisodeId": "59697911357",
+      "lastCheckedAt": 1788083186779
     },
     "1015378": {
       "lastRssKey": "6d431e83-eb88-4082-9b0c-aec16b34ea7b",
@@ -328,10 +328,10 @@
       "lastCheckedAt": 1786559324862
     },
     "1388001": {
-      "lastEpisodeId": "59661776920",
-      "lastEpisodeTitle": "La détention de deux détenus français au Togo pose question",
-      "lastRssKey": "ce883edb-74ed-43db-a6ad-94b802676477",
-      "lastCheckedAt": 1787998771852
+      "lastRssKey": "8f185a04-5559-41eb-a464-045c856f7cc3",
+      "lastEpisodeTitle": "Le futur procès des attentats du 11 septembre 2001",
+      "lastEpisodeId": "59698893130",
+      "lastCheckedAt": 1788083192795
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33432",
@@ -472,10 +472,10 @@
       "lastCheckedAt": 1787951211054
     },
     "5930143": {
-      "lastRssKey": "ce883edb-74ed-43db-a6ad-94b802676477",
-      "lastEpisodeTitle": "La détention de deux détenus français au Togo pose question",
+      "lastRssKey": "8f185a04-5559-41eb-a464-045c856f7cc3",
+      "lastEpisodeTitle": "Le futur procès des attentats du 11 septembre 2001",
       "lastEpisodeId": "59564116173",
-      "lastCheckedAt": 1787998779259
+      "lastCheckedAt": 1788083203160
     },
     "5945547": {
       "lastRssKey": "610bddc6-ee79-45ae-8c2b-3bd9258193f7",
@@ -532,16 +532,16 @@
       "lastCheckedAt": 1787770938932
     },
     "6866732": {
-      "lastRssKey": "https://api.spreaker.com/episode/74748024",
-      "lastEpisodeTitle": "রাতে পড়বে না",
-      "lastEpisodeId": "59674369625",
-      "lastCheckedAt": 1788029146913
+      "lastRssKey": "https://api.spreaker.com/episode/74752821",
+      "lastEpisodeTitle": "ভুতুড়ে খাদ",
+      "lastEpisodeId": "59699866006",
+      "lastCheckedAt": 1788083207524
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59780282",
-      "lastEpisodeTitle": "Nightbeat - Lorainne Adams Execution",
+      "lastRssKey": "https://api.spreaker.com/episode/59780278",
+      "lastEpisodeTitle": "Radio City Playhouse - King of the Moon",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1787998782930
+      "lastCheckedAt": 1788083208862
     },
     "6912659": {
       "lastRssKey": "2909e4ed-01da-4292-95a7-cafd0a3a15de",
@@ -639,10 +639,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "9efcc64d-f460-4703-905e-fece5716bfa3",
-      "lastEpisodeTitle": "Revelation 3",
-      "lastEpisodeId": "59661877076",
-      "lastCheckedAt": 1787998788788
+      "lastRssKey": "e4599fe0-53b9-4116-b915-f7938bafe01b",
+      "lastEpisodeTitle": "Revelation 4",
+      "lastEpisodeId": "59700758170",
+      "lastCheckedAt": 1788083216401
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
