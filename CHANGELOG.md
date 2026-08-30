@@ -11,8 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add regression tests covering subscription restoration edge cases ([#1009](https://github.com/boxcreate/boxlore/pull/1009)) <!-- impact:user-impact-high -->
+- Regression tests covering normalized, whitespace, and case variants of briefing market ([#1008](https://github.com/boxcreate/boxlore/pull/1008)) <!-- impact:user-impact-medium -->
+### Changed
+- Core model module documentation updated to describe briefing-market behavior ([#1008](https://github.com/boxcreate/boxlore/pull/1008)) <!-- impact:user-impact-medium -->
 ### Fixed
 - Prevent delayed PodcastInfo loads from restoring a subscription by re-reading live subscription state before applying page data and preserving subscription fields during delayed feed results ([#1009](https://github.com/boxcreate/boxlore/pull/1009)) <!-- impact:user-impact-high -->
+- Briefing market handling now preserves explicit `global` market before storefront canonicalization ([#1008](https://github.com/boxcreate/boxlore/pull/1008)) <!-- impact:user-impact-medium -->
 ## [v0.0.23] - 2026-08-28
 
 ### Changed
