@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="now_playing_widget_label">boxlore now playing</string>
-    <string name="now_playing_bar_widget_label">boxlore now playing bar</string>
-    <string name="playback_controls_widget_label">boxlore playback controls</string>
-    <string name="now_playing_bar_widget_description">Compact artwork, episode, and seek controls</string>
-    <string name="playback_controls_widget_description">Artwork, play, and seek controls</string>
+    <string name="now_playing_widget_label">Now Playing · Full Controls</string>
+    <string name="now_playing_bar_widget_label">Now Playing · Compact</string>
+    <string name="playback_controls_widget_label">Playback Controls · Seek</string>
+    <string name="playback_next_controls_widget_label">Playback Controls · Next</string>
+    <string name="now_playing_bar_widget_description">A slim now-playing bar with quick seek controls</string>
+    <string name="playback_controls_widget_description">Artwork with play and seek controls</string>
+    <string name="playback_next_controls_widget_description">Artwork with play, next episode, and seek-forward controls</string>
     <string name="widget_empty_title">Ready when you are</string>
-    <string name="widget_empty_cta">Open boxlore</string>
+    <string name="widget_empty_subtitle">Tap to open boxlore</string>
+    <string name="widget_empty_bar_title">Ready when you are</string>
     <string name="widget_previous">Previous episode</string>
     <string name="widget_next">Next episode</string>
     <string name="widget_skip_back">Seek backward</string>
@@ -24,12 +27,12 @@
     <string name="widget_preview_episode_3">How maps shape memory</string>
     <string name="widget_preview_episode_3_show">Soft Power</string>
     <string name="widget_preview_count">12</string>
-    <string name="subscriptions_widget_label">boxlore subscriptions</string>
+    <string name="subscriptions_widget_label">Your Shows</string>
     <string name="subscriptions_widget_description">Your subscribed shows</string>
     <string name="subscriptions_widget_header">Subscriptions</string>
     <string name="subscriptions_widget_empty_title">No subscriptions yet</string>
     <string name="subscriptions_widget_empty_cta">Open boxlore</string>
-    <string name="new_episodes_widget_label">boxlore new episodes</string>
+    <string name="new_episodes_widget_label">New Episodes</string>
     <string name="new_episodes_widget_description">Latest episodes from your shows</string>
     <string name="new_episodes_widget_header">New episodes</string>
     <string name="new_episodes_widget_empty_title">No new episodes</string>

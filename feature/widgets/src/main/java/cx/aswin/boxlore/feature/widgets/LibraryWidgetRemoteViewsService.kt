@@ -72,7 +72,12 @@ internal class LibraryWidgetRemoteViewsFactory(
         }
 
     override fun getViewAt(position: Int): RemoteViews {
-        val views = RemoteViews(context.packageName, R.layout.library_widget_list_item)
+        val layoutId =
+            when (kind) {
+                LibraryWidgetKind.SUBSCRIPTIONS -> R.layout.library_widget_list_item
+                LibraryWidgetKind.NEW_EPISODES -> R.layout.library_widget_episode_list_item
+            }
+        val views = RemoteViews(context.packageName, layoutId)
         WidgetRemoteViewsColors.setColorFilter(
             views,
             R.id.widget_row_bg,

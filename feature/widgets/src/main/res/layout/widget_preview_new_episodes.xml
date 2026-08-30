@@ -47,7 +47,7 @@
     <!-- Episode 1 -->
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="68dp"
         android:paddingBottom="6dp">
 
         <ImageView
@@ -65,8 +65,8 @@
             android:paddingHorizontal="8dp">
 
             <FrameLayout
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="@drawable/widget_list_art_frame"
                 android:clipToOutline="true">
 
@@ -91,7 +91,7 @@
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:includeFontPadding="false"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:text="@string/widget_preview_episode"
                     android:textColor="@color/widget_on_secondary_container"
                     android:textSize="14sp" />
@@ -114,7 +114,7 @@
     <!-- Episode 2 -->
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="68dp"
         android:paddingBottom="6dp">
 
         <ImageView
@@ -132,8 +132,8 @@
             android:paddingHorizontal="8dp">
 
             <FrameLayout
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="@drawable/widget_list_art_frame"
                 android:clipToOutline="true">
 
@@ -158,7 +158,7 @@
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:includeFontPadding="false"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:text="@string/widget_preview_episode_2"
                     android:textColor="@color/widget_on_secondary_container"
                     android:textSize="14sp" />
@@ -172,72 +172,6 @@
                     android:includeFontPadding="false"
                     android:maxLines="1"
                     android:text="@string/widget_preview_episode_2_show"
-                    android:textColor="@color/widget_on_surface_variant"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </FrameLayout>
-
-    <!-- Episode 3 -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="50dp">
-
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@null"
-            android:scaleType="fitXY"
-            android:src="@drawable/widget_preview_row_chip" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
-
-            <FrameLayout
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/widget_list_art_frame"
-                android:clipToOutline="true">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@null"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/widget_preview_cover_c" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif-medium"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="@string/widget_preview_episode_3"
-                    android:textColor="@color/widget_on_secondary_container"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="@string/widget_preview_episode_3_show"
                     android:textColor="@color/widget_on_surface_variant"
                     android:textSize="12sp" />
             </LinearLayout>

@@ -69,7 +69,7 @@
                         android:ellipsize="end"
                         android:fontFamily="sans-serif-medium"
                         android:includeFontPadding="false"
-                        android:maxLines="2"
+                        android:maxLines="1"
                         android:textColor="@color/widget_on_surface"
                         android:textSize="14sp" />
 
@@ -239,24 +239,48 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="14dp">
+            android:layout_height="100dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp">
 
             <ImageView
-                android:id="@+id/widget_empty_title"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
+                android:id="@+id/widget_empty_icon"
+                android:layout_width="68dp"
+                android:layout_height="68dp"
                 android:contentDescription="@null"
-                android:scaleType="fitCenter" />
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_widget_play" />
 
-            <ImageView
-                android:id="@+id/widget_empty_cta"
-                android:layout_width="match_parent"
-                android:layout_height="28dp"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter" />
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:id="@+id/widget_empty_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:contentDescription="@null"
+                        android:scaleType="fitCenter" />
+
+                    <ImageView
+                        android:id="@+id/widget_empty_subtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="18dp"
+                        android:layout_marginTop="2dp"
+                        android:contentDescription="@null"
+                        android:scaleType="fitCenter" />
+                </LinearLayout>
+            </FrameLayout>
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

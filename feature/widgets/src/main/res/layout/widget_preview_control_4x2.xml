@@ -49,7 +49,7 @@
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:includeFontPadding="false"
-                    android:maxLines="2"
+                    android:maxLines="1"
                     android:text="@string/widget_preview_episode"
                     android:textColor="@color/widget_on_surface"
                     android:textSize="14sp" />

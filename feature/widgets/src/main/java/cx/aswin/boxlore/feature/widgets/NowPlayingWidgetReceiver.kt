@@ -90,6 +90,10 @@ class PlaybackControlsWidgetReceiver : BaseNowPlayingWidgetReceiver() {
     override val variant = WidgetVariant.CONTROLS
 }
 
+class PlaybackNextControlsWidgetReceiver : BaseNowPlayingWidgetReceiver() {
+    override val variant = WidgetVariant.CONTROLS_NEXT
+}
+
 object WidgetProviders {
     data class Provider(
         val receiverClass: Class<out AppWidgetProvider>,
@@ -101,5 +105,6 @@ object WidgetProviders {
             Provider(NowPlayingWidgetReceiver::class.java, WidgetVariant.NOW_PLAYING),
             Provider(NowPlayingBarWidgetReceiver::class.java, WidgetVariant.BAR),
             Provider(PlaybackControlsWidgetReceiver::class.java, WidgetVariant.CONTROLS),
+            Provider(PlaybackNextControlsWidgetReceiver::class.java, WidgetVariant.CONTROLS_NEXT),
         )
 }
