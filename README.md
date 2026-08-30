@@ -1,12 +1,12 @@
 <div align="center" id="top">
 
-<img src="docs/images/featured_image.png" width="820" alt="boxlore Android podcast app and podcast player feature banner"/>
+<img src="docs/images/featured_image.png" width="960" alt="boxlore screens showing podcast discovery, playback, and the daily briefing"/>
 
 # boxlore
 
-**Podcast player for Android** — search that works, personal picks, offline listening, no ads
+**A focused podcast player for Android.**
 
-<br/>
+Find shows and episodes, get personal recommendations, listen offline, and watch video podcasts.
 
 <table align="center">
   <tr>
@@ -24,24 +24,20 @@
   </tr>
 </table>
 
-<br/><br/>
+<br/>
 
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="PolyForm Strict License"/></a>
-<img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total downloads"/>
-<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20version&amp;color=6750A4&amp;style=flat-square" alt="Google Play version"/></a>
 <a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=6750A4" alt="GitHub latest release"/></a>
+<img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total GitHub downloads"/>
 
 <br/><br/>
 
 **[About](#about)** ·
-**[Release notes](#release-notes)** ·
-**[Search](#search)** ·
 **[Features](#features)** ·
-**[Get started](#get-started)** ·
+**[Release notes](#release-notes)** ·
 **[Screenshots](#screenshots)** ·
 **[Install](#install)** ·
-**[Developers](#for-developers)** ·
-**[Roadmap](https://github.com/orgs/boxcreate/projects/2)**
+**[For developers](#for-developers)**
 
 <img src="docs/images/m3/divider.svg" width="820" alt=""/>
 
@@ -51,11 +47,25 @@
 
 <a id="about"></a>
 
-Most podcast apps call an open API, do word‑for‑word search, show Apple charts, and call it a day. Misspell a show name and you get nothing. Ask for a *topic* and you get title matches that miss the point. And once you’re in, the home screen rarely feels like *yours* — same rails for everyone, little that learns from what you actually play.
+boxlore helps you find something worth listening to and keeps the rest simple. Search for a show even when the spelling is imperfect, or describe a topic to find relevant shows and episodes.
 
-**boxlore** is built around both gaps. Find a show when the spelling is messy, or find shows and episodes by *idea* when you only know the vibe. Then the app gets personal as you listen: Home, Explore, queue, and downloads re‑rank on‑device from your taste — daypart rails, **Because You Like**, and **For You** picks, plus curiosity cards when you want something you’d never search for. Taste stays on your phone. Stream or download for offline, manage a real queue, and skip the ads and paywalls for the stuff that matters.
+As you listen, Home adapts to your taste on your device. Subscriptions, downloads, history, and likes stay together in the Library, while the queue keeps what you want to hear next.
 
-The smart catalog covers popular chart podcasts and grows daily — not every show on earth yet. Outside that index, boxlore still works as a normal podcast client (subscribe, play, download, OPML).
+## Features
+
+<a id="features"></a>
+
+| Feature | What it does |
+| :--- | :--- |
+| **Search and discovery** | Find podcasts by name, including misspellings, or search by topic to discover related shows and episodes. |
+| **Personal Home** | Get listening suggestions, time-aware picks, Because You Like recommendations, and a daily mix that improves as you listen. |
+| **Audio and video playback** | Play audio and video podcasts with speed controls, a sleep timer, chapters, transcripts, intro skipping, and a full queue. |
+| **Library and offline listening** | Keep subscriptions, new episodes, downloads, likes, and listening history together. Smart Downloads can prepare episodes for offline listening. |
+| **Notifications and widgets** | Turn on new-episode alerts for individual shows. Home-screen widgets provide playback controls, subscriptions, and new episodes. |
+| **Cast and Android Auto** | Continue listening on supported TVs and speakers with Google Cast, or use boxlore through Android Auto. |
+| **Lore and daily briefing** | Swipe through curiosity cards or listen to an optional news briefing with sources and chapters. |
+| **Import and backup** | Bring subscriptions from another app with OPML, then export OPML or a full library backup whenever needed. |
+| **No app ads** | boxlore has no banner ads or paid feature tier. Podcasts may still contain ads placed by their publishers. |
 
 <!-- upcoming-changes:start -->
 
@@ -95,48 +105,6 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 
 <!-- upcoming-changes:end -->
 
-## Search
-
-<a id="search"></a>
-
-Two jobs. Same Explore search bar (and onboarding when you already know your shows).
-
-| Find a show | Ask anything |
-| :--- | :--- |
-| Type a podcast name — typos welcome. Fast, typo‑tolerant lookup via [Meilisearch](https://github.com/meilisearch/meilisearch). Primary hits under **Matches**; extra coverage under **Also found**. | Describe a topic or mood. Concept search via [Qdrant](https://github.com/qdrant/qdrant) returns related shows and episodes by meaning — e.g. *“stories about startup failure”* finds the conversation, not just shared keywords. |
-
-## Features
-
-<a id="features"></a>
-
-| | |
-| :--- | :--- |
-| **Personalization** | On‑device learning re‑ranks Home, Explore, queue, and downloads as you listen. Taste stays on your phone. Daypart rails, **Because You Like**, and For You. [How it works →](docs/recommendation-system.md) |
-| **Curiosity cards** | Swipe question cards that point at episodes you’d never search for. Right to queue · left to dismiss · tap to play. |
-| **Listening** | Mixtape queue, mini/full player, speed, sleep timer, chapters, transcripts, video, Android Auto. |
-| **Library & offline** | Subs, downloads, history, likes. Launch offline → land on downloads. OPML / full JSON backup. |
-| **Daily briefing** | Optional region‑aware AI news audio with script, sources, and chapters. |
-| **No ads** | No banners, no sponsored inserts, no premium tier to unlock search or recommendations. |
-
-<details>
-<summary><b>Smart automation (defaults off)</b></summary>
-
-- **Smart Downloads** — curated offline pool within limits you set
-- **Per‑podcast auto‑download** — new drops download automatically (notifications required)
-- **New episode notifications** — per‑podcast bell
-
-</details>
-
-## Get started
-
-<a id="get-started"></a>
-
-| New to podcasts? | Switching apps? | Know your shows? |
-| :--- | :--- | :--- |
-| **AI onboarding** — short chat → matched shows from the catalog → subscribe before you enter. | **Import library** — OPML from Pocket Casts, Apple Podcasts, AntennaPod, or similar. Similar‑show suggestions after import. | **I know my shows** — search during setup, or **Skip Setup** and explore. |
-
-Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
-
 ## Screenshots
 
 <a id="screenshots"></a>
@@ -144,39 +112,31 @@ Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
 <div align="center">
 <table>
   <tr>
-    <td align="center" width="25%">
-      <b>Onboarding</b><br/><sub>AI · OPML · search</sub><br/><br/>
-      <img src="docs/images/onboarding.png" width="180" alt="Onboarding" style="border-radius: 14px;"/>
+    <td align="center" width="33%">
+      <img src="docs/images/homescreen.png" width="240" alt="boxlore Home with listening suggestions and Your Shows"/><br/>
+      <b>Home</b><br/><sub>Your shows and personal picks</sub>
     </td>
-    <td align="center" width="25%">
-      <b>Home</b><br/><sub>Mixtape · For You</sub><br/><br/>
-      <img src="docs/images/homescreen.png" width="180" alt="Home" style="border-radius: 14px;"/>
+    <td align="center" width="33%">
+      <img src="docs/images/semantic_search.png" width="240" alt="boxlore search showing topic-based podcast results"/><br/>
+      <b>Search</b><br/><sub>Find a name or explore a topic</sub>
     </td>
-    <td align="center" width="25%">
-      <b>Search</b><br/><sub>Name or idea</sub><br/><br/>
-      <img src="docs/images/semantic_search.png" width="180" alt="Search" style="border-radius: 14px;"/>
-    </td>
-    <td align="center" width="25%">
-      <b>Briefing</b><br/><sub>AI news audio</sub><br/><br/>
-      <img src="docs/images/daily_brief.png" width="180" alt="Daily briefing" style="border-radius: 14px;"/>
+    <td align="center" width="33%">
+      <img src="docs/images/player.png" width="240" alt="boxlore full podcast player with playback and queue controls"/><br/>
+      <b>Player</b><br/><sub>Playback, chapters, transcripts, and queue</sub>
     </td>
   </tr>
   <tr>
-    <td align="center">
-      <b>Curiosity</b><br/><sub>Swipe to discover</sub><br/><br/>
-      <img src="docs/images/curiosity_cards.png" width="180" alt="Curiosity cards" style="border-radius: 14px;"/>
+    <td align="center" width="33%">
+      <img src="docs/images/recommendation_engine.png" width="240" alt="boxlore personalized podcast recommendations"/><br/>
+      <b>For You</b><br/><sub>Suggestions shaped by your listening</sub>
     </td>
-    <td align="center">
-      <b>For You</b><br/><sub>Personalized picks</sub><br/><br/>
-      <img src="docs/images/recommendation_engine.png" width="180" alt="For You" style="border-radius: 14px;"/>
+    <td align="center" width="33%">
+      <img src="docs/images/library.png" width="240" alt="boxlore Library with subscriptions, likes, downloads, and history"/><br/>
+      <b>Library</b><br/><sub>Subscriptions, downloads, likes, and history</sub>
     </td>
-    <td align="center">
-      <b>Library</b><br/><sub>Subs · downloads</sub><br/><br/>
-      <img src="docs/images/library.png" width="180" alt="Library" style="border-radius: 14px;"/>
-    </td>
-    <td align="center">
-      <b>Player</b><br/><sub>Artwork‑matched</sub><br/><br/>
-      <img src="docs/images/player.png" width="180" alt="Artwork-matched expressive podcast player" style="border-radius: 14px;"/>
+    <td align="center" width="33%">
+      <img src="docs/images/daily_brief.png" width="240" alt="boxlore daily news briefing with stories and region controls"/><br/>
+      <b>Daily briefing</b><br/><sub>Optional news audio with sources</sub>
     </td>
   </tr>
 </table>
@@ -186,94 +146,43 @@ Export anytime: **Profile → Backup & Restore** (OPML or full JSON).
 
 <a id="install"></a>
 
-Get it on **Google Play** (primary), or sideload the latest **GitHub APK**. Live Play vs GitHub release versions are in the status badges under the title.
+- **[Google Play](https://play.google.com/store/apps/details?id=cx.aswin.boxlore)** is the recommended install.
+- **[GitHub Releases](https://github.com/boxcreate/boxlore/releases/latest)** provides the latest APK for sideloading.
 
-<div align="center">
-  <table>
-    <tr>
-      <td align="center" valign="middle">
-        <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="docs/images/card_playstore_v7.svg" width="260" height="80" alt="Get it on Google Play"/></a>
-      </td>
-      <td width="16"></td>
-      <td align="center" valign="middle">
-        <a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.23.apk"><img src="docs/images/card_github_v7.svg" width="260" height="80" alt="Download boxlore podcast app APK on GitHub"/></a>
-      </td>
-    </tr>
-  </table>
-</div>
-
-<br/>
-
-Enable *Install from unknown sources* for sideloading.
-
-```bash
-git clone https://github.com/boxcreate/boxlore.git
-cd boxlore
-./gradlew assembleDebug
-./gradlew installDebug
-```
-
-**Requirements:** Android Studio Ladybug+ · Android SDK 35+ · JDK 17 · Kotlin 1.9+
+Android may ask you to allow installation from your browser or file manager when sideloading.
 
 ## For developers
 
 <a id="for-developers"></a>
 
 <details>
-<summary><b>Modules &amp; stack</b></summary>
+<summary><b>Build from source</b></summary>
 
-| Module | Role |
-|--------|------|
-| `:core:catalog` | Repositories, mappers |
-| `:core:designsystem` | Themes, shared composables |
-| `:core:model` | Domain models |
-| `:core:network` | Catalog API client |
-| `:feature:explore` | Search, For You, curiosity |
-| `:feature:home` | Mixtape, charts, briefing entry |
-| `:feature:player` | Playback UI |
-| `:feature:briefing` | Daily briefing |
-| `:feature:library` | Downloads, subs, history |
-| `:feature:info` | Podcast & episode detail |
-| `:feature:onboarding` | First‑run paths |
+**Requirements:** Android Studio Ladybug or newer, Android SDK 35+, and JDK 17.
 
-| Technology | Purpose |
-|-----------|---------|
-| **Kotlin** · **Compose** · **Material 3** | App UI |
-| **Coroutines & Flow** | Async state |
-| **Retrofit** · **Room** · **Media3** · **Coil** | Network, DB, playback, images |
-| **[Meilisearch](https://github.com/meilisearch/meilisearch)** | Typo‑tolerant show search |
-| **[Qdrant](https://github.com/qdrant/qdrant)** · **Qwen3** | Concept search & multilingual recommendations |
-
-Agent notes: [`AGENTS.md`](AGENTS.md) · architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md) · testing: [`docs/TESTING.md`](docs/TESTING.md)
+```bash
+git clone https://github.com/boxcreate/boxlore.git
+cd boxlore
+./gradlew assembleDebug
+```
 
 </details>
 
-## Contributing
+Built with Kotlin, Jetpack Compose, Material 3, Room, and Media3.
 
-1. **Bugs** — [Issues](https://github.com/boxcreate/boxlore/issues)
-2. **Ideas** — [Discussions](https://github.com/boxcreate/boxlore/discussions)
-3. **Roadmap** — [Projects kanban](https://github.com/orgs/boxcreate/projects/2)
-4. **PRs** — Fork, change, open a pull request
+Read the [architecture guide](ARCHITECTURE.md), [testing guide](docs/TESTING.md), or [agent notes](AGENTS.md).
 
-## License
+## Project
 
-Source‑available under the [PolyForm Strict License 1.0.0](LICENSE). Noncommercial use of the code is allowed; redistribution and derivatives are not. See [LICENSE](LICENSE).
+[Report a bug](https://github.com/boxcreate/boxlore/issues) ·
+[Share an idea](https://github.com/boxcreate/boxlore/discussions) ·
+[View the roadmap](https://github.com/orgs/boxcreate/projects/2)
 
-## Contributors
-
-<div align="center">
-  <a href="https://github.com/boxcreate/boxlore/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=boxcreate/boxlore" alt="Contributors"/>
-  </a>
-</div>
-
-<br/>
+boxlore is source-available under the [PolyForm Strict License 1.0.0](LICENSE). Noncommercial use is allowed; redistribution and derivative works are restricted by the license.
 
 <div align="center">
 
 <img src="docs/images/m3/divider.svg" width="820" alt=""/>
-
-because antigravity is free and i love podcasts.
 
 **[⬆ Back to top](#top)**
 
