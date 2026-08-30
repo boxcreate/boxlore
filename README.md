@@ -64,12 +64,9 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-<b>🚨 Critical:</b>
-<ul align="left">
-<li>Subscriptions now restore reliably even if podcast info loads slowly, preventing missing episodes after a restart. <a href="https://github.com/boxcreate/boxlore/pull/1009"><img src="https://img.shields.io/badge/PR-1009-6750A4?style=flat-square" alt="PR #1009" height="18"/></a></li>
-</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Unsubscribing now works on the first try even while podcast data is loading, so removed shows no longer reappear or jump to the front of Home. <a href="https://github.com/boxcreate/boxlore/pull/1009"><img src="https://img.shields.io/badge/PR-1009-6750A4?style=flat-square" alt="PR #1009" height="18"/></a></li>
 <li>Sharing podcasts and episodes is now clearer, with cleaner artwork cards for messages and Instagram Stories. <a href="https://github.com/boxcreate/boxlore/pull/1011"><img src="https://img.shields.io/badge/PR-1011-6750A4?style=flat-square" alt="PR #1011" height="18"/></a></li>
 <li>Playback widgets now handle long episode names more cleanly, show more context for new episodes, and offer a new compact Next-control layout. <a href="https://github.com/boxcreate/boxlore/pull/1010"><img src="https://img.shields.io/badge/PR-1010-6750A4?style=flat-square" alt="PR #1010" height="18"/></a></li>
 <li>Briefing market respects the explicit global setting, ensuring consistent content across regions. <a href="https://github.com/boxcreate/boxlore/pull/1008"><img src="https://img.shields.io/badge/PR-1008-6750A4?style=flat-square" alt="PR #1008" height="18"/></a></li>
