@@ -1,5 +1,7 @@
 <div align="center" id="top">
 
+<img src="docs/images/featured_image.png" width="960" alt="boxlore screens showing podcast discovery, playback, and the daily briefing"/>
+
 # boxlore
 
 **Find podcasts. Follow your favorites. Listen anywhere.**
@@ -28,10 +30,6 @@ Search by name or topic, get recommendations, listen offline, watch video episod
 **[Release notes](#release-notes)** ·
 **[Screenshots](#screenshots)** ·
 **[Install](#install)**
-
-<br/>
-
-<img src="docs/images/featured_image.png" width="960" alt="boxlore screens showing podcast discovery, playback, and the daily briefing"/>
 
 <img src="docs/images/m3/divider.svg" width="820" alt=""/>
 
