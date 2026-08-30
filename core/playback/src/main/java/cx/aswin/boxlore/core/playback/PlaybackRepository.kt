@@ -77,7 +77,21 @@ object SleepTimerHolder {
 object PlaybackLifecycleSignals {
     @Volatile var serviceOwnedNaturalAdvanceEpisodeId: String? = null
 
-    @Volatile var effectiveSkipEndingMs: Long? = null
+    private val pendingZeroStartEpisodeId =
+        java.util.concurrent.atomic
+            .AtomicReference<String?>()
+
+    fun markPendingZeroStart(episodeId: String) {
+        pendingZeroStartEpisodeId.set(episodeId)
+    }
+
+    fun consumePendingZeroStart(episodeId: String): Boolean {
+        while (true) {
+            val pending = pendingZeroStartEpisodeId.get() ?: return false
+            if (pending != episodeId) return false
+            if (pendingZeroStartEpisodeId.compareAndSet(pending, null)) return true
+        }
+    }
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -153,17 +167,18 @@ class PlaybackRepository internal constructor(
     val playerState = playerStateFlow.asStateFlow()
 
     fun setUiForeground(isForeground: Boolean) {
+        if (PlaybackUiVisibility.isForeground.value == isForeground) return
         PlaybackUiVisibility.setForeground(isForeground)
         if (isForeground) {
             val controllerNow = mediaHandle.controller
             if (controllerNow != null) {
                 playerStateFlow.value =
-                    playerStateFlow.value.copy(
-                        position = controllerNow.currentPosition,
-                        bufferedPosition = controllerNow.bufferedPosition,
-                        duration = controllerNow.duration.coerceAtLeast(0L),
+                    PlaybackControllerStatePolicy.mergeProgress(
+                        previous = playerStateFlow.value,
+                        snapshot = controllerNow.progressSnapshot(),
                     )
             }
+            refreshRestoredProgressIfPlayerEmpty()
             if (
                 controllerNow != null &&
                 PlaybackPowerPolicy.shouldRunUiPositionTicker(
@@ -197,8 +212,6 @@ class PlaybackRepository internal constructor(
     private val KEY_DEBUG_SKIP_SLEEP_WINDOW = "debug_skip_sleep_window"
 
     private var currentSkipBehavior: String = "just_skip"
-
-    @Volatile private var currentSkipEndingMs: Long = 0L
 
     fun getOrCreateDeviceUuid(): String {
         val key = "device_uuid"
@@ -264,7 +277,7 @@ class PlaybackRepository internal constructor(
             },
             onPlaybackStarted = { sleepController.onPlaybackStarted() },
             storePendingEntryPoint = ::storePendingEntryPoint,
-            saveCurrentState = { updateLastPlayedAt -> saveCurrentState(updateLastPlayedAt) },
+            ensureCurrentHistoryRow = ::ensureCurrentHistoryRow,
             stopProgressTicker = ::stopProgressTicker,
         )
 
@@ -284,6 +297,12 @@ class PlaybackRepository internal constructor(
                             android.os.Bundle().apply { putString("entry_point", key) }
                         },
                 ).first
+            },
+            resolvePersistedResumePositionMs = { episodeId ->
+                listeningHistoryDao
+                    .getHistoryItem(episodeId)
+                    ?.takeUnless { it.isCompleted }
+                    ?.progressMs
             },
             playQueue = { episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext ->
                 queueCoordinator.playQueue(
@@ -305,11 +324,6 @@ class PlaybackRepository internal constructor(
         repositoryScope.launch {
             userPreferencesRepository.skipBehaviorStream.collect {
                 currentSkipBehavior = it
-            }
-        }
-        repositoryScope.launch {
-            userPreferencesRepository.skipEndingMsStream.collect {
-                currentSkipEndingMs = it.coerceAtLeast(0L)
             }
         }
         repositoryScope.launch {
@@ -356,12 +370,9 @@ class PlaybackRepository internal constructor(
                     mediaHandle = mediaHandle,
                     queueRepository = queueRepository,
                     currentSkipBehavior = { currentSkipBehavior },
-                    activePlaybackStartTimeMs = { activePlaybackStartTimeMs },
-                    setActivePlaybackStartTimeMs = { activePlaybackStartTimeMs = it },
                     onPlaybackStarted = { sleepController.onPlaybackStarted() },
                     startProgressTicker = ::startProgressTicker,
                     stopProgressTicker = ::stopProgressTicker,
-                    saveCurrentState = { updateLastPlayedAt -> saveCurrentState(updateLastPlayedAt) },
                     cancelSleepTimer = { sleepController.cancelSleepTimerJob() },
                     syncQueueToDb = { queueCoordinator.syncQueueToDb() },
                     reconcileQueueWithController = { queueCoordinator.reconcileQueueWithController() },
@@ -438,7 +449,7 @@ class PlaybackRepository internal constructor(
                             currentPodcast = podcast,
                             isPlaying = isPlaying,
                             isLoading = isLoading,
-                            position = currentPosition,
+                            position = currentPosition.takeIf { it > 0L } ?: lastSession.progressMs,
                             bufferedPosition = bufferedPosition,
                             duration = if (duration > 0) duration else lastSession.durationMs,
                             playbackSpeed = controller.playbackParameters.speed,
@@ -452,19 +463,18 @@ class PlaybackRepository internal constructor(
         } else {
             // Just sync playback state
             playerStateFlow.value =
-                playerStateFlow.value.copy(
-                    isPlaying = isPlaying,
-                    isLoading = isLoading,
-                    position = if (currentPosition > 0) currentPosition else playerStateFlow.value.position,
-                    bufferedPosition = bufferedPosition,
-                    duration = if (duration > 0) duration else playerStateFlow.value.duration,
-                    playbackSpeed = controller.playbackParameters.speed,
-                )
+                PlaybackControllerStatePolicy
+                    .mergeProgress(
+                        previous = playerStateFlow.value,
+                        snapshot = controller.progressSnapshot(),
+                    ).copy(
+                        isPlaying = isPlaying,
+                        isLoading = isLoading,
+                        playbackSpeed = controller.playbackParameters.speed,
+                    )
             if (isPlaying) startProgressTicker()
         }
     }
-
-    private var activePlaybackStartTimeMs = 0L
 
     private fun startProgressTicker() {
         stopProgressTicker()
@@ -481,10 +491,9 @@ class PlaybackRepository internal constructor(
                     )
                 ) {
                     playerStateFlow.value =
-                        playerStateFlow.value.copy(
-                            position = controllerNow.currentPosition,
-                            bufferedPosition = controllerNow.bufferedPosition,
-                            duration = controllerNow.duration.coerceAtLeast(0),
+                        PlaybackControllerStatePolicy.mergeProgress(
+                            previous = playerStateFlow.value,
+                            snapshot = controllerNow.progressSnapshot(),
                         )
                     kotlinx.coroutines.delay(PlaybackPowerPolicy.UI_POSITION_POLL_INTERVAL_MS)
                     controllerNow = mediaHandle.controller
@@ -492,47 +501,70 @@ class PlaybackRepository internal constructor(
             }
     }
 
-    // Helper to save current state
-    private suspend fun saveCurrentState(updateLastPlayedAt: Boolean = true) {
+    private fun refreshRestoredProgressIfPlayerEmpty() {
+        val controller = mediaHandle.controller
+        if (controller?.isConnected == true && controller.mediaItemCount > 0) return
+        val episodeId = playerStateFlow.value.currentEpisode?.id ?: return
+
+        repositoryScope.launch {
+            val persisted = listeningHistoryDao.getHistoryItem(episodeId) ?: return@launch
+            val latestController = mediaHandle.controller
+            if (latestController?.isConnected == true && latestController.mediaItemCount > 0) {
+                return@launch
+            }
+            val current = playerStateFlow.value
+            if (current.currentEpisode?.id != episodeId) return@launch
+            playerStateFlow.value =
+                current.copy(
+                    position = persisted.progressMs.coerceAtLeast(0L),
+                    duration = persisted.durationMs.takeIf { it > 0L } ?: current.duration,
+                    isCompleted = persisted.isCompleted,
+                    isLiked = persisted.isLiked,
+                )
+        }
+    }
+
+    /**
+     * Creates the history row needed by the service-owned progress writer. Existing rows are never
+     * replaced from UI state, because that state intentionally stops polling in the background.
+     */
+    private suspend fun ensureCurrentHistoryRow() {
         val state = playerStateFlow.value
         val episode = state.currentEpisode ?: return
         val podcast = state.currentPodcast ?: return
-
-        // Check existing completion status to avoid overwriting
-        val existing = listeningHistoryDao.getHistoryItem(episode.id)
-        val wasCompleted = existing?.isCompleted ?: false
-        val lastPlayed = if (updateLastPlayedAt) System.currentTimeMillis() else (existing?.lastPlayedAt ?: System.currentTimeMillis())
-
-        // While an effective ending trim is active the service is the sole completion owner.
-        // In particular, do not let the legacy 95%/long-episode heuristics complete an item
-        // before the service observes the configured boundary.
-        val isCompletedNow =
-            PlaybackSkipPolicy.shouldCompleteFromProgress(
-                positionMs = state.position,
-                durationMs = state.duration,
-                effectiveSkipEndingMs =
-                    PlaybackLifecycleSignals.effectiveSkipEndingMs ?: currentSkipEndingMs,
+        val history =
+            ListeningHistoryUpsertLogic.buildProgressSaveEntity(
+                ListeningHistoryUpsertLogic.ProgressSaveInput(
+                    podcastId = podcast.id,
+                    episodeId = episode.id,
+                    positionMs = state.position.coerceAtLeast(0L),
+                    durationMs =
+                        state.duration.takeIf { it > 0L }
+                            ?: episode.duration.toLong().coerceAtLeast(0L) * 1_000L,
+                    episodeTitle = episode.title,
+                    episodeImageUrl = episode.imageUrl,
+                    podcastImageUrl = podcast.imageUrl,
+                    episodeAudioUrl = episode.audioUrl,
+                    podcastName = podcast.title,
+                    isCompleted = false,
+                    isLiked = state.isLiked,
+                    lastPlayedAt = System.currentTimeMillis(),
+                    enclosureType = episode.enclosureType,
+                    episodeDescription = episode.description,
+                ),
             )
-        val finalCompleted = wasCompleted || isCompletedNow
-        val finalPosition = if (isCompletedNow && !wasCompleted) 0L else state.position
-
-        historyStore.savePlaybackState(
-            ListeningHistoryUpsertLogic.ProgressSaveInput(
-                podcastId = podcast.id,
-                episodeId = episode.id,
-                positionMs = finalPosition,
-                durationMs = state.duration,
-                episodeTitle = episode.title,
-                episodeImageUrl = episode.imageUrl,
-                podcastImageUrl = podcast.imageUrl,
-                episodeAudioUrl = episode.audioUrl,
-                podcastName = podcast.title,
-                isCompleted = finalCompleted,
-                isLiked = state.isLiked,
-                lastPlayedAt = lastPlayed,
-                enclosureType = episode.enclosureType,
-                episodeDescription = episode.description,
-            ),
+        listeningHistoryDao.insertIfAbsent(history)
+        listeningHistoryDao.enrichMetadataIfMissing(
+            episodeId = history.episodeId,
+            podcastId = history.podcastId,
+            episodeTitle = history.episodeTitle,
+            episodeImageUrl = history.episodeImageUrl,
+            podcastImageUrl = history.podcastImageUrl,
+            episodeAudioUrl = history.episodeAudioUrl,
+            podcastName = history.podcastName,
+            durationMs = history.durationMs,
+            enclosureType = history.enclosureType,
+            episodeDescription = history.episodeDescription,
         )
     }
 
@@ -732,9 +764,6 @@ class PlaybackRepository internal constructor(
         if (play) {
             mediaHandle.controller?.play()
         }
-
-        // Save state on seek (do not update lastPlayedAt to prevent reordering on scrub)
-        repositoryScope.launch { saveCurrentState(updateLastPlayedAt = false) }
     }
 
     fun setOutputVolume(volume: Int) {
@@ -763,3 +792,11 @@ internal object PlaybackOutputVolumePolicy {
         return requestedVolume.coerceIn(route.minimumVolume, route.maximumVolume)
     }
 }
+
+private fun MediaController.progressSnapshot(): PlaybackControllerStatePolicy.Snapshot =
+    PlaybackControllerStatePolicy.Snapshot(
+        hasMedia = isConnected && mediaItemCount > 0,
+        positionMs = currentPosition,
+        bufferedPositionMs = bufferedPosition,
+        durationMs = duration,
+    )

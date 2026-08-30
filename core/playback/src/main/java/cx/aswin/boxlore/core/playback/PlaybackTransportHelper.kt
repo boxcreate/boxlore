@@ -20,6 +20,7 @@ internal class PlaybackTransportHelper(
     private val mediaHandle: PlaybackMediaControllerHandle,
     private val storePendingEntryPoint: (android.os.Bundle?) -> Unit,
     private val resolveInitialSeekMs: suspend (episodeId: String, entryPointKey: String?) -> Long,
+    private val resolvePersistedResumePositionMs: suspend (episodeId: String) -> Long?,
     private val playQueue: suspend (
         episodes: List<Episode>,
         podcast: Podcast,
@@ -54,11 +55,19 @@ internal class PlaybackTransportHelper(
             val queue = playerStateFlow.value.queue
             val currentEpisode = playerStateFlow.value.currentEpisode!!
             val podcast = playerStateFlow.value.currentPodcast
-            val savedPosition = playerStateFlow.value.position
 
             Log.d("PlaybackRepo", "resume(): Controller empty, reloading full queue (${queue.size} items)")
 
             scope.launch {
+                val savedPosition =
+                    PlaybackControllerStatePolicy.resolveResumePositionMs(
+                        persistedPositionMs = resolvePersistedResumePositionMs(currentEpisode.id),
+                        restoredStatePositionMs =
+                            playerStateFlow.value
+                                .takeIf { it.currentEpisode?.id == currentEpisode.id }
+                                ?.position
+                                ?: 0L,
+                    )
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
                     .setSeekSource("resume")
                 if (queue.isNotEmpty() && podcast != null) {

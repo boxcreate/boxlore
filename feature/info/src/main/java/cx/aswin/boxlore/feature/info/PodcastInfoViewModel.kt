@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:backing-property-naming")
+
 package cx.aswin.boxlore.feature.info
 
 import android.app.Application

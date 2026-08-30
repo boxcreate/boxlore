@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package cx.aswin.boxlore.feature.info
 
 import android.Manifest
@@ -605,8 +607,8 @@ fun PodcastInfoScreen(
                                             selectedEpisodeIds =
                                                 PodcastEpisodeSelectionLogic
                                                     .toggle(
-                                                selectedIds = selectedEpisodeIdSet,
-                                                episodeId = episode.id,
+                                                        selectedIds = selectedEpisodeIdSet,
+                                                        episodeId = episode.id,
                                                     ).toList()
                                             selectionAnchorEpisodeId = episode.id
                                         },

@@ -63,19 +63,25 @@ fun PlaybackRepository.pause() {
 }
 
 fun PlaybackRepository.skipForward() {
+    val mediaController = controller?.takeIf { it.isConnected } ?: return
     cx.aswin.boxlore.core.analytics.AnalyticsHelper
         .setSeekSource("seek_forward")
-    val state = playerState.value
-    val incrementMs = PlaybackSkipPolicy.sanitizeSeekForward(state.seekForwardMs)
-    seekTo((state.position + incrementMs).coerceAtMost(state.duration))
+    val incrementMs = PlaybackSkipPolicy.sanitizeSeekForward(playerState.value.seekForwardMs)
+    val targetMs = mediaController.currentPosition.coerceAtLeast(0L) + incrementMs
+    val boundedTargetMs =
+        mediaController.duration
+            .takeIf { it > 0L }
+            ?.let(targetMs::coerceAtMost)
+            ?: targetMs
+    seekTo(boundedTargetMs)
 }
 
 fun PlaybackRepository.skipBackward() {
+    val mediaController = controller?.takeIf { it.isConnected } ?: return
     cx.aswin.boxlore.core.analytics.AnalyticsHelper
         .setSeekSource("seek_backward")
-    val state = playerState.value
-    val incrementMs = PlaybackSkipPolicy.sanitizeSeekBackward(state.seekBackwardMs)
-    seekTo((state.position - incrementMs).coerceAtLeast(0))
+    val incrementMs = PlaybackSkipPolicy.sanitizeSeekBackward(playerState.value.seekBackwardMs)
+    seekTo((mediaController.currentPosition - incrementMs).coerceAtLeast(0L))
 }
 
 fun PlaybackRepository.setPlaybackSpeed(speed: Float) {

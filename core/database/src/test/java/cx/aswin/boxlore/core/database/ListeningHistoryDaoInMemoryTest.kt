@@ -79,6 +79,55 @@ class ListeningHistoryDaoInMemoryTest {
         }
 
     @Test
+    fun insertIfAbsentNeverReplacesConcurrentHistoryState() =
+        runTest {
+            dao.insertIfAbsent(history("ep-1", progressMs = 500, isLiked = true))
+            dao.insertIfAbsent(history("ep-1", progressMs = 100, isLiked = false))
+
+            val stored = dao.getHistoryItem("ep-1")!!
+            assertEquals(500L, stored.progressMs)
+            assertTrue(stored.isLiked)
+        }
+
+    @Test
+    fun metadataEnrichmentFillsGapsWithoutReplacingPlaybackOrLikes() =
+        runTest {
+            dao.insertIfAbsent(
+                history(
+                    episodeId = "ep-1",
+                    podcastId = "",
+                    progressMs = 500,
+                    durationMs = 0,
+                    isLiked = true,
+                ).copy(
+                    podcastName = "",
+                    podcastImageUrl = null,
+                ),
+            )
+
+            dao.enrichMetadataIfMissing(
+                episodeId = "ep-1",
+                podcastId = "pod-1",
+                episodeTitle = "Richer title",
+                episodeImageUrl = "episode.jpg",
+                podcastImageUrl = "podcast.jpg",
+                episodeAudioUrl = "https://example.com/richer.mp3",
+                podcastName = "Richer podcast",
+                durationMs = 1_000,
+                enclosureType = "audio/mpeg",
+                episodeDescription = "Description",
+            )
+
+            val stored = dao.getHistoryItem("ep-1")!!
+            assertEquals("pod-1", stored.podcastId)
+            assertEquals("Richer podcast", stored.podcastName)
+            assertEquals("podcast.jpg", stored.podcastImageUrl)
+            assertEquals(1_000L, stored.durationMs)
+            assertEquals(500L, stored.progressMs)
+            assertTrue(stored.isLiked)
+        }
+
+    @Test
     fun getResumeItemsReturnsIncompleteWithProgressNewestFirst() =
         runTest {
             dao.upsertAll(
@@ -203,6 +252,59 @@ class ListeningHistoryDaoInMemoryTest {
             assertTrue(dao.getHistoryItem("a")!!.isCompleted)
             assertEquals(listOf("a"), dao.getCompletedEpisodeIds())
             assertEquals(listOf("a"), dao.getCompletedEpisodeIdsFlow().first())
+        }
+
+    @Test
+    fun completeFromPlaybackChangesOnlyPlaybackOwnedFields() =
+        runTest {
+            dao.upsert(
+                history(
+                    episodeId = "ep-1",
+                    progressMs = 500,
+                    durationMs = 1_000,
+                    isLiked = true,
+                ),
+            )
+
+            dao.completeFromPlayback(
+                episodeId = "ep-1",
+                durationMs = 1_200,
+                lastPlayedAt = 50,
+                isManualCompletion = false,
+            )
+
+            val stored = dao.getHistoryItem("ep-1")!!
+            assertEquals(0L, stored.progressMs)
+            assertEquals(1_200L, stored.durationMs)
+            assertTrue(stored.isCompleted)
+            assertTrue(stored.isLiked)
+            assertEquals(50L, stored.lastPlayedAt)
+        }
+
+    @Test
+    fun staleProgressCannotMutateACompletedRow() =
+        runTest {
+            dao.upsert(history("ep-1", progressMs = 900, durationMs = 1_000))
+            dao.completeFromPlayback(
+                episodeId = "ep-1",
+                durationMs = 1_000,
+                lastPlayedAt = 50,
+                isManualCompletion = false,
+            )
+
+            val updatedRows =
+                dao.updateProgress(
+                    episodeId = "ep-1",
+                    progressMs = 800,
+                    durationMs = 900,
+                    lastPlayedAt = 40,
+                )
+
+            val stored = dao.getHistoryItem("ep-1")!!
+            assertEquals(0, updatedRows)
+            assertEquals(0L, stored.progressMs)
+            assertEquals(1_000L, stored.durationMs)
+            assertEquals(50L, stored.lastPlayedAt)
         }
 
     @Test

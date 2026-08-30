@@ -33,6 +33,27 @@ class PlaybackPowerPolicyTest {
                 isLoading = false,
             ),
         )
+        assertFalse(
+            PlaybackPowerPolicy.shouldRunUiPositionTicker(
+                isUiForeground = false,
+                isPlaying = false,
+                isLoading = true,
+            ),
+        )
+        assertFalse(
+            PlaybackPowerPolicy.shouldRunUiPositionTicker(
+                isUiForeground = true,
+                isPlaying = false,
+                isLoading = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `playback power intervals remain battery bounded`() {
+        assertEquals(500L, PlaybackPowerPolicy.UI_POSITION_POLL_INTERVAL_MS)
+        assertEquals(500L, PlaybackPowerPolicy.OUTRO_POLL_INTERVAL_MS)
+        assertEquals(15 * 60 * 1_000L, PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS)
     }
 
     @Test

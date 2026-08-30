@@ -8,8 +8,8 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -82,7 +82,6 @@ internal class PlaybackIntroOutroController(
         activationInitialPositionMs = initialPositionMs.coerceAtLeast(0L)
         effectiveSkipBeginningMs = 0L
         effectiveSkipEndingMs = 0L
-        PlaybackLifecycleSignals.effectiveSkipEndingMs = null
         introTargetResolved = false
         pendingIntroTargetMs = null
         pendingIntroSeekSource = null
@@ -247,6 +246,10 @@ internal class PlaybackIntroOutroController(
             skipEndingMs = effectiveSkipEndingMs,
         )
 
+    suspend fun awaitPendingCompletionPersistence() {
+        completionPersistenceJob?.join()
+    }
+
     fun markCompletionTelemetryDispatched(): Boolean {
         if (completionTelemetryGeneration == playbackActivationGeneration) return false
         completionTelemetryGeneration = playbackActivationGeneration
@@ -273,8 +276,6 @@ internal class PlaybackIntroOutroController(
 
             effectiveSkipBeginningMs = effectiveTrim.skipBeginningMs
             effectiveSkipEndingMs = effectiveTrim.skipEndingMs
-            // Duration is required to decide whether trims leave a safe playable window.
-            PlaybackLifecycleSignals.effectiveSkipEndingMs = 0L
 
             if (!introTargetResolved) {
                 resolveActiveIntroTarget(history)
@@ -380,8 +381,6 @@ internal class PlaybackIntroOutroController(
         if (episodeId != null && activeLifecycleDurationMs > 0L) {
             onActiveDurationResolved(episodeId, activeLifecycleDurationMs)
         }
-        PlaybackLifecycleSignals.effectiveSkipEndingMs =
-            effectiveEndingTrimForCompletion(activeLifecycleDurationMs)
         val oldBoundaryMs = lastOutroBoundaryMs
         val newBoundaryMs = calculateOutroBoundary(activeLifecycleDurationMs)
         val positionMs = player.currentPosition.coerceAtLeast(0L)

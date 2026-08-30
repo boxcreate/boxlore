@@ -15,7 +15,6 @@ import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.QueueRepository
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +22,7 @@ import kotlinx.coroutines.withContext
 /**
  * Media3 [Player.Listener] implementation extracted from PlaybackRepository.initializeMediaController.
  */
+@Suppress("LongParameterList")
 internal class PlaybackMediaControllerBridge(
     private val context: Context,
     private val scope: CoroutineScope,
@@ -30,12 +30,9 @@ internal class PlaybackMediaControllerBridge(
     private val mediaHandle: PlaybackMediaControllerHandle,
     private val queueRepository: QueueRepository,
     private val currentSkipBehavior: () -> String,
-    private val activePlaybackStartTimeMs: () -> Long,
-    private val setActivePlaybackStartTimeMs: (Long) -> Unit,
     private val onPlaybackStarted: () -> Unit,
     private val startProgressTicker: () -> Unit,
     private val stopProgressTicker: () -> Unit,
-    private val saveCurrentState: suspend (updateLastPlayedAt: Boolean) -> Unit,
     private val cancelSleepTimer: () -> Unit,
     private val syncQueueToDb: suspend () -> Unit,
     private val reconcileQueueWithController: () -> Unit,
@@ -43,7 +40,6 @@ internal class PlaybackMediaControllerBridge(
     private val findPodcastIdForEpisode: suspend (String) -> String?,
     private val hasActiveCastSession: () -> Boolean?,
 ) : Player.Listener {
-    private var pendingSaveJob: Job? = null
     private var lastReportedRemote: Boolean? = null
     private var pendingCastTransition: PendingCastTransition? = null
 
@@ -114,23 +110,12 @@ internal class PlaybackMediaControllerBridge(
         val oldIsPlaying = playerStateFlow.value.isPlaying
         playerStateFlow.value = playerStateFlow.value.copy(isPlaying = isPlaying)
         if (isPlaying) {
-            pendingSaveJob?.cancel() // Cancel pending save if we resume
             if (!oldIsPlaying) {
-                setActivePlaybackStartTimeMs(System.currentTimeMillis())
                 onPlaybackStarted()
             }
             startProgressTicker()
         } else {
             stopProgressTicker()
-            val hasBeenPlayingFor10s =
-                activePlaybackStartTimeMs() > 0 &&
-                    (System.currentTimeMillis() - activePlaybackStartTimeMs() >= 10_000)
-            pendingSaveJob?.cancel()
-            pendingSaveJob =
-                scope.launch {
-                    saveCurrentState(hasBeenPlayingFor10s)
-                }
-            setActivePlaybackStartTimeMs(0L)
         }
     }
 
@@ -147,8 +132,7 @@ internal class PlaybackMediaControllerBridge(
         playerStateFlow.value = playerStateFlow.value.copy(isLoading = isLoading)
 
         if (playbackState == androidx.media3.common.Player.STATE_ENDED) {
-            Log.d("PlaybackRepo", "Playback ENDED. Cancelling pending saves.")
-            pendingSaveJob?.cancel() // CRITICAL: Prevent "Pause" save from overwriting completion
+            Log.d("PlaybackRepo", "Playback ENDED. Completion persistence remains service-owned.")
 
             val controller = mediaHandle.controller
             val hasMedia = controller != null && controller.mediaItemCount > 0
@@ -253,11 +237,6 @@ internal class PlaybackMediaControllerBridge(
     ) {
         if (mediaItem != null && pendingCastTransition?.mediaId != mediaItem.mediaId) {
             pendingCastTransition = null
-        }
-        if (mediaHandle.controller?.isPlaying == true) {
-            setActivePlaybackStartTimeMs(System.currentTimeMillis())
-        } else {
-            setActivePlaybackStartTimeMs(0L)
         }
         // Use mediaId to find episode — more reliable than index
         val episodeId = mediaItem?.mediaId?.let(PlaybackMediaIdPolicy::stripMediaIdPrefixes) ?: return

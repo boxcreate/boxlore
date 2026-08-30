@@ -14,11 +14,11 @@ class RoomLocalCatalog(
 ) : LocalCatalogPort {
     private val podcastDao get() = database.podcastDao()
 
-    override suspend fun getLocalPodcast(id: String): Podcast? =
-        podcastDao.getPodcast(id)?.toPodcast()
+    override suspend fun getLocalPodcast(id: String): Podcast? = podcastDao.getPodcast(id)?.toPodcast()
 
     override suspend fun getSubscribedRssLinkedTo(podcastIndexId: String): Podcast? =
-        podcastDao.getRssPodcastLinkedTo(podcastIndexId)
+        podcastDao
+            .getRssPodcastLinkedTo(podcastIndexId)
             ?.takeIf { it.isSubscribed }
             ?.toPodcast()
 
@@ -39,8 +39,9 @@ class RoomLocalCatalog(
                     genre = podcast.genre,
                     type = typeVal,
                     isSubscribed = true,
-                    subscribedAt = podcast.subscribedAt.takeIf { it > 0L }
-                        ?: existing.subscribedAt,
+                    subscribedAt =
+                        podcast.subscribedAt.takeIf { it > 0L }
+                            ?: existing.subscribedAt,
                     lastRefreshed = System.currentTimeMillis(),
                     latestEpisode = podcast.latestEpisode ?: existing.latestEpisode,
                     podcastGuid = podcast.podcastGuid ?: existing.podcastGuid,
@@ -55,10 +56,12 @@ class RoomLocalCatalog(
                     preferredSort = preferredSort,
                     notificationsEnabled = podcast.notificationsEnabled,
                     autoDownloadEnabled = podcast.autoDownloadEnabled,
-                    skipBeginningOverrideMs = podcast.skipBeginningOverrideMs
-                        ?: existing.skipBeginningOverrideMs,
-                    skipEndingOverrideMs = podcast.skipEndingOverrideMs
-                        ?: existing.skipEndingOverrideMs,
+                    skipBeginningOverrideMs =
+                        podcast.skipBeginningOverrideMs
+                            ?: existing.skipBeginningOverrideMs,
+                    skipEndingOverrideMs =
+                        podcast.skipEndingOverrideMs
+                            ?: existing.skipEndingOverrideMs,
                     // Preserve RSS / catalog identity fields from the existing row.
                     sourceType = existing.sourceType,
                     feedUrl = existing.feedUrl ?: podcast.feedUrl,
@@ -69,8 +72,9 @@ class RoomLocalCatalog(
                     lastRssSyncAt = existing.lastRssSyncAt,
                     rssCatalogStale = existing.rssCatalogStale,
                     rssHasNewEpisodes = existing.rssHasNewEpisodes,
-                    linkedPodcastIndexId = existing.linkedPodcastIndexId
-                        ?: podcast.linkedPodcastIndexId,
+                    linkedPodcastIndexId =
+                        existing.linkedPodcastIndexId
+                            ?: podcast.linkedPodcastIndexId,
                 ),
             )
         }
