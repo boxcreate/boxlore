@@ -64,7 +64,10 @@ The smart catalog covers popular chart podcasts and grows daily — not every sh
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
+<b>🐛 Fixes:</b>
+<ul align="left">
+<li>Your subscriptions now stay active even if podcast info loads slowly after reopening the app. <a href="https://github.com/boxcreate/boxlore/pull/1009"><img src="https://img.shields.io/badge/PR-1009-6750A4?style=flat-square" alt="PR #1009" height="18"/></a></li>
+</ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
 
