@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Regression tests covering normalized, whitespace, and case variants of briefing market ([#1008](https://github.com/boxcreate/boxlore/pull/1008)) <!-- impact:user-impact-medium -->
 ### Changed
 - Improved playback metadata sizing, New Episodes title wrapping, widget picker previews, and idle states. ([#1010](https://github.com/boxcreate/boxlore/pull/1010)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Redesigned the artwork sharing sheet and refined Story and square share-card composition. ([#1011](https://github.com/boxcreate/boxlore/pull/1011)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Core model module documentation updated to describe briefing-market behavior ([#1008](https://github.com/boxcreate/boxlore/pull/1008)) <!-- impact:user-impact-medium -->
 ### Fixed
 - Prevent delayed PodcastInfo loads from restoring a subscription by re-reading live subscription state before applying page data and preserving subscription fields during delayed feed results ([#1009](https://github.com/boxcreate/boxlore/pull/1009)) <!-- impact:user-impact-high -->
@@ -24,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improvements
 - Playback widgets now handle long episode names more cleanly, show more context for new episodes, and offer a new compact Next-control layout.
 <!-- readme-copy:end pr=1010 -->
+
+<!-- readme-copy:start pr=1011 -->
+### Improvements
+- Sharing podcasts and episodes is now clearer, with cleaner artwork cards for messages and Instagram Stories.
+<!-- readme-copy:end pr=1011 -->
 ## [v0.0.23] - 2026-08-28
 
 ### Changed
