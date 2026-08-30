@@ -15,6 +15,7 @@ import android.widget.RemoteViews
 import cx.aswin.boxlore.feature.widgets.actions.WidgetActionIntents
 import cx.aswin.boxlore.feature.widgets.logic.WidgetSemantics
 
+@Suppress("TooManyFunctions")
 object NowPlayingWidgetRenderer {
     fun updateAll(
         context: Context,
@@ -565,6 +566,5 @@ object NowPlayingWidgetRenderer {
     private const val STANDARD_CARD_HEIGHT_DP = 100
     private const val BAR_CARD_HEIGHT_DP = 48
 
-    private fun WidgetVariant.isControlsGrid(): Boolean =
-        this == WidgetVariant.CONTROLS || this == WidgetVariant.CONTROLS_NEXT
+    private fun WidgetVariant.isControlsGrid(): Boolean = this == WidgetVariant.CONTROLS || this == WidgetVariant.CONTROLS_NEXT
 }

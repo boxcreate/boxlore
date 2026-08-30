@@ -5,6 +5,36 @@ package cx.aswin.boxlore.core.designsystem.share
 import android.content.Context
 import cx.aswin.boxlore.core.model.ShareTarget
 
+internal data class ShareBrandingLayout(
+    val contentGap: Float,
+    val labelSize: Float,
+    val logoWidth: Int,
+    val listenNowGap: Float,
+    val listenNowSize: Float,
+    val showListenNow: Boolean,
+)
+
+internal fun shareBrandingLayout(isStory: Boolean): ShareBrandingLayout =
+    if (isStory) {
+        ShareBrandingLayout(
+            contentGap = 112f,
+            labelSize = 28f,
+            logoWidth = 400,
+            listenNowGap = 18f,
+            listenNowSize = 28f,
+            showListenNow = true,
+        )
+    } else {
+        ShareBrandingLayout(
+            contentGap = 64f,
+            labelSize = 24f,
+            logoWidth = 340,
+            listenNowGap = 0f,
+            listenNowSize = 0f,
+            showListenNow = false,
+        )
+    }
+
 /** Bitmap card composition for [ShareManager] share sheets / Instagram stories. */
 internal object ShareCardRenderer {
     fun createShareCard(
@@ -48,6 +78,7 @@ internal object ShareCardRenderer {
             cornerRadius = 72f,
         )
 
+        val brandingLayout = shareBrandingLayout(isStory)
         if (isStory) {
             val textBottom =
                 drawShareText(
@@ -66,11 +97,12 @@ internal object ShareCardRenderer {
                 context = context,
                 canvas = canvas,
                 canvasWidth = width,
-                brandingTop = textBottom + 44f,
-                brandingLabelSize = 34f,
-                logoWidth = 480,
-                listenNowGap = 22f,
-                listenNowSize = 32f,
+                brandingTop = textBottom + brandingLayout.contentGap,
+                brandingLabelSize = brandingLayout.labelSize,
+                logoWidth = brandingLayout.logoWidth,
+                listenNowGap = brandingLayout.listenNowGap,
+                listenNowSize = brandingLayout.listenNowSize,
+                showListenNow = brandingLayout.showListenNow,
             )
         } else {
             val textBottom =
@@ -90,11 +122,12 @@ internal object ShareCardRenderer {
                 context = context,
                 canvas = canvas,
                 canvasWidth = width,
-                brandingTop = textBottom + 30f,
-                brandingLabelSize = 28f,
-                logoWidth = 400,
-                listenNowGap = 17f,
-                listenNowSize = 28f,
+                brandingTop = textBottom + brandingLayout.contentGap,
+                brandingLabelSize = brandingLayout.labelSize,
+                logoWidth = brandingLayout.logoWidth,
+                listenNowGap = brandingLayout.listenNowGap,
+                listenNowSize = brandingLayout.listenNowSize,
+                showListenNow = brandingLayout.showListenNow,
             )
         }
 
@@ -184,6 +217,7 @@ internal object ShareCardRenderer {
         logoWidth: Int,
         listenNowGap: Float,
         listenNowSize: Float,
+        showListenNow: Boolean,
     ) {
         val brandingLeft = (canvasWidth - logoWidth) / 2f
         val brandingRight = brandingLeft + logoWidth
@@ -248,6 +282,8 @@ internal object ShareCardRenderer {
                 )
                 draw(canvas)
             }
+        if (!showListenNow) return
+
         val listenNowTop = logoTop + logoHeight + listenNowGap
         drawCenteredTextBlock(
             canvas = canvas,
@@ -366,7 +402,9 @@ internal object ShareCardRenderer {
         cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces.create(
             context = context,
             style = style,
-            roundness = cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces.cachedRoundness(context),
+            roundness =
+                cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
+                    .cachedRoundness(context),
         )
 
     private fun drawRoundedArtwork(

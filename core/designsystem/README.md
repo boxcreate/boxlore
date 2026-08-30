@@ -11,8 +11,8 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 - `PredictiveBackWrapper` peeks the NavHost (scale 1.0 → 0.9) during system Back. Progress always returns to rest after commit or cancel so a Back that replaces the start destination (cold-start Subscriptions → Home) does not leave Home scaled down.
 - Shared discovery poster cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing` (Home “Based on Your Taste” and Explore For You).
 - `ProgressiveSearchScrollLogic` decides when a progressive Find-a-show list should pin to the top (query change, new top hit, or Matches header). Used by onboarding search and Explore Find-a-show; Ask anything does not use it.
-- `share.ShareManager` for composite share cards and the system share sheet; emits glossary `share_content` via `:core:analytics`.
-- `share.ShareCardRenderer` builds the share-card bitmaps used by `ShareManager` (stories / message formats).
+- `share.ShareManager` for composite share cards and the system share sheet; emits glossary `share_content` via `:core:analytics`. `ShareBottomSheet` presents a clear content preview, a switch-style timestamp option, a primary artwork share action, and separate link/story actions.
+- `share.ShareCardRenderer` builds the share-card bitmaps used by `ShareManager`. Stories separate episode/show details from a reduced branding block and retain the “listen now” prompt; square message artwork uses smaller branding without that prompt.
 
 ## Internal structure
 
