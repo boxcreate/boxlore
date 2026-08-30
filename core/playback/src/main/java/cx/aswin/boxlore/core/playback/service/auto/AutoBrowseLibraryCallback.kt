@@ -184,14 +184,13 @@ internal class AutoBrowseLibraryCallback(
     private suspend fun markEpisodeComplete(episodeId: String): Boolean {
         val existing = getOrCreateHistoryItem(episodeId) ?: return false
         host.observeManualCompletion(episodeId)
-        host.database.listeningHistoryDao().upsert(
-            existing.copy(
-                progressMs = 0L,
-                isCompleted = true,
-                isManualCompletion = true,
-                isDirty = true,
-                lastPlayedAt = System.currentTimeMillis(),
-            ),
+        val dao = host.database.listeningHistoryDao()
+        dao.insertIfAbsent(existing)
+        dao.completeFromPlayback(
+            episodeId = episodeId,
+            durationMs = existing.durationMs,
+            lastPlayedAt = System.currentTimeMillis(),
+            isManualCompletion = true,
         )
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, 20, null)
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_HISTORY_ID, 50, null)

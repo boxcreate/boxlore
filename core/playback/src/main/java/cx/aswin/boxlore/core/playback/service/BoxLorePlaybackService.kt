@@ -10,16 +10,22 @@ import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.playback.CastMediaMetadata
+import cx.aswin.boxlore.core.playback.PlaybackHistorySeedPolicy
+import cx.aswin.boxlore.core.playback.PlaybackHistorySeedSource
 import cx.aswin.boxlore.core.playback.PlaybackIntroOutroController
 import cx.aswin.boxlore.core.playback.PlaybackPowerPolicy
 import cx.aswin.boxlore.core.playback.PlaybackProgressCoordinator
+import cx.aswin.boxlore.core.playback.PlaybackProgressSnapshot
 import cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
+import cx.aswin.boxlore.core.playback.PlaybackTaskRemovalPolicy
 import cx.aswin.boxlore.core.playback.PlaybackTelemetrySession
 import cx.aswin.boxlore.core.playback.PlaybackUiVisibility
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseContract
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryHost
 import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
+import cx.aswin.boxlore.core.playback.toPlaybackHistorySeedSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +53,7 @@ open class BoxLorePlaybackService :
     private var localExoPlayer: ExoPlayer? = null
     private var playbackPlayer: Player? = null
     private var pausedIdleTeardownJob: Job? = null
+    private val manualCompletionPersistenceJobs = mutableSetOf<Job>()
     override lateinit var seekBackAction: androidx.media3.session.CommandButton
         protected set
     override lateinit var seekForwardAction: androidx.media3.session.CommandButton
@@ -195,6 +202,7 @@ open class BoxLorePlaybackService :
             },
             updateConsumedAudio = { player -> telemetrySession.updateConsumedAudio(player) },
             dispatchHeartbeatTelemetry = { player -> telemetrySession.dispatchHeartbeatTelemetry(player) },
+            missingHistorySeedProvider = ::buildMissingProgressHistory,
         )
     }
 
@@ -383,6 +391,18 @@ open class BoxLorePlaybackService :
                     if (player.deviceInfo.playbackType == androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE) {
                         handleRemotePositionDiscontinuity(player, oldPosition, newPosition, reason)
                     }
+                    if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                        val snapshot =
+                            progressCoordinator.captureProgressSnapshot(
+                                player = player,
+                                allowZeroPosition = oldPosition.mediaItemIndex == newPosition.mediaItemIndex,
+                            )
+                        if (snapshot != null) {
+                            serviceScope.launch {
+                                progressCoordinator.saveProgressSnapshot(snapshot)
+                            }
+                        }
+                    }
                 }
 
                 override fun onMediaItemTransition(
@@ -482,6 +502,8 @@ open class BoxLorePlaybackService :
                             }
                     } else {
                         introOutroController.stopOutroMonitor()
+                        val progressSnapshot =
+                            progressCoordinator.captureProgressSnapshot(player)
                         val shouldEndSession =
                             !player.playWhenReady ||
                                 player.playbackState == Player.STATE_ENDED ||
@@ -495,9 +517,11 @@ open class BoxLorePlaybackService :
 
                         progressSaverJob?.cancel()
                         progressSaverJob = null
+                        progressCoordinator.activePlaybackStartTimeMs = 0L
                         serviceScope.launch {
-                            progressCoordinator.saveProgressOnce(player)
-                            progressCoordinator.activePlaybackStartTimeMs = 0L
+                            if (progressSnapshot != null) {
+                                progressCoordinator.saveProgressSnapshot(progressSnapshot)
+                            }
                         }
                     }
                     reconcilePausedIdleTeardown(player)
@@ -791,45 +815,37 @@ open class BoxLorePlaybackService :
         fallbackEpisodeTitle: String?,
         fallbackMediaItem: MediaItem?,
     ) {
-        val existing = database.listeningHistoryDao().getHistoryItem(episodeId)
+        val dao = database.listeningHistoryDao()
+        val existing = dao.getHistoryItem(episodeId)
         if (existing?.isCompleted == true && existing.progressMs == 0L) return
         val resolvedDurationMs =
             existing?.let { durationMs.takeIf { it > 0L } ?: it.durationMs }
                 ?: durationMs.coerceAtLeast(0L)
-        val completed =
-            if (existing != null) {
-                existing.copy(
-                    progressMs = 0L,
-                    durationMs = resolvedDurationMs,
-                    isCompleted = true,
-                    isManualCompletion = false,
-                    isDirty = true,
-                    lastPlayedAt = System.currentTimeMillis(),
-                )
-            } else {
-                val queueItem =
-                    runCatching {
-                        queueRepository.getQueueItemByEpisodeId(episodeId)
-                    }.getOrNull()
-                val podcastId =
-                    queueItem?.podcastId
-                        ?: fallbackPodcastId
-                        ?: ""
-                val podcast =
-                    podcastId.takeIf { it.isNotBlank() }?.let {
-                        runCatching { database.podcastDao().getPodcast(it) }.getOrNull()
-                    }
-                val episodeTitle =
-                    CastMediaMetadata.queueTitle(queueItem?.title)
-                        ?: CastMediaMetadata.queueTitle(fallbackEpisodeTitle)
-                        ?: CastMediaMetadata.queueTitle(fallbackMediaItem?.mediaMetadata?.title)
-                if (episodeTitle == null) {
-                    android.util.Log.w(
-                        "BoxCastPlayer",
-                        "Skipping completion row for $episodeId until episode metadata is available",
-                    )
-                    return
+        if (existing == null) {
+            val queueItem =
+                runCatching {
+                    queueRepository.getQueueItemByEpisodeId(episodeId)
+                }.getOrNull()
+            val podcastId =
+                queueItem?.podcastId
+                    ?: fallbackPodcastId
+                    ?: ""
+            val podcast =
+                podcastId.takeIf { it.isNotBlank() }?.let {
+                    runCatching { database.podcastDao().getPodcast(it) }.getOrNull()
                 }
+            val episodeTitle =
+                CastMediaMetadata.queueTitle(queueItem?.title)
+                    ?: CastMediaMetadata.queueTitle(fallbackEpisodeTitle)
+                    ?: CastMediaMetadata.queueTitle(fallbackMediaItem?.mediaMetadata?.title)
+            if (episodeTitle == null) {
+                android.util.Log.w(
+                    "BoxCastPlayer",
+                    "Skipping completion row for $episodeId until episode metadata is available",
+                )
+                return
+            }
+            dao.insertIfAbsent(
                 cx.aswin.boxlore.core.database.ListeningHistoryEntity(
                     episodeId = episodeId,
                     podcastId = podcastId,
@@ -849,18 +865,79 @@ open class BoxLorePlaybackService :
                             ?: "",
                     progressMs = 0L,
                     durationMs = resolvedDurationMs,
-                    isCompleted = true,
+                    isCompleted = false,
                     lastPlayedAt = System.currentTimeMillis(),
                     enclosureType = queueItem?.enclosureType,
                     isManualCompletion = false,
                     episodeDescription = queueItem?.description,
-                )
-            }
-        database.listeningHistoryDao().upsert(completed)
+                ),
+            )
+        }
+        val persisted = existing ?: dao.getHistoryItem(episodeId) ?: return
+        val completionDurationMs = durationMs.takeIf { it > 0L } ?: persisted.durationMs
+        dao.completeFromPlayback(
+            episodeId = episodeId,
+            durationMs = completionDurationMs,
+            lastPlayedAt = System.currentTimeMillis(),
+            isManualCompletion = false,
+        )
         mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, 20, null)
         mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_HISTORY_ID, 50, null)
         // Resume / Home collage tiles must track completed episodes, not stay on a stale PNG.
         requestAutoCollageRefresh(force = true)
+    }
+
+    private suspend fun buildMissingProgressHistory(
+        snapshot: PlaybackProgressSnapshot,
+    ): cx.aswin.boxlore.core.database.ListeningHistoryEntity? {
+        val sources = loadHistorySeedSources(snapshot.episodeId)
+        val telemetry = telemetryHistorySeedSource(snapshot)
+        val podcastId = PlaybackHistorySeedPolicy.resolvePodcastId(sources, telemetry)
+        val podcast =
+            podcastId.takeIf(String::isNotBlank)?.let { id ->
+                runCatching { database.podcastDao().getPodcast(id) }.getOrNull()
+            }
+        return PlaybackHistorySeedPolicy.build(
+            snapshot = snapshot,
+            sources = sources,
+            podcast =
+                podcast?.let {
+                    PlaybackHistorySeedSource(
+                        podcastImageUrl = it.imageUrl,
+                        podcastName = it.title,
+                    )
+                },
+            telemetry = telemetry,
+            nowMs = System.currentTimeMillis(),
+        )
+    }
+
+    private suspend fun loadHistorySeedSources(episodeId: String): List<PlaybackHistorySeedSource> {
+        runCatching { queueRepository.getQueueItemByEpisodeId(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        runCatching { database.localEpisodeCatalogDao().getEpisode(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        runCatching { database.rssEpisodeDao().getEpisode(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        runCatching { database.episodeSupplementDao().getEpisode(episodeId) }
+            .getOrNull()
+            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+        return runCatching { database.downloadedEpisodeDao().getDownload(episodeId) }
+            .getOrNull()
+            ?.let { listOf(it.toPlaybackHistorySeedSource()) }
+            .orEmpty()
+    }
+
+    private fun telemetryHistorySeedSource(snapshot: PlaybackProgressSnapshot): PlaybackHistorySeedSource? {
+        if (telemetrySession.episodeId != snapshot.episodeId) return null
+        return PlaybackHistorySeedSource(
+            podcastId = telemetrySession.podcastId,
+            episodeTitle = telemetrySession.episodeTitle,
+            podcastName = telemetrySession.podcastName,
+        )
     }
 
     override fun observeManualCompletion(episodeId: String) {
@@ -909,7 +986,10 @@ open class BoxLorePlaybackService :
             serviceScope.launch {
                 delay(PlaybackPowerPolicy.PAUSED_IDLE_TIMEOUT_MS)
                 PlaybackPowerPolicy.persistThenTearDownIfStillIdle(
-                    persistProgress = { progressCoordinator.saveProgressOnce(player) },
+                    persistProgress = {
+                        awaitTerminalPersistence()
+                        progressCoordinator.saveProgressOnce(player)
+                    },
                     isStillIdle = { isPausedLocalTeardownEligible(player) },
                     tearDown = {
                         telemetrySession.end(forceCompleted = false)
@@ -949,30 +1029,54 @@ open class BoxLorePlaybackService :
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val player = mediaSession?.player
-        if (player != null) {
-            if (!player.playWhenReady ||
-                player.mediaItemCount == 0 ||
-                player.playbackState == Player.STATE_ENDED ||
-                player.playbackState == Player.STATE_IDLE
-            ) {
-                android.util.Log.d(
-                    "BoxLorePlaybackService",
-                    "onTaskRemoved: player not playing or queue empty, stopping service gracefully",
+        val plan =
+            PlaybackTaskRemovalPolicy.plan(
+                hasPlayer = player != null,
+                playWhenReady = player?.playWhenReady == true,
+                mediaItemCount = player?.mediaItemCount ?: 0,
+                playbackState = player?.playbackState ?: Player.STATE_IDLE,
+            )
+        if (plan.keepServiceRunning) {
+            android.util.Log.d(
+                "BoxLorePlaybackService",
+                "onTaskRemoved: player is playing, keeping service in foreground and bypassing super.onTaskRemoved to prevent notification from disappearing",
+            )
+            return
+        }
+
+        android.util.Log.d(
+            "BoxLorePlaybackService",
+            "onTaskRemoved: inactive player, persisting before stopping service",
+        )
+        serviceScope.launch {
+            awaitTerminalPersistence()
+            if (plan.persistBeforeStop && player != null) {
+                progressCoordinator.saveProgressOnce(player)
+            }
+            val latestPlayer = mediaSession?.player
+            val latestPlan =
+                PlaybackTaskRemovalPolicy.plan(
+                    hasPlayer = latestPlayer != null,
+                    playWhenReady = latestPlayer?.playWhenReady == true,
+                    mediaItemCount = latestPlayer?.mediaItemCount ?: 0,
+                    playbackState = latestPlayer?.playbackState ?: Player.STATE_IDLE,
                 )
+            if (!latestPlan.keepServiceRunning) {
                 telemetrySession.end(forceCompleted = false)
                 introOutroController.reset(null, 0L)
-                stopSelf()
-                super.onTaskRemoved(rootIntent)
-            } else {
-                android.util.Log.d(
-                    "BoxLorePlaybackService",
-                    "onTaskRemoved: player is playing, keeping service in foreground and bypassing super.onTaskRemoved to prevent notification from disappearing",
-                )
+                finishTaskRemoval(rootIntent)
             }
-        } else {
-            stopSelf()
-            super.onTaskRemoved(rootIntent)
         }
+    }
+
+    private fun finishTaskRemoval(rootIntent: Intent?) {
+        stopSelf()
+        super.onTaskRemoved(rootIntent)
+    }
+
+    private suspend fun awaitTerminalPersistence() {
+        introOutroController.awaitPendingCompletionPersistence()
+        manualCompletionPersistenceJobs.toList().forEach { it.join() }
     }
 
     /**
@@ -1000,36 +1104,81 @@ open class BoxLorePlaybackService :
         val player = playbackPlayer ?: return
         val currentItem = player.currentMediaItem
         val durationMs = player.duration
-        val episodeId = currentItem?.mediaId?.stripEpisodePrefix()
-        if (episodeId != null) {
-            observeManualCompletion(episodeId)
+        val episodeId = currentItem?.mediaId?.stripEpisodePrefix() ?: return
+        val progressSnapshot =
+            progressCoordinator.captureProgressSnapshot(
+                player = player,
+                allowZeroPosition = true,
+            )
+        observeManualCompletion(episodeId)
+        val persistenceJob =
             serviceScope.launch {
-                try {
-                    val existing = database.listeningHistoryDao().getHistoryItem(episodeId)
-                    if (existing != null) {
-                        val updated =
-                            existing.copy(
-                                isCompleted = true,
-                                progressMs = 0L,
-                                durationMs = if (durationMs > 0) durationMs else existing.durationMs,
-                                lastPlayedAt = System.currentTimeMillis(),
-                                isDirty = true,
-                            )
-                        database.listeningHistoryDao().upsert(updated)
-                        android.util.Log.d("BoxLorePlaybackService", "Marked current episode completed: $episodeId")
-                        requestAutoCollageRefresh(force = true)
-
-                        telemetrySession.trackManualCompletion(
-                            episodeId = episodeId,
-                            totalDurationSeconds =
-                                (if (durationMs > 0) durationMs else existing.durationMs) / 1000f,
-                        )
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("BoxLorePlaybackService", "Failed to mark current episode completed", e)
-                }
+                persistManualCompletion(
+                    episodeId = episodeId,
+                    playerDurationMs = durationMs,
+                    progressSnapshot = progressSnapshot,
+                )
             }
+        manualCompletionPersistenceJobs += persistenceJob
+        persistenceJob.invokeOnCompletion {
+            manualCompletionPersistenceJobs -= persistenceJob
         }
+    }
+
+    private suspend fun persistManualCompletion(
+        episodeId: String,
+        playerDurationMs: Long,
+        progressSnapshot: PlaybackProgressSnapshot?,
+    ) {
+        try {
+            val existing = loadOrSeedManualCompletionHistory(episodeId, progressSnapshot) ?: return
+            val completionDurationMs =
+                playerDurationMs.takeIf { it > 0L }
+                    ?: existing.durationMs
+            database.listeningHistoryDao().completeFromPlayback(
+                episodeId = episodeId,
+                durationMs = completionDurationMs,
+                lastPlayedAt = System.currentTimeMillis(),
+                isManualCompletion = true,
+            )
+            android.util.Log.d("BoxLorePlaybackService", "Marked current episode completed: $episodeId")
+            requestAutoCollageRefresh(force = true)
+            telemetrySession.trackManualCompletion(
+                episodeId = episodeId,
+                totalDurationSeconds = completionDurationMs / 1000f,
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            android.util.Log.e(
+                "BoxLorePlaybackService",
+                "Failed to mark current episode completed",
+                error,
+            )
+        }
+    }
+
+    private suspend fun loadOrSeedManualCompletionHistory(
+        episodeId: String,
+        progressSnapshot: PlaybackProgressSnapshot?,
+    ): cx.aswin.boxlore.core.database.ListeningHistoryEntity? {
+        val dao = database.listeningHistoryDao()
+        dao.getHistoryItem(episodeId)?.let { return it }
+        val seed = progressSnapshot?.let { buildMissingProgressHistory(it) } ?: return null
+        dao.insertIfAbsent(seed)
+        dao.enrichMetadataIfMissing(
+            episodeId = seed.episodeId,
+            podcastId = seed.podcastId,
+            episodeTitle = seed.episodeTitle,
+            episodeImageUrl = seed.episodeImageUrl,
+            podcastImageUrl = seed.podcastImageUrl,
+            episodeAudioUrl = seed.episodeAudioUrl,
+            podcastName = seed.podcastName,
+            durationMs = seed.durationMs,
+            enclosureType = seed.enclosureType,
+            episodeDescription = seed.episodeDescription,
+        )
+        return dao.getHistoryItem(episodeId)
     }
 
     private fun handleSkipNext() {

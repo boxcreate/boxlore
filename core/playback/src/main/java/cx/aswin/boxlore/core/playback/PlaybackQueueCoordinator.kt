@@ -51,7 +51,7 @@ internal class PlaybackQueueCoordinator(
     private val checkSavedProgress: suspend (String?, Long?, PlaybackEntryPoint, android.os.Bundle?) -> Pair<Long, Boolean>,
     private val onPlaybackStarted: () -> Unit,
     private val storePendingEntryPoint: (android.os.Bundle?) -> Unit,
-    private val saveCurrentState: suspend (updateLastPlayedAt: Boolean) -> Unit,
+    private val ensureCurrentHistoryRow: suspend () -> Unit,
     private val stopProgressTicker: () -> Unit,
 ) {
     private val castQueueSnapshotPolicy = CastQueueSnapshotPolicy()
@@ -313,6 +313,8 @@ internal class PlaybackQueueCoordinator(
             if (startPosMs > 0L) {
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
                     .setSeekSource("resume")
+            } else if (startEpisodeId != null) {
+                PlaybackLifecycleSignals.markPendingZeroStart(startEpisodeId)
             }
             controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
             controller.prepare()
@@ -321,7 +323,7 @@ internal class PlaybackQueueCoordinator(
 
             controller.play()
             syncQueueToDb()
-            saveCurrentState(false)
+            ensureCurrentHistoryRow()
         }
     }
 
