@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.info.logic
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.EpisodeSort
+import cx.aswin.boxlore.feature.info.PodcastInfoUiState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -125,5 +126,51 @@ class PodcastInfoViewModelLogicTest {
         assertTrue(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = true))
         assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = false))
         assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = false, hasTip = true))
+    }
+
+    @Test
+    fun `late refresh preserves an unsubscribe completed while it was loading`() {
+        val current =
+            PodcastInfoUiState.Success(
+                podcast =
+                    TestFixtures
+                        .podcast(id = "p1")
+                        .copy(
+                            subscribedAt = 0L,
+                            notificationsEnabled = false,
+                            autoDownloadEnabled = false,
+                        ),
+                episodes = emptyList(),
+                isSubscribed = false,
+                directFeedChip = DirectFeedChipState.Offer,
+            )
+        val staleResult =
+            PodcastInfoUiState.Success(
+                podcast =
+                    TestFixtures
+                        .podcast(id = "p1")
+                        .copy(
+                            subscribedAt = 99L,
+                            notificationsEnabled = true,
+                            autoDownloadEnabled = true,
+                        ),
+                episodes = listOf(TestFixtures.episode(id = "new")),
+                isSubscribed = true,
+                directFeedChip = DirectFeedChipState.Hidden,
+            )
+
+        val applied =
+            PodcastInfoAsyncResultLogic.preserveCurrentSubscription(
+                current = current,
+                result = staleResult,
+                targetPodcastId = "p1",
+            )!!
+
+        assertFalse(applied.isSubscribed)
+        assertEquals(0L, applied.podcast.subscribedAt)
+        assertFalse(applied.podcast.notificationsEnabled)
+        assertFalse(applied.podcast.autoDownloadEnabled)
+        assertEquals(DirectFeedChipState.Offer, applied.directFeedChip)
+        assertEquals(listOf("new"), applied.episodes.map { it.id })
     }
 }

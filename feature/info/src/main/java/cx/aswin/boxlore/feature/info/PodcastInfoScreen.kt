@@ -42,15 +42,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -76,8 +77,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
@@ -789,31 +793,38 @@ fun PodcastInfoScreen(
                 if (showMissingEpisodesConfirm) {
                     AlertDialog(
                         onDismissRequest = { showMissingEpisodesConfirm = false },
-                        title = { Text("Missing some episodes?") },
+                        title = { Text("Get every episode") },
                         text = {
                             Text(
-                                "This list is powered by Podcast Index. For a few shows, it " +
-                                    "can lag behind the publisher. We'll check the show's own " +
-                                    "feed and add any extra episodes here. You only need to do " +
-                                    "this once per podcast.\n\n" +
-                                    "We don't do this automatically because most shows are " +
-                                    "already complete, and a full feed download can be large. " +
-                                    "Ask only when this list looks short.\n\n" +
-                                    "If you subscribe, boxlore keeps the complete list from that feed.",
+                                buildAnnotatedString {
+                                    append(
+                                        "If you prefer to stay unsubscribed but still want the latest " +
+                                            "episodes, let boxlore use this show’s publisher feed to fill " +
+                                            "any gaps. You only need to allow this once—future visits " +
+                                            "refresh automatically.\n\n",
+                                    )
+                                    append("Full feeds can be large, so boxlore asks first.\n\n")
+                                    withStyle(SpanStyle(fontWeight = GoogleSansWeight.bold)) {
+                                        append(
+                                            "Subscribe and boxlore will automatically keep the latest " +
+                                                "episodes up to date.",
+                                        )
+                                    }
+                                },
                             )
                         },
                         confirmButton = {
-                            TextButton(
+                            Button(
                                 onClick = {
                                     showMissingEpisodesConfirm = false
                                     viewModel.loadMissingEpisodes()
                                 },
                             ) {
-                                Text("Update list")
+                                Text("Auto-fetch from publisher")
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showMissingEpisodesConfirm = false }) {
+                            OutlinedButton(onClick = { showMissingEpisodesConfirm = false }) {
                                 Text("Not now")
                             }
                         },

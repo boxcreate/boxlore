@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -102,8 +103,10 @@ class RoomLocalCatalogTest {
         }
 
     @Test
-    fun upsertSubscribedPodcastMarksSubscribedWithDefaults() =
+    fun upsertSubscribedPodcastUpdatesExistingSubscriptionWithDefaults() =
         runTest {
+            podcastDao.upsert(entity("pod-new"))
+
             catalog.upsertSubscribedPodcast(
                 Podcast(
                     id = "pod-new",
@@ -121,8 +124,44 @@ class RoomLocalCatalogTest {
         }
 
     @Test
+    fun upsertSubscribedPodcastDoesNotCreateMissingSubscription() =
+        runTest {
+            catalog.upsertSubscribedPodcast(
+                Podcast(
+                    id = "pod-missing",
+                    title = "Late Metadata",
+                    artist = "Artist",
+                    imageUrl = "https://example.com/missing.jpg",
+                ),
+            )
+
+            assertNull(podcastDao.getPodcast("pod-missing"))
+        }
+
+    @Test
+    fun upsertSubscribedPodcastDoesNotResubscribeUnsubscribedPodcast() =
+        runTest {
+            podcastDao.upsert(entity("pod-retired", title = "Stored").copy(isSubscribed = false))
+
+            catalog.upsertSubscribedPodcast(
+                Podcast(
+                    id = "pod-retired",
+                    title = "Late Metadata",
+                    artist = "Artist",
+                    imageUrl = "https://example.com/late.jpg",
+                ),
+            )
+
+            val stored = podcastDao.getPodcast("pod-retired")!!
+            assertFalse(stored.isSubscribed)
+            assertEquals("Stored", stored.title)
+        }
+
+    @Test
     fun upsertSubscribedPodcastOldestSortImpliesSerial() =
         runTest {
+            podcastDao.upsert(entity("pod-serial"))
+
             catalog.upsertSubscribedPodcast(
                 Podcast(
                     id = "pod-serial",

@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
+import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -469,13 +470,16 @@ class PodcastInfoViewModel(
         viewModelScope.launch {
             try {
                 val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                val targetPodcastId = latest.podcast.id
                 val refresh = supplementSupport.refreshMissingEpisodes(latest, announceResult = true)
-                _uiState.value = refresh.state
+                val appliedState =
+                    applySupplementRefreshState(targetPodcastId, refresh.state)
+                        ?: return@launch
                 refresh.pageSourceCount?.let { currentOffset = it }
-                if (latest.isSubscribed) {
+                if (appliedState.isSubscribed) {
                     refresh.libraryTip?.let { tip ->
                         subscriptionRepository.updateLatestEpisode(
-                            podcastId = latest.podcast.id,
+                            podcastId = targetPodcastId,
                             episode = tip,
                             markAsNew = true,
                             publisherFeedAuthoritative = true,
@@ -591,6 +595,8 @@ class PodcastInfoViewModel(
                     _currentPodcastIdFlow.value = apiPodcastWithFallback.id
 
                     trackScreenViewed(apiPodcastWithFallback.id, apiPodcastWithFallback.title)
+                    val latestIsSubscribed =
+                        subscriptionRepository.isSubscribed(apiPodcastWithFallback.id)
 
                     if (wasSubscribedAtStart == null) {
                         wasSubscribedAtStart = isSubscribed
@@ -602,7 +608,7 @@ class PodcastInfoViewModel(
                             podcast = apiPodcastWithFallback,
                             episodes = page.episodes,
                             piEpisodes = page.episodes,
-                            isSubscribed = isSubscribed,
+                            isSubscribed = latestIsSubscribed,
                             hasMoreEpisodes = page.hasMore,
                             currentSort = initialSort,
                             isLoadingMore = false,
@@ -631,9 +637,13 @@ class PodcastInfoViewModel(
                                         state = latest.copy(directFeedChip = DirectFeedChipState.Fetching),
                                         announceResult = false,
                                     )
-                                _uiState.value = refreshed.state
+                                val appliedState =
+                                    applySupplementRefreshState(
+                                        apiPodcastWithFallback.id,
+                                        refreshed.state,
+                                    ) ?: return@launch
                                 refreshed.pageSourceCount?.let { currentOffset = it }
-                                if (latest.isSubscribed) {
+                                if (appliedState.isSubscribed) {
                                     refreshed.libraryTip?.let { tip ->
                                         subscriptionRepository.updateLatestEpisode(
                                             podcastId = apiPodcastWithFallback.id,
@@ -655,7 +665,7 @@ class PodcastInfoViewModel(
                         }
                     }
 
-                    if (isSubscribed) {
+                    if (latestIsSubscribed) {
                         apiPodcastWithFallback.latestEpisode?.id?.let { episodeId ->
                             launch {
                                 userPrefs.setLastSeenEpisodeId(apiPodcastWithFallback.id, episodeId)
@@ -669,7 +679,6 @@ class PodcastInfoViewModel(
                             fetchAndApplyPodcastMeta(
                                 effectivePodcastId,
                                 apiPodcast.id,
-                                isSubscribed,
                                 localPodcast,
                             )
                         }
@@ -753,7 +762,6 @@ class PodcastInfoViewModel(
     private suspend fun fetchAndApplyPodcastMeta(
         podcastId: String,
         apiPodcastId: String,
-        isSubscribed: Boolean,
         localPodcast: Podcast?,
     ) {
         try {
@@ -778,7 +786,7 @@ class PodcastInfoViewModel(
                         )
                     _uiState.value = state.copy(podcast = enrichedPodcast)
 
-                    if (isSubscribed) {
+                    if (state.isSubscribed) {
                         val preferredSortVal = localPodcast?.preferredSort ?: "newest"
                         val typeVal = if (preferredSortVal == "oldest") "serial" else "episodic"
                         localCatalog.upsertSubscribedPodcast(
@@ -941,10 +949,14 @@ class PodcastInfoViewModel(
                 if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
                     return@launch
                 }
-                _uiState.value = refreshed.state.copy(isRssRefreshing = false)
+                val appliedState =
+                    applySupplementRefreshState(
+                        targetPodcastId,
+                        refreshed.state.copy(isRssRefreshing = false),
+                    ) ?: return@launch
                 refreshed.pageSourceCount?.let { currentOffset = it }
                 if (PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(
-                        isSubscribed = currentState.isSubscribed,
+                        isSubscribed = appliedState.isSubscribed,
                         hasTip = refreshed.libraryTip != null,
                     )
                 ) {
@@ -972,6 +984,21 @@ class PodcastInfoViewModel(
                     )
             }
         }
+    }
+
+    private fun applySupplementRefreshState(
+        targetPodcastId: String,
+        result: PodcastInfoUiState.Success,
+    ): PodcastInfoUiState.Success? {
+        val current = _uiState.value as? PodcastInfoUiState.Success ?: return null
+        val applied =
+            PodcastInfoAsyncResultLogic.preserveCurrentSubscription(
+                current = current,
+                result = result,
+                targetPodcastId = targetPodcastId,
+            ) ?: return null
+        _uiState.value = applied
+        return applied
     }
 
     fun toggleSort() {
@@ -1109,20 +1136,24 @@ class PodcastInfoViewModel(
         currentState: PodcastInfoUiState.Success,
         isSubscribed: Boolean,
     ) {
+        val latestState =
+            (_uiState.value as? PodcastInfoUiState.Success)
+                ?.takeIf { it.podcast.id == currentState.podcast.id }
+                ?: currentState
         val updatedPodcast =
-            currentState.podcast.copy(
+            latestState.podcast.copy(
                 subscribedAt = if (isSubscribed) System.currentTimeMillis() else 0L,
-                notificationsEnabled = isSubscribed && currentState.podcast.notificationsEnabled,
-                autoDownloadEnabled = isSubscribed && currentState.podcast.autoDownloadEnabled,
+                notificationsEnabled = isSubscribed && latestState.podcast.notificationsEnabled,
+                autoDownloadEnabled = isSubscribed && latestState.podcast.autoDownloadEnabled,
             )
         _uiState.value =
-            currentState.copy(
+            latestState.copy(
                 podcast = updatedPodcast,
                 isSubscribed = isSubscribed,
             )
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackPodcastSubscriptionToggled(
-            podcastId = currentState.podcast.id,
-            podcastName = currentState.podcast.title,
+            podcastId = latestState.podcast.id,
+            podcastName = latestState.podcast.title,
             isSubscribed = isSubscribed,
             entryPoint = entryPoint ?: "unknown",
         )
