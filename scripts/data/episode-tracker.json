@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-01T01:22:46.082Z",
+  "lastRun": "2026-09-01T06:34:11.626Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788215418415
     },
     "385117": {
-      "lastRssKey": "c70f2394-a5a1-11f1-9836-dfee3a073f90",
-      "lastEpisodeTitle": "9PM ET 08/31/2026 Newscast",
+      "lastRssKey": "b30849dc-a5cb-11f1-81e9-6fea0981df71",
+      "lastEpisodeTitle": "2AM ET 09/01/2026 Newscast",
       "lastEpisodeId": "59758400253",
-      "lastCheckedAt": 1788225771304
+      "lastCheckedAt": 1788244460815
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -131,10 +131,10 @@
       "lastCheckedAt": 1788114332974
     },
     "491579": {
-      "lastRssKey": "6a959f98ee851f3f31048a9d",
-      "lastEpisodeTitle": "Beren Cross: One and Done? | The West Stand",
+      "lastRssKey": "6a90b31a1f4e42764d24ec0b",
+      "lastEpisodeTitle": "Bamford, Becchio, Pablo and more! | The Phil Hay Years Highlights",
       "lastEpisodeId": "59632622099",
-      "lastCheckedAt": 1788198852392
+      "lastCheckedAt": 1788244464863
     },
     "499394": {
       "lastRssKey": "flightcast:01M0ECWWKZKQ93WCFTA6JV03WZ",
@@ -143,10 +143,10 @@
       "lastCheckedAt": 1788172518787
     },
     "509873": {
-      "lastRssKey": "02600fdf-145c-43a2-93f5-95a6decd40f0",
-      "lastEpisodeTitle": "Maddow: Trump learns the hard way, 'incompetence has consequences'",
+      "lastRssKey": "ed67e561-10d9-436d-b9e1-53b678e76d4d",
+      "lastEpisodeTitle": "Trump BUSTED in bogus ballroom claim by Obama era secret",
       "lastEpisodeId": "59517346400",
-      "lastCheckedAt": 1788029125994
+      "lastCheckedAt": 1788244466671
     },
     "511104": {
       "lastRssKey": "https://www.archive.org/download/interpretationofdreams_1401_librivox/interpretationofdreams_00_freud_64kb.mp3",
@@ -166,10 +166,10 @@
       "lastCheckedAt": 1782585870863
     },
     "570903": {
-      "lastRssKey": "urn:bbc:podcast:p0p18x7m",
-      "lastEpisodeTitle": "Evil Animals, Series 3: Meerkats",
+      "lastRssKey": "urn:bbc:podcast:m0030f49",
+      "lastEpisodeTitle": "Series 13: The Humans are Taking Over",
       "lastEpisodeId": "58699345714",
-      "lastCheckedAt": 1787719105817
+      "lastCheckedAt": 1788244473149
     },
     "577105": {
       "lastRssKey": "prx_7057_4ea76520-0a3f-4789-bca4-fbd980488243",
@@ -208,10 +208,10 @@
       "lastCheckedAt": 1787801220675
     },
     "744587": {
-      "lastRssKey": "b4adbc78-3d4b-4807-836a-8ab3c59a19b5",
-      "lastEpisodeTitle": "Posesión en Cabaña de Mazamitla (experiencias paranormales)",
+      "lastRssKey": "e09c34cd-332b-44f3-beb9-fa7b074c410f",
+      "lastEpisodeTitle": "La Arpía de Ecatepec y otros relatos paranormales",
       "lastEpisodeId": "59650837980",
-      "lastCheckedAt": 1787973304500
+      "lastCheckedAt": 1788244475221
     },
     "745392": {
       "lastRssKey": "20ad2ce9-3088-449b-8001-2e3e739b54d8",
@@ -220,10 +220,10 @@
       "lastCheckedAt": 1786559319432
     },
     "771813": {
-      "lastRssKey": "cc425097-55f4-4ae8-90a8-96d293d2d261",
-      "lastEpisodeTitle": "Solving AI’s Energy Problem with Kathryn Huff",
-      "lastEpisodeId": "59292400834",
-      "lastCheckedAt": 1787910212417
+      "lastRssKey": "64bd7aac-114a-4cda-9b6d-9209c1c5081b",
+      "lastEpisodeTitle": "Rogue Planets & Exomoons with David Kipping",
+      "lastEpisodeId": "59781523054",
+      "lastCheckedAt": 1788244475854
     },
     "808826": {
       "lastRssKey": "6a8d2cc42fe0b9d078559c12",
@@ -256,16 +256,16 @@
       "lastCheckedAt": 1788029131426
     },
     "928708": {
-      "lastRssKey": "307b4cf4-a462-11f1-98ba-3f17aed2e05c",
-      "lastEpisodeTitle": "This Day in History - August 31, 2026",
+      "lastRssKey": "f7efb0f8-a53a-11f1-a7ed-ff022116b2db",
+      "lastEpisodeTitle": "This Day in History - September 1, 2026",
       "lastEpisodeId": "59673372610",
-      "lastCheckedAt": 1788172539702
+      "lastCheckedAt": 1788244478817
     },
     "946758": {
-      "lastRssKey": "963d1478-a336-11f1-87d5-db713dfce56b",
-      "lastEpisodeTitle": "Cecil and Kevin perform more from The Nudge, by Night Vale co-creator Joseph Fink",
+      "lastRssKey": "10a4917c-77b5-11f0-8752-337e8b32dca6",
+      "lastEpisodeTitle": "293 - The Boys (1946)",
       "lastEpisodeId": "59193386502",
-      "lastCheckedAt": 1788172540132
+      "lastCheckedAt": 1788244479263
     },
     "947138": {
       "lastRssKey": "81b5c28c-b5cc-11f0-92f1-27dac81c3eb6",
@@ -328,10 +328,10 @@
       "lastCheckedAt": 1786559324862
     },
     "1388001": {
-      "lastRssKey": "1f57342c-262c-481b-9322-d6b985a938cd",
-      "lastEpisodeTitle": "Pourquoi les Islandais ont dit « non » à l’Union européenne",
+      "lastRssKey": "14eba899-52bd-4279-8106-8ada919eabaa",
+      "lastEpisodeTitle": "La Chine réunit un Sommet antioccidental, pendant que Trump regarde ailleurs",
       "lastEpisodeId": "59698893130",
-      "lastCheckedAt": 1788172544802
+      "lastCheckedAt": 1788244486014
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33432",
@@ -340,9 +340,9 @@
       "lastCheckedAt": 1788172545760
     },
     "2407094": {
-      "lastRssKey": "6a95b7262bfa815cc602af62",
-      "lastEpisodeTitle": "Voici ce qui change pour vous au 1er septembre (31/08)",
-      "lastCheckedAt": 1788215439482
+      "lastRssKey": "6a95ae10e988099c6bc51bbf",
+      "lastEpisodeTitle": "(Pop) L’IA Grok est accusée d’avoir été entraîné avec des contenus pédocriminels… HugoDécrypte",
+      "lastCheckedAt": 1788244487240
     },
     "2574026": {
       "lastRssKey": "8ad6f416-a24e-11f1-b5ac-cf3d62e6c65c",
@@ -472,10 +472,10 @@
       "lastCheckedAt": 1787951211054
     },
     "5930143": {
-      "lastRssKey": "1f57342c-262c-481b-9322-d6b985a938cd",
-      "lastEpisodeTitle": "Pourquoi les Islandais ont dit « non » à l’Union européenne",
+      "lastRssKey": "14eba899-52bd-4279-8106-8ada919eabaa",
+      "lastEpisodeTitle": "La Chine réunit un Sommet antioccidental, pendant que Trump regarde ailleurs",
       "lastEpisodeId": "59564116173",
-      "lastCheckedAt": 1788172553230
+      "lastCheckedAt": 1788244496065
     },
     "5945547": {
       "lastRssKey": "610bddc6-ee79-45ae-8c2b-3bd9258193f7",
@@ -520,10 +520,10 @@
       "lastCheckedAt": 1787973324577
     },
     "6764080": {
-      "lastRssKey": "fa421d6b-1e75-46fb-b1f6-b4b000886ca8",
-      "lastEpisodeTitle": "Big Boy Movie Trilogy: Part Two - Controversial Opinions",
+      "lastRssKey": "da1ae59a-940e-45e9-9a79-b4b80052a7b9",
+      "lastEpisodeTitle": "Big Boy Movie Trilogy Part Three: Greg and Alexei Fix The Cinema",
       "lastEpisodeId": "58827636737",
-      "lastCheckedAt": 1787561727780
+      "lastCheckedAt": 1788244498570
     },
     "6766874": {
       "lastRssKey": "c58777c6-63b9-481e-a2d1-99e05fe828a9",
@@ -550,10 +550,10 @@
       "lastCheckedAt": 1787733718592
     },
     "6956562": {
-      "lastRssKey": "dcf4810e-6b6e-42b6-964e-ce43fed992c1",
-      "lastEpisodeTitle": "How do you manufacture a medicine that keeps changing?",
-      "lastEpisodeId": "59728456454",
-      "lastCheckedAt": 1788148397492
+      "lastRssKey": "1aab5392-34f9-4182-8c1b-2f49aed9877c",
+      "lastEpisodeTitle": "What a government audit found in India’s EV subsidy scheme?",
+      "lastEpisodeId": "59775485930",
+      "lastCheckedAt": 1788244500867
     },
     "6994919": {
       "lastEpisodeId": "42873997390",
