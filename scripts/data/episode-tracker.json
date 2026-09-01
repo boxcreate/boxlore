@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-01T12:22:32.752Z",
+  "lastRun": "2026-09-01T16:49:33.195Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -55,10 +55,10 @@
       "lastCheckedAt": 1787951188259
     },
     "222512": {
-      "lastRssKey": "Buzzsprout-19717688",
-      "lastEpisodeTitle": "Struggling, In Debt, and Trusting Allah | Khutbah by Sh. Elshinawy",
-      "lastEpisodeId": "59632387148",
-      "lastCheckedAt": 1787951188557
+      "lastRssKey": "Buzzsprout-19736828",
+      "lastEpisodeTitle": "Abdullah ibn Abi Umayyah (ra): He Shouted Over the Prophet ﷺ | The Firsts | Dr. Omar Suleiman",
+      "lastEpisodeId": "59801599669",
+      "lastCheckedAt": 1788281380211
     },
     "311214": {
       "lastEpisodeId": "567104661",
@@ -66,10 +66,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "97F5DF1B-0A4C-48A2-A362-B766AAFC2B64",
-      "lastEpisodeTitle": "School Phone Bans Are Spreading. But Are They Working?",
+      "lastRssKey": "48E64DC2-6990-4CB9-BE61-6D9B92D6B567",
+      "lastEpisodeTitle": "TNB Tech Minute: OpenAI Calls Apple’s Trade Theft Lawsuit ‘Baseless’",
       "lastEpisodeId": "59785471897",
-      "lastCheckedAt": 1788265359416
+      "lastCheckedAt": 1788281380686
     },
     "331078": {
       "lastRssKey": "4ad448c4-97e9-11f1-ac15-23f58794d628",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788215418415
     },
     "385117": {
-      "lastRssKey": "fa84c204-a5fd-11f1-8eac-ef96d52be925",
-      "lastEpisodeTitle": "8AM ET 09/01/2026 Newscast",
+      "lastRssKey": "817e87f6-a61f-11f1-91e4-e39895359ada",
+      "lastEpisodeTitle": "12PM ET 09/01/2026 Newscast",
       "lastEpisodeId": "59758400253",
-      "lastCheckedAt": 1788265359912
+      "lastCheckedAt": 1788281381442
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -274,10 +274,10 @@
       "lastCheckedAt": 1787910215018
     },
     "980370": {
-      "lastRssKey": "6a959507ee851f3f3101b20c",
-      "lastEpisodeTitle": "This is what the birth of the universe sounded like | Mark Whittle",
+      "lastRssKey": "6a95c9a13255edf604afbe65",
+      "lastEpisodeTitle": "The 60 seconds that make or break a conversation | Chris Fenning",
       "lastEpisodeId": "59697911357",
-      "lastCheckedAt": 1788198865447
+      "lastCheckedAt": 1788281409276
     },
     "1015378": {
       "lastRssKey": "6d431e83-eb88-4082-9b0c-aec16b34ea7b",
@@ -354,6 +354,12 @@
       "lastEpisodeTitle": "El Héroe perdido capitulo 42",
       "lastEpisodeId": "2138780960",
       "lastCheckedAt": 1788029139347
+    },
+    "3487352": {
+      "lastRssKey": "24729fb8-8363-4525-9581-9a93b4a7c557",
+      "lastEpisodeTitle": "Wo Insaan Nahi... Maut Ka Beej Tha! | Sehjeevi: T.A.N.T.R.A (Finale) | HINDI HORROR AUDIO CINEMA",
+      "lastEpisodeId": "59344146650",
+      "lastCheckedAt": 1788281418771
     },
     "3628391": {
       "lastRssKey": "b23f9a2d-78db-4ebd-92e1-f60b083e7c2b",
@@ -671,6 +677,12 @@
       "lastEpisodeTitle": "Hakeem Oluseyi: The different realms of the universe, in 69 minutes",
       "lastEpisodeId": "55941239469",
       "lastCheckedAt": 1786559339176
+    },
+    "7954192": {
+      "lastEpisodeId": "59218201194",
+      "lastEpisodeTitle": "EP02 - The First Kill",
+      "lastRssKey": "https://api.spreaker.com/episode/74318844",
+      "lastCheckedAt": 1788281442246
     }
   }
 }
