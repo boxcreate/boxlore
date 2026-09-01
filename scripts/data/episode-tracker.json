@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-01T16:49:33.195Z",
+  "lastRun": "2026-09-01T19:44:50.958Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -25,10 +25,10 @@
       "lastCheckedAt": 1786636690918
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/74775381",
-      "lastEpisodeTitle": "Kharge 'purification' row, English Vinglish in Punjab, and Messi retires",
-      "lastEpisodeId": "59773493199",
-      "lastCheckedAt": 1788225767634
+      "lastRssKey": "https://api.spreaker.com/episode/74788853",
+      "lastEpisodeTitle": "The Catch Up: CJP’s ‘historic’ praise, CJI's ‘gesture’ reply (1 September)",
+      "lastEpisodeId": "59806841939",
+      "lastCheckedAt": 1788291893138
     },
     "78573": {
       "lastRssKey": "8c623c9b-a4da-43b2-a85b-6bd0ec41301a",
@@ -72,16 +72,16 @@
       "lastCheckedAt": 1788281380686
     },
     "331078": {
-      "lastRssKey": "4ad448c4-97e9-11f1-ac15-23f58794d628",
-      "lastEpisodeTitle": "50% Toward AI Takeover?",
+      "lastRssKey": "93b71b32-a15a-11f1-bf6e-3bd05c852ec1",
+      "lastEpisodeTitle": "An... AI Toothbrush??!!",
       "lastEpisodeId": "59764839545",
-      "lastCheckedAt": 1788215418415
+      "lastCheckedAt": 1788291897628
     },
     "385117": {
-      "lastRssKey": "817e87f6-a61f-11f1-91e4-e39895359ada",
-      "lastEpisodeTitle": "12PM ET 09/01/2026 Newscast",
+      "lastRssKey": "aa265d0a-a638-11f1-976b-cb47b179ee2e",
+      "lastEpisodeTitle": "3PM ET 09/01/2026 Newscast",
       "lastEpisodeId": "59758400253",
-      "lastCheckedAt": 1788281381442
+      "lastCheckedAt": 1788291898157
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -90,10 +90,10 @@
       "lastCheckedAt": 1788016248854
     },
     "415434": {
-      "lastRssKey": "48339800-6e7b-11f1-94bf-2b1283441f72",
-      "lastEpisodeTitle": "Can Fairphone survive the US market",
+      "lastRssKey": "c8f4e5ca-c3c7-11f0-8340-83faba3b6333",
+      "lastEpisodeTitle": "What the AI oligarchs get wrong about being alive",
       "lastEpisodeId": "59636554974",
-      "lastCheckedAt": 1788215419618
+      "lastCheckedAt": 1788291899126
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -119,10 +119,15 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "2ee8321d-225f-41cc-87f1-9fddfb3798c6",
-      "lastEpisodeTitle": "CyberCab Colors | Tesla Time News 669",
-      "lastEpisodeId": "59586530510",
-      "lastCheckedAt": 1788114332242
+      "lastRssKey": "a7c56c2c-3bc9-465f-a255-19976a57f195",
+      "lastEpisodeTitle": "FSD 14.1 Lite TESTED! | Tesla Time News 670",
+      "lastEpisodeId": "59809990132",
+      "lastCheckedAt": 1788291901881
+    },
+    "466583": {
+      "lastRssKey": "bad887fa-8783-11f1-8da1-232ba4b9f2e8",
+      "lastEpisodeTitle": "The Young Hippies Who Hijacked a Plane",
+      "lastCheckedAt": 1788291902576
     },
     "490022": {
       "lastRssKey": "f596540a-4cc7-45b9-bcb3-46eba69b2751",
@@ -226,10 +231,10 @@
       "lastCheckedAt": 1788244475854
     },
     "808826": {
-      "lastRssKey": "6a8d2cc42fe0b9d078559c12",
-      "lastEpisodeTitle": "Purple Pepple Eater",
+      "lastRssKey": "6a9669e9341b771cca47ade6",
+      "lastEpisodeTitle": "Go Go Gadget GPT",
       "lastEpisodeId": "58865121562",
-      "lastCheckedAt": 1787686544139
+      "lastCheckedAt": 1788291914943
     },
     "838740": {
       "lastRssKey": "48715f2a-a32b-11f1-a5f3-97d9fbb3f79c",
@@ -244,10 +249,10 @@
       "lastCheckedAt": 1787801222606
     },
     "902798": {
-      "lastRssKey": "69724127-b29d-4751-9fde-a3308123c2bc",
-      "lastEpisodeTitle": "Luxury Watch Founder: How PM Modi Changed His Business | Gaurav Mehta | FO555 Raj Shamani",
+      "lastRssKey": "b7759d0f-0d79-41eb-b67d-e375cc7c3cdc",
+      "lastEpisodeTitle": "Andrew Huberman On The Science Of Peak Performance, Motivation & Sleep | FO556 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1788029130717
+      "lastCheckedAt": 1788291917050
     },
     "906591": {
       "lastRssKey": "17a03d1c-a5d8-11f1-9576-5fe6e6dd2cb8",
@@ -340,9 +345,9 @@
       "lastCheckedAt": 1788172545760
     },
     "2407094": {
-      "lastRssKey": "6a95ae10e988099c6bc51bbf",
-      "lastEpisodeTitle": "(Pop) L’IA Grok est accusée d’avoir été entraîné avec des contenus pédocriminels… HugoDécrypte",
-      "lastCheckedAt": 1788244487240
+      "lastRssKey": "6a971a7a9c251d489333ea5e",
+      "lastEpisodeTitle": "La vérité sur la mort de Tupac éclate en partie",
+      "lastCheckedAt": 1788291926224
     },
     "2574026": {
       "lastRssKey": "8ad6f416-a24e-11f1-b5ac-cf3d62e6c65c",
@@ -614,10 +619,10 @@
       "lastCheckedAt": 1787998787437
     },
     "7437277": {
-      "lastRssKey": "8e91ed9b-3b3e-41ea-bf85-99ba71348a40",
-      "lastEpisodeTitle": "The Slow Riddler Quiz",
+      "lastRssKey": "8a35950a-c7a9-4b58-a525-1056be9603b4",
+      "lastEpisodeTitle": "We Are So Back",
       "lastEpisodeId": "59534494576",
-      "lastCheckedAt": 1787951215924
+      "lastCheckedAt": 1788291949260
     },
     "7447848": {
       "lastRssKey": "04b71376-8bd6-4497-9d3c-b077afb12fa4",
