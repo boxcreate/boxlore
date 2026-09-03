@@ -269,6 +269,7 @@ fun FullPlayerV2(
                 chaptersSheetState,
                 context,
             ),
+        actions = actions,
     )
 
     // ------------------------------------------------------------------

@@ -101,4 +101,19 @@ class SameShowContinuationBannerTest {
         assertTrue(hidden.nextEpisodes.isEmpty())
         assertEquals("", hidden.podcastTitle)
     }
+
+    @Test
+    fun `QueueSheetActions holds and triggers onEpisodeInfoClick`() {
+        var clickedEpisode: Episode? = null
+        val expected = testEpisode("ep-target")
+        val actions =
+            QueueSheetActions(
+                onPlayEpisode = {},
+                onRemoveEpisode = {},
+                onClose = {},
+                onEpisodeInfoClick = { clickedEpisode = it },
+            )
+        actions.onEpisodeInfoClick(expected)
+        assertEquals(expected, clickedEpisode)
+    }
 }

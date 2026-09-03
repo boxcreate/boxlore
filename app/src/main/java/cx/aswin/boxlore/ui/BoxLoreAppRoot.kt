@@ -748,15 +748,18 @@ fun BoxLoreAppRoot(
                                     }
                                 } else {
                                     val podcast = playbackRepository.playerState.value.currentPodcast
+                                    val resolvedPodcastId = episode.podcastId ?: podcast?.id ?: "unknown"
+                                    val resolvedPodcastTitle = episode.podcastTitle ?: podcast?.title ?: "Podcast"
+                                    val resolvedImageUrl = episode.imageUrl ?: episode.podcastImageUrl ?: podcast?.imageUrl
 
                                     fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                                     navController.navigate(
                                         "episode/${encode(episode.id)}/${encode(episode.title)}/" +
                                             "${encode(episode.description.take(500))}/" +
-                                            "${encode(episode.imageUrl)}/" +
+                                            "${encode(resolvedImageUrl)}/" +
                                             "${encode(episode.audioUrl)}/" +
-                                            "${episode.duration}/${encode(podcast?.id ?: "unknown")}/" +
-                                            "${encode(podcast?.title ?: "Podcast")}" +
+                                            "${episode.duration}/${encode(resolvedPodcastId)}/" +
+                                            "${encode(resolvedPodcastTitle)}" +
                                             "?entryPoint=player_ui",
                                     ) { launchSingleTop = true }
                                 }

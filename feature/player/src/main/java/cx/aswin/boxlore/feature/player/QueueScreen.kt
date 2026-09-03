@@ -57,6 +57,7 @@ data class QueueSheetActions(
     val onEnableSmartQueue: () -> Unit = {},
     val onAddSameShowEpisodes: () -> Unit = {},
     val onDismissSameShowBanner: () -> Unit = {},
+    val onEpisodeInfoClick: (Episode) -> Unit = {},
 )
 
 data class QueueItemDisplay(
@@ -131,6 +132,7 @@ fun QueueSheetContent(
                 onAddEpisodes = actions.onAddSameShowEpisodes,
                 onDismiss = actions.onDismissSameShowBanner,
                 colorScheme = colorScheme,
+                onEpisodeClick = actions.onEpisodeInfoClick,
             )
         }
 
@@ -400,20 +402,23 @@ private fun SameShowContinuationPreviewList(
     episodes: List<Episode>,
     colorScheme: ColorScheme,
     modifier: Modifier = Modifier,
+    onEpisodeClick: (Episode) -> Unit = {},
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        episodes.forEachIndexed { index, episode ->
+        episodes.forEach { episode ->
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
                         .background(
                             color = colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
                             shape = RoundedCornerShape(12.dp),
                         )
+                        .expressiveClickable { onEpisodeClick(episode) }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -430,31 +435,24 @@ private fun SameShowContinuationPreviewList(
                     contentScale = ContentScale.Crop,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = episode.title.replace("+", " "),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = GoogleSansWeight.medium,
-                        maxLines = 1,
-                        color = colorScheme.onSurface,
-                        modifier = Modifier.basicMarquee(),
-                    )
-                    val duration = SameShowContinuationBannerDefaults.formatDuration(episode.duration)
-                    if (duration.isNotBlank()) {
-                        Text(
-                            text = duration,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "#${index + 1}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = colorScheme.primary,
+                    text = episode.title.replace("+", " "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = GoogleSansWeight.medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
                 )
+                val duration = SameShowContinuationBannerDefaults.formatDuration(episode.duration)
+                if (duration.isNotBlank()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = duration,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -498,6 +496,7 @@ fun SameShowContinuationBanner(
     onDismiss: () -> Unit,
     colorScheme: ColorScheme,
     modifier: Modifier = Modifier,
+    onEpisodeClick: (Episode) -> Unit = {},
 ) {
     if (!state.visible || state.availableCount <= 0) return
 
@@ -553,6 +552,7 @@ fun SameShowContinuationBanner(
                     episodes = state.nextEpisodes.take(state.availableCount),
                     colorScheme = colorScheme,
                     modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
+                    onEpisodeClick = onEpisodeClick,
                 )
             }
 

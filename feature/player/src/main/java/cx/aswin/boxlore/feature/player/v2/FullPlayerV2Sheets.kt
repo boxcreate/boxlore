@@ -110,7 +110,8 @@ internal fun FullPlayerModalSheets(
     dependencies: FullPlayerDependencies,
     model: FullPlayerModalModel,
     ui: FullPlayerUiState,
-    resources: FullPlayerModalResources
+    resources: FullPlayerModalResources,
+    actions: FullPlayerActions? = null,
 ) {
     if (ui.showQueueSheet) {
         PlayerQueueSheet(
@@ -122,7 +123,8 @@ internal fun FullPlayerModalSheets(
                 resources.snackbarHostState,
                 resources.queueSheetState
             ),
-            ui = ui
+            ui = ui,
+            actions = actions,
         )
     }
     if (ui.showChaptersSheet) {

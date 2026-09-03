@@ -367,8 +367,8 @@
         <error line="630" column="1" source="standard:indent" />
         <error line="631" column="1" source="standard:indent" />
         <error line="632" column="1" source="standard:indent" />
+        <error line="633" column="1" source="standard:indent" />
         <error line="634" column="1" source="standard:indent" />
-        <error line="635" column="1" source="standard:indent" />
         <error line="636" column="1" source="standard:indent" />
         <error line="637" column="1" source="standard:indent" />
         <error line="638" column="1" source="standard:indent" />
@@ -389,8 +389,8 @@
         <error line="653" column="1" source="standard:indent" />
         <error line="654" column="1" source="standard:indent" />
         <error line="655" column="1" source="standard:indent" />
+        <error line="656" column="1" source="standard:indent" />
         <error line="657" column="1" source="standard:indent" />
-        <error line="658" column="1" source="standard:indent" />
         <error line="659" column="1" source="standard:indent" />
         <error line="660" column="1" source="standard:indent" />
         <error line="661" column="1" source="standard:indent" />
@@ -415,8 +415,8 @@
         <error line="680" column="1" source="standard:indent" />
         <error line="681" column="1" source="standard:indent" />
         <error line="682" column="1" source="standard:indent" />
+        <error line="683" column="1" source="standard:indent" />
         <error line="684" column="1" source="standard:indent" />
-        <error line="685" column="1" source="standard:indent" />
         <error line="686" column="1" source="standard:indent" />
         <error line="687" column="1" source="standard:indent" />
         <error line="688" column="1" source="standard:indent" />
@@ -451,8 +451,8 @@
         <error line="717" column="1" source="standard:indent" />
         <error line="718" column="1" source="standard:indent" />
         <error line="719" column="1" source="standard:indent" />
+        <error line="720" column="1" source="standard:indent" />
         <error line="721" column="1" source="standard:indent" />
-        <error line="722" column="1" source="standard:indent" />
         <error line="723" column="1" source="standard:indent" />
         <error line="724" column="1" source="standard:indent" />
         <error line="725" column="1" source="standard:indent" />
@@ -479,11 +479,11 @@
         <error line="746" column="1" source="standard:indent" />
         <error line="747" column="1" source="standard:indent" />
         <error line="748" column="1" source="standard:indent" />
+        <error line="749" column="1" source="standard:indent" />
         <error line="750" column="1" source="standard:indent" />
         <error line="751" column="1" source="standard:indent" />
         <error line="752" column="1" source="standard:indent" />
         <error line="753" column="1" source="standard:indent" />
-        <error line="754" column="1" source="standard:indent" />
         <error line="755" column="1" source="standard:indent" />
         <error line="756" column="1" source="standard:indent" />
         <error line="757" column="1" source="standard:indent" />
@@ -508,11 +508,11 @@
         <error line="776" column="1" source="standard:indent" />
         <error line="777" column="1" source="standard:indent" />
         <error line="778" column="1" source="standard:indent" />
+        <error line="779" column="1" source="standard:indent" />
         <error line="780" column="1" source="standard:indent" />
         <error line="781" column="1" source="standard:indent" />
         <error line="782" column="1" source="standard:indent" />
         <error line="783" column="1" source="standard:indent" />
-        <error line="784" column="1" source="standard:indent" />
         <error line="785" column="1" source="standard:indent" />
         <error line="786" column="1" source="standard:indent" />
         <error line="787" column="1" source="standard:indent" />
@@ -596,11 +596,11 @@
         <error line="865" column="1" source="standard:indent" />
         <error line="866" column="1" source="standard:indent" />
         <error line="867" column="1" source="standard:indent" />
+        <error line="868" column="1" source="standard:indent" />
         <error line="869" column="1" source="standard:indent" />
         <error line="870" column="1" source="standard:indent" />
         <error line="871" column="1" source="standard:indent" />
         <error line="872" column="1" source="standard:indent" />
-        <error line="873" column="1" source="standard:indent" />
         <error line="874" column="1" source="standard:indent" />
         <error line="875" column="1" source="standard:indent" />
         <error line="876" column="1" source="standard:indent" />
@@ -632,15 +632,11 @@
         <error line="902" column="1" source="standard:indent" />
         <error line="903" column="1" source="standard:indent" />
         <error line="904" column="1" source="standard:indent" />
-        <error line="633" column="1" source="standard:indent" />
-        <error line="656" column="1" source="standard:indent" />
-        <error line="683" column="1" source="standard:indent" />
-        <error line="720" column="1" source="standard:indent" />
-        <error line="749" column="1" source="standard:indent" />
-        <error line="779" column="1" source="standard:indent" />
-        <error line="868" column="1" source="standard:indent" />
         <error line="905" column="1" source="standard:indent" />
         <error line="906" column="1" source="standard:indent" />
+        <error line="907" column="1" source="standard:indent" />
+        <error line="908" column="1" source="standard:indent" />
+        <error line="909" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/ui/CoilImageLoaderSetup.kt">
         <error line="15" column="27" source="standard:multiline-expression-wrapping" />
