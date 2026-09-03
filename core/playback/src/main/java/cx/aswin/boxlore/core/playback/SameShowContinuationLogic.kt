@@ -49,35 +49,23 @@ object SameShowContinuationLogic {
     fun computeCandidates(
         allEpisodes: List<Episode>,
         currentEpisode: Episode,
-        podcast: Podcast,
+        @Suppress("UNUSED_PARAMETER") podcast: Podcast,
         excludeEpisodeIds: Set<String> = emptySet(),
         maxCount: Int = SameShowContinuationState.MAX_CONTINUATION_OFFER,
     ): List<Episode> {
         if (allEpisodes.isEmpty()) return emptyList()
 
-        val sort = effectiveSort(podcast)
-        val isSerialListening = podcast.type == "serial" || sort == "oldest"
-        val newestFirst =
-            !isSerialListening &&
-                (sort == "newest" || podcast.genre.equals("News", ignoreCase = true))
-
         val currentPublished =
             allEpisodes.firstOrNull { it.id == currentEpisode.id }?.publishedDate
                 ?: currentEpisode.publishedDate
 
+        val chronological = allEpisodes.sortedBy { it.publishedDate }
+        val idx = chronological.indexOfFirst { it.id == currentEpisode.id }
         val rawCandidates =
-            if (newestFirst) {
-                allEpisodes
-                    .filter { it.publishedDate > currentPublished }
-                    .sortedByDescending { it.publishedDate }
+            if (idx == -1) {
+                chronological.filter { it.publishedDate > currentPublished }
             } else {
-                val chronological = allEpisodes.sortedBy { it.publishedDate }
-                val idx = chronological.indexOfFirst { it.id == currentEpisode.id }
-                if (idx == -1) {
-                    chronological.filter { it.publishedDate > currentPublished }
-                } else {
-                    chronological.drop(idx + 1)
-                }
+                chronological.drop(idx + 1)
             }
 
         return rawCandidates

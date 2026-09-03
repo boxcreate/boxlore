@@ -156,8 +156,8 @@ class SameShowContinuationLogicTest {
                 podcast = podcast,
             )
 
-        // Newer episodes: ep-6, ep-5, ep-4 (sorted descending)
-        assertEquals(listOf("ep-6", "ep-5", "ep-4"), candidates.map { it.id })
+        // Newer episodes in forward chronological order: ep-4, ep-5, ep-6
+        assertEquals(listOf("ep-4", "ep-5", "ep-6"), candidates.map { it.id })
     }
 
     @Test
