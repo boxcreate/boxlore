@@ -296,6 +296,10 @@ fun QueueItemRow(
     }
 }
 
+object SameShowContinuationBannerDefaults {
+    fun buttonText(availableCount: Int): String = "Add next $availableCount from this show"
+}
+
 @Composable
 fun SameShowContinuationBanner(
     state: SameShowContinuationState,
@@ -306,7 +310,7 @@ fun SameShowContinuationBanner(
 ) {
     if (!state.visible || state.availableCount <= 0) return
 
-    val buttonText = "Add next ${state.availableCount} from this show"
+    val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount)
 
     Card(
         modifier =

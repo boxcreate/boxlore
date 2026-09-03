@@ -348,4 +348,79 @@ class SameShowContinuationCoordinatorTest {
             assertFalse(state.visible)
             assertEquals(0, state.availableCount)
         }
+
+    @Test
+    fun `addContinuationEpisodes deduplicates against existing items in queue`() =
+        runTest(testDispatcher) {
+            insertTestShow(type = "serial", count = 4)
+            val coordinator =
+                SameShowContinuationCoordinator(
+                    scope = testScope,
+                    playerState = playerStateFlow,
+                    playerStateFlow = playerStateFlow,
+                    podcastRepository = podcastRepository,
+                    userPreferencesRepository = userPreferencesRepository,
+                    queueCoordinator = queueCoordinator,
+                )
+
+            val current = createEpisode("-1", pubDate = 1000L)
+            // Suppose -2 was already added to the queue by smart refill or user
+            val alreadyQueued = createEpisode("-2", pubDate = 2000L)
+            val other = createEpisode("other-ep", pubDate = 500L)
+            val podcast = createPodcast()
+
+            playerStateFlow.value =
+                playerStateFlow.value.copy(
+                    currentEpisode = current,
+                    currentPodcast = podcast,
+                    queue = listOf(current, alreadyQueued, other),
+                    // Banner was evaluated before -2 was queued:
+                    sameShowContinuation =
+                        SameShowContinuationState(
+                            visible = true,
+                            podcastTitle = "Test Show",
+                            availableCount = 3,
+                            nextEpisodes =
+                                listOf(
+                                    createEpisode("-2", pubDate = 2000L),
+                                    createEpisode("-3", pubDate = 3000L),
+                                    createEpisode("-4", pubDate = 4000L),
+                                ),
+                        ),
+                )
+
+            coordinator.addContinuationEpisodes()
+
+            val queue = playerStateFlow.value.queue
+            // -2 was already in queue, so it should not be inserted again
+            assertEquals(listOf("-1", "-3", "-4", "-2", "other-ep"), queue.map { it.id })
+            assertEquals(5, queue.size)
+        }
+
+    @Test
+    fun `addEpisodesAfterCurrent preserves playing episode at index 0 when queue was empty`() =
+        runTest(testDispatcher) {
+            val current = createEpisode("-1", pubDate = 1000L)
+            val podcast = createPodcast()
+            val episodesToAdd =
+                listOf(
+                    createEpisode("-2", pubDate = 2000L),
+                    createEpisode("-3", pubDate = 3000L),
+                )
+
+            playerStateFlow.value =
+                playerStateFlow.value.copy(
+                    currentEpisode = current,
+                    currentPodcast = podcast,
+                    queue = emptyList(),
+                )
+
+            queueCoordinator.addEpisodesAfterCurrent(episodesToAdd, podcast)
+
+            val queue = playerStateFlow.value.queue
+            assertEquals(3, queue.size)
+            assertEquals("-1", queue[0].id)
+            assertEquals("-2", queue[1].id)
+            assertEquals("-3", queue[2].id)
+        }
 }

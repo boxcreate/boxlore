@@ -26,16 +26,16 @@
         <error line="306" column="141" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoScreen.kt">
-        <error line="119" column="5" source="standard:function-naming" />
-        <error line="483" column="21" source="standard:function-naming" />
-        <error line="604" column="1" source="standard:indent" />
-        <error line="605" column="1" source="standard:indent" />
+        <error line="123" column="5" source="standard:function-naming" />
+        <error line="487" column="21" source="standard:function-naming" />
+        <error line="608" column="1" source="standard:indent" />
+        <error line="609" column="1" source="standard:indent" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoUiModels.kt">
         <error line="39" column="9" source="standard:no-consecutive-comments" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/PodcastInfoViewModel.kt">
-        <error line="70" column="17" source="standard:backing-property-naming" />
+        <error line="71" column="17" source="standard:backing-property-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/components/EpisodeActionRail.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -151,14 +151,14 @@
         <error line="34" column="76" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/logic/PodcastInfoPullRefreshLogic.kt">
-        <error line="25" column="21" source="standard:function-signature" />
-        <error line="25" column="47" source="standard:function-signature" />
-        <error line="25" column="70" source="standard:function-signature" />
-        <error line="25" column="82" source="standard:function-signature" />
-        <error line="28" column="33" source="standard:function-signature" />
-        <error line="28" column="56" source="standard:function-signature" />
-        <error line="28" column="71" source="standard:function-signature" />
-        <error line="28" column="83" source="standard:function-signature" />
+        <error line="26" column="21" source="standard:function-signature" />
+        <error line="26" column="47" source="standard:function-signature" />
+        <error line="26" column="70" source="standard:function-signature" />
+        <error line="26" column="82" source="standard:function-signature" />
+        <error line="29" column="33" source="standard:function-signature" />
+        <error line="29" column="56" source="standard:function-signature" />
+        <error line="29" column="71" source="standard:function-signature" />
+        <error line="29" column="83" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/info/logic/PodcastInfoToolbarLogic.kt">
         <error line="18" column="141" source="standard:max-line-length" />

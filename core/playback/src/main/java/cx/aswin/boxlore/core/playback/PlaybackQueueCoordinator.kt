@@ -510,8 +510,22 @@ internal class PlaybackQueueCoordinator(
     ) {
         if (episodes.isEmpty()) return
 
+        val currentQueue = playerStateFlow.value.queue
+        val playingId = playerStateFlow.value.currentEpisode?.id
+        val existingIds = currentQueue.map { it.id }.toSet()
+
+        val uniqueCandidates =
+            episodes
+                .distinctBy { it.id }
+                .filter { it.id != playingId && it.id !in existingIds }
+        if (uniqueCandidates.isEmpty()) return
+
+        val spaceLeft = (queueMaxSize - currentQueue.size).coerceAtLeast(0)
+        val episodesToAdd = uniqueCandidates.take(spaceLeft)
+        if (episodesToAdd.isEmpty()) return
+
         val taggedEpisodes =
-            episodes.map { ep ->
+            episodesToAdd.map { ep ->
                 ep.copy(
                     contextType = "AUTO_FILL",
                     contextSourceId = SmartQueueEngine.SOURCE_SAME_PODCAST,
@@ -551,27 +565,24 @@ internal class PlaybackQueueCoordinator(
                 }
 
             val insertIndex =
-                if (controller.mediaItemCount > 0) controller.currentMediaItemIndex + 1 else 0
+                if (controller.mediaItemCount > 0) {
+                    (controller.currentMediaItemIndex + 1).coerceIn(0, controller.mediaItemCount)
+                } else {
+                    0
+                }
             controller.addMediaItems(insertIndex, mediaItems)
         }
 
-        val currentQueue = playerStateFlow.value.queue
         val newQueue =
             if (currentQueue.isNotEmpty()) {
                 val mutable = currentQueue.toMutableList()
-                val currentId = playerStateFlow.value.currentEpisode?.id
                 val currentIndex =
-                    if (currentId != null) mutable.indexOfFirst { it.id == currentId } else 0
-                val safeIndex = if (currentIndex != -1) currentIndex + 1 else 1
-
-                if (mutable.size >= safeIndex) {
-                    mutable.addAll(safeIndex, taggedEpisodes)
-                } else {
-                    mutable.addAll(taggedEpisodes)
-                }
+                    if (playingId != null) mutable.indexOfFirst { it.id == playingId } else -1
+                val insertIndex = if (currentIndex != -1) currentIndex + 1 else 1.coerceAtMost(mutable.size)
+                mutable.addAll(insertIndex, taggedEpisodes)
                 mutable.toList()
             } else {
-                taggedEpisodes
+                listOfNotNull(playerStateFlow.value.currentEpisode) + taggedEpisodes
             }
 
         playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)

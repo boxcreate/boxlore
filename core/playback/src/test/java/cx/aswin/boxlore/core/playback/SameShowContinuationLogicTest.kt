@@ -236,4 +236,42 @@ class SameShowContinuationLogicTest {
 
         assertEquals(listOf("ep-4"), candidates.map { it.id })
     }
+
+    @Test
+    fun `computeCandidates deduplicates episodes with identical ids`() {
+        val ep1 = testEpisode("ep-1", publishedDate = 1000L)
+        val ep2a = testEpisode("ep-2", publishedDate = 2000L)
+        val ep2b = testEpisode("ep-2", publishedDate = 2000L)
+        val ep3 = testEpisode("ep-3", publishedDate = 3000L)
+        val episodes = listOf(ep1, ep2a, ep2b, ep3)
+
+        val candidates =
+            SameShowContinuationLogic.computeCandidates(
+                allEpisodes = episodes,
+                currentEpisode = ep1,
+                podcast = testPodcast(type = "serial"),
+            )
+
+        assertEquals(listOf("ep-2", "ep-3"), candidates.map { it.id })
+    }
+
+    @Test
+    fun `computeCandidates falls back to publishedDate when currentEpisode id is not in allEpisodes for serial show`() {
+        val ep1 = testEpisode("ep-1-unknown-id", publishedDate = 1500L)
+        val episodes =
+            listOf(
+                testEpisode("ep-0", publishedDate = 1000L),
+                testEpisode("ep-2", publishedDate = 2000L),
+                testEpisode("ep-3", publishedDate = 3000L),
+            )
+
+        val candidates =
+            SameShowContinuationLogic.computeCandidates(
+                allEpisodes = episodes,
+                currentEpisode = ep1,
+                podcast = testPodcast(type = "serial"),
+            )
+
+        assertEquals(listOf("ep-2", "ep-3"), candidates.map { it.id })
+    }
 }

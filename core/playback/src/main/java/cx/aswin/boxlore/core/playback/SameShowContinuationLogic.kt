@@ -73,7 +73,11 @@ object SameShowContinuationLogic {
             } else {
                 val chronological = allEpisodes.sortedBy { it.publishedDate }
                 val idx = chronological.indexOfFirst { it.id == currentEpisode.id }
-                if (idx == -1) emptyList() else chronological.drop(idx + 1)
+                if (idx == -1) {
+                    chronological.filter { it.publishedDate > currentPublished }
+                } else {
+                    chronological.drop(idx + 1)
+                }
             }
 
         return rawCandidates
@@ -82,6 +86,7 @@ object SameShowContinuationLogic {
             .filter { it.id !in excludeEpisodeIds }
             .filter { it.episodeType != "trailer" }
             .filter { it.audioUrl.isNotBlank() }
+            .distinctBy { it.id }
             .take(maxCount)
             .toList()
     }

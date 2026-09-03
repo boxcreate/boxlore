@@ -20,7 +20,7 @@ class SameShowContinuationBannerTest {
     fun `button copy formats availableCount correctly`() {
         listOf(1, 2, 3, 4, 5).forEach { count ->
             val expected = "Add next $count from this show"
-            val actual = "Add next $count from this show"
+            val actual = SameShowContinuationBannerDefaults.buttonText(count)
             assertEquals(expected, actual)
         }
     }

@@ -70,8 +70,14 @@ internal class SameShowContinuationCoordinator(
 
         val podcast =
             playerState.value.currentPodcast
-                ?: currentEpisode.podcastId?.let {
-                    runCatching { podcastRepository.getPodcastDetails(it) }.getOrNull()
+                ?: currentEpisode.podcastId?.let { podId ->
+                    runCatching { podcastRepository.getPodcastDetails(podId) }.getOrNull()
+                        ?: Podcast(
+                            id = podId,
+                            title = currentEpisode.podcastTitle.orEmpty(),
+                            artist = currentEpisode.podcastArtist.orEmpty(),
+                            imageUrl = currentEpisode.podcastImageUrl.orEmpty(),
+                        )
                 }
 
         if (podcast == null) {
