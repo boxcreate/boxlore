@@ -279,12 +279,13 @@ internal class PlaybackQueueCoordinator(
                     } else {
                         null
                     }
-            val mediaItems = buildMediaItems(uniqueEpisodes, podcast, entryPointContext)
+            val episodesWithSource = enrichWithContextSourceId(uniqueEpisodes, entryPoint, sourceContext)
+            val mediaItems = buildMediaItems(episodesWithSource, podcast, entryPointContext)
 
-            val startEpisodeId = uniqueEpisodes.getOrNull(uniqueStartIndex)?.id
+            val startEpisodeId = episodesWithSource.getOrNull(uniqueStartIndex)?.id
             val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint, entryPointContext)
 
-            val currentEp = uniqueEpisodes.getOrNull(uniqueStartIndex)
+            val currentEp = episodesWithSource.getOrNull(uniqueStartIndex)
             if (currentEp != null) {
                 // playQueue optimistically flips isPlaying=true here, ahead of the real
                 // MediaController callback, so the onIsPlayingChanged edge-trigger below
@@ -297,7 +298,7 @@ internal class PlaybackQueueCoordinator(
                         isPlaying = true,
                         position = startPosMs,
                         duration = currentEp.duration.toLong() * 1000,
-                        queue = uniqueEpisodes,
+                        queue = episodesWithSource,
                         isLiked = initialLikeState,
                     )
                 playerStateFlow.value =
@@ -324,6 +325,31 @@ internal class PlaybackQueueCoordinator(
             controller.play()
             syncQueueToDb()
             ensureCurrentHistoryRow()
+        }
+    }
+
+    private fun enrichWithContextSourceId(
+        episodes: List<Episode>,
+        entryPoint: PlaybackEntryPoint,
+        sourceContext: android.os.Bundle?,
+    ): List<Episode> {
+        val entryPointFallback =
+            if (entryPoint != PlaybackEntryPoint.GENERIC) {
+                entryPoint.name.lowercase()
+            } else {
+                null
+            }
+        val sourceId =
+            sourceContext?.getString("source_entry_point")
+                ?: sourceContext?.getString("entry_point")
+                ?: entryPointFallback
+                ?: return episodes
+        return episodes.map { ep ->
+            if (ep.contextSourceId == null) {
+                ep.copy(contextSourceId = sourceId)
+            } else {
+                ep
+            }
         }
     }
 

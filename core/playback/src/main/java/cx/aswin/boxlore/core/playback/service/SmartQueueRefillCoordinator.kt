@@ -106,7 +106,7 @@ class SmartQueueRefillCoordinator(
                 smartQueueEngine.getNextEpisodes(
                     currentEpisode = currentEpisodeItem,
                     podcast = podcast,
-                    preferredSort = podcastEntity?.preferredSort,
+                    preferredSort = podcastEntity?.preferredSort ?: podcast.preferredSort,
                     excludeEpisodeIds = existingIds,
                     currentContextSourceId = currentContextSourceId,
                 )

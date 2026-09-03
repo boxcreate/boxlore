@@ -364,12 +364,18 @@ class PodcastInfoViewModel(
         val targets = episodes.distinctBy(Episode::id)
         if (targets.isEmpty()) return
         playedEpisodes.addAll(targets.map(Episode::id))
+        val entryPointContext =
+            android.os.Bundle().apply {
+                putString("entry_point", "podcast_detail")
+                putString("source_entry_point", "podcast_detail")
+            }
         viewModelScope.launch {
             playbackRepository.playQueue(
                 episodes = targets,
                 podcast = currentState.podcast,
                 startIndex = 0,
                 entryPoint = PlaybackEntryPoint.GENERIC,
+                sourceContext = entryPointContext,
             )
         }
     }
@@ -1467,8 +1473,9 @@ class PodcastInfoViewModel(
             cx.aswin.boxlore.feature.info.logic.PodcastInfoPlaybackSourceLogic
                 .retainedEntryPoint(entryPoint)
         val entryPointContext =
-            retainedEntryPoint?.let { source ->
-                android.os.Bundle().apply { putString("entry_point", source) }
+            android.os.Bundle().apply {
+                putString("entry_point", retainedEntryPoint ?: "podcast_detail")
+                putString("source_entry_point", "podcast_detail")
             }
 
         if (startsPlayback && retainedEntryPoint != null) {
