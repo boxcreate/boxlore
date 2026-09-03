@@ -32,18 +32,19 @@ class SameShowContinuationBannerTest {
     }
 
     @Test
-    fun `explanationText formats availableCount correctly`() {
+    fun `explanationText matches requested copy`() {
         assertEquals(
-            "Played from recommendations, so next episodes were skipped to keep Up Next varied. You can add the next 5 episodes right after this track.",
-            SameShowContinuationBannerDefaults.explanationText(5),
+            "We skipped newer episodes from this show as you played this from recommendations.",
+            SameShowContinuationBannerDefaults.EXPLANATION_TEXT,
         )
     }
 
     @Test
-    fun `preview toggle text formats availableCount correctly`() {
-        assertEquals("1 upcoming episode", SameShowContinuationBannerDefaults.previewToggleText(1))
-        assertEquals("3 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(3))
-        assertEquals("5 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(5))
+    fun `preview toggle text formats correctly when collapsed and expanded`() {
+        assertEquals("Preview 1 upcoming episode", SameShowContinuationBannerDefaults.previewToggleText(1, isExpanded = false))
+        assertEquals("Preview 3 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(3, isExpanded = false))
+        assertEquals("Preview 5 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(5, isExpanded = false))
+        assertEquals("Hide preview", SameShowContinuationBannerDefaults.previewToggleText(3, isExpanded = true))
     }
 
     @Test

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -317,11 +318,17 @@ object SameShowContinuationBannerDefaults {
     fun titleText(podcastTitle: String): String =
         if (podcastTitle.isNotBlank()) "Continue $podcastTitle?" else "Continue this show?"
 
-    fun explanationText(availableCount: Int): String =
-        "Played from recommendations, so next episodes were skipped to keep Up Next varied. You can add the next $availableCount episodes right after this track."
+    const val EXPLANATION_TEXT =
+        "We skipped newer episodes from this show as you played this from recommendations."
 
-    fun previewToggleText(availableCount: Int): String =
-        if (availableCount == 1) "1 upcoming episode" else "$availableCount upcoming episodes"
+    fun previewToggleText(availableCount: Int, isExpanded: Boolean): String =
+        if (isExpanded) {
+            "Hide preview"
+        } else if (availableCount == 1) {
+            "Preview 1 upcoming episode"
+        } else {
+            "Preview $availableCount upcoming episodes"
+        }
 
     fun formatDuration(seconds: Int): String {
         if (seconds <= 0) return ""
@@ -367,9 +374,13 @@ private fun SameShowContinuationBannerHeader(
                 fontWeight = GoogleSansWeight.bold,
                 color = colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .basicMarquee(),
             )
         }
+        Spacer(modifier = Modifier.width(8.dp))
         IconButton(
             onClick = onDismiss,
             modifier = Modifier.size(32.dp),
@@ -425,8 +436,8 @@ private fun SameShowContinuationPreviewList(
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = GoogleSansWeight.medium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                         color = colorScheme.onSurface,
+                        modifier = Modifier.basicMarquee(),
                     )
                     val duration = SameShowContinuationBannerDefaults.formatDuration(episode.duration)
                     if (duration.isNotBlank()) {
@@ -437,12 +448,12 @@ private fun SameShowContinuationPreviewList(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "#${index + 1}",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = GoogleSansWeight.bold,
                     color = colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp),
                 )
             }
         }
@@ -456,36 +467,27 @@ private fun SameShowContinuationAccordionToggle(
     colorScheme: ColorScheme,
     onToggle: () -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .clickable { onToggle() }
-                .padding(vertical = 6.dp, horizontal = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+    FilledTonalButton(
+        onClick = onToggle,
+        shape = CircleShape,
+        colors =
+            ButtonDefaults.filledTonalButtonColors(
+                containerColor = colorScheme.surfaceContainerHighest,
+                contentColor = colorScheme.primary,
+            ),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
-            text = SameShowContinuationBannerDefaults.previewToggleText(availableCount),
-            style = MaterialTheme.typography.labelLarge,
+            text = SameShowContinuationBannerDefaults.previewToggleText(availableCount, isExpanded),
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = GoogleSansWeight.semiBold,
-            color = colorScheme.primary,
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = if (isExpanded) "Hide" else "Preview",
-                style = MaterialTheme.typography.labelMedium,
-                color = colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                contentDescription = null,
-                tint = colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        Spacer(modifier = Modifier.width(6.dp))
+        Icon(
+            imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 
@@ -502,17 +504,16 @@ fun SameShowContinuationBanner(
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount)
 
-    OutlinedCard(
+    Card(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp),
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor = colorScheme.surfaceContainerLow,
+            CardDefaults.cardColors(
+                containerColor = colorScheme.surfaceContainerHigh,
                 contentColor = colorScheme.onSurface,
             ),
-        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.45f)),
         shape = RoundedCornerShape(20.dp),
     ) {
         Column(
@@ -529,12 +530,12 @@ fun SameShowContinuationBanner(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = SameShowContinuationBannerDefaults.explanationText(state.availableCount),
+                text = SameShowContinuationBannerDefaults.EXPLANATION_TEXT,
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant,
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             SameShowContinuationAccordionToggle(
                 availableCount = state.availableCount,
                 isExpanded = isExpanded,
@@ -551,11 +552,11 @@ fun SameShowContinuationBanner(
                 SameShowContinuationPreviewList(
                     episodes = state.nextEpisodes.take(state.availableCount),
                     colorScheme = colorScheme,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Button(
                 onClick = onAddEpisodes,
                 colors =
@@ -563,8 +564,8 @@ fun SameShowContinuationBanner(
                         containerColor = colorScheme.primary,
                         contentColor = colorScheme.onPrimary,
                     ),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(
