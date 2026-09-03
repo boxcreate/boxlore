@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.playback.SameShowContinuationState
@@ -313,14 +314,14 @@ fun QueueItemRow(
 object SameShowContinuationBannerDefaults {
     fun buttonText(availableCount: Int): String = "Add next $availableCount from this show"
 
-    fun previewToggleText(availableCount: Int, expanded: Boolean): String =
-        if (expanded) {
-            "Hide preview"
-        } else if (availableCount == 1) {
-            "Preview 1 upcoming episode"
-        } else {
-            "Preview $availableCount upcoming episodes"
-        }
+    fun titleText(podcastTitle: String): String =
+        if (podcastTitle.isNotBlank()) "Continue $podcastTitle?" else "Continue this show?"
+
+    fun explanationText(availableCount: Int): String =
+        "Played from recommendations, so next episodes were skipped to keep Up Next varied. You can add the next $availableCount episodes right after this track."
+
+    fun previewToggleText(availableCount: Int): String =
+        if (availableCount == 1) "1 upcoming episode" else "$availableCount upcoming episodes"
 
     fun formatDuration(seconds: Int): String {
         if (seconds <= 0) return ""
@@ -332,41 +333,46 @@ object SameShowContinuationBannerDefaults {
 
 @Composable
 private fun SameShowContinuationBannerHeader(
+    podcastTitle: String,
     colorScheme: ColorScheme,
     onDismiss: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(32.dp)
-                    .background(colorScheme.primaryContainer, RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,
-                contentDescription = null,
-                tint = colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(18.dp),
+            Box(
+                modifier =
+                    Modifier
+                        .size(32.dp)
+                        .background(colorScheme.secondaryContainer, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    contentDescription = null,
+                    tint = colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = SameShowContinuationBannerDefaults.titleText(podcastTitle),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = GoogleSansWeight.bold,
+                color = colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = "Skipped next episodes of this show (played from recommendations).",
-            style = MaterialTheme.typography.bodyMedium,
-            color = colorScheme.onSurface,
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .padding(top = 2.dp),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
         IconButton(
             onClick = onDismiss,
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(32.dp),
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
@@ -386,7 +392,7 @@ private fun SameShowContinuationPreviewList(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         episodes.forEachIndexed { index, episode ->
             Row(
@@ -394,23 +400,29 @@ private fun SameShowContinuationPreviewList(
                     Modifier
                         .fillMaxWidth()
                         .background(
-                            color = colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
-                            shape = RoundedCornerShape(8.dp),
+                            color = colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(12.dp),
                         )
-                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "+${index + 1}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = colorScheme.primary,
-                    modifier = Modifier.width(26.dp),
+                AsyncImage(
+                    model =
+                        episode.imageUrl?.takeIf { it.isNotBlank() }
+                            ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop,
                 )
+                Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = episode.title,
-                        style = MaterialTheme.typography.bodySmall,
+                        text = episode.title.replace("+", " "),
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = GoogleSansWeight.medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -425,7 +437,54 @@ private fun SameShowContinuationPreviewList(
                         )
                     }
                 }
+                Text(
+                    text = "#${index + 1}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = GoogleSansWeight.bold,
+                    color = colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun SameShowContinuationAccordionToggle(
+    availableCount: Int,
+    isExpanded: Boolean,
+    colorScheme: ColorScheme,
+    onToggle: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { onToggle() }
+                .padding(vertical = 6.dp, horizontal = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = SameShowContinuationBannerDefaults.previewToggleText(availableCount),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = GoogleSansWeight.semiBold,
+            color = colorScheme.primary,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (isExpanded) "Hide" else "Preview",
+                style = MaterialTheme.typography.labelMedium,
+                color = colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                contentDescription = null,
+                tint = colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
@@ -443,18 +502,18 @@ fun SameShowContinuationBanner(
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount)
 
-    Card(
+    OutlinedCard(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp),
         colors =
-            CardDefaults.cardColors(
-                containerColor = colorScheme.surfaceContainerHigh,
+            CardDefaults.outlinedCardColors(
+                containerColor = colorScheme.surfaceContainerLow,
                 contentColor = colorScheme.onSurface,
             ),
-        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.45f)),
+        shape = RoundedCornerShape(20.dp),
     ) {
         Column(
             modifier =
@@ -463,36 +522,27 @@ fun SameShowContinuationBanner(
                     .padding(16.dp),
         ) {
             SameShowContinuationBannerHeader(
+                podcastTitle = state.podcastTitle,
                 colorScheme = colorScheme,
                 onDismiss = onDismiss,
             )
 
-            // Collapsible accordion toggle for previewing episodes
-            Row(
-                modifier =
-                    Modifier
-                        .padding(top = 8.dp, start = 44.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { isExpanded = !isExpanded }
-                        .padding(vertical = 4.dp, horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                    contentDescription = null,
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = SameShowContinuationBannerDefaults.previewToggleText(state.availableCount, isExpanded),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = GoogleSansWeight.medium,
-                    color = colorScheme.primary,
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = SameShowContinuationBannerDefaults.explanationText(state.availableCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onSurfaceVariant,
+            )
 
-            // Accordion preview content
+            Spacer(modifier = Modifier.height(10.dp))
+            SameShowContinuationAccordionToggle(
+                availableCount = state.availableCount,
+                isExpanded = isExpanded,
+                colorScheme = colorScheme,
+                onToggle = { isExpanded = !isExpanded },
+            )
+
+            // Accordion preview content (full card width)
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically() + fadeIn(),
@@ -501,11 +551,11 @@ fun SameShowContinuationBanner(
                 SameShowContinuationPreviewList(
                     episodes = state.nextEpisodes.take(state.availableCount),
                     colorScheme = colorScheme,
-                    modifier = Modifier.padding(top = 8.dp, start = 44.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onAddEpisodes,
                 colors =
@@ -514,8 +564,8 @@ fun SameShowContinuationBanner(
                         contentColor = colorScheme.onPrimary,
                     ),
                 shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                modifier = Modifier.padding(start = 44.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,

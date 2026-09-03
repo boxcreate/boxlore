@@ -26,11 +26,24 @@ class SameShowContinuationBannerTest {
     }
 
     @Test
-    fun `preview toggle text formats correctly when collapsed and expanded`() {
-        assertEquals("Preview 1 upcoming episode", SameShowContinuationBannerDefaults.previewToggleText(1, expanded = false))
-        assertEquals("Preview 3 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(3, expanded = false))
-        assertEquals("Preview 5 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(5, expanded = false))
-        assertEquals("Hide preview", SameShowContinuationBannerDefaults.previewToggleText(3, expanded = true))
+    fun `titleText formats correctly with or without podcast title`() {
+        assertEquals("Continue Tech Talk?", SameShowContinuationBannerDefaults.titleText("Tech Talk"))
+        assertEquals("Continue this show?", SameShowContinuationBannerDefaults.titleText(""))
+    }
+
+    @Test
+    fun `explanationText formats availableCount correctly`() {
+        assertEquals(
+            "Played from recommendations, so next episodes were skipped to keep Up Next varied. You can add the next 5 episodes right after this track.",
+            SameShowContinuationBannerDefaults.explanationText(5),
+        )
+    }
+
+    @Test
+    fun `preview toggle text formats availableCount correctly`() {
+        assertEquals("1 upcoming episode", SameShowContinuationBannerDefaults.previewToggleText(1))
+        assertEquals("3 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(3))
+        assertEquals("5 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(5))
     }
 
     @Test
