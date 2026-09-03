@@ -321,7 +321,7 @@ object SameShowContinuationBannerDefaults {
         if (podcastTitle.isNotBlank()) "Continue $podcastTitle?" else "Continue this show?"
 
     const val EXPLANATION_TEXT =
-        "We skipped newer episodes from this show as you played this from recommendations."
+        "We skipped newer episodes from this show as you played it from recommendations."
 
     fun previewToggleText(availableCount: Int, isExpanded: Boolean): String =
         if (isExpanded) {
@@ -351,37 +351,17 @@ private fun SameShowContinuationBannerHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(32.dp)
-                        .background(colorScheme.secondaryContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,
-                    contentDescription = null,
-                    tint = colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = SameShowContinuationBannerDefaults.titleText(podcastTitle),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = GoogleSansWeight.bold,
-                color = colorScheme.onSurface,
-                maxLines = 1,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .basicMarquee(),
-            )
-        }
+        Text(
+            text = SameShowContinuationBannerDefaults.titleText(podcastTitle),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = GoogleSansWeight.bold,
+            color = colorScheme.onSurface,
+            maxLines = 1,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .basicMarquee(),
+        )
         Spacer(modifier = Modifier.width(8.dp))
         IconButton(
             onClick = onDismiss,

@@ -160,10 +160,10 @@
         <error line="326" column="67" source="standard:function-signature" />
         <error line="339" column="55" source="standard:string-template" />
         <error line="344" column="13" source="standard:function-naming" />
-        <error line="401" column="13" source="standard:function-naming" />
-        <error line="421" column="25" source="standard:chain-method-continuation" />
-        <error line="462" column="13" source="standard:function-naming" />
-        <error line="493" column="5" source="standard:function-naming" />
+        <error line="381" column="13" source="standard:function-naming" />
+        <error line="401" column="25" source="standard:chain-method-continuation" />
+        <error line="442" column="13" source="standard:function-naming" />
+        <error line="473" column="5" source="standard:function-naming" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/feature/player/SeekDurationIcon.kt">
         <error line="3" column="1" source="standard:import-ordering" />

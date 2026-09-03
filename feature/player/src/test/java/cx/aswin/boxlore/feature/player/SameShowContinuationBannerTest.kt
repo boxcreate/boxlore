@@ -34,7 +34,7 @@ class SameShowContinuationBannerTest {
     @Test
     fun `explanationText matches requested copy`() {
         assertEquals(
-            "We skipped newer episodes from this show as you played this from recommendations.",
+            "We skipped newer episodes from this show as you played it from recommendations.",
             SameShowContinuationBannerDefaults.EXPLANATION_TEXT,
         )
     }
