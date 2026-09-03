@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-03T06:10:43.517Z",
+  "lastRun": "2026-09-03T11:31:06.906Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788381165797
     },
     "385117": {
-      "lastRssKey": "a67fd69a-a755-11f1-9cbd-d362a23ae4ab",
-      "lastEpisodeTitle": "1AM ET 09/03/2026 Newscast",
+      "lastRssKey": "f4c38856-a787-11f1-8b16-03b676b5e475",
+      "lastEpisodeTitle": "7AM ET 09/03/2026 Newscast",
       "lastEpisodeId": "59876025467",
-      "lastCheckedAt": 1788415850109
+      "lastCheckedAt": 1788435077125
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -102,10 +102,10 @@
       "lastCheckedAt": 1786765059294
     },
     "437685": {
-      "lastRssKey": "8420714a-8d60-11f1-adef-1bd005c11dcf",
-      "lastEpisodeTitle": "Watergate",
-      "lastEpisodeId": "59789710019",
-      "lastCheckedAt": 1788340729052
+      "lastRssKey": "843b26d4-8d60-11f1-adef-9797d4ac6a65",
+      "lastEpisodeTitle": "The Divided Island of Hispaniola",
+      "lastEpisodeId": "59883955929",
+      "lastCheckedAt": 1788435078948
     },
     "444331": {
       "lastRssKey": "b9872600-a645-11f1-9beb-bf0f1220ae69",
@@ -195,16 +195,16 @@
       "lastCheckedAt": 1788039088805
     },
     "724143": {
-      "lastRssKey": "058d828c-a71e-11f1-af9e-a769d0bb4824",
-      "lastEpisodeTitle": "Fachin promete providências sobre Moraes, Mendonça se encontrou com Vorcaro, e Augusto Cury cresce na Quaest",
+      "lastRssKey": "dadb6a6a-a77f-11f1-9682-5b1fb42f539e",
+      "lastEpisodeTitle": "Delação envolvendo Eduardo Bolsonaro; fim da escala 6x1 em espera; embargo europeu à carne brasileira",
       "lastEpisodeId": "59842264790",
-      "lastCheckedAt": 1788390000608
+      "lastCheckedAt": 1788435090193
     },
     "743229": {
-      "lastEpisodeId": "59837856976",
-      "lastEpisodeTitle": "The Fight for the West Bank",
-      "lastRssKey": "b0e586d9-8253-443e-93ea-b4d6dc8e1ae5",
-      "lastCheckedAt": 1788356851395
+      "lastEpisodeId": "59884605894",
+      "lastEpisodeTitle": "A.I. Is Outsmarting Its Creators",
+      "lastRssKey": "842d9b23-026f-4ebd-9c94-e19b3224f0a1",
+      "lastCheckedAt": 1788435091219
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -255,10 +255,10 @@
       "lastCheckedAt": 1788340753366
     },
     "906591": {
-      "lastRssKey": "17a03d1c-a5d8-11f1-9576-5fe6e6dd2cb8",
-      "lastEpisodeTitle": "Losers Try to Boycott & Ban Grand Theft Auto 6",
+      "lastRssKey": "38dbec90-a765-11f1-82db-0bfe9d5efc22",
+      "lastEpisodeTitle": "Donald Trump is Rigging the Midterm Elections",
       "lastEpisodeId": "59632175482",
-      "lastCheckedAt": 1788265373900
+      "lastCheckedAt": 1788435094412
     },
     "928708": {
       "lastRssKey": "7c662b66-a6f1-11f1-9600-27f47a9711f9",
@@ -349,10 +349,10 @@
       "lastCheckedAt": 1788340765459
     },
     "1388001": {
-      "lastRssKey": "74c9d7e4-5b62-4baf-acc4-5c47398e5147",
-      "lastEpisodeTitle": "La retenue n’est plus de mise : l’Europe met directement en cause les « attaques hybrides » russes",
-      "lastEpisodeId": "59836149551",
-      "lastCheckedAt": 1788340765719
+      "lastRssKey": "ca521fe7-3d94-4a40-936e-fb6e4af7330e",
+      "lastEpisodeTitle": "Donald Trump face au piège iranien qu’il a lui-même créé",
+      "lastEpisodeId": "59884008381",
+      "lastCheckedAt": 1788435104875
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33432",
@@ -460,10 +460,10 @@
       "lastCheckedAt": 1788340774917
     },
     "4894842": {
-      "lastRssKey": "e40da0ec-46dd-4c43-9c63-9866cd4eb61c",
-      "lastEpisodeTitle": "Demise by Design (PODCAST EXCLUSIVE EPISODE)",
-      "lastEpisodeId": "59832426567",
-      "lastCheckedAt": 1788340775201
+      "lastRssKey": "7d606fb6-9f0d-4b27-a4e0-8692155549c1",
+      "lastEpisodeTitle": "The Clearing",
+      "lastEpisodeId": "59879430523",
+      "lastCheckedAt": 1788435114107
     },
     "5107672": {
       "lastRssKey": "01fdf1e3-cffb-4e36-bac2-964990c91b3a",
@@ -505,10 +505,10 @@
       "lastCheckedAt": 1787951211054
     },
     "5930143": {
-      "lastRssKey": "74c9d7e4-5b62-4baf-acc4-5c47398e5147",
-      "lastEpisodeTitle": "La retenue n’est plus de mise : l’Europe met directement en cause les « attaques hybrides » russes",
+      "lastRssKey": "ca521fe7-3d94-4a40-936e-fb6e4af7330e",
+      "lastEpisodeTitle": "Donald Trump face au piège iranien qu’il a lui-même créé",
       "lastEpisodeId": "59564116173",
-      "lastCheckedAt": 1788340776773
+      "lastCheckedAt": 1788435116476
     },
     "5945547": {
       "lastRssKey": "610bddc6-ee79-45ae-8c2b-3bd9258193f7",
@@ -517,10 +517,10 @@
       "lastCheckedAt": 1787951211378
     },
     "5972153": {
-      "lastRssKey": "4f3afab2-a693-11f1-8e62-23cd36bf2326",
-      "lastEpisodeTitle": "US-Iran escalation, bond rout and Venezuela oil",
+      "lastRssKey": "af311efa-a770-11f1-8b3c-7ffeea798ae5",
+      "lastEpisodeTitle": "Iran midterms impact, Xi in Egypt and Denmark's Greenland conscripts",
       "lastEpisodeId": "59712792909",
-      "lastCheckedAt": 1788356878020
+      "lastCheckedAt": 1788435117499
     },
     "6456494": {
       "lastRssKey": "6a8e5a1a3e4ed0e7c2569db0",
@@ -577,10 +577,10 @@
       "lastCheckedAt": 1788083207524
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59780263",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Protection Matter",
+      "lastRssKey": "https://api.spreaker.com/episode/59780258",
+      "lastEpisodeTitle": "Lives Of Harry Lime - Violets Sweet Violets",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1788340779927
+      "lastCheckedAt": 1788435121034
     },
     "6912659": {
       "lastRssKey": "dd62a2e8-4eff-49e9-80d1-efa0be56c290",
@@ -690,10 +690,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "ed7ff6d4-0438-49ed-a83d-ac327c2b5bb4",
-      "lastEpisodeTitle": "Revelation 7",
-      "lastEpisodeId": "59836383576",
-      "lastCheckedAt": 1788340785535
+      "lastRssKey": "d62cd31d-b90d-4bc1-84d3-bc21b08508aa",
+      "lastEpisodeTitle": "Revelation 8",
+      "lastEpisodeId": "59883546883",
+      "lastCheckedAt": 1788435126801
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
