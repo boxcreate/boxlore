@@ -24,6 +24,20 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -298,6 +312,122 @@ fun QueueItemRow(
 
 object SameShowContinuationBannerDefaults {
     fun buttonText(availableCount: Int): String = "Add next $availableCount from this show"
+
+    fun previewToggleText(availableCount: Int, expanded: Boolean): String =
+        if (expanded) {
+            "Hide preview"
+        } else if (availableCount == 1) {
+            "Preview 1 upcoming episode"
+        } else {
+            "Preview $availableCount upcoming episodes"
+        }
+
+    fun formatDuration(seconds: Int): String {
+        if (seconds <= 0) return ""
+        val hrs = seconds / 3600
+        val mins = (seconds % 3600) / 60
+        return if (hrs > 0) "${hrs}h ${mins}m" else "${mins} min"
+    }
+}
+
+@Composable
+private fun SameShowContinuationBannerHeader(
+    colorScheme: ColorScheme,
+    onDismiss: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(32.dp)
+                    .background(colorScheme.primaryContainer, RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,
+                contentDescription = null,
+                tint = colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = "Skipped next episodes of this show (played from recommendations).",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colorScheme.onSurface,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(top = 2.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.size(28.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = "Dismiss",
+                tint = colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SameShowContinuationPreviewList(
+    episodes: List<Episode>,
+    colorScheme: ColorScheme,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        episodes.forEachIndexed { index, episode ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "+${index + 1}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = GoogleSansWeight.bold,
+                    color = colorScheme.primary,
+                    modifier = Modifier.width(26.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = episode.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = GoogleSansWeight.medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = colorScheme.onSurface,
+                    )
+                    val duration = SameShowContinuationBannerDefaults.formatDuration(episode.duration)
+                    if (duration.isNotBlank()) {
+                        Text(
+                            text = duration,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -310,6 +440,7 @@ fun SameShowContinuationBanner(
 ) {
     if (!state.visible || state.availableCount <= 0) return
 
+    var isExpanded by rememberSaveable { mutableStateOf(false) }
     val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount)
 
     Card(
@@ -319,9 +450,10 @@ fun SameShowContinuationBanner(
                 .padding(horizontal = 20.dp, vertical = 8.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = colorScheme.secondaryContainer,
-                contentColor = colorScheme.onSecondaryContainer,
+                containerColor = colorScheme.surfaceContainerHigh,
+                contentColor = colorScheme.onSurface,
             ),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.35f)),
         shape = RoundedCornerShape(16.dp),
     ) {
         Column(
@@ -330,32 +462,50 @@ fun SameShowContinuationBanner(
                     .fillMaxWidth()
                     .padding(16.dp),
         ) {
+            SameShowContinuationBannerHeader(
+                colorScheme = colorScheme,
+                onDismiss = onDismiss,
+            )
+
+            // Collapsible accordion toggle for previewing episodes
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
+                modifier =
+                    Modifier
+                        .padding(top = 8.dp, start = 44.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { isExpanded = !isExpanded }
+                        .padding(vertical = 4.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "Skipped next episodes of this show (played from recommendations).",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colorScheme.onSecondaryContainer,
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .padding(top = 4.dp),
+                Icon(
+                    imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
                 )
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = "Dismiss",
-                        tint = colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = SameShowContinuationBannerDefaults.previewToggleText(state.availableCount, isExpanded),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = GoogleSansWeight.medium,
+                    color = colorScheme.primary,
+                )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+
+            // Accordion preview content
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                SameShowContinuationPreviewList(
+                    episodes = state.nextEpisodes.take(state.availableCount),
+                    colorScheme = colorScheme,
+                    modifier = Modifier.padding(top = 8.dp, start = 44.dp, bottom = 4.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
             Button(
                 onClick = onAddEpisodes,
                 colors =
@@ -363,8 +513,16 @@ fun SameShowContinuationBanner(
                         containerColor = colorScheme.primary,
                         contentColor = colorScheme.onPrimary,
                     ),
+                shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(start = 44.dp),
             ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = buttonText,
                     style = MaterialTheme.typography.labelLarge,

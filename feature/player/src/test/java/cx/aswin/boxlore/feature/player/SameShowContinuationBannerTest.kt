@@ -26,6 +26,22 @@ class SameShowContinuationBannerTest {
     }
 
     @Test
+    fun `preview toggle text formats correctly when collapsed and expanded`() {
+        assertEquals("Preview 1 upcoming episode", SameShowContinuationBannerDefaults.previewToggleText(1, expanded = false))
+        assertEquals("Preview 3 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(3, expanded = false))
+        assertEquals("Preview 5 upcoming episodes", SameShowContinuationBannerDefaults.previewToggleText(5, expanded = false))
+        assertEquals("Hide preview", SameShowContinuationBannerDefaults.previewToggleText(3, expanded = true))
+    }
+
+    @Test
+    fun `formatDuration formats seconds correctly`() {
+        assertEquals("", SameShowContinuationBannerDefaults.formatDuration(0))
+        assertEquals("", SameShowContinuationBannerDefaults.formatDuration(-10))
+        assertEquals("45 min", SameShowContinuationBannerDefaults.formatDuration(2700))
+        assertEquals("1h 15m", SameShowContinuationBannerDefaults.formatDuration(4500))
+    }
+
+    @Test
     fun `banner is hidden when state is not visible`() {
         val state =
             SameShowContinuationState(
