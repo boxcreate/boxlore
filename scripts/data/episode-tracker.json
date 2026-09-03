@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-03T21:48:44.892Z",
+  "lastRun": "2026-09-03T23:49:01.301Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788462411107
     },
     "385117": {
-      "lastRssKey": "c26244d4-a7db-11f1-999f-173233b0ffcd",
-      "lastEpisodeTitle": "5PM ET 09/03/2026 Newscast",
+      "lastRssKey": "860bb9e6-a7ec-11f1-8e5a-339dec314f48",
+      "lastEpisodeTitle": "7PM ET 09/03/2026 Newscast",
       "lastEpisodeId": "59876025467",
-      "lastCheckedAt": 1788472131203
+      "lastCheckedAt": 1788479346541
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -297,10 +297,10 @@
       "lastCheckedAt": 1788450674556
     },
     "1065434": {
+      "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1118",
+      "lastEpisodeTitle": "PodQuiz 1118",
       "lastEpisodeId": "59615769287",
-      "lastEpisodeTitle": "PodQuiz 1117",
-      "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1117",
-      "lastCheckedAt": 1787910216773
+      "lastCheckedAt": 1788479375621
     },
     "1076260": {
       "lastRssKey": "aa3ed194-534b-4e1e-a28d-b4b40111958f",
