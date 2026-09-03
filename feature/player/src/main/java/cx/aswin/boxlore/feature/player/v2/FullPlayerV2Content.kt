@@ -39,6 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.playback.addSameShowContinuationEpisodes
+import cx.aswin.boxlore.core.playback.dismissSameShowContinuation
 import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.skipBackward
@@ -369,6 +371,7 @@ internal fun PlayerQueueSheet(
             currentPodcast = model.podcast,
             colorScheme = model.colorScheme,
             smartQueueEnabled = !sameShowQueueOnly,
+            sameShowContinuation = model.state.sameShowContinuation,
             actions = queueSheetActions(
                 playbackRepository = playbackRepository,
                 podcast = model.podcast,
@@ -376,6 +379,14 @@ internal fun PlayerQueueSheet(
                 ui = ui,
                 onEnableSmartQueue = {
                     resources.scope.launch { userPrefs.setSameShowQueueOnly(false) }
+                },
+                onAddSameShowEpisodes = {
+                    resources.scope.launch {
+                        playbackRepository.addSameShowContinuationEpisodes()
+                    }
+                },
+                onDismissSameShowBanner = {
+                    playbackRepository.dismissSameShowContinuation()
                 },
             ),
         )
@@ -387,6 +398,8 @@ internal fun queueSheetActions(
     resources: PlayerQueueSheetResources,
     ui: FullPlayerUiState,
     onEnableSmartQueue: () -> Unit = {},
+    onAddSameShowEpisodes: () -> Unit = {},
+    onDismissSameShowBanner: () -> Unit = {},
 ) = QueueSheetActions(
     onPlayEpisode = { episode ->
         resources.scope.launch {
@@ -418,6 +431,8 @@ internal fun queueSheetActions(
         }
     },
     onEnableSmartQueue = onEnableSmartQueue,
+    onAddSameShowEpisodes = onAddSameShowEpisodes,
+    onDismissSameShowBanner = onDismissSameShowBanner,
 )
 
 internal suspend fun handleQueueRemoval(

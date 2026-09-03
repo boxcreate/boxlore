@@ -25,7 +25,9 @@ import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.playback.SameShowContinuationState
 import cx.aswin.boxlore.feature.player.v2.logic.queueSourceLabel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -37,6 +39,8 @@ data class QueueSheetActions(
     val onMove: (fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _ -> },
     val onDragEnd: (episodeId: String, fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _, _ -> },
     val onEnableSmartQueue: () -> Unit = {},
+    val onAddSameShowEpisodes: () -> Unit = {},
+    val onDismissSameShowBanner: () -> Unit = {},
 )
 
 data class QueueItemDisplay(
@@ -61,6 +65,7 @@ fun QueueSheetContent(
     actions: QueueSheetActions,
     modifier: Modifier = Modifier,
     smartQueueEnabled: Boolean = true,
+    sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
 ) {
     val lazyListState = rememberLazyListState()
     val dragStartIndex = remember { mutableIntStateOf(-1) }
@@ -103,6 +108,15 @@ fun QueueSheetContent(
             color = colorScheme.outlineVariant.copy(alpha = 0.3f),
             modifier = Modifier.padding(horizontal = 20.dp)
         )
+
+        if (sameShowContinuation.visible && sameShowContinuation.availableCount > 0) {
+            SameShowContinuationBanner(
+                state = sameShowContinuation,
+                onAddEpisodes = actions.onAddSameShowEpisodes,
+                onDismiss = actions.onDismissSameShowBanner,
+                colorScheme = colorScheme,
+            )
+        }
 
         if (queue.isEmpty()) {
             QueueEmptyState(
@@ -278,6 +292,81 @@ fun QueueItemRow(
                     .size(40.dp)
                     .padding(8.dp)
             )
+        }
+    }
+}
+
+@Composable
+fun SameShowContinuationBanner(
+    state: SameShowContinuationState,
+    onAddEpisodes: () -> Unit,
+    onDismiss: () -> Unit,
+    colorScheme: ColorScheme,
+    modifier: Modifier = Modifier,
+) {
+    if (!state.visible || state.availableCount <= 0) return
+
+    val buttonText = "Add next ${state.availableCount} from this show"
+
+    Card(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = colorScheme.secondaryContainer,
+                contentColor = colorScheme.onSecondaryContainer,
+            ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Text(
+                    text = "Skipped next episodes of this show (played from recommendations).",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSecondaryContainer,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(top = 4.dp),
+                )
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Dismiss",
+                        tint = colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onAddEpisodes,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary,
+                    ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = buttonText,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = GoogleSansWeight.bold,
+                )
+            }
         }
     }
 }

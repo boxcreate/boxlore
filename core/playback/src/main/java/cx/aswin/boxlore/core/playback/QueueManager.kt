@@ -166,6 +166,16 @@ class QueueManager(
         }
     }
 
+    fun dismissSameShowContinuation() {
+        playbackRepository.dismissSameShowContinuation()
+    }
+
+    fun addSameShowContinuationEpisodes() {
+        scope.launch {
+            playbackRepository.addSameShowContinuationEpisodes()
+        }
+    }
+
     private fun cx.aswin.boxlore.core.model.Episode.toEpisodeItem(podcast: cx.aswin.boxlore.core.model.Podcast?): EpisodeItem =
         EpisodeItem(
             id = this.id.toLongOrNull() ?: 0L,

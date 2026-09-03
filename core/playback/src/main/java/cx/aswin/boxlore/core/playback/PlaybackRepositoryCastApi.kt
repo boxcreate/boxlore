@@ -66,3 +66,18 @@ internal object CastStopPolicy {
             endReceiverSession = isRemote,
         )
 }
+
+fun PlaybackRepository.setOutputVolume(volume: Int) {
+    val route = playerStateFlow.value.playbackRoute
+    val controller = mediaHandle.controller ?: return
+    val targetVolume =
+        PlaybackOutputVolumePolicy.targetVolume(
+            requestedVolume = volume,
+            route = route,
+            commandAvailable = controller.isCommandAvailable(androidx.media3.common.Player.COMMAND_SET_DEVICE_VOLUME_WITH_FLAGS),
+        ) ?: return
+    controller.setDeviceVolume(
+        targetVolume,
+        androidx.media3.common.C.VOLUME_FLAG_SHOW_UI,
+    )
+}

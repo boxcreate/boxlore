@@ -2,7 +2,6 @@ package cx.aswin.boxlore.core.playback
 
 import android.content.ComponentName
 import android.content.Context
-import androidx.media3.common.C
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -66,6 +65,7 @@ data class PlayerState(
     val autoChaptersState: AutoTranscriptState = AutoTranscriptState.NONE,
     val autoTranscriptLimitLeft: Int? = null,
     val playbackRoute: PlaybackRouteState = PlaybackRouteState(),
+    val sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
 )
 
 object SleepTimerHolder {
@@ -317,11 +317,22 @@ class PlaybackRepository internal constructor(
             },
         )
 
+    internal val continuationCoordinator =
+        SameShowContinuationCoordinator(
+            scope = repositoryScope,
+            playerState = playerState,
+            playerStateFlow = playerStateFlow,
+            podcastRepository = podcastRepository,
+            userPreferencesRepository = userPreferencesRepository,
+            queueCoordinator = queueCoordinator,
+        )
+
     init {
         getOrCreateDeviceUuid()
         initializeMediaController()
         historyStore.monitorLikeState()
         chaptersController.monitorChaptersAndTranscripts()
+        continuationCoordinator.startMonitoring()
         repositoryScope.launch {
             userPreferencesRepository.skipBehaviorStream.collect {
                 currentSkipBehavior = it
@@ -765,21 +776,6 @@ class PlaybackRepository internal constructor(
         if (play) {
             mediaHandle.controller?.play()
         }
-    }
-
-    fun setOutputVolume(volume: Int) {
-        val route = playerStateFlow.value.playbackRoute
-        val controller = mediaHandle.controller ?: return
-        val targetVolume =
-            PlaybackOutputVolumePolicy.targetVolume(
-                requestedVolume = volume,
-                route = route,
-                commandAvailable = controller.isCommandAvailable(Player.COMMAND_SET_DEVICE_VOLUME_WITH_FLAGS),
-            ) ?: return
-        controller.setDeviceVolume(
-            targetVolume,
-            C.VOLUME_FLAG_SHOW_UI,
-        )
     }
 }
 

@@ -50,32 +50,11 @@
         <error line="556" column="141" source="standard:max-line-length" />
         <error line="579" column="141" source="standard:max-line-length" />
     </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/PlaybackIntroOutroController.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-    </file>
     <file name="src/main/java/cx/aswin/boxlore/core/playback/PlaybackMediaIdPolicy.kt">
         <error line="24" column="5" source="standard:blank-line-before-declaration" />
     </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/PlaybackProgressCoordinator.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/PlaybackRepositoryTransportApi.kt">
-        <error line="25" column="53" source="standard:function-signature" />
-        <error line="28" column="50" source="standard:function-signature" />
-    </file>
     <file name="src/main/java/cx/aswin/boxlore/core/playback/PlaybackSessionMapping.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/PlaybackTelemetrySession.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/PlaybackTransportHelper.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="235" column="29" source="standard:chain-method-continuation" />
-        <error line="235" column="32" source="standard:argument-list-wrapping" />
-        <error line="235" column="48" source="standard:argument-list-wrapping" />
-        <error line="235" column="141" source="standard:max-line-length" />
-        <error line="235" column="143" source="standard:argument-list-wrapping" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/playback/QueueManager.kt">
         <error line="13" column="17" source="standard:property-naming" />
@@ -112,137 +91,10 @@
         <error line="113" column="33" source="standard:trailing-comma-on-call-site" />
         <error line="119" column="25" source="standard:multiline-expression-wrapping" />
     </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/SmartQueueEngine.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="33" column="23" source="standard:trailing-comma-on-declaration-site" />
-        <error line="37" column="1" source="standard:no-empty-first-line-in-class-body" />
-        <error line="41" column="9" source="standard:spacing-between-declarations-with-comments" />
-        <error line="47" column="9" source="standard:spacing-between-declarations-with-comments" />
-        <error line="51" column="9" source="standard:spacing-between-declarations-with-comments" />
-        <error line="59" column="53" source="standard:multiline-expression-wrapping" />
-        <error line="67" column="28" source="standard:trailing-comma-on-call-site" />
-        <error line="92" column="47" source="standard:trailing-comma-on-declaration-site" />
-        <error line="125" column="1" source="standard:no-empty-first-line-in-class-body" />
-        <error line="156" column="40" source="standard:trailing-comma-on-declaration-site" />
-        <error line="161" column="112" source="standard:trailing-comma-on-call-site" />
-        <error line="170" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="193" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="198" column="43" source="standard:trailing-comma-on-call-site" />
-        <error line="207" column="39" source="standard:trailing-comma-on-declaration-site" />
-        <error line="225" column="31" source="standard:trailing-comma-on-declaration-site" />
-        <error line="227" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="235" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="240" column="83" source="standard:trailing-comma-on-call-site" />
-        <error line="249" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="255" column="79" source="standard:trailing-comma-on-call-site" />
-        <error line="264" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="270" column="83" source="standard:trailing-comma-on-call-site" />
-        <error line="282" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="284" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="296" column="35" source="standard:multiline-expression-wrapping" />
-        <error line="323" column="29" source="standard:trailing-comma-on-declaration-site" />
-        <error line="332" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="344" column="45" source="standard:trailing-comma-on-call-site" />
-        <error line="347" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="347" column="31" source="standard:chain-method-continuation" />
-        <error line="359" column="43" source="standard:function-signature" />
-        <error line="359" column="67" source="standard:function-signature" />
-        <error line="359" column="83" source="standard:function-signature" />
-        <error line="368" column="36" source="standard:trailing-comma-on-declaration-site" />
-        <error line="369" column="15" source="standard:multiline-expression-wrapping" />
-        <error line="369" column="15" source="standard:function-signature" />
-        <error line="377" column="29" source="standard:trailing-comma-on-declaration-site" />
-        <error line="378" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="378" column="24" source="standard:function-signature" />
-        <error line="395" column="28" source="standard:trailing-comma-on-declaration-site" />
-        <error line="403" column="68" source="standard:trailing-comma-on-call-site" />
-        <error line="407" column="31" source="standard:function-signature" />
-        <error line="407" column="56" source="standard:function-signature" />
-        <error line="407" column="76" source="standard:function-signature" />
-        <error line="413" column="75" source="standard:trailing-comma-on-call-site" />
-        <error line="418" column="124" source="standard:trailing-comma-on-call-site" />
-        <error line="427" column="36" source="standard:trailing-comma-on-declaration-site" />
-        <error line="430" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="430" column="73" source="standard:chain-method-continuation" />
-        <error line="440" column="13" source="standard:chain-method-continuation" />
-        <error line="442" column="35" source="standard:multiline-expression-wrapping" />
-        <error line="450" column="57" source="standard:trailing-comma-on-call-site" />
-        <error line="452" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="456" column="86" source="standard:trailing-comma-on-call-site" />
-        <error line="469" column="13" source="standard:chain-method-continuation" />
-        <error line="482" column="20" source="standard:trailing-comma-on-declaration-site" />
-        <error line="520" column="40" source="standard:trailing-comma-on-declaration-site" />
-        <error line="523" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="528" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="540" column="25" source="standard:chain-method-continuation" />
-        <error line="547" column="48" source="standard:trailing-comma-on-call-site" />
-        <error line="548" column="18" source="standard:trailing-comma-on-call-site" />
-        <error line="550" column="13" source="standard:chain-method-continuation" />
-        <error line="554" column="37" source="standard:function-signature" />
-        <error line="554" column="55" source="standard:function-signature" />
-        <error line="554" column="75" source="standard:function-signature" />
-        <error line="561" column="41" source="standard:function-signature" />
-        <error line="561" column="55" source="standard:function-signature" />
-        <error line="561" column="75" source="standard:function-signature" />
-        <error line="570" column="45" source="standard:function-signature" />
-        <error line="570" column="59" source="standard:function-signature" />
-        <error line="570" column="79" source="standard:function-signature" />
-        <error line="582" column="40" source="standard:trailing-comma-on-declaration-site" />
-        <error line="591" column="20" source="standard:trailing-comma-on-declaration-site" />
-        <error line="596" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="603" column="32" source="standard:trailing-comma-on-call-site" />
-        <error line="612" column="32" source="standard:trailing-comma-on-call-site" />
-        <error line="620" column="73" source="standard:trailing-comma-on-call-site" />
-        <error line="630" column="20" source="standard:trailing-comma-on-declaration-site" />
-        <error line="632" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="640" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="640" column="40" source="standard:chain-method-continuation" />
-        <error line="642" column="32" source="standard:trailing-comma-on-call-site" />
-        <error line="652" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="662" column="20" source="standard:trailing-comma-on-declaration-site" />
-        <error line="664" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="671" column="33" source="standard:trailing-comma-on-call-site" />
-        <error line="681" column="61" source="standard:trailing-comma-on-call-site" />
-        <error line="691" column="23" source="standard:trailing-comma-on-declaration-site" />
-        <error line="693" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="693" column="29" source="standard:chain-method-continuation" />
-        <error line="705" column="36" source="standard:function-signature" />
-        <error line="705" column="58" source="standard:function-signature" />
-        <error line="705" column="74" source="standard:function-signature" />
-        <error line="714" column="23" source="standard:trailing-comma-on-declaration-site" />
-        <error line="716" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="716" column="78" source="standard:chain-method-continuation" />
-        <error line="721" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="728" column="33" source="standard:trailing-comma-on-call-site" />
-        <error line="732" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="733" column="34" source="standard:condition-wrapping" />
-        <error line="734" column="48" source="standard:condition-wrapping" />
-        <error line="748" column="20" source="standard:trailing-comma-on-declaration-site" />
-        <error line="768" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="768" column="74" source="standard:chain-method-continuation" />
-        <error line="771" column="42" source="standard:condition-wrapping" />
-        <error line="772" column="53" source="standard:condition-wrapping" />
-        <error line="787" column="90" source="standard:chain-method-continuation" />
-        <error line="791" column="65" source="standard:multiline-expression-wrapping" />
-        <error line="791" column="65" source="standard:function-signature" />
-        <error line="796" column="50" source="standard:trailing-comma-on-call-site" />
-        <error line="799" column="38" source="standard:function-signature" />
-        <error line="799" column="56" source="standard:function-signature" />
-        <error line="799" column="70" source="standard:function-signature" />
-        <error line="800" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="812" column="47" source="standard:trailing-comma-on-call-site" />
-        <error line="817" column="58" source="standard:multiline-expression-wrapping" />
-        <error line="817" column="58" source="standard:function-signature" />
-        <error line="834" column="63" source="standard:multiline-expression-wrapping" />
-        <error line="834" column="63" source="standard:function-signature" />
-    </file>
     <file name="src/main/java/cx/aswin/boxlore/core/playback/service/AutoCollageLayouts.kt">
         <error line="92" column="25" source="standard:chain-method-continuation" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/playback/service/MediaDownloadService.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/service/SmartQueueRefillCoordinator.kt">
         <error line="3" column="1" source="standard:import-ordering" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/playback/service/auto/AutoBrowseLibraryCallback.kt">
@@ -258,16 +110,9 @@
         <error line="46" column="17" source="standard:property-naming" />
         <error line="47" column="17" source="standard:property-naming" />
         <error line="48" column="17" source="standard:property-naming" />
-        <error line="49" column="17" source="standard:property-naming" />
         <error line="51" column="17" source="standard:property-naming" />
         <error line="52" column="17" source="standard:property-naming" />
         <error line="53" column="17" source="standard:property-naming" />
-        <error line="54" column="17" source="standard:property-naming" />
-        <error line="59" column="17" source="standard:property-naming" />
-        <error line="64" column="17" source="standard:property-naming" />
-    </file>
-    <file name="src/main/java/cx/aswin/boxlore/core/playback/service/auto/AutoBrowseLibraryHost.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/playback/service/auto/AutoBrowseTreeBuilder.kt">
         <error line="27" column="17" source="standard:property-naming" />
@@ -287,11 +132,5 @@
     </file>
     <file name="src/test/java/cx/aswin/boxlore/core/playback/SmartQueueEngineSupplementTest.kt">
         <error line="59" column="77" source="standard:function-signature" />
-    </file>
-    <file name="src/test/java/cx/aswin/boxlore/core/playback/SmartQueueEngineTest.kt">
-        <error line="488" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="491" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="514" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="517" column="27" source="standard:multiline-expression-wrapping" />
     </file>
 </baseline>

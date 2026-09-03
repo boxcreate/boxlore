@@ -64,3 +64,7 @@ suspend fun PlaybackRepository.playFromQueueIndex(
     queueList: List<Episode>,
     podcast: Podcast,
 ) = queueCoordinator.playFromQueueIndex(episodeId, queueList, podcast)
+
+fun PlaybackRepository.dismissSameShowContinuation() = continuationCoordinator.dismissBanner()
+
+suspend fun PlaybackRepository.addSameShowContinuationEpisodes() = continuationCoordinator.addContinuationEpisodes()

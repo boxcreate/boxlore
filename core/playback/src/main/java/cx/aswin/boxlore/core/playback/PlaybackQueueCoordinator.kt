@@ -504,6 +504,80 @@ internal class PlaybackQueueCoordinator(
         }
     }
 
+    suspend fun addEpisodesAfterCurrent(
+        episodes: List<Episode>,
+        podcast: Podcast,
+    ) {
+        if (episodes.isEmpty()) return
+
+        val taggedEpisodes =
+            episodes.map { ep ->
+                ep.copy(
+                    contextType = "AUTO_FILL",
+                    contextSourceId = SmartQueueEngine.SOURCE_SAME_PODCAST,
+                    podcastTitle = ep.podcastTitle ?: podcast.title,
+                    podcastId = ep.podcastId ?: podcast.id,
+                )
+            }
+
+        if (mediaHandle.controller == null) {
+            mediaHandle.controller = mediaHandle.future?.await()
+        }
+
+        mediaHandle.controller?.let { controller ->
+            val mediaItems =
+                taggedEpisodes.map { ep ->
+                    val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(ep, podcast)
+                    val metadata =
+                        androidx.media3.common.MediaMetadata
+                            .Builder()
+                            .setTitle(ep.title)
+                            .setArtist(podcast.title)
+                            .setArtworkUri(android.net.Uri.parse(resolvedUrl))
+                            .setDisplayTitle(ep.title)
+                            .setSubtitle(podcast.title)
+                            .setGenre(ep.podcastGenre ?: podcast.genre)
+                            .build()
+
+                    MediaItem
+                        .Builder()
+                        .setUri(ep.audioUrl)
+                        .setMimeType(ep.enclosureType)
+                        .setMediaMetadata(metadata)
+                        .setMediaId(ep.id)
+                        .setCustomCacheKey(
+                            PlaybackMediaIdPolicy.customCacheKey(ep.id, ep.audioUrl),
+                        ).build()
+                }
+
+            val insertIndex =
+                if (controller.mediaItemCount > 0) controller.currentMediaItemIndex + 1 else 0
+            controller.addMediaItems(insertIndex, mediaItems)
+        }
+
+        val currentQueue = playerStateFlow.value.queue
+        val newQueue =
+            if (currentQueue.isNotEmpty()) {
+                val mutable = currentQueue.toMutableList()
+                val currentId = playerStateFlow.value.currentEpisode?.id
+                val currentIndex =
+                    if (currentId != null) mutable.indexOfFirst { it.id == currentId } else 0
+                val safeIndex = if (currentIndex != -1) currentIndex + 1 else 1
+
+                if (mutable.size >= safeIndex) {
+                    mutable.addAll(safeIndex, taggedEpisodes)
+                } else {
+                    mutable.addAll(taggedEpisodes)
+                }
+                mutable.toList()
+            } else {
+                taggedEpisodes
+            }
+
+        playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
+        syncQueueToDb()
+    }
+
     /**
      * Removes an episode from the queue (Media3 + in-memory + DB).
      *
