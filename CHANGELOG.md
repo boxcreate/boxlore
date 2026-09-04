@@ -17,12 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed same-show continuation in `SmartQueueEngine` by restoring forward chronological queries in `LocalEpisodeCatalogDao` and `RssEpisodeDao` (#1017). ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Preserved `preferredSort` and `contextSourceId` across `QueueManager` and `PlaybackQueueCoordinator` for accurate refill sequencing. ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Preserved notification and auto-download toggles on Podcast Info pull-to-refresh and routed subscribed shows to direct publisher feed refresh. ([#1016](https://github.com/boxcreate/boxlore/issues/1016)) ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Fixed latent `notificationsEnabled` and `autoDownloadEnabled` mapping in RSS repository entity conversion. ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019 -->
 ### Critical
 - Fixed an issue where the queue would skip upcoming episodes of the show you were listening to.
 - Added a convenient queue banner to preview and add upcoming episodes of a show when played from recommendations.
 <!-- readme-copy:end pr=1019 -->
+
+<!-- readme-copy:start pr=1022 -->
+### High
+- Pulling down to refresh on a podcast's page now checks for newly released episodes without resetting your notification or download settings.
+<!-- readme-copy:end pr=1022 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
