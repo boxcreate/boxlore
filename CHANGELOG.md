@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added interactive same-show continuation banner with expandable episode preview and quick-refill action in the player queue sheet. ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+### Fixed
+- Fixed same-show continuation in `SmartQueueEngine` by restoring forward chronological queries in `LocalEpisodeCatalogDao` and `RssEpisodeDao` (#1017). ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Preserved `preferredSort` and `contextSourceId` across `QueueManager` and `PlaybackQueueCoordinator` for accurate refill sequencing. ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=1019 -->
+### Critical
+- Fixed an issue where the queue would skip upcoming episodes of the show you were listening to.
+- Added a convenient queue banner to preview and add upcoming episodes of a show when played from recommendations.
+<!-- readme-copy:end pr=1019 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
