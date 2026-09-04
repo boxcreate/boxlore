@@ -157,7 +157,11 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w
         arguments = listOf(
             navArgument("episodeId") { type = NavType.StringType },
             navArgument("episodeTitle") { type = NavType.StringType },
-            navArgument("episodeDescription") { type = NavType.StringType },
+            navArgument("episodeDescription") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
             navArgument("episodeImageUrl") { type = NavType.StringType },
             navArgument("episodeAudioUrl") { type = NavType.StringType },
             navArgument("episodeDuration") { type = NavType.IntType },

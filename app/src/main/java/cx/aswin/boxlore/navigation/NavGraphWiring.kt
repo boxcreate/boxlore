@@ -281,12 +281,17 @@ internal fun navPopExitTransition(fromRoute: String?, toRoute: String?,): androi
 // Navigation argument / route helpers (keeps destination methods under Sonar S3776)
 // ---------------------------------------------------------------------------
 
-internal fun encodeNavArg(s: String?): String = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+internal fun encodeNavArg(s: String?): String = android.net.Uri.encode(s?.ifBlank { "_" } ?: "_")
 
 internal fun decodeNavArg(s: String?): String = try {
-    android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it }
+    if (s.isNullOrBlank() || s.trim() == "_") {
+        ""
+    } else {
+        val decoded = android.net.Uri.decode(s)
+        if (decoded.isBlank() || decoded.trim() == "_") "" else decoded
+    }
 } catch (_: Exception) {
-    s ?: ""
+    s?.takeUnless { it.isBlank() || it.trim() == "_" } ?: ""
 }
 
 internal fun episodeFullPathRoute(
