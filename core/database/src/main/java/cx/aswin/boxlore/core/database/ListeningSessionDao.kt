@@ -34,25 +34,16 @@ interface ListeningSessionDao {
         ORDER BY localDay ASC, episodeId ASC
         """,
     )
-    suspend fun getSessionsEligibleForRollup(
-        cutoffEndedAtExclusive: Long,
-        todayLocalDay: Long,
-    ): List<ListeningSessionEntity>
+    suspend fun getSessionsEligibleForRollup(cutoffEndedAtExclusive: Long, todayLocalDay: Long,): List<ListeningSessionEntity>
 
     @Query("SELECT * FROM listening_sessions WHERE episodeId = :episodeId")
     suspend fun getSessionsForEpisode(episodeId: String): List<ListeningSessionEntity>
 
     @Query("UPDATE listening_sessions SET episodeId = :newEpisodeId WHERE episodeId = :oldEpisodeId")
-    suspend fun reassignEpisodeId(
-        oldEpisodeId: String,
-        newEpisodeId: String,
-    )
+    suspend fun reassignEpisodeId(oldEpisodeId: String, newEpisodeId: String,)
 
     @Query("UPDATE listening_sessions SET podcastId = :newPodcastId WHERE podcastId = :oldPodcastId")
-    suspend fun reassignPodcastId(
-        oldPodcastId: String,
-        newPodcastId: String,
-    )
+    suspend fun reassignPodcastId(oldPodcastId: String, newPodcastId: String,)
 
     @Query(
         """
@@ -61,10 +52,7 @@ interface ListeningSessionDao {
           AND localDay < :todayLocalDay
         """,
     )
-    suspend fun deleteSessionsEligibleForRollup(
-        cutoffEndedAtExclusive: Long,
-        todayLocalDay: Long,
-    )
+    suspend fun deleteSessionsEligibleForRollup(cutoffEndedAtExclusive: Long, todayLocalDay: Long,)
 
     @Query("DELETE FROM listening_sessions WHERE episodeId = :episodeId")
     suspend fun deleteSessionsForEpisode(episodeId: String)

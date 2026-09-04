@@ -3,37 +3,32 @@ package cx.aswin.boxlore.core.designsystem.components
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAddCheck
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.Toc
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.DownloadDone
-import androidx.compose.material.icons.rounded.QueueMusic
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.*
-import androidx.compose.material.icons.automirrored.rounded.QueueMusic
-import androidx.compose.material.icons.automirrored.rounded.PlaylistAddCheck
-import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
-import androidx.compose.material.icons.automirrored.rounded.Toc
-import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.QueueMusic
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.composed
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.AutoTranscriptState
-import androidx.compose.ui.graphics.graphicsLayer
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Check
-
-
 
 enum class ControlStyle {
     Squircle, // Primary Player Style (Primary Container)
@@ -73,7 +68,7 @@ fun AdvancedPlayerControls(
     modifier: Modifier = Modifier
 ) {
     val defaultArrangement = if (style == ControlStyle.Outlined) {
-        Arrangement.SpaceEvenly 
+        Arrangement.SpaceEvenly
     } else {
         Arrangement.spacedBy(12.dp, androidx.compose.ui.Alignment.CenterHorizontally)
     }
@@ -93,58 +88,66 @@ fun AdvancedPlayerControls(
         val baseInactiveTint = if (style == ControlStyle.Material3) {
             overrideColor ?: colorScheme.onSurfaceVariant
         } else {
-            overrideColor ?: if (style == ControlStyle.Outlined || style == ControlStyle.TonalSquircle || style == ControlStyle.Transparent) colorScheme.onSurfaceVariant else colorScheme.primary
+            overrideColor
+                ?: if (style == ControlStyle.Outlined ||
+                    style == ControlStyle.TonalSquircle ||
+                    style == ControlStyle.Transparent
+                ) {
+                    colorScheme.onSurfaceVariant
+                } else {
+                    colorScheme.primary
+                }
         }
-        
+
         // --- Reordered for thumb reachability: low-priority LEFT → high-priority RIGHT ---
-        
+
         // 1. MARK PLAYED (leftmost — least frequent action)
         if (onMarkPlayedClick != null && showMarkPlayedButton) {
-             val playedActiveTint = baseActiveTint
-             val playedActiveContainer = if (style == ControlStyle.TonalSquircle) {
-                 if (overrideColor != null) overrideColor.copy(alpha = 0.15f) else colorScheme.primaryContainer
-             } else if (style == ControlStyle.Material3) {
-                 if (overrideColor != null) overrideColor.copy(alpha = 0.2f) else colorScheme.primaryContainer
-             } else {
-                 Color.Unspecified
-             }
+            val playedActiveTint = baseActiveTint
+            val playedActiveContainer = if (style == ControlStyle.TonalSquircle) {
+                if (overrideColor != null) overrideColor.copy(alpha = 0.15f) else colorScheme.primaryContainer
+            } else if (style == ControlStyle.Material3) {
+                if (overrideColor != null) overrideColor.copy(alpha = 0.2f) else colorScheme.primaryContainer
+            } else {
+                Color.Unspecified
+            }
 
-             AdaptiveControlButton(
-                 style = style,
-                 isActive = isPlayed,
-                 isLoading = false,
-                 colorScheme = colorScheme,
-                 activeIcon = androidx.compose.material.icons.Icons.Rounded.CheckCircle,
-                 inactiveIcon = androidx.compose.material.icons.Icons.Outlined.CheckCircle,
-                 contentDescription = if (isPlayed) "Mark Unplayed" else "Mark Played",
-                 activeTint = playedActiveTint,
-                 inactiveTint = baseInactiveTint,
-                 activeContainerColor = playedActiveContainer,
-                 controlSize = controlSize,
-                 iconScale = 1.15f,
-                 onClick = onMarkPlayedClick
-             )
+            AdaptiveControlButton(
+                style = style,
+                isActive = isPlayed,
+                isLoading = false,
+                colorScheme = colorScheme,
+                activeIcon = androidx.compose.material.icons.Icons.Rounded.CheckCircle,
+                inactiveIcon = androidx.compose.material.icons.Icons.Outlined.CheckCircle,
+                contentDescription = if (isPlayed) "Mark Unplayed" else "Mark Played",
+                activeTint = playedActiveTint,
+                inactiveTint = baseInactiveTint,
+                activeContainerColor = playedActiveContainer,
+                controlSize = controlSize,
+                iconScale = 1.15f,
+                onClick = onMarkPlayedClick
+            )
         } else if (style != ControlStyle.Squircle && showShareButton) {
-              AdaptiveControlButton(
-                  style = style,
-                  isActive = false,
-                  isLoading = false,
-                  colorScheme = colorScheme,
-                  activeIcon = androidx.compose.material.icons.Icons.Outlined.Share,
-                  inactiveIcon = androidx.compose.material.icons.Icons.Outlined.Share,
-                  contentDescription = "Share",
-                  activeTint = baseInactiveTint,
-                  inactiveTint = baseInactiveTint,
-                  controlSize = controlSize,
-                  onClick = { /* TODO layer */ }
-              )
-          }
+            AdaptiveControlButton(
+                style = style,
+                isActive = false,
+                isLoading = false,
+                colorScheme = colorScheme,
+                activeIcon = androidx.compose.material.icons.Icons.Outlined.Share,
+                inactiveIcon = androidx.compose.material.icons.Icons.Outlined.Share,
+                contentDescription = "Share",
+                activeTint = baseInactiveTint,
+                inactiveTint = baseInactiveTint,
+                controlSize = controlSize,
+                onClick = { /* TODO layer */ }
+            )
+        }
 
         // 1.5. CHAPTERS
         val isChaptersAnimating = isChaptersLoading || autoChaptersState == AutoTranscriptState.GENERATING
-        val showChaptersButton = hasChapters || 
-                                 isChaptersAnimating || 
-                                 ((autoTranscriptState == AutoTranscriptState.NONE || autoTranscriptState == AutoTranscriptState.COMPLETED) && !hasChapters)
+        val showChaptersButton = hasChapters ||
+            isChaptersAnimating ||
+            ((autoTranscriptState == AutoTranscriptState.NONE || autoTranscriptState == AutoTranscriptState.COMPLETED) && !hasChapters)
         if (onChaptersClick != null && showChaptersButton) {
             AdaptiveControlButton(
                 style = style,
@@ -162,21 +165,23 @@ fun AdvancedPlayerControls(
         }
 
         // 1.6. TRANSCRIPT
-        val showTranscriptButton = autoTranscriptState == AutoTranscriptState.NONE || 
-                                   autoTranscriptState == AutoTranscriptState.COMPLETED || 
-                                   isTranscriptActive
+        val showTranscriptButton = autoTranscriptState == AutoTranscriptState.NONE ||
+            autoTranscriptState == AutoTranscriptState.COMPLETED ||
+            isTranscriptActive
         if (onTranscriptClick != null && showTranscriptButton) {
             // Determine loading/active/tint based on auto-transcript state
             val isTranscriptLoading = autoTranscriptState == AutoTranscriptState.GENERATING
             val transcriptBadge: (@Composable () -> Unit)? = when (autoTranscriptState) {
-                AutoTranscriptState.COMPLETED -> {{
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = null,
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(10.dp)
-                    )
-                }}
+                AutoTranscriptState.COMPLETED -> {
+                    {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(10.dp)
+                        )
+                    }
+                }
                 else -> null
             }
 
@@ -228,13 +233,19 @@ fun AdvancedPlayerControls(
             activeIcon = Icons.Default.Favorite,
             inactiveIcon = Icons.Outlined.FavoriteBorder,
             contentDescription = "Like",
-            activeTint = if (style == ControlStyle.TonalSquircle && overrideColor == null) colorScheme.onTertiaryContainer else baseActiveTint,
+            activeTint = if (style == ControlStyle.TonalSquircle &&
+                overrideColor == null
+            ) {
+                colorScheme.onTertiaryContainer
+            } else {
+                baseActiveTint
+            },
             inactiveTint = baseInactiveTint,
             activeContainerColor = likeActiveContainer,
             controlSize = controlSize,
             onClick = onLikeClick
         )
-        
+
         // 3. DOWNLOAD - Uses uniform base active/inactive tints and loader color
         val downloadActiveTint = baseActiveTint
         val downloadActiveContainer = if (style == ControlStyle.TonalSquircle) {
@@ -270,7 +281,7 @@ fun AdvancedPlayerControls(
         } else {
             androidx.compose.material.icons.Icons.AutoMirrored.Rounded.QueueMusic
         }
-        
+
         val queueActiveContainer = if (style == ControlStyle.TonalSquircle) {
             if (overrideColor != null) colorScheme.primaryContainer else colorScheme.tertiaryContainer
         } else if (style == ControlStyle.Material3) {
@@ -281,24 +292,41 @@ fun AdvancedPlayerControls(
 
         AdaptiveControlButton(
             style = style,
-            isActive = isQueued, 
+            isActive = isQueued,
             isLoading = false,
             colorScheme = colorScheme,
             activeIcon = queueIcon,
             inactiveIcon = queueIcon,
-            contentDescription = if (isQueued) "Added to Queue" else if (showAddQueueIcon || style == ControlStyle.TonalSquircle || style == ControlStyle.Transparent) "Add to Queue" else "Queue",
-            activeTint = if (style == ControlStyle.TonalSquircle && overrideColor == null) colorScheme.onTertiaryContainer else baseActiveTint, 
+            contentDescription = if (isQueued) {
+                "Added to Queue"
+            } else if (showAddQueueIcon ||
+                style == ControlStyle.TonalSquircle ||
+                style == ControlStyle.Transparent
+            ) {
+                "Add to Queue"
+            } else {
+                "Queue"
+            },
+            activeTint = if (style == ControlStyle.TonalSquircle &&
+                overrideColor == null
+            ) {
+                colorScheme.onTertiaryContainer
+            } else {
+                baseActiveTint
+            },
             inactiveTint = baseInactiveTint,
             activeContainerColor = queueActiveContainer,
             controlSize = controlSize,
             onClick = {
-                android.util.Log.d("AdvancedPlayerControls", "Queue button clicked: isQueued=$isQueued, showAddQueueIcon=$showAddQueueIcon, style=$style")
+                android.util.Log.d(
+                    "AdvancedPlayerControls",
+                    "Queue button clicked: isQueued=$isQueued, showAddQueueIcon=$showAddQueueIcon, style=$style"
+                )
                 onQueueClick()
             }
         )
     }
 }
-
 
 @Composable
 fun AdaptiveControlButton(
@@ -343,8 +371,8 @@ fun AdaptiveControlButton(
                 androidx.compose.animation.AnimatedContent(
                     targetState = isLoading,
                     transitionSpec = {
-                        androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith 
-                        androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
+                        androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith
+                            androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
                     },
                     label = "loader_transition"
                 ) { loading ->
@@ -378,15 +406,18 @@ fun AdaptiveControlButton(
 
     if (style == ControlStyle.Material3) {
         val containerColor = if (!isLoading && isActive) {
-            if (activeContainerColor != Color.Unspecified) activeContainerColor
-            else colorScheme.primaryContainer // Standard M3 active state
+            if (activeContainerColor != Color.Unspecified) {
+                activeContainerColor
+            } else {
+                colorScheme.primaryContainer // Standard M3 active state
+            }
         } else {
             colorScheme.surfaceContainerHigh
         }
-        
+
         val size = controlSize ?: 48.dp
         val iconSize = (size * 0.5f) * iconScale
-        
+
         Surface(
             color = containerColor,
             shape = androidx.compose.foundation.shape.CircleShape,
@@ -402,8 +433,8 @@ fun AdaptiveControlButton(
                 androidx.compose.animation.AnimatedContent(
                     targetState = isLoading,
                     transitionSpec = {
-                        androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith 
-                        androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
+                        androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith
+                            androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
                     },
                     label = "loader_transition"
                 ) { loading ->
@@ -439,25 +470,37 @@ fun AdaptiveControlButton(
         // Squircle Shape
         // Player (Squircle): 14dp radius, Primary Container (alpha 0.15)
         // TonalSquircle: 18dp radius, SurfaceContainerHigh default, TertiaryContainer active
-        
+
         val cornerRadius = if (style == ControlStyle.TonalSquircle) 18.dp else 14.dp
-        
+
         val squircleShape = AbsoluteSmoothCornerShape(
-            cornerRadiusTL = cornerRadius, smoothnessAsPercentTL = 60,
-            cornerRadiusTR = cornerRadius, smoothnessAsPercentTR = 60,
-            cornerRadiusBL = cornerRadius, smoothnessAsPercentBL = 60,
-            cornerRadiusBR = cornerRadius, smoothnessAsPercentBR = 60
+            cornerRadiusTL = cornerRadius,
+            smoothnessAsPercentTL = 60,
+            cornerRadiusTR = cornerRadius,
+            smoothnessAsPercentTR = 60,
+            cornerRadiusBL = cornerRadius,
+            smoothnessAsPercentBL = 60,
+            cornerRadiusBR = cornerRadius,
+            smoothnessAsPercentBR = 60
         )
-        
+
         val containerColor = if (!isLoading && isActive && activeContainerColor != Color.Unspecified) {
-            activeContainerColor 
+            activeContainerColor
         } else {
-             if (style == ControlStyle.TonalSquircle) colorScheme.surfaceContainerHigh else colorScheme.primary.copy(alpha = 0.15f)
+            if (style == ControlStyle.TonalSquircle) colorScheme.surfaceContainerHigh else colorScheme.primary.copy(alpha = 0.15f)
         }
-        
+
         val size = controlSize ?: if (style == ControlStyle.TonalSquircle) 56.dp else 48.dp
-        val iconSize = (if (controlSize != null) size * 0.5f else if (style == ControlStyle.TonalSquircle) 26.dp else 24.dp) * iconScale
-        
+        val iconSize = (
+            if (controlSize != null) {
+                size * 0.5f
+            } else if (style == ControlStyle.TonalSquircle) {
+                26.dp
+            } else {
+                24.dp
+            }
+            ) * iconScale
+
         Surface(
             color = containerColor,
             shape = squircleShape,
@@ -473,8 +516,8 @@ fun AdaptiveControlButton(
                 androidx.compose.animation.AnimatedContent(
                     targetState = isLoading,
                     transitionSpec = {
-                        androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith 
-                        androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
+                        androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith
+                            androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
                     },
                     label = "loader_transition"
                 ) { loading ->
@@ -513,13 +556,13 @@ fun AdaptiveControlButton(
             androidx.compose.animation.AnimatedContent(
                 targetState = isLoading,
                 transitionSpec = {
-                    androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith 
-                    androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
+                    androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300)) togetherWith
+                        androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
                 },
                 label = "loader_transition"
             ) { loading ->
                 if (loading) {
-                     cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader.CircularWavy(
+                    cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader.CircularWavy(
                         modifier = Modifier.size(20.dp),
                         color = inactiveTint,
                         trackColor = inactiveTint.copy(alpha = 0.2f)
@@ -543,5 +586,3 @@ fun AdaptiveControlButton(
         }
     }
 }
-
-

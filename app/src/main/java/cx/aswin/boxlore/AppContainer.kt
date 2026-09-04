@@ -123,9 +123,9 @@ class AppContainer(
         LocalEpisodeCatalogRepository.create(
             database = database,
             downloadCacheRelinker =
-                DownloadCacheRelinker { oldId, newId ->
-                    DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
-                },
+            DownloadCacheRelinker { oldId, newId ->
+                DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
+            },
         )
     }
 
@@ -224,29 +224,29 @@ class AppContainer(
     val legacyRssRepair: LegacyRssRepair by lazy {
         LegacyRssRepair.create(
             catalog =
-                LegacyRssRepairCatalog(
-                    podcastDao = database.podcastDao(),
-                    rssRepository = rssPodcastRepository,
-                    podcastRepository = podcastRepository,
-                    userPreferences = userPreferencesRepository,
-                    boxcastPrefs = BoxcastPrefs(appContext),
-                    adaptiveRanking = adaptiveRankingRepository,
-                ),
+            LegacyRssRepairCatalog(
+                podcastDao = database.podcastDao(),
+                rssRepository = rssPodcastRepository,
+                podcastRepository = podcastRepository,
+                userPreferences = userPreferencesRepository,
+                boxcastPrefs = BoxcastPrefs(appContext),
+                adaptiveRanking = adaptiveRankingRepository,
+            ),
             runtime =
-                LegacyRssRepairRuntime(
-                    isOnline = connectivityStatus::isOnline,
-                    activation =
-                        when (legacyRssRepairLaunchDecision) {
-                            LegacyRssRepairLaunchDecision.Enabled -> LegacyRssRepairActivation.ENABLED
-                            LegacyRssRepairLaunchDecision.SettleWithoutRepair ->
-                                LegacyRssRepairActivation.SETTLE_WITHOUT_REPAIR
-                            LegacyRssRepairLaunchDecision.Disabled -> LegacyRssRepairActivation.DISABLED
-                        },
-                    scope = syncScope,
-                    restoreNotifications = { podcast ->
-                        subscriptionRepository.setNotificationsEnabled(podcast, true)
-                    },
-                ),
+            LegacyRssRepairRuntime(
+                isOnline = connectivityStatus::isOnline,
+                activation =
+                when (legacyRssRepairLaunchDecision) {
+                    LegacyRssRepairLaunchDecision.Enabled -> LegacyRssRepairActivation.ENABLED
+                    LegacyRssRepairLaunchDecision.SettleWithoutRepair ->
+                        LegacyRssRepairActivation.SETTLE_WITHOUT_REPAIR
+                    LegacyRssRepairLaunchDecision.Disabled -> LegacyRssRepairActivation.DISABLED
+                },
+                scope = syncScope,
+                restoreNotifications = { podcast ->
+                    subscriptionRepository.setNotificationsEnabled(podcast, true)
+                },
+            ),
         )
     }
 

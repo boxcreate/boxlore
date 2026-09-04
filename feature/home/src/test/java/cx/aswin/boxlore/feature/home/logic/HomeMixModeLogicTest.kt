@@ -99,11 +99,10 @@ class HomeMixModeLogicTest {
         )
     }
 
-    private fun episode(id: String): Episode =
-        Episode(
-            id = id,
-            title = id,
-            description = "",
-            audioUrl = "/downloads/$id.mp3",
-        )
+    private fun episode(id: String): Episode = Episode(
+        id = id,
+        title = id,
+        description = "",
+        audioUrl = "/downloads/$id.mp3",
+    )
 }

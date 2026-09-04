@@ -1,12 +1,12 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
+import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
-import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 
 class OnboardingSuggestionsLanesTest {
     @Test
@@ -16,9 +16,9 @@ class OnboardingSuggestionsLanesTest {
                 OnboardingCurriculumRowDto(
                     rowTitle = "Deep Dives",
                     podcasts =
-                        listOf(
-                            OnboardingCurriculumPodcastDto(id = 1, title = "A", author = "Host"),
-                        ),
+                    listOf(
+                        OnboardingCurriculumPodcastDto(id = 1, title = "A", author = "Host"),
+                    ),
                 ),
             )
         val charts = listOf(samplePodcast("c1"))
@@ -41,7 +41,7 @@ class OnboardingSuggestionsLanesTest {
         val lanes =
             OnboardingSuggestionsLanes.build(
                 curriculumRows =
-                    listOf(OnboardingCurriculumRowDto(rowTitle = "For Winding Down", podcasts = emptyList())),
+                listOf(OnboardingCurriculumRowDto(rowTitle = "For Winding Down", podcasts = emptyList())),
                 chartsPodcasts = emptyList(),
             )
         assertEquals(1, lanes.size)
@@ -54,9 +54,9 @@ class OnboardingSuggestionsLanesTest {
         val lanes =
             OnboardingSuggestionsLanes.build(
                 curriculumRows =
-                    listOf(
-                        OnboardingCurriculumRowDto(rowTitle = "   ", podcasts = emptyList()),
-                    ),
+                listOf(
+                    OnboardingCurriculumRowDto(rowTitle = "   ", podcasts = emptyList()),
+                ),
                 chartsPodcasts = emptyList(),
             )
         assertEquals("For you", lanes.single().title)
@@ -99,13 +99,12 @@ class OnboardingSuggestionsLanesTest {
         assertEquals(2, OnboardingSuggestionsLanes.selectedCountInLane(lane, setOf("1", "3", "9")))
     }
 
-    private fun samplePodcast(id: String) =
-        Podcast(
-            id = id,
-            title = "Show $id",
-            artist = "Host",
-            imageUrl = "",
-            description = "About $id",
-            genre = "News",
-        )
+    private fun samplePodcast(id: String) = Podcast(
+        id = id,
+        title = "Show $id",
+        artist = "Host",
+        imageUrl = "",
+        description = "About $id",
+        genre = "News",
+    )
 }

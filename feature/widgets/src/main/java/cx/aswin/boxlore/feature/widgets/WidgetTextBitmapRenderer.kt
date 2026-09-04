@@ -35,12 +35,11 @@ object WidgetTextBitmapRenderer {
         context: Context,
         spec: Spec,
         @ColorRes colorRes: Int,
-    ): Bitmap =
-        renderColor(
-            context = context,
-            spec = spec,
-            color = ContextCompat.getColor(context, colorRes),
-        )
+    ): Bitmap = renderColor(
+        context = context,
+        spec = spec,
+        color = ContextCompat.getColor(context, colorRes),
+    )
 
     fun renderColor(
         context: Context,
@@ -92,21 +91,19 @@ object WidgetTextBitmapRenderer {
         widthPx: Int,
         maxLines: Int,
         alignment: Layout.Alignment,
-    ): StaticLayout =
-        StaticLayout
-            .Builder
-            .obtain(text, 0, text.length, paint, widthPx)
-            .setAlignment(alignment)
-            .setIncludePad(false)
-            .setLineSpacing(0f, 1f)
-            .setMaxLines(maxLines)
-            .setEllipsize(TextUtils.TruncateAt.END)
-            .build()
+    ): StaticLayout = StaticLayout
+        .Builder
+        .obtain(text, 0, text.length, paint, widthPx)
+        .setAlignment(alignment)
+        .setIncludePad(false)
+        .setLineSpacing(0f, 1f)
+        .setMaxLines(maxLines)
+        .setEllipsize(TextUtils.TruncateAt.END)
+        .build()
 
-    private fun isEllipsized(layout: StaticLayout): Boolean =
-        (0 until layout.lineCount).any { line ->
-            layout.getEllipsisCount(line) > 0
-        }
+    private fun isEllipsized(layout: StaticLayout): Boolean = (0 until layout.lineCount).any { line ->
+        layout.getEllipsisCount(line) > 0
+    }
 
     private const val FIT_ITERATIONS = 8
 }

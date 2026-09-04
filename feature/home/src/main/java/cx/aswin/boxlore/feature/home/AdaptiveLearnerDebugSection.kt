@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -54,11 +52,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.ranking.FeatureSlot
 import cx.aswin.boxlore.core.ranking.LearnerFacetDebug
 import cx.aswin.boxlore.core.ranking.LearnerFeatureWeightDebug
@@ -69,9 +67,9 @@ import cx.aswin.boxlore.core.ranking.PreferenceFacetType
 import cx.aswin.boxlore.core.ranking.RankingDebugSnapshot
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingShadowSnapshot
-import kotlinx.coroutines.delay
 import java.util.Locale
 import kotlin.math.abs
+import kotlinx.coroutines.delay
 
 private enum class LearnerPane(
     val label: String,
@@ -143,9 +141,9 @@ internal fun AdaptiveLearnerDebugSection(
         AnimatedContent(
             targetState = panes[paneIndex],
             modifier =
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+            Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             transitionSpec = {
                 fadeIn(tween(180, easing = FastOutSlowInEasing)) togetherWith fadeOut(tween(120))
             },
@@ -202,17 +200,17 @@ private fun LearnerHeader(
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .size(44.dp)
-                        .background(stageColor.copy(alpha = 0.18f), CircleShape),
+                Modifier
+                    .size(44.dp)
+                    .background(stageColor.copy(alpha = 0.18f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Rounded.AutoAwesome, null, tint = stageColor, modifier = Modifier.size(22.dp))
@@ -223,7 +221,7 @@ private fun LearnerHeader(
                     text = "$stage · ${discovery?.updateCount ?: 0} outcomes · Discovery blend ${(
                         ((discovery?.learnedBlend ?: 0.0) * 100)
                             .toInt()
-                    )}%",
+                        )}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -238,9 +236,9 @@ private fun LearnerHeader(
                     Icons.Rounded.Refresh,
                     contentDescription = "Refresh taste/model snapshot",
                     modifier =
-                        Modifier
-                            .padding(10.dp)
-                            .size(20.dp),
+                    Modifier
+                        .padding(10.dp)
+                        .size(20.dp),
                 )
             }
         }
@@ -260,9 +258,9 @@ private fun LogToggleCard(
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -270,11 +268,11 @@ private fun LogToggleCard(
                 Text("Signal logging", style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
                 Text(
                     text =
-                        if (enabled) {
-                            "Capturing live · $eventCount events this session"
-                        } else {
-                            "Off — turn on to capture every signal (session only, no storage)"
-                        },
+                    if (enabled) {
+                        "Capturing live · $eventCount events this session"
+                    } else {
+                        "Off — turn on to capture every signal (session only, no storage)"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -357,9 +355,9 @@ private fun SessionCounters(events: List<LearningEvent>) {
     val counts = remember(events) { events.groupingBy { it.kind }.eachCount() }
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         counterPill(counts, LearningEventKind.ACTION, "Actions")
@@ -414,10 +412,10 @@ private fun EventRow(
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .padding(top = 4.dp)
-                        .size(10.dp)
-                        .background(accent, CircleShape),
+                Modifier
+                    .padding(top = 4.dp)
+                    .size(10.dp)
+                    .background(accent, CircleShape),
             )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(
@@ -560,9 +558,9 @@ private fun DivergingBar(
     val clamped = value.toFloat().coerceIn(-1f, 1f)
     Box(
         modifier =
-            modifier
-                .height(12.dp)
-                .background(track, CircleShape),
+        modifier
+            .height(12.dp)
+            .background(track, CircleShape),
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val mid = size.width / 2f
@@ -670,19 +668,19 @@ private fun ObjectiveRow(
             }
             Text(
                 text =
-                    buildString {
-                        append("blend ")
-                        append((obj.learnedBlend * 100).toInt())
-                        append("% · explore ")
-                        append(if (obj.explorationEnabled) "on" else "off")
-                        if (shadow != null) {
-                            append(" · rank shift ")
-                            append(format1(shadow.meanAbsoluteRankShift))
-                            append(" · top5 overlap ")
-                            append(shadow.topFiveOverlap)
-                            append("/5")
-                        }
-                    },
+                buildString {
+                    append("blend ")
+                    append((obj.learnedBlend * 100).toInt())
+                    append("% · explore ")
+                    append(if (obj.explorationEnabled) "on" else "off")
+                    if (shadow != null) {
+                        append(" · rank shift ")
+                        append(format1(shadow.meanAbsoluteRankShift))
+                        append(" · top5 overlap ")
+                        append(shadow.topFiveOverlap)
+                        append("/5")
+                    }
+                },
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -754,9 +752,9 @@ private fun InfoCard(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -772,31 +770,29 @@ private fun InfoCard(
 }
 
 @Composable
-private fun eventAccent(event: LearningEvent): Color =
-    when (event.kind) {
-        LearningEventKind.IMPRESSION -> MaterialTheme.colorScheme.tertiary
-        LearningEventKind.DUPLICATE -> MaterialTheme.colorScheme.outline
-        LearningEventKind.PRUNE -> MaterialTheme.colorScheme.secondary
-        LearningEventKind.ACTION,
-        LearningEventKind.FACET,
-        LearningEventKind.RESOLUTION,
-        -> {
-            val reward = event.reward
-            when {
-                reward == null -> MaterialTheme.colorScheme.tertiary
-                reward >= 0.0 -> MaterialTheme.colorScheme.primary
-                else -> MaterialTheme.colorScheme.error
-            }
+private fun eventAccent(event: LearningEvent): Color = when (event.kind) {
+    LearningEventKind.IMPRESSION -> MaterialTheme.colorScheme.tertiary
+    LearningEventKind.DUPLICATE -> MaterialTheme.colorScheme.outline
+    LearningEventKind.PRUNE -> MaterialTheme.colorScheme.secondary
+    LearningEventKind.ACTION,
+    LearningEventKind.FACET,
+    LearningEventKind.RESOLUTION,
+    -> {
+        val reward = event.reward
+        when {
+            reward == null -> MaterialTheme.colorScheme.tertiary
+            reward >= 0.0 -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.error
         }
     }
+}
 
-private fun prettyLabel(raw: String): String =
-    raw
-        .trim()
-        .lowercase()
-        .split('_', ' ')
-        .filter { it.isNotEmpty() }
-        .joinToString(" ") { it.replaceFirstChar(Char::titlecase) }
+private fun prettyLabel(raw: String): String = raw
+    .trim()
+    .lowercase()
+    .split('_', ' ')
+    .filter { it.isNotEmpty() }
+    .joinToString(" ") { it.replaceFirstChar(Char::titlecase) }
 
 private fun signed(value: Double): String = (if (value >= 0) "+" else "") + String.format(Locale.US, "%.2f", value)
 

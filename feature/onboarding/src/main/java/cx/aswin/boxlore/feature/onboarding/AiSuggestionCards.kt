@@ -1,5 +1,8 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -53,10 +56,6 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-
 /** Stable Compose [testTag] ids for onboarding suggestion instrumentation / Maestro. */
 internal object SuggestedPodcastTestTags {
     const val TOGGLE = "onboarding_subscribe_toggle"
@@ -76,20 +75,20 @@ internal fun SuggestionSelectCard(
 ) {
     val borderColor by animateColorAsState(
         targetValue =
-            if (isSubscribed) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
-            },
+        if (isSubscribed) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        },
         label = "suggestionCardBorder",
     )
     val containerColor by animateColorAsState(
         targetValue =
-            if (isSubscribed) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            },
+        if (isSubscribed) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
         label = "suggestionCardBg",
     )
 
@@ -97,20 +96,20 @@ internal fun SuggestionSelectCard(
         shape = MaterialTheme.shapes.large,
         border = BorderStroke(if (isSubscribed) 2.dp else 1.dp, borderColor),
         modifier =
-            modifier
-                .fillMaxWidth()
-                .testTag(SuggestedPodcastTestTags.GRID_CARD)
-                .semantics(mergeDescendants = true) {
-                    selected = isSubscribed
-                    role = Role.Checkbox
-                }
-                .expressiveClickable(shape = MaterialTheme.shapes.large) {
-                    onToggleSubscription(podcast.id)
-                },
+        modifier
+            .fillMaxWidth()
+            .testTag(SuggestedPodcastTestTags.GRID_CARD)
+            .semantics(mergeDescendants = true) {
+                selected = isSubscribed
+                role = Role.Checkbox
+            }
+            .expressiveClickable(shape = MaterialTheme.shapes.large) {
+                onToggleSubscription(podcast.id)
+            },
         colors =
-            androidx.compose.material3.CardDefaults.outlinedCardColors(
-                containerColor = containerColor,
-            ),
+        androidx.compose.material3.CardDefaults.outlinedCardColors(
+            containerColor = containerColor,
+        ),
     ) {
         Column {
             SuggestionCardArtwork(
@@ -133,15 +132,15 @@ private fun SuggestionCardArtwork(
     val artBottomShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f),
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f),
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .clip(artBottomShape),
+            Modifier
+                .fillMaxSize()
+                .clip(artBottomShape),
         ) {
             OptimizedImage(
                 url = podcast.imageUrl,
@@ -152,27 +151,27 @@ private fun SuggestionCardArtwork(
             )
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colorStops =
-                                    arrayOf(
-                                        0f to Color.Transparent,
-                                        0.55f to Color.Transparent,
-                                        1f to Color.Black.copy(alpha = 0.45f),
-                                    ),
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops =
+                            arrayOf(
+                                0f to Color.Transparent,
+                                0.55f to Color.Transparent,
+                                1f to Color.Black.copy(alpha = 0.45f),
                             ),
                         ),
+                    ),
             )
         }
         SuggestionCardGenreChip(genre = podcast.genre.trim())
         IconButton(
             onClick = { onOpenDetails(podcast) },
             modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .size(48.dp),
+            Modifier
+                .align(Alignment.TopEnd)
+                .size(48.dp),
         ) {
             Surface(
                 shape = CircleShape,
@@ -184,9 +183,9 @@ private fun SuggestionCardArtwork(
                     contentDescription = "About ${podcast.title}",
                     tint = Color.White,
                     modifier =
-                        Modifier
-                            .padding(6.dp)
-                            .size(16.dp),
+                    Modifier
+                        .padding(6.dp)
+                        .size(16.dp),
                 )
             }
         }
@@ -201,9 +200,9 @@ private fun BoxScope.SuggestionCardGenreChip(genre: String) {
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.92f),
         modifier =
-            Modifier
-                .padding(8.dp)
-                .align(Alignment.TopStart),
+        Modifier
+            .padding(8.dp)
+            .align(Alignment.TopStart),
     ) {
         Text(
             text = genre,
@@ -222,17 +221,17 @@ private fun BoxScope.SuggestionCardSelectBadge(isSubscribed: Boolean) {
     Surface(
         shape = CircleShape,
         color =
-            if (isSubscribed) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                Color.Black.copy(alpha = 0.4f)
-            },
+        if (isSubscribed) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            Color.Black.copy(alpha = 0.4f)
+        },
         modifier =
-            Modifier
-                .padding(10.dp)
-                .align(Alignment.BottomEnd)
-                .size(28.dp)
-                .testTag(SuggestedPodcastTestTags.TOGGLE),
+        Modifier
+            .padding(10.dp)
+            .align(Alignment.BottomEnd)
+            .size(28.dp)
+            .testTag(SuggestedPodcastTestTags.TOGGLE),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             if (isSubscribed) {
@@ -256,19 +255,19 @@ private fun SuggestionCardFooter(
         Text(
             text = podcast.title,
             style =
-                MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = GoogleSansWeight.bold,
-                    fontSize = 13.sp,
-                    lineHeight = 16.sp,
-                ),
+            MaterialTheme.typography.titleSmall.copy(
+                fontWeight = GoogleSansWeight.bold,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            ),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             color =
-                if (isSubscribed) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
+            if (isSubscribed) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
         )
         if (podcast.artist.isNotBlank() && podcast.artist != "Unknown") {
             Spacer(modifier = Modifier.height(2.dp))
@@ -303,11 +302,11 @@ internal fun SuggestionPodcastDetailSheet(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 24.dp),
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
         ) {
             SuggestionDetailHeader(podcast = podcast)
             Spacer(modifier = Modifier.height(16.dp))
@@ -316,10 +315,10 @@ internal fun SuggestionPodcastDetailSheet(
                 style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .verticalScroll(rememberScrollState()),
+                Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .verticalScroll(rememberScrollState()),
             )
             Spacer(modifier = Modifier.height(20.dp))
             SuggestionDetailActions(
@@ -344,9 +343,9 @@ private fun SuggestionDetailHeader(podcast: Podcast) {
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier =
-                Modifier
-                    .size(96.dp)
-                    .clip(MaterialTheme.shapes.medium),
+            Modifier
+                .size(96.dp)
+                .clip(MaterialTheme.shapes.medium),
         )
         Column(modifier = Modifier.weight(1f)) {
             val genre = podcast.genre.trim()

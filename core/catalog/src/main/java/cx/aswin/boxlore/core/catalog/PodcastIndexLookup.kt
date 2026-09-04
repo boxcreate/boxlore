@@ -7,15 +7,10 @@ internal enum class ExactPodcastLookupType {
     PODCAST_GUID,
 }
 
-internal data class ExactPodcastLookupKey(
-    val type: ExactPodcastLookupType,
-    val value: String,
-)
+internal data class ExactPodcastLookupKey(val type: ExactPodcastLookupType, val value: String,)
 
 internal sealed interface ExactPodcastLookupResult {
-    data class Found(
-        val podcast: Podcast,
-    ) : ExactPodcastLookupResult
+    data class Found(val podcast: Podcast,) : ExactPodcastLookupResult
 
     data object NotFound : ExactPodcastLookupResult
 
@@ -23,9 +18,7 @@ internal sealed interface ExactPodcastLookupResult {
 }
 
 internal sealed interface PodcastIndexSearchResult {
-    data class Success(
-        val podcasts: List<Podcast>,
-    ) : PodcastIndexSearchResult
+    data class Success(val podcasts: List<Podcast>,) : PodcastIndexSearchResult
 
     data object Failed : PodcastIndexSearchResult
 }

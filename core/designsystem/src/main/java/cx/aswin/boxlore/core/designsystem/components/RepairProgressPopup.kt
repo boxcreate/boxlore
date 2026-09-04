@@ -39,25 +39,22 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
  */
 @Suppress("FunctionName")
 @Composable
-fun RepairProgressPopup(
-    visible: Boolean,
-    modifier: Modifier = Modifier,
-) {
+fun RepairProgressPopup(visible: Boolean, modifier: Modifier = Modifier,) {
     AnimatedVisibility(
         visible = visible,
         enter =
-            fadeIn(animationSpec = tween(220)) +
-                scaleIn(
-                    initialScale = 0.82f,
-                    transformOrigin = TransformOrigin(0.5f, 0f),
-                    animationSpec = ExpressiveMotion.FormalSpring,
-                ),
+        fadeIn(animationSpec = tween(220)) +
+            scaleIn(
+                initialScale = 0.82f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = ExpressiveMotion.FormalSpring,
+            ),
         exit =
-            fadeOut(animationSpec = tween(180)) +
-                scaleOut(
-                    targetScale = 0.88f,
-                    transformOrigin = TransformOrigin(0.5f, 0f),
-                ),
+        fadeOut(animationSpec = tween(180)) +
+            scaleOut(
+                targetScale = 0.88f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+            ),
         modifier = modifier,
     ) {
         Surface(
@@ -67,10 +64,10 @@ fun RepairProgressPopup(
             shadowElevation = 20.dp,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 420.dp)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
+            Modifier
+                .fillMaxWidth()
+                .widthIn(max = 420.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),

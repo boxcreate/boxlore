@@ -3,9 +3,7 @@ package cx.aswin.boxlore.core.catalog.crosspromo
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.model.Podcast
 
-class CrossPromotionResolver(
-    private val podcastRepository: PodcastRepository
-) {
+class CrossPromotionResolver(private val podcastRepository: PodcastRepository) {
     private val resolutionCache = mutableMapOf<String, Podcast?>()
     private val cacheLock = Any()
 
@@ -57,11 +55,7 @@ class CrossPromotionResolver(
         return resolved
     }
 
-    private fun pickBestMatch(
-        results: List<Podcast>,
-        cleanedName: String,
-        searchQuery: String
-    ): Podcast? {
+    private fun pickBestMatch(results: List<Podcast>, cleanedName: String, searchQuery: String): Podcast? {
         if (results.isEmpty()) return null
 
         val normalizedCleaned = normalizeForComparison(cleanedName)
@@ -106,16 +100,14 @@ class CrossPromotionResolver(
         RegexOption.IGNORE_CASE
     )
 
-    private fun normalizeForComparison(text: String): String {
-        return text.lowercase()
-            .replace("’", "'")
-            .replace("‘", "'")
-            .replace("“", "\"")
-            .replace("”", "\"")
-            .replace(":", "")
-            .replace("-", "")
-            .replace(",", "")
-            .replace(Regex("""\s+"""), " ")
-            .trim()
-    }
+    private fun normalizeForComparison(text: String): String = text.lowercase()
+        .replace("’", "'")
+        .replace("‘", "'")
+        .replace("“", "\"")
+        .replace("”", "\"")
+        .replace(":", "")
+        .replace("-", "")
+        .replace(",", "")
+        .replace(Regex("""\s+"""), " ")
+        .trim()
 }

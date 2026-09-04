@@ -8,19 +8,18 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import cx.aswin.boxlore.core.model.ContentRegions
+import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import java.io.IOException
 
 val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
 
 private const val LAST_SEEN_EPISODE_ID_PREFIX = "last_seen_episode_id_"
 
-internal fun sanitizeNavigationStyle(value: String?): String =
-    if (value?.trim()?.lowercase() == "classic") "classic" else "floating"
+internal fun sanitizeNavigationStyle(value: String?): String = if (value?.trim()?.lowercase() == "classic") "classic" else "floating"
 
 /** Cold-start landing: `home` (default), `subscriptions`, or `downloads`. */
 object OpenAppTo {
@@ -29,21 +28,15 @@ object OpenAppTo {
     const val DOWNLOADS = "downloads"
 }
 
-data class PendingPodcastIdRepair(
-    val oldPodcastId: String,
-    val newPodcastId: String,
-)
+data class PendingPodcastIdRepair(val oldPodcastId: String, val newPodcastId: String,)
 
-internal fun sanitizeOpenAppTo(value: String?): String =
-    when (value?.trim()?.lowercase()) {
-        OpenAppTo.SUBSCRIPTIONS -> OpenAppTo.SUBSCRIPTIONS
-        OpenAppTo.DOWNLOADS -> OpenAppTo.DOWNLOADS
-        else -> OpenAppTo.HOME
-    }
+internal fun sanitizeOpenAppTo(value: String?): String = when (value?.trim()?.lowercase()) {
+    OpenAppTo.SUBSCRIPTIONS -> OpenAppTo.SUBSCRIPTIONS
+    OpenAppTo.DOWNLOADS -> OpenAppTo.DOWNLOADS
+    else -> OpenAppTo.HOME
+}
 
-class UserPreferencesRepository(
-    context: Context,
-) {
+class UserPreferencesRepository(context: Context,) {
     private val dataStore = context.userPreferencesDataStore
     private val syncPrefs =
         PrefsFileMigrator.open(
@@ -585,11 +578,10 @@ class UserPreferencesRepository(
     }
 
     /** Versioned one-time repair gate; a failed/incomplete pass deliberately leaves this unchanged. */
-    suspend fun legacyRssRepairVersion(): Int =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.first()[Keys.LEGACY_RSS_REPAIR_VERSION] ?: 0
+    suspend fun legacyRssRepairVersion(): Int = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.first()[Keys.LEGACY_RSS_REPAIR_VERSION] ?: 0
 
     suspend fun markLegacyRssRepairVersion(version: Int) {
         dataStore.edit { preferences ->
@@ -602,36 +594,29 @@ class UserPreferencesRepository(
      * Journals the cross-store ID rewrite before the Room transaction. If the process stops after
      * Room commits, the next launch can still repair Manual order, pins, and last-seen state.
      */
-    suspend fun beginPodcastIdRepair(
-        oldPodcastId: String,
-        newPodcastId: String,
-    ) {
+    suspend fun beginPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) {
         dataStore.edit { preferences ->
             preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] = oldPodcastId
             preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] = newPodcastId
         }
     }
 
-    suspend fun pendingPodcastIdRepair(): PendingPodcastIdRepair? =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.first()
-            .let { preferences ->
-                val oldId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID]
-                val newId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID]
-                if (oldId.isNullOrBlank() || newId.isNullOrBlank()) {
-                    null
-                } else {
-                    PendingPodcastIdRepair(oldId, newId)
-                }
+    suspend fun pendingPodcastIdRepair(): PendingPodcastIdRepair? = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.first()
+        .let { preferences ->
+            val oldId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID]
+            val newId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID]
+            if (oldId.isNullOrBlank() || newId.isNullOrBlank()) {
+                null
+            } else {
+                PendingPodcastIdRepair(oldId, newId)
             }
+        }
 
     /** Atomically rewrites every DataStore preference keyed by a podcast ID and clears the journal. */
-    suspend fun finishPodcastIdRepair(
-        oldPodcastId: String,
-        newPodcastId: String,
-    ) {
+    suspend fun finishPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) {
         dataStore.edit { preferences ->
             if (preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] != oldPodcastId ||
                 preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] != newPodcastId
@@ -668,10 +653,7 @@ class UserPreferencesRepository(
         }
     }
 
-    suspend fun cancelPodcastIdRepair(
-        oldPodcastId: String,
-        newPodcastId: String,
-    ) {
+    suspend fun cancelPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) {
         dataStore.edit { preferences ->
             if (preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] == oldPodcastId &&
                 preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] == newPodcastId
@@ -759,22 +741,13 @@ class UserPreferencesRepository(
         }
     }
 
-    private fun playbackDurationStream(
-        key: Preferences.Key<Long>,
-        defaultValue: Long,
-        sanitize: (Long) -> Long,
-    ): Flow<Long> =
-        dataStore.data
-            .map { preferences -> sanitize(preferences[key] ?: defaultValue) }
-            .catch { exception ->
-                if (exception is IOException) emit(defaultValue) else throw exception
-            }.distinctUntilChanged()
+    private fun playbackDurationStream(key: Preferences.Key<Long>, defaultValue: Long, sanitize: (Long) -> Long,): Flow<Long> = dataStore.data
+        .map { preferences -> sanitize(preferences[key] ?: defaultValue) }
+        .catch { exception ->
+            if (exception is IOException) emit(defaultValue) else throw exception
+        }.distinctUntilChanged()
 
-    private suspend fun setPlaybackDuration(
-        key: Preferences.Key<Long>,
-        valueMs: Long,
-        sanitize: (Long) -> Long,
-    ) {
+    private suspend fun setPlaybackDuration(key: Preferences.Key<Long>, valueMs: Long, sanitize: (Long) -> Long,) {
         dataStore.edit { preferences ->
             preferences[key] = sanitize(valueMs)
         }
@@ -1483,10 +1456,7 @@ class UserPreferencesRepository(
                     }.toMap()
             }.distinctUntilChanged()
 
-    suspend fun setLastSeenEpisodeId(
-        podcastId: String,
-        episodeId: String,
-    ) {
+    suspend fun setLastSeenEpisodeId(podcastId: String, episodeId: String,) {
         dataStore.edit { preferences ->
             preferences[stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$podcastId")] = episodeId
         }

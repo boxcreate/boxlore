@@ -19,11 +19,7 @@ enum class RankingAction {
     DISMISS,
 }
 
-data class RankingOutcome(
-    val actions: Set<RankingAction> = emptySet(),
-    val listenSeconds: Long = 0,
-    val durationSeconds: Long = 0,
-)
+data class RankingOutcome(val actions: Set<RankingAction> = emptySet(), val listenSeconds: Long = 0, val durationSeconds: Long = 0,)
 
 object RankingReward {
     private val actionWeights = mapOf(
@@ -49,10 +45,7 @@ object RankingReward {
         return (actionReward + listenReward).coerceIn(-1.0, 1.0)
     }
 
-    private fun listeningValue(
-        listenSeconds: Long,
-        durationSeconds: Long,
-    ): Double {
+    private fun listeningValue(listenSeconds: Long, durationSeconds: Long,): Double {
         if (listenSeconds <= 0) return 0.0
         val absoluteValue = (ln(1.0 + listenSeconds.coerceAtMost(3_600)) / ln(3_601.0)) * 0.2
         val progressValue = if (durationSeconds > 0) {

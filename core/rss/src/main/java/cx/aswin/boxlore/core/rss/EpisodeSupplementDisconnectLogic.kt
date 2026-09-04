@@ -7,11 +7,7 @@ package cx.aswin.boxlore.core.rss
  * the live feed tip is newer than the newest baseline tip.
  */
 object EpisodeSupplementDisconnectLogic {
-    fun shouldOptIn(
-        feedOnlyCount: Int,
-        newestFeedPublishedDate: Long,
-        newestBaselinePublishedDate: Long,
-    ): Boolean {
+    fun shouldOptIn(feedOnlyCount: Int, newestFeedPublishedDate: Long, newestBaselinePublishedDate: Long,): Boolean {
         if (feedOnlyCount > 0) return true
         if (newestFeedPublishedDate <= 0L) return false
         if (newestBaselinePublishedDate <= 0L) return newestFeedPublishedDate > 0L

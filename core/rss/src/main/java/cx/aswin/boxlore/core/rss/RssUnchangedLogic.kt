@@ -9,8 +9,7 @@ object RssUnchangedLogic {
     fun headMeansUnchanged(code: Int): Boolean = code == HTTP_NOT_MODIFIED
 
     /** HEAD 405/501 (or a failed HEAD) must try conditional GET, not "changed". */
-    fun headMeansTryConditionalGet(code: Int?): Boolean =
-        code == null ||
-            code == HTTP_METHOD_NOT_ALLOWED ||
-            code == HTTP_NOT_IMPLEMENTED
+    fun headMeansTryConditionalGet(code: Int?): Boolean = code == null ||
+        code == HTTP_METHOD_NOT_ALLOWED ||
+        code == HTTP_NOT_IMPLEMENTED
 }

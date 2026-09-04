@@ -383,11 +383,7 @@ open class BoxLorePlaybackService :
                     }
                 }
 
-                override fun onPositionDiscontinuity(
-                    oldPosition: Player.PositionInfo,
-                    newPosition: Player.PositionInfo,
-                    reason: Int,
-                ) {
+                override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int,) {
                     if (player.deviceInfo.playbackType == androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_REMOTE) {
                         handleRemotePositionDiscontinuity(player, oldPosition, newPosition, reason)
                     }
@@ -405,17 +401,11 @@ open class BoxLorePlaybackService :
                     }
                 }
 
-                override fun onMediaItemTransition(
-                    mediaItem: androidx.media3.common.MediaItem?,
-                    reason: Int,
-                ) {
+                override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int,) {
                     handleMediaItemTransition(player, mediaItem, reason)
                 }
 
-                override fun onPlayWhenReadyChanged(
-                    playWhenReady: Boolean,
-                    reason: Int,
-                ) {
+                override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int,) {
                     if (!playWhenReady) {
                         val pauseReason =
                             when (reason) {
@@ -467,10 +457,7 @@ open class BoxLorePlaybackService :
                     reconcilePausedIdleTeardown(player)
                 }
 
-                override fun onTimelineChanged(
-                    timeline: androidx.media3.common.Timeline,
-                    reason: Int,
-                ) {
+                override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int,) {
                     if (reason != Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) return
                     val currentItem = player.currentMediaItem
                     if (currentItem == null) {
@@ -565,11 +552,7 @@ open class BoxLorePlaybackService :
         }
     }
 
-    private fun seekByConfiguredIncrement(
-        player: Player,
-        deltaMs: Long,
-        source: String,
-    ) {
+    private fun seekByConfiguredIncrement(player: Player, deltaMs: Long, source: String,) {
         val upperBound = player.duration.takeIf { it > 0L } ?: Long.MAX_VALUE
         val target = (player.currentPosition + deltaMs).coerceIn(0L, upperBound)
         cx.aswin.boxlore.core.analytics.AnalyticsHelper
@@ -617,11 +600,7 @@ open class BoxLorePlaybackService :
 
     private fun lifecycleEpisodeId(item: MediaItem?): String? = item?.mediaId?.stripEpisodePrefix()
 
-    private fun handleMediaItemTransition(
-        player: Player,
-        mediaItem: MediaItem?,
-        reason: Int,
-    ) {
+    private fun handleMediaItemTransition(player: Player, mediaItem: MediaItem?, reason: Int,) {
         android.util.Log.d(
             "BoxCastPlayer",
             "onMediaItemTransition: mediaId=${mediaItem?.mediaId}, title=${mediaItem?.mediaMetadata?.title}, artworkUri=${mediaItem?.mediaMetadata?.artworkUri}, reason=$reason",
@@ -658,11 +637,7 @@ open class BoxLorePlaybackService :
         maybeRefillQueueAfterTransition(player, reason)
     }
 
-    private fun completePreviousItemTransition(
-        previousEpisodeId: String?,
-        previousDurationMs: Long,
-        wasAutoCompleted: Boolean,
-    ) {
+    private fun completePreviousItemTransition(previousEpisodeId: String?, previousDurationMs: Long, wasAutoCompleted: Boolean,) {
         if (wasAutoCompleted && previousEpisodeId != null) {
             introOutroController.claimNaturalCompletion(previousEpisodeId, previousDurationMs)
         } else {
@@ -670,10 +645,7 @@ open class BoxLorePlaybackService :
         }
     }
 
-    private fun restoreLifecycleAfterSleepTransition(
-        player: Player,
-        mediaItem: MediaItem?,
-    ): Boolean {
+    private fun restoreLifecycleAfterSleepTransition(player: Player, mediaItem: MediaItem?,): Boolean {
         if (!sleepRestoreInProgress) return false
         sleepRestoreInProgress = false
         introOutroController.reset(mediaItem, player.currentPosition)
@@ -706,10 +678,7 @@ open class BoxLorePlaybackService :
         progressCoordinator.activePlaybackStartTimeMs = System.currentTimeMillis()
     }
 
-    private fun maybeRefillQueueAfterTransition(
-        player: Player,
-        reason: Int,
-    ) {
+    private fun maybeRefillQueueAfterTransition(player: Player, reason: Int,) {
         tryStartSmartQueueRefill(player, logReason = "transition:$reason")
     }
 
@@ -722,10 +691,7 @@ open class BoxLorePlaybackService :
         tryStartSmartQueueRefill(player, logReason = "smart_queue_enabled")
     }
 
-    private fun tryStartSmartQueueRefill(
-        player: Player,
-        logReason: String,
-    ) {
+    private fun tryStartSmartQueueRefill(player: Player, logReason: String,) {
         val remaining = player.mediaItemCount - player.currentMediaItemIndex - 1
         android.util.Log.d("AutoQueue", "tryStartRefill: remaining=$remaining, reason=$logReason")
         val currentItem = player.currentMediaItem
@@ -756,10 +722,7 @@ open class BoxLorePlaybackService :
         }
     }
 
-    private fun enforceEndOfEpisodeSleepAfterTransition(
-        player: Player,
-        completedDurationMs: Long,
-    ) {
+    private fun enforceEndOfEpisodeSleepAfterTransition(player: Player, completedDurationMs: Long,) {
         clearEndOfEpisodeSleep()
         player.pause()
         val previousIndex = player.currentMediaItemIndex - 1
@@ -778,10 +741,7 @@ open class BoxLorePlaybackService :
         cx.aswin.boxlore.core.playback.SleepTimerHolder.sleepAtEndOfEpisode = false
     }
 
-    private fun persistNaturalCompletionFromLifecycle(
-        episodeId: String,
-        durationMs: Long,
-    ): kotlinx.coroutines.Job {
+    private fun persistNaturalCompletionFromLifecycle(episodeId: String, durationMs: Long,): kotlinx.coroutines.Job {
         val fallbackPodcastId = telemetrySession.podcastId
         val fallbackPodcastName = telemetrySession.podcastName
         val fallbackEpisodeTitle = telemetrySession.episodeTitle
@@ -851,18 +811,18 @@ open class BoxLorePlaybackService :
                     podcastId = podcastId,
                     episodeTitle = episodeTitle,
                     episodeImageUrl =
-                        queueItem?.imageUrl
-                            ?: fallbackMediaItem?.mediaMetadata?.artworkUri?.toString(),
+                    queueItem?.imageUrl
+                        ?: fallbackMediaItem?.mediaMetadata?.artworkUri?.toString(),
                     podcastImageUrl = queueItem?.podcastImageUrl ?: podcast?.imageUrl,
                     episodeAudioUrl =
-                        queueItem?.audioUrl
-                            ?: fallbackMediaItem?.localConfiguration?.uri?.toString(),
+                    queueItem?.audioUrl
+                        ?: fallbackMediaItem?.localConfiguration?.uri?.toString(),
                     podcastName =
-                        queueItem?.podcastTitle
-                            ?: podcast?.title
-                            ?: fallbackPodcastName
-                            ?: fallbackMediaItem?.mediaMetadata?.artist?.toString()
-                            ?: "",
+                    queueItem?.podcastTitle
+                        ?: podcast?.title
+                        ?: fallbackPodcastName
+                        ?: fallbackMediaItem?.mediaMetadata?.artist?.toString()
+                        ?: "",
                     progressMs = 0L,
                     durationMs = resolvedDurationMs,
                     isCompleted = false,
@@ -901,12 +861,12 @@ open class BoxLorePlaybackService :
             snapshot = snapshot,
             sources = sources,
             podcast =
-                podcast?.let {
-                    PlaybackHistorySeedSource(
-                        podcastImageUrl = it.imageUrl,
-                        podcastName = it.title,
-                    )
-                },
+            podcast?.let {
+                PlaybackHistorySeedSource(
+                    podcastImageUrl = it.imageUrl,
+                    podcastName = it.title,
+                )
+            },
             telemetry = telemetry,
             nowMs = System.currentTimeMillis(),
         )
@@ -944,32 +904,30 @@ open class BoxLorePlaybackService :
         introOutroController.observeManualCompletion(episodeId)
     }
 
-    override fun toAutoPodcast(entity: cx.aswin.boxlore.core.database.PodcastEntity) =
-        with(entity) {
-            cx.aswin.boxlore.core.model.Podcast(
-                id = podcastId,
-                title = title,
-                artist = author,
-                imageUrl = imageUrl,
-                type = type,
-                description = description,
-                genre = genre ?: "Podcast",
-                fallbackImageUrl = imageUrl,
-                latestEpisode = latestEpisode,
-                subscribedAt = subscribedAt,
-                preferredSort = preferredSort,
-                notificationsEnabled = notificationsEnabled,
-                autoDownloadEnabled = autoDownloadEnabled,
-                sourceType = sourceType,
-                feedUrl = feedUrl,
-                rssRefreshCapability = rssRefreshCapability,
-                rssCatalogStale = rssCatalogStale,
-                rssHasNewEpisodes = rssHasNewEpisodes,
-            )
-        }
+    override fun toAutoPodcast(entity: cx.aswin.boxlore.core.database.PodcastEntity) = with(entity) {
+        cx.aswin.boxlore.core.model.Podcast(
+            id = podcastId,
+            title = title,
+            artist = author,
+            imageUrl = imageUrl,
+            type = type,
+            description = description,
+            genre = genre ?: "Podcast",
+            fallbackImageUrl = imageUrl,
+            latestEpisode = latestEpisode,
+            subscribedAt = subscribedAt,
+            preferredSort = preferredSort,
+            notificationsEnabled = notificationsEnabled,
+            autoDownloadEnabled = autoDownloadEnabled,
+            sourceType = sourceType,
+            feedUrl = feedUrl,
+            rssRefreshCapability = rssRefreshCapability,
+            rssCatalogStale = rssCatalogStale,
+            rssHasNewEpisodes = rssHasNewEpisodes,
+        )
+    }
 
-    override fun getTimeBasedGenres(hour: Int): List<Pair<String, String>> =
-        CuratedMoods.forDaypart(CuratedMoods.daypartForHour(hour)).map { it.id to it.title }
+    override fun getTimeBasedGenres(hour: Int): List<Pair<String, String>> = CuratedMoods.forDaypart(CuratedMoods.daypartForHour(hour)).map { it.id to it.title }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 
@@ -1002,13 +960,12 @@ open class BoxLorePlaybackService :
             }
     }
 
-    private fun isPausedLocalTeardownEligible(player: Player): Boolean =
-        PlaybackPowerPolicy.shouldSchedulePausedLocalTeardown(
-            isUiForeground = PlaybackUiVisibility.isForeground.value,
-            isRemote = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE,
-            isPlaying = player.isPlaying,
-            playWhenReady = player.playWhenReady,
-        )
+    private fun isPausedLocalTeardownEligible(player: Player): Boolean = PlaybackPowerPolicy.shouldSchedulePausedLocalTeardown(
+        isUiForeground = PlaybackUiVisibility.isForeground.value,
+        isRemote = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE,
+        isPlaying = player.isPlaying,
+        playWhenReady = player.playWhenReady,
+    )
 
     override fun onDestroy() {
         pausedIdleTeardownJob?.cancel()
@@ -1125,11 +1082,7 @@ open class BoxLorePlaybackService :
         }
     }
 
-    private suspend fun persistManualCompletion(
-        episodeId: String,
-        playerDurationMs: Long,
-        progressSnapshot: PlaybackProgressSnapshot?,
-    ) {
+    private suspend fun persistManualCompletion(episodeId: String, playerDurationMs: Long, progressSnapshot: PlaybackProgressSnapshot?,) {
         try {
             val existing = loadOrSeedManualCompletionHistory(episodeId, progressSnapshot) ?: return
             val completionDurationMs =

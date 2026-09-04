@@ -91,36 +91,36 @@ internal fun AccentColorPickerDialog(
         text = {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 ConnectedOptionSelector(
                     options =
-                        listOf(
-                            "m3" to "Material 3",
-                            "exact" to "Exact color",
-                        ),
+                    listOf(
+                        "m3" to "Material 3",
+                        "exact" to "Exact color",
+                    ),
                     selected = if (useExact) "exact" else "m3",
                     onSelect = { useExact = it == "exact" },
                 )
                 Text(
                     text =
-                        if (useExact) {
-                            "Not recommended. Not tested for UI readability. " +
-                                "Conflicting colours may cause UI issues."
-                        } else {
-                            "Recommended. Your colour is a seed and matched to a Material 3 palette."
-                        },
+                    if (useExact) {
+                        "Not recommended. Not tested for UI readability. " +
+                            "Conflicting colours may cause UI issues."
+                    } else {
+                        "Recommended. Your colour is a seed and matched to a Material 3 palette."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color =
-                        if (useExact) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+                    if (useExact) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
                 if (useExact) {
                     ColorSwatchPreview(
@@ -160,17 +160,17 @@ internal fun AccentColorPickerDialog(
                         value = v
                     },
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.2f),
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.2f),
                 )
                 HueBar(
                     hue = hue,
                     onHueChange = { hue = it },
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(28.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(28.dp),
                 )
             }
         },
@@ -236,23 +236,23 @@ private fun SaturationValuePanel(
 ) {
     Box(
         modifier =
-            modifier
-                .pointerInput(hue) {
-                    detectTapGestures { offset ->
-                        onChange(
-                            (offset.x / size.width).coerceIn(0f, 1f),
-                            1f - (offset.y / size.height).coerceIn(0f, 1f),
-                        )
-                    }
-                }.pointerInput(hue) {
-                    detectDragGestures { change, _ ->
-                        change.consume()
-                        onChange(
-                            (change.position.x / size.width).coerceIn(0f, 1f),
-                            1f - (change.position.y / size.height).coerceIn(0f, 1f),
-                        )
-                    }
-                },
+        modifier
+            .pointerInput(hue) {
+                detectTapGestures { offset ->
+                    onChange(
+                        (offset.x / size.width).coerceIn(0f, 1f),
+                        1f - (offset.y / size.height).coerceIn(0f, 1f),
+                    )
+                }
+            }.pointerInput(hue) {
+                detectDragGestures { change, _ ->
+                    change.consume()
+                    onChange(
+                        (change.position.x / size.width).coerceIn(0f, 1f),
+                        1f - (change.position.y / size.height).coerceIn(0f, 1f),
+                    )
+                }
+            },
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val hueColor = hsvToColor(hue, 1f, 1f)
@@ -299,17 +299,17 @@ private fun HueBar(
         }
     Box(
         modifier =
-            modifier
-                .pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        onHueChange((offset.x / size.width).coerceIn(0f, 1f) * 360f)
-                    }
-                }.pointerInput(Unit) {
-                    detectDragGestures { change, _ ->
-                        change.consume()
-                        onHueChange((change.position.x / size.width).coerceIn(0f, 1f) * 360f)
-                    }
-                },
+        modifier
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    onHueChange((offset.x / size.width).coerceIn(0f, 1f) * 360f)
+                }
+            }.pointerInput(Unit) {
+                detectDragGestures { change, _ ->
+                    change.consume()
+                    onHueChange((change.position.x / size.width).coerceIn(0f, 1f) * 360f)
+                }
+            },
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawRect(brush = Brush.horizontalGradient(hues))

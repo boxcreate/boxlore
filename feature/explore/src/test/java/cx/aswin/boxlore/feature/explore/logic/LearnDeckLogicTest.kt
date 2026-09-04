@@ -1,10 +1,10 @@
 package cx.aswin.boxlore.feature.explore.logic
 
+import java.util.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.Random
 
 class LearnDeckLogicTest {
     @Test

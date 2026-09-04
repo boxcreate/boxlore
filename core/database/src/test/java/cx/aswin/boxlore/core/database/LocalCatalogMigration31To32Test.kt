@@ -48,11 +48,7 @@ class LocalCatalogMigration31To32Test {
                             )
                         }
 
-                        override fun onUpgrade(
-                            db: SupportSQLiteDatabase,
-                            oldVersion: Int,
-                            newVersion: Int,
-                        ) = Unit
+                        override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int,) = Unit
                     },
                 ).build()
         val openHelper = FrameworkSQLiteOpenHelperFactory().create(config)
@@ -120,11 +116,7 @@ class LocalCatalogMigration31To32Test {
                             )
                         }
 
-                        override fun onUpgrade(
-                            db: SupportSQLiteDatabase,
-                            oldVersion: Int,
-                            newVersion: Int,
-                        ) = Unit
+                        override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int,) = Unit
                     },
                 ).build()
         val openHelper = FrameworkSQLiteOpenHelperFactory().create(config)

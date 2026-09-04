@@ -31,8 +31,7 @@ object PushTargetRouteAllowlist {
 
     private val appOrWebSchemes = listOf("http://", "https://", "boxlore://", "boxcast://")
 
-    fun isAppOrWebUri(route: String): Boolean =
-        appOrWebSchemes.any { route.startsWith(it) }
+    fun isAppOrWebUri(route: String): Boolean = appOrWebSchemes.any { route.startsWith(it) }
 
     fun isAllowed(route: String): Boolean {
         val trimmed = route.trim()

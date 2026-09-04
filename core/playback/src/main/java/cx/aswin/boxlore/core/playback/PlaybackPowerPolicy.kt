@@ -13,11 +13,7 @@ object PlaybackPowerPolicy {
     const val OUTRO_POLL_INTERVAL_MS = 500L
     const val PAUSED_IDLE_TIMEOUT_MS = 15 * 60 * 1_000L
 
-    fun shouldRunUiPositionTicker(
-        isUiForeground: Boolean,
-        isPlaying: Boolean,
-        isLoading: Boolean,
-    ): Boolean = isUiForeground && (isPlaying || isLoading)
+    fun shouldRunUiPositionTicker(isUiForeground: Boolean, isPlaying: Boolean, isLoading: Boolean,): Boolean = isUiForeground && (isPlaying || isLoading)
 
     fun shouldSchedulePausedLocalTeardown(
         isUiForeground: Boolean,
@@ -26,29 +22,21 @@ object PlaybackPowerPolicy {
         playWhenReady: Boolean,
     ): Boolean = !isUiForeground && !isRemote && !isPlaying && !playWhenReady
 
-    fun shouldMonitorOutro(
-        isPlaying: Boolean,
-        effectiveSkipEndingMs: Long,
-    ): Boolean = isPlaying && effectiveSkipEndingMs > 0L
+    fun shouldMonitorOutro(isPlaying: Boolean, effectiveSkipEndingMs: Long,): Boolean = isPlaying && effectiveSkipEndingMs > 0L
 
-    suspend fun persistThenTearDownIfStillIdle(
-        persistProgress: suspend () -> Unit,
-        isStillIdle: () -> Boolean,
-        tearDown: () -> Unit,
-    ) {
+    suspend fun persistThenTearDownIfStillIdle(persistProgress: suspend () -> Unit, isStillIdle: () -> Boolean, tearDown: () -> Unit,) {
         persistProgress()
         if (isStillIdle()) {
             tearDown()
         }
     }
 
-    fun audioOffloadPreferences(): TrackSelectionParameters.AudioOffloadPreferences =
-        TrackSelectionParameters.AudioOffloadPreferences
-            .Builder()
-            .setAudioOffloadMode(
-                TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED,
-            ).setIsSpeedChangeSupportRequired(true)
-            .build()
+    fun audioOffloadPreferences(): TrackSelectionParameters.AudioOffloadPreferences = TrackSelectionParameters.AudioOffloadPreferences
+        .Builder()
+        .setAudioOffloadMode(
+            TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED,
+        ).setIsSpeedChangeSupportRequired(true)
+        .build()
 }
 
 /**

@@ -85,8 +85,8 @@ class MainActivity : ComponentActivity() {
                 podcastId = intent.getStringExtra("podcast_id"),
                 episodeId = intent.getStringExtra("episode_id"),
                 targetRoute =
-                    intent.getStringExtra("target_route")
-                        ?: intent.data?.toString(),
+                intent.getStringExtra("target_route")
+                    ?: intent.data?.toString(),
             )
         }
     }

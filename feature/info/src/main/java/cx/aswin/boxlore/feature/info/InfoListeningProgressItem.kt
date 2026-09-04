@@ -12,10 +12,9 @@ data class InfoListeningProgressItem(
     val isCompleted: Boolean,
 )
 
-internal fun ListeningHistoryEntity.toInfoListeningProgressItem(): InfoListeningProgressItem =
-    InfoListeningProgressItem(
-        episodeId = episodeId,
-        progressMs = progressMs,
-        durationMs = durationMs,
-        isCompleted = isCompleted,
-    )
+internal fun ListeningHistoryEntity.toInfoListeningProgressItem(): InfoListeningProgressItem = InfoListeningProgressItem(
+    episodeId = episodeId,
+    progressMs = progressMs,
+    durationMs = durationMs,
+    isCompleted = isCompleted,
+)

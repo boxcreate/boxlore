@@ -12,18 +12,16 @@ import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.rss.LegacyRssFeedSnapshot
 import cx.aswin.boxlore.core.rss.LegacyRssUpgradeOutcome
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 internal sealed interface ExactRepairMatch {
-    data class Found(
-        val podcast: Podcast,
-    ) : ExactRepairMatch
+    data class Found(val podcast: Podcast,) : ExactRepairMatch
 
     data object NoMatch : ExactRepairMatch
 
@@ -49,24 +47,17 @@ class LegacyRssRepairRuntime(
 internal object LegacyRssRepairLogic {
     const val MAX_CONSECUTIVE_TRANSIENT_FAILURES = 3
 
-    fun isEligibleSource(source: PodcastEntity): Boolean =
-        source.isSubscribed &&
-            source.isRss &&
-            source.linkedPodcastIndexId == null
+    fun isEligibleSource(source: PodcastEntity): Boolean = source.isSubscribed &&
+        source.isRss &&
+        source.linkedPodcastIndexId == null
 
-    fun shouldStartPass(
-        hasEligibleSources: Boolean,
-        isOnline: Boolean,
-    ): Boolean = hasEligibleSources && isOnline
+    fun shouldStartPass(hasEligibleSources: Boolean, isOnline: Boolean,): Boolean = hasEligibleSources && isOnline
 
     fun shouldMarkCompleted(hasPendingIdRepair: Boolean): Boolean = !hasPendingIdRepair
 
     fun shouldStopPass(consecutiveTransientFailures: Int): Boolean = consecutiveTransientFailures >= MAX_CONSECUTIVE_TRANSIENT_FAILURES
 
-    fun selectMatch(
-        urlLookup: ExactPodcastLookupResult,
-        guidLookup: ExactPodcastLookupResult,
-    ): ExactRepairMatch {
+    fun selectMatch(urlLookup: ExactPodcastLookupResult, guidLookup: ExactPodcastLookupResult,): ExactRepairMatch {
         if (urlLookup is ExactPodcastLookupResult.Failed ||
             guidLookup is ExactPodcastLookupResult.Failed
         ) {
@@ -205,10 +196,7 @@ class LegacyRssRepair private constructor(
         }
     }
 
-    private suspend fun processSource(
-        sourcePodcastId: String,
-        consecutiveTransientFailures: Int,
-    ): Int {
+    private suspend fun processSource(sourcePodcastId: String, consecutiveTransientFailures: Int,): Int {
         val snapshot =
             try {
                 rssRepository.legacySubscriptionRepair.inspect(sourcePodcastId).getOrThrow()
@@ -232,7 +220,7 @@ class LegacyRssRepair private constructor(
             (
                 OpmlImportLogic.urlLookupCandidates(snapshot.sourceFeedUrl) +
                     OpmlImportLogic.urlLookupCandidates(snapshot.finalFeedUrl)
-            ).distinct()
+                ).distinct()
         val urlLookup =
             OpmlImportLogic.firstExactLookup(urlCandidates) { candidate ->
                 lookup(ExactPodcastLookupKey(ExactPodcastLookupType.FEED_URL, candidate))
@@ -247,11 +235,7 @@ class LegacyRssRepair private constructor(
         return LegacyRssRepairLogic.selectMatch(urlLookup, guidLookup)
     }
 
-    private suspend fun migrate(
-        oldPodcastId: String,
-        target: Podcast,
-        snapshot: LegacyRssFeedSnapshot,
-    ): Boolean {
+    private suspend fun migrate(oldPodcastId: String, target: Podcast, snapshot: LegacyRssFeedSnapshot,): Boolean {
         userPreferences.beginPodcastIdRepair(oldPodcastId, target.id)
         return try {
             when (
@@ -300,10 +284,7 @@ class LegacyRssRepair private constructor(
         }
     }
 
-    private suspend fun finishIdRepair(
-        oldPodcastId: String,
-        newPodcastId: String,
-    ) {
+    private suspend fun finishIdRepair(oldPodcastId: String, newPodcastId: String,) {
         try {
             adaptiveRanking.migrateShowFacet(oldPodcastId, newPodcastId)
         } catch (error: CancellationException) {
@@ -333,14 +314,10 @@ class LegacyRssRepair private constructor(
         private const val TAG = "LegacyRssRepair"
         private const val REPAIR_VERSION = 1
 
-        fun create(
-            catalog: LegacyRssRepairCatalog,
-            runtime: LegacyRssRepairRuntime,
-        ): LegacyRssRepair =
-            LegacyRssRepair(
-                catalog = catalog,
-                runtime = runtime,
-                lookup = catalog.podcastRepository::lookupExactPodcastIndex,
-            )
+        fun create(catalog: LegacyRssRepairCatalog, runtime: LegacyRssRepairRuntime,): LegacyRssRepair = LegacyRssRepair(
+            catalog = catalog,
+            runtime = runtime,
+            lookup = catalog.podcastRepository::lookupExactPodcastIndex,
+        )
     }
 }

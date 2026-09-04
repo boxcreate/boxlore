@@ -30,6 +30,7 @@ import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,7 +38,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import java.util.concurrent.TimeUnit
 
 class BoxLoreApplication :
     Application(),
@@ -53,17 +53,11 @@ class BoxLoreApplication :
                 handleCastSessionEvent(CastSessionEvent.STARTING)
             }
 
-            override fun onSessionStarted(
-                session: CastSession,
-                sessionId: String,
-            ) {
+            override fun onSessionStarted(session: CastSession, sessionId: String,) {
                 handleCastSessionEvent(CastSessionEvent.STARTED)
             }
 
-            override fun onSessionStartFailed(
-                session: CastSession,
-                error: Int,
-            ) {
+            override fun onSessionStartFailed(session: CastSession, error: Int,) {
                 handleCastSessionEvent(CastSessionEvent.START_FAILED)
             }
 
@@ -71,38 +65,23 @@ class BoxLoreApplication :
                 handleCastSessionEvent(CastSessionEvent.ENDING)
             }
 
-            override fun onSessionEnded(
-                session: CastSession,
-                error: Int,
-            ) {
+            override fun onSessionEnded(session: CastSession, error: Int,) {
                 handleCastSessionEvent(CastSessionEvent.ENDED)
             }
 
-            override fun onSessionResuming(
-                session: CastSession,
-                sessionId: String,
-            ) {
+            override fun onSessionResuming(session: CastSession, sessionId: String,) {
                 handleCastSessionEvent(CastSessionEvent.RESUMING)
             }
 
-            override fun onSessionResumed(
-                session: CastSession,
-                wasSuspended: Boolean,
-            ) {
+            override fun onSessionResumed(session: CastSession, wasSuspended: Boolean,) {
                 handleCastSessionEvent(CastSessionEvent.RESUMED)
             }
 
-            override fun onSessionResumeFailed(
-                session: CastSession,
-                error: Int,
-            ) {
+            override fun onSessionResumeFailed(session: CastSession, error: Int,) {
                 handleCastSessionEvent(CastSessionEvent.RESUME_FAILED)
             }
 
-            override fun onSessionSuspended(
-                session: CastSession,
-                reason: Int,
-            ) {
+            override fun onSessionSuspended(session: CastSession, reason: Int,) {
                 // Keep the Cast route while the framework's reconnection service reattaches.
                 handleCastSessionEvent(CastSessionEvent.SUSPENDED)
             }
@@ -119,10 +98,7 @@ class BoxLoreApplication :
                 )
             }
 
-            override fun onTransferred(
-                transferType: Int,
-                sessionState: SessionState,
-            ) {
+            override fun onTransferred(transferType: Int, sessionState: SessionState,) {
                 handleCastSessionAction(
                     CastSessionTransferPolicy.action(
                         isRemoteToLocal = transferType == SessionTransferCallback.TRANSFER_TYPE_FROM_REMOTE_TO_LOCAL,
@@ -131,10 +107,7 @@ class BoxLoreApplication :
                 )
             }
 
-            override fun onTransferFailed(
-                transferType: Int,
-                transferFailedReason: Int,
-            ) {
+            override fun onTransferFailed(transferType: Int, transferFailedReason: Int,) {
                 handleCastSessionAction(
                     CastSessionTransferPolicy.action(
                         isRemoteToLocal = transferType == SessionTransferCallback.TRANSFER_TYPE_FROM_REMOTE_TO_LOCAL,
@@ -451,22 +424,21 @@ internal enum class CastSessionAction {
 }
 
 internal object CastSessionLifecyclePolicy {
-    fun action(event: CastSessionEvent): CastSessionAction =
-        when (event) {
-            CastSessionEvent.STARTING,
-            CastSessionEvent.STARTED,
-            CastSessionEvent.RESUMING,
-            CastSessionEvent.RESUMED,
-            CastSessionEvent.SUSPENDED,
-            -> CastSessionAction.KEEP_ACTIVE
+    fun action(event: CastSessionEvent): CastSessionAction = when (event) {
+        CastSessionEvent.STARTING,
+        CastSessionEvent.STARTED,
+        CastSessionEvent.RESUMING,
+        CastSessionEvent.RESUMED,
+        CastSessionEvent.SUSPENDED,
+        -> CastSessionAction.KEEP_ACTIVE
 
-            CastSessionEvent.START_FAILED,
-            CastSessionEvent.ENDED,
-            CastSessionEvent.RESUME_FAILED,
-            -> CastSessionAction.DEFER_CLEAR
+        CastSessionEvent.START_FAILED,
+        CastSessionEvent.ENDED,
+        CastSessionEvent.RESUME_FAILED,
+        -> CastSessionAction.DEFER_CLEAR
 
-            CastSessionEvent.ENDING -> CastSessionAction.NONE
-        }
+        CastSessionEvent.ENDING -> CastSessionAction.NONE
+    }
 }
 
 internal enum class CastTransferOutcome {
@@ -476,10 +448,7 @@ internal enum class CastTransferOutcome {
 }
 
 internal object CastSessionTransferPolicy {
-    fun action(
-        isRemoteToLocal: Boolean,
-        outcome: CastTransferOutcome,
-    ): CastSessionAction {
+    fun action(isRemoteToLocal: Boolean, outcome: CastTransferOutcome,): CastSessionAction {
         if (!isRemoteToLocal) return CastSessionAction.NONE
         return when (outcome) {
             CastTransferOutcome.TRANSFERRING -> CastSessionAction.KEEP_ACTIVE

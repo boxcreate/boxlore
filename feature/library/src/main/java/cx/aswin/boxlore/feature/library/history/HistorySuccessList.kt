@@ -48,12 +48,12 @@ internal fun HistorySuccessList(
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(contentPadding),
         contentPadding =
-            PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 8.dp,
-                bottom = bottomInset + 24.dp,
-            ),
+        PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 8.dp,
+            bottom = bottomInset + 24.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {

@@ -222,12 +222,7 @@ sealed interface LearningEvent {
     }
 
     /** A duplicate action inside the dedup window was dropped before it could affect anything. */
-    data class DuplicateIgnored(
-        override val id: Long,
-        override val timestamp: Long,
-        val action: RankingAction,
-        val episodeId: String,
-    ) : LearningEvent {
+    data class DuplicateIgnored(override val id: Long, override val timestamp: Long, val action: RankingAction, val episodeId: String,) : LearningEvent {
         override val kind = LearningEventKind.DUPLICATE
         override val reward: Double? = null
         override val title: String = "Ignored duplicate"
@@ -235,12 +230,7 @@ sealed interface LearningEvent {
     }
 
     /** Genre facets were canonicalized: aliases merged, placeholders dropped. */
-    data class GenreFacetPruned(
-        override val id: Long,
-        override val timestamp: Long,
-        val mergedCount: Int,
-        val removedCount: Int,
-    ) : LearningEvent {
+    data class GenreFacetPruned(override val id: Long, override val timestamp: Long, val mergedCount: Int, val removedCount: Int,) : LearningEvent {
         override val kind = LearningEventKind.PRUNE
         override val reward: Double? = null
         override val title: String = "Genre facets cleaned"
@@ -248,22 +238,17 @@ sealed interface LearningEvent {
     }
 
     companion object {
-        internal fun prettyAction(action: RankingAction): String =
-            action.name.lowercase().split('_').joinToString(" ") { it.replaceFirstChar(Char::titlecase) }
+        internal fun prettyAction(action: RankingAction): String = action.name.lowercase().split('_').joinToString(" ") { it.replaceFirstChar(Char::titlecase) }
 
-        internal fun prettyToken(raw: String): String =
-            raw.trim().lowercase().replace('_', ' ').replaceFirstChar(Char::titlecase)
+        internal fun prettyToken(raw: String): String = raw.trim().lowercase().replace('_', ' ').replaceFirstChar(Char::titlecase)
 
-        internal fun prettyEntryPoint(raw: String): String =
-            raw.removePrefix("home_adaptive_").replace('_', ' ').trim()
+        internal fun prettyEntryPoint(raw: String): String = raw.removePrefix("home_adaptive_").replace('_', ' ').trim()
 
-        internal fun signed(value: Double): String =
-            (if (value >= 0) "+" else "") + format2(value)
+        internal fun signed(value: Double): String = (if (value >= 0) "+" else "") + format2(value)
 
         internal fun format2(value: Double): String = String.format(Locale.US, "%.2f", value)
 
-        internal fun percent(value: Double): String =
-            String.format(Locale.US, "%d%%", (value * 100).toInt())
+        internal fun percent(value: Double): String = String.format(Locale.US, "%d%%", (value * 100).toInt())
 
         internal fun formatSeconds(seconds: Long): String = when {
             seconds < 60 -> "${seconds}s"

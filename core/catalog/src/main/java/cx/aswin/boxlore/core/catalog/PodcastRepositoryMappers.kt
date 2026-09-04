@@ -1,12 +1,11 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.Transcript
-
 import cx.aswin.boxlore.core.network.model.TrendingFeed
-import cx.aswin.boxlore.core.catalog.BuildConfig
 
 /**
  * Upgrade HTTP URLs to HTTPS to fix Android cleartext traffic restrictions.
@@ -49,30 +48,30 @@ internal fun resolvePrimaryGenre(categories: Map<String, String>?): String {
     return categories.values.firstOrNull { it.lowercase() !in ignored } ?: "Podcast"
 }
 
-internal fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.TrendingFeed>): List<Podcast> {
-    return feeds.map { feed ->
-        Podcast(
-            id = feed.id.toString(),
-            title = feed.title,
-            artist = feed.author ?: "Unknown",
-            imageUrl = (feed.artwork ?: feed.image).toHttps(),
-            description = feed.description,
-            genre = resolvePrimaryGenre(feed.categories),
-            latestEpisode = feed.latestEpisode?.let { epItem ->
-                mapToEpisode(epItem)?.copy(
-                    podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
-                    podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
-                )
-            },
-            medium = feed.medium
-        )
-    }
+internal fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.TrendingFeed>): List<Podcast> = feeds.map { feed ->
+    Podcast(
+        id = feed.id.toString(),
+        title = feed.title,
+        artist = feed.author ?: "Unknown",
+        imageUrl = (feed.artwork ?: feed.image).toHttps(),
+        description = feed.description,
+        genre = resolvePrimaryGenre(feed.categories),
+        latestEpisode = feed.latestEpisode?.let { epItem ->
+            mapToEpisode(epItem)?.copy(
+                podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
+                podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
+            )
+        },
+        medium = feed.medium
+    )
 }
-
 
 internal fun mapToEpisode(item: cx.aswin.boxlore.core.network.model.EpisodeItem): Episode? {
     val audioUrl = item.enclosureUrl ?: return null
-    android.util.Log.d("BoxCastRepo", "mapToEpisode: ${item.title} | persons=${item.persons?.size} | chaptersUrl=${item.chaptersUrl != null} | transcripts=${item.transcripts?.size}")
+    android.util.Log.d(
+        "BoxCastRepo",
+        "mapToEpisode: ${item.title} | persons=${item.persons?.size} | chaptersUrl=${item.chaptersUrl != null} | transcripts=${item.transcripts?.size}"
+    )
     return item.toEpisode(
         audioUrl = audioUrl,
         resolvedTranscriptUrl = item.resolvedTranscriptUrl()
@@ -91,67 +90,57 @@ private fun cx.aswin.boxlore.core.network.model.EpisodeItem.resolvedTranscriptUr
     return directTranscriptUrl ?: transcripts?.firstOrNull()?.url
 }
 
-private fun cx.aswin.boxlore.core.network.model.TranscriptItem.isPreferredSubtitleTranscript(): Boolean =
-    type.isSubtitleTranscriptType() || url.isSubtitleTranscriptUrl()
+private fun cx.aswin.boxlore.core.network.model.TranscriptItem.isPreferredSubtitleTranscript(): Boolean = type.isSubtitleTranscriptType() || url.isSubtitleTranscriptUrl()
 
-private fun String?.isSubtitleTranscriptType(): Boolean =
-    this == "application/srt" ||
-        this == "text/vtt" ||
-        this == "application/x-subrip"
+private fun String?.isSubtitleTranscriptType(): Boolean = this == "application/srt" ||
+    this == "text/vtt" ||
+    this == "application/x-subrip"
 
-private fun String?.isSubtitleTranscriptUrl(): Boolean =
-    this?.contains(".srt", ignoreCase = true) == true ||
-        this?.contains(".vtt", ignoreCase = true) == true
+private fun String?.isSubtitleTranscriptUrl(): Boolean = this?.contains(".srt", ignoreCase = true) == true ||
+    this?.contains(".vtt", ignoreCase = true) == true
 
-private fun cx.aswin.boxlore.core.network.model.EpisodeItem.toEpisode(
-    audioUrl: String,
-    resolvedTranscriptUrl: String?
-): Episode {
-    return Episode(
-        id = id.toString(),
-        title = title,
-        description = description ?: "",
-        audioUrl = audioUrl,
-        imageUrl = (image?.takeIf { it.isNotBlank() } ?: feedImage?.takeIf { it.isNotBlank() }).toHttps(),
-        podcastImageUrl = feedImage?.takeIf { it.isNotBlank() }?.let { it.toHttps() },
-        podcastTitle = feedTitle,
-        podcastId = feedId?.toString(),
-        duration = duration ?: 0,
-        publishedDate = datePublished ?: 0L,
-        // Podcast 2.0
-        chaptersUrl = chaptersUrl,
-        transcriptUrl = resolvedTranscriptUrl,
-        transcripts = transcripts?.map { Transcript(url = it.url, type = it.type) },
-        persons = persons?.map { Person(name = it.name, role = it.role, group = it.group, img = it.img, href = it.href) },
-        seasonNumber = season,
-        episodeNumber = episodeNumber,
-        episodeType = episodeType,
-        enclosureType = enclosureType,
-        retrievalScore = retrievalScore,
-        semanticScore = semanticScore,
-        recommendationSource = recommendationSource,
-        recommendationReason = recommendationReason,
-        serverRank = serverRank,
-        recommendationAlgorithmVersion = algorithmVersion,
-        language = language,
-        podcastGenre = genre,
-    )
-}
+private fun cx.aswin.boxlore.core.network.model.EpisodeItem.toEpisode(audioUrl: String, resolvedTranscriptUrl: String?): Episode = Episode(
+    id = id.toString(),
+    title = title,
+    description = description ?: "",
+    audioUrl = audioUrl,
+    imageUrl = (image?.takeIf { it.isNotBlank() } ?: feedImage?.takeIf { it.isNotBlank() }).toHttps(),
+    podcastImageUrl = feedImage?.takeIf { it.isNotBlank() }?.let { it.toHttps() },
+    podcastTitle = feedTitle,
+    podcastId = feedId?.toString(),
+    duration = duration ?: 0,
+    publishedDate = datePublished ?: 0L,
+    // Podcast 2.0
+    chaptersUrl = chaptersUrl,
+    transcriptUrl = resolvedTranscriptUrl,
+    transcripts = transcripts?.map { Transcript(url = it.url, type = it.type) },
+    persons = persons?.map { Person(name = it.name, role = it.role, group = it.group, img = it.img, href = it.href) },
+    seasonNumber = season,
+    episodeNumber = episodeNumber,
+    episodeType = episodeType,
+    enclosureType = enclosureType,
+    retrievalScore = retrievalScore,
+    semanticScore = semanticScore,
+    recommendationSource = recommendationSource,
+    recommendationReason = recommendationReason,
+    serverRank = serverRank,
+    recommendationAlgorithmVersion = algorithmVersion,
+    language = language,
+    podcastGenre = genre,
+)
 
-internal fun mapToPodcast(feed: cx.aswin.boxlore.core.network.model.TrendingFeed): Podcast {
-    return Podcast(
-        id = feed.id.toString(),
-        title = feed.title,
-        artist = feed.author ?: "Unknown",
-        imageUrl = (feed.artwork ?: feed.image).toHttps(),
-        description = feed.description,
-        genre = resolvePrimaryGenre(feed.categories),
-        latestEpisode = feed.latestEpisode?.let { epItem ->
-            mapToEpisode(epItem)?.copy(
-                podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
-                podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
-            )
-        },
-        medium = feed.medium
-    )
-}
+internal fun mapToPodcast(feed: cx.aswin.boxlore.core.network.model.TrendingFeed): Podcast = Podcast(
+    id = feed.id.toString(),
+    title = feed.title,
+    artist = feed.author ?: "Unknown",
+    imageUrl = (feed.artwork ?: feed.image).toHttps(),
+    description = feed.description,
+    genre = resolvePrimaryGenre(feed.categories),
+    latestEpisode = feed.latestEpisode?.let { epItem ->
+        mapToEpisode(epItem)?.copy(
+            podcastId = epItem.feedId?.toString() ?: feed.id.toString(),
+            podcastTitle = epItem.feedTitle?.takeIf { it.isNotBlank() } ?: feed.title
+        )
+    },
+    medium = feed.medium
+)

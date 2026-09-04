@@ -71,11 +71,11 @@ class PodcastEpisodeSelectionLogicTest {
         val visible =
             PodcastEpisodeSelectionLogic.visibleEpisodes(
                 feedItems =
-                    listOf(
-                        FeedItem.NormalEpisode(episode("a"), 0),
-                        FeedItem.TrailerGroup(listOf(episode("trailer-1") to 1, episode("trailer-2") to 2)),
-                        FeedItem.NormalEpisode(episode("hidden"), 3),
-                    ),
+                listOf(
+                    FeedItem.NormalEpisode(episode("a"), 0),
+                    FeedItem.TrailerGroup(listOf(episode("trailer-1") to 1, episode("trailer-2") to 2)),
+                    FeedItem.NormalEpisode(episode("hidden"), 3),
+                ),
                 visibleItemKeys = setOf("a", "trailer_group_trailer-1"),
             )
 
@@ -111,11 +111,10 @@ class PodcastEpisodeSelectionLogicTest {
         )
     }
 
-    private fun episode(id: String): Episode =
-        Episode(
-            id = id,
-            title = id,
-            description = "",
-            audioUrl = "https://example.com/$id.mp3",
-        )
+    private fun episode(id: String): Episode = Episode(
+        id = id,
+        title = id,
+        description = "",
+        audioUrl = "https://example.com/$id.mp3",
+    )
 }

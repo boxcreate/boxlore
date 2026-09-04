@@ -21,6 +21,5 @@ internal object HomeFeedSpacing {
     const val ForYouBodyCount = 8
     const val ExploreGridCap = 6
 
-    fun railTextFootHeight(titleMaxLines: Int): Dp =
-        FeedPosterSpacing.textFootHeight(titleMaxLines)
+    fun railTextFootHeight(titleMaxLines: Int): Dp = FeedPosterSpacing.textFootHeight(titleMaxLines)
 }

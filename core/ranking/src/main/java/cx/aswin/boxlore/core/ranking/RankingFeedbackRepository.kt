@@ -5,30 +5,16 @@ import android.util.Log
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
 
-data class FeedbackTarget(
-    val episodeId: String,
-    val podcastId: String,
-    val genre: String? = null,
-    val source: CandidateSource? = null,
-)
+data class FeedbackTarget(val episodeId: String, val podcastId: String, val genre: String? = null, val source: CandidateSource? = null,)
 
-class RankingFeedbackRepository private constructor(
-    private val adaptiveRankingRepository: AdaptiveRankingRepository?,
-) : cx.aswin.boxlore.core.domain.ports.RankingResetPort {
+class RankingFeedbackRepository private constructor(private val adaptiveRankingRepository: AdaptiveRankingRepository?,) : cx.aswin.boxlore.core.domain.ports.RankingResetPort {
     private val recentActions = ConcurrentHashMap<String, Long>()
 
-    suspend fun recordExposure(exposure: RankingExposure): String {
-        return safely("record exposure", "") {
-            adaptiveRankingRepository?.recordExposure(exposure).orEmpty()
-        }
+    suspend fun recordExposure(exposure: RankingExposure): String = safely("record exposure", "") {
+        adaptiveRankingRepository?.recordExposure(exposure).orEmpty()
     }
 
-    suspend fun recordAction(
-        target: FeedbackTarget,
-        action: RankingAction,
-        listenSeconds: Long = 0,
-        durationSeconds: Long = 0,
-    ) {
+    suspend fun recordAction(target: FeedbackTarget, action: RankingAction, listenSeconds: Long = 0, durationSeconds: Long = 0,) {
         safely("record action", Unit) {
             if (isRecentDuplicate(target.episodeId, action)) {
                 LearningEventLog.record { id, ts ->
@@ -122,20 +108,15 @@ class RankingFeedbackRepository private constructor(
         }
     }
 
-    override suspend fun reset(): Boolean {
-        return safely("reset recommendations", false) {
-            adaptiveRankingRepository?.reset()
-            recentActions.clear()
-            RankingShadowDiagnostics.clear()
-            LearningEventLog.clear()
-            adaptiveRankingRepository != null
-        }
+    override suspend fun reset(): Boolean = safely("reset recommendations", false) {
+        adaptiveRankingRepository?.reset()
+        recentActions.clear()
+        RankingShadowDiagnostics.clear()
+        LearningEventLog.clear()
+        adaptiveRankingRepository != null
     }
 
-    private suspend fun updateTasteFacets(
-        target: FeedbackTarget,
-        reward: Double,
-    ) {
+    private suspend fun updateTasteFacets(target: FeedbackTarget, reward: Double,) {
         val repository = adaptiveRankingRepository ?: return
         repository.updateFacet(PreferenceFacetType.SHOW, target.podcastId, reward)
         // Skip placeholder "Podcast" / unknown labels — only canonical genres learn.
@@ -151,10 +132,7 @@ class RankingFeedbackRepository private constructor(
         }
     }
 
-    private fun isRecentDuplicate(
-        episodeId: String,
-        action: RankingAction,
-    ): Boolean {
+    private fun isRecentDuplicate(episodeId: String, action: RankingAction,): Boolean {
         val now = System.currentTimeMillis()
         val key = "$episodeId:${action.name}"
         val previous = recentActions.put(key, now)
@@ -164,19 +142,13 @@ class RankingFeedbackRepository private constructor(
         return previous != null && now - previous < ACTION_DEDUP_WINDOW_MILLIS
     }
 
-    private suspend fun <T> safely(
-        operation: String,
-        fallback: T,
-        block: suspend () -> T,
-    ): T {
-        return try {
-            block()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            Log.e(TAG, "Failed to $operation", error)
-            fallback
-        }
+    private suspend fun <T> safely(operation: String, fallback: T, block: suspend () -> T,): T = try {
+        block()
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Log.e(TAG, "Failed to $operation", error)
+        fallback
     }
 
     companion object {
@@ -205,24 +177,21 @@ class RankingFeedbackRepository private constructor(
         @Volatile
         private var instance: RankingFeedbackRepository? = null
 
-        fun create(adaptiveRankingRepository: AdaptiveRankingRepository?): RankingFeedbackRepository =
-            RankingFeedbackRepository(adaptiveRankingRepository)
+        fun create(adaptiveRankingRepository: AdaptiveRankingRepository?): RankingFeedbackRepository = RankingFeedbackRepository(adaptiveRankingRepository)
 
         fun install(value: RankingFeedbackRepository) {
             instance = value
         }
 
         /** Prefer AppContainer / SharedAppDependenciesHolder in production. */
-        fun getInstance(context: Context): RankingFeedbackRepository {
-            return instance ?: synchronized(this) {
-                instance ?: create(
-                    runCatching {
-                        AdaptiveRankingRepository.getInstance(context.applicationContext)
-                    }.onFailure { error ->
-                        Log.e(TAG, "Failed to initialize adaptive ranking", error)
-                    }.getOrNull(),
-                ).also { instance = it }
-            }
+        fun getInstance(context: Context): RankingFeedbackRepository = instance ?: synchronized(this) {
+            instance ?: create(
+                runCatching {
+                    AdaptiveRankingRepository.getInstance(context.applicationContext)
+                }.onFailure { error ->
+                    Log.e(TAG, "Failed to initialize adaptive ranking", error)
+                }.getOrNull(),
+            ).also { instance = it }
         }
 
         fun getIfInitialized(): RankingFeedbackRepository? = instance

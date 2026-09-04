@@ -56,13 +56,13 @@ fun HeroCard(
         remember {
             Brush.verticalGradient(
                 colors =
-                    listOf(
-                        Color.Black.copy(alpha = 0.15f),
-                        Color.Black.copy(alpha = 0.35f),
-                        Color.Black.copy(alpha = 0.55f),
-                        Color.Black.copy(alpha = 0.75f),
-                        Color.Black.copy(alpha = 0.92f),
-                    ),
+                listOf(
+                    Color.Black.copy(alpha = 0.15f),
+                    Color.Black.copy(alpha = 0.35f),
+                    Color.Black.copy(alpha = 0.55f),
+                    Color.Black.copy(alpha = 0.75f),
+                    Color.Black.copy(alpha = 0.92f),
+                ),
             )
         }
 
@@ -72,10 +72,10 @@ fun HeroCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier =
-            modifier
-                .fillMaxSize()
-                .clip(MaterialTheme.shapes.extraLarge)
-                .expressiveClickable(onClick = onArrowClick),
+        modifier
+            .fillMaxSize()
+            .clip(MaterialTheme.shapes.extraLarge)
+            .expressiveClickable(onClick = onArrowClick),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             OptimizedImage(
@@ -83,20 +83,20 @@ fun HeroCard(
                 proxyWidth = 800, // Full-width hero needs high res
                 contentDescription = null,
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .drawWithContent {
-                            drawContent()
-                            drawRect(gradientBrush)
-                        },
+                Modifier
+                    .fillMaxSize()
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(gradientBrush)
+                    },
                 contentScale = ContentScale.Crop,
             )
             // Content - Distributed Layout
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
+                Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 HeroBadge(label = item.label)
@@ -173,17 +173,17 @@ fun HeroCard(
                         Surface(
                             color = MaterialTheme.colorScheme.primary,
                             shape =
-                                RoundedCornerShape(
-                                    topStart = 24.dp,
-                                    bottomStart = 24.dp,
-                                    topEnd = 8.dp,
-                                    bottomEnd = 8.dp,
-                                ),
+                            RoundedCornerShape(
+                                topStart = 24.dp,
+                                bottomStart = 24.dp,
+                                topEnd = 8.dp,
+                                bottomEnd = 8.dp,
+                            ),
                             modifier =
-                                Modifier
-                                    .height(48.dp)
-                                    .width(160.dp)
-                                    .expressiveClickable(isolate = true, onClick = onClick),
+                            Modifier
+                                .height(48.dp)
+                                .width(160.dp)
+                                .expressiveClickable(isolate = true, onClick = onClick),
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxSize(),
@@ -199,15 +199,15 @@ fun HeroCard(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text =
-                                        if (showPause) {
-                                            "Pause"
-                                        } else if (item.type == HeroType.RESUME ||
-                                            isCurrentEpisode
-                                        ) {
-                                            "Resume"
-                                        } else {
-                                            "Play"
-                                        },
+                                    if (showPause) {
+                                        "Pause"
+                                    } else if (item.type == HeroType.RESUME ||
+                                        isCurrentEpisode
+                                    ) {
+                                        "Resume"
+                                    } else {
+                                        "Play"
+                                    },
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.onPrimary,
                                 )
@@ -218,16 +218,16 @@ fun HeroCard(
                         Surface(
                             color = MaterialTheme.colorScheme.primary,
                             shape =
-                                RoundedCornerShape(
-                                    topStart = 8.dp,
-                                    bottomStart = 8.dp,
-                                    topEnd = 24.dp,
-                                    bottomEnd = 24.dp,
-                                ),
+                            RoundedCornerShape(
+                                topStart = 8.dp,
+                                bottomStart = 8.dp,
+                                topEnd = 24.dp,
+                                bottomEnd = 24.dp,
+                            ),
                             modifier =
-                                Modifier
-                                    .size(48.dp)
-                                    .expressiveClickable(isolate = true, onClick = onArrowClick),
+                            Modifier
+                                .size(48.dp)
+                                .expressiveClickable(isolate = true, onClick = onArrowClick),
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -267,9 +267,9 @@ private fun HeroBadge(label: String) {
         Text(
             text = label.uppercase(),
             style =
-                MaterialTheme.typography.labelSmall.copy(
-                    letterSpacing = 0.5.sp,
-                ),
+            MaterialTheme.typography.labelSmall.copy(
+                letterSpacing = 0.5.sp,
+            ),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )

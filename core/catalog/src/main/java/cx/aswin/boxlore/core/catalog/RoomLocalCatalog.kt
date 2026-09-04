@@ -9,18 +9,14 @@ import cx.aswin.boxlore.core.model.Podcast
 /**
  * Room-backed [LocalCatalogPort] for feature ViewModels and nav helpers.
  */
-class RoomLocalCatalog(
-    private val database: BoxLoreDatabase,
-) : LocalCatalogPort {
+class RoomLocalCatalog(private val database: BoxLoreDatabase,) : LocalCatalogPort {
     private val podcastDao get() = database.podcastDao()
 
-    override suspend fun getLocalPodcast(id: String): Podcast? =
-        podcastDao.getPodcast(id)?.toPodcast()
+    override suspend fun getLocalPodcast(id: String): Podcast? = podcastDao.getPodcast(id)?.toPodcast()
 
-    override suspend fun getSubscribedRssLinkedTo(podcastIndexId: String): Podcast? =
-        podcastDao.getRssPodcastLinkedTo(podcastIndexId)
-            ?.takeIf { it.isSubscribed }
-            ?.toPodcast()
+    override suspend fun getSubscribedRssLinkedTo(podcastIndexId: String): Podcast? = podcastDao.getRssPodcastLinkedTo(podcastIndexId)
+        ?.takeIf { it.isSubscribed }
+        ?.toPodcast()
 
     override suspend fun upsertSubscribedPodcast(podcast: Podcast) {
         database.withTransaction {

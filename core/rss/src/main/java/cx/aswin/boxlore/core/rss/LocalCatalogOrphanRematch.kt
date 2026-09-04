@@ -10,10 +10,7 @@ import kotlin.math.abs
 object LocalCatalogOrphanRematch {
     private const val DATE_WINDOW_SECONDS = 48L * 60L * 60L
 
-    data class Candidate(
-        val episode: Episode,
-        val guid: String?,
-    )
+    data class Candidate(val episode: Episode, val guid: String?,)
 
     fun shouldRematch(resolved: Episode?): Boolean = resolved == null
 

@@ -54,7 +54,7 @@ object NetworkModule {
         redactHeader("X-Firebase-AppCheck")
         redactHeader("X-App-Key")
     }
-    
+
     private val okHttpClient = OkHttpClient.Builder().apply {
         addInterceptor(appCheckInterceptor)
         addInterceptor(loggingInterceptor)
@@ -83,12 +83,10 @@ object NetworkModule {
      * Builds [BoxLoreApi] against an arbitrary [OkHttpClient].
      * Used by production (cached client) and JVM tests (MockWebServer, no disk cache).
      */
-    fun createBoxLoreApi(baseUrl: String, client: OkHttpClient): BoxLoreApi {
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(client)
-            .addConverterFactory(json.asConverterFactory(contentType))
-            .build()
-            .create(BoxLoreApi::class.java)
-    }
+    fun createBoxLoreApi(baseUrl: String, client: OkHttpClient): BoxLoreApi = Retrofit.Builder()
+        .baseUrl(baseUrl)
+        .client(client)
+        .addConverterFactory(json.asConverterFactory(contentType))
+        .build()
+        .create(BoxLoreApi::class.java)
 }

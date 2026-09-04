@@ -11,6 +11,5 @@ object FeedPosterSpacing {
     /** 18dp line height reserved per title line in equal-height poster feet. */
     val TitleLineHeight = 18.dp
 
-    fun textFootHeight(titleMaxLines: Int): Dp =
-        TitleLineHeight * titleMaxLines.coerceAtLeast(1)
+    fun textFootHeight(titleMaxLines: Int): Dp = TitleLineHeight * titleMaxLines.coerceAtLeast(1)
 }

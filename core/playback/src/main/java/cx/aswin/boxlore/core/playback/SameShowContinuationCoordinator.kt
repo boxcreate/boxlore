@@ -43,10 +43,7 @@ internal class SameShowContinuationCoordinator(
         }
     }
 
-    internal suspend fun evaluate(
-        currentEpisode: Episode?,
-        sameShowQueueOnly: Boolean,
-    ) {
+    internal suspend fun evaluate(currentEpisode: Episode?, sameShowQueueOnly: Boolean,) {
         if (currentEpisode == null) {
             updateState(SameShowContinuationState.HIDDEN)
             return

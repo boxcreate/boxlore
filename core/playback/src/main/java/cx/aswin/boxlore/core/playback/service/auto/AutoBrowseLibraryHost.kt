@@ -37,10 +37,7 @@ interface AutoBrowseLibraryHost {
     /** Rebuild folder collage tiles when resume/history/queue content changes. */
     fun requestAutoCollageRefresh(force: Boolean = false)
 
-    fun getString(
-        @StringRes id: Int,
-        vararg formatArgs: Any,
-    ): String
+    fun getString(@StringRes id: Int, vararg formatArgs: Any,): String
 
     fun observeManualCompletion(episodeId: String)
 

@@ -25,11 +25,7 @@ interface SmartQueueSources : HistoryRecommendationSource {
     suspend fun getEpisodes(podcastId: String): List<Episode>
 
     /** Same-show continuation around [aroundEpisodeId], bounded to ~200. */
-    suspend fun getEpisodesAround(
-        podcastId: String,
-        aroundEpisodeId: String,
-        preferredSort: String? = null,
-    ): List<Episode> = getEpisodes(podcastId)
+    suspend fun getEpisodesAround(podcastId: String, aroundEpisodeId: String, preferredSort: String? = null,): List<Episode> = getEpisodes(podcastId)
 
     /**
      * Returns a bounded newest-first slice for cross-show queue fallback.
@@ -38,10 +34,7 @@ interface SmartQueueSources : HistoryRecommendationSource {
      * this separate prevents a large local RSS catalog from being materialized and
      * sorted during every queue refill.
      */
-    suspend fun getQueueCandidates(
-        podcastId: String,
-        limit: Int,
-    ): List<Episode> = getEpisodes(podcastId).take(limit)
+    suspend fun getQueueCandidates(podcastId: String, limit: Int,): List<Episode> = getEpisodes(podcastId).take(limit)
 
     suspend fun getPodcastDetails(podcastId: String): Podcast?
 
@@ -80,10 +73,7 @@ interface SmartQueueSources : HistoryRecommendationSource {
         country: String?,
     ): List<Episode>
 
-    suspend fun getTrendingPodcasts(
-        country: String,
-        category: String?,
-    ): List<Podcast>
+    suspend fun getTrendingPodcasts(country: String, category: String?,): List<Podcast>
 }
 
 @Suppress("TooManyFunctions")
@@ -96,21 +86,13 @@ class DefaultSmartQueueSources(
 ) : SmartQueueSources {
     override suspend fun getEpisodes(podcastId: String): List<Episode> = podcastRepository.getEpisodeWindow(podcastId)
 
-    override suspend fun getEpisodesAround(
-        podcastId: String,
-        aroundEpisodeId: String,
-        preferredSort: String?,
-    ): List<Episode> =
-        podcastRepository.getEpisodeWindow(
-            feedId = podcastId,
-            aroundEpisodeId = aroundEpisodeId,
-            sort = preferredSort ?: "newest",
-        )
+    override suspend fun getEpisodesAround(podcastId: String, aroundEpisodeId: String, preferredSort: String?,): List<Episode> = podcastRepository.getEpisodeWindow(
+        feedId = podcastId,
+        aroundEpisodeId = aroundEpisodeId,
+        sort = preferredSort ?: "newest",
+    )
 
-    override suspend fun getQueueCandidates(
-        podcastId: String,
-        limit: Int,
-    ): List<Episode> {
+    override suspend fun getQueueCandidates(podcastId: String, limit: Int,): List<Episode> {
         val page =
             podcastRepository.getEpisodesPaginated(
                 feedId = podcastId,
@@ -127,31 +109,27 @@ class DefaultSmartQueueSources(
 
     override suspend fun getCompletedEpisodeIds(): Set<String> = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()
 
-    override suspend fun getRecentlyPlayedPodcastIds(sinceMs: Long): Set<String> =
-        database.listeningHistoryDao().getRecentlyPlayedPodcasts(sinceMs).toSet()
+    override suspend fun getRecentlyPlayedPodcastIds(sinceMs: Long): Set<String> = database.listeningHistoryDao().getRecentlyPlayedPodcasts(sinceMs).toSet()
 
     override suspend fun getResumeCandidates(): List<ListeningHistoryEntity> = database.listeningHistoryDao().getResumeItemsList()
 
-    override suspend fun getRecentHistory(limit: Int): List<ListeningHistoryEntity> =
-        database.listeningHistoryDao().getRecentHistoryList(limit)
+    override suspend fun getRecentHistory(limit: Int): List<ListeningHistoryEntity> = database.listeningHistoryDao().getRecentHistoryList(limit)
 
-    override suspend fun getRegion(): String =
-        try {
-            userPreferencesRepository.regionStream.first()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            "us"
-        }
+    override suspend fun getRegion(): String = try {
+        userPreferencesRepository.regionStream.first()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        "us"
+    }
 
-    override suspend fun getInterests(): List<String> =
-        try {
-            BoxcastPrefs(context).getUserGenres().toList()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            emptyList()
-        }
+    override suspend fun getInterests(): List<String> = try {
+        BoxcastPrefs(context).getUserGenres().toList()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        emptyList()
+    }
 
     /**
      * Same shaping as PlaybackRepository.getHistoryForRecommendations: recent meaningful
@@ -245,8 +223,5 @@ class DefaultSmartQueueSources(
         )
     }
 
-    override suspend fun getTrendingPodcasts(
-        country: String,
-        category: String?,
-    ): List<Podcast> = podcastRepository.getTrendingPodcasts(country = country, category = category)
+    override suspend fun getTrendingPodcasts(country: String, category: String?,): List<Podcast> = podcastRepository.getTrendingPodcasts(country = country, category = category)
 }

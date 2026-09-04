@@ -43,23 +43,22 @@ class PodcastDaoInMemoryTest {
     }
 
     @Test
-    fun upsertAndGetPodcast_roundTrips() =
-        runTest {
-            val entity =
-                PodcastEntity(
-                    podcastId = "920666",
-                    title = "The Daily",
-                    author = "The New York Times",
-                    imageUrl = "https://example.com/daily.jpg",
-                    description = "News",
-                    isSubscribed = true,
-                )
+    fun upsertAndGetPodcast_roundTrips() = runTest {
+        val entity =
+            PodcastEntity(
+                podcastId = "920666",
+                title = "The Daily",
+                author = "The New York Times",
+                imageUrl = "https://example.com/daily.jpg",
+                description = "News",
+                isSubscribed = true,
+            )
 
-            dao.upsert(entity)
+        dao.upsert(entity)
 
-            val loaded = dao.getPodcast("920666")
-            assertEquals("The Daily", loaded?.title)
-            assertEquals("The New York Times", loaded?.author)
-            assertNull(dao.getPodcast("missing"))
-        }
+        val loaded = dao.getPodcast("920666")
+        assertEquals("The Daily", loaded?.title)
+        assertEquals("The New York Times", loaded?.author)
+        assertNull(dao.getPodcast("missing"))
+    }
 }

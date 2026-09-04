@@ -44,73 +44,46 @@ internal object PlaybackHistorySeedPolicy {
         )
     }
 
-    fun resolvePodcastId(
-        sources: List<PlaybackHistorySeedSource>,
-        telemetry: PlaybackHistorySeedSource?,
-    ): String =
-        sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::podcastId)
-            ?: telemetry?.podcastId
-            ?: ""
+    fun resolvePodcastId(sources: List<PlaybackHistorySeedSource>, telemetry: PlaybackHistorySeedSource?,): String = sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::podcastId)
+        ?: telemetry?.podcastId
+        ?: ""
 
     private fun resolveEpisodeTitle(
         snapshot: PlaybackProgressSnapshot,
         sources: List<PlaybackHistorySeedSource>,
         telemetry: PlaybackHistorySeedSource?,
-    ): String? =
-        sources.firstNonBlank(PlaybackHistorySeedSource::episodeTitle)
-            ?: snapshot.episodeTitle.nonBlank()
-            ?: telemetry?.episodeTitle.nonBlank()
+    ): String? = sources.firstNonBlank(PlaybackHistorySeedSource::episodeTitle)
+        ?: snapshot.episodeTitle.nonBlank()
+        ?: telemetry?.episodeTitle.nonBlank()
 
-    private fun resolveDurationMs(
-        snapshot: PlaybackProgressSnapshot,
-        sources: List<PlaybackHistorySeedSource>,
-    ): Long =
-        snapshot.durationMs.takeIf { it > 0L }
-            ?: sources.firstNotNullOfOrNull { it.durationMs.takeIf { duration -> duration > 0L } }
-            ?: 0L
+    private fun resolveDurationMs(snapshot: PlaybackProgressSnapshot, sources: List<PlaybackHistorySeedSource>,): Long = snapshot.durationMs.takeIf { it > 0L }
+        ?: sources.firstNotNullOfOrNull { it.durationMs.takeIf { duration -> duration > 0L } }
+        ?: 0L
 
-    private fun resolveEpisodeImageUrl(
-        snapshot: PlaybackProgressSnapshot,
-        sources: List<PlaybackHistorySeedSource>,
-    ): String? =
-        sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::episodeImageUrl)
-            ?: snapshot.episodeImageUrl
+    private fun resolveEpisodeImageUrl(snapshot: PlaybackProgressSnapshot, sources: List<PlaybackHistorySeedSource>,): String? = sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::episodeImageUrl)
+        ?: snapshot.episodeImageUrl
 
-    private fun resolvePodcastImageUrl(
-        sources: List<PlaybackHistorySeedSource>,
-        podcast: PlaybackHistorySeedSource?,
-    ): String? =
-        sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::podcastImageUrl)
-            ?: podcast?.podcastImageUrl
+    private fun resolvePodcastImageUrl(sources: List<PlaybackHistorySeedSource>, podcast: PlaybackHistorySeedSource?,): String? = sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::podcastImageUrl)
+        ?: podcast?.podcastImageUrl
 
-    private fun resolveEpisodeAudioUrl(
-        snapshot: PlaybackProgressSnapshot,
-        sources: List<PlaybackHistorySeedSource>,
-    ): String? =
-        sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::episodeAudioUrl)
-            ?: snapshot.episodeAudioUrl
+    private fun resolveEpisodeAudioUrl(snapshot: PlaybackProgressSnapshot, sources: List<PlaybackHistorySeedSource>,): String? = sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::episodeAudioUrl)
+        ?: snapshot.episodeAudioUrl
 
     private fun resolvePodcastName(
         snapshot: PlaybackProgressSnapshot,
         sources: List<PlaybackHistorySeedSource>,
         podcast: PlaybackHistorySeedSource?,
         telemetry: PlaybackHistorySeedSource?,
-    ): String =
-        sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::podcastName)
-            ?: podcast?.podcastName
-            ?: snapshot.podcastName
-            ?: telemetry?.podcastName
-            ?: ""
+    ): String = sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::podcastName)
+        ?: podcast?.podcastName
+        ?: snapshot.podcastName
+        ?: telemetry?.podcastName
+        ?: ""
 
-    private fun resolveEnclosureType(
-        snapshot: PlaybackProgressSnapshot,
-        sources: List<PlaybackHistorySeedSource>,
-    ): String? =
-        sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::enclosureType)
-            ?: snapshot.enclosureType
+    private fun resolveEnclosureType(snapshot: PlaybackProgressSnapshot, sources: List<PlaybackHistorySeedSource>,): String? = sources.firstNotNullOfOrNull(PlaybackHistorySeedSource::enclosureType)
+        ?: snapshot.enclosureType
 
-    private fun List<PlaybackHistorySeedSource>.firstNonBlank(value: (PlaybackHistorySeedSource) -> String?): String? =
-        firstNotNullOfOrNull { value(it).nonBlank() }
+    private fun List<PlaybackHistorySeedSource>.firstNonBlank(value: (PlaybackHistorySeedSource) -> String?): String? = firstNotNullOfOrNull { value(it).nonBlank() }
 
     private fun String?.nonBlank(): String? = this?.trim()?.takeIf(String::isNotEmpty)
 }

@@ -13,12 +13,10 @@ object QueueMath {
     const val CONTEXT_TYPE_LORE = "LORE"
 
     /** Strips any media-id prefix so ids can be compared against raw episode ids. */
-    fun stripMediaIdPrefixes(mediaId: String): String =
-        mediaId.removePrefix(LEARN_PREFIX).removePrefix(EPISODE_PREFIX).removePrefix(QUEUE_PREFIX)
+    fun stripMediaIdPrefixes(mediaId: String): String = mediaId.removePrefix(LEARN_PREFIX).removePrefix(EPISODE_PREFIX).removePrefix(QUEUE_PREFIX)
 
     /** Finds the media-item index of an episode, matching by id with prefixes stripped. */
-    fun mediaIndexOfEpisode(mediaIds: List<String>, episodeId: String): Int =
-        mediaIds.indexOfFirst { stripMediaIdPrefixes(it) == episodeId }
+    fun mediaIndexOfEpisode(mediaIds: List<String>, episodeId: String): Int = mediaIds.indexOfFirst { stripMediaIdPrefixes(it) == episodeId }
 
     /**
      * The queue sheet hides the currently playing item (queue index 0), so UI list
@@ -32,12 +30,10 @@ object QueueMath {
      * A queue is a "normal" queue (as opposed to a Lore-only queue) when any media id
      * is not learn-prefixed.
      */
-    fun hasNonLoreMediaIds(mediaIds: List<String>): Boolean =
-        mediaIds.any { !it.startsWith(LEARN_PREFIX) }
+    fun hasNonLoreMediaIds(mediaIds: List<String>): Boolean = mediaIds.any { !it.startsWith(LEARN_PREFIX) }
 
     /** Same detection, from persisted queue rows (survives process restarts). */
-    fun hasNonLoreContextTypes(contextTypes: List<String?>): Boolean =
-        contextTypes.any { it != CONTEXT_TYPE_LORE }
+    fun hasNonLoreContextTypes(contextTypes: List<String?>): Boolean = contextTypes.any { it != CONTEXT_TYPE_LORE }
 
     /** Moves an element within a list, returning a new list. */
     fun <T> moveItem(list: List<T>, fromIndex: Int, toIndex: Int): List<T> {

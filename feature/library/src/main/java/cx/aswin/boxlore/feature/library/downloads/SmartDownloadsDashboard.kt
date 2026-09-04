@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.downloads
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -64,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
 @Composable
@@ -82,7 +81,7 @@ fun SquigglyProgressLoader(
         ),
         label = "phase"
     )
-    
+
     val density = LocalDensity.current
     val strokeWidthPx = with(density) { strokeWidth.toPx() }
 
@@ -128,7 +127,7 @@ fun SmartDownloadsDashboardCard(
     val maxEpisodes by userPrefs.smartDownloadsMaxEpisodesStream.collectAsState(initial = 10)
     val storageBudget by userPrefs.smartDownloadsStorageBudgetStream.collectAsState(initial = 250L)
     val lastSyncTime by userPrefs.smartDownloadsLastSyncTimeStream.collectAsState(initial = 0L)
-    
+
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 90f else 0f,
@@ -140,12 +139,12 @@ fun SmartDownloadsDashboardCard(
     val smartDownloadedCount = remember(downloads) {
         downloads.count { it.isSmartDownloaded && it.status == DownloadedEpisodeEntity.STATUS_COMPLETED }
     }
-    
+
     // Count how many smart downloads are currently in-progress (downloading)
     val smartDownloadingCount = remember(downloads) {
         downloads.count { it.isSmartDownloaded && it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING }
     }
-    
+
     // Calculate total storage used by completed smart downloads in MB
     val smartDownloadedSizeMb = remember(downloads) {
         downloads.filter { it.isSmartDownloaded && it.status == DownloadedEpisodeEntity.STATUS_COMPLETED }.sumOf { it.sizeBytes } / (1024 * 1024)
@@ -266,7 +265,7 @@ fun SmartDownloadsDashboardCard(
                             text = if (isExpanded) {
                                 "Automated offline library"
                             } else {
-                                "$statusText • $smartDownloadedCount/$maxEpisodes eps (${smartDownloadedSizeMb} MB)"
+                                "$statusText • $smartDownloadedCount/$maxEpisodes eps ($smartDownloadedSizeMb MB)"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (!isExpanded && (smartDownloadingCount > 0 || isSyncing)) {
@@ -280,7 +279,7 @@ fun SmartDownloadsDashboardCard(
                         )
                     }
                 }
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -336,7 +335,9 @@ fun SmartDownloadsDashboardCard(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Last sync: " + if (lastSyncTime <= 0L) "Never" else {
+                            text = "Last sync: " + if (lastSyncTime <= 0L) {
+                                "Never"
+                            } else {
                                 val diff = System.currentTimeMillis() - lastSyncTime
                                 when {
                                     diff < 60_000 -> "Just now"
@@ -349,7 +350,7 @@ fun SmartDownloadsDashboardCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    
+
                     Button(
                         onClick = onSyncNow,
                         enabled = !isSyncing,
@@ -406,10 +407,12 @@ fun SmartDownloadsDashboardCard(
 
                 // Linear Progress Metrics matching limits & storage budget
                 val countProgress = ((smartDownloadedCount + smartDownloadingCount).toFloat() / maxEpisodes.toFloat()).coerceIn(0f, 1f)
-                val storageProgress = if (storageBudget <= 0L) 0f else {
+                val storageProgress = if (storageBudget <= 0L) {
+                    0f
+                } else {
                     (smartDownloadedSizeMb.toFloat() / storageBudget.toFloat()).coerceIn(0f, 1f)
                 }
-                
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -496,4 +499,3 @@ fun SmartDownloadsDashboardCard(
         }
     }
 }
-

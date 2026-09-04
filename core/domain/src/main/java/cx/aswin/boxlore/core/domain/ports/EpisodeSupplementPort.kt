@@ -49,25 +49,21 @@ interface EpisodeSupplementPort {
      * Default delegates to the list form and ignores [RefreshFromFeedRequest.loadBaseline].
      * Production overrides this to fetch the feed and PI baseline together.
      */
-    suspend fun refreshFromFeed(request: RefreshFromFeedRequest): EpisodeSupplementOutcome =
-        refreshFromFeed(
-            podcastIndexId = request.podcastIndexId,
-            feedUrl = request.feedUrl,
-            baselineEpisodes = request.baselineEpisodes,
-            podcastTitle = request.podcastTitle,
-            podcastImageUrl = request.podcastImageUrl,
-            podcastGenre = request.podcastGenre,
-            podcastArtist = request.podcastArtist,
-        )
+    suspend fun refreshFromFeed(request: RefreshFromFeedRequest): EpisodeSupplementOutcome = refreshFromFeed(
+        podcastIndexId = request.podcastIndexId,
+        feedUrl = request.feedUrl,
+        baselineEpisodes = request.baselineEpisodes,
+        podcastTitle = request.podcastTitle,
+        podcastImageUrl = request.podcastImageUrl,
+        podcastGenre = request.podcastGenre,
+        podcastArtist = request.podcastArtist,
+    )
 
     /**
      * True when the stored supplement ETag / Last-Modified still matches the live feed.
      * Default false (always refresh). Production HEADs the publisher URL.
      */
-    suspend fun isPublisherFeedUnchanged(
-        podcastIndexId: String,
-        feedUrl: String,
-    ): Boolean = false
+    suspend fun isPublisherFeedUnchanged(podcastIndexId: String, feedUrl: String,): Boolean = false
 
     /**
      * Fetches [feedUrl] and **only** persists a supplement (opt-in) when the feed
@@ -94,10 +90,7 @@ interface EpisodeSupplementPort {
     suspend fun listOptedInPodcastIds(): Set<String>
 
     /** HTTPS publisher feed the user opted into via Missing episodes?. */
-    data class DirectFeedOptIn(
-        val podcastIndexId: String,
-        val feedUrl: String,
-    )
+    data class DirectFeedOptIn(val podcastIndexId: String, val feedUrl: String,)
 
     /**
      * Opted-in PI shows with their stored publisher URLs. Default empty so fakes
@@ -110,19 +103,13 @@ interface EpisodeSupplementPort {
      * without a feed GET. Existing extras stay. No-ops for blank / `rss:` ids or
      * non-HTTPS URLs. Default no-op for fakes.
      */
-    suspend fun restoreDirectFeedOptIn(
-        podcastIndexId: String,
-        feedUrl: String,
-    ) = Unit
+    suspend fun restoreDirectFeedOptIn(podcastIndexId: String, feedUrl: String,) = Unit
 
     /**
      * Optional identity for a specific feed item (FCM hydration). When set,
      * [resolveNewestTipFromFeed] returns that item instead of whatever is currently newest.
      */
-    data class FeedItemMatch(
-        val guid: String? = null,
-        val enclosureUrl: String? = null,
-    )
+    data class FeedItemMatch(val guid: String? = null, val enclosureUrl: String? = null,)
 
     /**
      * Inputs for [resolveNewestTipFromFeed]. Bundled so the port stays under
@@ -186,7 +173,5 @@ sealed interface EpisodeSupplementOutcome {
     /** Feed matches the PI baseline — no supplement row written. */
     data object NoDisconnect : EpisodeSupplementOutcome
 
-    data class Failure(
-        val message: String,
-    ) : EpisodeSupplementOutcome
+    data class Failure(val message: String,) : EpisodeSupplementOutcome
 }

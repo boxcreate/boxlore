@@ -79,9 +79,9 @@ fun GenreSelector(
 
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .horizontalScroll(scrollState),
+        modifier
+            .fillMaxWidth()
+            .horizontalScroll(scrollState),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PillFilterChip(
@@ -116,10 +116,10 @@ fun GenreSelector(
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .padding(bottom = 48.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 48.dp),
             ) {
                 Text(
                     text = "Browse Genres",

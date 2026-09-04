@@ -4,12 +4,7 @@ package cx.aswin.boxlore.core.catalog.content
  * Canonical curated-mood catalog shared by Home daypart rails and Explore For You chips.
  * [id] is the backend `getCuratedVibe` provider key — do not rename without a server change.
  */
-data class CuratedMood(
-    val id: String,
-    val title: String,
-    val subtitle: String,
-    val daypart: ContentDaypart,
-)
+data class CuratedMood(val id: String, val title: String, val subtitle: String, val daypart: ContentDaypart,)
 
 object CuratedMoods {
     val all: List<CuratedMood> =
@@ -90,8 +85,7 @@ object CuratedMoods {
 
     private val byId: Map<String, CuratedMood> = all.associateBy { it.id }
 
-    fun forDaypart(daypart: ContentDaypart): List<CuratedMood> =
-        all.filter { it.daypart == daypart }
+    fun forDaypart(daypart: ContentDaypart): List<CuratedMood> = all.filter { it.daypart == daypart }
 
     /** Explore chip order: current daypart first, then the rest in day cycle. */
     fun forHourOfDay(hourOfDay: Int): List<CuratedMood> {
@@ -132,11 +126,10 @@ object CuratedMoods {
 
     fun titleForId(id: String): String? = byId[id]?.title
 
-    fun daypartForHour(hourOfDay: Int): ContentDaypart =
-        when (hourOfDay) {
-            in 5..11 -> ContentDaypart.MORNING
-            in 12..16 -> ContentDaypart.AFTERNOON
-            in 17..22 -> ContentDaypart.EVENING
-            else -> ContentDaypart.LATE_NIGHT
-        }
+    fun daypartForHour(hourOfDay: Int): ContentDaypart = when (hourOfDay) {
+        in 5..11 -> ContentDaypart.MORNING
+        in 12..16 -> ContentDaypart.AFTERNOON
+        in 17..22 -> ContentDaypart.EVENING
+        else -> ContentDaypart.LATE_NIGHT
+    }
 }

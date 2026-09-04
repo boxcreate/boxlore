@@ -8,14 +8,19 @@ package cx.aswin.boxlore.core.model
 enum class AutoTranscriptState {
     /** RSS transcript is available — normal behavior, no badge/indicator. */
     NONE,
+
     /** Non-blocking server/DB status check in progress. */
     CHECKING,
+
     /** Eligible for AI transcript — show starry AI badge. */
     NOT_GENERATED,
+
     /** Actively generating — show wavy circular loader. */
     GENERATING,
+
     /** Completed — show normal icon with small checkmark badge. */
     COMPLETED,
+
     /** Failed — show starry AI badge (retryable). */
     FAILED
 }

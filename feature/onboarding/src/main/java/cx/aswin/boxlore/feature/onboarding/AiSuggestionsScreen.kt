@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,11 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -68,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
@@ -117,19 +116,19 @@ internal fun AiSuggestionsScreen(
                 navigationIcon = {
                     Box(
                         modifier =
-                            Modifier
-                                .padding(start = 8.dp)
-                                .size(40.dp)
-                                .expressiveClickable(shape = CircleShape) { onBack() },
+                        Modifier
+                            .padding(start = 8.dp)
+                            .size(40.dp)
+                            .expressiveClickable(shape = CircleShape) { onBack() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
         bottomBar = {
@@ -154,9 +153,9 @@ internal fun AiSuggestionsScreen(
             activeLane == null ->
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -169,9 +168,9 @@ internal fun AiSuggestionsScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -199,10 +198,10 @@ internal fun AiSuggestionsScreen(
                             SuggestionsActiveLaneHeader(
                                 lane = lane,
                                 selectedInLane =
-                                    OnboardingSuggestionsLanes.selectedCountInLane(
-                                        lane,
-                                        uiState.subscribedPodcastIds,
-                                    ),
+                                OnboardingSuggestionsLanes.selectedCountInLane(
+                                    lane,
+                                    uiState.subscribedPodcastIds,
+                                ),
                                 onToggleAll = {
                                     if (!lane.isCharts) {
                                         onToggleRowSubscriptions(lane.title)
@@ -234,9 +233,9 @@ internal fun AiSuggestionsScreen(
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 Box(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .height(120.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(120.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     BoxLoreLoader.Expressive(size = 48.dp)
@@ -281,14 +280,14 @@ private fun SuggestionsIntroHeader() {
     Text(
         text = "Pick a few shows to start",
         style =
-            MaterialTheme.typography.titleLarge.copy(
-                fontFamily = rememberSectionHeaderFontFamily(),
-            ),
+        MaterialTheme.typography.titleLarge.copy(
+            fontFamily = rememberSectionHeaderFontFamily(),
+        ),
         color = MaterialTheme.colorScheme.onSurface,
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 2.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
     )
 }
 
@@ -398,10 +397,10 @@ private fun SuggestionsActiveLaneHeader(
     // Compact toolbar: purpose + Select all only (title already on the active chip).
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-                .padding(bottom = 2.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp)
+            .padding(bottom = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -438,9 +437,9 @@ private fun SuggestionsEmptyLane() {
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(120.dp),
+        Modifier
+            .fillMaxWidth()
+            .height(120.dp),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Text(
@@ -467,10 +466,10 @@ private fun SuggestionsFinishBar(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
             val cta = suggestionsFinishCtaLabel(uiState, selectedCount)
 
@@ -478,15 +477,15 @@ private fun SuggestionsFinishBar(
                 onClick = onFinish,
                 enabled = !isCompleting,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors =
-                    ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
+                ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
             ) {
                 if (isCompleting) {
                     BoxLoreLoader.Expressive(size = 28.dp)
@@ -538,18 +537,18 @@ private fun SuggestionsLoadingState(
                 Text(
                     text = copy.title,
                     style =
-                        MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            textAlign = TextAlign.Center,
-                        ),
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = GoogleSansWeight.bold,
+                        textAlign = TextAlign.Center,
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = copy.subtitle,
                     style =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            textAlign = TextAlign.Center,
-                        ),
+                    MaterialTheme.typography.bodyLarge.copy(
+                        textAlign = TextAlign.Center,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

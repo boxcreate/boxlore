@@ -9,32 +9,30 @@ import com.google.android.gms.cast.framework.CastContext
 internal fun availableCastRoutes(
     mediaRouter: MediaRouter,
     selector: MediaRouteSelector,
-): List<MediaRouter.RouteInfo> =
-    mediaRouter.routes
-        .filter { route ->
-            shouldShowCastRoute(
-                isEnabled = route.isEnabled,
-                isDefault = route.isDefault,
-                isBluetooth = route.isBluetooth,
-                matchesSelector = route.matchesSelector(selector),
-            )
-        }.sortedBy { it.name.lowercase() }
+): List<MediaRouter.RouteInfo> = mediaRouter.routes
+    .filter { route ->
+        shouldShowCastRoute(
+            isEnabled = route.isEnabled,
+            isDefault = route.isDefault,
+            isBluetooth = route.isBluetooth,
+            matchesSelector = route.matchesSelector(selector),
+        )
+    }.sortedBy { it.name.lowercase() }
 
 @Suppress("DEPRECATION")
-internal fun resolveCastRouteSelector(context: Context): MediaRouteSelector =
-    runCatching {
-        CastContext
-            .getSharedInstance(context)
-            .mergedSelector
-    }.getOrNull()
-        ?.takeUnless(MediaRouteSelector::isEmpty)
-        ?: MediaRouteSelector
-            .Builder()
-            .addControlCategory(
-                CastMediaControlIntent.categoryForCast(
-                    CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID,
-                ),
-            ).build()
+internal fun resolveCastRouteSelector(context: Context): MediaRouteSelector = runCatching {
+    CastContext
+        .getSharedInstance(context)
+        .mergedSelector
+}.getOrNull()
+    ?.takeUnless(MediaRouteSelector::isEmpty)
+    ?: MediaRouteSelector
+        .Builder()
+        .addControlCategory(
+            CastMediaControlIntent.categoryForCast(
+                CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID,
+            ),
+        ).build()
 
 internal fun shouldShowCastRoute(
     isEnabled: Boolean,
@@ -47,13 +45,12 @@ internal fun castRouteSubtitle(
     isSelected: Boolean,
     isConnecting: Boolean,
     description: String?,
-): String =
-    when {
-        isSelected -> "Connected"
-        isConnecting -> "Connecting…"
-        !description.isNullOrBlank() -> description
-        else -> "Ready to cast"
-    }
+): String = when {
+    isSelected -> "Connected"
+    isConnecting -> "Connecting…"
+    !description.isNullOrBlank() -> description
+    else -> "Ready to cast"
+}
 
 internal fun isCastConnectionComplete(
     pendingRouteId: String?,

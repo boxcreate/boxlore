@@ -43,10 +43,7 @@ class RankingFeedbackRepositoryTest {
         RankingShadowDiagnostics.clear()
     }
 
-    private fun exposureFor(
-        episodeId: String,
-        podcastId: String = "pod-1",
-    ) = RankingExposure(
+    private fun exposureFor(episodeId: String, podcastId: String = "pod-1",) = RankingExposure(
         episodeId = episodeId,
         podcastId = podcastId,
         objective = RankingObjective.DISCOVERY,
@@ -57,184 +54,171 @@ class RankingFeedbackRepositoryTest {
     )
 
     @Test
-    fun recordExposureDelegatesToAdaptiveRepository() =
-        runTest {
-            val id = feedback.recordExposure(exposureFor("ep-1"))
+    fun recordExposureDelegatesToAdaptiveRepository() = runTest {
+        val id = feedback.recordExposure(exposureFor("ep-1"))
 
-            assertTrue(id.isNotBlank())
-            assertEquals(1, database.adaptiveRankingDao().getAllExposures().size)
-        }
-
-    @Test
-    fun recordExposureWithNullRepositoryReturnsEmpty() =
-        runTest {
-            val orphan = RankingFeedbackRepository.create(null)
-
-            assertEquals("", orphan.recordExposure(exposureFor("ep-1")))
-        }
+        assertTrue(id.isNotBlank())
+        assertEquals(1, database.adaptiveRankingDao().getAllExposures().size)
+    }
 
     @Test
-    fun recordActionTerminalResolvesExposureAndLearnsFacets() =
-        runTest {
-            feedback.recordExposure(exposureFor("ep-1", podcastId = "pod-7"))
+    fun recordExposureWithNullRepositoryReturnsEmpty() = runTest {
+        val orphan = RankingFeedbackRepository.create(null)
 
-            feedback.recordAction(
-                target =
-                    FeedbackTarget(
-                        episodeId = "ep-1",
-                        podcastId = "pod-7",
-                        genre = "Science",
-                        source = CandidateSource.SERVER_RECOMMENDATION,
-                    ),
-                action = RankingAction.LIKE,
-            )
-
-            val resolved = database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null }
-            assertEquals(1, resolved)
-            assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-7") > 0.0)
-            assertTrue(adaptive.genreAffinities().containsKey("Science"))
-            assertTrue(adaptive.facetAffinity(PreferenceFacetType.SOURCE, CandidateSource.SERVER_RECOMMENDATION.name) > 0.0)
-        }
+        assertEquals("", orphan.recordExposure(exposureFor("ep-1")))
+    }
 
     @Test
-    fun recordActionNonTerminalDoesNotResolveExposure() =
-        runTest {
-            feedback.recordExposure(exposureFor("ep-2", podcastId = "pod-3"))
+    fun recordActionTerminalResolvesExposureAndLearnsFacets() = runTest {
+        feedback.recordExposure(exposureFor("ep-1", podcastId = "pod-7"))
 
-            feedback.recordAction(
-                target = FeedbackTarget(episodeId = "ep-2", podcastId = "pod-3"),
-                action = RankingAction.OPEN_DETAILS,
-            )
+        feedback.recordAction(
+            target =
+            FeedbackTarget(
+                episodeId = "ep-1",
+                podcastId = "pod-7",
+                genre = "Science",
+                source = CandidateSource.SERVER_RECOMMENDATION,
+            ),
+            action = RankingAction.LIKE,
+        )
 
-            assertEquals(0, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
-            assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-3") > 0.0)
-        }
-
-    @Test
-    fun recordActionDeduplicatesRepeatWithinWindow() =
-        runTest {
-            LearningEventLog.configure(true)
-
-            val target = FeedbackTarget(episodeId = "ep-dup", podcastId = "pod-1")
-            feedback.recordAction(target, RankingAction.LIKE)
-            feedback.recordAction(target, RankingAction.LIKE)
-
-            val events = LearningEventLog.events.value
-            assertTrue(events.any { it is LearningEvent.DuplicateIgnored })
-        }
+        val resolved = database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null }
+        assertEquals(1, resolved)
+        assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-7") > 0.0)
+        assertTrue(adaptive.genreAffinities().containsKey("Science"))
+        assertTrue(adaptive.facetAffinity(PreferenceFacetType.SOURCE, CandidateSource.SERVER_RECOMMENDATION.name) > 0.0)
+    }
 
     @Test
-    fun recordPlaybackMeaningfulPlayLearnsPositiveFacet() =
-        runTest {
-            feedback.recordPlayback(
-                target = FeedbackTarget(episodeId = "ep-3", podcastId = "pod-5", genre = "News"),
-                listenSeconds = 120,
-                durationSeconds = 600,
-                completed = false,
-                earlySkip = false,
-            )
+    fun recordActionNonTerminalDoesNotResolveExposure() = runTest {
+        feedback.recordExposure(exposureFor("ep-2", podcastId = "pod-3"))
 
-            assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-5") > 0.0)
-            assertTrue(adaptive.genreAffinities().containsKey("News"))
-        }
+        feedback.recordAction(
+            target = FeedbackTarget(episodeId = "ep-2", podcastId = "pod-3"),
+            action = RankingAction.OPEN_DETAILS,
+        )
+
+        assertEquals(0, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
+        assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-3") > 0.0)
+    }
 
     @Test
-    fun recordPlaybackEarlySkipLearnsNegativeFacet() =
-        runTest {
-            feedback.recordPlayback(
-                target = FeedbackTarget(episodeId = "ep-4", podcastId = "pod-6"),
-                listenSeconds = 5,
-                durationSeconds = 600,
-                completed = false,
-                earlySkip = true,
-            )
+    fun recordActionDeduplicatesRepeatWithinWindow() = runTest {
+        LearningEventLog.configure(true)
 
-            assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-6") < 0.0)
-        }
+        val target = FeedbackTarget(episodeId = "ep-dup", podcastId = "pod-1")
+        feedback.recordAction(target, RankingAction.LIKE)
+        feedback.recordAction(target, RankingAction.LIKE)
+
+        val events = LearningEventLog.events.value
+        assertTrue(events.any { it is LearningEvent.DuplicateIgnored })
+    }
 
     @Test
-    fun recordPlaybackWithNoQualifyingSignalsIsNoOp() =
-        runTest {
-            feedback.recordExposure(exposureFor("ep-5", podcastId = "pod-8"))
+    fun recordPlaybackMeaningfulPlayLearnsPositiveFacet() = runTest {
+        feedback.recordPlayback(
+            target = FeedbackTarget(episodeId = "ep-3", podcastId = "pod-5", genre = "News"),
+            listenSeconds = 120,
+            durationSeconds = 600,
+            completed = false,
+            earlySkip = false,
+        )
 
-            feedback.recordPlayback(
-                target = FeedbackTarget(episodeId = "ep-5", podcastId = "pod-8"),
-                listenSeconds = 3,
-                durationSeconds = 600,
-                completed = false,
-                earlySkip = false,
-            )
-
-            assertEquals(0, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
-            assertEquals(0.0, adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-8"), 0.0)
-        }
+        assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-5") > 0.0)
+        assertTrue(adaptive.genreAffinities().containsKey("News"))
+    }
 
     @Test
-    fun recordPlaybackMeaningfulProgressRatioLearnsWithoutSixtySeconds() =
-        runTest {
-            feedback.recordExposure(exposureFor("ep-ratio", podcastId = "pod-ratio"))
+    fun recordPlaybackEarlySkipLearnsNegativeFacet() = runTest {
+        feedback.recordPlayback(
+            target = FeedbackTarget(episodeId = "ep-4", podcastId = "pod-6"),
+            listenSeconds = 5,
+            durationSeconds = 600,
+            completed = false,
+            earlySkip = true,
+        )
 
-            feedback.recordPlayback(
-                target = FeedbackTarget(episodeId = "ep-ratio", podcastId = "pod-ratio"),
-                listenSeconds = 30,
-                durationSeconds = 100,
-                completed = false,
-                earlySkip = false,
-            )
-
-            assertEquals(1, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
-            assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-ratio") > 0.0)
-        }
+        assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-6") < 0.0)
+    }
 
     @Test
-    fun recordPlaybackBelowProgressRatioAndSecondsIsNoOp() =
-        runTest {
-            feedback.recordExposure(exposureFor("ep-shallow", podcastId = "pod-shallow"))
+    fun recordPlaybackWithNoQualifyingSignalsIsNoOp() = runTest {
+        feedback.recordExposure(exposureFor("ep-5", podcastId = "pod-8"))
 
-            feedback.recordPlayback(
-                target = FeedbackTarget(episodeId = "ep-shallow", podcastId = "pod-shallow"),
-                listenSeconds = 10,
-                durationSeconds = 100,
-                completed = false,
-                earlySkip = false,
-            )
+        feedback.recordPlayback(
+            target = FeedbackTarget(episodeId = "ep-5", podcastId = "pod-8"),
+            listenSeconds = 3,
+            durationSeconds = 600,
+            completed = false,
+            earlySkip = false,
+        )
 
-            assertEquals(0, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
-            assertEquals(0.0, adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-shallow"), 0.0)
-        }
-
-    @Test
-    fun recordPlaybackCompletedResolvesExposure() =
-        runTest {
-            feedback.recordExposure(exposureFor("ep-6", podcastId = "pod-9"))
-
-            feedback.recordPlayback(
-                target = FeedbackTarget(episodeId = "ep-6", podcastId = "pod-9"),
-                listenSeconds = 600,
-                durationSeconds = 600,
-                completed = true,
-                earlySkip = false,
-            )
-
-            assertEquals(1, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
-        }
+        assertEquals(0, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
+        assertEquals(0.0, adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-8"), 0.0)
+    }
 
     @Test
-    fun resetClearsStateAndReportsBackingRepository() =
-        runTest {
-            feedback.recordExposure(exposureFor("ep-7"))
+    fun recordPlaybackMeaningfulProgressRatioLearnsWithoutSixtySeconds() = runTest {
+        feedback.recordExposure(exposureFor("ep-ratio", podcastId = "pod-ratio"))
 
-            val result = feedback.reset()
+        feedback.recordPlayback(
+            target = FeedbackTarget(episodeId = "ep-ratio", podcastId = "pod-ratio"),
+            listenSeconds = 30,
+            durationSeconds = 100,
+            completed = false,
+            earlySkip = false,
+        )
 
-            assertTrue(result)
-            assertTrue(database.adaptiveRankingDao().getAllExposures().isEmpty())
-        }
+        assertEquals(1, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
+        assertTrue(adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-ratio") > 0.0)
+    }
 
     @Test
-    fun resetWithNullRepositoryReturnsFalse() =
-        runTest {
-            val orphan = RankingFeedbackRepository.create(null)
+    fun recordPlaybackBelowProgressRatioAndSecondsIsNoOp() = runTest {
+        feedback.recordExposure(exposureFor("ep-shallow", podcastId = "pod-shallow"))
 
-            assertFalse(orphan.reset())
-        }
+        feedback.recordPlayback(
+            target = FeedbackTarget(episodeId = "ep-shallow", podcastId = "pod-shallow"),
+            listenSeconds = 10,
+            durationSeconds = 100,
+            completed = false,
+            earlySkip = false,
+        )
+
+        assertEquals(0, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
+        assertEquals(0.0, adaptive.facetAffinity(PreferenceFacetType.SHOW, "pod-shallow"), 0.0)
+    }
+
+    @Test
+    fun recordPlaybackCompletedResolvesExposure() = runTest {
+        feedback.recordExposure(exposureFor("ep-6", podcastId = "pod-9"))
+
+        feedback.recordPlayback(
+            target = FeedbackTarget(episodeId = "ep-6", podcastId = "pod-9"),
+            listenSeconds = 600,
+            durationSeconds = 600,
+            completed = true,
+            earlySkip = false,
+        )
+
+        assertEquals(1, database.adaptiveRankingDao().getAllExposures().count { it.resolvedAt != null })
+    }
+
+    @Test
+    fun resetClearsStateAndReportsBackingRepository() = runTest {
+        feedback.recordExposure(exposureFor("ep-7"))
+
+        val result = feedback.reset()
+
+        assertTrue(result)
+        assertTrue(database.adaptiveRankingDao().getAllExposures().isEmpty())
+    }
+
+    @Test
+    fun resetWithNullRepositoryReturnsFalse() = runTest {
+        val orphan = RankingFeedbackRepository.create(null)
+
+        assertFalse(orphan.reset())
+    }
 }

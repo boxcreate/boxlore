@@ -27,10 +27,7 @@ class FakeLocalCatalogPort(
         byId[podcast.id] = podcast
     }
 
-    fun linkRss(
-        podcastIndexId: String,
-        rssPodcast: Podcast,
-    ) {
+    fun linkRss(podcastIndexId: String, rssPodcast: Podcast,) {
         rssLinks[podcastIndexId] = rssPodcast
     }
 
@@ -46,10 +43,7 @@ class FakeLocalCatalogPort(
 }
 
 /** Controllable [LocalEpisodeCatalogPort] for catalog / FCM tests. */
-class FakeLocalEpisodeCatalogPort(
-    var readyIds: Set<String> = emptySet(),
-    var episodes: MutableMap<String, Episode> = mutableMapOf(),
-) : LocalEpisodeCatalogPort {
+class FakeLocalEpisodeCatalogPort(var readyIds: Set<String> = emptySet(), var episodes: MutableMap<String, Episode> = mutableMapOf(),) : LocalEpisodeCatalogPort {
     var refreshCalls: Int = 0
     var refreshError: Throwable? = null
     var sweepCalls: Int = 0
@@ -87,10 +81,7 @@ class FakeLocalEpisodeCatalogPort(
         meta: LocalEpisodeCatalogPort.PodcastMeta,
     ): List<Episode> = getPage(podcastId, bound, 0, sort, meta)
 
-    override suspend fun getEpisode(
-        episodeId: String,
-        meta: LocalEpisodeCatalogPort.PodcastMeta,
-    ): Episode? = episodes[episodeId]
+    override suspend fun getEpisode(episodeId: String, meta: LocalEpisodeCatalogPort.PodcastMeta,): Episode? = episodes[episodeId]
 
     override suspend fun findByCatalogKey(
         podcastId: String,
@@ -106,15 +97,11 @@ class FakeLocalEpisodeCatalogPort(
                 (
                     (wantedGuid.isNotEmpty() && episode.id == wantedGuid) ||
                         (enclosure.isNotEmpty() && episode.audioUrl.trim() == enclosure)
-                )
+                    )
         }
     }
 
-    override suspend fun search(
-        podcastId: String,
-        query: String,
-        meta: LocalEpisodeCatalogPort.PodcastMeta,
-    ): List<Episode> {
+    override suspend fun search(podcastId: String, query: String, meta: LocalEpisodeCatalogPort.PodcastMeta,): List<Episode> {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return emptyList()
         return episodes.values.filter { episode ->
@@ -122,14 +109,11 @@ class FakeLocalEpisodeCatalogPort(
                 (
                     episode.title.contains(trimmed, ignoreCase = true) ||
                         episode.description.contains(trimmed, ignoreCase = true)
-                )
+                    )
         }
     }
 
-    override suspend fun newest(
-        podcastId: String,
-        meta: LocalEpisodeCatalogPort.PodcastMeta,
-    ): Episode? = episodes.values.filter { it.podcastId == podcastId }.maxByOrNull { it.publishedDate }
+    override suspend fun newest(podcastId: String, meta: LocalEpisodeCatalogPort.PodcastMeta,): Episode? = episodes.values.filter { it.podcastId == podcastId }.maxByOrNull { it.publishedDate }
 
     override suspend fun count(podcastId: String): Int = episodes.values.count { it.podcastId == podcastId }
 
@@ -139,22 +123,13 @@ class FakeLocalEpisodeCatalogPort(
         return LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(newest(request.podcastIndexId))
     }
 
-    override suspend fun isPublisherFeedUnchanged(
-        podcastId: String,
-        feedUrl: String,
-    ): Boolean = true
+    override suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String,): Boolean = true
 
-    override suspend fun markFeedUrlLookup(
-        podcastId: String,
-        atMillis: Long,
-    ) = Unit
+    override suspend fun markFeedUrlLookup(podcastId: String, atMillis: Long,) = Unit
 
     override suspend fun lastFeedUrlLookupAt(podcastId: String): Long = 0L
 
-    override suspend fun setUnsubscribedTtl(
-        podcastId: String,
-        ttlExpiresAt: Long?,
-    ) = Unit
+    override suspend fun setUnsubscribedTtl(podcastId: String, ttlExpiresAt: Long?,) = Unit
 
     override suspend fun sweepExpired(nowMillis: Long) {
         lastSweepNowMs = nowMillis
@@ -202,10 +177,7 @@ class FakePodcastCatalogPort(
 }
 
 /** Controllable [EpisodeOfflineLookupPort]. */
-class FakeEpisodeOfflineLookup(
-    var fromDownload: OfflineEpisodeSnapshot? = null,
-    var fromHistory: OfflineEpisodeSnapshot? = null,
-) : EpisodeOfflineLookupPort {
+class FakeEpisodeOfflineLookup(var fromDownload: OfflineEpisodeSnapshot? = null, var fromHistory: OfflineEpisodeSnapshot? = null,) : EpisodeOfflineLookupPort {
     var downloadCalls = 0
     var historyCalls = 0
 
@@ -244,10 +216,7 @@ class FakeRssSubscriptionPort(
         return result
     }
 
-    override suspend fun confirmPodcastIndexLink(
-        rssPodcastId: String,
-        podcastIndexId: String,
-    ): Podcast {
+    override suspend fun confirmPodcastIndexLink(rssPodcastId: String, podcastIndexId: String,): Podcast {
         confirmCalls++
         lastConfirmRssId = rssPodcastId
         lastConfirmIndexId = podcastIndexId
@@ -257,9 +226,7 @@ class FakeRssSubscriptionPort(
 }
 
 /** Controllable [RankingResetPort]. */
-class FakeRankingResetPort(
-    var result: Boolean = true,
-) : RankingResetPort {
+class FakeRankingResetPort(var result: Boolean = true,) : RankingResetPort {
     var resetCalls = 0
 
     override suspend fun reset(): Boolean {
@@ -269,9 +236,7 @@ class FakeRankingResetPort(
 }
 
 /** Controllable [HistoryRecommendationSource]. */
-class FakeHistoryRecommendationSource(
-    var items: List<HistoryItem> = listOf(TestFixtures.historyItem()),
-) : HistoryRecommendationSource {
+class FakeHistoryRecommendationSource(var items: List<HistoryItem> = listOf(TestFixtures.historyItem()),) : HistoryRecommendationSource {
     var calls = 0
     var lastLimit: Int? = null
 
@@ -283,9 +248,7 @@ class FakeHistoryRecommendationSource(
 }
 
 /** Controllable [ConnectivityStatusPort]. */
-class FakeConnectivityStatusPort(
-    var online: Boolean = true,
-) : ConnectivityStatusPort {
+class FakeConnectivityStatusPort(var online: Boolean = true,) : ConnectivityStatusPort {
     var calls = 0
 
     override fun isOnline(): Boolean {

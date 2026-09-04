@@ -1,38 +1,23 @@
 package cx.aswin.boxlore.core.network.model
 
-import kotlinx.serialization.Serializable
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
+import kotlinx.serialization.Serializable
 
 @Serializable
-data class SyncRequest(
-    val ids: List<String>
-)
+data class SyncRequest(val ids: List<String>)
 
 @Serializable
-data class SyncResponse(
-    val items: List<SyncItem> = emptyList(),
-    val error: String? = null
-)
+data class SyncResponse(val items: List<SyncItem> = emptyList(), val error: String? = null)
 
 @Serializable
-data class SyncItem(
-    val id: String,
-    val latestEpisode: EpisodeItem? = null
-)
+data class SyncItem(val id: String, val latestEpisode: EpisodeItem? = null)
 
 @Serializable
-data class FeedbackRequest(
-    val category: String,
-    val message: String,
-    val appVersion: String,
-    val email: String? = null
-)
+data class FeedbackRequest(val category: String, val message: String, val appVersion: String, val email: String? = null)
 
 @Serializable
-data class FeedbackResponse(
-    val success: Boolean
-)
+data class FeedbackResponse(val success: Boolean)
 
 @Serializable
 data class RecommendationsRequest(
@@ -52,12 +37,7 @@ data class RecommendationSemanticFallback(
 )
 
 @Serializable
-data class RecommendationSeedV2(
-    val kind: String,
-    val id: Long,
-    val weight: Double,
-    val fallback: RecommendationSemanticFallback? = null,
-)
+data class RecommendationSeedV2(val kind: String, val id: Long, val weight: Double, val fallback: RecommendationSemanticFallback? = null,)
 
 @Serializable
 data class RecommendationsV2Request(
@@ -134,11 +114,7 @@ data class ContentCatalogResponse(
 )
 
 @Serializable
-data class ContentDaypartDto(
-    val id: String,
-    val startMinute: Int,
-    val endMinute: Int,
-)
+data class ContentDaypartDto(val id: String, val startMinute: Int, val endMinute: Int,)
 
 @Serializable
 data class ContentIntentDto(
@@ -162,22 +138,13 @@ data class ContentIntentDto(
 )
 
 @Serializable
-data class ContentDurationRangeDto(
-    val min: Int,
-    val max: Int,
-)
+data class ContentDurationRangeDto(val min: Int, val max: Int,)
 
 @Serializable
-data class ContentDiversityDto(
-    val maxPerShow: Int,
-    val minDistinctShows: Int,
-)
+data class ContentDiversityDto(val maxPerShow: Int, val minDistinctShows: Int,)
 
 @Serializable
-data class ContentQualityDto(
-    val minSemanticScore: Double = 0.0,
-    val unseenShowReserve: Double = 0.0,
-)
+data class ContentQualityDto(val minSemanticScore: Double = 0.0, val unseenShowReserve: Double = 0.0,)
 
 @Serializable
 data class ContentFallbackIntentDto(
@@ -204,4 +171,3 @@ data class BecauseYouLikeResponse(
     val podcasts: List<TrendingFeed> = emptyList(),
     val episodes: List<EpisodeItem> = emptyList()
 )
-

@@ -61,11 +61,11 @@ class ProgressiveSearchScrollLogicTest {
             ProgressiveSearchScrollLogic.shouldPinToTop(
                 previous = null,
                 current =
-                    ProgressiveSearchScrollLogic.Snapshot(
-                        query = "",
-                        topResultId = "1",
-                        hasAlsoFoundSection = false,
-                    ),
+                ProgressiveSearchScrollLogic.Snapshot(
+                    query = "",
+                    topResultId = "1",
+                    hasAlsoFoundSection = false,
+                ),
             ),
         )
     }

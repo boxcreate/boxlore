@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -56,8 +54,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.EpisodeStatus
 
@@ -145,19 +144,19 @@ fun DailyBriefingCard(
         }
     Box(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .expressiveClickable(
-                    shape = RoundedCornerShape(24.dp),
-                    onClick = onClick,
-                ).clip(RoundedCornerShape(24.dp))
-                .shadow(8.dp, RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = RoundedCornerShape(24.dp),
-                ),
+        modifier
+            .fillMaxWidth()
+            .expressiveClickable(
+                shape = RoundedCornerShape(24.dp),
+                onClick = onClick,
+            ).clip(RoundedCornerShape(24.dp))
+            .shadow(8.dp, RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = RoundedCornerShape(24.dp),
+            ),
     ) {
         val coverResId =
             remember(briefing.region) {
@@ -175,28 +174,28 @@ fun DailyBriefingCard(
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .matchParentSize(),
+            Modifier
+                .fillMaxWidth()
+                .matchParentSize(),
         )
 
         // Gradient overlay — multi-stop for dramatic effect
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops =
-                                arrayOf(
-                                    0.0f to Color.Black.copy(alpha = 0.45f),
-                                    0.3f to Color.Black.copy(alpha = 0.6f),
-                                    0.55f to Color.Black.copy(alpha = 0.8f),
-                                    1.0f to Color.Black.copy(alpha = 0.95f),
-                                ),
+            Modifier
+                .fillMaxWidth()
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops =
+                        arrayOf(
+                            0.0f to Color.Black.copy(alpha = 0.45f),
+                            0.3f to Color.Black.copy(alpha = 0.6f),
+                            0.55f to Color.Black.copy(alpha = 0.8f),
+                            1.0f to Color.Black.copy(alpha = 0.95f),
                         ),
                     ),
+                ),
         )
 
         // Content overlay
@@ -205,22 +204,22 @@ fun DailyBriefingCard(
         // Content overlay
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .animateContentSize(
-                        animationSpec =
-                            spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium,
-                            ),
+            Modifier
+                .fillMaxWidth()
+                .animateContentSize(
+                    animationSpec =
+                    spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium,
                     ),
+                ),
         ) {
             // Static Top bar: Logo & Date Column + Dismiss
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 4.dp, top = 12.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 4.dp, top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
@@ -232,14 +231,14 @@ fun DailyBriefingCard(
                 ) {
                     androidx.compose.foundation.Image(
                         painter =
-                            painterResource(
-                                id = cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_brief_logo,
-                            ),
+                        painterResource(
+                            id = cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_brief_logo,
+                        ),
                         contentDescription = "The Boxlore Brief",
                         modifier = Modifier.height(48.dp),
                         colorFilter =
-                            androidx.compose.ui.graphics.ColorFilter
-                                .tint(Color.White),
+                        androidx.compose.ui.graphics.ColorFilter
+                            .tint(Color.White),
                     )
 
                     // Date chip: using opaque Material 3 container colors to avoid transparency visibility issues on dark backdrop
@@ -247,10 +246,10 @@ fun DailyBriefingCard(
                         shape = RoundedCornerShape(10.dp),
                         color = MaterialTheme.colorScheme.primaryContainer,
                         border =
-                            androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                primaryColor,
-                            ),
+                        androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            primaryColor,
+                        ),
                         modifier = Modifier.padding(start = 4.dp),
                     ) {
                         Text(
@@ -285,9 +284,9 @@ fun DailyBriefingCard(
                         }
                     },
                     colors =
-                        IconButtonDefaults.iconButtonColors(
-                            contentColor = Color.White.copy(alpha = 0.7f),
-                        ),
+                    IconButtonDefaults.iconButtonColors(
+                        contentColor = Color.White.copy(alpha = 0.7f),
+                    ),
                     modifier = Modifier.size(36.dp),
                 ) {
                     Icon(
@@ -314,15 +313,15 @@ fun DailyBriefingCard(
                     DailyBriefingCardState.NORMAL -> {
                         DailyBriefingNormalContent(
                             state =
-                                DailyBriefingVisualState(
-                                    briefing = briefing,
-                                    chapters = chapters,
-                                    isPlaying = isPlaying,
-                                    isBuffering = isBuffering,
-                                    playbackStatus = playbackStatus,
-                                    durationMin = durationMin,
-                                    timeLeftMin = timeLeftMin,
-                                ),
+                            DailyBriefingVisualState(
+                                briefing = briefing,
+                                chapters = chapters,
+                                isPlaying = isPlaying,
+                                isBuffering = isBuffering,
+                                playbackStatus = playbackStatus,
+                                durationMin = durationMin,
+                                timeLeftMin = timeLeftMin,
+                            ),
                             onPlayPauseClick = onPlayPauseClick,
                             expanded = expanded,
                             onExpandedChange = { expanded = it },
@@ -369,18 +368,18 @@ private fun DailyBriefingChapterRow(
 ) {
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(6.dp))
-                .then(
-                    if ((index == 2 && !expanded && totalChapters > 3) ||
-                        (index == totalChapters - 1 && expanded && totalChapters > 3)
-                    ) {
-                        Modifier.clickable { onToggleExpanded() }
-                    } else {
-                        Modifier
-                    },
-                ).padding(vertical = 2.dp),
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .then(
+                if ((index == 2 && !expanded && totalChapters > 3) ||
+                    (index == totalChapters - 1 && expanded && totalChapters > 3)
+                ) {
+                    Modifier.clickable { onToggleExpanded() }
+                } else {
+                    Modifier
+                },
+            ).padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -448,12 +447,12 @@ private fun DailyBriefingPlayButton(
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
         modifier =
-            Modifier
-                .padding(horizontal = 20.dp)
-                .height(48.dp)
-                .widthIn(min = 180.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .expressiveClickable(onClick = onClick),
+        Modifier
+            .padding(horizontal = 20.dp)
+            .height(48.dp)
+            .widthIn(min = 180.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .expressiveClickable(onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 24.dp),
@@ -476,11 +475,11 @@ private fun DailyBriefingPlayButton(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text =
-                    when {
-                        isPlaying -> "Playing"
-                        playbackStatus == EpisodeStatus.IN_PROGRESS -> "Resume · $timeLeftMin min left"
-                        else -> "Listen Now · $durationMin min"
-                    },
+                when {
+                    isPlaying -> "Playing"
+                    playbackStatus == EpisodeStatus.IN_PROGRESS -> "Resume · $timeLeftMin min left"
+                    else -> "Listen Now · $durationMin min"
+                },
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = GoogleSansWeight.bold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -502,9 +501,9 @@ private fun DailyBriefingChaptersList(
         Spacer(modifier = Modifier.height(16.dp))
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val visibleChapters = if (expanded) chapters else chapters.take(3)
@@ -591,19 +590,19 @@ private fun DailyBriefingDismissContent(
             color = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier =
-                Modifier
-                    .padding(horizontal = 20.dp)
-                    .height(48.dp)
-                    .widthIn(min = 180.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .clickable {
-                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                            action = "dismissed_today",
-                            region = briefing.region,
-                            date = briefing.date,
-                        )
-                        onDismiss()
-                    },
+            Modifier
+                .padding(horizontal = 20.dp)
+                .height(48.dp)
+                .widthIn(min = 180.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .clickable {
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                        action = "dismissed_today",
+                        region = briefing.region,
+                        date = briefing.date,
+                    )
+                    onDismiss()
+                },
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 24.dp),
@@ -625,22 +624,22 @@ private fun DailyBriefingDismissContent(
         Text(
             text = "Dismiss forever",
             style =
-                MaterialTheme.typography.labelMedium.copy(
-                    textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                ),
+            MaterialTheme.typography.labelMedium.copy(
+                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+            ),
             fontWeight = GoogleSansWeight.semiBold,
             color = Color.White.copy(alpha = 0.6f),
             modifier =
-                Modifier
-                    .padding(horizontal = 20.dp)
-                    .clickable {
-                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                            action = "dismiss_forever_initiated",
-                            region = briefing.region,
-                            date = briefing.date,
-                        )
-                        onDismissForeverClick()
-                    },
+            Modifier
+                .padding(horizontal = 20.dp)
+                .clickable {
+                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                        action = "dismiss_forever_initiated",
+                        region = briefing.region,
+                        date = briefing.date,
+                    )
+                    onDismissForeverClick()
+                },
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -683,9 +682,9 @@ private fun DailyBriefingForeverContent(
         // Buttons side by side (using standard M3 48.dp height & 24.dp shape)
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -694,18 +693,18 @@ private fun DailyBriefingForeverContent(
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier =
-                    Modifier
-                        .height(48.dp)
-                        .weight(1f)
-                        .clip(RoundedCornerShape(24.dp))
-                        .clickable {
-                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                                action = "feedback_clicked",
-                                region = briefing.region,
-                                date = briefing.date,
-                            )
-                            onFeedbackClick()
-                        },
+                Modifier
+                    .height(48.dp)
+                    .weight(1f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .clickable {
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                            action = "feedback_clicked",
+                            region = briefing.region,
+                            date = briefing.date,
+                        )
+                        onFeedbackClick()
+                    },
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -726,18 +725,18 @@ private fun DailyBriefingForeverContent(
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White),
                 contentColor = Color.White,
                 modifier =
-                    Modifier
-                        .height(48.dp)
-                        .weight(1f)
-                        .clip(RoundedCornerShape(24.dp))
-                        .clickable {
-                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                                action = "dismissed_forever",
-                                region = briefing.region,
-                                date = briefing.date,
-                            )
-                            onDismissForever()
-                        },
+                Modifier
+                    .height(48.dp)
+                    .weight(1f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .clickable {
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
+                            action = "dismissed_forever",
+                            region = briefing.region,
+                            date = briefing.date,
+                        )
+                        onDismissForever()
+                    },
             ) {
                 Box(
                     contentAlignment = Alignment.Center,

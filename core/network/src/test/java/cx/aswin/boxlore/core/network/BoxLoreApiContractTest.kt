@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.network
 
 import cx.aswin.boxlore.core.network.model.BootstrapRequest
+import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.concurrent.TimeUnit
 
 /**
  * MockWebServer contract tests for critical [BoxLoreApi] endpoints and DTO decoding.
@@ -139,13 +139,13 @@ class BoxLoreApiContractTest {
                     publicKey = APP_KEY,
                     deviceUuid = DEVICE_UUID,
                     request =
-                        BootstrapRequest(
-                            country = "us",
-                            vibeIds = listOf("focus"),
-                            deviceUuid = DEVICE_UUID,
-                            contractVersion = 1,
-                            intentIds = listOf("learn"),
-                        ),
+                    BootstrapRequest(
+                        country = "us",
+                        vibeIds = listOf("focus"),
+                        deviceUuid = DEVICE_UUID,
+                        contractVersion = 1,
+                        intentIds = listOf("learn"),
+                    ),
                 ).execute()
 
         assertTrue(response.isSuccessful)

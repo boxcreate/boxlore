@@ -1,24 +1,20 @@
 package cx.aswin.boxlore.core.downloads
 
-import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
-
 import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
+import cx.aswin.boxlore.core.catalog.toPodcast
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
-import cx.aswin.boxlore.core.catalog.toPodcast
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.flow.first
 
-open class AutoDownloadWorker(
-    appContext: Context,
-    params: WorkerParameters
-) : CoroutineWorker(appContext, params) {
+open class AutoDownloadWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
         val episodeId = inputData.getString(KEY_EPISODE_ID) ?: run {
@@ -45,22 +41,33 @@ open class AutoDownloadWorker(
             Log.i("BoxLore_BackgroundTrace", "[Worker] RSS podcasts do not support release-triggered auto-downloads.")
             return Result.success()
         }
-        
-        Log.i("BoxLore_BackgroundTrace", "[Worker] Local podcast check: autoDownloadEnabled=${podcastEntity.autoDownloadEnabled}, notificationsEnabled=${podcastEntity.notificationsEnabled}, title='${podcastEntity.title}'")
-        
+
+        Log.i(
+            "BoxLore_BackgroundTrace",
+            "[Worker] Local podcast check: autoDownloadEnabled=${podcastEntity.autoDownloadEnabled}, notificationsEnabled=${podcastEntity.notificationsEnabled}, title='${podcastEntity.title}'"
+        )
+
         if (!podcastEntity.autoDownloadEnabled) {
-            Log.w("BoxLore_BackgroundTrace", "[Worker] Auto-download is NOT enabled for podcast '${podcastEntity.title}' ($podcastId). Skipping.")
+            Log.w(
+                "BoxLore_BackgroundTrace",
+                "[Worker] Auto-download is NOT enabled for podcast '${podcastEntity.title}' ($podcastId). Skipping."
+            )
             return Result.success()
         }
 
         // 2. Check if the episode is already downloaded or active
         val existingDownload = database.downloadedEpisodeDao().getDownload(episodeId)
-        if (existingDownload != null && existingDownload.status in listOf(
+        if (existingDownload != null &&
+            existingDownload.status in listOf(
                 DownloadedEpisodeEntity.STATUS_QUEUED,
                 DownloadedEpisodeEntity.STATUS_DOWNLOADING,
                 DownloadedEpisodeEntity.STATUS_COMPLETED
-            )) {
-            Log.i("BoxLore_BackgroundTrace", "[Worker] Episode $episodeId is already in status '${existingDownload.status}'. Skipping download.")
+            )
+        ) {
+            Log.i(
+                "BoxLore_BackgroundTrace",
+                "[Worker] Episode $episodeId is already in status '${existingDownload.status}'. Skipping download."
+            )
             if (existingDownload.isSmartDownloaded) {
                 Log.i("BoxLore_BackgroundTrace", "[Worker] Promoting smart-downloaded episode $episodeId to standard auto-download.")
                 database.downloadedEpisodeDao().insert(existingDownload.copy(isSmartDownloaded = false))
@@ -78,7 +85,10 @@ open class AutoDownloadWorker(
 
             // Validate episode data before enqueuing — empty audioUrl means all metadata sources failed
             if (episode.audioUrl.isBlank()) {
-                Log.e("BoxLore_BackgroundTrace", "[Worker] Cannot enqueue download for '$episodeId': audioUrl is blank. All metadata sources failed.")
+                Log.e(
+                    "BoxLore_BackgroundTrace",
+                    "[Worker] Cannot enqueue download for '$episodeId': audioUrl is blank. All metadata sources failed."
+                )
                 return Result.failure()
             }
 
@@ -114,7 +124,10 @@ open class AutoDownloadWorker(
     ): Episode {
         var episode = podcastRepository.getEpisode(episodeId)
         if (episode == null) {
-            Log.w("BoxLore_BackgroundTrace", "[Worker] Direct getEpisode failed for $episodeId. Attempting paginated list fallback for podcast $podcastId...")
+            Log.w(
+                "BoxLore_BackgroundTrace",
+                "[Worker] Direct getEpisode failed for $episodeId. Attempting paginated list fallback for podcast $podcastId..."
+            )
             val page = podcastRepository.getEpisodesPaginated(podcastId, limit = 50)
             episode = page.episodes.find { it.id == episodeId }
         }
@@ -149,20 +162,28 @@ open class AutoDownloadWorker(
         maxAllowed: Int
     ) {
         val allDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()
-        val podcastAutoDownloads = allDownloads.filter { 
-            it.podcastId == podcastId && !it.isSmartDownloaded && it.status in listOf(
-                DownloadedEpisodeEntity.STATUS_COMPLETED,
-                DownloadedEpisodeEntity.STATUS_DOWNLOADING,
-                DownloadedEpisodeEntity.STATUS_QUEUED
-            )
+        val podcastAutoDownloads = allDownloads.filter {
+            it.podcastId == podcastId &&
+                !it.isSmartDownloaded &&
+                it.status in listOf(
+                    DownloadedEpisodeEntity.STATUS_COMPLETED,
+                    DownloadedEpisodeEntity.STATUS_DOWNLOADING,
+                    DownloadedEpisodeEntity.STATUS_QUEUED
+                )
         }
-        
-        Log.i("BoxLore_BackgroundTrace", "[Worker] Quota Check: currently retain ${podcastAutoDownloads.size} auto-downloads (Max allowed: $maxAllowed)")
-        
+
+        Log.i(
+            "BoxLore_BackgroundTrace",
+            "[Worker] Quota Check: currently retain ${podcastAutoDownloads.size} auto-downloads (Max allowed: $maxAllowed)"
+        )
+
         if (podcastAutoDownloads.size >= maxAllowed) {
             val oldest = podcastAutoDownloads.minByOrNull { it.downloadedAt }
             if (oldest != null) {
-                Log.i("BoxLore_BackgroundTrace", "[Worker] Quota reached ($maxAllowed). Deleting oldest download '${oldest.episodeTitle}' (${oldest.episodeId})")
+                Log.i(
+                    "BoxLore_BackgroundTrace",
+                    "[Worker] Quota reached ($maxAllowed). Deleting oldest download '${oldest.episodeTitle}' (${oldest.episodeId})"
+                )
                 downloadRepository.removeDownload(oldest.episodeId)
             }
         }

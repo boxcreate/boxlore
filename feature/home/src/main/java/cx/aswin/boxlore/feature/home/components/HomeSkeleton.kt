@@ -69,18 +69,18 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
         contentPadding = PaddingValues(horizontal = 0.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         modifier =
-            modifier
-                .fillMaxWidth()
-                .height(420.dp),
+        modifier
+            .fillMaxWidth()
+            .height(420.dp),
     ) {
         items(2) {
             Box(
                 modifier =
-                    Modifier
-                        .width(320.dp)
-                        .fillMaxHeight()
-                        .clip(MaterialTheme.shapes.extraLarge)
-                        .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.extraLarge),
+                Modifier
+                    .width(320.dp)
+                    .fillMaxHeight()
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.extraLarge),
             )
         }
     }
@@ -103,11 +103,11 @@ fun RisingSkeleton() {
             items(4) {
                 Box(
                     modifier =
-                        Modifier
-                            .fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION)
-                            .height(200.dp)
-                            .clip(MaterialTheme.shapes.large)
-                            .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.large),
+                    Modifier
+                        .fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION)
+                        .height(200.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.large),
                 )
             }
         }
@@ -136,37 +136,37 @@ fun GridSkeletonItem(modifier: Modifier = Modifier) {
             // Image area skeleton matching aspect ratio 1f
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+                    .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
             )
 
             // Text area skeleton matching title-only FeedMediaCard grid foot
             Column(
                 modifier =
-                    Modifier
-                        .padding(HomeFeedSpacing.CardTextPadding),
+                Modifier
+                    .padding(HomeFeedSpacing.CardTextPadding),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 // Title line 1
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth(0.9f)
-                            .height(14.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp)),
+                    Modifier
+                        .fillMaxWidth(0.9f)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp)),
                 )
                 // Title line 2
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth(0.6f)
-                            .height(14.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp)),
+                    Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(4.dp)),
                 )
             }
         }
@@ -183,11 +183,11 @@ fun SkeletonBlock(
 ) {
     Box(
         modifier =
-            Modifier
-                .width(width)
-                .height(height)
-                .clip(shape)
-                .m3Shimmer(baseColor, highlightColor, shape = shape),
+        Modifier
+            .width(width)
+            .height(height)
+            .clip(shape)
+            .m3Shimmer(baseColor, highlightColor, shape = shape),
     )
 }
 
@@ -203,9 +203,9 @@ fun YourShowsSkeleton(
         // Section Header Row
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -214,10 +214,10 @@ fun YourShowsSkeleton(
             }
             Box(
                 modifier =
-                    Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .m3Shimmer(baseColor, highlightColor, shape = CircleShape),
+                Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .m3Shimmer(baseColor, highlightColor, shape = CircleShape),
             )
         }
 
@@ -228,10 +228,10 @@ fun YourShowsSkeleton(
             // 2-row layout matching the height 156.dp
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(156.dp)
-                        .padding(bottom = 16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(156.dp)
+                    .padding(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Row 1 shimmers
@@ -243,10 +243,10 @@ fun YourShowsSkeleton(
                     repeat(5) {
                         Box(
                             modifier =
-                                Modifier
-                                    .size(60.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
+                            Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
                         )
                     }
                 }
@@ -259,10 +259,10 @@ fun YourShowsSkeleton(
                     repeat(4) {
                         Box(
                             modifier =
-                                Modifier
-                                    .size(60.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
+                            Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
                         )
                     }
                 }
@@ -278,10 +278,10 @@ fun YourShowsSkeleton(
                 items(if (subscribedCount > 0) (subscribedCount + 1).coerceAtMost(5) else 5) {
                     Box(
                         modifier =
-                            Modifier
-                                .size(60.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
+                        Modifier
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
                     )
                 }
             }
@@ -290,11 +290,11 @@ fun YourShowsSkeleton(
         // Large Mixtape Card
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(24.dp)),
+            Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(24.dp)),
         )
     }
 }
@@ -314,14 +314,14 @@ fun EditorialRowsSkeleton(modifier: Modifier = Modifier) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier =
-                            Modifier
-                                .size(36.dp)
-                                .clip(MaterialTheme.shapes.medium)
-                                .m3Shimmer(
-                                    baseColor,
-                                    highlightColor,
-                                    shape = MaterialTheme.shapes.medium,
-                                ),
+                        Modifier
+                            .size(36.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .m3Shimmer(
+                                baseColor,
+                                highlightColor,
+                                shape = MaterialTheme.shapes.medium,
+                            ),
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     SkeletonBlock(
@@ -335,15 +335,15 @@ fun EditorialRowsSkeleton(modifier: Modifier = Modifier) {
                     items(4) {
                         Box(
                             modifier =
-                                Modifier
-                                    .fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION)
-                                    .height(214.dp)
-                                    .clip(MaterialTheme.shapes.large)
-                                    .m3Shimmer(
-                                        baseColor,
-                                        highlightColor,
-                                        shape = MaterialTheme.shapes.large,
-                                    ),
+                            Modifier
+                                .fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION)
+                                .height(214.dp)
+                                .clip(MaterialTheme.shapes.large)
+                                .m3Shimmer(
+                                    baseColor,
+                                    highlightColor,
+                                    shape = MaterialTheme.shapes.large,
+                                ),
                         )
                     }
                 }

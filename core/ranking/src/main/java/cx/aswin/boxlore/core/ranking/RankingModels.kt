@@ -4,9 +4,7 @@ import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 
-enum class RankingObjective(
-    val allowsExploration: Boolean,
-) {
+enum class RankingObjective(val allowsExploration: Boolean,) {
     YOUR_SHOWS(allowsExploration = false),
     DISCOVERY(allowsExploration = true),
     CONTINUATION(allowsExploration = true),
@@ -79,10 +77,7 @@ data class CandidateSignals(
     val isCurrentShow: Boolean = false,
 )
 
-data class RankingFeatures(
-    val schemaVersion: Int = RankingFeatureSchema.VERSION,
-    val values: DoubleArray,
-) {
+data class RankingFeatures(val schemaVersion: Int = RankingFeatureSchema.VERSION, val values: DoubleArray,) {
     init {
         require(values.size == RankingFeatureSchema.dimension) {
             "Expected ${RankingFeatureSchema.dimension} ranking features, got ${values.size}"
@@ -152,10 +147,7 @@ data class DiversityPolicy(
 )
 
 object DiversityReranker {
-    fun <T> rerank(
-        candidates: List<RankedCandidate<T>>,
-        policy: DiversityPolicy,
-    ): List<RankedCandidate<T>> {
+    fun <T> rerank(candidates: List<RankedCandidate<T>>, policy: DiversityPolicy,): List<RankedCandidate<T>> {
         if (policy.limit <= 0) return emptyList()
         val state = DiversitySelectionState(candidates, policy)
         while (state.canSelectMore()) {
@@ -167,10 +159,7 @@ object DiversityReranker {
     }
 }
 
-private class DiversitySelectionState<T>(
-    private val candidates: List<RankedCandidate<T>>,
-    private val policy: DiversityPolicy,
-) {
+private class DiversitySelectionState<T>(private val candidates: List<RankedCandidate<T>>, private val policy: DiversityPolicy,) {
     val selected = mutableListOf<RankedCandidate<T>>()
     private val remaining = candidates.distinctBy { it.episodeId }.toMutableList()
     private val showCounts = mutableMapOf<String, Int>()
@@ -178,12 +167,10 @@ private class DiversitySelectionState<T>(
 
     fun canSelectMore(): Boolean = selected.size < policy.limit && remaining.isNotEmpty()
 
-    fun nextCandidate(): RankedCandidate<T>? {
-        return remaining
-            .asSequence()
-            .filter(::isWithinShowCap)
-            .maxByOrNull(::adjustedScore)
-    }
+    fun nextCandidate(): RankedCandidate<T>? = remaining
+        .asSequence()
+        .filter(::isWithinShowCap)
+        .maxByOrNull(::adjustedScore)
 
     fun select(candidate: RankedCandidate<T>) {
         selected += candidate
@@ -207,9 +194,7 @@ private class DiversitySelectionState<T>(
         select(novel)
     }
 
-    private fun isWithinShowCap(candidate: RankedCandidate<T>): Boolean {
-        return (showCounts[candidate.podcastId] ?: 0) < policy.maxPerShow
-    }
+    private fun isWithinShowCap(candidate: RankedCandidate<T>): Boolean = (showCounts[candidate.podcastId] ?: 0) < policy.maxPerShow
 
     private fun isWithinShowCapAfterEviction(candidate: RankedCandidate<T>): Boolean {
         val evicted = selected.lastOrNull().takeIf { selected.size >= policy.limit }
@@ -240,9 +225,7 @@ private fun MutableMap<String, Int>.decrement(key: String) {
     if (next <= 0) remove(key) else this[key] = next
 }
 
-private fun <T> RankedCandidate<T>.normalizedGenre(): String {
-    return genre?.trim()?.lowercase().orEmpty()
-}
+private fun <T> RankedCandidate<T>.normalizedGenre(): String = genre?.trim()?.lowercase().orEmpty()
 
 private fun Double.unit(): Double = min(1.0, max(0.0, this))
 

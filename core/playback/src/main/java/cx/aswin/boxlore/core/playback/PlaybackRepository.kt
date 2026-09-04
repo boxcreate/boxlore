@@ -94,10 +94,9 @@ object PlaybackLifecycleSignals {
     }
 }
 
-private fun entryPointBundle(entryPointKey: String?): android.os.Bundle? =
-    entryPointKey?.let { key ->
-        android.os.Bundle().apply { putString("entry_point", key) }
-    }
+private fun entryPointBundle(entryPointKey: String?): android.os.Bundle? = entryPointKey?.let { key ->
+    android.os.Bundle().apply { putString("entry_point", key) }
+}
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class PlaybackRepository internal constructor(
@@ -141,15 +140,15 @@ class PlaybackRepository internal constructor(
         rankingFeedbackRepository = rankingFeedbackRepository,
         userPreferencesRepository = userPreferencesRepository,
         historyStore =
-            defaultPlaybackHistoryStore(
-                context = context,
-                listeningHistoryDao = listeningHistoryDao,
-                listeningSessionDao = listeningSessionDao,
-                listeningRollupDao = listeningRollupDao,
-                listeningInsightsMaintenance = listeningInsightsMaintenance,
-                podcastRepository = podcastRepository,
-                rankingFeedbackRepository = rankingFeedbackRepository,
-            ),
+        defaultPlaybackHistoryStore(
+            context = context,
+            listeningHistoryDao = listeningHistoryDao,
+            listeningSessionDao = listeningSessionDao,
+            listeningRollupDao = listeningRollupDao,
+            listeningInsightsMaintenance = listeningInsightsMaintenance,
+            podcastRepository = podcastRepository,
+            rankingFeedbackRepository = rankingFeedbackRepository,
+        ),
     )
 
     internal val mediaHandle = PlaybackMediaControllerHandle()
@@ -551,8 +550,8 @@ class PlaybackRepository internal constructor(
                     episodeId = episode.id,
                     positionMs = state.position.coerceAtLeast(0L),
                     durationMs =
-                        state.duration.takeIf { it > 0L }
-                            ?: episode.duration.toLong().coerceAtLeast(0L) * 1_000L,
+                    state.duration.takeIf { it > 0L }
+                        ?: episode.duration.toLong().coerceAtLeast(0L) * 1_000L,
                     episodeTitle = episode.title,
                     episodeImageUrl = episode.imageUrl,
                     podcastImageUrl = podcast.imageUrl,
@@ -585,16 +584,11 @@ class PlaybackRepository internal constructor(
         progressJob = null
     }
 
-    private fun shouldResetPlaybackForMixtape(
-        savedProgressMs: Long,
-        durationMs: Long,
-        entryPoint: PlaybackEntryPoint,
-    ): Boolean =
-        MixtapeResumePolicy.shouldResetPlayback(
-            savedProgressMs = savedProgressMs,
-            durationMs = durationMs,
-            entryPoint = entryPoint,
-        )
+    private fun shouldResetPlaybackForMixtape(savedProgressMs: Long, durationMs: Long, entryPoint: PlaybackEntryPoint,): Boolean = MixtapeResumePolicy.shouldResetPlayback(
+        savedProgressMs = savedProgressMs,
+        durationMs = durationMs,
+        entryPoint = entryPoint,
+    )
 
     private suspend fun checkSavedProgress(
         startEpisodeId: String?,
@@ -766,10 +760,7 @@ class PlaybackRepository internal constructor(
         prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, true).apply()
     }
 
-    fun seekTo(
-        positionMs: Long,
-        play: Boolean = false,
-    ) {
+    fun seekTo(positionMs: Long, play: Boolean = false,) {
         mediaHandle.controller?.seekTo(positionMs)
         playerStateFlow.value = playerStateFlow.value.copy(position = positionMs)
 
@@ -780,20 +771,15 @@ class PlaybackRepository internal constructor(
 }
 
 internal object PlaybackOutputVolumePolicy {
-    fun targetVolume(
-        requestedVolume: Int,
-        route: PlaybackRouteState,
-        commandAvailable: Boolean,
-    ): Int? {
+    fun targetVolume(requestedVolume: Int, route: PlaybackRouteState, commandAvailable: Boolean,): Int? {
         if (!route.canControlVolume || !commandAvailable) return null
         return requestedVolume.coerceIn(route.minimumVolume, route.maximumVolume)
     }
 }
 
-private fun MediaController.progressSnapshot(): PlaybackControllerStatePolicy.Snapshot =
-    PlaybackControllerStatePolicy.Snapshot(
-        hasMedia = isConnected && mediaItemCount > 0,
-        positionMs = currentPosition,
-        bufferedPositionMs = bufferedPosition,
-        durationMs = duration,
-    )
+private fun MediaController.progressSnapshot(): PlaybackControllerStatePolicy.Snapshot = PlaybackControllerStatePolicy.Snapshot(
+    hasMedia = isConnected && mediaItemCount > 0,
+    positionMs = currentPosition,
+    bufferedPositionMs = bufferedPosition,
+    durationMs = duration,
+)

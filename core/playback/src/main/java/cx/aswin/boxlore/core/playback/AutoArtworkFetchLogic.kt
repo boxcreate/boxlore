@@ -54,12 +54,7 @@ object AutoArtworkFetchLogic {
             header.copyOfRange(8, 12).contentEquals(WEBP)
     }
 
-    fun shouldAcceptArtwork(
-        responseCode: Int,
-        contentType: String?,
-        contentLength: Long,
-        headerBytes: ByteArray? = null,
-    ): Boolean {
+    fun shouldAcceptArtwork(responseCode: Int, contentType: String?, contentLength: Long, headerBytes: ByteArray? = null,): Boolean {
         if (responseCode !in 200..299) return false
         if (contentLength > MAX_ARTWORK_BYTES) return false
         if (!isAcceptableImageContentType(contentType)) return false
@@ -71,10 +66,7 @@ object AutoArtworkFetchLogic {
 
     fun isRedirect(responseCode: Int): Boolean = responseCode in setOf(301, 302, 303, 307, 308)
 
-    private fun startsWith(
-        bytes: ByteArray,
-        prefix: ByteArray,
-    ): Boolean {
+    private fun startsWith(bytes: ByteArray, prefix: ByteArray,): Boolean {
         if (bytes.size < prefix.size) return false
         for (i in prefix.indices) {
             if (bytes[i] != prefix[i]) return false

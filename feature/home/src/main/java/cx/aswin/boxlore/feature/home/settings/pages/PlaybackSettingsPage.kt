@@ -65,11 +65,11 @@ internal fun PlaybackSettingsPage(
                 title = "Skip beginning",
                 supportingText = "Jump past intros or opening ads on a fresh start",
                 value =
-                    SettingsDurationSliderValue(
-                        seconds = (state.skipBeginningMs / 1_000L).toInt(),
-                        range = 0..300,
-                        stepSeconds = 5,
-                    ),
+                SettingsDurationSliderValue(
+                    seconds = (state.skipBeginningMs / 1_000L).toInt(),
+                    range = 0..300,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSkipBeginningMs(it * 1_000L) },
                 icon = SettingsDurationSliderIcon(Icons.Rounded.FastForward),
             )
@@ -78,11 +78,11 @@ internal fun PlaybackSettingsPage(
                 title = "Skip ending",
                 supportingText = "Finish naturally before credits or closing ads",
                 value =
-                    SettingsDurationSliderValue(
-                        seconds = (state.skipEndingMs / 1_000L).toInt(),
-                        range = 0..300,
-                        stepSeconds = 5,
-                    ),
+                SettingsDurationSliderValue(
+                    seconds = (state.skipEndingMs / 1_000L).toInt(),
+                    range = 0..300,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSkipEndingMs(it * 1_000L) },
                 icon = SettingsDurationSliderIcon(Icons.AutoMirrored.Rounded.LastPage),
             )
@@ -98,11 +98,11 @@ internal fun PlaybackSettingsPage(
             SettingsDurationSliderRow(
                 title = "Seek backward",
                 value =
-                    SettingsDurationSliderValue(
-                        seconds = (state.seekBackwardMs / 1_000L).toInt(),
-                        range = 5..120,
-                        stepSeconds = 5,
-                    ),
+                SettingsDurationSliderValue(
+                    seconds = (state.seekBackwardMs / 1_000L).toInt(),
+                    range = 5..120,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSeekBackwardMs(it * 1_000L) },
                 icon = SettingsDurationSliderIcon(Icons.Rounded.Replay),
             )
@@ -110,17 +110,17 @@ internal fun PlaybackSettingsPage(
             SettingsDurationSliderRow(
                 title = "Seek forward",
                 value =
-                    SettingsDurationSliderValue(
-                        seconds = (state.seekForwardMs / 1_000L).toInt(),
-                        range = 5..120,
-                        stepSeconds = 5,
-                    ),
+                SettingsDurationSliderValue(
+                    seconds = (state.seekForwardMs / 1_000L).toInt(),
+                    range = 5..120,
+                    stepSeconds = 5,
+                ),
                 onValueCommitted = { actions.onSetSeekForwardMs(it * 1_000L) },
                 icon =
-                    SettingsDurationSliderIcon(
-                        image = Icons.Rounded.Replay,
-                        mirrored = true,
-                    ),
+                SettingsDurationSliderIcon(
+                    image = Icons.Rounded.Replay,
+                    mirrored = true,
+                ),
             )
         }
 
@@ -146,7 +146,7 @@ internal fun PlaybackSettingsPage(
         SettingsGroup(
             title = "Resume",
             footer =
-                "When on, queue and mixtape start from the beginning if you haven’t played an episode in 7 days. Jump Back In and History always resume where you left off.",
+            "When on, queue and mixtape start from the beginning if you haven’t played an episode in 7 days. Jump Back In and History always resume where you left off.",
         ) {
             SettingsSwitchRow(
                 title = "Restart forgotten episodes",
@@ -160,7 +160,7 @@ internal fun PlaybackSettingsPage(
         SettingsGroup(
             title = "Queue",
             footer =
-                "When this is off, the queue only auto-adds newer episodes of the show you’re playing, if any are available. You can always add episodes yourself.",
+            "When this is off, the queue only auto-adds newer episodes of the show you’re playing, if any are available. You can always add episodes yourself.",
         ) {
             SettingsSwitchRow(
                 title = "Smart queue",

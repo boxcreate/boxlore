@@ -1,11 +1,8 @@
 package cx.aswin.boxlore.surveys.internal.ui
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,21 +25,17 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.posthog.surveys.PostHogDisplayRatingQuestion
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.surveys.internal.theme.ResolvedSurveyAppearance
 import cx.aswin.boxlore.surveys.internal.theme.contrastingTextColor
 import cx.aswin.boxlore.surveys.internal.theme.localAppearance
 
 /** Connected 0–10 (or custom-range) rating bar with scale endpoint labels. */
 @Composable
-internal fun NumberRating(
-    question: PostHogDisplayRatingQuestion,
-    selectedValue: Int?,
-    onSelect: (Int?) -> Unit,
-) {
+internal fun NumberRating(question: PostHogDisplayRatingQuestion, selectedValue: Int?, onSelect: (Int?) -> Unit,) {
     val appearance = localAppearance()
     val values = (question.scaleLowerBound..question.scaleUpperBound).toList()
 
@@ -52,12 +45,12 @@ internal fun NumberRating(
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(appearance.ratingButtonColor)
-                    .border(1.dp, appearance.borderColor, RoundedCornerShape(16.dp)),
+            Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(appearance.ratingButtonColor)
+                .border(1.dp, appearance.borderColor, RoundedCornerShape(16.dp)),
         ) {
             values.forEachIndexed { index, value ->
                 RatingSegment(
@@ -101,30 +94,30 @@ private fun RowScope.RatingSegment(
 
     Box(
         modifier =
-            Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .background(animatedBg)
-                .selectable(
-                    selected = isSelected,
-                    onClick = { onSelect(if (isSelected) null else value) },
-                    role = Role.RadioButton,
-                )
-                .drawBehind {
-                    if (drawBorderRight) {
-                        val strokeWidthPx = 1.dp.toPx()
-                        drawLine(
-                            color = appearance.borderColor,
-                            start = Offset(size.width - strokeWidthPx / 2f, 8.dp.toPx()),
-                            end =
-                                Offset(
-                                    size.width - strokeWidthPx / 2f,
-                                    size.height - 8.dp.toPx(),
-                                ),
-                            strokeWidth = strokeWidthPx,
-                        )
-                    }
-                },
+        Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .background(animatedBg)
+            .selectable(
+                selected = isSelected,
+                onClick = { onSelect(if (isSelected) null else value) },
+                role = Role.RadioButton,
+            )
+            .drawBehind {
+                if (drawBorderRight) {
+                    val strokeWidthPx = 1.dp.toPx()
+                    drawLine(
+                        color = appearance.borderColor,
+                        start = Offset(size.width - strokeWidthPx / 2f, 8.dp.toPx()),
+                        end =
+                        Offset(
+                            size.width - strokeWidthPx / 2f,
+                            size.height - 8.dp.toPx(),
+                        ),
+                        strokeWidth = strokeWidthPx,
+                    )
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -139,18 +132,14 @@ private fun RowScope.RatingSegment(
 }
 
 @Composable
-private fun RatingScaleLabels(
-    lower: String,
-    upper: String,
-    appearance: ResolvedSurveyAppearance,
-) {
+private fun RatingScaleLabels(lower: String, upper: String, appearance: ResolvedSurveyAppearance,) {
     if (lower.isBlank() && upper.isBlank()) return
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 2.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 2.dp),
     ) {
         Text(
             text = lower,

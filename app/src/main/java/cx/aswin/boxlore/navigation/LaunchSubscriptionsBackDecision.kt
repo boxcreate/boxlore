@@ -9,9 +9,8 @@ enum class LaunchSubscriptionsBackAction {
     PopBackStack,
 }
 
-fun resolveLaunchSubscriptionsBack(openedToLandingOnLaunch: Boolean): LaunchSubscriptionsBackAction =
-    if (openedToLandingOnLaunch) {
-        LaunchSubscriptionsBackAction.NavigateHome
-    } else {
-        LaunchSubscriptionsBackAction.PopBackStack
-    }
+fun resolveLaunchSubscriptionsBack(openedToLandingOnLaunch: Boolean): LaunchSubscriptionsBackAction = if (openedToLandingOnLaunch) {
+    LaunchSubscriptionsBackAction.NavigateHome
+} else {
+    LaunchSubscriptionsBackAction.PopBackStack
+}

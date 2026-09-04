@@ -25,9 +25,9 @@ internal fun HistoryScreenBody(
         HistoryUiState.Loading -> {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(contentPadding),
+                Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()

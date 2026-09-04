@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.explore.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -31,8 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.explore.SearchTab
 
@@ -45,7 +43,7 @@ fun ExploreTabSelectorFab(
     val totalWidth = 240.dp
     val padding = 4.dp
     val spacing = 4.dp
-    
+
     // totalWidth (240) - 2 * padding (8) - spacing (4) = 228
     // 228 / 2 = 114.dp per tab
     val tabWidth = 114.dp
@@ -95,7 +93,7 @@ fun ExploreTabSelectorFab(
                     targetValue = if (isForYouSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "foryou_content"
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .width(tabWidth)

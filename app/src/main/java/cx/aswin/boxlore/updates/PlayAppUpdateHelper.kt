@@ -14,10 +14,7 @@ import com.google.android.play.core.install.model.UpdateAvailability
 /**
  * Google Play In-App Updates wiring owned by the Activity shell (not [AppContainer]).
  */
-class PlayAppUpdateHelper(
-    private val activity: Activity,
-    private val updateLauncher: ActivityResultLauncher<IntentSenderRequest>,
-) {
+class PlayAppUpdateHelper(private val activity: Activity, private val updateLauncher: ActivityResultLauncher<IntentSenderRequest>,) {
     private val appUpdateManager: AppUpdateManager by lazy {
         AppUpdateManagerFactory.create(activity)
     }

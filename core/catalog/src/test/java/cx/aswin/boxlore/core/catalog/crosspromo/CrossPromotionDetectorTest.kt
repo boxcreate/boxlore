@@ -18,16 +18,15 @@ class CrossPromotionDetectorTest {
         episodeType: String? = null,
         episodeNumber: Int? = null,
         description: String = "Test description",
-    ): Episode =
-        Episode(
-            id = "test-id",
-            title = title,
-            description = description,
-            audioUrl = "http://example.com/audio.mp3",
-            duration = duration,
-            episodeType = episodeType,
-            episodeNumber = episodeNumber,
-        )
+    ): Episode = Episode(
+        id = "test-id",
+        title = title,
+        description = description,
+        audioUrl = "http://example.com/audio.mp3",
+        duration = duration,
+        episodeType = episodeType,
+        episodeNumber = episodeNumber,
+    )
 
     @Test
     fun testStrictDelimiterPattern() {

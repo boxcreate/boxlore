@@ -24,11 +24,11 @@ import cx.aswin.boxlore.core.ranking.AdaptiveRankingBackup
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.rss.RssFeedClient
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import java.io.InputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
-import java.io.InputStream
 
 data class GlobalPreferencesBackup(
     val region: String? = null,
@@ -77,10 +77,7 @@ data class BoxLoreBackup(
     val directFeedOptIns: List<DirectFeedOptInBackup>? = null,
 )
 
-data class OpmlFeed(
-    val title: String,
-    val xmlUrl: String,
-)
+data class OpmlFeed(val title: String, val xmlUrl: String,)
 
 @Suppress("TooManyFunctions", "LargeClass")
 class LibraryBackupManager(
@@ -196,29 +193,28 @@ class LibraryBackupManager(
             .replace("'", "&apos;")
     }
 
-    suspend fun importLibraryFromJson(jsonString: String): Pair<Int, Boolean> =
-        try {
-            val backup = gson.fromJson(jsonString, BoxLoreBackup::class.java)
-            restoreImportedGlobalPreferences(backup.globalPreferences)
-            val importedIds = mutableListOf<String>()
-            for (entity in backup.subscriptions) {
-                importBackupSubscription(entity, backup)?.let { importedIds += it }
-            }
-            restoreImportedHistory(backup.history, importedIds)
-            backup.adaptiveRanking?.let { rankingBackup ->
-                adaptiveRankingRepository.restoreBackup(rankingBackup)
-            }
-            refreshImportedLatestEpisodes(importedIds, backup.directFeedOptIns)
-            Pair(
-                importedIds.size,
-                backup.subscriptions.any { it.notificationsEnabled || it.autoDownloadEnabled },
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Pair(-1, false)
+    suspend fun importLibraryFromJson(jsonString: String): Pair<Int, Boolean> = try {
+        val backup = gson.fromJson(jsonString, BoxLoreBackup::class.java)
+        restoreImportedGlobalPreferences(backup.globalPreferences)
+        val importedIds = mutableListOf<String>()
+        for (entity in backup.subscriptions) {
+            importBackupSubscription(entity, backup)?.let { importedIds += it }
         }
+        restoreImportedHistory(backup.history, importedIds)
+        backup.adaptiveRanking?.let { rankingBackup ->
+            adaptiveRankingRepository.restoreBackup(rankingBackup)
+        }
+        refreshImportedLatestEpisodes(importedIds, backup.directFeedOptIns)
+        Pair(
+            importedIds.size,
+            backup.subscriptions.any { it.notificationsEnabled || it.autoDownloadEnabled },
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Pair(-1, false)
+    }
 
     private suspend fun restoreImportedGlobalPreferences(prefs: GlobalPreferencesBackup?) {
         val up = userPrefs ?: return
@@ -283,10 +279,7 @@ class LibraryBackupManager(
         prefs.smartDownloadsCleanupRule?.let { up.setSmartDownloadsCleanupRule(it) }
     }
 
-    private suspend fun importBackupSubscription(
-        entity: PodcastEntity,
-        backup: BoxLoreBackup,
-    ): String? {
+    private suspend fun importBackupSubscription(entity: PodcastEntity, backup: BoxLoreBackup,): String? {
         val podcast =
             if (entity.sourceType == PodcastEntity.SOURCE_RSS) {
                 importRssBackupSubscription(entity) ?: return null
@@ -354,12 +347,12 @@ class LibraryBackupManager(
                 skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
                 skipEndingOverrideMs = entity.skipEndingOverrideMs,
                 sourceType =
-                    (entity.sourceType as String?)
-                        ?: PodcastEntity.SOURCE_PODCAST_INDEX,
+                (entity.sourceType as String?)
+                    ?: PodcastEntity.SOURCE_PODCAST_INDEX,
                 feedUrl = entity.feedUrl,
                 rssRefreshCapability =
-                    (entity.rssRefreshCapability as String?)
-                        ?: PodcastEntity.RSS_REFRESH_MANUAL,
+                (entity.rssRefreshCapability as String?)
+                    ?: PodcastEntity.RSS_REFRESH_MANUAL,
                 rssCatalogStale = entity.rssCatalogStale,
                 rssHasNewEpisodes = entity.rssHasNewEpisodes,
                 linkedPodcastIndexId = entity.linkedPodcastIndexId,
@@ -391,10 +384,7 @@ class LibraryBackupManager(
         }
     }
 
-    private suspend fun restoreImportedHistory(
-        history: List<ListeningHistoryEntity>,
-        importedIds: List<String>,
-    ) {
+    private suspend fun restoreImportedHistory(history: List<ListeningHistoryEntity>, importedIds: List<String>,) {
         for (entity in history) {
             if (entity.podcastId.startsWith("rss:") && entity.podcastId !in importedIds) {
                 continue
@@ -404,10 +394,7 @@ class LibraryBackupManager(
         }
     }
 
-    private suspend fun refreshImportedLatestEpisodes(
-        importedIds: List<String>,
-        backupOptIns: List<DirectFeedOptInBackup>?,
-    ) {
+    private suspend fun refreshImportedLatestEpisodes(importedIds: List<String>, backupOptIns: List<DirectFeedOptInBackup>?,) {
         val subscriptionFeedUrls =
             importedIds.associateWith { id ->
                 subscriptionRepository.getPodcastEntity(id)?.feedUrl
@@ -437,14 +424,13 @@ class LibraryBackupManager(
         )
     }
 
-    suspend fun importFromOpml(inputStream: InputStream): Int =
-        LibraryBackupImportLogic.opmlImportCount(
-            onFailure = { error -> Log.e("OPML_IMPORT", "Failed to import OPML", error) },
-        ) {
-            parseOpmlFeeds(inputStream).count { feed ->
-                importSingleOpmlFeed(feed) != null
-            }
+    suspend fun importFromOpml(inputStream: InputStream): Int = LibraryBackupImportLogic.opmlImportCount(
+        onFailure = { error -> Log.e("OPML_IMPORT", "Failed to import OPML", error) },
+    ) {
+        parseOpmlFeeds(inputStream).count { feed ->
+            importSingleOpmlFeed(feed) != null
         }
+    }
 
     fun parseOpmlFeeds(inputStream: InputStream): List<OpmlFeed> {
         val feeds = mutableListOf<OpmlFeed>()
@@ -544,15 +530,14 @@ class LibraryBackupManager(
         )
     }
 
-    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): ExactPodcastLookupResult =
-        OpmlImportLogic.firstExactLookup(OpmlImportLogic.urlLookupCandidates(xmlUrl)) { candidate ->
-            podcastRepository.lookupExactPodcastIndex(
-                ExactPodcastLookupKey(
-                    type = ExactPodcastLookupType.FEED_URL,
-                    value = candidate,
-                ),
-            )
-        }
+    private suspend fun lookupOpmlFeedByUrl(xmlUrl: String): ExactPodcastLookupResult = OpmlImportLogic.firstExactLookup(OpmlImportLogic.urlLookupCandidates(xmlUrl)) { candidate ->
+        podcastRepository.lookupExactPodcastIndex(
+            ExactPodcastLookupKey(
+                type = ExactPodcastLookupType.FEED_URL,
+                value = candidate,
+            ),
+        )
+    }
 
     private suspend fun lookupOpmlFeedByGuid(guid: String): ExactPodcastLookupResult {
         val value = guid.trim()
@@ -580,83 +565,76 @@ class LibraryBackupManager(
         }.getOrNull()
     }
 
-    private data class PeekedOpmlFeed(
-        val finalUrl: String,
-        val title: String,
-        val guid: String?,
-    )
+    private data class PeekedOpmlFeed(val finalUrl: String, val title: String, val guid: String?,)
 
     private fun supplementPort(): EpisodeSupplementPort? = episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
 
-    private suspend fun restoreImportedLocalCatalogs(
-        targets: List<DirectFeedOptInBackup>,
-        catalog: LocalEpisodeCatalogPort,
-    ) {
+    private suspend fun restoreImportedLocalCatalogs(targets: List<DirectFeedOptInBackup>, catalog: LocalEpisodeCatalogPort,) {
         LibraryBackupDirectFeedRestore.restoreAndRefresh(
             targets = targets,
             actions =
-                DirectFeedRestoreActions(
-                    restoreStub = { _, _ -> },
-                    ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
-                    invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
-                    refreshFeed = { id, url ->
-                        val entity = subscriptionRepository.getPodcastEntity(id)
-                        val meta =
-                            LocalEpisodeCatalogPort.PodcastMeta(
-                                title = entity?.title,
-                                imageUrl = entity?.imageUrl,
-                                genre = entity?.genre,
-                                artist = entity?.author,
-                            )
-                        when (
-                            val outcome =
-                                catalog.refresh(
-                                    LocalEpisodeCatalogPort.RefreshRequest(
-                                        podcastIndexId = id,
-                                        feedUrl = url,
-                                        meta = meta,
-                                        loadPiBaseline = {
-                                            podcastRepository.loadPiEpisodesForBaseline(
-                                                feedId = id,
-                                                limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
-                                            )
-                                        },
-                                    ),
-                                )
-                        ) {
-                            is LocalEpisodeCatalogPort.RefreshOutcome.Success ->
-                                EpisodeSupplementOutcome.Success(
-                                    addedCount = outcome.itemCount,
-                                    totalSupplementCount = outcome.itemCount,
-                                    newestFeedEpisode = outcome.newest,
-                                )
-                            is LocalEpisodeCatalogPort.RefreshOutcome.Unchanged ->
-                                EpisodeSupplementOutcome.Success(
-                                    addedCount = 0,
-                                    totalSupplementCount = 0,
-                                    newestFeedEpisode = outcome.newest,
-                                )
-                            is LocalEpisodeCatalogPort.RefreshOutcome.Failure ->
-                                EpisodeSupplementOutcome.Failure(outcome.message)
-                        }
-                    },
-                    saveTip = { id, episode ->
-                        subscriptionRepository.updateLatestEpisode(
-                            podcastId = id,
-                            episode = episode,
-                            markAsNew = false,
-                            publisherFeedAuthoritative = true,
+            DirectFeedRestoreActions(
+                restoreStub = { _, _ -> },
+                ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
+                refreshFeed = { id, url ->
+                    val entity = subscriptionRepository.getPodcastEntity(id)
+                    val meta =
+                        LocalEpisodeCatalogPort.PodcastMeta(
+                            title = entity?.title,
+                            imageUrl = entity?.imageUrl,
+                            genre = entity?.genre,
+                            artist = entity?.author,
                         )
-                    },
-                    syncTrackedUrl = { id ->
-                        subscriptionRepository.getPodcastEntity(id)?.toPodcast()?.let { podcast ->
-                            subscriptionRepository.syncTrackedPodcastFeedUrl(podcast)
-                        }
-                    },
-                    onError = { id, error ->
-                        Log.e("JSON_IMPORT", "Local catalog restore failed for $id", error)
-                    },
-                ),
+                    when (
+                        val outcome =
+                            catalog.refresh(
+                                LocalEpisodeCatalogPort.RefreshRequest(
+                                    podcastIndexId = id,
+                                    feedUrl = url,
+                                    meta = meta,
+                                    loadPiBaseline = {
+                                        podcastRepository.loadPiEpisodesForBaseline(
+                                            feedId = id,
+                                            limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
+                                        )
+                                    },
+                                ),
+                            )
+                    ) {
+                        is LocalEpisodeCatalogPort.RefreshOutcome.Success ->
+                            EpisodeSupplementOutcome.Success(
+                                addedCount = outcome.itemCount,
+                                totalSupplementCount = outcome.itemCount,
+                                newestFeedEpisode = outcome.newest,
+                            )
+                        is LocalEpisodeCatalogPort.RefreshOutcome.Unchanged ->
+                            EpisodeSupplementOutcome.Success(
+                                addedCount = 0,
+                                totalSupplementCount = 0,
+                                newestFeedEpisode = outcome.newest,
+                            )
+                        is LocalEpisodeCatalogPort.RefreshOutcome.Failure ->
+                            EpisodeSupplementOutcome.Failure(outcome.message)
+                    }
+                },
+                saveTip = { id, episode ->
+                    subscriptionRepository.updateLatestEpisode(
+                        podcastId = id,
+                        episode = episode,
+                        markAsNew = false,
+                        publisherFeedAuthoritative = true,
+                    )
+                },
+                syncTrackedUrl = { id ->
+                    subscriptionRepository.getPodcastEntity(id)?.toPodcast()?.let { podcast ->
+                        subscriptionRepository.syncTrackedPodcastFeedUrl(podcast)
+                    }
+                },
+                onError = { id, error ->
+                    Log.e("JSON_IMPORT", "Local catalog restore failed for $id", error)
+                },
+            ),
         )
     }
 
@@ -670,46 +648,46 @@ class LibraryBackupManager(
         LibraryBackupDirectFeedRestore.restoreAndRefresh(
             targets = targets,
             actions =
-                DirectFeedRestoreActions(
-                    restoreStub = { _, _ -> },
-                    ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
-                    invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
-                    refreshFeed = { id, url ->
-                        val entity = subscriptionRepository.getPodcastEntity(id)
-                        port.refreshFromFeed(
-                            EpisodeSupplementPort.RefreshFromFeedRequest(
-                                podcastIndexId = id,
-                                feedUrl = url,
-                                loadBaseline = {
-                                    podcastRepository.loadPiEpisodesForBaseline(
-                                        feedId = id,
-                                        limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
-                                    )
-                                },
-                                podcastTitle = entity?.title,
-                                podcastImageUrl = entity?.imageUrl,
-                                podcastGenre = entity?.genre,
-                                podcastArtist = entity?.author,
-                            ),
-                        )
-                    },
-                    saveTip = { id, episode ->
-                        subscriptionRepository.updateLatestEpisode(
-                            podcastId = id,
-                            episode = episode,
-                            markAsNew = false,
-                            publisherFeedAuthoritative = true,
-                        )
-                    },
-                    syncTrackedUrl = { id ->
-                        subscriptionRepository.getPodcastEntity(id)?.toPodcast()?.let { podcast ->
-                            subscriptionRepository.syncTrackedPodcastFeedUrl(podcast)
-                        }
-                    },
-                    onError = { id, error ->
-                        Log.e("JSON_IMPORT", "Direct-feed restore failed for $id", error)
-                    },
-                ),
+            DirectFeedRestoreActions(
+                restoreStub = { _, _ -> },
+                ensureFeedUrl = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
+                invalidateCache = { id -> podcastRepository.invalidateEpisodesCache(id) },
+                refreshFeed = { id, url ->
+                    val entity = subscriptionRepository.getPodcastEntity(id)
+                    port.refreshFromFeed(
+                        EpisodeSupplementPort.RefreshFromFeedRequest(
+                            podcastIndexId = id,
+                            feedUrl = url,
+                            loadBaseline = {
+                                podcastRepository.loadPiEpisodesForBaseline(
+                                    feedId = id,
+                                    limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
+                                )
+                            },
+                            podcastTitle = entity?.title,
+                            podcastImageUrl = entity?.imageUrl,
+                            podcastGenre = entity?.genre,
+                            podcastArtist = entity?.author,
+                        ),
+                    )
+                },
+                saveTip = { id, episode ->
+                    subscriptionRepository.updateLatestEpisode(
+                        podcastId = id,
+                        episode = episode,
+                        markAsNew = false,
+                        publisherFeedAuthoritative = true,
+                    )
+                },
+                syncTrackedUrl = { id ->
+                    subscriptionRepository.getPodcastEntity(id)?.toPodcast()?.let { podcast ->
+                        subscriptionRepository.syncTrackedPodcastFeedUrl(podcast)
+                    }
+                },
+                onError = { id, error ->
+                    Log.e("JSON_IMPORT", "Direct-feed restore failed for $id", error)
+                },
+            ),
         )
     }
 

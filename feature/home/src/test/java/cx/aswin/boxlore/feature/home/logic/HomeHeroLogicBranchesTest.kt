@@ -17,19 +17,18 @@ class HomeHeroLogicBranchesTest {
         positionMs: Long = 30_000L,
         durationMs: Long = 120_000L,
         imageUrl: String? = "https://example.com/$id.jpg",
-    ): PlaybackSession =
-        PlaybackSession(
-            podcastId = podcastId,
-            episodeId = "ep-$id",
-            positionMs = positionMs,
-            durationMs = durationMs,
-            timestamp = 1L,
-            episodeTitle = "Episode $id",
-            podcastTitle = podcastTitle,
-            imageUrl = imageUrl,
-            podcastImageUrl = "https://example.com/pod-$id.jpg",
-            audioUrl = "https://example.com/$id.mp3",
-        )
+    ): PlaybackSession = PlaybackSession(
+        podcastId = podcastId,
+        episodeId = "ep-$id",
+        positionMs = positionMs,
+        durationMs = durationMs,
+        timestamp = 1L,
+        episodeTitle = "Episode $id",
+        podcastTitle = podcastTitle,
+        imageUrl = imageUrl,
+        podcastImageUrl = "https://example.com/pod-$id.jpg",
+        audioUrl = "https://example.com/$id.mp3",
+    )
 
     @Test
     fun sessionToPodcastFallsBackToParentTitleAndPodcastImage() {

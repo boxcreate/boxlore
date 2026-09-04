@@ -8,13 +8,13 @@ import android.net.Uri
 import android.util.Log
 import cx.aswin.boxlore.core.playback.AutoArtworkFetchLogic
 import cx.aswin.boxlore.core.playback.AutoCollageFreshnessLogic
+import java.io.File
+import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
 
 /**
  * Generates composite collage bitmaps from multiple podcast cover art images
@@ -26,12 +26,7 @@ object AutoCollageGenerator {
     private const val TAG = "AutoCollage"
     private const val COLLAGE_SIZE = 512 // px, square
 
-    data class CollageResult(
-        val uri: Uri,
-        val signature: String,
-        val loadedImageCount: Int,
-        val expectedImageCount: Int,
-    )
+    data class CollageResult(val uri: Uri, val signature: String, val loadedImageCount: Int, val expectedImageCount: Int,)
 
     /**
      * Pre-generate Home / Library / Discover collages and return folder ID → content URI.
@@ -41,25 +36,24 @@ object AutoCollageGenerator {
         context: Context,
         folderImages: Map<String, List<String>>,
         folderContentKeys: Map<String, List<String>> = emptyMap(),
-    ): Map<String, Uri> =
-        withContext(Dispatchers.IO) {
-            val results = mutableMapOf<String, Uri>()
-            val cacheDir = File(context.cacheDir, "auto_collages").apply { mkdirs() }
-            for ((folderId, imageUrls) in folderImages) {
-                try {
-                    generateOneCollage(
-                        context = context,
-                        cacheDir = cacheDir,
-                        folderId = folderId,
-                        imageUrls = imageUrls,
-                        contentKeys = folderContentKeys[folderId].orEmpty(),
-                    )?.let { result -> results[folderId] = result.uri }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to generate collage for $folderId", e)
-                }
+    ): Map<String, Uri> = withContext(Dispatchers.IO) {
+        val results = mutableMapOf<String, Uri>()
+        val cacheDir = File(context.cacheDir, "auto_collages").apply { mkdirs() }
+        for ((folderId, imageUrls) in folderImages) {
+            try {
+                generateOneCollage(
+                    context = context,
+                    cacheDir = cacheDir,
+                    folderId = folderId,
+                    imageUrls = imageUrls,
+                    contentKeys = folderContentKeys[folderId].orEmpty(),
+                )?.let { result -> results[folderId] = result.uri }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to generate collage for $folderId", e)
             }
-            results
         }
+        results
+    }
 
     private suspend fun generateOneCollage(
         context: Context,
@@ -138,29 +132,21 @@ object AutoCollageGenerator {
         return loaded to expected
     }
 
-    private data class BuiltCollage(
-        val bitmap: Bitmap,
-        val loadedImageCount: Int,
-    )
+    private data class BuiltCollage(val bitmap: Bitmap, val loadedImageCount: Int,)
 
-    private suspend fun createCollageBitmap(
-        context: Context,
-        imageUrls: List<String>,
-        folderId: String,
-    ): BuiltCollage? =
-        coroutineScope {
-            val size = COLLAGE_SIZE
-            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            val bitmaps =
-                imageUrls
-                    .map { url -> async(Dispatchers.IO) { downloadBitmap(url) } }
-                    .awaitAll()
-                    .filterNotNull()
-            AutoCollageLayouts.draw(context, canvas, size, folderId, bitmaps)
-            bitmaps.forEach { it.recycle() }
-            BuiltCollage(bitmap = bitmap, loadedImageCount = bitmaps.size)
-        }
+    private suspend fun createCollageBitmap(context: Context, imageUrls: List<String>, folderId: String,): BuiltCollage? = coroutineScope {
+        val size = COLLAGE_SIZE
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val bitmaps =
+            imageUrls
+                .map { url -> async(Dispatchers.IO) { downloadBitmap(url) } }
+                .awaitAll()
+                .filterNotNull()
+        AutoCollageLayouts.draw(context, canvas, size, folderId, bitmaps)
+        bitmaps.forEach { it.recycle() }
+        BuiltCollage(bitmap = bitmap, loadedImageCount = bitmaps.size)
+    }
 
     private fun downloadBitmap(urlString: String): Bitmap? {
         return try {

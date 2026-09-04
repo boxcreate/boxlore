@@ -11,7 +11,7 @@ data class Episode(
     val imageUrl: String? = null,
     val podcastImageUrl: String? = null,
     val podcastTitle: String? = null, // For Queue context
-    val podcastId: String? = null,    // For Queue fallback refill
+    val podcastId: String? = null, // For Queue fallback refill
     val podcastGenre: String? = null, // For Queue genre matching
     val podcastArtist: String? = null, // For display
     val duration: Int = 0, // seconds
@@ -23,7 +23,7 @@ data class Episode(
     val persons: List<Person>? = null,
     val seasonNumber: Int? = null,
     val episodeNumber: Int? = null,
-    val episodeType: String? = null,  // "full", "trailer", "bonus"
+    val episodeType: String? = null, // "full", "trailer", "bonus"
     val contextType: String? = null,
     val contextSourceId: String? = null,
     val enclosureType: String? = null,

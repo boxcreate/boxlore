@@ -188,9 +188,9 @@ private fun LazyStaggeredGridScope.discoverViewMoreItem(
     item(span = StaggeredGridItemSpan.FullLine, key = "discover_view_more", contentType = "discover_view_more") {
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
             androidx.compose.material3.FilledTonalButton(

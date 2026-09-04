@@ -52,19 +52,15 @@ internal object CastSessionSyncPolicy {
     fun shouldAcceptRemoteRoute(hasActiveSession: Boolean?): Boolean = hasActiveSession != false
 }
 
-internal data class CastStopPlan(
-    val stopRemotePlayback: Boolean,
-    val endReceiverSession: Boolean,
-)
+internal data class CastStopPlan(val stopRemotePlayback: Boolean, val endReceiverSession: Boolean,)
 
 internal object CastStopPolicy {
     const val REMOTE_STOP_GRACE_MS = 250L
 
-    fun plan(isRemote: Boolean): CastStopPlan =
-        CastStopPlan(
-            stopRemotePlayback = isRemote,
-            endReceiverSession = isRemote,
-        )
+    fun plan(isRemote: Boolean): CastStopPlan = CastStopPlan(
+        stopRemotePlayback = isRemote,
+        endReceiverSession = isRemote,
+    )
 }
 
 fun PlaybackRepository.setOutputVolume(volume: Int) {

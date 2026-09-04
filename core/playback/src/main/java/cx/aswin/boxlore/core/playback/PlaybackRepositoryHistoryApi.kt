@@ -21,22 +21,11 @@ val PlaybackRepository.completedEpisodeIds: Flow<Set<String>>
 
 suspend fun PlaybackRepository.recordListeningSession(session: ListeningSessionEntity) = historyStore.recordListeningSession(session)
 
-suspend fun PlaybackRepository.toggleLike(
-    episode: Episode,
-    podcastId: String,
-    podcastTitle: String,
-    podcastImageUrl: String?,
-) = historyStore.toggleLike(episode, podcastId, podcastTitle, podcastImageUrl)
+suspend fun PlaybackRepository.toggleLike(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?,) = historyStore.toggleLike(episode, podcastId, podcastTitle, podcastImageUrl)
 
-suspend fun PlaybackRepository.toggleCompletion(
-    episode: Episode,
-    podcastId: String,
-    podcastTitle: String,
-    podcastImageUrl: String?,
-) = historyStore.toggleCompletion(episode, podcastId, podcastTitle, podcastImageUrl)
+suspend fun PlaybackRepository.toggleCompletion(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?,) = historyStore.toggleCompletion(episode, podcastId, podcastTitle, podcastImageUrl)
 
-suspend fun PlaybackRepository.savePlaybackState(input: ListeningHistoryUpsertLogic.ProgressSaveInput) =
-    historyStore.savePlaybackState(input)
+suspend fun PlaybackRepository.savePlaybackState(input: ListeningHistoryUpsertLogic.ProgressSaveInput) = historyStore.savePlaybackState(input)
 
 suspend fun PlaybackRepository.toggleLike() = historyStore.toggleLike()
 
@@ -48,5 +37,4 @@ suspend fun PlaybackRepository.getRecentHistoryList(limit: Int): List<ListeningH
 
 suspend fun PlaybackRepository.markAllEpisodesUncompleted(episodes: List<Episode>) = historyStore.markAllEpisodesUncompleted(episodes)
 
-suspend fun PlaybackRepository.getHistoryForRecommendations(limit: Int = 15): List<HistoryItem> =
-    historyStore.getHistoryForRecommendations(limit)
+suspend fun PlaybackRepository.getHistoryForRecommendations(limit: Int = 15): List<HistoryItem> = historyStore.getHistoryForRecommendations(limit)

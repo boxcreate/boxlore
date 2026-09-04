@@ -62,8 +62,7 @@ object WidgetActionIntents {
         )
     }
 
-    fun parseControl(intent: Intent): WidgetControl? =
-        intent.getStringExtra(EXTRA_CONTROL)?.let { runCatching { WidgetControl.valueOf(it) }.getOrNull() }
+    fun parseControl(intent: Intent): WidgetControl? = intent.getStringExtra(EXTRA_CONTROL)?.let { runCatching { WidgetControl.valueOf(it) }.getOrNull() }
 
     private fun requestCode(
         appWidgetId: Int,

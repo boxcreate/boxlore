@@ -1,23 +1,16 @@
 package cx.aswin.boxlore.navigation
 
-import android.Manifest
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import cx.aswin.boxlore.feature.briefing.BriefingRoute
-import cx.aswin.boxlore.feature.home.HomeRoute
-import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -40,10 +33,26 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
         route = "podcast/{podcastId}?entryPoint={entryPoint}&genre={genre}&depth={depth}&query={query}",
         arguments = listOf(
             navArgument("podcastId") { type = NavType.StringType },
-            navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("genre") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("depth") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("query") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("entryPoint") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("genre") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("depth") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("query") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
         ),
         deepLinks = listOf(
             navDeepLink { uriPattern = "boxlore://podcast/{podcastId}" },
@@ -154,9 +163,20 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w
             navArgument("episodeDuration") { type = NavType.IntType },
             navArgument("podcastId") { type = NavType.StringType },
             navArgument("podcastTitle") { type = NavType.StringType },
-            navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("vibeId") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("carouselPosition") { type = NavType.IntType; defaultValue = -1 },
+            navArgument("entryPoint") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("vibeId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("carouselPosition") {
+                type = NavType.IntType
+                defaultValue = -1
+            },
         ),
     ) { backStackEntry ->
         val args = backStackEntry.arguments ?: return@composable
@@ -261,17 +281,50 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
         route = "episode/{episodeId}?entryPoint={entryPoint}&t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}",
         arguments = listOf(
             navArgument("episodeId") { type = NavType.StringType },
-            navArgument("entryPoint") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("t") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("start") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("end") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("autoplay") { type = NavType.StringType; nullable = true; defaultValue = "true" },
-            navArgument("podcastId") { type = NavType.StringType; nullable = true; defaultValue = "" },
-            navArgument("podcastTitle") { type = NavType.StringType; nullable = true; defaultValue = "" },
+            navArgument("entryPoint") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("t") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("start") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("end") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("autoplay") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = "true"
+            },
+            navArgument("podcastId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = ""
+            },
+            navArgument("podcastTitle") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = ""
+            },
         ),
         deepLinks = listOf(
-            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
-            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}" },
+            navDeepLink {
+                uriPattern =
+                    "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}"
+            },
+            navDeepLink {
+                uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}"
+            },
             navDeepLink { uriPattern = "boxlore://episode/{episodeId}?podcastId={podcastId}&podcastTitle={podcastTitle}" },
             navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
             navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&autoplay={autoplay}" },
@@ -281,11 +334,17 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
             navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&autoplay={autoplay}" },
             navDeepLink { uriPattern = "boxcast://episode/{episodeId}?autoplay={autoplay}" },
             navDeepLink { uriPattern = "boxcast://episode/{episodeId}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}" },
+            navDeepLink {
+                uriPattern =
+                    "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}"
+            },
             navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
             navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&autoplay={autoplay}" },
             navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}" },
+            navDeepLink {
+                uriPattern =
+                    "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}"
+            },
             navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
             navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&autoplay={autoplay}" },
             navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}" },

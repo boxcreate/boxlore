@@ -4,9 +4,5 @@ package cx.aswin.boxlore.core.playback
 object AutoCollagePrewarmPolicy {
     const val MIN_REFRESH_INTERVAL_MS = 30_000L
 
-    fun shouldRun(
-        force: Boolean,
-        lastPrewarmAtMs: Long,
-        nowMs: Long,
-    ): Boolean = force || nowMs - lastPrewarmAtMs >= MIN_REFRESH_INTERVAL_MS
+    fun shouldRun(force: Boolean, lastPrewarmAtMs: Long, nowMs: Long,): Boolean = force || nowMs - lastPrewarmAtMs >= MIN_REFRESH_INTERVAL_MS
 }

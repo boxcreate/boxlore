@@ -5,17 +5,9 @@ package cx.aswin.boxlore.core.playback
  * valid Room-restored position and duration.
  */
 internal object PlaybackControllerStatePolicy {
-    data class Snapshot(
-        val hasMedia: Boolean,
-        val positionMs: Long,
-        val bufferedPositionMs: Long,
-        val durationMs: Long,
-    )
+    data class Snapshot(val hasMedia: Boolean, val positionMs: Long, val bufferedPositionMs: Long, val durationMs: Long,)
 
-    fun mergeProgress(
-        previous: PlayerState,
-        snapshot: Snapshot,
-    ): PlayerState {
+    fun mergeProgress(previous: PlayerState, snapshot: Snapshot,): PlayerState {
         if (!snapshot.hasMedia) return previous
 
         val validDurationMs = snapshot.durationMs.takeIf { it > 0L }
@@ -24,26 +16,22 @@ internal object PlaybackControllerStatePolicy {
 
         return previous.copy(
             position =
-                if (hasUsablePosition) {
-                    snapshot.positionMs.coerceAtLeast(0L)
-                } else {
-                    previous.position
-                },
+            if (hasUsablePosition) {
+                snapshot.positionMs.coerceAtLeast(0L)
+            } else {
+                previous.position
+            },
             bufferedPosition =
-                if (hasUsableBuffer) {
-                    snapshot.bufferedPositionMs.coerceAtLeast(0L)
-                } else {
-                    previous.bufferedPosition
-                },
+            if (hasUsableBuffer) {
+                snapshot.bufferedPositionMs.coerceAtLeast(0L)
+            } else {
+                previous.bufferedPosition
+            },
             duration = validDurationMs ?: previous.duration,
         )
     }
 
-    fun resolveResumePositionMs(
-        persistedPositionMs: Long?,
-        restoredStatePositionMs: Long,
-    ): Long =
-        persistedPositionMs
-            ?.coerceAtLeast(0L)
-            ?: restoredStatePositionMs.coerceAtLeast(0L)
+    fun resolveResumePositionMs(persistedPositionMs: Long?, restoredStatePositionMs: Long,): Long = persistedPositionMs
+        ?.coerceAtLeast(0L)
+        ?: restoredStatePositionMs.coerceAtLeast(0L)
 }

@@ -15,10 +15,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackAndroidAutoDisconnected(
-        sessionId: String? = null,
-        durationSeconds: Int? = null,
-    ) {
+    fun trackAndroidAutoDisconnected(sessionId: String? = null, durationSeconds: Int? = null,) {
         AnalyticsEmit.event(
             "android_auto_disconnected",
             buildMap {
@@ -28,10 +25,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackAndroidAutoBrowse(
-        node: String,
-        action: String? = null,
-    ) {
+    fun trackAndroidAutoBrowse(node: String, action: String? = null,) {
         AnalyticsEmit.event(
             "android_auto_browse",
             buildMap {
@@ -64,10 +58,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackCatalogMiss(
-        lookupType: String,
-        key: String? = null,
-    ) {
+    fun trackCatalogMiss(lookupType: String, key: String? = null,) {
         AnalyticsEmit.event(
             "catalog_miss",
             buildMap {
@@ -77,10 +68,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackRssRefreshFailed(
-        podcastId: String? = null,
-        errorType: String? = null,
-    ) {
+    fun trackRssRefreshFailed(podcastId: String? = null, errorType: String? = null,) {
         AnalyticsEmit.event(
             "rss_refresh_failed",
             buildMap {
@@ -90,10 +78,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackProgressSyncAnomaly(
-        anomalyType: String,
-        episodeId: String? = null,
-    ) {
+    fun trackProgressSyncAnomaly(anomalyType: String, episodeId: String? = null,) {
         AnalyticsEmit.event(
             "progress_sync_anomaly",
             buildMap {
@@ -103,10 +88,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackLateNightSafeguardDecision(
-        decision: String,
-        durationMinutes: Int? = null,
-    ) {
+    fun trackLateNightSafeguardDecision(decision: String, durationMinutes: Int? = null,) {
         AnalyticsEmit.event(
             "late_night_safeguard_decision",
             buildMap {
@@ -116,11 +98,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackAutoChaptersLifecycle(
-        stage: String,
-        episodeId: String? = null,
-        errorMessage: String? = null,
-    ) {
+    fun trackAutoChaptersLifecycle(stage: String, episodeId: String? = null, errorMessage: String? = null,) {
         AnalyticsEmit.event(
             "auto_chapters_lifecycle",
             buildMap {
@@ -131,11 +109,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackAutoTranscriptLifecycle(
-        stage: String,
-        episodeId: String? = null,
-        errorMessage: String? = null,
-    ) {
+    fun trackAutoTranscriptLifecycle(stage: String, episodeId: String? = null, errorMessage: String? = null,) {
         AnalyticsEmit.event(
             "auto_transcript_lifecycle",
             buildMap {
@@ -146,11 +120,7 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackProxyFallbackTriggered(
-        imageHost: String,
-        proxyWidth: Int,
-        sampleMultiplier: Int = 10,
-    ) {
+    fun trackProxyFallbackTriggered(imageHost: String, proxyWidth: Int, sampleMultiplier: Int = 10,) {
         AnalyticsEmit.event(
             "proxy_fallback_triggered",
             mapOf(

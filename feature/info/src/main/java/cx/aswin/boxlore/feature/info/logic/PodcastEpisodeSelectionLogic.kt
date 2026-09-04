@@ -12,12 +12,11 @@ internal object PodcastEpisodeSelectionLogic {
     fun toggle(
         selectedIds: Set<String>,
         episodeId: String,
-    ): Set<String> =
-        if (episodeId in selectedIds) {
-            selectedIds - episodeId
-        } else {
-            selectedIds + episodeId
-        }
+    ): Set<String> = if (episodeId in selectedIds) {
+        selectedIds - episodeId
+    } else {
+        selectedIds + episodeId
+    }
 
     /**
      * Adds a chronological range from a complete fetched episode window.
@@ -58,18 +57,17 @@ internal object PodcastEpisodeSelectionLogic {
     fun visibleEpisodes(
         feedItems: List<FeedItem>,
         visibleItemKeys: Set<String>,
-    ): List<Episode> =
-        feedItems
-            .asSequence()
-            .filter { it.id in visibleItemKeys }
-            .flatMap { feedItem ->
-                when (feedItem) {
-                    is FeedItem.NormalEpisode -> sequenceOf(feedItem.episode)
-                    is FeedItem.SingleTrailer -> sequenceOf(feedItem.episode)
-                    is FeedItem.TrailerGroup -> feedItem.trailers.asSequence().map { it.first }
-                }
-            }.distinctBy(Episode::id)
-            .toList()
+    ): List<Episode> = feedItems
+        .asSequence()
+        .filter { it.id in visibleItemKeys }
+        .flatMap { feedItem ->
+            when (feedItem) {
+                is FeedItem.NormalEpisode -> sequenceOf(feedItem.episode)
+                is FeedItem.SingleTrailer -> sequenceOf(feedItem.episode)
+                is FeedItem.TrailerGroup -> feedItem.trailers.asSequence().map { it.first }
+            }
+        }.distinctBy(Episode::id)
+        .toList()
 
     fun selectedEpisodes(
         episodes: List<Episode>,

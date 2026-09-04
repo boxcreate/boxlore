@@ -52,12 +52,7 @@ internal suspend fun PlaybackHistoryStore.recordListeningSession(session: Listen
     )
 }
 
-internal suspend fun PlaybackHistoryStore.toggleLike(
-    episode: Episode,
-    podcastId: String,
-    podcastTitle: String,
-    podcastImageUrl: String?,
-) {
+internal suspend fun PlaybackHistoryStore.toggleLike(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?,) {
     val dao = data.listeningHistoryDao
     val existing = dao.getHistoryItem(episode.id)
     val newStatus = !(existing?.isLiked ?: false)
@@ -92,11 +87,11 @@ internal suspend fun PlaybackHistoryStore.toggleLike(
     }
     data.rankingFeedbackRepository.recordAction(
         target =
-            FeedbackTarget(
-                episodeId = episode.id,
-                podcastId = podcastId,
-                genre = episode.podcastGenre,
-            ),
+        FeedbackTarget(
+            episodeId = episode.id,
+            podcastId = podcastId,
+            genre = episode.podcastGenre,
+        ),
         action = if (newStatus) RankingAction.LIKE else RankingAction.UNLIKE,
     )
     cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEpisodeLikedToggled(
@@ -157,10 +152,7 @@ internal suspend fun PlaybackHistoryStore.toggleCompletion(
     )
 }
 
-internal suspend fun PlaybackHistoryStore.markEpisodeAsCompleted(
-    episode: Episode,
-    podcast: Podcast?,
-) {
+internal suspend fun PlaybackHistoryStore.markEpisodeAsCompleted(episode: Episode, podcast: Podcast?,) {
     android.util.Log.d("PlaybackRepo", "markEpisodeAsCompleted: START for ${episode.title}")
     val dao = data.listeningHistoryDao
     dao.setCompletionStatus(episode.id, true)
@@ -181,9 +173,9 @@ internal suspend fun PlaybackHistoryStore.markEpisodeAsCompleted(
                 podcastImageUrl = episode.podcastImageUrl ?: podcast?.imageUrl,
                 episodeAudioUrl = episode.audioUrl,
                 podcastName =
-                    episode.podcastTitle.orEmpty().ifBlank {
-                        podcast?.title ?: "Unknown Podcast"
-                    },
+                episode.podcastTitle.orEmpty().ifBlank {
+                    podcast?.title ?: "Unknown Podcast"
+                },
                 progressMs = 0L,
                 durationMs = episode.duration * 1000L,
                 isCompleted = true,
@@ -233,8 +225,7 @@ internal suspend fun PlaybackHistoryStore.getSession(episodeId: String): Playbac
     return PlaybackSessionMapping.fromHistoryEntity(entity)
 }
 
-internal suspend fun PlaybackHistoryStore.getRecentHistoryList(limit: Int): List<ListeningHistoryEntity> =
-    data.listeningHistoryDao.getRecentHistoryList(limit)
+internal suspend fun PlaybackHistoryStore.getRecentHistoryList(limit: Int): List<ListeningHistoryEntity> = data.listeningHistoryDao.getRecentHistoryList(limit)
 
 internal suspend fun PlaybackHistoryStore.markAllEpisodesUncompleted(episodes: List<Episode>) {
     val currentTime = System.currentTimeMillis()

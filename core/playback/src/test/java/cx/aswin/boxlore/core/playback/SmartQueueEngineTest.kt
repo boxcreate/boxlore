@@ -55,10 +55,7 @@ class SmartQueueEngineTest {
             return episodesByPodcast[podcastId] ?: emptyList()
         }
 
-        override suspend fun getQueueCandidates(
-            podcastId: String,
-            limit: Int,
-        ): List<Episode> {
+        override suspend fun getQueueCandidates(podcastId: String, limit: Int,): List<Episode> {
             queueCandidateRequests += podcastId to limit
             if (podcastId in queueCandidateFailureIds) {
                 error("Broken feed: $podcastId")
@@ -112,10 +109,7 @@ class SmartQueueEngineTest {
             return similarEpisodes
         }
 
-        override suspend fun getTrendingPodcasts(
-            country: String,
-            category: String?,
-        ): List<Podcast> {
+        override suspend fun getTrendingPodcasts(country: String, category: String?,): List<Podcast> {
             trendingCalls++
             lastTrendingCountry = country
             lastTrendingCategory = category
@@ -208,782 +202,740 @@ class SmartQueueEngineTest {
     // ── Tier 0: same-podcast continuation ───────────────────────────────────
 
     @Test
-    fun `serial podcast continues chronologically after the current episode`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+    fun `serial podcast continues chronologically after the current episode`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
 
-            val batch = engine(sources).getNextEpisodes(currentItem(3), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(3), podcast("pod1", type = "serial"))
 
-            assertEquals(listOf("4", "5", "6"), batch.map { it.episode.id.toString() })
-            assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
-            // Binge fast path: no network tiers at all.
-            assertEquals(0, sources.recommendationsCalls)
-            assertEquals(0, sources.trendingCalls)
-        }
-
-    @Test
-    fun `preferredSort oldest forces chronological continuation on an episodic show`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
-
-            val batch =
-                engine(sources).getNextEpisodes(
-                    currentItem(2),
-                    podcast("pod1", type = "episodic"),
-                    preferredSort = "oldest",
-                )
-
-            assertEquals(listOf("3", "4", "5", "6"), batch.map { it.episode.id.toString() })
-        }
+        assertEquals(listOf("4", "5", "6"), batch.map { it.episode.id.toString() })
+        assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+        // Binge fast path: no network tiers at all.
+        assertEquals(0, sources.recommendationsCalls)
+        assertEquals(0, sources.trendingCalls)
+    }
 
     @Test
-    fun `news-style episodic show queues only newer episodes than current`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..5L).map { episode(it, podcastGenre = "News") }
+    fun `preferredSort oldest forces chronological continuation on an episodic show`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
 
-            val batch =
-                engine(sources).getNextEpisodes(
-                    currentItem(2),
-                    podcast("pod1", type = "episodic", genre = "News"),
-                )
+        val batch =
+            engine(sources).getNextEpisodes(
+                currentItem(2),
+                podcast("pod1", type = "episodic"),
+                preferredSort = "oldest",
+            )
 
-            // Playing ep 2 → only fresher eps 3, 4, 5 (newest first), never rewind to ep 1.
-            assertEquals(listOf("5", "4", "3"), batch.map { it.episode.id.toString() })
-        }
-
-    @Test
-    fun `newest sort on latest episode does not rewind into older episodes`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..5L).map { episode(it) }
-            sources.subscriptions = listOf(podcast("sub1"))
-            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
-
-            val batch =
-                engine(sources).getNextEpisodes(
-                    currentItem(5),
-                    podcast("pod1", type = "episodic", preferredSort = "newest"),
-                )
-
-            assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
-        }
+        assertEquals(listOf("3", "4", "5", "6"), batch.map { it.episode.id.toString() })
+    }
 
     @Test
-    fun `completed episodes and trailers are never suggested`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] =
-                listOf(
-                    episode(1),
-                    episode(2),
-                    episode(3),
-                    episode(4, episodeType = "trailer"),
-                    episode(5),
-                )
-            sources.completedIds = setOf("3")
+    fun `news-style episodic show queues only newer episodes than current`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..5L).map { episode(it, podcastGenre = "News") }
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch =
+            engine(sources).getNextEpisodes(
+                currentItem(2),
+                podcast("pod1", type = "episodic", genre = "News"),
+            )
 
-            assertEquals(listOf("2", "5"), batch.map { it.episode.id.toString() })
-        }
+        // Playing ep 2 → only fresher eps 3, 4, 5 (newest first), never rewind to ep 1.
+        assertEquals(listOf("5", "4", "3"), batch.map { it.episode.id.toString() })
+    }
 
     @Test
-    fun `episodes already in the live queue are excluded`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..5L).map { episode(it) }
+    fun `newest sort on latest episode does not rewind into older episodes`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..5L).map { episode(it) }
+        sources.subscriptions = listOf(podcast("sub1"))
+        sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
 
-            val batch =
-                engine(sources).getNextEpisodes(
-                    currentItem(1),
-                    podcast("pod1", type = "serial"),
-                    excludeEpisodeIds = setOf("2", "4"),
-                )
+        val batch =
+            engine(sources).getNextEpisodes(
+                currentItem(5),
+                podcast("pod1", type = "episodic", preferredSort = "newest"),
+            )
 
-            assertEquals(listOf("3", "5"), batch.map { it.episode.id.toString() })
-        }
-
-    @Test
-    fun `batch never contains duplicates`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
-
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            assertEquals(batch.size, batch.map { it.episode.id }.distinct().size)
-        }
+        assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+    }
 
     @Test
-    fun `discovery landing skips tier 0 so one suggested episode does not backfill the whole show`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
-            sources.subscriptions = listOf(podcast("sub1"))
-            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+    fun `completed episodes and trailers are never suggested`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] =
+            listOf(
+                episode(1),
+                episode(2),
+                episode(3),
+                episode(4, episodeType = "trailer"),
+                episode(5),
+            )
+        sources.completedIds = setOf("3")
 
-            SmartQueueEngine.DISCOVERY_REFILL_SOURCES.forEach { discoverySource ->
-                val batch =
-                    engine(sources).getNextEpisodes(
-                        currentItem(1),
-                        podcast("pod1", type = "serial"),
-                        currentContextSourceId = discoverySource,
-                    )
-                assertTrue(
-                    batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST },
-                    "Tier 0 must not run for discovery source $discoverySource",
-                )
-            }
-        }
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        assertEquals(listOf("2", "5"), batch.map { it.episode.id.toString() })
+    }
 
     @Test
-    fun `same-podcast auto-fill and manual play still allow tier 0 continuation`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+    fun `episodes already in the live queue are excluded`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..5L).map { episode(it) }
 
-            val bingeBatch =
-                engine(sources).getNextEpisodes(
-                    currentItem(3),
-                    podcast("pod1", type = "serial"),
-                    currentContextSourceId = SmartQueueEngine.SOURCE_SAME_PODCAST,
-                )
-            assertTrue(bingeBatch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+        val batch =
+            engine(sources).getNextEpisodes(
+                currentItem(1),
+                podcast("pod1", type = "serial"),
+                excludeEpisodeIds = setOf("2", "4"),
+            )
 
-            val manualBatch =
-                engine(sources).getNextEpisodes(
-                    currentItem(3),
-                    podcast("pod1", type = "serial"),
-                    currentContextSourceId = null,
-                )
-            assertTrue(manualBatch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
-        }
+        assertEquals(listOf("3", "5"), batch.map { it.episode.id.toString() })
+    }
 
     @Test
-    fun `same-show continuation succeeds for podcast page entry point`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+    fun `batch never contains duplicates`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
 
-            val batch =
-                engine(sources).getNextEpisodes(
-                    currentItem(3),
-                    podcast("pod1", type = "serial"),
-                    currentContextSourceId = "podcast_detail",
-                )
-            assertTrue(batch.isNotEmpty())
-            assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
-            assertEquals(listOf(4L, 5L, 6L), batch.map { it.episode.id })
-        }
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        assertEquals(batch.size, batch.map { it.episode.id }.distinct().size)
+    }
 
     @Test
-    fun `same-show continuation is bypassed for recommendation entry point keeping queue mixed`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
-            sources.subscriptions = listOf(podcast("sub1"))
-            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+    fun `discovery landing skips tier 0 so one suggested episode does not backfill the whole show`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
+        sources.subscriptions = listOf(podcast("sub1"))
+        sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
 
+        SmartQueueEngine.DISCOVERY_REFILL_SOURCES.forEach { discoverySource ->
             val batch =
                 engine(sources).getNextEpisodes(
                     currentItem(1),
                     podcast("pod1", type = "serial"),
-                    currentContextSourceId = "home_for_you",
+                    currentContextSourceId = discoverySource,
                 )
             assertTrue(
                 batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST },
-                "Tier 0 same show continuation must be bypassed for home_for_you recommendation entry point",
-            )
-            assertTrue(
-                batch.any { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION },
-                "Queue must fall back to mixed diverse shows (e.g. subscription)",
+                "Tier 0 must not run for discovery source $discoverySource",
             )
         }
+    }
 
     @Test
-    fun `same-show-only still continues a serial mid-show`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
-            sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+    fun `same-podcast auto-fill and manual play still allow tier 0 continuation`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
 
-            val batch =
-                engine(sources, sameShowQueueOnly = true).getNextEpisodes(
-                    currentItem(3),
-                    podcast("pod1", type = "serial"),
-                )
+        val bingeBatch =
+            engine(sources).getNextEpisodes(
+                currentItem(3),
+                podcast("pod1", type = "serial"),
+                currentContextSourceId = SmartQueueEngine.SOURCE_SAME_PODCAST,
+            )
+        assertTrue(bingeBatch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
 
-            assertEquals(listOf("4", "5", "6"), batch.map { it.episode.id.toString() })
-            assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
-            assertEquals(0, sources.recommendationsCalls)
-            assertEquals(0, sources.trendingCalls)
-        }
-
-    @Test
-    fun `same-show-only returns empty when the show is exhausted`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
-            sources.subscriptions = listOf(podcast("sub1"))
-            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
-
-            val batch =
-                engine(sources, sameShowQueueOnly = true).getNextEpisodes(
-                    currentItem(1),
-                    podcast("pod1", type = "serial"),
-                )
-
-            assertTrue(batch.isEmpty())
-            assertEquals(0, sources.recommendationsCalls)
-            assertEquals(0, sources.trendingCalls)
-        }
+        val manualBatch =
+            engine(sources).getNextEpisodes(
+                currentItem(3),
+                podcast("pod1", type = "serial"),
+                currentContextSourceId = null,
+            )
+        assertTrue(manualBatch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+    }
 
     @Test
-    fun `same-show-only does not fill after a discovery landing`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
-            sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
-            sources.subscriptions = listOf(podcast("sub1"))
-            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+    fun `same-show continuation succeeds for podcast page entry point`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
 
-            val batch =
-                engine(sources, sameShowQueueOnly = true).getNextEpisodes(
-                    currentItem(1),
-                    podcast("pod1", type = "serial"),
-                    currentContextSourceId = SmartQueueEngine.SOURCE_PERSONALIZED_REC,
-                )
+        val batch =
+            engine(sources).getNextEpisodes(
+                currentItem(3),
+                podcast("pod1", type = "serial"),
+                currentContextSourceId = "podcast_detail",
+            )
+        assertTrue(batch.isNotEmpty())
+        assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+        assertEquals(listOf(4L, 5L, 6L), batch.map { it.episode.id })
+    }
 
-            assertTrue(batch.isEmpty())
-        }
+    @Test
+    fun `same-show continuation is bypassed for recommendation entry point keeping queue mixed`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
+        sources.subscriptions = listOf(podcast("sub1"))
+        sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+
+        val batch =
+            engine(sources).getNextEpisodes(
+                currentItem(1),
+                podcast("pod1", type = "serial"),
+                currentContextSourceId = "home_for_you",
+            )
+        assertTrue(
+            batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST },
+            "Tier 0 same show continuation must be bypassed for home_for_you recommendation entry point",
+        )
+        assertTrue(
+            batch.any { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION },
+            "Queue must fall back to mixed diverse shows (e.g. subscription)",
+        )
+    }
+
+    @Test
+    fun `same-show-only still continues a serial mid-show`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+        sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+
+        val batch =
+            engine(sources, sameShowQueueOnly = true).getNextEpisodes(
+                currentItem(3),
+                podcast("pod1", type = "serial"),
+            )
+
+        assertEquals(listOf("4", "5", "6"), batch.map { it.episode.id.toString() })
+        assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+        assertEquals(0, sources.recommendationsCalls)
+        assertEquals(0, sources.trendingCalls)
+    }
+
+    @Test
+    fun `same-show-only returns empty when the show is exhausted`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+        sources.subscriptions = listOf(podcast("sub1"))
+        sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+
+        val batch =
+            engine(sources, sameShowQueueOnly = true).getNextEpisodes(
+                currentItem(1),
+                podcast("pod1", type = "serial"),
+            )
+
+        assertTrue(batch.isEmpty())
+        assertEquals(0, sources.recommendationsCalls)
+        assertEquals(0, sources.trendingCalls)
+    }
+
+    @Test
+    fun `same-show-only does not fill after a discovery landing`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+        sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+        sources.subscriptions = listOf(podcast("sub1"))
+        sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+
+        val batch =
+            engine(sources, sameShowQueueOnly = true).getNextEpisodes(
+                currentItem(1),
+                podcast("pod1", type = "serial"),
+                currentContextSourceId = SmartQueueEngine.SOURCE_PERSONALIZED_REC,
+            )
+
+        assertTrue(batch.isEmpty())
+    }
 
     // ── Tier 1: resume ──────────────────────────────────────────────────────
 
     @Test
-    fun `show exhausted falls back to one resume candidate`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1)) // nothing after current
-            sources.resumeCandidates =
-                listOf(
-                    resumeEntry("101", "pod2", progressMs = 50_000),
-                    resumeEntry("102", "pod3", progressMs = 40_000),
-                )
-
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            val resumes = batch.filter { it.source == SmartQueueEngine.SOURCE_RESUME }
-            assertEquals(1, resumes.size, "at most one resume nudge per batch")
-            assertEquals(
-                "101",
-                resumes
-                    .first()
-                    .episode.id
-                    .toString(),
+    fun `show exhausted falls back to one resume candidate`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1)) // nothing after current
+        sources.resumeCandidates =
+            listOf(
+                resumeEntry("101", "pod2", progressMs = 50_000),
+                resumeEntry("102", "pod3", progressMs = 40_000),
             )
-        }
+
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        val resumes = batch.filter { it.source == SmartQueueEngine.SOURCE_RESUME }
+        assertEquals(1, resumes.size, "at most one resume nudge per batch")
+        assertEquals(
+            "101",
+            resumes
+                .first()
+                .episode.id
+                .toString(),
+        )
+    }
 
     @Test
-    fun `resume ignores barely-started, nearly-done, stale and same-podcast episodes`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.resumeCandidates =
-                listOf(
-                    resumeEntry("201", "pod2", progressMs = 5_000), // < 10%
-                    resumeEntry("202", "pod2", progressMs = 95_000), // > 90%
-                    resumeEntry("203", "pod1", progressMs = 50_000), // same podcast
-                    resumeEntry(
-                        "204",
-                        "pod2",
-                        progressMs = 50_000,
-                        lastPlayedAt = now - 31L * 24 * 60 * 60 * 1000,
-                    ), // stale
-                )
+    fun `resume ignores barely-started, nearly-done, stale and same-podcast episodes`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.resumeCandidates =
+            listOf(
+                resumeEntry("201", "pod2", progressMs = 5_000), // < 10%
+                resumeEntry("202", "pod2", progressMs = 95_000), // > 90%
+                resumeEntry("203", "pod1", progressMs = 50_000), // same podcast
+                resumeEntry(
+                    "204",
+                    "pod2",
+                    progressMs = 50_000,
+                    lastPlayedAt = now - 31L * 24 * 60 * 60 * 1000,
+                ), // stale
+            )
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_RESUME })
-            assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_RESUME_STALE })
-        }
-
-    @Test
-    fun `resume pick older than 7 days is stamped resume_stale when soft-expire is on`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.resumeCandidates =
-                listOf(
-                    resumeEntry(
-                        "301",
-                        "pod2",
-                        progressMs = 50_000,
-                        lastPlayedAt = now - 8L * 24 * 60 * 60 * 1000,
-                    ),
-                )
-
-            val batch =
-                engine(sources, staleRestartEnabled = true)
-                    .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            val resumes =
-                batch.filter {
-                    it.source == SmartQueueEngine.SOURCE_RESUME ||
-                        it.source == SmartQueueEngine.SOURCE_RESUME_STALE
-                }
-            assertEquals(1, resumes.size)
-            assertEquals(SmartQueueEngine.SOURCE_RESUME_STALE, resumes.first().source)
-        }
+        assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_RESUME })
+        assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_RESUME_STALE })
+    }
 
     @Test
-    fun `resume pick older than 7 days stays resume when soft-expire is off`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.resumeCandidates =
-                listOf(
-                    resumeEntry(
-                        "302",
-                        "pod2",
-                        progressMs = 50_000,
-                        lastPlayedAt = now - 8L * 24 * 60 * 60 * 1000,
-                    ),
-                )
+    fun `resume pick older than 7 days is stamped resume_stale when soft-expire is on`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.resumeCandidates =
+            listOf(
+                resumeEntry(
+                    "301",
+                    "pod2",
+                    progressMs = 50_000,
+                    lastPlayedAt = now - 8L * 24 * 60 * 60 * 1000,
+                ),
+            )
 
-            val batch =
-                engine(sources, staleRestartEnabled = false)
-                    .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch =
+            engine(sources, staleRestartEnabled = true)
+                .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            val resumes =
-                batch.filter {
-                    it.source == SmartQueueEngine.SOURCE_RESUME ||
-                        it.source == SmartQueueEngine.SOURCE_RESUME_STALE
-                }
-            assertEquals(1, resumes.size)
-            assertEquals(SmartQueueEngine.SOURCE_RESUME, resumes.first().source)
-        }
+        val resumes =
+            batch.filter {
+                it.source == SmartQueueEngine.SOURCE_RESUME ||
+                    it.source == SmartQueueEngine.SOURCE_RESUME_STALE
+            }
+        assertEquals(1, resumes.size)
+        assertEquals(SmartQueueEngine.SOURCE_RESUME_STALE, resumes.first().source)
+    }
+
+    @Test
+    fun `resume pick older than 7 days stays resume when soft-expire is off`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.resumeCandidates =
+            listOf(
+                resumeEntry(
+                    "302",
+                    "pod2",
+                    progressMs = 50_000,
+                    lastPlayedAt = now - 8L * 24 * 60 * 60 * 1000,
+                ),
+            )
+
+        val batch =
+            engine(sources, staleRestartEnabled = false)
+                .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        val resumes =
+            batch.filter {
+                it.source == SmartQueueEngine.SOURCE_RESUME ||
+                    it.source == SmartQueueEngine.SOURCE_RESUME_STALE
+            }
+        assertEquals(1, resumes.size)
+        assertEquals(SmartQueueEngine.SOURCE_RESUME, resumes.first().source)
+    }
 
     // ── Tier 2: scored subscriptions ────────────────────────────────────────
 
     @Test
-    fun `fallback pulls newest unplayed episodes from subscriptions`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.subscriptions = listOf(podcast("sub1"), podcast("sub2"))
-            sources.episodesByPodcast["sub1"] = listOf(episode(301, "sub1"), episode(302, "sub1"))
-            sources.episodesByPodcast["sub2"] = listOf(episode(401, "sub2"))
+    fun `fallback pulls newest unplayed episodes from subscriptions`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.subscriptions = listOf(podcast("sub1"), podcast("sub2"))
+        sources.episodesByPodcast["sub1"] = listOf(episode(301, "sub1"), episode(302, "sub1"))
+        sources.episodesByPodcast["sub2"] = listOf(episode(401, "sub2"))
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
-            assertTrue(subs.isNotEmpty())
-            // Round-robin: one episode per show, newest first within a show.
-            assertEquals(setOf("sub1", "sub2"), subs.map { it.podcast.id }.toSet())
-            assertTrue(subs.any { it.episode.id == 302L })
-        }
-
-    @Test
-    fun `recently played subscriptions are skipped to avoid loops`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.subscriptions = listOf(podcast("sub1"), podcast("sub2"))
-            sources.recentlyPlayedPodcastIds = setOf("sub1")
-            sources.episodesByPodcast["sub1"] = listOf(episode(301, "sub1"))
-            sources.episodesByPodcast["sub2"] = listOf(episode(401, "sub2"))
-
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
-            assertTrue(subs.none { it.podcast.id == "sub1" })
-        }
+        val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
+        assertTrue(subs.isNotEmpty())
+        // Round-robin: one episode per show, newest first within a show.
+        assertEquals(setOf("sub1", "sub2"), subs.map { it.podcast.id }.toSet())
+        assertTrue(subs.any { it.episode.id == 302L })
+    }
 
     @Test
-    fun `RSS subscription candidates are bounded and negative IDs remain playable`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.subscriptions = listOf(podcast("rss:feed"))
-            sources.episodesByPodcast["rss:feed"] =
-                (1L..2_000L).map { index ->
-                    episode(
-                        id = -index,
-                        podcastId = "rss:feed",
-                        publishedDate = index,
-                    )
-                }
+    fun `recently played subscriptions are skipped to avoid loops`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.subscriptions = listOf(podcast("sub1"), podcast("sub2"))
+        sources.recentlyPlayedPodcastIds = setOf("sub1")
+        sources.episodesByPodcast["sub1"] = listOf(episode(301, "sub1"))
+        sources.episodesByPodcast["sub2"] = listOf(episode(401, "sub2"))
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertEquals(
-                listOf("rss:feed" to DefaultSmartQueueEngine.SUBSCRIPTION_CANDIDATE_LIMIT),
-                sources.queueCandidateRequests,
-            )
-            assertTrue(batch.any { it.episode.id < 0L })
-        }
+        val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
+        assertTrue(subs.none { it.podcast.id == "sub1" })
+    }
 
     @Test
-    fun `cached latest episode with blank audioUrl is skipped in favor of queue candidates`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            val malformedCached = episode(301, "sub1").copy(audioUrl = "")
-            sources.subscriptions = listOf(podcast("sub1", latestEpisode = malformedCached))
-            sources.episodesByPodcast["sub1"] = listOf(episode(302, "sub1"))
+    fun `RSS subscription candidates are bounded and negative IDs remain playable`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.subscriptions = listOf(podcast("rss:feed"))
+        sources.episodesByPodcast["rss:feed"] =
+            (1L..2_000L).map { index ->
+                episode(
+                    id = -index,
+                    podcastId = "rss:feed",
+                    publishedDate = index,
+                )
+            }
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
-            assertTrue(subs.none { it.episode.id == 301L }, "malformed cached episode (blank audioUrl) must never be suggested")
-            assertTrue(
-                sources.queueCandidateRequests.any {
-                    it.first == "sub1"
-                },
-                "getQueueCandidates must be invoked as a fallback when the cache is unusable",
-            )
-            assertTrue(subs.any { it.episode.id == 302L })
-        }
-
-    @Test
-    fun `cached latest episode with a non-numeric id is skipped in favor of queue candidates`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            val malformedCached = episode(401, "sub1").copy(id = "not-a-number")
-            sources.subscriptions = listOf(podcast("sub1", latestEpisode = malformedCached))
-            sources.episodesByPodcast["sub1"] = listOf(episode(402, "sub1"))
-
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
-            assertTrue(
-                subs.none { it.episode.id.toString() == "not-a-number" },
-                "malformed cached episode (non-numeric id) must never be suggested",
-            )
-            assertTrue(
-                sources.queueCandidateRequests.any {
-                    it.first == "sub1"
-                },
-                "getQueueCandidates must be invoked as a fallback when the cache is unusable",
-            )
-            assertTrue(subs.any { it.episode.id == 402L })
-        }
+        assertEquals(
+            listOf("rss:feed" to DefaultSmartQueueEngine.SUBSCRIPTION_CANDIDATE_LIMIT),
+            sources.queueCandidateRequests,
+        )
+        assertTrue(batch.any { it.episode.id < 0L })
+    }
 
     @Test
-    fun `one failing RSS subscription does not abort other queue fallbacks`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.subscriptions = listOf(podcast("rss:broken"), podcast("subGood"))
-            sources.queueCandidateFailureIds += "rss:broken"
-            sources.episodesByPodcast["subGood"] = listOf(episode(601, "subGood"))
+    fun `cached latest episode with blank audioUrl is skipped in favor of queue candidates`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        val malformedCached = episode(301, "sub1").copy(audioUrl = "")
+        sources.subscriptions = listOf(podcast("sub1", latestEpisode = malformedCached))
+        sources.episodesByPodcast["sub1"] = listOf(episode(302, "sub1"))
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertTrue(batch.any { it.podcast.id == "subGood" })
-        }
+        val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
+        assertTrue(subs.none { it.episode.id == 301L }, "malformed cached episode (blank audioUrl) must never be suggested")
+        assertTrue(
+            sources.queueCandidateRequests.any {
+                it.first == "sub1"
+            },
+            "getQueueCandidates must be invoked as a fallback when the cache is unusable",
+        )
+        assertTrue(subs.any { it.episode.id == 302L })
+    }
+
+    @Test
+    fun `cached latest episode with a non-numeric id is skipped in favor of queue candidates`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        val malformedCached = episode(401, "sub1").copy(id = "not-a-number")
+        sources.subscriptions = listOf(podcast("sub1", latestEpisode = malformedCached))
+        sources.episodesByPodcast["sub1"] = listOf(episode(402, "sub1"))
+
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
+        assertTrue(
+            subs.none { it.episode.id.toString() == "not-a-number" },
+            "malformed cached episode (non-numeric id) must never be suggested",
+        )
+        assertTrue(
+            sources.queueCandidateRequests.any {
+                it.first == "sub1"
+            },
+            "getQueueCandidates must be invoked as a fallback when the cache is unusable",
+        )
+        assertTrue(subs.any { it.episode.id == 402L })
+    }
+
+    @Test
+    fun `one failing RSS subscription does not abort other queue fallbacks`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.subscriptions = listOf(podcast("rss:broken"), podcast("subGood"))
+        sources.queueCandidateFailureIds += "rss:broken"
+        sources.episodesByPodcast["subGood"] = listOf(episode(601, "subGood"))
+
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        assertTrue(batch.any { it.podcast.id == "subGood" })
+    }
 
     // ── Skip memory ─────────────────────────────────────────────────────────
 
     @Test
-    fun `skipped episodes are never re-suggested`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..4L).map { episode(it) }
-            val memory = skipMemory()
-            memory.recordSkip("3", "pod1", "same_podcast")
+    fun `skipped episodes are never re-suggested`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..4L).map { episode(it) }
+        val memory = skipMemory()
+        memory.recordSkip("3", "pod1", "same_podcast")
 
-            val batch = engine(sources, memory).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources, memory).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertEquals(listOf("2", "4"), batch.map { it.episode.id.toString() })
-        }
+        assertEquals(listOf("2", "4"), batch.map { it.episode.id.toString() })
+    }
 
     @Test
-    fun `podcasts with repeated skips are down-ranked in subscription fallback`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.subscriptions = listOf(podcast("subBad"), podcast("subGood"))
-            sources.episodesByPodcast["subBad"] = listOf(episode(501, "subBad"))
-            sources.episodesByPodcast["subGood"] = listOf(episode(601, "subGood"))
-            val memory = skipMemory()
-            memory.recordSkip("801", "subBad", "subscription")
-            memory.recordSkip("802", "subBad", "subscription")
+    fun `podcasts with repeated skips are down-ranked in subscription fallback`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.subscriptions = listOf(podcast("subBad"), podcast("subGood"))
+        sources.episodesByPodcast["subBad"] = listOf(episode(501, "subBad"))
+        sources.episodesByPodcast["subGood"] = listOf(episode(601, "subGood"))
+        val memory = skipMemory()
+        memory.recordSkip("801", "subBad", "subscription")
+        memory.recordSkip("802", "subBad", "subscription")
 
-            val batch = engine(sources, memory).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources, memory).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
-            assertTrue(subs.isNotEmpty())
-            assertEquals("subGood", subs.first().podcast.id)
-        }
+        val subs = batch.filter { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION }
+        assertTrue(subs.isNotEmpty())
+        assertEquals("subGood", subs.first().podcast.id)
+    }
 
     // ── Tier 3 + 4: network tiers ───────────────────────────────────────────
 
     @Test
-    fun `warm users get personalized recommendations when local tiers are thin`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "in"
-            sources.recommendationHistory =
-                listOf(
-                    HistoryItem(podcastTitle = "Past Pod", episodeTitle = "Past Ep"),
-                )
-            sources.episodesByPodcast["pod1"] = listOf(episode(1)) // exhausted
-            sources.recommendations = listOf(episode(701, "recPod"), episode(702, "recPod2"))
+    fun `warm users get personalized recommendations when local tiers are thin`() = runTest {
+        val sources = FakeSources()
+        sources.region = "in"
+        sources.recommendationHistory =
+            listOf(
+                HistoryItem(podcastTitle = "Past Pod", episodeTitle = "Past Ep"),
+            )
+        sources.episodesByPodcast["pod1"] = listOf(episode(1)) // exhausted
+        sources.recommendations = listOf(episode(701, "recPod"), episode(702, "recPod2"))
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertEquals(1, sources.recommendationsCalls)
-            assertEquals(0, sources.similarCalls)
-            assertEquals("in", sources.lastRecommendationCountry)
-            assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_PERSONALIZED_REC })
-        }
-
-    @Test
-    fun `cold users with episode metadata get similar episodes instead of recommendations`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "us"
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.similarEpisodes = listOf(episode(801, "simPod"))
-
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            assertEquals(0, sources.recommendationsCalls)
-            assertEquals(1, sources.similarCalls)
-            assertEquals("us", sources.lastSimilarCountry)
-            assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_SIMILAR_EPISODE })
-        }
+        assertEquals(1, sources.recommendationsCalls)
+        assertEquals(0, sources.similarCalls)
+        assertEquals("in", sources.lastRecommendationCountry)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_PERSONALIZED_REC })
+    }
 
     @Test
-    fun `cold users without metadata skip tier 3 and fall through to trending`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "de"
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.recommendations = listOf(episode(701, "recPod"))
-            sources.trendingPodcasts = listOf(podcast("trend1"))
-            sources.episodesByPodcast["trend1"] = listOf(episode(901, "trend1"))
+    fun `cold users with episode metadata get similar episodes instead of recommendations`() = runTest {
+        val sources = FakeSources()
+        sources.region = "us"
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.similarEpisodes = listOf(episode(801, "simPod"))
 
-            val batch =
-                engine(sources).getNextEpisodes(
-                    EpisodeItem(id = 0L, title = ""),
-                    podcast("pod1", genre = "Comedy", type = "serial"),
-                )
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertEquals(0, sources.recommendationsCalls)
-            assertEquals(0, sources.similarCalls)
-            assertEquals(1, sources.trendingCalls)
-            assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
-        }
+        assertEquals(0, sources.recommendationsCalls)
+        assertEquals(1, sources.similarCalls)
+        assertEquals("us", sources.lastSimilarCountry)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_SIMILAR_EPISODE })
+    }
 
     @Test
-    fun `trending is region-aware and used when recommendations come back empty`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "de"
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.recommendations = emptyList()
-            sources.trendingPodcasts = listOf(podcast("trend1"))
-            sources.episodesByPodcast["trend1"] = listOf(episode(901, "trend1"))
+    fun `cold users without metadata skip tier 3 and fall through to trending`() = runTest {
+        val sources = FakeSources()
+        sources.region = "de"
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.recommendations = listOf(episode(701, "recPod"))
+        sources.trendingPodcasts = listOf(podcast("trend1"))
+        sources.episodesByPodcast["trend1"] = listOf(episode(901, "trend1"))
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", genre = "Comedy", type = "serial"))
+        val batch =
+            engine(sources).getNextEpisodes(
+                EpisodeItem(id = 0L, title = ""),
+                podcast("pod1", genre = "Comedy", type = "serial"),
+            )
 
-            assertEquals(1, sources.trendingCalls)
-            assertEquals("de", sources.lastTrendingCountry)
-            assertEquals("Comedy", sources.lastTrendingCategory)
-            assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
-        }
-
-    @Test
-    fun `healthy same-show continuation makes no network calls at all`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
-
-            engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
-
-            assertEquals(0, sources.recommendationsCalls)
-            assertEquals(0, sources.trendingCalls)
-            assertEquals(0, sources.similarCalls)
-        }
+        assertEquals(0, sources.recommendationsCalls)
+        assertEquals(0, sources.similarCalls)
+        assertEquals(1, sources.trendingCalls)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
+    }
 
     @Test
-    fun `offline degradation returns local results without throwing`() =
-        runTest {
-            val sources =
-                object : FakeSources() {
-                    override suspend fun getPersonalizedRecommendations(
-                        history: List<HistoryItem>,
-                        interests: List<String>,
-                        country: String?,
-                        subscribedPodcastIds: List<String>,
-                        subscribedGenres: List<String>,
-                    ): List<Episode> = throw RuntimeException("offline")
+    fun `trending is region-aware and used when recommendations come back empty`() = runTest {
+        val sources = FakeSources()
+        sources.region = "de"
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.recommendations = emptyList()
+        sources.trendingPodcasts = listOf(podcast("trend1"))
+        sources.episodesByPodcast["trend1"] = listOf(episode(901, "trend1"))
 
-                    override suspend fun getTrendingPodcasts(
-                        country: String,
-                        category: String?,
-                    ): List<Podcast> = throw RuntimeException("offline")
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", genre = "Comedy", type = "serial"))
 
-                    override suspend fun getSimilarEpisodes(
-                        episodeId: String,
-                        podcastId: String,
-                        title: String,
-                        description: String,
-                        podcastTitle: String,
-                        country: String?,
-                    ): List<Episode> = throw RuntimeException("offline")
-                }
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+        assertEquals(1, sources.trendingCalls)
+        assertEquals("de", sources.lastTrendingCountry)
+        assertEquals("Comedy", sources.lastTrendingCategory)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
+    }
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+    @Test
+    fun `healthy same-show continuation makes no network calls at all`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
 
-            // Whatever local tiers produced still comes back.
-            assertEquals(listOf(SmartQueueEngine.SOURCE_RESUME), batch.map { it.source })
-        }
+        engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        assertEquals(0, sources.recommendationsCalls)
+        assertEquals(0, sources.trendingCalls)
+        assertEquals(0, sources.similarCalls)
+    }
+
+    @Test
+    fun `offline degradation returns local results without throwing`() = runTest {
+        val sources =
+            object : FakeSources() {
+                override suspend fun getPersonalizedRecommendations(
+                    history: List<HistoryItem>,
+                    interests: List<String>,
+                    country: String?,
+                    subscribedPodcastIds: List<String>,
+                    subscribedGenres: List<String>,
+                ): List<Episode> = throw RuntimeException("offline")
+
+                override suspend fun getTrendingPodcasts(country: String, category: String?,): List<Podcast> = throw RuntimeException("offline")
+
+                override suspend fun getSimilarEpisodes(
+                    episodeId: String,
+                    podcastId: String,
+                    title: String,
+                    description: String,
+                    podcastTitle: String,
+                    country: String?,
+                ): List<Episode> = throw RuntimeException("offline")
+            }
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.resumeCandidates = listOf(resumeEntry("101", "pod2", progressMs = 50_000))
+
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+
+        // Whatever local tiers produced still comes back.
+        assertEquals(listOf(SmartQueueEngine.SOURCE_RESUME), batch.map { it.source })
+    }
 
     // ── Tier 3.5: liked similarity boost ────────────────────────────────────
 
     @Test
-    fun `recent like triggers a region-aware similar-episode boost when tiers are thin`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "gb"
-            sources.recommendationHistory =
-                listOf(
-                    HistoryItem(podcastTitle = "Past Pod", episodeTitle = "Past Ep"),
-                )
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.recentHistory =
-                listOf(
-                    resumeEntry("111", "pod9", progressMs = 60_000, isLiked = true),
-                )
-            sources.similarEpisodes = listOf(episode(951, "simPod"))
+    fun `recent like triggers a region-aware similar-episode boost when tiers are thin`() = runTest {
+        val sources = FakeSources()
+        sources.region = "gb"
+        sources.recommendationHistory =
+            listOf(
+                HistoryItem(podcastTitle = "Past Pod", episodeTitle = "Past Ep"),
+            )
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.recentHistory =
+            listOf(
+                resumeEntry("111", "pod9", progressMs = 60_000, isLiked = true),
+            )
+        sources.similarEpisodes = listOf(episode(951, "simPod"))
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertEquals(1, sources.recommendationsCalls)
-            assertEquals(1, sources.similarCalls)
-            assertEquals("gb", sources.lastSimilarCountry)
-            assertTrue(batch.any { it.episode.id == 951L && it.source == SmartQueueEngine.SOURCE_SIMILAR_LIKED })
-        }
+        assertEquals(1, sources.recommendationsCalls)
+        assertEquals(1, sources.similarCalls)
+        assertEquals("gb", sources.lastSimilarCountry)
+        assertTrue(batch.any { it.episode.id == 951L && it.source == SmartQueueEngine.SOURCE_SIMILAR_LIKED })
+    }
 
     @Test
-    fun `liked similar boost is skipped when tier 3 already used episode similar`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "gb"
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.recentHistory =
-                listOf(
-                    resumeEntry("111", "pod9", progressMs = 60_000, isLiked = true),
-                )
-            sources.similarEpisodes = listOf(episode(801, "simPod"))
+    fun `liked similar boost is skipped when tier 3 already used episode similar`() = runTest {
+        val sources = FakeSources()
+        sources.region = "gb"
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.recentHistory =
+            listOf(
+                resumeEntry("111", "pod9", progressMs = 60_000, isLiked = true),
+            )
+        sources.similarEpisodes = listOf(episode(801, "simPod"))
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertEquals(0, sources.recommendationsCalls)
-            assertEquals(1, sources.similarCalls)
-            assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_SIMILAR_EPISODE })
-            assertEquals(1, batch.count { it.source == SmartQueueEngine.SOURCE_SIMILAR_EPISODE })
-        }
+        assertEquals(0, sources.recommendationsCalls)
+        assertEquals(1, sources.similarCalls)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_SIMILAR_EPISODE })
+        assertEquals(1, batch.count { it.source == SmartQueueEngine.SOURCE_SIMILAR_EPISODE })
+    }
 
     // ── Briefing handling ───────────────────────────────────────────────────
 
     @Test
-    fun `briefing skips same-show tier and prefers short episodes in fallback`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "us"
-            sources.subscriptions = listOf(podcast("subLong"), podcast("subShort"))
-            sources.episodesByPodcast["subLong"] = listOf(episode(311, "subLong", duration = 3600))
-            sources.episodesByPodcast["subShort"] = listOf(episode(312, "subShort", duration = 600))
+    fun `briefing skips same-show tier and prefers short episodes in fallback`() = runTest {
+        val sources = FakeSources()
+        sources.region = "us"
+        sources.subscriptions = listOf(podcast("subLong"), podcast("subShort"))
+        sources.episodesByPodcast["subLong"] = listOf(episode(311, "subLong", duration = 3600))
+        sources.episodesByPodcast["subShort"] = listOf(episode(312, "subShort", duration = 600))
 
-            val briefingItem = EpisodeItem(id = 0L, title = "Morning Briefing")
-            val briefingPodcast = podcast("briefing_daily", genre = "News")
+        val briefingItem = EpisodeItem(id = 0L, title = "Morning Briefing")
+        val briefingPodcast = podcast("briefing_daily", genre = "News")
 
-            val batch = engine(sources).getNextEpisodes(briefingItem, briefingPodcast)
+        val batch = engine(sources).getNextEpisodes(briefingItem, briefingPodcast)
 
-            assertTrue(batch.isNotEmpty())
-            assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
-            // Short episode sorted ahead of the long one.
-            val ids = batch.map { it.episode.id }
-            assertTrue(ids.indexOf(312L) < ids.indexOf(311L))
-        }
+        assertTrue(batch.isNotEmpty())
+        assertTrue(batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+        // Short episode sorted ahead of the long one.
+        val ids = batch.map { it.episode.id }
+        assertTrue(ids.indexOf(312L) < ids.indexOf(311L))
+    }
 
     @Test
-    fun `briefing trending fallback uses the News genre`() =
-        runTest {
-            val sources = FakeSources()
-            sources.region = "in"
-            sources.trendingPodcasts = listOf(podcast("trendNews", genre = "News"))
-            sources.episodesByPodcast["trendNews"] = listOf(episode(971, "trendNews"))
+    fun `briefing trending fallback uses the News genre`() = runTest {
+        val sources = FakeSources()
+        sources.region = "in"
+        sources.trendingPodcasts = listOf(podcast("trendNews", genre = "News"))
+        sources.episodesByPodcast["trendNews"] = listOf(episode(971, "trendNews"))
 
-            val briefingItem = EpisodeItem(id = 0L, title = "Morning Briefing")
-            val batch = engine(sources).getNextEpisodes(briefingItem, podcast("briefing_daily", genre = "Podcast"))
+        val briefingItem = EpisodeItem(id = 0L, title = "Morning Briefing")
+        val batch = engine(sources).getNextEpisodes(briefingItem, podcast("briefing_daily", genre = "Podcast"))
 
-            assertEquals(1, sources.trendingCalls)
-            assertEquals("News", sources.lastTrendingCategory)
-            assertEquals("in", sources.lastTrendingCountry)
-            assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
-        }
+        assertEquals(1, sources.trendingCalls)
+        assertEquals("News", sources.lastTrendingCategory)
+        assertEquals("in", sources.lastTrendingCountry)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
+    }
 
     // ── batch invariants ────────────────────────────────────────────────────
 
     @Test
-    fun `null podcast returns an empty batch instead of throwing`() =
-        runTest {
-            val batch = engine(FakeSources()).getNextEpisodes(currentItem(1), null)
-            assertTrue(batch.isEmpty())
-        }
+    fun `null podcast returns an empty batch instead of throwing`() = runTest {
+        val batch = engine(FakeSources()).getNextEpisodes(currentItem(1), null)
+        assertTrue(batch.isEmpty())
+    }
 
     @Test
-    fun `fallback batch is capped at the target size`() =
-        runTest {
-            val sources = FakeSources()
-            sources.episodesByPodcast["pod1"] = listOf(episode(1))
-            sources.subscriptions = (1..10).map { podcast("sub$it") }
-            (1..10).forEach { i ->
-                sources.episodesByPodcast["sub$i"] = listOf(episode((1000 + i).toLong(), "sub$i"))
-            }
+    fun `fallback batch is capped at the target size`() = runTest {
+        val sources = FakeSources()
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.subscriptions = (1..10).map { podcast("sub$it") }
+        (1..10).forEach { i ->
+            sources.episodesByPodcast["sub$i"] = listOf(episode((1000 + i).toLong(), "sub$i"))
+        }
 
-            val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+        val batch = engine(sources).getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            assertTrue(
-                batch.size <= DefaultSmartQueueEngine.FALLBACK_BATCH_TARGET,
-                "fallback batch of ${batch.size} must be <= ${DefaultSmartQueueEngine.FALLBACK_BATCH_TARGET}",
+        assertTrue(
+            batch.size <= DefaultSmartQueueEngine.FALLBACK_BATCH_TARGET,
+            "fallback batch of ${batch.size} must be <= ${DefaultSmartQueueEngine.FALLBACK_BATCH_TARGET}",
+        )
+        assertFalse(batch.isEmpty())
+    }
+
+    @Test
+    fun `continuation preserves forward episodes sharing the anchor timestamp`() = runTest {
+        val sources = FakeSources()
+        val ep1 = episode(1, publishedDate = 1000L)
+        val ep2 = episode(2, publishedDate = 2000L)
+        val ep3 = episode(3, publishedDate = 2000L)
+        val ep4 = episode(4, publishedDate = 3000L)
+        sources.episodesByPodcast["pod1"] = listOf(ep1, ep2, ep3, ep4)
+
+        val batch =
+            engine(sources).getNextEpisodes(
+                currentItem(2),
+                podcast("pod1", type = "episodic", preferredSort = "newest"),
+                currentContextSourceId = "podcast_detail",
             )
-            assertFalse(batch.isEmpty())
-        }
 
-    @Test
-    fun `continuation preserves forward episodes sharing the anchor timestamp`() =
-        runTest {
-            val sources = FakeSources()
-            val ep1 = episode(1, publishedDate = 1000L)
-            val ep2 = episode(2, publishedDate = 2000L)
-            val ep3 = episode(3, publishedDate = 2000L)
-            val ep4 = episode(4, publishedDate = 3000L)
-            sources.episodesByPodcast["pod1"] = listOf(ep1, ep2, ep3, ep4)
-
-            val batch =
-                engine(sources).getNextEpisodes(
-                    currentItem(2),
-                    podcast("pod1", type = "episodic", preferredSort = "newest"),
-                    currentContextSourceId = "podcast_detail",
-                )
-
-            val samePodIds =
-                batch
-                    .filter { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST }
-                    .map { it.episode.id }
-            assertTrue(3L in samePodIds, "Expected ep3 (same timestamp as anchor) to be included in continuation")
-        }
+        val samePodIds =
+            batch
+                .filter { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST }
+                .map { it.episode.id }
+        assertTrue(3L in samePodIds, "Expected ep3 (same timestamp as anchor) to be included in continuation")
+    }
 }

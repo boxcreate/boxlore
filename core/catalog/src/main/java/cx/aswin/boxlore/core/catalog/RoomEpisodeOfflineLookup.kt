@@ -5,9 +5,7 @@ import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
 import cx.aswin.boxlore.core.domain.ports.OfflineEpisodeSnapshot
 
 /** Room-backed [EpisodeOfflineLookupPort] for Episode Info deep-link hydration. */
-class RoomEpisodeOfflineLookup(
-    private val database: BoxLoreDatabase,
-) : EpisodeOfflineLookupPort {
+class RoomEpisodeOfflineLookup(private val database: BoxLoreDatabase,) : EpisodeOfflineLookupPort {
     override suspend fun fromDownload(episodeId: String): OfflineEpisodeSnapshot? {
         val row = database.downloadedEpisodeDao().getDownload(episodeId) ?: return null
         return OfflineEpisodeSnapshot(

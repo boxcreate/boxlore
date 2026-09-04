@@ -15,19 +15,16 @@ internal object PodcastInfoPullRefreshLogic {
     fun target(
         isRss: Boolean,
         chip: DirectFeedChipState,
-    ): Target =
-        when {
-            isRss -> Target.RSS_CATALOG
-            chip == DirectFeedChipState.Updated -> Target.DIRECT_FEED
-            chip == DirectFeedChipState.Fetching -> Target.NONE
-            else -> Target.PI_CATALOG
-        }
+    ): Target = when {
+        isRss -> Target.RSS_CATALOG
+        chip == DirectFeedChipState.Updated -> Target.DIRECT_FEED
+        chip == DirectFeedChipState.Fetching -> Target.NONE
+        else -> Target.PI_CATALOG
+    }
 
-    fun shouldApply(currentPodcastId: String, targetPodcastId: String): Boolean =
-        currentPodcastId == targetPodcastId
+    fun shouldApply(currentPodcastId: String, targetPodcastId: String): Boolean = currentPodcastId == targetPodcastId
 
-    fun shouldPersistLibraryTip(isSubscribed: Boolean, hasTip: Boolean): Boolean =
-        isSubscribed && hasTip
+    fun shouldPersistLibraryTip(isSubscribed: Boolean, hasTip: Boolean): Boolean = isSubscribed && hasTip
 }
 
 /** Keeps a late async refresh from restoring subscription state captured before a toggle. */
@@ -44,18 +41,18 @@ internal object PodcastInfoAsyncResultLogic {
         val subscriptionChanged = current.isSubscribed != result.isSubscribed
         return result.copy(
             podcast =
-                result.podcast.copy(
-                    subscribedAt = current.podcast.subscribedAt,
-                    notificationsEnabled = current.podcast.notificationsEnabled,
-                    autoDownloadEnabled = current.podcast.autoDownloadEnabled,
-                ),
+            result.podcast.copy(
+                subscribedAt = current.podcast.subscribedAt,
+                notificationsEnabled = current.podcast.notificationsEnabled,
+                autoDownloadEnabled = current.podcast.autoDownloadEnabled,
+            ),
             isSubscribed = current.isSubscribed,
             directFeedChip =
-                if (subscriptionChanged) {
-                    current.directFeedChip
-                } else {
-                    result.directFeedChip
-                },
+            if (subscriptionChanged) {
+                current.directFeedChip
+            } else {
+                result.directFeedChip
+            },
         )
     }
 }

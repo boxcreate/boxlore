@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
@@ -19,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +24,7 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.EqualHeightPosterGrid
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Episode
@@ -120,9 +118,9 @@ fun LazyStaggeredGridScope.forYouItems(
                             title = ep.podcastTitle ?: "Podcast",
                             artist = "",
                             imageUrl =
-                                ep.podcastImageUrl?.takeIf { it.isNotBlank() }
-                                    ?: ep.imageUrl?.takeIf { it.isNotBlank() }
-                                    ?: "",
+                            ep.podcastImageUrl?.takeIf { it.isNotBlank() }
+                                ?: ep.imageUrl?.takeIf { it.isNotBlank() }
+                                ?: "",
                             description = "",
                             genre = ep.podcastGenre ?: "Podcast",
                         )
@@ -158,11 +156,11 @@ private fun ForYouHeroCard(
 ) {
     Box(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .expressiveClickable(shape = RoundedCornerShape(20.dp), onClick = onClick),
+        modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .expressiveClickable(shape = RoundedCornerShape(20.dp), onClick = onClick),
     ) {
         // Full-bleed artwork background
         OptimizedImage(
@@ -176,31 +174,31 @@ private fun ForYouHeroCard(
         // Dark gradient scrim — heavier at bottom for text legibility (Option A)
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops =
-                                arrayOf(
-                                    0.0f to Color.Transparent,
-                                    0.3f to Color.Black.copy(alpha = 0.15f),
-                                    0.6f to Color.Black.copy(alpha = 0.65f),
-                                    1.0f to Color.Black,
-                                ),
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops =
+                        arrayOf(
+                            0.0f to Color.Transparent,
+                            0.3f to Color.Black.copy(alpha = 0.15f),
+                            0.6f to Color.Black.copy(alpha = 0.65f),
+                            1.0f to Color.Black,
                         ),
                     ),
+                ),
         )
 
         // Premium tag for the Hero card
         Box(
             modifier =
-                Modifier
-                    .padding(14.dp)
-                    .align(Alignment.TopStart)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                        shape = RoundedCornerShape(12.dp),
-                    ).padding(horizontal = 8.dp, vertical = 4.dp),
+            Modifier
+                .padding(14.dp)
+                .align(Alignment.TopStart)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(12.dp),
+                ).padding(horizontal = 8.dp, vertical = 4.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -215,12 +213,12 @@ private fun ForYouHeroCard(
                 Text(
                     text = if (isFallback) "POPULAR IN YOUR REGION" else "FEATURED RECOMMENDATION",
                     style =
-                        MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontSize = 9.sp,
-                            fontWeight = GoogleSansWeight.bold,
-                            letterSpacing = 0.5.sp,
-                        ),
+                    MaterialTheme.typography.labelSmall.copy(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 9.sp,
+                        fontWeight = GoogleSansWeight.bold,
+                        letterSpacing = 0.5.sp,
+                    ),
                 )
             }
         }
@@ -228,22 +226,22 @@ private fun ForYouHeroCard(
         // Metadata anchored to bottom
         Column(
             modifier =
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(16.dp),
+            Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             // Podcast name
             Text(
                 text = episode.podcastTitle ?: "",
                 style =
-                    MaterialTheme.typography.labelMedium.copy(
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 11.sp,
-                        fontWeight = GoogleSansWeight.semiBold,
-                        letterSpacing = 0.4.sp,
-                    ),
+                MaterialTheme.typography.labelMedium.copy(
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 11.sp,
+                    fontWeight = GoogleSansWeight.semiBold,
+                    letterSpacing = 0.4.sp,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -252,12 +250,12 @@ private fun ForYouHeroCard(
             Text(
                 text = episode.title,
                 style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        color = Color.White,
-                        fontWeight = GoogleSansWeight.bold,
-                        fontSize = 16.sp,
-                        lineHeight = 20.sp,
-                    ),
+                MaterialTheme.typography.titleMedium.copy(
+                    color = Color.White,
+                    fontWeight = GoogleSansWeight.bold,
+                    fontSize = 16.sp,
+                    lineHeight = 20.sp,
+                ),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -272,11 +270,11 @@ private fun ForYouHeroCard(
                     Text(
                         text = "$minutes min listen",
                         style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 10.sp,
-                                fontWeight = GoogleSansWeight.medium,
-                            ),
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 10.sp,
+                            fontWeight = GoogleSansWeight.medium,
+                        ),
                     )
                 }
 
@@ -290,11 +288,11 @@ private fun ForYouHeroCard(
                     Text(
                         text = genre,
                         style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 10.sp,
-                                fontWeight = GoogleSansWeight.medium,
-                            ),
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 10.sp,
+                            fontWeight = GoogleSansWeight.medium,
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -311,11 +309,11 @@ private fun ForYouHeroSkeleton(
 ) {
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(20.dp)),
+        Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(20.dp)),
     )
 }
 
@@ -327,11 +325,11 @@ private fun ForYouHorizontalBentoCard(
 ) {
     Box(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .height(115.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .expressiveClickable(onClick = onClick),
+        modifier
+            .fillMaxWidth()
+            .height(115.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .expressiveClickable(onClick = onClick),
     ) {
         // Full-bleed artwork background
         OptimizedImage(
@@ -345,18 +343,18 @@ private fun ForYouHorizontalBentoCard(
         // Heavy dark gradient scrim for pristine text contrast
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops =
-                                arrayOf(
-                                    0.0f to Color.Transparent,
-                                    0.4f to Color.Black.copy(alpha = 0.3f),
-                                    1.0f to Color.Black.copy(alpha = 0.85f),
-                                ),
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops =
+                        arrayOf(
+                            0.0f to Color.Transparent,
+                            0.4f to Color.Black.copy(alpha = 0.3f),
+                            1.0f to Color.Black.copy(alpha = 0.85f),
                         ),
                     ),
+                ),
         )
 
         // Duration chip — top left
@@ -366,18 +364,18 @@ private fun ForYouHorizontalBentoCard(
                 shape = RoundedCornerShape(8.dp),
                 color = Color.Black.copy(alpha = 0.6f),
                 modifier =
-                    Modifier
-                        .padding(10.dp)
-                        .align(Alignment.TopStart),
+                Modifier
+                    .padding(10.dp)
+                    .align(Alignment.TopStart),
             ) {
                 Text(
                     text = "$minutes min",
                     style =
-                        MaterialTheme.typography.labelSmall.copy(
-                            color = Color.White,
-                            fontSize = 9.sp,
-                            fontWeight = GoogleSansWeight.bold,
-                        ),
+                    MaterialTheme.typography.labelSmall.copy(
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = GoogleSansWeight.bold,
+                    ),
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                 )
             }
@@ -390,9 +388,9 @@ private fun ForYouHorizontalBentoCard(
                 shape = androidx.compose.foundation.shape.CircleShape,
                 color = Color.Black.copy(alpha = 0.6f),
                 modifier =
-                    Modifier
-                        .padding(10.dp)
-                        .align(Alignment.TopEnd),
+                Modifier
+                    .padding(10.dp)
+                    .align(Alignment.TopEnd),
             ) {
                 Box(
                     modifier = Modifier.padding(4.dp),
@@ -411,18 +409,18 @@ private fun ForYouHorizontalBentoCard(
                 shape = RoundedCornerShape(8.dp),
                 color = Color.Black.copy(alpha = 0.6f),
                 modifier =
-                    Modifier
-                        .padding(10.dp)
-                        .align(Alignment.TopEnd),
+                Modifier
+                    .padding(10.dp)
+                    .align(Alignment.TopEnd),
             ) {
                 Text(
                     text = genre,
                     style =
-                        MaterialTheme.typography.labelSmall.copy(
-                            color = Color.White,
-                            fontSize = 9.sp,
-                            fontWeight = GoogleSansWeight.bold,
-                        ),
+                    MaterialTheme.typography.labelSmall.copy(
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = GoogleSansWeight.bold,
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
@@ -433,21 +431,21 @@ private fun ForYouHorizontalBentoCard(
         // Episode title — bottom aligned
         Column(
             modifier =
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(14.dp),
+            Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
                 text = episode.title,
                 style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = GoogleSansWeight.bold,
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp,
-                        color = Color.White,
-                    ),
+                MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = GoogleSansWeight.bold,
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp,
+                    color = Color.White,
+                ),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -463,10 +461,10 @@ private fun ForYouHorizontalBentoSkeleton(
 ) {
     Box(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .height(115.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(20.dp)),
+        modifier
+            .fillMaxWidth()
+            .height(115.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(20.dp)),
     )
 }

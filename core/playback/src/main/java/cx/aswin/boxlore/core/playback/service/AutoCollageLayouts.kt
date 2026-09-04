@@ -19,13 +19,7 @@ import cx.aswin.boxlore.core.prefs.FontRoundnessAxis
 
 /** Layout helpers for [AutoCollageGenerator] Android Auto folder tiles. */
 internal object AutoCollageLayouts {
-    fun draw(
-        context: Context,
-        canvas: Canvas,
-        size: Int,
-        folderId: String,
-        bitmaps: List<Bitmap>,
-    ) {
+    fun draw(context: Context, canvas: Canvas, size: Int, folderId: String, bitmaps: List<Bitmap>,) {
         when (bitmaps.size) {
             0 -> drawBrandedFallback(canvas, size, folderId)
             1 -> drawSingleCover(canvas, size, bitmaps[0])
@@ -39,12 +33,7 @@ internal object AutoCollageLayouts {
         }
     }
 
-    private fun drawLabelBadge(
-        context: Context,
-        canvas: Canvas,
-        size: Int,
-        label: String,
-    ) {
+    private fun drawLabelBadge(context: Context, canvas: Canvas, size: Int, label: String,) {
         val padding = size * 0.04f
         val badgeWidth = size * if (label.length > 3) 0.42f else 0.28f
         val badgeHeight = size * 0.14f
@@ -108,19 +97,11 @@ internal object AutoCollageLayouts {
         return Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
     }
 
-    private fun drawSingleCover(
-        canvas: Canvas,
-        size: Int,
-        bmp: Bitmap,
-    ) {
+    private fun drawSingleCover(canvas: Canvas, size: Int, bmp: Bitmap,) {
         drawCenterCrop(canvas, bmp, Rect(0, 0, size, size))
     }
 
-    private fun drawTwoSplit(
-        canvas: Canvas,
-        size: Int,
-        bitmaps: List<Bitmap>,
-    ) {
+    private fun drawTwoSplit(canvas: Canvas, size: Int, bitmaps: List<Bitmap>,) {
         val halfW = size / 2
         val gap = 3
         for (i in 0..1) {
@@ -129,11 +110,7 @@ internal object AutoCollageLayouts {
         }
     }
 
-    private fun drawThreeLayout(
-        canvas: Canvas,
-        size: Int,
-        bitmaps: List<Bitmap>,
-    ) {
+    private fun drawThreeLayout(canvas: Canvas, size: Int, bitmaps: List<Bitmap>,) {
         val halfW = size / 2
         val halfH = size / 2
         val gap = 3
@@ -142,11 +119,7 @@ internal object AutoCollageLayouts {
         drawCenterCrop(canvas, bitmaps[2], Rect(halfW + gap, halfH + gap, size, size))
     }
 
-    private fun drawFourGrid(
-        canvas: Canvas,
-        size: Int,
-        bitmaps: List<Bitmap>,
-    ) {
+    private fun drawFourGrid(canvas: Canvas, size: Int, bitmaps: List<Bitmap>,) {
         val halfW = size / 2
         val halfH = size / 2
         val gap = 3
@@ -167,11 +140,7 @@ internal object AutoCollageLayouts {
         }
     }
 
-    private fun drawBrandedFallback(
-        canvas: Canvas,
-        size: Int,
-        folderId: String,
-    ) {
+    private fun drawBrandedFallback(canvas: Canvas, size: Int, folderId: String,) {
         val gradient =
             LinearGradient(
                 0f,
@@ -205,11 +174,7 @@ internal object AutoCollageLayouts {
         canvas.drawText(label, size / 2f, size / 2f + textPaint.textSize / 3f, textPaint)
     }
 
-    private fun drawCenterCrop(
-        canvas: Canvas,
-        bitmap: Bitmap,
-        destination: Rect,
-    ) {
+    private fun drawCenterCrop(canvas: Canvas, bitmap: Bitmap, destination: Rect,) {
         val sourceRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
         val destinationRatio = destination.width().toFloat() / destination.height().toFloat()
         val source =

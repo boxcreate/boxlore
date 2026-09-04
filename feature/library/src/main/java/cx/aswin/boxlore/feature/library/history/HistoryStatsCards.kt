@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.history
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.library.R
@@ -73,19 +72,19 @@ fun ListeningTimeCard(
         Box(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 30.dp, y = (-38).dp)
-                        .size(132.dp)
-                        .rotate(12f)
-                        .clip(ExpressiveShapes.Puffy)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)),
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 30.dp, y = (-38).dp)
+                    .size(132.dp)
+                    .rotate(12f)
+                    .clip(ExpressiveShapes.Puffy)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)),
             )
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
@@ -137,8 +136,7 @@ private fun ListeningTimeMetaChips(
     }
 }
 
-private fun listeningTimeDisplayMs(insights: ListeningInsightSummary): Long =
-    if (insights.hasEnoughData) insights.totalConsumedMs else insights.estimatedLibraryMs
+private fun listeningTimeDisplayMs(insights: ListeningInsightSummary): Long = if (insights.hasEnoughData) insights.totalConsumedMs else insights.estimatedLibraryMs
 
 private fun listeningTimeDeltaLabel(insights: ListeningInsightSummary): String? {
     if (!insights.hasEnoughData || insights.period == ListeningPeriod.ALL) return null
@@ -154,10 +152,10 @@ private fun TimeMetaChip(
 ) {
     Box(
         modifier =
-            modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f))
-                .padding(horizontal = 10.dp, vertical = 5.dp),
+        modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
     ) {
         Text(
             text = text,

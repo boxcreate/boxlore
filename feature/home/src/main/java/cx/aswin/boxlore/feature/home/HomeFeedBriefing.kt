@@ -124,34 +124,32 @@ private fun dailyBriefingEpisode(
         duration = 180,
         publishedDate = dailyBriefingPublishedDate(briefing.date),
         transcriptUrl =
-            briefing.transcriptUrl
-                ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+        briefing.transcriptUrl
+            ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
         chaptersUrl =
-            briefing.chaptersUrl
-                ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam",
+        briefing.chaptersUrl
+            ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam",
     )
 }
 
 private fun dailyBriefingPodcast(
     briefing: Briefing,
     localCoverUrl: String,
-): Podcast =
-    Podcast(
-        id = "briefing_${briefing.region}",
-        title = "The Boxlore Brief",
-        artist = "BoxCast AI",
-        imageUrl = localCoverUrl,
-    )
+): Podcast = Podcast(
+    id = "briefing_${briefing.region}",
+    title = "The Boxlore Brief",
+    artist = "BoxCast AI",
+    imageUrl = localCoverUrl,
+)
 
-private fun dailyBriefingPublishedDate(date: String): Long =
-    try {
-        LocalDate
-            .parse(date)
-            .atStartOfDay(ZoneOffset.UTC)
-            .toEpochSecond()
-    } catch (e: Exception) {
-        System.currentTimeMillis() / 1000
-    }
+private fun dailyBriefingPublishedDate(date: String): Long = try {
+    LocalDate
+        .parse(date)
+        .atStartOfDay(ZoneOffset.UTC)
+        .toEpochSecond()
+} catch (e: Exception) {
+    System.currentTimeMillis() / 1000
+}
 
 private fun dailyBriefingVersionParam(audioUrl: String): String {
     val version = Uri.parse(audioUrl).getQueryParameter("v")

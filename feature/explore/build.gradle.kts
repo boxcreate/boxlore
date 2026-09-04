@@ -88,5 +88,4 @@ dependencies {
     // Robolectric: SharedPreferences-backed BoxcastPrefs + org.json for the curiosity history store.
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.6.1")
-
 }

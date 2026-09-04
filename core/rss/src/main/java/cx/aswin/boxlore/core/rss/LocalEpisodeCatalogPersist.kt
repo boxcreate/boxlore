@@ -48,10 +48,7 @@ object LocalEpisodeCatalogPersist {
         val showImageUrl: String?,
     )
 
-    private fun mapOne(
-        ctx: PersistContext,
-        rss: RssEpisodeEntity,
-    ): LocalEpisodeEntity? {
+    private fun mapOne(ctx: PersistContext, rss: RssEpisodeEntity,): LocalEpisodeEntity? {
         val key = StickyEpisodeIdentity.requireCatalogKey(rss.guid, rss.audioUrl) ?: return null
         if (!StickyEpisodeIdentity.firstWinsExisting(ctx.seen, key)) return null
         val existingId = ctx.existingByKey[key]
@@ -81,11 +78,11 @@ object LocalEpisodeCatalogPersist {
             description = rss.description,
             audioUrl = rss.audioUrl,
             imageUrl =
-                EpisodeSupplementArtworkLogic.resolvedImageUrl(
-                    itemImageUrl = rss.imageUrl,
-                    channelImageUrl = ctx.channelImageUrl,
-                    showImageUrl = ctx.showImageUrl,
-                ),
+            EpisodeSupplementArtworkLogic.resolvedImageUrl(
+                itemImageUrl = rss.imageUrl,
+                channelImageUrl = ctx.channelImageUrl,
+                showImageUrl = ctx.showImageUrl,
+            ),
             duration = rss.duration,
             publishedDate = rss.publishedDate,
             chaptersUrl = rss.chaptersUrl,

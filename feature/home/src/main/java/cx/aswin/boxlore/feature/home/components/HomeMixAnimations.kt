@@ -18,8 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
@@ -38,31 +38,31 @@ internal fun AnimatedHomeMixCard(
     AnimatedVisibility(
         visible = visible,
         enter =
-            slideInHorizontally(
+        slideInHorizontally(
+            animationSpec =
+            tween(
+                durationMillis = CARD_ENTER_DURATION_MILLIS,
+                delayMillis = delayMillis,
+            ),
+            initialOffsetX = { width ->
+                if (enterFromEnd) width / 3 else -width / 3
+            },
+        ) +
+            fadeIn(
                 animationSpec =
-                    tween(
-                        durationMillis = CARD_ENTER_DURATION_MILLIS,
-                        delayMillis = delayMillis,
-                    ),
-                initialOffsetX = { width ->
-                    if (enterFromEnd) width / 3 else -width / 3
-                },
-            ) +
-                fadeIn(
-                    animationSpec =
-                        tween(
-                            durationMillis = CARD_ENTER_DURATION_MILLIS,
-                            delayMillis = delayMillis,
-                        ),
-                ) +
-                scaleIn(
-                    initialScale = 0.92f,
-                    animationSpec =
-                        tween(
-                            durationMillis = CARD_ENTER_DURATION_MILLIS,
-                            delayMillis = delayMillis,
-                        ),
+                tween(
+                    durationMillis = CARD_ENTER_DURATION_MILLIS,
+                    delayMillis = delayMillis,
                 ),
+            ) +
+            scaleIn(
+                initialScale = 0.92f,
+                animationSpec =
+                tween(
+                    durationMillis = CARD_ENTER_DURATION_MILLIS,
+                    delayMillis = delayMillis,
+                ),
+            ),
     ) {
         content()
     }
@@ -79,24 +79,24 @@ internal fun AnimatedHomeMixTitle(mode: HomeMixMode) {
                     animationSpec = tween(durationMillis = 280),
                     initialOffsetY = { height -> direction * height / 2 },
                 ) + fadeIn(animationSpec = tween(durationMillis = 220))
-            ) togetherWith
+                ) togetherWith
                 (
                     slideOutVertically(
                         animationSpec = tween(durationMillis = 180),
                         targetOffsetY = { height -> -direction * height / 2 },
                     ) + fadeOut(animationSpec = tween(durationMillis = 140))
-                )
+                    )
         },
         label = "home_mix_title",
     ) { activeMode ->
         Text(
             text =
-                stringResource(
-                    when (activeMode) {
-                        HomeMixMode.DAILY -> R.string.home_mix_daily_title
-                        HomeMixMode.OFFLINE -> R.string.home_mix_offline_title
-                    },
-                ),
+            stringResource(
+                when (activeMode) {
+                    HomeMixMode.DAILY -> R.string.home_mix_daily_title
+                    HomeMixMode.OFFLINE -> R.string.home_mix_offline_title
+                },
+            ),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = GoogleSansWeight.bold,
         )

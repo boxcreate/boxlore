@@ -55,12 +55,12 @@ class NowPlayingWidgetRemoteViewsTest {
                 context = context,
                 appWidgetId = 2,
                 snapshot =
-                    NowPlayingWidgetSnapshot(
-                        episodeId = "ep-1",
-                        episodeTitle = "Episode",
-                        podcastTitle = "Podcast",
-                        isPlaying = true,
-                    ),
+                NowPlayingWidgetSnapshot(
+                    episodeId = "ep-1",
+                    episodeTitle = "Episode",
+                    podcastTitle = "Podcast",
+                    isPlaying = true,
+                ),
                 options = defaultOptions(),
             )
 
@@ -88,11 +88,11 @@ class NowPlayingWidgetRemoteViewsTest {
                 widthDp = 245,
                 heightDp = 100,
                 snapshot =
-                    playingSnapshot().copy(
-                        episodeTitle =
-                            "An exceptionally long episode title that would occupy several lines " +
-                                "without a strict metadata boundary",
-                    ),
+                playingSnapshot().copy(
+                    episodeTitle =
+                    "An exceptionally long episode title that would occupy several lines " +
+                        "without a strict metadata boundary",
+                ),
             )
 
         assertEquals(1, root.findViewById<TextView>(R.id.widget_episode_title).maxLines)
@@ -115,10 +115,10 @@ class NowPlayingWidgetRemoteViewsTest {
                 widthDp = 245,
                 heightDp = 48,
                 snapshot =
-                    playingSnapshot().copy(
-                        episodeTitle = "A long episode title that must truncate cleanly",
-                        podcastTitle = "A long publisher name that must also truncate cleanly",
-                    ),
+                playingSnapshot().copy(
+                    episodeTitle = "A long episode title that must truncate cleanly",
+                    podcastTitle = "A long publisher name that must also truncate cleanly",
+                ),
             )
 
         val metadata = root.findViewById<View>(R.id.widget_metadata_container)
@@ -255,13 +255,12 @@ class NowPlayingWidgetRemoteViewsTest {
         )
     }
 
-    private fun playingSnapshot() =
-        NowPlayingWidgetSnapshot(
-            episodeId = "ep-1",
-            episodeTitle = "A long episode title that needs careful fitting",
-            podcastTitle = "Podcast",
-            isPlaying = true,
-        )
+    private fun playingSnapshot() = NowPlayingWidgetSnapshot(
+        episodeId = "ep-1",
+        episodeTitle = "A long episode title that needs careful fitting",
+        podcastTitle = "Podcast",
+        isPlaying = true,
+    )
 
     private fun renderAtMinimumSize(
         variant: WidgetVariant,
@@ -275,12 +274,12 @@ class NowPlayingWidgetRemoteViewsTest {
                 appWidgetId = 6,
                 snapshot = snapshot,
                 options =
-                    Bundle().apply {
-                        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, widthDp)
-                        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, widthDp)
-                        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, heightDp)
-                        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, heightDp)
-                    },
+                Bundle().apply {
+                    putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, widthDp)
+                    putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, widthDp)
+                    putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, heightDp)
+                    putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, heightDp)
+                },
                 variant = variant,
             )
         return views.apply(context, FrameLayout(context)).also { root ->
@@ -308,9 +307,8 @@ class NowPlayingWidgetRemoteViewsTest {
         assertTrue("view $viewId ends below its widget", top + view.height <= root.height)
     }
 
-    private fun defaultOptions(): Bundle =
-        Bundle().apply {
-            putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250)
-            putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 220)
-        }
+    private fun defaultOptions(): Bundle = Bundle().apply {
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 220)
+    }
 }

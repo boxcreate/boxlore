@@ -1,25 +1,22 @@
 package cx.aswin.boxlore.core.playback
 
 import androidx.room.withTransaction
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.entities.QueueItem
+import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.core.model.Transcript
+import cx.aswin.boxlore.core.network.model.EpisodeItem
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
-import cx.aswin.boxlore.core.model.Person
-import cx.aswin.boxlore.core.model.Transcript
-import cx.aswin.boxlore.core.network.model.EpisodeItem
-import cx.aswin.boxlore.core.catalog.PodcastRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
 
-class QueueRepository(
-    private val database: BoxLoreDatabase,
-    private val podcastRepository: PodcastRepository,
-) {
+class QueueRepository(private val database: BoxLoreDatabase, private val podcastRepository: PodcastRepository,) {
     private val TAG = "QueueRepository"
     private val queueDao = database.queueDao()
 
@@ -101,17 +98,17 @@ class QueueRepository(
         if (newItem.contextType == "MANUAL" || newItem.contextType == QueueMath.CONTEXT_TYPE_LORE) {
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target =
-                    FeedbackTarget(
-                        episodeId = newItem.episodeId,
-                        podcastId = newItem.podcastId,
-                        genre = newItem.podcastGenre,
-                        source =
-                            if (newItem.contextType == QueueMath.CONTEXT_TYPE_LORE) {
-                                CandidateSource.CURATED_INTENT
-                            } else {
-                                null
-                            },
-                    ),
+                FeedbackTarget(
+                    episodeId = newItem.episodeId,
+                    podcastId = newItem.podcastId,
+                    genre = newItem.podcastGenre,
+                    source =
+                    if (newItem.contextType == QueueMath.CONTEXT_TYPE_LORE) {
+                        CandidateSource.CURATED_INTENT
+                    } else {
+                        null
+                    },
+                ),
                 action = RankingAction.EXPLICIT_QUEUE,
             )
         }
@@ -177,49 +174,47 @@ class QueueRepository(
         }
     }
 
-    suspend fun getQueueSnapshot(): List<cx.aswin.boxlore.core.model.Episode> =
-        database.withTransaction {
-            android.util.Log.d(TAG, "getQueueSnapshot: Fetching sync")
-            val items = queueDao.getAllQueueItemsSync()
-            android.util.Log.d(TAG, "getQueueSnapshot: Got ${items.size} items")
-            val episodes = items.map { it.toDomainEpisode() }
-            val uniqueEpisodes = episodes.distinctBy { it.id }
-            if (uniqueEpisodes.size != episodes.size) {
-                android.util.Log.w(
-                    TAG,
-                    "getQueueSnapshot: Repairing ${episodes.size - uniqueEpisodes.size} duplicate queue rows",
-                )
-                replaceQueueItems(uniqueEpisodes)
-            }
-            uniqueEpisodes
+    suspend fun getQueueSnapshot(): List<cx.aswin.boxlore.core.model.Episode> = database.withTransaction {
+        android.util.Log.d(TAG, "getQueueSnapshot: Fetching sync")
+        val items = queueDao.getAllQueueItemsSync()
+        android.util.Log.d(TAG, "getQueueSnapshot: Got ${items.size} items")
+        val episodes = items.map { it.toDomainEpisode() }
+        val uniqueEpisodes = episodes.distinctBy { it.id }
+        if (uniqueEpisodes.size != episodes.size) {
+            android.util.Log.w(
+                TAG,
+                "getQueueSnapshot: Repairing ${episodes.size - uniqueEpisodes.size} duplicate queue rows",
+            )
+            replaceQueueItems(uniqueEpisodes)
         }
+        uniqueEpisodes
+    }
 
-    private fun cx.aswin.boxlore.core.database.entities.QueueItem.toDomainEpisode(): cx.aswin.boxlore.core.model.Episode =
-        cx.aswin.boxlore.core.model.Episode(
-            id = this.episodeId,
-            title = this.title,
-            description = this.description ?: "",
-            audioUrl = this.audioUrl,
-            imageUrl = this.imageUrl,
-            podcastImageUrl = this.podcastImageUrl ?: this.imageUrl,
-            podcastTitle = this.podcastTitle,
-            podcastId = this.podcastId,
-            podcastGenre = this.podcastGenre,
-            podcastArtist = this.podcastArtist,
-            duration = this.duration,
-            publishedDate = this.pubDate,
-            // Podcast 2.0
-            chaptersUrl = this.chaptersUrl,
-            transcriptUrl = this.transcriptUrl,
-            persons = decodePersons(this.personsJson),
-            transcripts = decodeTranscripts(this.transcriptsJson),
-            episodeType = this.episodeType,
-            seasonNumber = this.seasonNumber,
-            episodeNumber = this.episodeNumber,
-            contextType = this.contextType,
-            contextSourceId = this.contextSourceId,
-            enclosureType = this.enclosureType,
-        )
+    private fun cx.aswin.boxlore.core.database.entities.QueueItem.toDomainEpisode(): cx.aswin.boxlore.core.model.Episode = cx.aswin.boxlore.core.model.Episode(
+        id = this.episodeId,
+        title = this.title,
+        description = this.description ?: "",
+        audioUrl = this.audioUrl,
+        imageUrl = this.imageUrl,
+        podcastImageUrl = this.podcastImageUrl ?: this.imageUrl,
+        podcastTitle = this.podcastTitle,
+        podcastId = this.podcastId,
+        podcastGenre = this.podcastGenre,
+        podcastArtist = this.podcastArtist,
+        duration = this.duration,
+        publishedDate = this.pubDate,
+        // Podcast 2.0
+        chaptersUrl = this.chaptersUrl,
+        transcriptUrl = this.transcriptUrl,
+        persons = decodePersons(this.personsJson),
+        transcripts = decodeTranscripts(this.transcriptsJson),
+        episodeType = this.episodeType,
+        seasonNumber = this.seasonNumber,
+        episodeNumber = this.episodeNumber,
+        contextType = this.contextType,
+        contextSourceId = this.contextSourceId,
+        enclosureType = this.enclosureType,
+    )
 
     // --- P2.0 JSON helpers (using Android's org.json) ---
 
@@ -283,8 +278,7 @@ class QueueRepository(
         }
     }
 
-    suspend fun getQueueItemByEpisodeId(episodeId: String): cx.aswin.boxlore.core.database.entities.QueueItem? =
-        queueDao.getQueueItemByEpisodeId(episodeId)
+    suspend fun getQueueItemByEpisodeId(episodeId: String): cx.aswin.boxlore.core.database.entities.QueueItem? = queueDao.getQueueItemByEpisodeId(episodeId)
 
     /**
      * Rewrites row positions to match the given episode-id order (a Room transaction via

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -43,14 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -321,8 +319,11 @@ internal fun LatestEpisodeRow(
                     Text(
                         text = if (relativePublished != null) "· $displayText" else displayText,
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isInProgress) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        color = if (isInProgress) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        },
                         fontWeight = if (isInProgress) GoogleSansWeight.medium else GoogleSansWeight.regular
                     )
                 }
@@ -342,21 +343,21 @@ private fun LatestEpisodePlayButton(onPlay: () -> Unit) {
     val isPressed by interactionSource.collectIsPressedAsState()
     val btnColor by animateColorAsState(
         targetValue =
-            if (isPressed) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.primaryContainer
-            },
+        if (isPressed) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.primaryContainer
+        },
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "btnColor",
     )
     val iconColor by animateColorAsState(
         targetValue =
-            if (isPressed) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.primary
-            },
+        if (isPressed) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.primary
+        },
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "iconColor",
     )
@@ -365,13 +366,13 @@ private fun LatestEpisodePlayButton(onPlay: () -> Unit) {
         shape = CircleShape,
         color = btnColor,
         modifier =
-            Modifier
-                .size(44.dp)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onPlay,
-                ),
+        Modifier
+            .size(44.dp)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onPlay,
+            ),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Icon(
@@ -419,23 +420,23 @@ internal fun SubscriptionGridCard(
     )
     Box(
         modifier =
-            modifier
-                .then(dragModifier)
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .zIndex(if (isDragging) 1f else 0f)
-                .graphicsLayer {
-                    scaleX = dragScale
-                    scaleY = dragScale
-                    shape = artworkShape
-                    clip = true
-                }
-                .shadow(elevation = dragElevation, shape = artworkShape, clip = false)
-                .expressiveClickable(
-                    shape = artworkShape,
-                    pressScaleEnabled = !isDragging,
-                    onClick = onClick,
-                ),
+        modifier
+            .then(dragModifier)
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .zIndex(if (isDragging) 1f else 0f)
+            .graphicsLayer {
+                scaleX = dragScale
+                scaleY = dragScale
+                shape = artworkShape
+                clip = true
+            }
+            .shadow(elevation = dragElevation, shape = artworkShape, clip = false)
+            .expressiveClickable(
+                shape = artworkShape,
+                pressScaleEnabled = !isDragging,
+                onClick = onClick,
+            ),
     ) {
         OptimizedImage(
             url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
@@ -443,14 +444,14 @@ internal fun SubscriptionGridCard(
             contentDescription = podcast.title,
             contentScale = ContentScale.Crop,
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .clip(artworkShape)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                        shape = artworkShape,
-                    ),
+            Modifier
+                .fillMaxSize()
+                .clip(artworkShape)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                    shape = artworkShape,
+                ),
             errorContent = {
                 ArtworkTitleFallback(title = podcast.title)
             },
@@ -524,16 +525,14 @@ internal fun EpisodeRowArtwork(
     }
 }
 
-internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> {
-    return podcasts.flatMap { pod ->
-        pod.genre.split(",")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
-            .map { genre ->
-                genre.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-            }
-    }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
-}
+internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> = podcasts.flatMap { pod ->
+    pod.genre.split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
+        .map { genre ->
+            genre.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        }
+}.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
 
 internal fun filterPodcastsByGenre(podcasts: List<Podcast>, selectedGenre: String): List<Podcast> {
     if (selectedGenre == "All") return podcasts

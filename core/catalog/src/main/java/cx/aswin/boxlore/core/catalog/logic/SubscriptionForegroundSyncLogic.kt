@@ -10,12 +10,7 @@ package cx.aswin.boxlore.core.catalog.logic
 internal object SubscriptionForegroundSyncLogic {
     const val NEVER_COMPLETED_MS = -1L
 
-    fun shouldSkipRefresh(
-        inFlight: Boolean,
-        lastCompletedAtMs: Long,
-        nowMs: Long,
-        cooldownMs: Long,
-    ): Boolean {
+    fun shouldSkipRefresh(inFlight: Boolean, lastCompletedAtMs: Long, nowMs: Long, cooldownMs: Long,): Boolean {
         if (inFlight) return true
         if (lastCompletedAtMs < 0L) return false
         return nowMs - lastCompletedAtMs < cooldownMs

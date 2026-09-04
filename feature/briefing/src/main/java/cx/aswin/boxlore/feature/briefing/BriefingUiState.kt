@@ -5,7 +5,7 @@ import cx.aswin.boxlore.core.model.Chapter
 
 sealed interface BriefingUiState {
     data object Loading : BriefingUiState
-    
+
     data class Success(
         val briefing: Briefing,
         val selectedRegion: String,
@@ -15,7 +15,7 @@ sealed interface BriefingUiState {
         val isBuffering: Boolean = false,
         val chapters: List<Chapter> = emptyList()
     ) : BriefingUiState
-    
+
     data class Error(
         val message: String,
         val selectedRegion: String

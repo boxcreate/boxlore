@@ -90,8 +90,8 @@ class PodcastInfoViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    kotlinx.coroutines.flow.SharingStarted
-                        .WhileSubscribed(5_000),
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
 
@@ -121,8 +121,8 @@ class PodcastInfoViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    kotlinx.coroutines.flow.SharingStarted
-                        .WhileSubscribed(5_000),
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
     val completedEpisodesState: StateFlow<Set<String>> = completedEpisodeIds
@@ -174,8 +174,8 @@ class PodcastInfoViewModel(
         if (!state.isSubscribed) return
         updatePodcastPlaybackOverrides(
             beginningMs =
-                cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
-                    .sanitizeTrim(valueMs),
+            cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
+                .sanitizeTrim(valueMs),
             endingMs = state.podcast.skipEndingOverrideMs ?: globalSkipEndingMs.value,
         )
     }
@@ -186,8 +186,8 @@ class PodcastInfoViewModel(
         updatePodcastPlaybackOverrides(
             beginningMs = state.podcast.skipBeginningOverrideMs ?: globalSkipBeginningMs.value,
             endingMs =
-                cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
-                    .sanitizeTrim(valueMs),
+            cx.aswin.boxlore.core.playback.PlaybackSkipPolicy
+                .sanitizeTrim(valueMs),
         )
     }
 
@@ -207,10 +207,10 @@ class PodcastInfoViewModel(
                 _uiState.value =
                     latest.copy(
                         podcast =
-                            latest.podcast.copy(
-                                skipBeginningOverrideMs = beginningMs,
-                                skipEndingOverrideMs = endingMs,
-                            ),
+                        latest.podcast.copy(
+                            skipBeginningOverrideMs = beginningMs,
+                            skipEndingOverrideMs = endingMs,
+                        ),
                     )
             }
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSettingsInteraction(
@@ -234,8 +234,8 @@ class PodcastInfoViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    kotlinx.coroutines.flow.SharingStarted
-                        .WhileSubscribed(5_000),
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
 
@@ -245,8 +245,8 @@ class PodcastInfoViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    kotlinx.coroutines.flow.SharingStarted
-                        .WhileSubscribed(5_000),
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
 
@@ -434,13 +434,12 @@ class PodcastInfoViewModel(
 
     fun isDownloaded(episodeId: String): kotlinx.coroutines.flow.Flow<Boolean> = downloadRepository.isDownloaded(episodeId)
 
-    fun isDownloading(episodeId: String): kotlinx.coroutines.flow.Flow<Boolean> =
-        downloadRepository
-            .isDownloading(episodeId)
-            .map { isDownloading ->
-                android.util.Log.d("PodcastInfoVM", "isDownloading($episodeId): $isDownloading")
-                isDownloading
-            }
+    fun isDownloading(episodeId: String): kotlinx.coroutines.flow.Flow<Boolean> = downloadRepository
+        .isDownloading(episodeId)
+        .map { isDownloading ->
+            android.util.Log.d("PodcastInfoVM", "isDownloading($episodeId): $isDownloading")
+            isDownloading
+        }
 
     companion object {
         private const val TAG = "PodcastInfoViewModel"
@@ -732,30 +731,29 @@ class PodcastInfoViewModel(
         podcastId: String,
         limit: Int,
         sortParam: String,
-    ): Pair<Podcast?, cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage> =
-        kotlinx.coroutines.coroutineScope {
-            val apiPodcast: Podcast?
-            val page: cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage
+    ): Pair<Podcast?, cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage> = kotlinx.coroutines.coroutineScope {
+        val apiPodcast: Podcast?
+        val page: cx.aswin.boxlore.core.catalog.PodcastRepository.EpisodePage
 
-            if (podcastId.startsWith("url:") || podcastId.startsWith("guid:")) {
-                apiPodcast = repository.getPodcastDetails(podcastId)
-                if (apiPodcast != null) {
-                    val realId = apiPodcast.id
-                    val episodesDeferred = async { repository.getEpisodesPaginated(realId, limit, 0, sortParam) }
-                    page = episodesDeferred.await()
-                } else {
-                    page =
-                        cx.aswin.boxlore.core.catalog.PodcastRepository
-                            .EpisodePage(emptyList(), false)
-                }
-            } else {
-                val podcastDeferred = async { repository.getPodcastDetails(podcastId) }
-                val episodesDeferred = async { repository.getEpisodesPaginated(podcastId, limit, 0, sortParam) }
-                apiPodcast = podcastDeferred.await()
+        if (podcastId.startsWith("url:") || podcastId.startsWith("guid:")) {
+            apiPodcast = repository.getPodcastDetails(podcastId)
+            if (apiPodcast != null) {
+                val realId = apiPodcast.id
+                val episodesDeferred = async { repository.getEpisodesPaginated(realId, limit, 0, sortParam) }
                 page = episodesDeferred.await()
+            } else {
+                page =
+                    cx.aswin.boxlore.core.catalog.PodcastRepository
+                        .EpisodePage(emptyList(), false)
             }
-            Pair(apiPodcast, page)
+        } else {
+            val podcastDeferred = async { repository.getPodcastDetails(podcastId) }
+            val episodesDeferred = async { repository.getEpisodesPaginated(podcastId, limit, 0, sortParam) }
+            apiPodcast = podcastDeferred.await()
+            page = episodesDeferred.await()
         }
+        Pair(apiPodcast, page)
+    }
 
     private fun trackScreenViewed(
         podcastId: String,
@@ -788,13 +786,13 @@ class PodcastInfoViewModel(
                     isLocked = meta.locked == 1,
                     updateFrequency = meta.updateFrequency,
                     podroll =
-                        meta.podroll?.map {
-                            cx.aswin.boxlore.core.model.PodrollItem(
-                                title = it.title,
-                                url = it.url,
-                                uuid = it.uuid,
-                            )
-                        },
+                    meta.podroll?.map {
+                        cx.aswin.boxlore.core.model.PodrollItem(
+                            title = it.title,
+                            url = it.url,
+                            uuid = it.uuid,
+                        )
+                    },
                 )
             _uiState.value = state.copy(podcast = enrichedPodcast)
             if (!state.isSubscribed) return
@@ -804,9 +802,9 @@ class PodcastInfoViewModel(
             localCatalog.upsertSubscribedPodcast(
                 enrichedPodcast.copy(
                     imageUrl =
-                        enrichedPodcast.imageUrl.ifEmpty {
-                            localPodcast?.imageUrl.orEmpty()
-                        },
+                    enrichedPodcast.imageUrl.ifEmpty {
+                        localPodcast?.imageUrl.orEmpty()
+                    },
                     type = typeVal,
                     preferredSort = preferredSortVal,
                     notificationsEnabled = localPodcast?.notificationsEnabled ?: false,
@@ -949,10 +947,10 @@ class PodcastInfoViewModel(
                 val refreshed =
                     supplementSupport.refreshMissingEpisodes(
                         state =
-                            currentState.copy(
-                                isRssRefreshing = true,
-                                directFeedChip = DirectFeedChipState.Fetching,
-                            ),
+                        currentState.copy(
+                            isRssRefreshing = true,
+                            directFeedChip = DirectFeedChipState.Fetching,
+                        ),
                         announceResult = false,
                     )
                 if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
@@ -1095,12 +1093,12 @@ class PodcastInfoViewModel(
                             query = query,
                             networkResults = networkResults,
                             meta =
-                                PodcastListMeta(
-                                    title = podcast.title,
-                                    imageUrl = podcast.imageUrl,
-                                    genre = podcast.genre,
-                                    artist = podcast.artist,
-                                ),
+                            PodcastListMeta(
+                                title = podcast.title,
+                                imageUrl = podcast.imageUrl,
+                                genre = podcast.genre,
+                                artist = podcast.artist,
+                            ),
                             isRss = podcast.isRss,
                         )
 
@@ -1225,18 +1223,18 @@ class PodcastInfoViewModel(
                     feedUrl = feedUrl,
                     meta = meta,
                     loadPiBaseline =
-                        if (needsBaseline) {
-                            {
-                                repository.loadPiEpisodesForBaseline(
-                                    feedId = targetPodcastId,
-                                    limit =
-                                        cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
-                                            .DIRECT_FEED_BASELINE_LIMIT,
-                                )
-                            }
-                        } else {
-                            null
-                        },
+                    if (needsBaseline) {
+                        {
+                            repository.loadPiEpisodesForBaseline(
+                                feedId = targetPodcastId,
+                                limit =
+                                cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
+                                    .DIRECT_FEED_BASELINE_LIMIT,
+                            )
+                        }
+                    } else {
+                        null
+                    },
                 ),
             )
         val tip =
@@ -1464,8 +1462,8 @@ class PodcastInfoViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    kotlinx.coroutines.flow.SharingStarted
-                        .WhileSubscribed(5_000),
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5_000),
                 initialValue = emptyMap(),
             )
 

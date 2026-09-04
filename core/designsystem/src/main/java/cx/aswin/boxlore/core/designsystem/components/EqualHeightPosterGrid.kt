@@ -82,11 +82,7 @@ fun EqualHeightPosterGrid(
 }
 
 /** Total height of a packed [columns]-wide grid given measured item heights and vertical gap. */
-fun equalHeightPosterGridExtent(
-    itemHeights: List<Int>,
-    columns: Int,
-    verticalGap: Int,
-): Int {
+fun equalHeightPosterGridExtent(itemHeights: List<Int>, columns: Int, verticalGap: Int,): Int {
     if (itemHeights.isEmpty()) return 0
     val colCount = columns.coerceAtLeast(1)
     val rowCount = ceil(itemHeights.size / colCount.toFloat()).toInt()

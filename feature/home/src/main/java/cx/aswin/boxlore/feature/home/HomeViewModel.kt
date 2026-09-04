@@ -1,9 +1,5 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.playQueue
-import cx.aswin.boxlore.core.playback.togglePlayPause
-
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -12,16 +8,19 @@ import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.prefs.BoxcastPrefs
-import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.content.ContentContextEngine
-import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.playQueue
+import cx.aswin.boxlore.core.playback.togglePlayPause
+import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.core.prefs.HomePinnedShows
+import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.feature.home.logic.FilterSelectionAction
 import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
 import cx.aswin.boxlore.feature.home.logic.HomeFilterSelectionLogic
@@ -169,12 +168,12 @@ class HomeViewModel(
                 scope = viewModelScope,
                 started = SharingStarted.Eagerly,
                 initialValue =
-                    java.time.ZonedDateTime.now().let { now ->
-                        HomeClockContext(
-                            daypart = contentContextEngine.currentDaypart(),
-                            date = now.toLocalDate(),
-                        )
-                    },
+                java.time.ZonedDateTime.now().let { now ->
+                    HomeClockContext(
+                        daypart = contentContextEngine.currentDaypart(),
+                        date = now.toLocalDate(),
+                    )
+                },
             )
     internal val userPrefs = userPreferencesRepository
     internal val boxcastPrefs = BoxcastPrefs(application)
@@ -510,11 +509,11 @@ class HomeViewModel(
                 imageUrl = "",
                 fallbackImageUrl = null,
                 description =
-                    if (mode == HomeMixMode.OFFLINE) {
-                        "Downloaded episodes ordered by release time"
-                    } else {
-                        "Mixed playlist of unplayed episodes"
-                    },
+                if (mode == HomeMixMode.OFFLINE) {
+                    "Downloaded episodes ordered by release time"
+                } else {
+                    "Mixed playlist of unplayed episodes"
+                },
                 genre = "Mix",
             )
         viewModelScope.launch {
@@ -553,9 +552,6 @@ class HomeViewModel(
         }
     }
 
-
-
-
     init {
         observeSelectedPodcast()
         observeDirectFeedRefresh()
@@ -578,16 +574,6 @@ class HomeViewModel(
                 }
         }
     }
-
-
-
-
-
-
-
-
-
-
 
     fun setRegion(region: String) {
         viewModelScope.launch {

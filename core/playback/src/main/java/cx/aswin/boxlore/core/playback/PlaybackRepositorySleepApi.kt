@@ -1,10 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
 /** Sleep timer / late-night nudge [PlaybackRepository] API. */
-fun PlaybackRepository.setSleepTimer(
-    durationMinutes: Int,
-    dismissNudge: Boolean = true,
-) = sleepController.setSleepTimer(durationMinutes, dismissNudge)
+fun PlaybackRepository.setSleepTimer(durationMinutes: Int, dismissNudge: Boolean = true,) = sleepController.setSleepTimer(durationMinutes, dismissNudge)
 
 fun PlaybackRepository.isInNightWindow(): Boolean = sleepController.isInNightWindow()
 

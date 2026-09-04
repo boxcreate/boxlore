@@ -12,24 +12,19 @@ internal object CastMediaMetadata {
 
     fun queueTitle(title: CharSequence?): String? = title?.toString()?.trim()?.takeIf(String::isNotEmpty)
 
-    fun extrasWithRemoteUri(
-        existing: Bundle?,
-        remoteUri: String?,
-    ): Bundle? {
+    fun extrasWithRemoteUri(existing: Bundle?, remoteUri: String?,): Bundle? {
         if (!CastMediaEligibility.isCastable(remoteUri)) return existing
         return Bundle(existing ?: Bundle()).apply {
             putString(REMOTE_URI_KEY, remoteUri)
         }
     }
 
-    fun remoteUri(mediaItem: MediaItem): String? =
-        mediaItem.mediaMetadata.extras
-            ?.getString(REMOTE_URI_KEY)
-            ?.takeIf(CastMediaEligibility::isCastable)
+    fun remoteUri(mediaItem: MediaItem): String? = mediaItem.mediaMetadata.extras
+        ?.getString(REMOTE_URI_KEY)
+        ?.takeIf(CastMediaEligibility::isCastable)
 
-    fun effectiveUri(mediaItem: MediaItem): String? =
-        remoteUri(mediaItem)
-            ?: mediaItem.localConfiguration?.uri?.toString()
+    fun effectiveUri(mediaItem: MediaItem): String? = remoteUri(mediaItem)
+        ?: mediaItem.localConfiguration?.uri?.toString()
 
     fun isAnalyticsSafeExtra(key: String): Boolean = key != REMOTE_URI_KEY
 }

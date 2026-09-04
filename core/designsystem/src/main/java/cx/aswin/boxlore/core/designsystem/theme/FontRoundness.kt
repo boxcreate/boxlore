@@ -18,11 +18,7 @@ object FontRoundness {
     const val AXIS_SOFT = 50f
     const val AXIS_ROUND = 100f
 
-    data class Entry(
-        val key: String,
-        val label: String,
-        val axis: Float,
-    )
+    data class Entry(val key: String, val label: String, val axis: Float,)
 
     val entries =
         listOf(

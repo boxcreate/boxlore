@@ -22,12 +22,7 @@ class QueueSkipMemory(
     private val nowMs: () -> Long = { System.currentTimeMillis() }
 ) {
 
-    data class SkipEntry(
-        val episodeId: String,
-        val podcastId: String,
-        val source: String,
-        val timestampMs: Long
-    )
+    data class SkipEntry(val episodeId: String, val podcastId: String, val source: String, val timestampMs: Long)
 
     companion object {
         const val MAX_ENTRIES = 200
@@ -70,14 +65,12 @@ class QueueSkipMemory(
 
     /** Podcasts with [DOWN_RANK_MIN_SKIPS]+ recent skips — de-prioritized in fallback tiers. */
     @Synchronized
-    fun downRankedPodcastIds(): Set<String> {
-        return pruneList(load())
-            .filter { it.podcastId.isNotBlank() }
-            .groupingBy { it.podcastId }
-            .eachCount()
-            .filterValues { it >= DOWN_RANK_MIN_SKIPS }
-            .keys
-    }
+    fun downRankedPodcastIds(): Set<String> = pruneList(load())
+        .filter { it.podcastId.isNotBlank() }
+        .groupingBy { it.podcastId }
+        .eachCount()
+        .filterValues { it >= DOWN_RANK_MIN_SKIPS }
+        .keys
 
     /** Removes expired entries from the persisted store. */
     @Synchronized

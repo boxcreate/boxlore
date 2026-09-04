@@ -14,8 +14,7 @@ internal data class HomeEditorialRowDefinition(
     val icon: HomeEditorialIcon,
 )
 
-internal fun editorialRowDefinitionsFor(daypart: ContentDaypart): List<HomeEditorialRowDefinition> =
-    CuratedMoods.forDaypart(daypart).map { it.toHomeDefinition() }
+internal fun editorialRowDefinitionsFor(daypart: ContentDaypart): List<HomeEditorialRowDefinition> = CuratedMoods.forDaypart(daypart).map { it.toHomeDefinition() }
 
 internal fun buildHomeEditorialRows(
     daypart: ContentDaypart,
@@ -57,27 +56,25 @@ internal fun buildHomeEditorialRows(
     }
 }
 
-private fun CuratedMood.toHomeDefinition(): HomeEditorialRowDefinition =
-    HomeEditorialRowDefinition(
-        providerId = id,
-        title = title,
-        subtitle = subtitle,
-        icon = homeEditorialIconForMood(id),
-    )
+private fun CuratedMood.toHomeDefinition(): HomeEditorialRowDefinition = HomeEditorialRowDefinition(
+    providerId = id,
+    title = title,
+    subtitle = subtitle,
+    icon = homeEditorialIconForMood(id),
+)
 
-private fun homeEditorialIconForMood(moodId: String): HomeEditorialIcon =
-    when (moodId) {
-        "morning_news" -> HomeEditorialIcon.HEADLINES
-        "morning_motivation" -> HomeEditorialIcon.UPLIFTING
-        "business_insider" -> HomeEditorialIcon.BUSINESS
-        "science_explainer" -> HomeEditorialIcon.SCIENCE
-        "tech_culture" -> HomeEditorialIcon.TECHNOLOGY
-        "creative_focus" -> HomeEditorialIcon.CREATIVITY
-        "comedy_gold" -> HomeEditorialIcon.COMEDY
-        "tv_film_buff" -> HomeEditorialIcon.SCREEN
-        "sports_fan" -> HomeEditorialIcon.SPORTS
-        "true_crime_sleep" -> HomeEditorialIcon.TRUE_CRIME
-        "history_buff" -> HomeEditorialIcon.HISTORY
-        "mystery_thriller" -> HomeEditorialIcon.MYSTERY
-        else -> HomeEditorialIcon.HEADLINES
-    }
+private fun homeEditorialIconForMood(moodId: String): HomeEditorialIcon = when (moodId) {
+    "morning_news" -> HomeEditorialIcon.HEADLINES
+    "morning_motivation" -> HomeEditorialIcon.UPLIFTING
+    "business_insider" -> HomeEditorialIcon.BUSINESS
+    "science_explainer" -> HomeEditorialIcon.SCIENCE
+    "tech_culture" -> HomeEditorialIcon.TECHNOLOGY
+    "creative_focus" -> HomeEditorialIcon.CREATIVITY
+    "comedy_gold" -> HomeEditorialIcon.COMEDY
+    "tv_film_buff" -> HomeEditorialIcon.SCREEN
+    "sports_fan" -> HomeEditorialIcon.SPORTS
+    "true_crime_sleep" -> HomeEditorialIcon.TRUE_CRIME
+    "history_buff" -> HomeEditorialIcon.HISTORY
+    "mystery_thriller" -> HomeEditorialIcon.MYSTERY
+    else -> HomeEditorialIcon.HEADLINES
+}

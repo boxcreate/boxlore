@@ -14,10 +14,7 @@ import androidx.media3.common.PlayerTransferState
  * those rows through the default transfer callback crashes during remote-to-local teardown.
  */
 internal class BoxLoreCastTransferCallback : CastPlayer.TransferCallback {
-    override fun transferState(
-        sourcePlayer: Player,
-        targetPlayer: Player,
-    ) {
+    override fun transferState(sourcePlayer: Player, targetPlayer: Player,) {
         var transferState = PlayerTransferState.fromPlayer(sourcePlayer)
         val sanitized =
             CastTransferPolicy.sanitize(
@@ -40,17 +37,10 @@ internal class BoxLoreCastTransferCallback : CastPlayer.TransferCallback {
     }
 }
 
-internal data class SanitizedCastTransfer(
-    val mediaItems: List<MediaItem>,
-    val currentIndex: Int,
-    val resetPosition: Boolean,
-)
+internal data class SanitizedCastTransfer(val mediaItems: List<MediaItem>, val currentIndex: Int, val resetPosition: Boolean,)
 
 internal object CastTransferPolicy {
-    fun sanitize(
-        mediaItems: List<MediaItem>,
-        currentIndex: Int,
-    ): SanitizedCastTransfer {
+    fun sanitize(mediaItems: List<MediaItem>, currentIndex: Int,): SanitizedCastTransfer {
         val playableItems = ArrayList<MediaItem>(mediaItems.size)
         var adjustedIndex = currentIndex
         var currentItemWasFiltered = false

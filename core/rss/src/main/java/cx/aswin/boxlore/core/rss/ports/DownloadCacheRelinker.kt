@@ -12,8 +12,5 @@ package cx.aswin.boxlore.core.rss.ports
  */
 fun interface DownloadCacheRelinker {
     /** True only when cached bytes were made available under [newEpisodeId]. */
-    fun relink(
-        oldEpisodeId: String,
-        newEpisodeId: String,
-    ): Boolean
+    fun relink(oldEpisodeId: String, newEpisodeId: String,): Boolean
 }

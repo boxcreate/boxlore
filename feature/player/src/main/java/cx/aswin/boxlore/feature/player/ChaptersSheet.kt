@@ -1,16 +1,14 @@
 package cx.aswin.boxlore.feature.player
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Chapter
 
 @Composable
@@ -151,7 +150,7 @@ fun ChaptersSheetContent(
                             Long.MAX_VALUE
                         }
                         val isActive = positionMs >= startMs && positionMs < endMs
-                        
+
                         ChapterRow(
                             chapter = chapter,
                             startMs = startMs,
@@ -179,15 +178,15 @@ fun ChapterRow(
     } else {
         colorScheme.surfaceContainerLow
     }
-    
+
     val contentColor = if (isActive) {
         colorScheme.onPrimaryContainer
     } else {
         colorScheme.onSurface
     }
-    
+
     val shape = RoundedCornerShape(12.dp)
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -213,7 +212,7 @@ fun ChapterRow(
             )
             Spacer(modifier = Modifier.width(12.dp))
         }
-        
+
         Column(
             modifier = Modifier.weight(1f)
         ) {

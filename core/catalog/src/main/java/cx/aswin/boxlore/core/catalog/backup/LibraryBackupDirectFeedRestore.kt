@@ -44,10 +44,7 @@ internal object LibraryBackupDirectFeedRestore {
         }
     }
 
-    private suspend fun restoreOne(
-        optIn: DirectFeedOptInBackup,
-        actions: DirectFeedRestoreActions,
-    ) {
+    private suspend fun restoreOne(optIn: DirectFeedOptInBackup, actions: DirectFeedRestoreActions,) {
         val id = optIn.podcastId?.trim().orEmpty()
         val url = optIn.feedUrl
         if (id.isEmpty() || url.isNullOrBlank()) return

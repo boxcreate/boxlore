@@ -27,19 +27,13 @@ interface ListeningRollupDao {
     suspend fun getAllRollups(): List<ListeningRollupEntity>
 
     @Query("SELECT * FROM listening_rollups WHERE localDay = :localDay AND episodeId = :episodeId LIMIT 1")
-    suspend fun getRollup(
-        localDay: Long,
-        episodeId: String,
-    ): ListeningRollupEntity?
+    suspend fun getRollup(localDay: Long, episodeId: String,): ListeningRollupEntity?
 
     @Query("SELECT * FROM listening_rollups WHERE episodeId = :episodeId")
     suspend fun getRollupsForEpisode(episodeId: String): List<ListeningRollupEntity>
 
     @Query("UPDATE listening_rollups SET podcastId = :newPodcastId WHERE podcastId = :oldPodcastId")
-    suspend fun reassignPodcastId(
-        oldPodcastId: String,
-        newPodcastId: String,
-    )
+    suspend fun reassignPodcastId(oldPodcastId: String, newPodcastId: String,)
 
     @Query("SELECT MIN(lastListenedAt) FROM listening_rollups")
     suspend fun getEarliestRollupListenedAt(): Long?

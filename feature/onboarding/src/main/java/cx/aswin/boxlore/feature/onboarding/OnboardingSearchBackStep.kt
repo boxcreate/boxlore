@@ -7,16 +7,15 @@ internal object OnboardingSearchBackStep {
     fun resolve(
         searchEntryPoint: String,
         selectedGenres: Set<String>,
-    ): OnboardingStep =
-        when (searchEntryPoint) {
-            "welcome_screen" -> OnboardingStep.WELCOME
-            "genre_screen" ->
-                if (selectedGenres.isNotEmpty()) {
-                    OnboardingStep.SUB_GENRES
-                } else {
-                    OnboardingStep.GENRES
-                }
-            "ai_onboarding" -> OnboardingStep.AI_ONBOARDING
-            else -> OnboardingStep.WELCOME
-        }
+    ): OnboardingStep = when (searchEntryPoint) {
+        "welcome_screen" -> OnboardingStep.WELCOME
+        "genre_screen" ->
+            if (selectedGenres.isNotEmpty()) {
+                OnboardingStep.SUB_GENRES
+            } else {
+                OnboardingStep.GENRES
+            }
+        "ai_onboarding" -> OnboardingStep.AI_ONBOARDING
+        else -> OnboardingStep.WELCOME
+    }
 }

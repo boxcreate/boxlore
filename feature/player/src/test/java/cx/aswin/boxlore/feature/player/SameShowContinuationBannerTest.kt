@@ -8,13 +8,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SameShowContinuationBannerTest {
-    private fun testEpisode(id: String): Episode =
-        Episode(
-            id = id,
-            title = "Episode $id",
-            description = "Desc $id",
-            audioUrl = "https://example.com/$id.mp3",
-        )
+    private fun testEpisode(id: String): Episode = Episode(
+        id = id,
+        title = "Episode $id",
+        description = "Desc $id",
+        audioUrl = "https://example.com/$id.mp3",
+    )
 
     @Test
     fun `button copy formats availableCount correctly`() {

@@ -67,11 +67,7 @@ class QueueRepositoryTest {
         RssPodcastRepository.clearInstanceForTests()
     }
 
-    private fun episodeItem(
-        id: Long,
-        title: String = "Episode $id",
-        audioUrl: String = "https://example.com/$id.mp3",
-    ) = EpisodeItem(
+    private fun episodeItem(id: Long, title: String = "Episode $id", audioUrl: String = "https://example.com/$id.mp3",) = EpisodeItem(
         id = id,
         title = title,
         enclosureUrl = audioUrl,
@@ -79,165 +75,149 @@ class QueueRepositoryTest {
         datePublished = id,
     )
 
-    private fun podcast(id: String = "pod-1") =
-        Podcast(
-            id = id,
-            title = "Podcast",
-            artist = "Artist",
-            imageUrl = "https://example.com/art.jpg",
-            genre = "Technology",
+    private fun podcast(id: String = "pod-1") = Podcast(
+        id = id,
+        title = "Podcast",
+        artist = "Artist",
+        imageUrl = "https://example.com/art.jpg",
+        genre = "Technology",
+    )
+
+    @Test
+    fun addToQueueAppendsAndExposesViaFlow() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+
+        val queued = repository.queue.first()
+        assertEquals(listOf("1", "2"), queued.map { it.id.toString() })
+    }
+
+    @Test
+    fun addToQueueSkipsDuplicateEpisode() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(1), podcast())
+
+        assertEquals(1, database.queueDao().getAllQueueItemsSync().size)
+    }
+
+    @Test
+    fun addToQueueAssignsIncrementingPositions() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+
+        val positions = database.queueDao().getAllQueueItemsSync().associate { it.episodeId to it.position }
+        assertEquals(1, positions["1"])
+        assertEquals(2, positions["2"])
+    }
+
+    @Test
+    fun clearQueueRemovesAll() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.clearQueue()
+
+        assertTrue(repository.queue.first().isEmpty())
+    }
+
+    @Test
+    fun replaceQueueDeduplicatesAndOrders() = runTest {
+        repository.replaceQueue(
+            listOf(
+                domainEpisode("1"),
+                domainEpisode("2"),
+                domainEpisode("1"),
+            ),
         )
 
-    @Test
-    fun addToQueueAppendsAndExposesViaFlow() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast())
-            repository.addToQueue(episodeItem(2), podcast())
-
-            val queued = repository.queue.first()
-            assertEquals(listOf("1", "2"), queued.map { it.id.toString() })
-        }
+        val snapshot = repository.getQueueSnapshot()
+        assertEquals(listOf("1", "2"), snapshot.map { it.id })
+    }
 
     @Test
-    fun addToQueueSkipsDuplicateEpisode() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast())
-            repository.addToQueue(episodeItem(1), podcast())
-
-            assertEquals(1, database.queueDao().getAllQueueItemsSync().size)
-        }
-
-    @Test
-    fun addToQueueAssignsIncrementingPositions() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast())
-            repository.addToQueue(episodeItem(2), podcast())
-
-            val positions = database.queueDao().getAllQueueItemsSync().associate { it.episodeId to it.position }
-            assertEquals(1, positions["1"])
-            assertEquals(2, positions["2"])
-        }
-
-    @Test
-    fun clearQueueRemovesAll() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast())
-            repository.clearQueue()
-
-            assertTrue(repository.queue.first().isEmpty())
-        }
-
-    @Test
-    fun replaceQueueDeduplicatesAndOrders() =
-        runTest {
-            repository.replaceQueue(
-                listOf(
-                    domainEpisode("1"),
-                    domainEpisode("2"),
-                    domainEpisode("1"),
-                ),
+    fun replaceQueueRoundTripsPodcast20Metadata() = runTest {
+        val episode =
+            domainEpisode("1").copy(
+                persons = listOf(Person(name = "Host", role = "host", img = "https://img", href = "https://href")),
+                transcripts = listOf(Transcript(url = "https://t.vtt", type = "text/vtt")),
             )
 
-            val snapshot = repository.getQueueSnapshot()
-            assertEquals(listOf("1", "2"), snapshot.map { it.id })
-        }
+        repository.replaceQueue(listOf(episode))
+
+        val restored = repository.getQueueSnapshot().single()
+        assertEquals("Host", restored.persons?.single()?.name)
+        assertEquals("host", restored.persons?.single()?.role)
+        assertEquals("https://t.vtt", restored.transcripts?.single()?.url)
+        assertEquals("text/vtt", restored.transcripts?.single()?.type)
+    }
 
     @Test
-    fun replaceQueueRoundTripsPodcast20Metadata() =
-        runTest {
-            val episode =
-                domainEpisode("1").copy(
-                    persons = listOf(Person(name = "Host", role = "host", img = "https://img", href = "https://href")),
-                    transcripts = listOf(Transcript(url = "https://t.vtt", type = "text/vtt")),
-                )
+    fun getQueueSnapshotRepairsDuplicateRows() = runTest {
+        // Insert duplicate episodeIds directly (bypassing addToQueue's dedup guard).
+        database.queueDao().insertQueueItem(rawItem("dup", position = 0))
+        database.queueDao().insertQueueItem(rawItem("dup", position = 1))
+        database.queueDao().insertQueueItem(rawItem("unique", position = 2))
 
-            repository.replaceQueue(listOf(episode))
+        val snapshot = repository.getQueueSnapshot()
 
-            val restored = repository.getQueueSnapshot().single()
-            assertEquals("Host", restored.persons?.single()?.name)
-            assertEquals("host", restored.persons?.single()?.role)
-            assertEquals("https://t.vtt", restored.transcripts?.single()?.url)
-            assertEquals("text/vtt", restored.transcripts?.single()?.type)
-        }
+        assertEquals(setOf("dup", "unique"), snapshot.map { it.id }.toSet())
+        assertEquals(2, database.queueDao().getAllQueueItemsSync().size)
+    }
 
     @Test
-    fun getQueueSnapshotRepairsDuplicateRows() =
-        runTest {
-            // Insert duplicate episodeIds directly (bypassing addToQueue's dedup guard).
-            database.queueDao().insertQueueItem(rawItem("dup", position = 0))
-            database.queueDao().insertQueueItem(rawItem("dup", position = 1))
-            database.queueDao().insertQueueItem(rawItem("unique", position = 2))
+    fun reorderQueueRewritesPositions() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+        repository.addToQueue(episodeItem(3), podcast())
 
-            val snapshot = repository.getQueueSnapshot()
+        repository.reorderQueue(listOf("3", "1", "2"))
 
-            assertEquals(setOf("dup", "unique"), snapshot.map { it.id }.toSet())
-            assertEquals(2, database.queueDao().getAllQueueItemsSync().size)
-        }
+        assertEquals(listOf("3", "1", "2"), repository.queue.first().map { it.id.toString() })
+    }
 
     @Test
-    fun reorderQueueRewritesPositions() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast())
-            repository.addToQueue(episodeItem(2), podcast())
-            repository.addToQueue(episodeItem(3), podcast())
+    fun reorderQueueAppendsUnlistedRowsAtTail() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+        repository.addToQueue(episodeItem(3), podcast())
 
-            repository.reorderQueue(listOf("3", "1", "2"))
+        repository.reorderQueue(listOf("2"))
 
-            assertEquals(listOf("3", "1", "2"), repository.queue.first().map { it.id.toString() })
-        }
-
-    @Test
-    fun reorderQueueAppendsUnlistedRowsAtTail() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast())
-            repository.addToQueue(episodeItem(2), podcast())
-            repository.addToQueue(episodeItem(3), podcast())
-
-            repository.reorderQueue(listOf("2"))
-
-            val ordered = repository.queue.first().map { it.id.toString() }
-            assertEquals("2", ordered.first())
-            assertEquals(setOf("1", "3"), ordered.drop(1).toSet())
-        }
+        val ordered = repository.queue.first().map { it.id.toString() }
+        assertEquals("2", ordered.first())
+        assertEquals(setOf("1", "3"), ordered.drop(1).toSet())
+    }
 
     @Test
-    fun getQueueItemByEpisodeIdReturnsRowOrNull() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast())
+    fun getQueueItemByEpisodeIdReturnsRowOrNull() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
 
-            assertEquals("Episode 1", repository.getQueueItemByEpisodeId("1")?.title)
-            assertNull(repository.getQueueItemByEpisodeId("missing"))
-        }
+        assertEquals("Episode 1", repository.getQueueItemByEpisodeId("1")?.title)
+        assertNull(repository.getQueueItemByEpisodeId("missing"))
+    }
 
     @Test
-    fun addToQueueAndReplaceQueuePersistContextSourceId() =
-        runTest {
-            repository.addToQueue(episodeItem(1), podcast(), contextSourceId = "podcast_detail")
-            val item = database.queueDao().getQueueItemByEpisodeId("1")
-            assertEquals("podcast_detail", item?.contextSourceId)
+    fun addToQueueAndReplaceQueuePersistContextSourceId() = runTest {
+        repository.addToQueue(episodeItem(1), podcast(), contextSourceId = "podcast_detail")
+        val item = database.queueDao().getQueueItemByEpisodeId("1")
+        assertEquals("podcast_detail", item?.contextSourceId)
 
-            val domainEp = domainEpisode("2").copy(contextSourceId = "podcast_detail")
-            repository.replaceQueue(listOf(domainEp))
-            val replaced = database.queueDao().getQueueItemByEpisodeId("2")
-            assertEquals("podcast_detail", replaced?.contextSourceId)
-        }
+        val domainEp = domainEpisode("2").copy(contextSourceId = "podcast_detail")
+        repository.replaceQueue(listOf(domainEp))
+        val replaced = database.queueDao().getQueueItemByEpisodeId("2")
+        assertEquals("podcast_detail", replaced?.contextSourceId)
+    }
 
-    private fun domainEpisode(id: String) =
-        Episode(
-            id = id,
-            title = "Episode $id",
-            description = "desc $id",
-            audioUrl = "https://example.com/$id.mp3",
-            podcastId = "pod-1",
-            podcastTitle = "Podcast",
-            duration = 120,
-            publishedDate = id.hashCode().toLong(),
-        )
+    private fun domainEpisode(id: String) = Episode(
+        id = id,
+        title = "Episode $id",
+        description = "desc $id",
+        audioUrl = "https://example.com/$id.mp3",
+        podcastId = "pod-1",
+        podcastTitle = "Podcast",
+        duration = 120,
+        publishedDate = id.hashCode().toLong(),
+    )
 
-    private fun rawItem(
-        episodeId: String,
-        position: Int,
-    ) = QueueItem(
+    private fun rawItem(episodeId: String, position: Int,) = QueueItem(
         episodeId = episodeId,
         title = "Episode $episodeId",
         podcastId = "pod-1",

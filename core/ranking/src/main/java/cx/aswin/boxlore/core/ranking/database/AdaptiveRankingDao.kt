@@ -50,11 +50,7 @@ interface AdaptiveRankingDao {
     suspend fun deleteFacet(facetType: String, facetKey: String)
 
     @Transaction
-    suspend fun replaceFacetKey(
-        oldFacetType: String,
-        oldFacetKey: String,
-        replacement: PreferenceFacetEntity,
-    ) {
+    suspend fun replaceFacetKey(oldFacetType: String, oldFacetKey: String, replacement: PreferenceFacetEntity,) {
         upsertFacet(replacement)
         if (oldFacetType != replacement.facetType || oldFacetKey != replacement.facetKey) {
             deleteFacet(oldFacetType, oldFacetKey)
@@ -90,12 +86,7 @@ interface AdaptiveRankingDao {
         WHERE exposureId = :exposureId AND resolvedAt IS NULL
         """,
     )
-    suspend fun resolveExposure(
-        exposureId: String,
-        resolvedAt: Long,
-        reward: Double,
-        listenSeconds: Long,
-    ): Int
+    suspend fun resolveExposure(exposureId: String, resolvedAt: Long, reward: Double, listenSeconds: Long,): Int
 
     @Query("DELETE FROM ranking_exposures WHERE shownAt < :cutoff")
     suspend fun pruneExposuresBefore(cutoff: Long): Int

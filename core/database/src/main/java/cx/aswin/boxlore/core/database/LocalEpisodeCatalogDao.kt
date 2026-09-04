@@ -28,10 +28,7 @@ interface LocalEpisodeCatalogDao {
         LIMIT 1
         """,
     )
-    suspend fun getByGuid(
-        podcastId: String,
-        guid: String,
-    ): LocalEpisodeEntity?
+    suspend fun getByGuid(podcastId: String, guid: String,): LocalEpisodeEntity?
 
     @Query(
         """
@@ -40,10 +37,7 @@ interface LocalEpisodeCatalogDao {
         LIMIT 1
         """,
     )
-    suspend fun getByAudioUrl(
-        podcastId: String,
-        audioUrl: String,
-    ): LocalEpisodeEntity?
+    suspend fun getByAudioUrl(podcastId: String, audioUrl: String,): LocalEpisodeEntity?
 
     @Query(
         """
@@ -61,11 +55,7 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit OFFSET :offset
         """,
     )
-    suspend fun getNewestPage(
-        podcastId: String,
-        limit: Int,
-        offset: Int,
-    ): List<LocalEpisodeEntity>
+    suspend fun getNewestPage(podcastId: String, limit: Int, offset: Int,): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -75,11 +65,7 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit OFFSET :offset
         """,
     )
-    suspend fun getOldestPage(
-        podcastId: String,
-        limit: Int,
-        offset: Int,
-    ): List<LocalEpisodeEntity>
+    suspend fun getOldestPage(podcastId: String, limit: Int, offset: Int,): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -107,10 +93,7 @@ interface LocalEpisodeCatalogDao {
         ORDER BY publishedDate DESC, episodeId ASC
         """,
     )
-    suspend fun search(
-        podcastId: String,
-        query: String,
-    ): List<LocalEpisodeEntity>
+    suspend fun search(podcastId: String, query: String,): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -124,12 +107,7 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit
         """,
     )
-    suspend fun getEpisodesAfter(
-        podcastId: String,
-        publishedDate: Long,
-        episodeId: String,
-        limit: Int,
-    ): List<LocalEpisodeEntity>
+    suspend fun getEpisodesAfter(podcastId: String, publishedDate: Long, episodeId: String, limit: Int,): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -143,12 +121,7 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit
         """,
     )
-    suspend fun getOlderThan(
-        podcastId: String,
-        publishedDate: Long,
-        episodeId: String,
-        limit: Int,
-    ): List<LocalEpisodeEntity>
+    suspend fun getOlderThan(podcastId: String, publishedDate: Long, episodeId: String, limit: Int,): List<LocalEpisodeEntity>
 
     @Query(
         """
@@ -162,24 +135,13 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit
         """,
     )
-    suspend fun getNewerThan(
-        podcastId: String,
-        publishedDate: Long,
-        episodeId: String,
-        limit: Int,
-    ): List<LocalEpisodeEntity>
+    suspend fun getNewerThan(podcastId: String, publishedDate: Long, episodeId: String, limit: Int,): List<LocalEpisodeEntity>
 
     @Query("UPDATE local_episode_feeds SET ttlExpiresAt = :ttlExpiresAt WHERE podcastId = :podcastId")
-    suspend fun setTtl(
-        podcastId: String,
-        ttlExpiresAt: Long?,
-    )
+    suspend fun setTtl(podcastId: String, ttlExpiresAt: Long?,)
 
     @Query("UPDATE local_episode_feeds SET feedUrlLookupAt = :atMillis WHERE podcastId = :podcastId")
-    suspend fun setFeedUrlLookupAt(
-        podcastId: String,
-        atMillis: Long,
-    )
+    suspend fun setFeedUrlLookupAt(podcastId: String, atMillis: Long,)
 
     @Query("DELETE FROM local_episodes WHERE podcastId = :podcastId")
     suspend fun deleteEpisodes(podcastId: String)
@@ -206,10 +168,7 @@ interface LocalEpisodeCatalogDao {
      * the TTL after [listExpiredFeedIds] cannot delete a live catalog.
      */
     @Transaction
-    suspend fun deleteCatalogIfExpired(
-        podcastId: String,
-        nowMillis: Long,
-    ) {
+    suspend fun deleteCatalogIfExpired(podcastId: String, nowMillis: Long,) {
         val ttl = getFeed(podcastId)?.ttlExpiresAt ?: return
         if (ttl > nowMillis) return
         deleteCatalog(podcastId)

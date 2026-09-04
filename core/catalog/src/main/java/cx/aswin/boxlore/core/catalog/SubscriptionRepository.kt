@@ -98,11 +98,11 @@ class SubscriptionRepository(
             }
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target =
-                    FeedbackTarget(
-                        episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                        podcastId = podcast.id,
-                        genre = podcast.genre,
-                    ),
+                FeedbackTarget(
+                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                    podcastId = podcast.id,
+                    genre = podcast.genre,
+                ),
                 action = RankingAction.UNSUBSCRIBE,
             )
         } else {
@@ -120,12 +120,12 @@ class SubscriptionRepository(
                     type = podcast.type,
                     lastRefreshed = System.currentTimeMillis(),
                     latestEpisode =
-                        podcast.latestEpisode?.let { ep ->
-                            ep.copy(
-                                podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
-                                podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title,
-                            )
-                        },
+                    podcast.latestEpisode?.let { ep ->
+                        ep.copy(
+                            podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
+                            podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title,
+                        )
+                    },
                     podcastGuid = podcast.podcastGuid,
                     fundingUrl = podcast.fundingUrl,
                     fundingMessage = podcast.fundingMessage,
@@ -139,11 +139,11 @@ class SubscriptionRepository(
                     notificationsEnabled = false, // Off by default
                     autoDownloadEnabled = false,
                     skipBeginningOverrideMs =
-                        existing?.skipBeginningOverrideMs
-                            ?: podcast.skipBeginningOverrideMs,
+                    existing?.skipBeginningOverrideMs
+                        ?: podcast.skipBeginningOverrideMs,
                     skipEndingOverrideMs =
-                        existing?.skipEndingOverrideMs
-                            ?: podcast.skipEndingOverrideMs,
+                    existing?.skipEndingOverrideMs
+                        ?: podcast.skipEndingOverrideMs,
                     sourceType = podcast.sourceType,
                     feedUrl = podcast.feedUrl,
                     rssRefreshCapability = podcast.rssRefreshCapability,
@@ -156,11 +156,11 @@ class SubscriptionRepository(
             recoverFeedUrlIfMissing(podcast)
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target =
-                    FeedbackTarget(
-                        episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                        podcastId = podcast.id,
-                        genre = podcast.genre,
-                    ),
+                FeedbackTarget(
+                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                    podcastId = podcast.id,
+                    genre = podcast.genre,
+                ),
                 action = RankingAction.SUBSCRIBE,
             )
         }
@@ -181,10 +181,7 @@ class SubscriptionRepository(
      * Valid historical timestamps are preserved. Missing or future timestamps fall back
      * to the current time for compatibility with older or malformed backups.
      */
-    internal suspend fun restoreSubscription(
-        podcast: Podcast,
-        subscribedAt: Long,
-    ) {
+    internal suspend fun restoreSubscription(podcast: Podcast, subscribedAt: Long,) {
         subscribeInternal(
             podcast = podcast,
             restoredSubscribedAt = subscribedAt,
@@ -192,11 +189,7 @@ class SubscriptionRepository(
         )
     }
 
-    private suspend fun subscribeInternal(
-        podcast: Podcast,
-        restoredSubscribedAt: Long?,
-        recordFeedback: Boolean,
-    ) {
+    private suspend fun subscribeInternal(podcast: Podcast, restoredSubscribedAt: Long?, recordFeedback: Boolean,) {
         if (!podcast.isRss && podcastDao.getRssPodcastLinkedTo(podcast.id)?.isSubscribed == true) {
             return
         }
@@ -215,19 +208,19 @@ class SubscriptionRepository(
                 description = podcast.description,
                 isSubscribed = true,
                 subscribedAt =
-                    validRestoredSubscribedAt
-                        ?: existing?.takeIf { it.isSubscribed }?.subscribedAt
-                        ?: now,
+                validRestoredSubscribedAt
+                    ?: existing?.takeIf { it.isSubscribed }?.subscribedAt
+                    ?: now,
                 genre = podcast.genre,
                 type = typeVal,
                 lastRefreshed = existing?.lastRefreshed ?: now,
                 latestEpisode =
-                    (podcast.latestEpisode ?: existing?.latestEpisode)?.let { ep ->
-                        ep.copy(
-                            podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
-                            podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title,
-                        )
-                    },
+                (podcast.latestEpisode ?: existing?.latestEpisode)?.let { ep ->
+                    ep.copy(
+                        podcastId = ep.podcastId.takeIf { !it.isNullOrBlank() } ?: podcast.id,
+                        podcastTitle = ep.podcastTitle.takeIf { !it.isNullOrBlank() } ?: podcast.title,
+                    )
+                },
                 podcastGuid = existing?.podcastGuid ?: podcast.podcastGuid,
                 fundingUrl = existing?.fundingUrl ?: podcast.fundingUrl,
                 fundingMessage = existing?.fundingMessage ?: podcast.fundingMessage,
@@ -241,25 +234,25 @@ class SubscriptionRepository(
                 notificationsEnabled = false, // Off by default
                 autoDownloadEnabled = false,
                 skipBeginningOverrideMs =
-                    existing?.skipBeginningOverrideMs
-                        ?: podcast.skipBeginningOverrideMs,
+                existing?.skipBeginningOverrideMs
+                    ?: podcast.skipBeginningOverrideMs,
                 skipEndingOverrideMs =
-                    existing?.skipEndingOverrideMs
-                        ?: podcast.skipEndingOverrideMs,
+                existing?.skipEndingOverrideMs
+                    ?: podcast.skipEndingOverrideMs,
                 sourceType = existing?.sourceType ?: podcast.sourceType,
                 feedUrl = existing?.feedUrl ?: podcast.feedUrl,
                 feedEtag = existing?.feedEtag,
                 feedLastModified = existing?.feedLastModified,
                 feedDeclaredUpdatedAt = existing?.feedDeclaredUpdatedAt,
                 rssRefreshCapability =
-                    existing?.rssRefreshCapability
-                        ?: podcast.rssRefreshCapability,
+                existing?.rssRefreshCapability
+                    ?: podcast.rssRefreshCapability,
                 lastRssSyncAt = existing?.lastRssSyncAt ?: 0L,
                 rssCatalogStale = existing?.rssCatalogStale ?: podcast.rssCatalogStale,
                 rssHasNewEpisodes = existing?.rssHasNewEpisodes ?: podcast.rssHasNewEpisodes,
                 linkedPodcastIndexId =
-                    existing?.linkedPodcastIndexId
-                        ?: podcast.linkedPodcastIndexId,
+                existing?.linkedPodcastIndexId
+                    ?: podcast.linkedPodcastIndexId,
             )
         podcastDao.upsert(entity)
         localEpisodeCatalog?.setUnsubscribedTtl(podcast.id, null)
@@ -267,20 +260,17 @@ class SubscriptionRepository(
         if (isNewSubscription && recordFeedback) {
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target =
-                    FeedbackTarget(
-                        episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                        podcastId = podcast.id,
-                        genre = podcast.genre,
-                    ),
+                FeedbackTarget(
+                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                    podcastId = podcast.id,
+                    genre = podcast.genre,
+                ),
                 action = RankingAction.SUBSCRIBE,
             )
         }
     }
 
-    suspend fun setNotificationsEnabled(
-        podcast: Podcast,
-        enabled: Boolean,
-    ) {
+    suspend fun setNotificationsEnabled(podcast: Podcast, enabled: Boolean,) {
         if (podcast.isRss) {
             podcastDao.setNotificationsEnabled(podcast.id, false)
             podcastDao.setAutoDownloadEnabled(podcast.id, false)
@@ -425,18 +415,12 @@ class SubscriptionRepository(
         podcastDao.clearRssNewEpisodesFlag(podcastId)
     }
 
-    suspend fun updatePreferredSort(
-        podcastId: String,
-        sort: String?,
-    ) {
+    suspend fun updatePreferredSort(podcastId: String, sort: String?,) {
         val type = if (sort == "oldest") "serial" else "episodic"
         podcastDao.updatePreferredSortAndType(podcastId, sort, type)
     }
 
-    suspend fun setAutoDownloadEnabled(
-        podcastId: String,
-        enabled: Boolean,
-    ) {
+    suspend fun setAutoDownloadEnabled(podcastId: String, enabled: Boolean,) {
         if (podcastDao.getPodcast(podcastId)?.isRss == true) {
             podcastDao.setAutoDownloadEnabled(podcastId, false)
             return
@@ -444,11 +428,7 @@ class SubscriptionRepository(
         podcastDao.setAutoDownloadEnabled(podcastId, enabled)
     }
 
-    suspend fun setPlaybackSkipOverrides(
-        podcastId: String,
-        skipBeginningMs: Long?,
-        skipEndingMs: Long?,
-    ) {
+    suspend fun setPlaybackSkipOverrides(podcastId: String, skipBeginningMs: Long?, skipEndingMs: Long?,) {
         podcastDao.setPlaybackSkipOverrides(
             podcastId,
             skipBeginningMs,
@@ -496,10 +476,7 @@ class SubscriptionRepository(
      * Writes an HTTPS publisher [feedUrl] onto the Room row so launch sync and
      * notification RTDB can poll the same feed after library restore.
      */
-    suspend fun ensureHttpsFeedUrl(
-        podcastId: String,
-        feedUrl: String,
-    ) {
+    suspend fun ensureHttpsFeedUrl(podcastId: String, feedUrl: String,) {
         val https = TrackedPodcastRtdbLogic.httpsFeedUrl(feedUrl) ?: return
         if (podcastDao.getPodcast(podcastId) == null) return
         podcastDao.setFeedUrl(podcastId, https)

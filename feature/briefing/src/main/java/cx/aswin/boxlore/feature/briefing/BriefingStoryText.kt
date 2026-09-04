@@ -51,10 +51,9 @@ private fun removeClosingOutro(text: String): String {
     return text.substring(0, outroIndex).trim()
 }
 
-private fun lastBriefReferenceIndex(text: String): Int =
-    text
-        .lastIndexOf("boxlore brief", ignoreCase = true)
-        .coerceAtLeast(text.lastIndexOf("boxcast brief", ignoreCase = true))
+private fun lastBriefReferenceIndex(text: String): Int = text
+    .lastIndexOf("boxlore brief", ignoreCase = true)
+    .coerceAtLeast(text.lastIndexOf("boxcast brief", ignoreCase = true))
 
 private fun trimTrailingBriefReference(
     text: String,
@@ -65,21 +64,19 @@ private fun trimTrailingBriefReference(
     return if (lastPeriod != -1) text.substring(0, lastPeriod + 1).trim() else text
 }
 
-private fun briefingGreetingPrefixes(): List<String> =
-    listOf(
-        "This is the boxlore brief for",
-        "This is the boxcast brief for",
-        "Welcome to the boxlore brief for",
-        "Welcome to the boxcast brief for",
-        "Welcome to the daily brief for"
-    )
+private fun briefingGreetingPrefixes(): List<String> = listOf(
+    "This is the boxlore brief for",
+    "This is the boxcast brief for",
+    "Welcome to the boxlore brief for",
+    "Welcome to the boxcast brief for",
+    "Welcome to the daily brief for"
+)
 
-private fun briefingOutroSubstrings(): List<String> =
-    listOf(
-        "That's your boxlore brief. See you tomorrow.",
-        "That's your boxcast brief. See you tomorrow.",
-        "That's your boxlore brief. See you tomorrow",
-        "That's your boxcast brief. See you tomorrow",
-        "See you tomorrow.",
-        "See you tomorrow"
-    )
+private fun briefingOutroSubstrings(): List<String> = listOf(
+    "That's your boxlore brief. See you tomorrow.",
+    "That's your boxcast brief. See you tomorrow.",
+    "That's your boxlore brief. See you tomorrow",
+    "That's your boxcast brief. See you tomorrow",
+    "See you tomorrow.",
+    "See you tomorrow"
+)

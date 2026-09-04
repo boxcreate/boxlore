@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.core.analytics
 
 import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
+import java.io.File
+import java.util.stream.Stream
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -8,8 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.File
-import java.util.stream.Stream
 
 /**
  * Full glossary coverage: every `emission:` inventory row fires via a façade,
@@ -369,16 +369,15 @@ class LifecycleSdkMappingTest {
         )
     }
 
-    private fun projectRoot(): File =
-        System
-            .getProperty("boxlore.projectRoot")
-            ?.let(::File)
-            ?.takeIf { it.isDirectory }
-            ?: File(".").canonicalFile.let { dir ->
-                generateSequence(dir) { it.parentFile }
-                    .firstOrNull { File(it, "settings.gradle.kts").isFile }
-                    ?: dir
-            }
+    private fun projectRoot(): File = System
+        .getProperty("boxlore.projectRoot")
+        ?.let(::File)
+        ?.takeIf { it.isDirectory }
+        ?: File(".").canonicalFile.let { dir ->
+            generateSequence(dir) { it.parentFile }
+                .firstOrNull { File(it, "settings.gradle.kts").isFile }
+                ?: dir
+        }
 }
 
 /** Install channel is person `$set_once` only — never install_attributed volume. */

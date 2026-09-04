@@ -148,13 +148,13 @@ internal class PodcastInfoSupplementSupport(
         val reloaded = reloadDisplayPage(state)
         return MissingEpisodesRefresh(
             state =
-                remountWithSupplements(
-                    state = state,
-                    piEpisodes = reloaded.episodes,
-                    hasMoreEpisodes = reloaded.hasMore,
-                    userMessage = message,
-                    isFetchingFromFeed = false,
-                ),
+            remountWithSupplements(
+                state = state,
+                piEpisodes = reloaded.episodes,
+                hasMoreEpisodes = reloaded.hasMore,
+                userMessage = message,
+                isFetchingFromFeed = false,
+            ),
             libraryTip = tip,
             pageSourceCount = reloaded.sourceCount,
         )
@@ -200,22 +200,22 @@ internal class PodcastInfoSupplementSupport(
                 val reloaded = reloadDisplayPage(state)
                 MissingEpisodesRefresh(
                     state =
-                        remountWithSupplements(
-                            state = state,
-                            piEpisodes = reloaded.episodes,
-                            hasMoreEpisodes = reloaded.hasMore,
-                            userMessage =
-                                if (announce) {
-                                    if (outcome.addedCount > 0) {
-                                        "Added ${outcome.addedCount} episodes from the feed"
-                                    } else {
-                                        "Episode list updated from the feed"
-                                    }
-                                } else {
-                                    null
-                                },
-                            isFetchingFromFeed = false,
-                        ),
+                    remountWithSupplements(
+                        state = state,
+                        piEpisodes = reloaded.episodes,
+                        hasMoreEpisodes = reloaded.hasMore,
+                        userMessage =
+                        if (announce) {
+                            if (outcome.addedCount > 0) {
+                                "Added ${outcome.addedCount} episodes from the feed"
+                            } else {
+                                "Episode list updated from the feed"
+                            }
+                        } else {
+                            null
+                        },
+                        isFetchingFromFeed = false,
+                    ),
                     libraryTip = outcome.newestFeedEpisode,
                     pageSourceCount = reloaded.sourceCount,
                 )
@@ -226,10 +226,9 @@ internal class PodcastInfoSupplementSupport(
     suspend fun shouldRefreshOnOpen(
         podcastId: String,
         isRss: Boolean,
-    ): Boolean =
-        !isRss &&
-            !isCatalogReady(podcastId) &&
-            episodeSupplementPort.hasDirectFeedOptIn(podcastId)
+    ): Boolean = !isRss &&
+        !isCatalogReady(podcastId) &&
+        episodeSupplementPort.hasDirectFeedOptIn(podcastId)
 
     suspend fun unionSearch(
         feedId: String,

@@ -221,12 +221,7 @@ class SmartDownloadCandidateLogicTest {
         )
     }
 
-    private fun episode(
-        id: String,
-        podcastId: String = "pod1",
-        publishedDate: Long = 0L,
-        duration: Int = 1800,
-    ) = Episode(
+    private fun episode(id: String, podcastId: String = "pod1", publishedDate: Long = 0L, duration: Int = 1800,) = Episode(
         id = id,
         title = "Episode $id",
         description = "",
@@ -290,22 +285,17 @@ class SmartDownloadCandidateLogicTest {
         score = score,
         isProgress = isProgress,
         podcast =
-            Podcast(
-                id = podcastId,
-                title = "Podcast $podcastId",
-                artist = "Artist $podcastId",
-                imageUrl = "https://img/$podcastId.png",
-                subscribedAt = subscribedAt,
-            ),
+        Podcast(
+            id = podcastId,
+            title = "Podcast $podcastId",
+            artist = "Artist $podcastId",
+            imageUrl = "https://img/$podcastId.png",
+            subscribedAt = subscribedAt,
+        ),
         episode = episode(episodeId, podcastId, publishedDate = publishedDate),
     )
 
-    private fun download(
-        episodeId: String,
-        status: Int,
-        durationMs: Long = 0L,
-        sizeBytes: Long = 0L,
-    ) = DownloadedEpisodeEntity(
+    private fun download(episodeId: String, status: Int, durationMs: Long = 0L, sizeBytes: Long = 0L,) = DownloadedEpisodeEntity(
         episodeId = episodeId,
         podcastId = "pod1",
         episodeTitle = "Episode $episodeId",

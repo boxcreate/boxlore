@@ -17,10 +17,7 @@ object ErrorReporter {
         sink = reporter
     }
 
-    fun report(
-        throwable: Throwable,
-        message: String? = null,
-    ) {
+    fun report(throwable: Throwable, message: String? = null,) {
         try {
             sink(throwable, message)
         } catch (e: Exception) {

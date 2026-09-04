@@ -111,12 +111,12 @@ class PlaybackControlSyncTest {
                 sleepTimerEnd = 99L,
                 sleepAtEndOfEpisode = true,
                 playbackRoute =
-                    PlaybackRouteState(
-                        isRemote = true,
-                        deviceName = "Living room",
-                        volume = 8,
-                        maximumVolume = 20,
-                    ),
+                PlaybackRouteState(
+                    isRemote = true,
+                    deviceName = "Living room",
+                    volume = 8,
+                    maximumVolume = 20,
+                ),
             )
 
         val cleared =

@@ -53,166 +53,151 @@ class UserPreferencesRepositoryTest {
     // ---- Region ----
 
     @Test
-    fun regionDefaultsToUsForUnsupportedLocale() =
-        runTest {
-            assertEquals("us", repository.regionStream.first())
-        }
+    fun regionDefaultsToUsForUnsupportedLocale() = runTest {
+        assertEquals("us", repository.regionStream.first())
+    }
 
     @Test
-    fun setRegionNormalizesAliasesAndDismissesNudge() =
-        runTest {
-            repository.setRegion("IND")
-            assertEquals("in", repository.regionStream.first())
-            assertTrue(repository.hasDismissedRegionNudgeStream.first())
+    fun setRegionNormalizesAliasesAndDismissesNudge() = runTest {
+        repository.setRegion("IND")
+        assertEquals("in", repository.regionStream.first())
+        assertTrue(repository.hasDismissedRegionNudgeStream.first())
 
-            repository.setRegion("UK")
-            assertEquals("gb", repository.regionStream.first())
-        }
-
-    @Test
-    fun dismissRegionNudgeSetsFlag() =
-        runTest {
-            assertFalse(repository.hasDismissedRegionNudgeStream.first())
-            repository.dismissRegionNudge()
-            assertTrue(repository.hasDismissedRegionNudgeStream.first())
-        }
+        repository.setRegion("UK")
+        assertEquals("gb", repository.regionStream.first())
+    }
 
     @Test
-    fun dismissExploreRegionNudgeSetsFlag() =
-        runTest {
-            assertFalse(repository.hasDismissedExploreRegionNudgeStream.first())
-            repository.dismissExploreRegionNudge()
-            assertTrue(repository.hasDismissedExploreRegionNudgeStream.first())
-        }
+    fun dismissRegionNudgeSetsFlag() = runTest {
+        assertFalse(repository.hasDismissedRegionNudgeStream.first())
+        repository.dismissRegionNudge()
+        assertTrue(repository.hasDismissedRegionNudgeStream.first())
+    }
 
     @Test
-    fun dismissHomeImportBannerSetsFlag() =
-        runTest {
-            assertFalse(repository.hasDismissedHomeImportBannerStream.first())
-            repository.dismissHomeImportBanner()
-            assertTrue(repository.hasDismissedHomeImportBannerStream.first())
-        }
+    fun dismissExploreRegionNudgeSetsFlag() = runTest {
+        assertFalse(repository.hasDismissedExploreRegionNudgeStream.first())
+        repository.dismissExploreRegionNudge()
+        assertTrue(repository.hasDismissedExploreRegionNudgeStream.first())
+    }
 
     @Test
-    fun wasInitialRegionMatchIsWriteOnce() =
-        runTest {
-            assertNull(repository.wasInitialRegionMatchStream.first())
-            repository.setWasInitialRegionMatch(true)
-            assertEquals(true, repository.wasInitialRegionMatchStream.first())
-            // Second write is ignored because the value was already set.
-            repository.setWasInitialRegionMatch(false)
-            assertEquals(true, repository.wasInitialRegionMatchStream.first())
-        }
+    fun dismissHomeImportBannerSetsFlag() = runTest {
+        assertFalse(repository.hasDismissedHomeImportBannerStream.first())
+        repository.dismissHomeImportBanner()
+        assertTrue(repository.hasDismissedHomeImportBannerStream.first())
+    }
+
+    @Test
+    fun wasInitialRegionMatchIsWriteOnce() = runTest {
+        assertNull(repository.wasInitialRegionMatchStream.first())
+        repository.setWasInitialRegionMatch(true)
+        assertEquals(true, repository.wasInitialRegionMatchStream.first())
+        // Second write is ignored because the value was already set.
+        repository.setWasInitialRegionMatch(false)
+        assertEquals(true, repository.wasInitialRegionMatchStream.first())
+    }
 
     // ---- Briefing ----
 
     @Test
-    fun briefingDismissDateRoundTrips() =
-        runTest {
-            assertEquals("", repository.briefingDismissedDate.first())
-            repository.dismissBriefing("2026-07-19")
-            assertEquals("2026-07-19", repository.briefingDismissedDate.first())
-        }
+    fun briefingDismissDateRoundTrips() = runTest {
+        assertEquals("", repository.briefingDismissedDate.first())
+        repository.dismissBriefing("2026-07-19")
+        assertEquals("2026-07-19", repository.briefingDismissedDate.first())
+    }
 
     @Test
-    fun briefingDismissForeverRoundTrips() =
-        runTest {
-            assertFalse(repository.briefingDismissedForever.first())
-            repository.dismissBriefingForever()
-            assertTrue(repository.briefingDismissedForever.first())
-        }
+    fun briefingDismissForeverRoundTrips() = runTest {
+        assertFalse(repository.briefingDismissedForever.first())
+        repository.dismissBriefingForever()
+        assertTrue(repository.briefingDismissedForever.first())
+    }
 
     // ---- Theme ----
 
     @Test
-    fun themeDefaultsMatchDocumentedValues() =
-        runTest {
-            assertEquals("system", repository.themeConfigStream.first())
-            assertEquals(false, repository.useDynamicColorStream.first())
-            assertEquals("violet", repository.themeBrandStream.first())
-            assertEquals("classic_dynamic", repository.surfaceStyleStream.first())
-        }
+    fun themeDefaultsMatchDocumentedValues() = runTest {
+        assertEquals("system", repository.themeConfigStream.first())
+        assertEquals(false, repository.useDynamicColorStream.first())
+        assertEquals("violet", repository.themeBrandStream.first())
+        assertEquals("classic_dynamic", repository.surfaceStyleStream.first())
+    }
 
     @Test
-    fun setThemeConfigUpdatesStreamAndSyncCache() =
-        runTest {
-            repository.setThemeConfig("dark")
-            assertEquals("dark", repository.themeConfigStream.first())
-            assertEquals("dark", repository.cachedThemeConfig)
-        }
+    fun setThemeConfigUpdatesStreamAndSyncCache() = runTest {
+        repository.setThemeConfig("dark")
+        assertEquals("dark", repository.themeConfigStream.first())
+        assertEquals("dark", repository.cachedThemeConfig)
+    }
 
     @Test
-    fun setUseDynamicColorUpdatesStreamAndCache() =
-        runTest {
-            repository.setUseDynamicColor(true)
-            assertTrue(repository.useDynamicColorStream.first())
-            assertTrue(repository.cachedUseDynamicColor)
-        }
+    fun setUseDynamicColorUpdatesStreamAndCache() = runTest {
+        repository.setUseDynamicColor(true)
+        assertTrue(repository.useDynamicColorStream.first())
+        assertTrue(repository.cachedUseDynamicColor)
+    }
 
     @Test
-    fun setThemeBrandAndSurfaceStyleUpdateCaches() =
-        runTest {
-            repository.setThemeBrand("emerald")
-            repository.setSurfaceStyle("frosted")
-            assertEquals("emerald", repository.themeBrandStream.first())
-            assertEquals("emerald", repository.cachedThemeBrand)
-            assertEquals("frosted", repository.surfaceStyleStream.first())
-            assertEquals("frosted", repository.cachedSurfaceStyle)
-        }
+    fun setThemeBrandAndSurfaceStyleUpdateCaches() = runTest {
+        repository.setThemeBrand("emerald")
+        repository.setSurfaceStyle("frosted")
+        assertEquals("emerald", repository.themeBrandStream.first())
+        assertEquals("emerald", repository.cachedThemeBrand)
+        assertEquals("frosted", repository.surfaceStyleStream.first())
+        assertEquals("frosted", repository.cachedSurfaceStyle)
+    }
 
     @Test
-    fun setFontRoundnessUpdatesStreamAndCache() =
-        runTest {
-            repository.setFontRoundness("round")
-            assertEquals("round", repository.fontRoundnessStream.first())
-            assertEquals("round", repository.cachedFontRoundness)
+    fun setFontRoundnessUpdatesStreamAndCache() = runTest {
+        repository.setFontRoundness("round")
+        assertEquals("round", repository.fontRoundnessStream.first())
+        assertEquals("round", repository.cachedFontRoundness)
 
-            repository.setFontRoundness("CRISP")
-            assertEquals("crisp", repository.fontRoundnessStream.first())
-            assertEquals("crisp", repository.cachedFontRoundness)
+        repository.setFontRoundness("CRISP")
+        assertEquals("crisp", repository.fontRoundnessStream.first())
+        assertEquals("crisp", repository.cachedFontRoundness)
 
-            repository.setFontRoundness("unknown")
-            assertEquals("round", repository.fontRoundnessStream.first())
-            assertEquals("round", repository.cachedFontRoundness)
-        }
-
-    @Test
-    fun openAppToDefaultsToHomeAndMirrorsFastCache() =
-        runTest {
-            assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
-            assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
-
-            repository.setOpenAppTo(OpenAppTo.SUBSCRIPTIONS)
-            assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.openAppToStream.first())
-            assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.cachedOpenAppTo)
-
-            repository.setOpenAppTo(OpenAppTo.DOWNLOADS)
-            assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
-            assertEquals(OpenAppTo.DOWNLOADS, repository.cachedOpenAppTo)
-
-            repository.setOpenAppTo("unsupported")
-            assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
-            assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
-        }
+        repository.setFontRoundness("unknown")
+        assertEquals("round", repository.fontRoundnessStream.first())
+        assertEquals("round", repository.cachedFontRoundness)
+    }
 
     @Test
-    fun exploreAndSubscriptionsDefaultTabsPersistAndSanitize() =
-        runTest {
-            assertEquals(ExploreDefaultTab.FOR_YOU, repository.exploreDefaultTabStream.first())
-            assertEquals(SubscriptionsDefaultTab.SHOWS, repository.subscriptionsDefaultTabStream.first())
+    fun openAppToDefaultsToHomeAndMirrorsFastCache() = runTest {
+        assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
+        assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
 
-            repository.setExploreDefaultTab(ExploreDefaultTab.TOP)
-            assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
-            assertEquals(ExploreDefaultTab.TOP, repository.cachedExploreDefaultTab)
-            repository.setExploreDefaultTab("unknown")
-            assertEquals(ExploreDefaultTab.FOR_YOU, repository.exploreDefaultTabStream.first())
+        repository.setOpenAppTo(OpenAppTo.SUBSCRIPTIONS)
+        assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.openAppToStream.first())
+        assertEquals(OpenAppTo.SUBSCRIPTIONS, repository.cachedOpenAppTo)
 
-            repository.setSubscriptionsDefaultTab(SubscriptionsDefaultTab.NEW_EPISODES)
-            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
-            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.cachedSubscriptionsDefaultTab)
-            repository.setSubscriptionsDefaultTab("unknown")
-            assertEquals(SubscriptionsDefaultTab.SHOWS, repository.subscriptionsDefaultTabStream.first())
-        }
+        repository.setOpenAppTo(OpenAppTo.DOWNLOADS)
+        assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
+        assertEquals(OpenAppTo.DOWNLOADS, repository.cachedOpenAppTo)
+
+        repository.setOpenAppTo("unsupported")
+        assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
+        assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
+    }
+
+    @Test
+    fun exploreAndSubscriptionsDefaultTabsPersistAndSanitize() = runTest {
+        assertEquals(ExploreDefaultTab.FOR_YOU, repository.exploreDefaultTabStream.first())
+        assertEquals(SubscriptionsDefaultTab.SHOWS, repository.subscriptionsDefaultTabStream.first())
+
+        repository.setExploreDefaultTab(ExploreDefaultTab.TOP)
+        assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
+        assertEquals(ExploreDefaultTab.TOP, repository.cachedExploreDefaultTab)
+        repository.setExploreDefaultTab("unknown")
+        assertEquals(ExploreDefaultTab.FOR_YOU, repository.exploreDefaultTabStream.first())
+
+        repository.setSubscriptionsDefaultTab(SubscriptionsDefaultTab.NEW_EPISODES)
+        assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
+        assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.cachedSubscriptionsDefaultTab)
+        repository.setSubscriptionsDefaultTab("unknown")
+        assertEquals(SubscriptionsDefaultTab.SHOWS, repository.subscriptionsDefaultTabStream.first())
+    }
 
     @Test
     fun cachedGettersReturnDefaultsBeforeAnyWrite() {
@@ -229,511 +214,473 @@ class UserPreferencesRepositoryTest {
     // ---- Sorting ----
 
     @Test
-    fun subscriptionSortDefaultsToSmartRank() =
-        runTest {
-            assertEquals("SmartRank", repository.subscriptionSortStream.first())
-            repository.setSubscriptionSort("Alphabetical")
-            assertEquals("Alphabetical", repository.subscriptionSortStream.first())
-        }
+    fun subscriptionSortDefaultsToSmartRank() = runTest {
+        assertEquals("SmartRank", repository.subscriptionSortStream.first())
+        repository.setSubscriptionSort("Alphabetical")
+        assertEquals("Alphabetical", repository.subscriptionSortStream.first())
+    }
 
     @Test
-    fun subscriptionManualOrderAndPinsRoundTrip() =
-        runTest {
-            assertEquals(emptyList<String>(), repository.subscriptionManualOrderStream.first())
-            assertEquals(emptyList<String>(), repository.homePinnedPodcastIdsStream.first())
+    fun subscriptionManualOrderAndPinsRoundTrip() = runTest {
+        assertEquals(emptyList<String>(), repository.subscriptionManualOrderStream.first())
+        assertEquals(emptyList<String>(), repository.homePinnedPodcastIdsStream.first())
 
-            repository.setSubscriptionManualOrder(listOf("a", "rss:https://feeds.example/x.xml"))
-            repository.setHomePinnedPodcastIds(listOf("p1", "p2", "p3", "p4", "p5", "p6"))
+        repository.setSubscriptionManualOrder(listOf("a", "rss:https://feeds.example/x.xml"))
+        repository.setHomePinnedPodcastIds(listOf("p1", "p2", "p3", "p4", "p5", "p6"))
 
-            assertEquals(
-                listOf("a", "rss:https://feeds.example/x.xml"),
-                repository.subscriptionManualOrderStream.first(),
-            )
-            assertEquals(listOf("p1", "p2", "p3", "p4", "p5"), repository.homePinnedPodcastIdsStream.first())
-        }
-
-    @Test
-    fun homeMixModeDefaultsPersistsAndSanitizes() =
-        runTest {
-            assertEquals("daily", repository.homeMixModeStream.first())
-
-            repository.setHomeMixMode("offline")
-            assertEquals("offline", repository.homeMixModeStream.first())
-
-            repository.setHomeMixMode("unsupported")
-            assertEquals("daily", repository.homeMixModeStream.first())
-        }
+        assertEquals(
+            listOf("a", "rss:https://feeds.example/x.xml"),
+            repository.subscriptionManualOrderStream.first(),
+        )
+        assertEquals(listOf("p1", "p2", "p3", "p4", "p5"), repository.homePinnedPodcastIdsStream.first())
+    }
 
     @Test
-    fun removePodcastIdFromManualOrderAndPinsDropsMatchingIds() =
-        runTest {
-            repository.setSubscriptionManualOrder(listOf("keep", "gone"))
-            repository.setHomePinnedPodcastIds(listOf("gone", "pin"))
+    fun homeMixModeDefaultsPersistsAndSanitizes() = runTest {
+        assertEquals("daily", repository.homeMixModeStream.first())
 
-            repository.removePodcastIdFromManualOrderAndPins("gone")
+        repository.setHomeMixMode("offline")
+        assertEquals("offline", repository.homeMixModeStream.first())
 
-            assertEquals(listOf("keep"), repository.subscriptionManualOrderStream.first())
-            assertEquals(listOf("pin"), repository.homePinnedPodcastIdsStream.first())
-        }
-
-    @Test
-    fun podcastIdRepairJournalsAndAtomicallyMovesIdKeyedPreferences() =
-        runTest {
-            val oldId = "rss:old"
-            val newId = "42"
-            repository.setSubscriptionManualOrder(listOf("keep", oldId, newId))
-            repository.setHomePinnedPodcastIds(listOf(oldId, "pin"))
-            repository.setOverriddenRecPodcastId(oldId)
-            repository.setLastSeenEpisodeId(oldId, "-9")
-
-            repository.beginPodcastIdRepair(oldId, newId)
-            assertEquals(PendingPodcastIdRepair(oldId, newId), repository.pendingPodcastIdRepair())
-
-            repository.finishPodcastIdRepair(oldId, newId)
-
-            assertEquals(listOf("keep", newId), repository.subscriptionManualOrderStream.first())
-            assertEquals(listOf(newId, "pin"), repository.homePinnedPodcastIdsStream.first())
-            assertEquals(newId, repository.overriddenRecPodcastIdStream.first())
-            assertEquals(mapOf(newId to "-9"), repository.lastSeenEpisodesStream.first())
-            assertNull(repository.pendingPodcastIdRepair())
-        }
+        repository.setHomeMixMode("unsupported")
+        assertEquals("daily", repository.homeMixModeStream.first())
+    }
 
     @Test
-    fun finishPodcastIdRepairIgnoresMismatchedJournal() =
-        runTest {
-            val oldId = "rss:old"
-            repository.setSubscriptionManualOrder(listOf(oldId, "keep"))
-            repository.beginPodcastIdRepair(oldId, "42")
+    fun removePodcastIdFromManualOrderAndPinsDropsMatchingIds() = runTest {
+        repository.setSubscriptionManualOrder(listOf("keep", "gone"))
+        repository.setHomePinnedPodcastIds(listOf("gone", "pin"))
 
-            repository.finishPodcastIdRepair(oldId, "99")
+        repository.removePodcastIdFromManualOrderAndPins("gone")
 
-            assertEquals(listOf(oldId, "keep"), repository.subscriptionManualOrderStream.first())
-            assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
-        }
+        assertEquals(listOf("keep"), repository.subscriptionManualOrderStream.first())
+        assertEquals(listOf("pin"), repository.homePinnedPodcastIdsStream.first())
+    }
 
     @Test
-    fun cancelPodcastIdRepairClearsOnlyMatchingJournal() =
-        runTest {
-            val oldId = "rss:old"
-            repository.beginPodcastIdRepair(oldId, "42")
-            repository.cancelPodcastIdRepair(oldId, "99")
-            assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
+    fun podcastIdRepairJournalsAndAtomicallyMovesIdKeyedPreferences() = runTest {
+        val oldId = "rss:old"
+        val newId = "42"
+        repository.setSubscriptionManualOrder(listOf("keep", oldId, newId))
+        repository.setHomePinnedPodcastIds(listOf(oldId, "pin"))
+        repository.setOverriddenRecPodcastId(oldId)
+        repository.setLastSeenEpisodeId(oldId, "-9")
 
-            repository.cancelPodcastIdRepair(oldId, "42")
-            assertNull(repository.pendingPodcastIdRepair())
-        }
+        repository.beginPodcastIdRepair(oldId, newId)
+        assertEquals(PendingPodcastIdRepair(oldId, newId), repository.pendingPodcastIdRepair())
 
-    @Test
-    fun legacyRssRepairVersionOnlyMovesForward() =
-        runTest {
-            assertEquals(0, repository.legacyRssRepairVersion())
-            repository.markLegacyRssRepairVersion(2)
-            repository.markLegacyRssRepairVersion(1)
-            assertEquals(2, repository.legacyRssRepairVersion())
-        }
+        repository.finishPodcastIdRepair(oldId, newId)
 
-    @Test
-    fun toggleHomePinnedPodcastIdPinsUnpinsAndLeavesListAtCapacity() =
-        runTest {
-            assertEquals(
-                HomePinnedShows.ToggleResult.Pinned,
-                repository.toggleHomePinnedPodcastId("a"),
-            )
-            assertEquals(listOf("a"), repository.homePinnedPodcastIdsStream.first())
-
-            assertEquals(
-                HomePinnedShows.ToggleResult.Unpinned,
-                repository.toggleHomePinnedPodcastId("a"),
-            )
-            assertEquals(emptyList<String>(), repository.homePinnedPodcastIdsStream.first())
-
-            repository.setHomePinnedPodcastIds(listOf("1", "2", "3", "4", "5"))
-            assertEquals(
-                HomePinnedShows.ToggleResult.AtCapacity,
-                repository.toggleHomePinnedPodcastId("6"),
-            )
-            assertEquals(
-                listOf("1", "2", "3", "4", "5"),
-                repository.homePinnedPodcastIdsStream.first(),
-            )
-        }
+        assertEquals(listOf("keep", newId), repository.subscriptionManualOrderStream.first())
+        assertEquals(listOf(newId, "pin"), repository.homePinnedPodcastIdsStream.first())
+        assertEquals(newId, repository.overriddenRecPodcastIdStream.first())
+        assertEquals(mapOf(newId to "-9"), repository.lastSeenEpisodesStream.first())
+        assertNull(repository.pendingPodcastIdRepair())
+    }
 
     @Test
-    fun latestEpisodesSortDefaultsToSmart() =
-        runTest {
-            assertTrue(repository.latestEpisodesSortUseSmartStream.first())
-            repository.setLatestEpisodesSortUseSmart(false)
-            assertFalse(repository.latestEpisodesSortUseSmartStream.first())
-        }
+    fun finishPodcastIdRepairIgnoresMismatchedJournal() = runTest {
+        val oldId = "rss:old"
+        repository.setSubscriptionManualOrder(listOf(oldId, "keep"))
+        repository.beginPodcastIdRepair(oldId, "42")
+
+        repository.finishPodcastIdRepair(oldId, "99")
+
+        assertEquals(listOf(oldId, "keep"), repository.subscriptionManualOrderStream.first())
+        assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
+    }
+
+    @Test
+    fun cancelPodcastIdRepairClearsOnlyMatchingJournal() = runTest {
+        val oldId = "rss:old"
+        repository.beginPodcastIdRepair(oldId, "42")
+        repository.cancelPodcastIdRepair(oldId, "99")
+        assertEquals(PendingPodcastIdRepair(oldId, "42"), repository.pendingPodcastIdRepair())
+
+        repository.cancelPodcastIdRepair(oldId, "42")
+        assertNull(repository.pendingPodcastIdRepair())
+    }
+
+    @Test
+    fun legacyRssRepairVersionOnlyMovesForward() = runTest {
+        assertEquals(0, repository.legacyRssRepairVersion())
+        repository.markLegacyRssRepairVersion(2)
+        repository.markLegacyRssRepairVersion(1)
+        assertEquals(2, repository.legacyRssRepairVersion())
+    }
+
+    @Test
+    fun toggleHomePinnedPodcastIdPinsUnpinsAndLeavesListAtCapacity() = runTest {
+        assertEquals(
+            HomePinnedShows.ToggleResult.Pinned,
+            repository.toggleHomePinnedPodcastId("a"),
+        )
+        assertEquals(listOf("a"), repository.homePinnedPodcastIdsStream.first())
+
+        assertEquals(
+            HomePinnedShows.ToggleResult.Unpinned,
+            repository.toggleHomePinnedPodcastId("a"),
+        )
+        assertEquals(emptyList<String>(), repository.homePinnedPodcastIdsStream.first())
+
+        repository.setHomePinnedPodcastIds(listOf("1", "2", "3", "4", "5"))
+        assertEquals(
+            HomePinnedShows.ToggleResult.AtCapacity,
+            repository.toggleHomePinnedPodcastId("6"),
+        )
+        assertEquals(
+            listOf("1", "2", "3", "4", "5"),
+            repository.homePinnedPodcastIdsStream.first(),
+        )
+    }
+
+    @Test
+    fun latestEpisodesSortDefaultsToSmart() = runTest {
+        assertTrue(repository.latestEpisodesSortUseSmartStream.first())
+        repository.setLatestEpisodesSortUseSmart(false)
+        assertFalse(repository.latestEpisodesSortUseSmartStream.first())
+    }
 
     // ---- Playback speed & skip bounds ----
 
     @Test
-    fun playbackSpeedDefaultsToOne() =
-        runTest {
-            assertEquals(1.0f, repository.playbackSpeedStream.first(), 0.0f)
-            repository.setPlaybackSpeed(1.75f)
-            assertEquals(1.75f, repository.playbackSpeedStream.first(), 0.0f)
-        }
+    fun playbackSpeedDefaultsToOne() = runTest {
+        assertEquals(1.0f, repository.playbackSpeedStream.first(), 0.0f)
+        repository.setPlaybackSpeed(1.75f)
+        assertEquals(1.75f, repository.playbackSpeedStream.first(), 0.0f)
+    }
 
     @Test
-    fun skipBoundsUseDefaultsAndSanitizeWrites() =
-        runTest {
-            assertEquals(PlaybackSkipBounds.DEFAULT_SKIP_BEGINNING_MS, repository.skipBeginningMsStream.first())
-            assertEquals(PlaybackSkipBounds.DEFAULT_SKIP_ENDING_MS, repository.skipEndingMsStream.first())
-            assertEquals(PlaybackSkipBounds.DEFAULT_SEEK_BACKWARD_MS, repository.seekBackwardMsStream.first())
-            assertEquals(PlaybackSkipBounds.DEFAULT_SEEK_FORWARD_MS, repository.seekForwardMsStream.first())
+    fun skipBoundsUseDefaultsAndSanitizeWrites() = runTest {
+        assertEquals(PlaybackSkipBounds.DEFAULT_SKIP_BEGINNING_MS, repository.skipBeginningMsStream.first())
+        assertEquals(PlaybackSkipBounds.DEFAULT_SKIP_ENDING_MS, repository.skipEndingMsStream.first())
+        assertEquals(PlaybackSkipBounds.DEFAULT_SEEK_BACKWARD_MS, repository.seekBackwardMsStream.first())
+        assertEquals(PlaybackSkipBounds.DEFAULT_SEEK_FORWARD_MS, repository.seekForwardMsStream.first())
 
-            repository.setSkipBeginningMs(-5_000L)
-            assertEquals(0L, repository.skipBeginningMsStream.first())
+        repository.setSkipBeginningMs(-5_000L)
+        assertEquals(0L, repository.skipBeginningMsStream.first())
 
-            repository.setSkipEndingMs(999_999_999L)
-            assertEquals(PlaybackSkipBounds.MAX_TRIM_MS, repository.skipEndingMsStream.first())
+        repository.setSkipEndingMs(999_999_999L)
+        assertEquals(PlaybackSkipBounds.MAX_TRIM_MS, repository.skipEndingMsStream.first())
 
-            repository.setSeekBackwardMs(1L)
-            assertEquals(PlaybackSkipBounds.MIN_SEEK_MS, repository.seekBackwardMsStream.first())
+        repository.setSeekBackwardMs(1L)
+        assertEquals(PlaybackSkipBounds.MIN_SEEK_MS, repository.seekBackwardMsStream.first())
 
-            repository.setSeekForwardMs(999_999_999L)
-            assertEquals(PlaybackSkipBounds.MAX_SEEK_MS, repository.seekForwardMsStream.first())
-        }
+        repository.setSeekForwardMs(999_999_999L)
+        assertEquals(PlaybackSkipBounds.MAX_SEEK_MS, repository.seekForwardMsStream.first())
+    }
 
     @Test
-    fun skipBehaviorDefaultsToJustSkip() =
-        runTest {
-            assertEquals("just_skip", repository.skipBehaviorStream.first())
-            repository.setSkipBehavior("skip_silence")
-            assertEquals("skip_silence", repository.skipBehaviorStream.first())
-        }
+    fun skipBehaviorDefaultsToJustSkip() = runTest {
+        assertEquals("just_skip", repository.skipBehaviorStream.first())
+        repository.setSkipBehavior("skip_silence")
+        assertEquals("skip_silence", repository.skipBehaviorStream.first())
+    }
 
     // ---- Tooltips & first-play ----
 
     @Test
-    fun tooltipFlagsDefaultFalseAndMarkSeen() =
-        runTest {
-            assertFalse(repository.hasSeenSwipeDismissTip.first())
-            assertFalse(repository.hasSeenTitleTapTip.first())
-            assertFalse(repository.hasSeenSwipeMinimizeTip.first())
-            assertFalse(repository.hasSeenMarkPlayedTip.first())
-            assertFalse(repository.hasSeenListeningHistoryTrackingNotice.first())
+    fun tooltipFlagsDefaultFalseAndMarkSeen() = runTest {
+        assertFalse(repository.hasSeenSwipeDismissTip.first())
+        assertFalse(repository.hasSeenTitleTapTip.first())
+        assertFalse(repository.hasSeenSwipeMinimizeTip.first())
+        assertFalse(repository.hasSeenMarkPlayedTip.first())
+        assertFalse(repository.hasSeenListeningHistoryTrackingNotice.first())
 
-            repository.markSwipeDismissTipSeen()
-            repository.markTitleTapTipSeen()
-            repository.markSwipeMinimizeTipSeen()
-            repository.markMarkPlayedTipSeen()
-            repository.markListeningHistoryTrackingNoticeSeen()
+        repository.markSwipeDismissTipSeen()
+        repository.markTitleTapTipSeen()
+        repository.markSwipeMinimizeTipSeen()
+        repository.markMarkPlayedTipSeen()
+        repository.markListeningHistoryTrackingNoticeSeen()
 
-            assertTrue(repository.hasSeenSwipeDismissTip.first())
-            assertTrue(repository.hasSeenTitleTapTip.first())
-            assertTrue(repository.hasSeenSwipeMinimizeTip.first())
-            assertTrue(repository.hasSeenMarkPlayedTip.first())
-            assertTrue(repository.hasSeenListeningHistoryTrackingNotice.first())
-        }
-
-    @Test
-    fun firstPlayLoggedFlag() =
-        runTest {
-            assertFalse(repository.hasLoggedFirstPlay.first())
-            repository.markFirstPlayLogged()
-            assertTrue(repository.hasLoggedFirstPlay.first())
-        }
+        assertTrue(repository.hasSeenSwipeDismissTip.first())
+        assertTrue(repository.hasSeenTitleTapTip.first())
+        assertTrue(repository.hasSeenSwipeMinimizeTip.first())
+        assertTrue(repository.hasSeenMarkPlayedTip.first())
+        assertTrue(repository.hasSeenListeningHistoryTrackingNotice.first())
+    }
 
     @Test
-    fun dismissedFeatureVersionRoundTrips() =
-        runTest {
-            assertEquals("", repository.dismissedFeatureVersion.first())
-            repository.dismissFeatureAnnouncement("2.5.0")
-            assertEquals("2.5.0", repository.dismissedFeatureVersion.first())
-        }
+    fun firstPlayLoggedFlag() = runTest {
+        assertFalse(repository.hasLoggedFirstPlay.first())
+        repository.markFirstPlayLogged()
+        assertTrue(repository.hasLoggedFirstPlay.first())
+    }
+
+    @Test
+    fun dismissedFeatureVersionRoundTrips() = runTest {
+        assertEquals("", repository.dismissedFeatureVersion.first())
+        repository.dismissFeatureAnnouncement("2.5.0")
+        assertEquals("2.5.0", repository.dismissedFeatureVersion.first())
+    }
 
     // ---- Announcement ----
 
     @Test
-    fun announcementDefaultsNullAndRoundTrips() =
-        runTest {
-            assertNull(repository.activeAnnouncementStream.first())
+    fun announcementDefaultsNullAndRoundTrips() = runTest {
+        assertNull(repository.activeAnnouncementStream.first())
 
-            val announcement =
-                UserPreferencesRepository.Announcement(
-                    title = "Hello",
-                    body = "World",
-                    route = "boxcast://home",
-                    imageUrl = "https://example.com/x.jpg",
-                    actionLabel = "Open",
-                    showActionInApp = true,
-                    timestamp = 42L,
-                    category = "WHAT'S NEW",
-                )
-            repository.setAnnouncement(announcement)
+        val announcement =
+            UserPreferencesRepository.Announcement(
+                title = "Hello",
+                body = "World",
+                route = "boxcast://home",
+                imageUrl = "https://example.com/x.jpg",
+                actionLabel = "Open",
+                showActionInApp = true,
+                timestamp = 42L,
+                category = "WHAT'S NEW",
+            )
+        repository.setAnnouncement(announcement)
 
-            val stored = repository.activeAnnouncementStream.first()!!
-            assertEquals("Hello", stored.title)
-            assertEquals("boxcast://home", stored.route)
-            assertEquals(42L, stored.timestamp)
+        val stored = repository.activeAnnouncementStream.first()!!
+        assertEquals("Hello", stored.title)
+        assertEquals("boxcast://home", stored.route)
+        assertEquals(42L, stored.timestamp)
 
-            repository.clearAnnouncement()
-            assertNull(repository.activeAnnouncementStream.first())
-        }
+        repository.clearAnnouncement()
+        assertNull(repository.activeAnnouncementStream.first())
+    }
 
     @Test
-    fun announcementWithBlankTitleIsNotSurfaced() =
-        runTest {
-            repository.setAnnouncement(
-                UserPreferencesRepository.Announcement(
-                    title = "   ",
-                    body = "body",
-                    route = null,
-                    imageUrl = null,
-                    actionLabel = null,
-                    showActionInApp = false,
-                    timestamp = 1L,
-                    category = "X",
-                ),
-            )
-            assertNull(repository.activeAnnouncementStream.first())
-        }
+    fun announcementWithBlankTitleIsNotSurfaced() = runTest {
+        repository.setAnnouncement(
+            UserPreferencesRepository.Announcement(
+                title = "   ",
+                body = "body",
+                route = null,
+                imageUrl = null,
+                actionLabel = null,
+                showActionInApp = false,
+                timestamp = 1L,
+                category = "X",
+            ),
+        )
+        assertNull(repository.activeAnnouncementStream.first())
+    }
 
     // ---- Review logic ----
 
     @Test
-    fun shouldShowReviewPromptFalseWhilePlaying() =
-        runTest {
-            assertFalse(repository.shouldShowReviewPrompt(isPlaying = true))
-        }
+    fun shouldShowReviewPromptFalseWhilePlaying() = runTest {
+        assertFalse(repository.shouldShowReviewPrompt(isPlaying = true))
+    }
 
     @Test
-    fun shouldShowReviewPromptFalseWithoutPendingMilestone() =
-        runTest {
-            assertFalse(repository.shouldShowReviewPrompt(isPlaying = false))
-        }
+    fun shouldShowReviewPromptFalseWithoutPendingMilestone() = runTest {
+        assertFalse(repository.shouldShowReviewPrompt(isPlaying = false))
+    }
 
     @Test
-    fun markReviewedBlocksFuturePrompts() =
-        runTest {
-            assertFalse(repository.reviewHasReviewed.first())
-            repository.markReviewed()
-            assertTrue(repository.reviewHasReviewed.first())
-            assertTrue(repository.hasReviewedSync())
-        }
+    fun markReviewedBlocksFuturePrompts() = runTest {
+        assertFalse(repository.reviewHasReviewed.first())
+        repository.markReviewed()
+        assertTrue(repository.reviewHasReviewed.first())
+        assertTrue(repository.hasReviewedSync())
+    }
 
     @Test
-    fun reviewMilestonePendingTracksHighestReachedTier() =
-        runTest {
-            assertNull(repository.reviewMilestonePending())
+    fun reviewMilestonePendingTracksHighestReachedTier() = runTest {
+        assertNull(repository.reviewMilestonePending())
 
-            repository.syncReviewMilestonePending(3)
-            assertNull(repository.reviewMilestonePending())
+        repository.syncReviewMilestonePending(3)
+        assertNull(repository.reviewMilestonePending())
 
-            repository.syncReviewMilestonePending(5)
-            assertEquals(5, repository.reviewMilestonePending())
+        repository.syncReviewMilestonePending(5)
+        assertEquals(5, repository.reviewMilestonePending())
 
-            repository.syncReviewMilestonePending(30)
-            assertEquals(30, repository.reviewMilestonePending())
+        repository.syncReviewMilestonePending(30)
+        assertEquals(30, repository.reviewMilestonePending())
 
-            // Lower milestone does not downgrade.
-            repository.syncReviewMilestonePending(15)
-            assertEquals(30, repository.reviewMilestonePending())
+        // Lower milestone does not downgrade.
+        repository.syncReviewMilestonePending(15)
+        assertEquals(30, repository.reviewMilestonePending())
 
-            repository.clearReviewMilestonePending()
-            assertNull(repository.reviewMilestonePending())
-        }
-
-    @Test
-    fun reviewMilestoneNotStoredAfterReview() =
-        runTest {
-            repository.markReviewed()
-            repository.syncReviewMilestonePending(30)
-            assertNull(repository.reviewMilestonePending())
-        }
+        repository.clearReviewMilestonePending()
+        assertNull(repository.reviewMilestonePending())
+    }
 
     @Test
-    fun engagementCooldownElapsedByDefaultThenResets() =
-        runTest {
-            assertTrue(repository.isEngagementCooldownElapsed())
-            repository.recordEngagementPromptShown()
-            assertFalse(repository.isEngagementCooldownElapsed())
-        }
+    fun reviewMilestoneNotStoredAfterReview() = runTest {
+        repository.markReviewed()
+        repository.syncReviewMilestonePending(30)
+        assertNull(repository.reviewMilestonePending())
+    }
 
     @Test
-    fun npsScoreRoundTrips() =
-        runTest {
-            assertNull(repository.npsLastScore())
-            repository.setNpsLastScore(9)
-            assertEquals(9, repository.npsLastScore())
-        }
+    fun engagementCooldownElapsedByDefaultThenResets() = runTest {
+        assertTrue(repository.isEngagementCooldownElapsed())
+        repository.recordEngagementPromptShown()
+        assertFalse(repository.isEngagementCooldownElapsed())
+    }
 
     @Test
-    fun promoterReviewPendingRoundTrips() =
-        runTest {
-            assertFalse(repository.isPromoterReviewPending())
-            repository.setPromoterReviewPending(true)
-            assertTrue(repository.isPromoterReviewPending())
-        }
+    fun npsScoreRoundTrips() = runTest {
+        assertNull(repository.npsLastScore())
+        repository.setNpsLastScore(9)
+        assertEquals(9, repository.npsLastScore())
+    }
+
+    @Test
+    fun promoterReviewPendingRoundTrips() = runTest {
+        assertFalse(repository.isPromoterReviewPending())
+        repository.setPromoterReviewPending(true)
+        assertTrue(repository.isPromoterReviewPending())
+    }
 
     // ---- NPS survey lifecycle ----
 
     @Test
-    fun npsSurveyPendingThenFiredLifecycle() =
-        runTest {
-            assertFalse(repository.isNpsSurveyPending())
-            assertFalse(repository.hasNpsSurveyFired())
-            assertNull(repository.npsSurveyCompletedCount())
+    fun npsSurveyPendingThenFiredLifecycle() = runTest {
+        assertFalse(repository.isNpsSurveyPending())
+        assertFalse(repository.hasNpsSurveyFired())
+        assertNull(repository.npsSurveyCompletedCount())
 
-            repository.markNpsSurveyPending(3)
-            assertTrue(repository.isNpsSurveyPending())
-            assertEquals(3, repository.npsSurveyCompletedCount())
+        repository.markNpsSurveyPending(3)
+        assertTrue(repository.isNpsSurveyPending())
+        assertEquals(3, repository.npsSurveyCompletedCount())
 
-            repository.markNpsSurveyFired()
-            assertTrue(repository.hasNpsSurveyFired())
-            assertFalse(repository.isNpsSurveyPending())
-        }
+        repository.markNpsSurveyFired()
+        assertTrue(repository.hasNpsSurveyFired())
+        assertFalse(repository.isNpsSurveyPending())
+    }
 
     @Test
-    fun markNpsSurveyPendingNoOpAfterFired() =
-        runTest {
-            repository.markNpsSurveyFired()
-            repository.markNpsSurveyPending(10)
-            assertFalse(repository.isNpsSurveyPending())
-        }
+    fun markNpsSurveyPendingNoOpAfterFired() = runTest {
+        repository.markNpsSurveyFired()
+        repository.markNpsSurveyPending(10)
+        assertFalse(repository.isNpsSurveyPending())
+    }
 
     // ---- Hide-completed toggles ----
 
     @Test
-    fun hideCompletedDefaults() =
-        runTest {
-            assertTrue(repository.hideCompletedInFeedsStream.first())
-            assertFalse(repository.hideCompletedInShowDetailsStream.first())
-            assertTrue(repository.hideCompletedInHomeStream.first())
-            assertTrue(repository.hideCompletedInSubsStream.first())
+    fun hideCompletedDefaults() = runTest {
+        assertTrue(repository.hideCompletedInFeedsStream.first())
+        assertFalse(repository.hideCompletedInShowDetailsStream.first())
+        assertTrue(repository.hideCompletedInHomeStream.first())
+        assertTrue(repository.hideCompletedInSubsStream.first())
 
-            repository.setHideCompletedInFeeds(false)
-            repository.setHideCompletedInShowDetails(true)
-            repository.setHideCompletedInHome(false)
-            repository.setHideCompletedInSubs(false)
+        repository.setHideCompletedInFeeds(false)
+        repository.setHideCompletedInShowDetails(true)
+        repository.setHideCompletedInHome(false)
+        repository.setHideCompletedInSubs(false)
 
-            assertFalse(repository.hideCompletedInFeedsStream.first())
-            assertTrue(repository.hideCompletedInShowDetailsStream.first())
-            assertFalse(repository.hideCompletedInHomeStream.first())
-            assertFalse(repository.hideCompletedInSubsStream.first())
-        }
-
-    @Test
-    fun restartForgottenEpisodesDefaultsOnAndPersists() =
-        runTest {
-            assertTrue(repository.restartForgottenEpisodesStream.first())
-            repository.setRestartForgottenEpisodes(false)
-            assertFalse(repository.restartForgottenEpisodesStream.first())
-            repository.setRestartForgottenEpisodes(true)
-            assertTrue(repository.restartForgottenEpisodesStream.first())
-        }
+        assertFalse(repository.hideCompletedInFeedsStream.first())
+        assertTrue(repository.hideCompletedInShowDetailsStream.first())
+        assertFalse(repository.hideCompletedInHomeStream.first())
+        assertFalse(repository.hideCompletedInSubsStream.first())
+    }
 
     @Test
-    fun sameShowQueueOnlyDefaultsOffAndPersists() =
-        runTest {
-            assertFalse(repository.sameShowQueueOnlyStream.first())
-            repository.setSameShowQueueOnly(true)
-            assertTrue(repository.sameShowQueueOnlyStream.first())
-            repository.setSameShowQueueOnly(false)
-            assertFalse(repository.sameShowQueueOnlyStream.first())
-        }
+    fun restartForgottenEpisodesDefaultsOnAndPersists() = runTest {
+        assertTrue(repository.restartForgottenEpisodesStream.first())
+        repository.setRestartForgottenEpisodes(false)
+        assertFalse(repository.restartForgottenEpisodesStream.first())
+        repository.setRestartForgottenEpisodes(true)
+        assertTrue(repository.restartForgottenEpisodesStream.first())
+    }
 
     @Test
-    fun homeShortcutsInLibraryDefaultsOffAndPersists() =
-        runTest {
-            assertFalse(repository.homeShortcutsInLibraryStream.first())
-            repository.setHomeShortcutsInLibrary(true)
-            assertTrue(repository.homeShortcutsInLibraryStream.first())
-            repository.setHomeShortcutsInLibrary(false)
-            assertFalse(repository.homeShortcutsInLibraryStream.first())
-        }
+    fun sameShowQueueOnlyDefaultsOffAndPersists() = runTest {
+        assertFalse(repository.sameShowQueueOnlyStream.first())
+        repository.setSameShowQueueOnly(true)
+        assertTrue(repository.sameShowQueueOnlyStream.first())
+        repository.setSameShowQueueOnly(false)
+        assertFalse(repository.sameShowQueueOnlyStream.first())
+    }
 
     @Test
-    fun widgetAppearanceDefaultsToAppAndPersists() =
-        runTest {
-            assertEquals(WidgetAppearance.APP, repository.widgetAppearanceStream.first())
-            repository.setWidgetAppearance(WidgetAppearance.SYSTEM)
-            assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
-            assertEquals(WidgetAppearance.SYSTEM, repository.cachedWidgetAppearance)
-            repository.setWidgetAppearance("unknown")
-            assertEquals(WidgetAppearance.APP, repository.widgetAppearanceStream.first())
-        }
+    fun homeShortcutsInLibraryDefaultsOffAndPersists() = runTest {
+        assertFalse(repository.homeShortcutsInLibraryStream.first())
+        repository.setHomeShortcutsInLibrary(true)
+        assertTrue(repository.homeShortcutsInLibraryStream.first())
+        repository.setHomeShortcutsInLibrary(false)
+        assertFalse(repository.homeShortcutsInLibraryStream.first())
+    }
 
     @Test
-    fun overriddenRecPodcastIdSetAndClear() =
-        runTest {
-            assertNull(repository.overriddenRecPodcastIdStream.first())
-            repository.setOverriddenRecPodcastId("pod-1")
-            assertEquals("pod-1", repository.overriddenRecPodcastIdStream.first())
-            repository.setOverriddenRecPodcastId(null)
-            assertNull(repository.overriddenRecPodcastIdStream.first())
-        }
+    fun widgetAppearanceDefaultsToAppAndPersists() = runTest {
+        assertEquals(WidgetAppearance.APP, repository.widgetAppearanceStream.first())
+        repository.setWidgetAppearance(WidgetAppearance.SYSTEM)
+        assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
+        assertEquals(WidgetAppearance.SYSTEM, repository.cachedWidgetAppearance)
+        repository.setWidgetAppearance("unknown")
+        assertEquals(WidgetAppearance.APP, repository.widgetAppearanceStream.first())
+    }
+
+    @Test
+    fun overriddenRecPodcastIdSetAndClear() = runTest {
+        assertNull(repository.overriddenRecPodcastIdStream.first())
+        repository.setOverriddenRecPodcastId("pod-1")
+        assertEquals("pod-1", repository.overriddenRecPodcastIdStream.first())
+        repository.setOverriddenRecPodcastId(null)
+        assertNull(repository.overriddenRecPodcastIdStream.first())
+    }
 
     // ---- Smart & auto downloads ----
 
     @Test
-    fun smartDownloadDefaults() =
-        runTest {
-            assertFalse(repository.smartDownloadsEnabledStream.first())
-            assertEquals(10, repository.smartDownloadsMaxEpisodesStream.first())
-            assertEquals(1000L, repository.smartDownloadsStorageBudgetStream.first())
-            assertTrue(repository.smartDownloadsWifiOnlyStream.first())
-            assertFalse(repository.smartDownloadsChargingOnlyStream.first())
-            assertEquals("after_24h", repository.smartDownloadsCleanupRuleStream.first())
-            assertEquals(0L, repository.smartDownloadsLastSyncTimeStream.first())
-        }
+    fun smartDownloadDefaults() = runTest {
+        assertFalse(repository.smartDownloadsEnabledStream.first())
+        assertEquals(10, repository.smartDownloadsMaxEpisodesStream.first())
+        assertEquals(1000L, repository.smartDownloadsStorageBudgetStream.first())
+        assertTrue(repository.smartDownloadsWifiOnlyStream.first())
+        assertFalse(repository.smartDownloadsChargingOnlyStream.first())
+        assertEquals("after_24h", repository.smartDownloadsCleanupRuleStream.first())
+        assertEquals(0L, repository.smartDownloadsLastSyncTimeStream.first())
+    }
 
     @Test
-    fun smartDownloadSettersRoundTrip() =
-        runTest {
-            repository.setSmartDownloadsEnabled(true)
-            repository.setSmartDownloadsMaxEpisodes(25)
-            repository.setSmartDownloadsStorageBudget(2048L)
-            repository.setSmartDownloadsWifiOnly(false)
-            repository.setSmartDownloadsChargingOnly(true)
-            repository.setSmartDownloadsCleanupRule("never")
-            repository.setSmartDownloadsLastSyncTime(123L)
+    fun smartDownloadSettersRoundTrip() = runTest {
+        repository.setSmartDownloadsEnabled(true)
+        repository.setSmartDownloadsMaxEpisodes(25)
+        repository.setSmartDownloadsStorageBudget(2048L)
+        repository.setSmartDownloadsWifiOnly(false)
+        repository.setSmartDownloadsChargingOnly(true)
+        repository.setSmartDownloadsCleanupRule("never")
+        repository.setSmartDownloadsLastSyncTime(123L)
 
-            assertTrue(repository.smartDownloadsEnabledStream.first())
-            assertEquals(25, repository.smartDownloadsMaxEpisodesStream.first())
-            assertEquals(2048L, repository.smartDownloadsStorageBudgetStream.first())
-            assertFalse(repository.smartDownloadsWifiOnlyStream.first())
-            assertTrue(repository.smartDownloadsChargingOnlyStream.first())
-            assertEquals("never", repository.smartDownloadsCleanupRuleStream.first())
-            assertEquals(123L, repository.smartDownloadsLastSyncTimeStream.first())
-        }
+        assertTrue(repository.smartDownloadsEnabledStream.first())
+        assertEquals(25, repository.smartDownloadsMaxEpisodesStream.first())
+        assertEquals(2048L, repository.smartDownloadsStorageBudgetStream.first())
+        assertFalse(repository.smartDownloadsWifiOnlyStream.first())
+        assertTrue(repository.smartDownloadsChargingOnlyStream.first())
+        assertEquals("never", repository.smartDownloadsCleanupRuleStream.first())
+        assertEquals(123L, repository.smartDownloadsLastSyncTimeStream.first())
+    }
 
     @Test
-    fun autoDownloadDefaultsAndSetters() =
-        runTest {
-            assertTrue(repository.autoDownloadWifiOnlyStream.first())
-            assertEquals(2, repository.autoDownloadMaxEpisodesStream.first())
-            assertTrue(repository.autoDownloadDeleteCompletedStream.first())
+    fun autoDownloadDefaultsAndSetters() = runTest {
+        assertTrue(repository.autoDownloadWifiOnlyStream.first())
+        assertEquals(2, repository.autoDownloadMaxEpisodesStream.first())
+        assertTrue(repository.autoDownloadDeleteCompletedStream.first())
 
-            repository.setAutoDownloadWifiOnly(false)
-            repository.setAutoDownloadMaxEpisodes(5)
-            repository.setAutoDownloadDeleteCompleted(false)
+        repository.setAutoDownloadWifiOnly(false)
+        repository.setAutoDownloadMaxEpisodes(5)
+        repository.setAutoDownloadDeleteCompleted(false)
 
-            assertFalse(repository.autoDownloadWifiOnlyStream.first())
-            assertEquals(5, repository.autoDownloadMaxEpisodesStream.first())
-            assertFalse(repository.autoDownloadDeleteCompletedStream.first())
-        }
+        assertFalse(repository.autoDownloadWifiOnlyStream.first())
+        assertEquals(5, repository.autoDownloadMaxEpisodesStream.first())
+        assertFalse(repository.autoDownloadDeleteCompletedStream.first())
+    }
 
     // ---- Last-seen episodes ----
 
     @Test
-    fun lastSeenEpisodesMapSetAndRemove() =
-        runTest {
-            assertTrue(repository.lastSeenEpisodesStream.first().isEmpty())
+    fun lastSeenEpisodesMapSetAndRemove() = runTest {
+        assertTrue(repository.lastSeenEpisodesStream.first().isEmpty())
 
-            repository.setLastSeenEpisodeId("pod-1", "ep-1")
-            repository.setLastSeenEpisodeId("pod-2", "ep-2")
+        repository.setLastSeenEpisodeId("pod-1", "ep-1")
+        repository.setLastSeenEpisodeId("pod-2", "ep-2")
 
-            val map = repository.lastSeenEpisodesStream.first()
-            assertEquals("ep-1", map["pod-1"])
-            assertEquals("ep-2", map["pod-2"])
+        val map = repository.lastSeenEpisodesStream.first()
+        assertEquals("ep-1", map["pod-1"])
+        assertEquals("ep-2", map["pod-2"])
 
-            repository.removeLastSeenEpisodeId("pod-1")
-            val after = repository.lastSeenEpisodesStream.first()
-            assertNull(after["pod-1"])
-            assertEquals("ep-2", after["pod-2"])
-        }
+        repository.removeLastSeenEpisodeId("pod-1")
+        val after = repository.lastSeenEpisodesStream.first()
+        assertNull(after["pod-1"])
+        assertEquals("ep-2", after["pod-2"])
+    }
 }

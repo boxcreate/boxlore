@@ -52,9 +52,9 @@ internal fun PlayerTopBar(
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MaterialTheme(colorScheme = colorScheme) {
@@ -62,10 +62,10 @@ internal fun PlayerTopBar(
                 enabled = canCast || isCasting,
                 isCasting = isCasting,
                 modifier =
-                    Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.onSurface.copy(alpha = 0.1f)),
+                Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(colorScheme.onSurface.copy(alpha = 0.1f)),
             )
         }
 
@@ -82,9 +82,9 @@ internal fun PlayerTopBar(
         }
         Column(
             modifier =
-                Modifier
-                    .weight(1f)
-                    .clickable(onClick = actions.onCollapse),
+            Modifier
+                .weight(1f)
+                .clickable(onClick = actions.onCollapse),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedContent(
@@ -111,11 +111,11 @@ internal fun PlayerTopBar(
 
         Box(
             modifier =
-                Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.onSurface.copy(alpha = 0.1f))
-                    .clickable(onClick = actions.onShare),
+            Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(colorScheme.onSurface.copy(alpha = 0.1f))
+                .clickable(onClick = actions.onShare),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

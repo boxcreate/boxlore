@@ -20,30 +20,17 @@ suspend fun PlaybackRepository.addToQueue(
     entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
 ): Boolean = queueCoordinator.addToQueue(episode, podcast, entryPoint)
 
-suspend fun PlaybackRepository.addToQueueNext(
-    episode: Episode,
-    podcast: Podcast,
-) = queueCoordinator.addToQueueNext(episode, podcast)
+suspend fun PlaybackRepository.addToQueueNext(episode: Episode, podcast: Podcast,) = queueCoordinator.addToQueueNext(episode, podcast)
 
-suspend fun PlaybackRepository.removeFromQueue(
-    episodeId: String,
-    deferSkipSignal: Boolean = false,
-): PlaybackRepository.RemovedQueueItem? = queueCoordinator.removeFromQueue(episodeId, deferSkipSignal)
+suspend fun PlaybackRepository.removeFromQueue(episodeId: String, deferSkipSignal: Boolean = false,): PlaybackRepository.RemovedQueueItem? = queueCoordinator.removeFromQueue(episodeId, deferSkipSignal)
 
 fun PlaybackRepository.confirmQueueRemoval(removed: PlaybackRepository.RemovedQueueItem) = queueCoordinator.confirmQueueRemoval(removed)
 
 suspend fun PlaybackRepository.undoQueueRemoval(removed: PlaybackRepository.RemovedQueueItem) = queueCoordinator.undoQueueRemoval(removed)
 
-fun PlaybackRepository.moveQueueItem(
-    fromQueueIndex: Int,
-    toQueueIndex: Int,
-) = queueCoordinator.moveQueueItem(fromQueueIndex, toQueueIndex)
+fun PlaybackRepository.moveQueueItem(fromQueueIndex: Int, toQueueIndex: Int,) = queueCoordinator.moveQueueItem(fromQueueIndex, toQueueIndex)
 
-suspend fun PlaybackRepository.persistQueueOrder(
-    movedEpisodeId: String? = null,
-    fromQueueIndex: Int = -1,
-    toQueueIndex: Int = -1,
-) = queueCoordinator.persistQueueOrder(movedEpisodeId, fromQueueIndex, toQueueIndex)
+suspend fun PlaybackRepository.persistQueueOrder(movedEpisodeId: String? = null, fromQueueIndex: Int = -1, toQueueIndex: Int = -1,) = queueCoordinator.persistQueueOrder(movedEpisodeId, fromQueueIndex, toQueueIndex)
 
 suspend fun PlaybackRepository.hasNonLoreQueue(): Boolean = queueCoordinator.hasNonLoreQueue()
 
@@ -59,11 +46,7 @@ suspend fun PlaybackRepository.playEpisode(
     initialPositionMs: Long? = null,
 ) = queueCoordinator.playEpisode(episode, podcast, entryPoint, initialPositionMs)
 
-suspend fun PlaybackRepository.playFromQueueIndex(
-    episodeId: String,
-    queueList: List<Episode>,
-    podcast: Podcast,
-) = queueCoordinator.playFromQueueIndex(episodeId, queueList, podcast)
+suspend fun PlaybackRepository.playFromQueueIndex(episodeId: String, queueList: List<Episode>, podcast: Podcast,) = queueCoordinator.playFromQueueIndex(episodeId, queueList, podcast)
 
 fun PlaybackRepository.dismissSameShowContinuation() = continuationCoordinator.dismissBanner()
 

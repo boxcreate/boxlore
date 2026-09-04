@@ -14,15 +14,15 @@ import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.core.model.ListeningHistoryRemoval
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 
 /**
  * Listening history / like / completion store for [PlaybackRepository].
@@ -31,10 +31,8 @@ import java.time.ZoneId
  *
  * Non-port helpers live in [PlaybackHistoryStoreApi] extensions.
  */
-internal class PlaybackHistoryStore(
-    internal val player: PlaybackHistoryPlayerDeps,
-    internal val data: PlaybackHistoryDataDeps,
-) : ListeningHistoryPort,
+internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDeps, internal val data: PlaybackHistoryDataDeps,) :
+    ListeningHistoryPort,
     ListeningHistoryBackupPort {
     /** Exposed so [PlaybackRepository] can share scope / player state created with the store. */
     internal val playerDeps: PlaybackHistoryPlayerDeps get() = player
@@ -76,72 +74,70 @@ internal class PlaybackHistoryStore(
 
     override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = data.listeningHistoryDao.getAllHistory()
 
-    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> =
-        data.listeningHistoryDao.getAllHistory().map { entities ->
-            entities
-                .filter { !it.isManualCompletion && !it.isBulkCompletion }
-                .map { it.toListeningHistoryItem() }
-        }
+    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = data.listeningHistoryDao.getAllHistory().map { entities ->
+        entities
+            .filter { !it.isManualCompletion && !it.isBulkCompletion }
+            .map { it.toListeningHistoryItem() }
+    }
 
-    override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> =
-        combine(
-            data.listeningSessionDao.observeAllSessions(),
-            data.listeningRollupDao.observeAllRollups(),
-            data.listeningHistoryDao.getAllHistory(),
-        ) { sessions, rollups, history ->
-            val timeline =
-                history.filter { !it.isManualCompletion && !it.isBulkCompletion }
-            val completedCount =
-                timeline.count {
-                    ListeningCompletionLogic.isCompleted(it.isCompleted, it.progressMs, it.durationMs)
-                }
-            val inProgressCount =
-                timeline.count {
-                    ListeningCompletionLogic.isInProgress(it.isCompleted, it.progressMs, it.durationMs)
-                }
-            val likedCount = timeline.count { it.isLiked }
-            val podcastMeta =
-                timeline
-                    .groupBy { it.podcastId }
-                    .mapValues { (_, rows) ->
-                        val first = rows.first()
-                        ListeningInsightsLogic.PodcastMeta(
-                            name = first.podcastName,
-                            imageUrl = first.podcastImageUrl ?: first.episodeImageUrl,
-                        )
-                    }
-            val historyRows =
-                timeline.map {
-                    ListeningInsightsLogic.HistoryActivityRow(
-                        podcastId = it.podcastId,
-                        podcastName = it.podcastName,
-                        podcastImageUrl = it.podcastImageUrl ?: it.episodeImageUrl,
-                        progressMs = it.progressMs,
-                        durationMs = it.durationMs,
-                        isCompletedFlag = it.isCompleted,
-                        lastPlayedAt = it.lastPlayedAt,
+    override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = combine(
+        data.listeningSessionDao.observeAllSessions(),
+        data.listeningRollupDao.observeAllRollups(),
+        data.listeningHistoryDao.getAllHistory(),
+    ) { sessions, rollups, history ->
+        val timeline =
+            history.filter { !it.isManualCompletion && !it.isBulkCompletion }
+        val completedCount =
+            timeline.count {
+                ListeningCompletionLogic.isCompleted(it.isCompleted, it.progressMs, it.durationMs)
+            }
+        val inProgressCount =
+            timeline.count {
+                ListeningCompletionLogic.isInProgress(it.isCompleted, it.progressMs, it.durationMs)
+            }
+        val likedCount = timeline.count { it.isLiked }
+        val podcastMeta =
+            timeline
+                .groupBy { it.podcastId }
+                .mapValues { (_, rows) ->
+                    val first = rows.first()
+                    ListeningInsightsLogic.PodcastMeta(
+                        name = first.podcastName,
+                        imageUrl = first.podcastImageUrl ?: first.episodeImageUrl,
                     )
                 }
-            val trackingSince =
-                listOfNotNull(
-                    sessions.minOfOrNull { it.endedAt },
-                    rollups.minOfOrNull { it.lastListenedAt },
-                ).minOrNull()
-            ListeningInsightsLogic.summarize(
-                ListeningInsightsLogic.SummarizeInput(
-                    period = period,
-                    sessions = sessions,
-                    rollups = rollups,
-                    historyRows = historyRows,
-                    historyCompleted = completedCount,
-                    historyInProgress = inProgressCount,
-                    historyLiked = likedCount,
-                    podcastMetaById = podcastMeta,
-                    today = LocalDate.now(),
-                    trackingSinceEpochMs = trackingSince,
-                ),
-            )
-        }
+        val historyRows =
+            timeline.map {
+                ListeningInsightsLogic.HistoryActivityRow(
+                    podcastId = it.podcastId,
+                    podcastName = it.podcastName,
+                    podcastImageUrl = it.podcastImageUrl ?: it.episodeImageUrl,
+                    progressMs = it.progressMs,
+                    durationMs = it.durationMs,
+                    isCompletedFlag = it.isCompleted,
+                    lastPlayedAt = it.lastPlayedAt,
+                )
+            }
+        val trackingSince =
+            listOfNotNull(
+                sessions.minOfOrNull { it.endedAt },
+                rollups.minOfOrNull { it.lastListenedAt },
+            ).minOrNull()
+        ListeningInsightsLogic.summarize(
+            ListeningInsightsLogic.SummarizeInput(
+                period = period,
+                sessions = sessions,
+                rollups = rollups,
+                historyRows = historyRows,
+                historyCompleted = completedCount,
+                historyInProgress = inProgressCount,
+                historyLiked = likedCount,
+                podcastMetaById = podcastMeta,
+                today = LocalDate.now(),
+                trackingSinceEpochMs = trackingSince,
+            ),
+        )
+    }
 
     override suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity) {
         data.listeningHistoryDao.upsert(entity)
@@ -153,7 +149,7 @@ internal class PlaybackHistoryStore(
         val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
         data.listeningInsightsMaintenance.rollUpEligibleSessions(
             cutoffEndedAtExclusive =
-                ListeningSessionRecordLogic.retentionCutoffEndedAtExclusive(nowMs, zone),
+            ListeningSessionRecordLogic.retentionCutoffEndedAtExclusive(nowMs, zone),
             todayLocalDay = today.toEpochDay(),
         )
     }
@@ -237,20 +233,20 @@ internal fun defaultPlaybackHistoryStore(
         )
     return PlaybackHistoryStore(
         player =
-            PlaybackHistoryPlayerDeps(
-                context = context,
-                scope = scope,
-                playerState = playerStateFlow,
-                playerStateFlow = playerStateFlow,
-            ),
+        PlaybackHistoryPlayerDeps(
+            context = context,
+            scope = scope,
+            playerState = playerStateFlow,
+            playerStateFlow = playerStateFlow,
+        ),
         data =
-            PlaybackHistoryDataDeps(
-                listeningHistoryDao = listeningHistoryDao,
-                listeningSessionDao = listeningSessionDao,
-                listeningRollupDao = listeningRollupDao,
-                listeningInsightsMaintenance = listeningInsightsMaintenance,
-                podcastRepository = podcastRepository,
-                rankingFeedbackRepository = rankingFeedbackRepository,
-            ),
+        PlaybackHistoryDataDeps(
+            listeningHistoryDao = listeningHistoryDao,
+            listeningSessionDao = listeningSessionDao,
+            listeningRollupDao = listeningRollupDao,
+            listeningInsightsMaintenance = listeningInsightsMaintenance,
+            podcastRepository = podcastRepository,
+            rankingFeedbackRepository = rankingFeedbackRepository,
+        ),
     )
 }

@@ -25,8 +25,8 @@ import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
-import kotlinx.coroutines.flow.first
 import java.io.File
+import kotlinx.coroutines.flow.first
 
 class SmartDownloadManager(
     private val context: Context,
@@ -40,10 +40,7 @@ class SmartDownloadManager(
 ) {
     private val syncGate = SmartDownloadSyncGate()
 
-    private suspend fun checkSyncConstraints(
-        isManual: Boolean,
-        isForeground: Boolean,
-    ): Boolean {
+    private suspend fun checkSyncConstraints(isManual: Boolean, isForeground: Boolean,): Boolean {
         val isEnabled = userPrefs.smartDownloadsEnabledStream.first()
         if (!isEnabled && !isManual) {
             Log.d("SmartDownloadManager", "Smart downloads disabled. Sync skipped.")
@@ -242,11 +239,7 @@ class SmartDownloadManager(
         return chosenRecs
     }
 
-    private suspend fun fetchTrendingEpisodes(
-        chosenSubsIds: Set<String>,
-        chosenRecsIds: Set<String>,
-        targetSize: Int,
-    ): List<Episode> {
+    private suspend fun fetchTrendingEpisodes(chosenSubsIds: Set<String>, chosenRecsIds: Set<String>, targetSize: Int,): List<Episode> {
         val chosenTrends = mutableListOf<Episode>()
         if (targetSize > 0) {
             try {
@@ -278,10 +271,7 @@ class SmartDownloadManager(
         return chosenTrends
     }
 
-    private fun checkIsAlreadyDownloadedOrDownloading(
-        episode: Episode,
-        existingDownloads: List<DownloadedEpisodeEntity>,
-    ): Boolean {
+    private fun checkIsAlreadyDownloadedOrDownloading(episode: Episode, existingDownloads: List<DownloadedEpisodeEntity>,): Boolean {
         val isAlreadyDownloaded =
             existingDownloads.any {
                 it.episodeId == episode.id &&
@@ -364,11 +354,11 @@ class SmartDownloadManager(
                     title = episode.podcastTitle?.takeIf { it.isNotBlank() } ?: "Unknown Podcast",
                     artist = episode.podcastArtist ?: "Unknown",
                     imageUrl =
-                        DownloadArtworkUrls.remoteUrl(episode.podcastImageUrl)
-                            ?: DownloadArtworkUrls.remoteUrl(episode.imageUrl)
-                            ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
-                            ?: episode.imageUrl
-                            ?: "",
+                    DownloadArtworkUrls.remoteUrl(episode.podcastImageUrl)
+                        ?: DownloadArtworkUrls.remoteUrl(episode.imageUrl)
+                        ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
+                        ?: episode.imageUrl
+                        ?: "",
                 )
 
             Log.d(
@@ -385,32 +375,24 @@ class SmartDownloadManager(
         }
     }
 
-    suspend fun performSync(
-        isManual: Boolean = false,
-        isForeground: Boolean = false,
-    ): Boolean =
-        syncGate.run(
-            isManual = isManual,
-            lastSuccessfulSyncMs = { userPrefs.smartDownloadsLastSyncTimeStream.first() },
-            onAutomaticCadenceSatisfied = {
-                Log.d("SmartDownloadManager", "Automatic sync skipped because the daily cadence is already satisfied.")
-                writeLogToFile(context, "Sync skipped: automatic daily cadence already satisfied.")
-            },
-            sync = { nowMs ->
-                performAdmittedSync(
-                    isManual = isManual,
-                    isForeground = isForeground,
-                    nowMs = nowMs,
-                )
-            },
-        )
+    suspend fun performSync(isManual: Boolean = false, isForeground: Boolean = false,): Boolean = syncGate.run(
+        isManual = isManual,
+        lastSuccessfulSyncMs = { userPrefs.smartDownloadsLastSyncTimeStream.first() },
+        onAutomaticCadenceSatisfied = {
+            Log.d("SmartDownloadManager", "Automatic sync skipped because the daily cadence is already satisfied.")
+            writeLogToFile(context, "Sync skipped: automatic daily cadence already satisfied.")
+        },
+        sync = { nowMs ->
+            performAdmittedSync(
+                isManual = isManual,
+                isForeground = isForeground,
+                nowMs = nowMs,
+            )
+        },
+    )
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
-    private suspend fun performAdmittedSync(
-        isManual: Boolean,
-        isForeground: Boolean,
-        nowMs: Long,
-    ): Boolean {
+    private suspend fun performAdmittedSync(isManual: Boolean, isForeground: Boolean, nowMs: Long,): Boolean {
         Log.d("SmartDownloadManager", "Starting smart downloads sync. isManual=$isManual, isForeground=$isForeground")
         writeLogToFile(context, "Starting sync. isManual=$isManual, isForeground=$isForeground")
 
@@ -463,20 +445,20 @@ class SmartDownloadManager(
                 try {
                     adaptiveScorer.scoreEpisodes(
                         inputs =
-                            initialCandidates.map { candidate ->
-                                EpisodeRankingInput(
-                                    episode = candidate.episode,
-                                    podcast = candidate.podcast,
-                                    priorScore = candidate.score,
-                                    source =
-                                        if (candidate.isProgress) {
-                                            CandidateSource.LOCAL_HISTORY
-                                        } else {
-                                            CandidateSource.SUBSCRIPTION
-                                        },
-                                    online = false,
-                                )
-                            },
+                        initialCandidates.map { candidate ->
+                            EpisodeRankingInput(
+                                episode = candidate.episode,
+                                podcast = candidate.podcast,
+                                priorScore = candidate.score,
+                                source =
+                                if (candidate.isProgress) {
+                                    CandidateSource.LOCAL_HISTORY
+                                } else {
+                                    CandidateSource.SUBSCRIPTION
+                                },
+                                online = false,
+                            )
+                        },
                         history = allHistory,
                         objective = RankingObjective.OFFLINE,
                         surface = RankingSurface.DOWNLOADS,
@@ -540,7 +522,7 @@ class SmartDownloadManager(
                     (
                         it.status == DownloadedEpisodeEntity.STATUS_COMPLETED ||
                             it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING
-                    ) &&
+                        ) &&
                         it.isSmartDownloaded &&
                         it.episodeId in candidateEpisodeIds
                 }
@@ -593,22 +575,14 @@ class SmartDownloadManager(
         )
     }
 
-    private fun smartDownloadSyncTrigger(
-        isManual: Boolean,
-        isForeground: Boolean,
-    ): String =
-        when {
-            isManual -> "manual"
-            isForeground -> "foreground"
-            else -> "background"
-        }
+    private fun smartDownloadSyncTrigger(isManual: Boolean, isForeground: Boolean,): String = when {
+        isManual -> "manual"
+        isForeground -> "foreground"
+        else -> "background"
+    }
 
     companion object {
-        fun schedulePeriodicSync(
-            context: Context,
-            wifiOnly: Boolean,
-            chargingOnly: Boolean,
-        ) {
+        fun schedulePeriodicSync(context: Context, wifiOnly: Boolean, chargingOnly: Boolean,) {
             try {
                 val constraints =
                     androidx.work.Constraints
@@ -648,17 +622,16 @@ class SmartDownloadManager(
             }
         }
 
-        fun hasActivePeriodicSync(context: Context): Boolean =
-            try {
-                androidx.work.WorkManager
-                    .getInstance(context)
-                    .getWorkInfosForUniqueWork(SmartDownloadScheduleLogic.UNIQUE_WORK_NAME)
-                    .get()
-                    .any { info -> !info.state.isFinished }
-            } catch (e: Exception) {
-                Log.e("SmartDownloadManager", "Failed to read periodic sync work", e)
-                false
-            }
+        fun hasActivePeriodicSync(context: Context): Boolean = try {
+            androidx.work.WorkManager
+                .getInstance(context)
+                .getWorkInfosForUniqueWork(SmartDownloadScheduleLogic.UNIQUE_WORK_NAME)
+                .get()
+                .any { info -> !info.state.isFinished }
+        } catch (e: Exception) {
+            Log.e("SmartDownloadManager", "Failed to read periodic sync work", e)
+            false
+        }
 
         fun cancelPeriodicSync(context: Context) {
             try {
@@ -690,10 +663,7 @@ class SmartDownloadManager(
             }
         }
 
-        fun writeLogToFile(
-            context: Context,
-            message: String,
-        ) {
+        fun writeLogToFile(context: Context, message: String,) {
             try {
                 val logFile = java.io.File(context.filesDir, "smart_downloads_log.txt")
                 val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())

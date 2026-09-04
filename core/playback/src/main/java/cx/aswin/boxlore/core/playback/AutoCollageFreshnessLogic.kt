@@ -12,11 +12,7 @@ object AutoCollageFreshnessLogic {
     /** Partial / fallback collages expire sooner so the next prewarm can recover art. */
     const val PARTIAL_TTL_MS = 20L * 60L * 1_000L
 
-    fun buildSignature(
-        contentKeysOrUrls: List<String>,
-        loadedImageCount: Int,
-        expectedImageCount: Int,
-    ): String {
+    fun buildSignature(contentKeysOrUrls: List<String>, loadedImageCount: Int, expectedImageCount: Int,): String {
         val values =
             contentKeysOrUrls
                 .take(4)
@@ -33,13 +29,7 @@ object AutoCollageFreshnessLogic {
         }.hashCode().toString()
     }
 
-    fun isFresh(
-        ageMs: Long,
-        storedSignature: String?,
-        currentSignature: String,
-        loadedImageCount: Int,
-        expectedImageCount: Int,
-    ): Boolean {
+    fun isFresh(ageMs: Long, storedSignature: String?, currentSignature: String, loadedImageCount: Int, expectedImageCount: Int,): Boolean {
         if (storedSignature.isNullOrBlank() || storedSignature != currentSignature) return false
         if (ageMs < 0L) return false
         val ttl =

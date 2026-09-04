@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.core.downloads
 
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
-
 import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.downloads.SmartDownloadManager
 
@@ -29,10 +28,9 @@ object DownloadsDependenciesHolder {
     @Volatile
     var instance: DownloadsDependencies? = null
 
-    fun require(): DownloadsDependencies =
-        instance
-            ?: error(
-                "DownloadsDependencies not installed. " +
-                    "Set DownloadsDependenciesHolder.instance from Application after creating AppContainer.",
-            )
+    fun require(): DownloadsDependencies = instance
+        ?: error(
+            "DownloadsDependencies not installed. " +
+                "Set DownloadsDependenciesHolder.instance from Application after creating AppContainer.",
+        )
 }

@@ -4,13 +4,13 @@ import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.ListeningSessionEntity
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.core.model.ListeningTimeBucket
+import java.time.LocalDate
+import java.time.ZoneId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
-import java.time.ZoneId
 
 class ListeningSessionRecordLogicTest {
     @Test
@@ -63,13 +63,7 @@ class ListeningSessionRecordLogicTest {
 }
 
 class ListeningInsightsLogicTest {
-    private fun session(
-        day: Long,
-        consumed: Long,
-        podcastId: String = "pod-a",
-        bucket: Int = 0,
-        completed: Boolean = false,
-    ) = ListeningSessionEntity(
+    private fun session(day: Long, consumed: Long, podcastId: String = "pod-a", bucket: Int = 0, completed: Boolean = false,) = ListeningSessionEntity(
         sessionId = "s-$day-$consumed",
         episodeId = "ep-$day",
         podcastId = podcastId,
@@ -90,24 +84,24 @@ class ListeningInsightsLogicTest {
                     period = ListeningPeriod.DAYS_30,
                     sessions = listOf(session(day = 100, consumed = 400, bucket = 1)),
                     rollups =
-                        listOf(
-                            ListeningRollupEntity(
-                                localDay = 90,
-                                episodeId = "ep-old",
-                                podcastId = "pod-a",
-                                consumedMs = 600,
-                                sessionCount = 2,
-                                completionCount = 1,
-                                lastListenedAt = 1,
-                                morningMs = 600,
-                            ),
+                    listOf(
+                        ListeningRollupEntity(
+                            localDay = 90,
+                            episodeId = "ep-old",
+                            podcastId = "pod-a",
+                            consumedMs = 600,
+                            sessionCount = 2,
+                            completionCount = 1,
+                            lastListenedAt = 1,
+                            morningMs = 600,
                         ),
+                    ),
                     historyRows = emptyList(),
                     historyCompleted = 3,
                     historyInProgress = 1,
                     historyLiked = 2,
                     podcastMetaById =
-                        mapOf("pod-a" to ListeningInsightsLogic.PodcastMeta("Show A", null)),
+                    mapOf("pod-a" to ListeningInsightsLogic.PodcastMeta("Show A", null)),
                     today = today,
                     trackingSinceEpochMs = 1L,
                 ),
@@ -130,17 +124,17 @@ class ListeningInsightsLogicTest {
                     sessions = emptyList(),
                     rollups = emptyList(),
                     historyRows =
-                        listOf(
-                            ListeningInsightsLogic.HistoryActivityRow(
-                                podcastId = "pod-a",
-                                podcastName = "Show A",
-                                podcastImageUrl = null,
-                                progressMs = 3_600_000,
-                                durationMs = 3_600_000,
-                                isCompletedFlag = true,
-                                lastPlayedAt = today.toEpochDay() * 86_400_000,
-                            ),
+                    listOf(
+                        ListeningInsightsLogic.HistoryActivityRow(
+                            podcastId = "pod-a",
+                            podcastName = "Show A",
+                            podcastImageUrl = null,
+                            progressMs = 3_600_000,
+                            durationMs = 3_600_000,
+                            isCompletedFlag = true,
+                            lastPlayedAt = today.toEpochDay() * 86_400_000,
                         ),
+                    ),
                     historyCompleted = 1,
                     historyInProgress = 0,
                     historyLiked = 0,

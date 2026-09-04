@@ -63,23 +63,20 @@ internal object AutoBrowseContract {
     const val COMMAND_ADD_TO_QUEUE = "AUTO_ADD_TO_QUEUE"
     const val COMMAND_MARK_COMPLETE = "AUTO_MARK_COMPLETE"
 
-    fun listChildrenExtras(): Bundle =
-        contentStyleExtras(
-            browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
-            playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
-        )
+    fun listChildrenExtras(): Bundle = contentStyleExtras(
+        browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+        playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+    )
 
-    fun gridChildrenExtras(): Bundle =
-        contentStyleExtras(
-            browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
-        )
+    fun gridChildrenExtras(): Bundle = contentStyleExtras(
+        browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+        playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+    )
 
-    fun categoryGridChildrenExtras(): Bundle =
-        contentStyleExtras(
-            browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_CATEGORY_GRID_ITEM,
-            playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
-        )
+    fun categoryGridChildrenExtras(): Bundle = contentStyleExtras(
+        browsable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_CATEGORY_GRID_ITEM,
+        playable = MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+    )
 
     fun itemExtras(
         source: String,
@@ -88,39 +85,37 @@ internal object AutoBrowseContract {
         isCompleted: Boolean = false,
         downloadStatus: Long? = null,
         singleItemStyle: Int? = null,
-    ): Bundle =
-        Bundle().apply {
-            putString(EXTRA_SOURCE, source)
-            putString(EXTRA_ENTRY_POINT, "android_auto_$source")
-            groupTitle?.let {
-                putString(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE, it)
-            }
-            singleItemStyle?.let {
-                putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_SINGLE_ITEM, it)
-            }
-            progress?.let {
-                putDouble(
-                    MediaConstants.EXTRAS_KEY_COMPLETION_PERCENTAGE,
-                    it.coerceIn(0.0, 1.0),
-                )
-                putInt(
-                    MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
-                    when {
-                        isCompleted -> MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_FULLY_PLAYED
-                        it > 0.0 -> MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_PARTIALLY_PLAYED
-                        else -> MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_NOT_PLAYED
-                    },
-                )
-            }
-            downloadStatus?.let {
-                putLong(MediaConstants.EXTRAS_KEY_DOWNLOAD_STATUS, it)
-            }
+    ): Bundle = Bundle().apply {
+        putString(EXTRA_SOURCE, source)
+        putString(EXTRA_ENTRY_POINT, "android_auto_$source")
+        groupTitle?.let {
+            putString(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE, it)
         }
+        singleItemStyle?.let {
+            putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_SINGLE_ITEM, it)
+        }
+        progress?.let {
+            putDouble(
+                MediaConstants.EXTRAS_KEY_COMPLETION_PERCENTAGE,
+                it.coerceIn(0.0, 1.0),
+            )
+            putInt(
+                MediaConstants.EXTRAS_KEY_COMPLETION_STATUS,
+                when {
+                    isCompleted -> MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_FULLY_PLAYED
+                    it > 0.0 -> MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_PARTIALLY_PLAYED
+                    else -> MediaConstants.EXTRAS_VALUE_COMPLETION_STATUS_NOT_PLAYED
+                },
+            )
+        }
+        downloadStatus?.let {
+            putLong(MediaConstants.EXTRAS_KEY_DOWNLOAD_STATUS, it)
+        }
+    }
 
-    fun mergeExtras(vararg bundles: Bundle?): Bundle =
-        Bundle().apply {
-            bundles.filterNotNull().forEach(::putAll)
-        }
+    fun mergeExtras(vararg bundles: Bundle?): Bundle = Bundle().apply {
+        bundles.filterNotNull().forEach(::putAll)
+    }
 
     fun driveVibes(calendar: Calendar = Calendar.getInstance()): List<String> {
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
@@ -141,18 +136,13 @@ internal object AutoBrowseContract {
         }
     }
 
-    private fun contentStyleExtras(
-        browsable: Int,
-        playable: Int,
-    ): Bundle =
-        Bundle().apply {
-            putBoolean(CONTENT_STYLE_SUPPORTED, true)
-            putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE, browsable)
-            putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, playable)
-        }
+    private fun contentStyleExtras(browsable: Int, playable: Int,): Bundle = Bundle().apply {
+        putBoolean(CONTENT_STYLE_SUPPORTED, true)
+        putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_BROWSABLE, browsable)
+        putInt(MediaConstants.EXTRAS_KEY_CONTENT_STYLE_PLAYABLE, playable)
+    }
 }
 
-internal fun String.stripEpisodePrefix(): String =
-    removePrefix(AutoBrowseContract.LEARN_PREFIX)
-        .removePrefix(AutoBrowseContract.EPISODE_PREFIX)
-        .removePrefix(AutoBrowseContract.QUEUE_PREFIX)
+internal fun String.stripEpisodePrefix(): String = removePrefix(AutoBrowseContract.LEARN_PREFIX)
+    .removePrefix(AutoBrowseContract.EPISODE_PREFIX)
+    .removePrefix(AutoBrowseContract.QUEUE_PREFIX)

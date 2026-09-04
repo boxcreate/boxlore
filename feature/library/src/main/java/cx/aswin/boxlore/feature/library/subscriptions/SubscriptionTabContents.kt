@@ -149,9 +149,9 @@ private fun ShowsReorderableGrid(
         item(key = ShowsGenreHeaderKey, span = { GridItemSpan(maxLineSpan) }) {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
             ) {
                 genreChips()
             }
@@ -170,11 +170,11 @@ private fun ShowsReorderableGrid(
                     isPinned = podcast.id in pinnedPodcastIds,
                     isDragging = isDragging,
                     dragModifier =
-                        if (reorderEnabled) {
-                            Modifier.longPressDraggableHandle()
-                        } else {
-                            Modifier
-                        },
+                    if (reorderEnabled) {
+                        Modifier.longPressDraggableHandle()
+                    } else {
+                        Modifier
+                    },
                 )
             }
         }
@@ -205,9 +205,9 @@ private fun ShowsReorderableList(
         item(key = ShowsGenreHeaderKey) {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
             ) {
                 genreChips()
             }
@@ -224,11 +224,11 @@ private fun ShowsReorderableList(
                     isPinned = podcast.id in pinnedPodcastIds,
                     isDragging = isDragging,
                     dragModifier =
-                        if (reorderEnabled) {
-                            Modifier.longPressDraggableHandle()
-                        } else {
-                            Modifier
-                        },
+                    if (reorderEnabled) {
+                        Modifier.longPressDraggableHandle()
+                    } else {
+                        Modifier
+                    },
                 )
             }
         }
@@ -341,9 +341,9 @@ private fun LatestEpisodesList(
                     },
                     distinctGenres = distinctGenres,
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
                 )
             }
             latestEpisodeItems(
@@ -366,29 +366,26 @@ internal suspend fun scoreLatestIfNeeded(
     podcasts: List<Podcast>,
     history: List<ListeningHistoryEntity>,
     scoreEpisodes: suspend (List<Podcast>, List<ListeningHistoryEntity>) -> Map<String, Double>,
-): Map<String, Double> =
-    if (useSmartRank) scoreEpisodes(podcasts, history) else emptyMap()
+): Map<String, Double> = if (useSmartRank) scoreEpisodes(podcasts, history) else emptyMap()
 
 internal fun sortLatestDisplayPodcasts(
     podcasts: List<Podcast>,
     useSmartRank: Boolean,
     episodeScores: Map<String, Double>,
-): List<Podcast> =
-    if (useSmartRank) {
-        podcasts.sortedByDescending { episodeScores[it.latestEpisode?.id] ?: 0.0 }
-    } else {
-        podcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
-    }
+): List<Podcast> = if (useSmartRank) {
+    podcasts.sortedByDescending { episodeScores[it.latestEpisode?.id] ?: 0.0 }
+} else {
+    podcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
+}
 
 internal fun groupLatestByDateHeader(
     podcasts: List<Podcast>,
     useSmartRank: Boolean,
-): Map<String, List<Podcast>> =
-    if (useSmartRank) {
-        emptyMap()
-    } else {
-        podcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate) }
-    }
+): Map<String, List<Podcast>> = if (useSmartRank) {
+    emptyMap()
+} else {
+    podcasts.groupBy { getChronologicalHeader(it.latestEpisode!!.publishedDate) }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 private fun androidx.compose.foundation.lazy.LazyListScope.latestEpisodeItems(
@@ -438,10 +435,10 @@ private fun LatestEpisodeListRow(
         podcast = podcast,
         onClick = { actions.onEpisodeClick?.invoke(episode, podcast, "library_latest_episodes") },
         onPlay =
-            if (actions.onPlayEpisode != null) {
-                { actions.onPlayEpisode.invoke(episode, podcast) }
-            } else {
-                null
-            },
+        if (actions.onPlayEpisode != null) {
+            { actions.onPlayEpisode.invoke(episode, podcast) }
+        } else {
+            null
+        },
     )
 }

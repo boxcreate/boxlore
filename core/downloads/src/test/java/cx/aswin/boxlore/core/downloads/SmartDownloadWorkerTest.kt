@@ -74,9 +74,7 @@ class SmartDownloadWorkerTest {
         assertEquals(ListenableWorker.Result.failure(), result)
     }
 
-    private class FakeSharedAppDependencies(
-        override val userPreferencesRepository: UserPreferencesRepository,
-    ) : SharedAppDependencies {
+    private class FakeSharedAppDependencies(override val userPreferencesRepository: UserPreferencesRepository,) : SharedAppDependencies {
         override val database: BoxLoreDatabase get() = error("unused")
         override val podcastRepository: PodcastRepository get() = error("unused")
         override val subscriptionRepository: SubscriptionRepository get() = error("unused")

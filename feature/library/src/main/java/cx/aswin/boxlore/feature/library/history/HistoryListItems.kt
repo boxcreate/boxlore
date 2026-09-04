@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.history
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -38,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.library.HistoryFilter
 import cx.aswin.boxlore.feature.library.R
@@ -87,10 +86,10 @@ fun DateHeaderRow(
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(vertical = 8.dp),
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -143,11 +142,11 @@ fun HistoryTimelineItem(
         backgroundContent = {
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(horizontal = 20.dp),
+                Modifier
+                    .fillMaxSize()
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -163,9 +162,9 @@ fun HistoryTimelineItem(
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onClick),
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -177,9 +176,9 @@ fun HistoryTimelineItem(
                     proxyWidth = 128,
                     contentDescription = null,
                     modifier =
-                        Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(14.dp)),
+                    Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(14.dp)),
                 )
                 Column(
                     modifier = Modifier.weight(1f),
@@ -208,11 +207,11 @@ fun HistoryTimelineItem(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = GoogleSansWeight.semiBold,
                         color =
-                            if (item.isCompleted) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                        if (item.isCompleted) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                 }
             }

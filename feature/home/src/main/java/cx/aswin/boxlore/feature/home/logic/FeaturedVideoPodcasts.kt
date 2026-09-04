@@ -38,8 +38,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "This Week in Tech",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/This%20Week%20in%20Tech/album_art/hd/TWIT_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/This%20Week%20in%20Tech/album_art/hd/TWIT_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/twit_video_hd.xml",
                 description = "A roundtable on the week’s biggest technology stories.",
             ),
@@ -48,8 +48,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "Security Now",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/Security%20Now/album_art/hd/SN_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/Security%20Now/album_art/hd/SN_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/sn_video_hd.xml",
                 description = "Deep, practical explanations of security, privacy, and cybercrime.",
             ),
@@ -58,8 +58,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "MacBreak Weekly",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/MacBreak%20Weekly/album_art/hd/MBW_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/MacBreak%20Weekly/album_art/hd/MBW_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/mbw_video_hd.xml",
                 description = "Apple news and analysis from veteran observers.",
             ),
@@ -68,8 +68,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "Windows Weekly",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/Windows%20Weekly/album_art/hd/WW_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/Windows%20Weekly/album_art/hd/WW_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/ww_video_hd.xml",
                 description = "Microsoft, Windows, cloud, and the wider PC world.",
             ),
@@ -78,8 +78,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "iOS Today",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/iOS%20Today/album_art/hd/IOS_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/iOS%20Today/album_art/hd/IOS_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/ipad_video_hd.xml",
                 description = "Apps, tips, and ideas for Apple’s mobile devices.",
             ),
@@ -88,8 +88,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "Intelligent Machines",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/Intelligent%20Machines/album_art/hd/IM_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/Intelligent%20Machines/album_art/hd/IM_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/twig_video_hd.xml",
                 description = "AI, automation, and the machines reshaping everyday life.",
             ),
@@ -98,8 +98,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "Tech News Weekly",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/Tech%20News%20Weekly/album_art/hd/TNW_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/Tech%20News%20Weekly/album_art/hd/TNW_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/tnw_video_hd.xml",
                 description = "Interviews with the journalists behind the week’s tech stories.",
             ),
@@ -108,8 +108,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "FLOSS Weekly",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/floss_weekly/album_art/hd/floss2022_albumart_standard_2400.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/floss_weekly/album_art/hd/floss2022_albumart_standard_2400.jpg",
                 feedUrl = "https://feeds.twit.tv/floss_video_hd.xml",
                 description = "The people and projects driving open-source software.",
             ),
@@ -118,8 +118,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "Hands-On Windows",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/Hands-On%20Windows/album_art/hd/HOW_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/Hands-On%20Windows/album_art/hd/HOW_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/howin_video_hd.xml",
                 description = "Practical Windows guidance, from visual tweaks to performance.",
             ),
@@ -128,8 +128,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "Untitled Linux Show",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/Untitled%20Linux%20Show/album_art/hd/ULS_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/Untitled%20Linux%20Show/album_art/hd/ULS_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/uls_video_hd.xml",
                 description = "Linux news for desktop, gaming, servers, and enterprise.",
             ),
@@ -138,8 +138,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "Know How…",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/" +
-                        "public/images/shows/know_how./album_art/hd/kh1400video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/" +
+                    "public/images/shows/know_how./album_art/hd/kh1400video.jpg",
                 feedUrl = "https://feeds.twit.tv/kh_video_hd.xml",
                 description = "Hands-on projects, gaming hardware, and practical technology.",
             ),
@@ -156,8 +156,8 @@ private object FeaturedVideoPodcastCatalog {
                 title = "TWiT Events",
                 artist = "TWiT",
                 imageUrl =
-                    "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
-                        "images/shows/TWiT%20Events/album_art/hd/TWITevents_albumart_standard_video.jpg",
+                "https://elroy.twit.tv/sites/default/files/styles/twit_album_art_2048x2048/public/" +
+                    "images/shows/TWiT%20Events/album_art/hd/TWITevents_albumart_standard_video.jpg",
                 feedUrl = "https://feeds.twit.tv/events_video_hd.xml",
                 description = "On-location coverage from major technology events.",
             ),
@@ -171,14 +171,13 @@ private fun videoPodcast(
     imageUrl: String,
     feedUrl: String,
     description: String,
-): Podcast =
-    Podcast(
-        id = id,
-        title = title,
-        artist = artist,
-        imageUrl = imageUrl,
-        description = description,
-        genre = "Technology",
-        medium = "video",
-        feedUrl = feedUrl,
-    )
+): Podcast = Podcast(
+    id = id,
+    title = title,
+    artist = artist,
+    imageUrl = imageUrl,
+    description = description,
+    genre = "Technology",
+    medium = "video",
+    feedUrl = feedUrl,
+)

@@ -71,29 +71,26 @@ fun resolveAutoScrollTarget(
     completedEpisodeIds: Set<String>,
     ongoingEpisodeIds: Set<String>,
 ): AutoScrollTarget {
-    fun isCompleted(item: FeedItem): Boolean =
-        when (item) {
-            is FeedItem.NormalEpisode -> completedEpisodeIds.contains(item.episode.id)
-            is FeedItem.SingleTrailer -> completedEpisodeIds.contains(item.episode.id)
-            is FeedItem.TrailerGroup -> item.trailers.any { completedEpisodeIds.contains(it.first.id) }
-        }
+    fun isCompleted(item: FeedItem): Boolean = when (item) {
+        is FeedItem.NormalEpisode -> completedEpisodeIds.contains(item.episode.id)
+        is FeedItem.SingleTrailer -> completedEpisodeIds.contains(item.episode.id)
+        is FeedItem.TrailerGroup -> item.trailers.any { completedEpisodeIds.contains(it.first.id) }
+    }
 
-    fun isOngoing(item: FeedItem): Boolean =
-        when (item) {
-            is FeedItem.NormalEpisode -> ongoingEpisodeIds.contains(item.episode.id)
-            is FeedItem.SingleTrailer -> ongoingEpisodeIds.contains(item.episode.id)
-            // Match any trailer in the group, not only the first.
-            is FeedItem.TrailerGroup -> item.trailers.any { ongoingEpisodeIds.contains(it.first.id) }
-        }
+    fun isOngoing(item: FeedItem): Boolean = when (item) {
+        is FeedItem.NormalEpisode -> ongoingEpisodeIds.contains(item.episode.id)
+        is FeedItem.SingleTrailer -> ongoingEpisodeIds.contains(item.episode.id)
+        // Match any trailer in the group, not only the first.
+        is FeedItem.TrailerGroup -> item.trailers.any { ongoingEpisodeIds.contains(it.first.id) }
+    }
 
-    fun episodeAt(item: FeedItem): Episode? =
-        when (item) {
-            is FeedItem.NormalEpisode -> item.episode
-            is FeedItem.SingleTrailer -> item.episode
-            is FeedItem.TrailerGroup ->
-                item.trailers.firstOrNull { ongoingEpisodeIds.contains(it.first.id) }?.first
-                    ?: item.trailers.firstOrNull { !completedEpisodeIds.contains(it.first.id) }?.first
-        }
+    fun episodeAt(item: FeedItem): Episode? = when (item) {
+        is FeedItem.NormalEpisode -> item.episode
+        is FeedItem.SingleTrailer -> item.episode
+        is FeedItem.TrailerGroup ->
+            item.trailers.firstOrNull { ongoingEpisodeIds.contains(it.first.id) }?.first
+                ?: item.trailers.firstOrNull { !completedEpisodeIds.contains(it.first.id) }?.first
+    }
 
     // 1. Look for an in-progress/ongoing episode first
     var targetIndex = feedItems.indexOfFirst { isOngoing(it) }

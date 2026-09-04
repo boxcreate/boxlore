@@ -35,9 +35,7 @@ private val ImportHeroSize = 80.dp
 internal sealed interface ImportHeroVisual {
     data object Indeterminate : ImportHeroVisual
 
-    data class Progress(
-        val value: Float,
-    ) : ImportHeroVisual
+    data class Progress(val value: Float,) : ImportHeroVisual
 
     data object Complete : ImportHeroVisual
 
@@ -49,10 +47,7 @@ internal sealed interface ImportHeroVisual {
  * progress fills to 1, then the ring resolves into a filled badge with a spring-scaled check.
  */
 @Composable
-internal fun ImportStatusHero(
-    visual: ImportHeroVisual,
-    size: Dp = ImportHeroSize,
-) {
+internal fun ImportStatusHero(visual: ImportHeroVisual, size: Dp = ImportHeroSize,) {
     val animation = rememberImportHeroAnimation(visual)
 
     Box(
@@ -102,10 +97,10 @@ private fun rememberImportHeroAnimation(visual: ImportHeroVisual): ImportHeroAni
     val checkScale by animateFloatAsState(
         targetValue = if (showCheck) 1f else 0.55f,
         animationSpec =
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMediumLow,
-            ),
+        spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
         label = "check_scale",
     )
     val checkAlpha by animateFloatAsState(
@@ -121,18 +116,10 @@ private fun rememberImportHeroAnimation(visual: ImportHeroVisual): ImportHeroAni
     )
 }
 
-private data class ImportHeroAnimation(
-    val ringProgress: Float,
-    val checkScale: Float,
-    val checkAlpha: Float,
-)
+private data class ImportHeroAnimation(val ringProgress: Float, val checkScale: Float, val checkAlpha: Float,)
 
 @Composable
-private fun ImportStatusHeroBody(
-    visual: ImportHeroVisual,
-    size: Dp,
-    animation: ImportHeroAnimation,
-) {
+private fun ImportStatusHeroBody(visual: ImportHeroVisual, size: Dp, animation: ImportHeroAnimation,) {
     when (visual) {
         ImportHeroVisual.Error -> ImportErrorHero()
         ImportHeroVisual.Complete -> ImportCompleteHero(size, animation)
@@ -145,12 +132,12 @@ private fun ImportStatusHeroBody(
 private fun ImportErrorHero() {
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(
-                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f),
-                    shape = CircleShape,
-                ),
+        Modifier
+            .fillMaxSize()
+            .background(
+                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f),
+                shape = CircleShape,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -163,24 +150,21 @@ private fun ImportErrorHero() {
 }
 
 @Composable
-private fun ImportCompleteHero(
-    size: Dp,
-    animation: ImportHeroAnimation,
-) {
+private fun ImportCompleteHero(size: Dp, animation: ImportHeroAnimation,) {
     // Keep the wavy ring at full progress under the badge so the motion continues.
     ImportProgressHero(size, animation.ringProgress)
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = animation.checkScale
-                    scaleY = animation.checkScale
-                    alpha = animation.checkAlpha
-                }.background(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = CircleShape,
-                ),
+        Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                scaleX = animation.checkScale
+                scaleY = animation.checkScale
+                alpha = animation.checkAlpha
+            }.background(
+                color = MaterialTheme.colorScheme.primary,
+                shape = CircleShape,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -193,10 +177,7 @@ private fun ImportCompleteHero(
 }
 
 @Composable
-private fun ImportProgressHero(
-    size: Dp,
-    progress: Float,
-) {
+private fun ImportProgressHero(size: Dp, progress: Float,) {
     BoxLoreLoader.CircularWavy(
         progress = progress,
         size = size,

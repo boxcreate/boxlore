@@ -13,14 +13,13 @@ import org.junit.jupiter.api.Test
  */
 class InfoCatalogPortErrorBehaviorTest {
     @Test
-    fun `failing catalog surfaces null and empty without throwing`() =
-        runTest {
-            val catalog = FailingPodcastCatalogPort()
+    fun `failing catalog surfaces null and empty without throwing`() = runTest {
+        val catalog = FailingPodcastCatalogPort()
 
-            assertNull(catalog.getPodcastDetails("any"))
-            assertNull(catalog.getEpisode("any"))
-            assertTrue(catalog.getEpisodes("any").isEmpty())
-        }
+        assertNull(catalog.getPodcastDetails("any"))
+        assertNull(catalog.getEpisode("any"))
+        assertTrue(catalog.getEpisodes("any").isEmpty())
+    }
 
     private class FailingPodcastCatalogPort : PodcastCatalogPort {
         override suspend fun getPodcastDetails(feedId: String): Podcast? = null

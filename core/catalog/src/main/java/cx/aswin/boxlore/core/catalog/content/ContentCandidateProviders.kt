@@ -2,33 +2,28 @@ package cx.aswin.boxlore.core.catalog.content
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.PodcastRankingInput
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CancellationException
 
 class PodcastCandidateProvider(
     override val source: CandidateSource,
     private val loader: suspend (ContentIntent, ContentContext) -> List<Podcast>,
 ) : CandidateProvider {
-    override suspend fun candidates(
-        intent: ContentIntent,
-        context: ContentContext,
-    ): List<ContentCandidate> {
-        return loader(intent, context).mapIndexed { index, podcast ->
-            ContentCandidate(
-                id = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                episode = podcast.latestEpisode,
-                podcast = podcast,
-                source = source,
-                intentId = intent.id,
-                retrievalScore = reciprocalRank(index),
-                isNovel = podcast.subscribedAt <= 0L,
-            )
-        }
+    override suspend fun candidates(intent: ContentIntent, context: ContentContext,): List<ContentCandidate> = loader(intent, context).mapIndexed { index, podcast ->
+        ContentCandidate(
+            id = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+            episode = podcast.latestEpisode,
+            podcast = podcast,
+            source = source,
+            intentId = intent.id,
+            retrievalScore = reciprocalRank(index),
+            isNovel = podcast.subscribedAt <= 0L,
+        )
     }
 }
 
@@ -36,34 +31,24 @@ class EpisodeCandidateProvider(
     override val source: CandidateSource,
     private val loader: suspend (ContentIntent, ContentContext) -> List<Pair<Episode, Podcast>>,
 ) : CandidateProvider {
-    override suspend fun candidates(
-        intent: ContentIntent,
-        context: ContentContext,
-    ): List<ContentCandidate> {
-        return loader(intent, context).mapIndexed { index, (episode, podcast) ->
-            ContentCandidate(
-                id = episode.id,
-                episode = episode,
-                podcast = podcast,
-                source = source,
-                intentId = intent.id,
-                retrievalScore = episode.retrievalScore ?: reciprocalRank(index),
-                isNovel = podcast.subscribedAt <= 0L,
-                explanationTokens = setOfNotNull(episode.recommendationReason),
-            )
-        }
+    override suspend fun candidates(intent: ContentIntent, context: ContentContext,): List<ContentCandidate> = loader(intent, context).mapIndexed { index, (episode, podcast) ->
+        ContentCandidate(
+            id = episode.id,
+            episode = episode,
+            podcast = podcast,
+            source = source,
+            intentId = intent.id,
+            retrievalScore = episode.retrievalScore ?: reciprocalRank(index),
+            isNovel = podcast.subscribedAt <= 0L,
+            explanationTokens = setOfNotNull(episode.recommendationReason),
+        )
     }
 }
 
-class ServerIntentCandidateProvider(
-    private val podcastRepository: PodcastRepository,
-) : CandidateProvider {
+class ServerIntentCandidateProvider(private val podcastRepository: PodcastRepository,) : CandidateProvider {
     override val source: CandidateSource = CandidateSource.CURATED_INTENT
 
-    override suspend fun candidates(
-        intent: ContentIntent,
-        context: ContentContext,
-    ): List<ContentCandidate> {
+    override suspend fun candidates(intent: ContentIntent, context: ContentContext,): List<ContentCandidate> {
         val query = intent.providerQueryRef ?: return emptyList()
         return podcastRepository.getCuratedPodcasts(query, context.region).mapIndexed { index, podcast ->
             ContentCandidate(
@@ -84,22 +69,16 @@ class AdaptiveContentCandidateRanker(
     private val scorer: AdaptiveCandidateScorer,
     private val historyProvider: suspend () -> List<ListeningHistoryEntity>,
 ) : ContentCandidateRanker {
-    override suspend fun rank(
-        candidates: List<ContentCandidate>,
-        intent: ContentIntent,
-        context: ContentContext,
-    ): List<ContentCandidate> {
-        return try {
-            rankAdaptively(candidates, intent, context)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            candidates.sortedWith(
-                compareByDescending(ContentCandidate::retrievalScore)
-                    .thenBy { it.serverRank ?: Int.MAX_VALUE }
-                    .thenBy(ContentCandidate::id),
-            )
-        }
+    override suspend fun rank(candidates: List<ContentCandidate>, intent: ContentIntent, context: ContentContext,): List<ContentCandidate> = try {
+        rankAdaptively(candidates, intent, context)
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Exception) {
+        candidates.sortedWith(
+            compareByDescending(ContentCandidate::retrievalScore)
+                .thenBy { it.serverRank ?: Int.MAX_VALUE }
+                .thenBy(ContentCandidate::id),
+        )
     }
 
     private suspend fun rankAdaptively(

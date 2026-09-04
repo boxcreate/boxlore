@@ -22,9 +22,8 @@ object SmartQueueRefillPolicy {
         return remainingUpcoming <= remainingThreshold
     }
 
-    fun stripQueuePrefixes(mediaId: String): String =
-        mediaId
-            .removePrefix("learn:")
-            .removePrefix("episode:")
-            .removePrefix("queue:")
+    fun stripQueuePrefixes(mediaId: String): String = mediaId
+        .removePrefix("learn:")
+        .removePrefix("episode:")
+        .removePrefix("queue:")
 }

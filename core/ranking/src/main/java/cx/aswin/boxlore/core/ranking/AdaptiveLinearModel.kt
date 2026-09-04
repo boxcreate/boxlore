@@ -39,12 +39,7 @@ class AdaptiveLinearModel(
         require(maximumLearnedBlend in 0.0..1.0)
     }
 
-    fun score(
-        objective: RankingObjective,
-        features: RankingFeatures,
-        priorScore: Double,
-        state: AdaptiveModelState,
-    ): RankingScore {
+    fun score(objective: RankingObjective, features: RankingFeatures, priorScore: Double, state: AdaptiveModelState,): RankingScore {
         requireCompatible(features, state)
         val theta = multiply(state.inverseCovariance, state.rewardVector, state.dimension)
         val rawLearned = dot(theta, features.values)
@@ -75,14 +70,9 @@ class AdaptiveLinearModel(
     }
 
     /** The prior→learned blend weight for a given number of resolved outcomes. */
-    fun learnedBlend(updateCount: Long): Double =
-        (updateCount.toDouble() / explorationThreshold).coerceIn(0.0, 1.0) * maximumLearnedBlend
+    fun learnedBlend(updateCount: Long): Double = (updateCount.toDouble() / explorationThreshold).coerceIn(0.0, 1.0) * maximumLearnedBlend
 
-    fun update(
-        features: RankingFeatures,
-        reward: Double,
-        state: AdaptiveModelState,
-    ): AdaptiveModelState {
+    fun update(features: RankingFeatures, reward: Double, state: AdaptiveModelState,): AdaptiveModelState {
         requireCompatible(features, state)
         val boundedReward = reward.coerceIn(-1.0, 1.0)
         val dimension = state.dimension
@@ -123,10 +113,8 @@ class AdaptiveLinearModel(
     }
 }
 
-internal fun identityMatrix(dimension: Int, diagonal: Double): DoubleArray {
-    return DoubleArray(dimension * dimension) { index ->
-        if (index / dimension == index % dimension) diagonal else 0.0
-    }
+internal fun identityMatrix(dimension: Int, diagonal: Double): DoubleArray = DoubleArray(dimension * dimension) { index ->
+    if (index / dimension == index % dimension) diagonal else 0.0
 }
 
 internal fun dot(left: DoubleArray, right: DoubleArray): Double {
@@ -161,25 +149,17 @@ internal fun invertPositiveDefinite(matrix: DoubleArray, dimension: Int): Double
     }
 }
 
-private fun augmentedWithIdentity(
-    matrix: DoubleArray,
-    dimension: Int,
-): Array<DoubleArray> {
-    return Array(dimension) { row ->
-        DoubleArray(dimension * 2) { column ->
-            when {
-                column < dimension -> matrix[row * dimension + column]
-                column - dimension == row -> 1.0
-                else -> 0.0
-            }
+private fun augmentedWithIdentity(matrix: DoubleArray, dimension: Int,): Array<DoubleArray> = Array(dimension) { row ->
+    DoubleArray(dimension * 2) { column ->
+        when {
+            column < dimension -> matrix[row * dimension + column]
+            column - dimension == row -> 1.0
+            else -> 0.0
         }
     }
 }
 
-private fun swapBestPivotIntoPlace(
-    augmented: Array<DoubleArray>,
-    pivotIndex: Int,
-) {
+private fun swapBestPivotIntoPlace(augmented: Array<DoubleArray>, pivotIndex: Int,) {
     val bestRow = (pivotIndex until augmented.size).maxBy { row ->
         kotlin.math.abs(augmented[row][pivotIndex])
     }
@@ -189,10 +169,7 @@ private fun swapBestPivotIntoPlace(
     augmented[bestRow] = temporary
 }
 
-private fun normalizePivotRow(
-    augmented: Array<DoubleArray>,
-    pivotIndex: Int,
-) {
+private fun normalizePivotRow(augmented: Array<DoubleArray>, pivotIndex: Int,) {
     val pivot = augmented[pivotIndex][pivotIndex]
     require(kotlin.math.abs(pivot) > 1e-12) { "Ranking covariance matrix is singular" }
     for (column in augmented[pivotIndex].indices) {
@@ -200,20 +177,13 @@ private fun normalizePivotRow(
     }
 }
 
-private fun eliminatePivotColumn(
-    augmented: Array<DoubleArray>,
-    pivotIndex: Int,
-) {
+private fun eliminatePivotColumn(augmented: Array<DoubleArray>, pivotIndex: Int,) {
     for (row in augmented.indices) {
         if (row != pivotIndex) eliminateFromRow(augmented, row, pivotIndex)
     }
 }
 
-private fun eliminateFromRow(
-    augmented: Array<DoubleArray>,
-    row: Int,
-    pivotIndex: Int,
-) {
+private fun eliminateFromRow(augmented: Array<DoubleArray>, row: Int, pivotIndex: Int,) {
     val factor = augmented[row][pivotIndex]
     if (factor == 0.0) return
     for (column in augmented[row].indices) {

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,11 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.home.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.home.settings.components.SettingsNavigationRow
@@ -75,9 +73,9 @@ internal fun AboutSettingsPage(
                     )
                     Text(
                         text =
-                            "boxlore’s podcast catalog comes from Podcast Index — " +
-                                "an open directory that makes indie podcast discovery possible. " +
-                                "We’re grateful they exist.",
+                        "boxlore’s podcast catalog comes from Podcast Index — " +
+                            "an open directory that makes indie podcast discovery possible. " +
+                            "We’re grateful they exist.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -92,10 +90,10 @@ internal fun AboutSettingsPage(
                             painter = painterResource(R.drawable.ic_podcast_index_logo),
                             contentDescription = "Podcast Index logo",
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 28.dp, vertical = 24.dp)
-                                    .height(72.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 28.dp, vertical = 24.dp)
+                                .height(72.dp),
                             contentScale = ContentScale.Fit,
                         )
                     }
@@ -105,10 +103,10 @@ internal fun AboutSettingsPage(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.Launch,
@@ -152,9 +150,9 @@ private fun SpecRow(
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

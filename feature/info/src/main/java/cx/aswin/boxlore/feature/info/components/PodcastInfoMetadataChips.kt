@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -28,16 +26,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.EpisodeSort
-
 
 internal fun calculateUpdateFrequencyData(
     podcast: Podcast,
@@ -70,11 +67,10 @@ internal fun calculateUpdateFrequencyData(
     return predictedFrequencyFromPattern(validEpisodes, medianIntervalDays) ?: cachedFrequencyData
 }
 
-internal fun filterValidFrequencyEpisodes(episodes: List<Episode>): List<Episode> =
-    episodes
-        .filter { it.episodeType != "trailer" && it.episodeType != "bonus" && it.publishedDate > 0 }
-        .sortedByDescending { it.publishedDate }
-        .take(15)
+internal fun filterValidFrequencyEpisodes(episodes: List<Episode>): List<Episode> = episodes
+    .filter { it.episodeType != "trailer" && it.episodeType != "bonus" && it.publishedDate > 0 }
+    .sortedByDescending { it.publishedDate }
+    .take(15)
 
 internal fun computeDaysSinceLatest(
     podcast: Podcast,
@@ -238,17 +234,15 @@ internal fun genreIconFor(genre: String): ImageVector {
     }
 }
 
-internal fun mediumIconFor(medium: String): ImageVector =
-    when (medium.lowercase()) {
-        "music" -> Icons.Rounded.MusicNote
-        "video" -> Icons.Rounded.Videocam
-        "film" -> Icons.Rounded.Movie
-        "audiobook" -> Icons.Rounded.AutoStories
-        "newsletter" -> Icons.Rounded.Email
-        "blog" -> Icons.AutoMirrored.Rounded.Article
-        else -> Icons.Rounded.Headphones
-    }
-
+internal fun mediumIconFor(medium: String): ImageVector = when (medium.lowercase()) {
+    "music" -> Icons.Rounded.MusicNote
+    "video" -> Icons.Rounded.Videocam
+    "film" -> Icons.Rounded.Movie
+    "audiobook" -> Icons.Rounded.AutoStories
+    "newsletter" -> Icons.Rounded.Email
+    "blog" -> Icons.AutoMirrored.Rounded.Article
+    else -> Icons.Rounded.Headphones
+}
 
 @Composable
 internal fun CompactPersonChip(
@@ -259,10 +253,10 @@ internal fun CompactPersonChip(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = ExpressiveShapes.Pill,
         modifier =
-            Modifier.expressiveClickable(
-                enabled = !person.href.isNullOrBlank(),
-                onClick = onClick,
-            ),
+        Modifier.expressiveClickable(
+            enabled = !person.href.isNullOrBlank(),
+            onClick = onClick,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -275,9 +269,9 @@ internal fun CompactPersonChip(
                     proxyWidth = 40,
                     contentDescription = person.name,
                     modifier =
-                        Modifier
-                            .size(16.dp)
-                            .clip(CircleShape),
+                    Modifier
+                        .size(16.dp)
+                        .clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )
             } else {
@@ -304,7 +298,6 @@ internal fun CompactPersonChip(
         }
     }
 }
-
 
 @Composable
 internal fun RssFeedChip() {
@@ -501,12 +494,11 @@ internal fun PodcastInfoMetadataChipsRow(
 }
 
 /** "video" if this is a video-only podcast feed masquerading as "podcast" medium; otherwise unchanged. */
-private fun resolveDisplayMedium(podcast: Podcast): String? =
-    if (podcast.medium == "podcast" && podcast.latestEpisode?.enclosureType?.startsWith("video/") == true) {
-        "video"
-    } else {
-        podcast.medium
-    }
+private fun resolveDisplayMedium(podcast: Podcast): String? = if (podcast.medium == "podcast" && podcast.latestEpisode?.enclosureType?.startsWith("video/") == true) {
+    "video"
+} else {
+    podcast.medium
+}
 
 private fun openPersonLink(
     context: android.content.Context,
@@ -559,4 +551,3 @@ private fun LazyListScope.fundingChip(
         )
     }
 }
-

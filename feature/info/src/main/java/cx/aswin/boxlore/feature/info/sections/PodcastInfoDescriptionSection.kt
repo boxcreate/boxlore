@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.sections
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.net.Uri
 import android.text.Html
 import androidx.compose.animation.animateContentSize
@@ -36,10 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.PodrollItem
 
@@ -47,7 +45,6 @@ internal fun stripHtml(html: String?): String {
     if (html.isNullOrEmpty()) return ""
     return android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_LEGACY).toString().trim()
 }
-
 
 @Composable
 internal fun LockedFeedNotice() {
@@ -62,11 +59,11 @@ internal fun LockedFeedNotice() {
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.small)
-                .expressiveClickable(isolate = true) { showLockedInfoDialog = true }
-                .padding(vertical = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .expressiveClickable(isolate = true) { showLockedInfoDialog = true }
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -170,15 +167,15 @@ internal fun PodcastInfoDescriptionSection(
 
     Surface(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .animateContentSize(
-                    animationSpec =
-                        spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessMediumLow,
-                        ),
-                ).expressiveClickable { onToggleExpanded() },
+        Modifier
+            .fillMaxWidth()
+            .animateContentSize(
+                animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+            ).expressiveClickable { onToggleExpanded() },
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
     ) {
@@ -204,9 +201,9 @@ internal fun PodcastInfoDescriptionBody(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
     ) {
         if (strippedDesc.isNotEmpty()) {
             Text(
@@ -232,7 +229,6 @@ internal fun PodcastInfoDescriptionBody(
     }
 }
 
-
 @Composable
 internal fun RecommendedPodcastCard(
     item: cx.aswin.boxlore.core.model.PodrollItem,
@@ -241,17 +237,17 @@ internal fun RecommendedPodcastCard(
 ) {
     Surface(
         modifier =
-            modifier
-                .expressiveClickable(isolate = true) {
-                    val targetId =
-                        if (!item.uuid.isNullOrBlank()) {
-                            "guid:${item.uuid}"
-                        } else {
-                            val encoded = Uri.encode(item.url)
-                            "url:$encoded"
-                        }
-                    onPodcastClick(targetId)
-                },
+        modifier
+            .expressiveClickable(isolate = true) {
+                val targetId =
+                    if (!item.uuid.isNullOrBlank()) {
+                        "guid:${item.uuid}"
+                    } else {
+                        val encoded = Uri.encode(item.url)
+                        "url:$encoded"
+                    }
+                onPodcastClick(targetId)
+            },
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),

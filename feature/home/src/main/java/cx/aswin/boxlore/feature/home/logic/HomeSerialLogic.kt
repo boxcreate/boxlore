@@ -24,20 +24,18 @@ internal object HomeSerialLogic {
     fun ongoingEpisodeId(
         allHistory: List<HomeListeningHistoryItem>,
         podcastId: String,
-    ): String? =
-        allHistory
-            .filter { h -> h.podcastId == podcastId && !h.isCompleted && h.progressMs > 0L }
-            .maxByOrNull { it.lastPlayedAt }
-            ?.episodeId
+    ): String? = allHistory
+        .filter { h -> h.podcastId == podcastId && !h.isCompleted && h.progressMs > 0L }
+        .maxByOrNull { it.lastPlayedAt }
+        ?.episodeId
 
     fun lastCompletedEpisodeId(
         allHistory: List<HomeListeningHistoryItem>,
         podcastId: String,
-    ): String? =
-        allHistory
-            .filter { h -> h.podcastId == podcastId && h.isCompleted }
-            .maxByOrNull { it.lastPlayedAt }
-            ?.episodeId
+    ): String? = allHistory
+        .filter { h -> h.podcastId == podcastId && h.isCompleted }
+        .maxByOrNull { it.lastPlayedAt }
+        ?.episodeId
 
     fun findPendingSerialPodcasts(
         subs: List<Podcast>,

@@ -65,15 +65,15 @@ internal class PlaybackTransportHelper(
                 val savedPosition =
                     PlaybackControllerStatePolicy.resolveResumePositionMs(
                         persistedPositionMs =
-                            resolvePersistedResumePositionMs(
-                                currentEpisode.id,
-                                entryPointContext?.getString("entry_point"),
-                            ),
+                        resolvePersistedResumePositionMs(
+                            currentEpisode.id,
+                            entryPointContext?.getString("entry_point"),
+                        ),
                         restoredStatePositionMs =
-                            playerStateFlow.value
-                                .takeIf { it.currentEpisode?.id == currentEpisode.id }
-                                ?.position
-                                ?: 0L,
+                        playerStateFlow.value
+                            .takeIf { it.currentEpisode?.id == currentEpisode.id }
+                            ?.position
+                            ?: 0L,
                     )
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
                     .setSeekSource("resume")
@@ -199,11 +199,7 @@ internal class PlaybackTransportHelper(
         }
     }
 
-    fun skipToEpisode(
-        index: Int,
-        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-        sourceContext: android.os.Bundle? = null,
-    ) {
+    fun skipToEpisode(index: Int, entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC, sourceContext: android.os.Bundle? = null,) {
         val controller = mediaHandle.controller
         android.util.Log.d(
             "PlaybackRepo",

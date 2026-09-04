@@ -64,7 +64,7 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
         (
             currentState.aiSelectedOptions.toList() +
                 if (currentState.aiCustomInputText.isNotBlank()) listOf(currentState.aiCustomInputText) else emptyList()
-        ).joinToString(". ")
+            ).joinToString(". ")
 
     if (turnInput.isBlank()) return
 
@@ -225,7 +225,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
         (
             currentState.aiSelectedOptions.toList() +
                 if (currentState.aiCustomInputText.isNotBlank()) listOf(currentState.aiCustomInputText) else emptyList()
-        ).joinToString(". ")
+            ).joinToString(". ")
 
     if (!force) {
         val turnTime = (System.currentTimeMillis() - turnStartMs) / 1000f
@@ -347,11 +347,11 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                                     .getOnboardingCurriculum(
                                         publicKey = podcastRepository.publicKey,
                                         request =
-                                            OnboardingCurriculumRequest(
-                                                queries = queries,
-                                                country = locale.country,
-                                                languages = locale.languages,
-                                            ),
+                                        OnboardingCurriculumRequest(
+                                            queries = queries,
+                                            country = locale.country,
+                                            languages = locale.languages,
+                                        ),
                                     ).execute()
                             }
                         if (curriculumResponse.isSuccessful && curriculumResponse.body() != null) {

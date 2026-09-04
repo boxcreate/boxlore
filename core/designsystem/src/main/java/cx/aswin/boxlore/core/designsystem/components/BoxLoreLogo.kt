@@ -17,18 +17,14 @@ import androidx.compose.ui.unit.dp
  * @param height Visual height of the mark; width follows the logo aspect ratio.
  */
 @Composable
-fun BoxLoreLogo(
-    modifier: Modifier = Modifier,
-    textColor: Color = MaterialTheme.colorScheme.primary,
-    height: Dp = 20.dp,
-) {
+fun BoxLoreLogo(modifier: Modifier = Modifier, textColor: Color = MaterialTheme.colorScheme.primary, height: Dp = 20.dp,) {
     Icon(
         painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_logo),
         contentDescription = "boxlore",
         tint = textColor,
         modifier =
-            modifier
-                .height(height)
-                .aspectRatio(805f / 110f),
+        modifier
+            .height(height)
+            .aspectRatio(805f / 110f),
     )
 }

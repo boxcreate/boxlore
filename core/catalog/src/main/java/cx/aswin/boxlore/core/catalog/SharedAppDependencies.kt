@@ -1,12 +1,12 @@
 package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import cx.aswin.boxlore.core.ranking.RankingRuntimeControls
-import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 
 /**
@@ -44,10 +44,9 @@ object SharedAppDependenciesHolder {
     @Volatile
     var instance: SharedAppDependencies? = null
 
-    fun require(): SharedAppDependencies =
-        instance
-            ?: error(
-                "SharedAppDependencies not installed. " +
-                    "Set SharedAppDependenciesHolder.instance from Application after creating AppContainer.",
-            )
+    fun require(): SharedAppDependencies = instance
+        ?: error(
+            "SharedAppDependencies not installed. " +
+                "Set SharedAppDependenciesHolder.instance from Application after creating AppContainer.",
+        )
 }

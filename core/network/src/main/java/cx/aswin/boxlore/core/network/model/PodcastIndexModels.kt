@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.core.network.model
 
-
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -10,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class TrendingResponse(
     @SerialName("status")
     val status: String,
-    
+
     @SerialName("feeds")
     val feeds: List<TrendingFeed> = emptyList()
 )
@@ -19,40 +18,40 @@ data class TrendingResponse(
 data class TrendingFeed(
     @SerialName("id")
     val id: Long,
-    
+
     @SerialName("title")
     val title: String,
-    
+
     @SerialName("author")
     val author: String? = null,
-    
+
     @SerialName("description")
     val description: String? = null,
-    
+
     @SerialName("image")
     val image: String? = null,
-    
+
     @SerialName("artwork")
     val artwork: String? = null,
-    
+
     @SerialName("language")
     val language: String? = null,
-    
+
     @SerialName("categories")
     val categories: Map<String, String>? = emptyMap(),
-    
+
     @SerialName("itunesId")
     val itunesId: Long? = null,
-    
+
     @SerialName("trendScore")
     val trendScore: Int? = null,
-    
+
     @SerialName("newestItemPublishTime")
     val newestItemPublishTime: Long? = null,
-    
+
     @SerialName("medium")
     val medium: String? = null,
-    
+
     @SerialName("latestEpisode")
     val latestEpisode: EpisodeItem? = null
 )
@@ -63,7 +62,7 @@ data class TrendingFeed(
 data class SearchResponse(
     @SerialName("status")
     val status: String,
-    
+
     @SerialName("feeds")
     val feeds: List<SearchFeed> = emptyList()
 )
@@ -72,31 +71,31 @@ data class SearchResponse(
 data class SearchFeed(
     @SerialName("id")
     val id: Long,
-    
+
     @SerialName("title")
     val title: String,
-    
+
     @SerialName("author")
     val author: String? = null,
-    
+
     @SerialName("description")
     val description: String? = null,
-    
+
     @SerialName("image")
     val image: String? = null,
-    
+
     @SerialName("artwork")
     val artwork: String? = null,
-    
+
     @SerialName("url")
     val url: String? = null,
-    
+
     @SerialName("itunesId")
     val itunesId: Long? = null,
-    
+
     @SerialName("medium")
     val medium: String? = null,
-    
+
     @SerialName("categories")
     val categories: Map<String, String>? = emptyMap()
 )
@@ -107,7 +106,7 @@ data class SearchFeed(
 data class EpisodesResponse(
     @SerialName("status")
     val status: String,
-    
+
     @SerialName("items")
     val items: List<EpisodeItem> = emptyList(),
 
@@ -120,13 +119,13 @@ data class EpisodesResponse(
 data class EpisodesPaginatedResponse(
     @SerialName("items")
     val items: List<EpisodeItem> = emptyList(),
-    
+
     @SerialName("hasMore")
     val hasMore: Boolean = false,
-    
+
     @SerialName("offset")
     val offset: Int = 0,
-    
+
     @SerialName("limit")
     val limit: Int = 20
 )
@@ -135,7 +134,7 @@ data class EpisodesPaginatedResponse(
 data class SingleEpisodeResponse(
     @SerialName("status")
     val status: String,
-    
+
     @SerialName("episode")
     val episode: EpisodeItem? = null
 )
@@ -144,43 +143,43 @@ data class SingleEpisodeResponse(
 data class EpisodeItem(
     @SerialName("id")
     val id: Long,
-    
+
     @SerialName("title")
     val title: String,
-    
+
     @SerialName("description")
     val description: String? = null,
-    
+
     @SerialName("enclosureUrl")
     val enclosureUrl: String? = null,
-    
+
     @SerialName("enclosureLength")
     val enclosureLength: Long? = null,
-    
+
     @SerialName("enclosureType")
     val enclosureType: String? = null,
-    
+
     @SerialName("duration")
     val duration: Int? = null,
-    
+
     @SerialName("datePublished")
     val datePublished: Long? = null,
-    
+
     @SerialName("image")
     val image: String? = null,
-    
+
     @SerialName("feedImage")
     val feedImage: String? = null,
-    
+
     @SerialName("feedId")
     val feedId: Long? = null,
-    
+
     @SerialName("feedTitle")
     val feedTitle: String? = null,
-    
+
     @SerialName("chaptersUrl")
     val chaptersUrl: String? = null,
-    
+
     @SerialName("transcriptUrl")
     val transcriptUrl: String? = null,
 
@@ -204,7 +203,7 @@ data class EpisodeItem(
     val episodeNumber: Int? = null,
 
     @SerialName("episodeType")
-    val episodeType: String? = null,  // "full", "trailer", "bonus"
+    val episodeType: String? = null, // "full", "trailer", "bonus"
 
     @SerialName("genre")
     val genre: String? = null,
@@ -237,7 +236,7 @@ data class EpisodeItem(
 data class PodcastResponse(
     @SerialName("status")
     val status: String,
-    
+
     @SerialName("feed")
     val feed: PodcastFeed? = null
 )
@@ -246,31 +245,31 @@ data class PodcastResponse(
 data class PodcastFeed(
     @SerialName("id")
     val id: Long,
-    
+
     @SerialName("title")
     val title: String,
-    
+
     @SerialName("url")
     val url: String? = null,
-    
+
     @SerialName("type")
     val type: String? = "episodic",
-    
+
     @SerialName("author")
     val author: String? = null,
-    
+
     @SerialName("description")
     val description: String? = null,
-    
+
     @SerialName("image")
     val image: String? = null,
-    
+
     @SerialName("artwork")
     val artwork: String? = null,
-    
+
     @SerialName("language")
     val language: String? = null,
-    
+
     @SerialName("categories")
     val categories: Map<String, String>? = emptyMap(),
 
@@ -285,7 +284,7 @@ data class PodcastFeed(
     val podcastGuid: String? = null,
 
     @SerialName("medium")
-    val medium: String? = null,  // "podcast", "music", "video"
+    val medium: String? = null, // "podcast", "music", "video"
 
     @SerialName("locked")
     val locked: Int? = null,
@@ -309,10 +308,10 @@ data class PodcastFeed(
 data class PodcastMetaResponse(
     @SerialName("id")
     val id: Long,
-    
+
     @SerialName("type")
     val type: String? = "episodic", // serial or episodic
-    
+
     @SerialName("title")
     val title: String? = null,
 
@@ -336,10 +335,10 @@ data class PodcastMetaResponse(
 data class NetworkPodrollItem(
     @SerialName("title")
     val title: String,
-    
+
     @SerialName("url")
     val url: String,
-    
+
     @SerialName("uuid")
     val uuid: String? = null
 )
@@ -355,7 +354,7 @@ data class PersonItem(
     val name: String,
 
     @SerialName("role")
-    val role: String? = null,  // "host", "guest", "editor"
+    val role: String? = null, // "host", "guest", "editor"
 
     @SerialName("group")
     val group: String? = null, // "cast", "writing", "visuals"
@@ -373,7 +372,7 @@ data class TranscriptItem(
     val url: String,
 
     @SerialName("type")
-    val type: String  // "application/srt", "text/vtt", "application/json"
+    val type: String // "application/srt", "text/vtt", "application/json"
 )
 
 @Serializable
@@ -412,7 +411,7 @@ data class ValueModel(
 @Serializable
 data class ValueModelType(
     @SerialName("type")
-    val type: String? = null,  // "lightning"
+    val type: String? = null, // "lightning"
 
     @SerialName("method")
     val method: String? = null, // "keysend"

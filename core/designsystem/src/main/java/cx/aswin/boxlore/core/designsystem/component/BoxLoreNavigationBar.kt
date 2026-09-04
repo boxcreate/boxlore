@@ -28,8 +28,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Home
@@ -39,6 +37,9 @@ import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationItemIconPosition
@@ -47,25 +48,24 @@ import androidx.compose.material3.ShortNavigationBarArrangement
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,17 +74,13 @@ import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
 import kotlin.math.PI
 import kotlin.math.sin
 
-enum class NavigationStyle(
-    val key: String,
-    val label: String,
-) {
+enum class NavigationStyle(val key: String, val label: String,) {
     Floating(key = "floating", label = "Floating"),
     Classic(key = "classic", label = "Classic"),
     ;
 
     companion object {
-        fun fromKey(key: String?): NavigationStyle =
-            entries.firstOrNull { it.key == key } ?: Floating
+        fun fromKey(key: String?): NavigationStyle = entries.firstOrNull { it.key == key } ?: Floating
     }
 }
 
@@ -122,14 +118,12 @@ private val ClassicNavigationChromeMetrics =
         miniPlayerBottomCornerRadius = 14.dp,
     )
 
-fun navigationChromeMetrics(style: NavigationStyle): NavigationChromeMetrics =
-    when (style) {
-        NavigationStyle.Floating -> FloatingNavigationChromeMetrics
-        NavigationStyle.Classic -> ClassicNavigationChromeMetrics
-    }
+fun navigationChromeMetrics(style: NavigationStyle): NavigationChromeMetrics = when (style) {
+    NavigationStyle.Floating -> FloatingNavigationChromeMetrics
+    NavigationStyle.Classic -> ClassicNavigationChromeMetrics
+}
 
-fun navigationStyleUsesExternalSystemNavigationInset(style: NavigationStyle): Boolean =
-    style == NavigationStyle.Floating
+fun navigationStyleUsesExternalSystemNavigationInset(style: NavigationStyle): Boolean = style == NavigationStyle.Floating
 
 /** Height of the floating Home / Explore / Library pill. */
 val AppNavigationBarHeight = FloatingNavigationChromeMetrics.navigationBarHeight
@@ -159,21 +153,17 @@ val AppMiniPlayerHeight = FloatingNavigationChromeMetrics.miniPlayerHeight
 val AppMiniPlayerNavGap = FloatingNavigationChromeMetrics.miniPlayerNavigationGap
 
 /** Content clearance for either navigation presentation, optionally including mini-player chrome. */
-fun appBottomChromeContentPadding(
-    style: NavigationStyle,
-    isMiniPlayerVisible: Boolean,
-): androidx.compose.ui.unit.Dp {
+fun appBottomChromeContentPadding(style: NavigationStyle, isMiniPlayerVisible: Boolean,): androidx.compose.ui.unit.Dp {
     val metrics = navigationChromeMetrics(style)
     return metrics.bottomNavigationClearance +
         if (isMiniPlayerVisible) metrics.miniPlayerHeight + metrics.miniPlayerNavigationGap else 0.dp
 }
 
 @Composable
-fun appBottomChromeContentPadding(isMiniPlayerVisible: Boolean): androidx.compose.ui.unit.Dp =
-    appBottomChromeContentPadding(
-        style = LocalNavigationStyle.current,
-        isMiniPlayerVisible = isMiniPlayerVisible,
-    )
+fun appBottomChromeContentPadding(isMiniPlayerVisible: Boolean): androidx.compose.ui.unit.Dp = appBottomChromeContentPadding(
+    style = LocalNavigationStyle.current,
+    isMiniPlayerVisible = isMiniPlayerVisible,
+)
 
 /** Explore For You / Top segmented control (padding + pill). */
 val ExploreTabSelectorFabHeight = 44.dp
@@ -271,13 +261,13 @@ private fun FloatingNavigationBar(
 
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(
-                    start = AppNavigationBarHorizontalInset,
-                    end = AppNavigationBarHorizontalInset,
-                    bottom = AppNavigationBarBottomInset,
-                ),
+        modifier
+            .fillMaxWidth()
+            .padding(
+                start = AppNavigationBarHorizontalInset,
+                end = AppNavigationBarHorizontalInset,
+                bottom = AppNavigationBarBottomInset,
+            ),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -311,10 +301,10 @@ private fun FloatingPrimaryNavPill(
     ) {
         BoxWithConstraints(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(NavPillContentPadding)
-                    .selectableGroup(),
+            Modifier
+                .fillMaxSize()
+                .padding(NavPillContentPadding)
+                .selectableGroup(),
         ) {
             val selectedIndex =
                 primaryNavDestinations.indexOfFirst { destination ->
@@ -324,20 +314,20 @@ private fun FloatingPrimaryNavPill(
             val indicatorOffset by animateDpAsState(
                 targetValue = itemWidth * selectedIndex.coerceAtLeast(0),
                 animationSpec =
-                    spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium,
-                    ),
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium,
+                ),
                 label = "navigationIndicatorOffset",
             )
 
             if (selectedIndex >= 0) {
                 Surface(
                     modifier =
-                        Modifier
-                            .offset(x = indicatorOffset)
-                            .width(itemWidth)
-                            .height(NavPillItemHeight),
+                    Modifier
+                        .offset(x = indicatorOffset)
+                        .width(itemWidth)
+                        .height(NavPillItemHeight),
                     shape = NavSelectionShape,
                     color = MaterialTheme.colorScheme.secondaryContainer,
                 ) {}
@@ -349,21 +339,21 @@ private fun FloatingPrimaryNavPill(
                     Surface(
                         onClick = { onNavigate(destination.route) },
                         modifier =
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .semantics {
-                                    role = Role.Tab
-                                    this.selected = selected
-                                },
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .semantics {
+                                role = Role.Tab
+                                this.selected = selected
+                            },
                         shape = NavSelectionShape,
                         color = Color.Transparent,
                         contentColor =
-                            if (selected) {
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                        if (selected) {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -394,38 +384,34 @@ private fun FloatingPrimaryNavPill(
 }
 
 @Composable
-private fun LoreNavActionFab(
-    selected: Boolean,
-    initialContentReady: Boolean,
-    onClick: () -> Unit,
-) {
+private fun LoreNavActionFab(selected: Boolean, initialContentReady: Boolean, onClick: () -> Unit,) {
     FloatingActionButton(
         onClick = onClick,
         modifier =
-            Modifier
-                .size(AppLoreNavigationActionSize)
-                .semantics {
-                    role = Role.Tab
-                    this.selected = selected
-                },
+        Modifier
+            .size(AppLoreNavigationActionSize)
+            .semantics {
+                role = Role.Tab
+                this.selected = selected
+            },
         shape = RoundedCornerShape(50),
         containerColor =
-            if (selected) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            },
+        if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
         contentColor =
-            if (selected) {
-                MaterialTheme.colorScheme.onSecondaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
+        if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
         elevation =
-            FloatingActionButtonDefaults.elevation(
-                defaultElevation = 2.dp,
-                pressedElevation = 3.dp,
-            ),
+        FloatingActionButtonDefaults.elevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 3.dp,
+        ),
     ) {
         androidx.compose.foundation.layout.Box(
             modifier = Modifier.fillMaxSize(),
@@ -445,10 +431,7 @@ private fun LoreNavActionFab(
 }
 
 @Composable
-private fun LoreAurora(
-    isSelected: Boolean,
-    initialContentReady: Boolean,
-) {
+private fun LoreAurora(isSelected: Boolean, initialContentReady: Boolean,) {
     val startupProgress = remember { Animatable(0f) }
     LaunchedEffect(initialContentReady) {
         if (initialContentReady) {
@@ -477,10 +460,10 @@ private fun LoreActiveAurora() {
             initialValue = 0f,
             targetValue = 1f,
             animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 10_000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
+            infiniteRepeatable(
+                animation = tween(durationMillis = 10_000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
             label = "loreActiveAuroraProgress",
         )
 
@@ -491,10 +474,7 @@ private fun LoreActiveAurora() {
 }
 
 @Composable
-private fun LoreAuroraSurface(
-    progress: Float,
-    glowIntensity: Float,
-) {
+private fun LoreAuroraSurface(progress: Float, glowIntensity: Float,) {
     val glowColors =
         listOf(
             Color(0xFF4285F4).copy(alpha = glowIntensity),
@@ -507,46 +487,42 @@ private fun LoreAuroraSurface(
         )
     androidx.compose.foundation.layout.Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .clip(CircleShape)
-                .drawBehind {
-                    val shift = progress * size.width
-                    drawRect(
-                        brush =
-                            Brush.linearGradient(
-                                colors = glowColors,
-                                start = Offset(x = shift - size.width, y = size.height),
-                                end = Offset(x = shift + size.width, y = 0f),
-                            ),
-                    )
-                    drawRect(
-                        brush =
-                            Brush.radialGradient(
-                                colors =
-                                    listOf(
-                                        Color.White.copy(alpha = glowIntensity * 0.38f),
-                                        Color.Transparent,
-                                    ),
-                                center =
-                                    Offset(
-                                        x = size.width * (0.22f + (progress * 0.56f)),
-                                        y = size.height * 0.5f,
-                                    ),
-                                radius = size.minDimension * 0.8f,
-                            ),
-                    )
-                },
+        Modifier
+            .fillMaxSize()
+            .clip(CircleShape)
+            .drawBehind {
+                val shift = progress * size.width
+                drawRect(
+                    brush =
+                    Brush.linearGradient(
+                        colors = glowColors,
+                        start = Offset(x = shift - size.width, y = size.height),
+                        end = Offset(x = shift + size.width, y = 0f),
+                    ),
+                )
+                drawRect(
+                    brush =
+                    Brush.radialGradient(
+                        colors =
+                        listOf(
+                            Color.White.copy(alpha = glowIntensity * 0.38f),
+                            Color.Transparent,
+                        ),
+                        center =
+                        Offset(
+                            x = size.width * (0.22f + (progress * 0.56f)),
+                            y = size.height * 0.5f,
+                        ),
+                        radius = size.minDimension * 0.8f,
+                    ),
+                )
+            },
     )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ClassicNavigationBar(
-    currentRoute: String,
-    onNavigate: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun ClassicNavigationBar(currentRoute: String, onNavigate: (String) -> Unit, modifier: Modifier = Modifier,) {
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -556,9 +532,9 @@ private fun ClassicNavigationBar(
     ) {
         ShortNavigationBar(
             modifier =
-                Modifier.heightIn(
-                    min = navigationChromeMetrics(NavigationStyle.Classic).navigationBarHeight,
-                ),
+            Modifier.heightIn(
+                min = navigationChromeMetrics(NavigationStyle.Classic).navigationBarHeight,
+            ),
             containerColor = Color.Transparent,
             arrangement = ShortNavigationBarArrangement.EqualWeight,
         ) {
@@ -581,14 +557,12 @@ private fun ClassicNavigationBar(
     }
 }
 
-internal fun isNavDestinationSelected(currentRoute: String, destinationRoute: String): Boolean =
-    currentRoute == destinationRoute || currentRoute.startsWith("$destinationRoute?")
+internal fun isNavDestinationSelected(currentRoute: String, destinationRoute: String): Boolean = currentRoute == destinationRoute || currentRoute.startsWith("$destinationRoute?")
 
 @Composable
-private fun NavDestination.iconFor(selected: Boolean): ImageVector =
-    when {
-        selectedIconRes != null && unselectedIconRes != null ->
-            ImageVector.vectorResource(id = if (selected) selectedIconRes else unselectedIconRes)
-        selected -> selectedIcon
-        else -> unselectedIcon
-    }
+private fun NavDestination.iconFor(selected: Boolean): ImageVector = when {
+    selectedIconRes != null && unselectedIconRes != null ->
+        ImageVector.vectorResource(id = if (selected) selectedIconRes else unselectedIconRes)
+    selected -> selectedIcon
+    else -> unselectedIcon
+}

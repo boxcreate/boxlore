@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 
 @Composable
@@ -37,20 +36,20 @@ fun PodcastCard(
         onClick = onClick,
         modifier = modifier,
         titleMaxLines =
-            when {
-                showSubtitle -> 2
-                density == FeedMediaCardDensity.Rail -> 2
-                else -> 3
-            },
+        when {
+            showSubtitle -> 2
+            density == FeedMediaCardDensity.Rail -> 2
+            else -> 3
+        },
         imageChrome = {
             if (showGenreChip && podcast.genre.isNotEmpty()) {
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
                     modifier =
-                        Modifier
-                            .padding(8.dp)
-                            .align(Alignment.TopStart),
+                    Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopStart),
                 ) {
                     Text(
                         text = podcast.genre.uppercase(),
@@ -68,9 +67,9 @@ fun PodcastCard(
                     shape = androidx.compose.foundation.shape.CircleShape,
                     color = Color.Black.copy(alpha = 0.55f),
                     modifier =
-                        Modifier
-                            .padding(8.dp)
-                            .align(Alignment.TopEnd),
+                    Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopEnd),
                 ) {
                     Box(
                         modifier = Modifier.padding(6.dp),

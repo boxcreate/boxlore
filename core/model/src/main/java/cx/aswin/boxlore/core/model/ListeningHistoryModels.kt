@@ -43,10 +43,7 @@ data class ListeningTopShow(
 )
 
 /** One local calendar day's listening total for activity charts. */
-data class ListeningDayActivity(
-    val localDay: Long,
-    val consumedMs: Long,
-)
+data class ListeningDayActivity(val localDay: Long, val consumedMs: Long,)
 
 data class ListeningInsightSummary(
     val period: ListeningPeriod,
@@ -113,15 +110,7 @@ data class ListeningHistoryRemoval(
 )
 
 object ListeningCompletionLogic {
-    fun isCompleted(
-        isCompleted: Boolean,
-        progressMs: Long,
-        durationMs: Long,
-    ): Boolean = isCompleted || (durationMs > 0 && progressMs > durationMs * 0.9f)
+    fun isCompleted(isCompleted: Boolean, progressMs: Long, durationMs: Long,): Boolean = isCompleted || (durationMs > 0 && progressMs > durationMs * 0.9f)
 
-    fun isInProgress(
-        isCompleted: Boolean,
-        progressMs: Long,
-        durationMs: Long,
-    ): Boolean = !isCompleted(isCompleted, progressMs, durationMs) && progressMs > 0
+    fun isInProgress(isCompleted: Boolean, progressMs: Long, durationMs: Long,): Boolean = !isCompleted(isCompleted, progressMs, durationMs) && progressMs > 0
 }

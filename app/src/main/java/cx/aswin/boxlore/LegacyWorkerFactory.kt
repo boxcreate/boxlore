@@ -16,11 +16,7 @@ import androidx.work.WorkerParameters
  * Belt-and-suspenders: thin stubs also remain at the old `core.data` FQCNs.
  */
 class LegacyWorkerFactory : WorkerFactory() {
-    override fun createWorker(
-        appContext: Context,
-        workerClassName: String,
-        workerParameters: WorkerParameters
-    ): ListenableWorker? {
+    override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
         val resolvedClassName = LEGACY_WORKER_ALIASES[workerClassName] ?: return null
         return try {
             val clazz = Class.forName(resolvedClassName).asSubclass(ListenableWorker::class.java)

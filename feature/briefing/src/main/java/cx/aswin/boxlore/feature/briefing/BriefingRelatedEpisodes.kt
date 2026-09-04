@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.briefing
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,10 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 
 @Composable
@@ -64,16 +62,14 @@ internal fun RelatedEpisodesSection(
     }
 }
 
-private fun relatedEpisodeKey(episode: Episode): String =
-    "${episode.podcastId.orEmpty()}:${episode.id}:${episode.audioUrl}:${episode.title}"
+private fun relatedEpisodeKey(episode: Episode): String = "${episode.podcastId.orEmpty()}:${episode.id}:${episode.audioUrl}:${episode.title}"
 
 @Composable
-private fun relatedEpisodesDividerColor(isActive: Boolean): Color =
-    if (isActive) {
-        Color.White.copy(alpha = 0.15f)
-    } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-    }
+private fun relatedEpisodesDividerColor(isActive: Boolean): Color = if (isActive) {
+    Color.White.copy(alpha = 0.15f)
+} else {
+    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+}
 
 @Composable
 private fun RelatedEpisodesHeader(isActive: Boolean) {
@@ -104,12 +100,11 @@ private fun RelatedEpisodesHeader(isActive: Boolean) {
 private fun relatedEpisodesHeaderColor(
     isActive: Boolean,
     alpha: Float,
-): Color =
-    if (isActive) {
-        Color.White.copy(alpha = alpha)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
-    }
+): Color = if (isActive) {
+    Color.White.copy(alpha = alpha)
+} else {
+    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
+}
 
 private fun trackRelatedEpisodeClick(
     state: BriefingStoryCardState,

@@ -6,11 +6,6 @@ import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Transcript
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
@@ -21,6 +16,11 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.xmlpull.v1.XmlPullParser
 
 data class ParsedRssFeed(
     val title: String,
@@ -34,35 +34,20 @@ data class ParsedRssFeed(
     val episodes: List<RssEpisodeEntity>,
 )
 
-data class RssFetchResult(
-    val finalUrl: String,
-    val etag: String?,
-    val lastModified: String?,
-    val body: ByteArray,
-)
+data class RssFetchResult(val finalUrl: String, val etag: String?, val lastModified: String?, val body: ByteArray,)
 
 sealed interface RssFreshnessResult {
-    data class Unchanged(
-        val etag: String?,
-        val lastModified: String?,
-    ) : RssFreshnessResult
+    data class Unchanged(val etag: String?, val lastModified: String?,) : RssFreshnessResult
 
-    data class Changed(
-        val etag: String?,
-        val lastModified: String?,
-    ) : RssFreshnessResult
+    data class Changed(val etag: String?, val lastModified: String?,) : RssFreshnessResult
 
     data object Unsupported : RssFreshnessResult
 
-    data class Failed(
-        val cause: Throwable,
-    ) : RssFreshnessResult
+    data class Failed(val cause: Throwable,) : RssFreshnessResult
 }
 
 @Suppress("LargeClass")
-open class RssFeedClient(
-    private val httpClient: OkHttpClient = defaultHttpClient(),
-) {
+open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClient(),) {
     open suspend fun fetch(url: String): RssFetchResult {
         val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(url)
         val request =
@@ -93,21 +78,13 @@ open class RssFeedClient(
         }
     }
 
-    suspend fun confirmHeadValidators(
-        url: String,
-        etag: String?,
-        lastModified: String?,
-    ): Boolean = confirmUnchanged(url, etag, lastModified)
+    suspend fun confirmHeadValidators(url: String, etag: String?, lastModified: String?,): Boolean = confirmUnchanged(url, etag, lastModified)
 
     /**
      * True when validators say the body is unchanged. HEAD 405/501 falls through
      * to a conditional GET instead of treating the feed as changed.
      */
-    suspend fun confirmUnchanged(
-        url: String,
-        etag: String?,
-        lastModified: String?,
-    ): Boolean {
+    suspend fun confirmUnchanged(url: String, etag: String?, lastModified: String?,): Boolean {
         if (etag.isNullOrBlank() && lastModified.isNullOrBlank()) return false
         val headCode =
             runCatching {
@@ -168,11 +145,7 @@ open class RssFeedClient(
         }
     }
 
-    open suspend fun parse(
-        feedUrl: String,
-        bytes: ByteArray,
-        podcastId: String = RssIdGenerator.podcastId(feedUrl),
-    ): ParsedRssFeed {
+    open suspend fun parse(feedUrl: String, bytes: ByteArray, podcastId: String = RssIdGenerator.podcastId(feedUrl),): ParsedRssFeed {
         var libraryError: Exception? = null
         var customError: Exception? = null
         val libraryFeed =
@@ -198,10 +171,7 @@ open class RssFeedClient(
             )
     }
 
-    private suspend fun parseWithLibrary(
-        bytes: ByteArray,
-        podcastId: String,
-    ): ParsedRssFeed {
+    private suspend fun parseWithLibrary(bytes: ByteArray, podcastId: String,): ParsedRssFeed {
         val channel = RssParser().parse(String(bytes, StandardCharsets.UTF_8))
         val title = channel.title?.trim().orEmpty()
         require(title.isNotBlank()) { "Feed has no podcast title" }
@@ -247,13 +217,13 @@ open class RssFeedClient(
                     val publishedDate = parseDate(item.pubDate.orEmpty()) ?: 0L
                     RssEpisodeEntity(
                         episodeId =
-                            RssIdGenerator.episodeIdForPodcast(
-                                podcastId = podcastId,
-                                guid = item.guid,
-                                enclosureUrl = audioUrl,
-                                publishedDate = publishedDate,
-                                title = itemTitle,
-                            ),
+                        RssIdGenerator.episodeIdForPodcast(
+                            podcastId = podcastId,
+                            guid = item.guid,
+                            enclosureUrl = audioUrl,
+                            publishedDate = publishedDate,
+                            title = itemTitle,
+                        ),
                         podcastId = podcastId,
                         guid = item.guid,
                         title = itemTitle,
@@ -270,8 +240,8 @@ open class RssFeedClient(
                         episodeNumber = itunes?.episode?.toIntOrNull(),
                         episodeType = itunes?.episodeType,
                         enclosureType =
-                            item.rawEnclosure?.type
-                                ?: item.rawMediaContent?.type,
+                        item.rawEnclosure?.type
+                            ?: item.rawMediaContent?.type,
                     )
                 }
             }
@@ -281,29 +251,26 @@ open class RssFeedClient(
             title = title,
             author = itunes?.author.orEmpty(),
             description =
-                (channel.description ?: itunes?.summary)
-                    ?.cleanDescription(),
+            (channel.description ?: itunes?.summary)
+                ?.cleanDescription(),
             imageUrl = channelImage,
             genre = itunes?.categories?.firstOrNull(),
             podcastType =
-                itunes
-                    ?.type
-                    ?.lowercase(Locale.ROOT)
-                    ?.takeIf { it == "serial" || it == "episodic" }
-                    ?: "episodic",
+            itunes
+                ?.type
+                ?.lowercase(Locale.ROOT)
+                ?.takeIf { it == "serial" || it == "episodic" }
+                ?: "episodic",
             podcastGuid = null,
             declaredUpdatedAt = parseDate(channel.lastBuildDate.orEmpty()),
             episodes =
-                episodes
-                    .distinctBy(RssEpisodeEntity::episodeId)
-                    .sortedByDescending(RssEpisodeEntity::publishedDate),
+            episodes
+                .distinctBy(RssEpisodeEntity::episodeId)
+                .sortedByDescending(RssEpisodeEntity::publishedDate),
         )
     }
 
-    private fun parseCustom(
-        bytes: ByteArray,
-        podcastId: String,
-    ): ParsedRssFeed {
+    private fun parseCustom(bytes: ByteArray, podcastId: String,): ParsedRssFeed {
         val parser =
             Xml.newPullParser().apply {
                 disableUnsafeXmlFeatures()
@@ -360,30 +327,21 @@ open class RssFeedClient(
             podcastGuid = feed.podcastGuid,
             declaredUpdatedAt = feed.declaredUpdatedAt,
             episodes =
-                feed.episodes
-                    .distinctBy(RssEpisodeEntity::episodeId)
-                    .sortedByDescending(RssEpisodeEntity::publishedDate),
+            feed.episodes
+                .distinctBy(RssEpisodeEntity::episodeId)
+                .sortedByDescending(RssEpisodeEntity::publishedDate),
         )
     }
 
     /** Handles START_TAG events for channel-level (non-episode) feed metadata elements. */
-    private fun handleChannelStartTag(
-        parser: XmlPullParser,
-        feed: MutableFeed,
-        name: String,
-        qualifiedName: String,
-    ) {
+    private fun handleChannelStartTag(parser: XmlPullParser, feed: MutableFeed, name: String, qualifiedName: String,) {
         if (handleChannelImageOrAuthorTag(parser, feed, name)) return
         if (handleChannelTextTag(parser, feed, name)) return
         handleChannelMiscTag(parser, feed, name, qualifiedName)
     }
 
     /** Handles the channel `<image>`/`<author>` nesting, which share `feed`'s "inside X" flags. */
-    private fun handleChannelImageOrAuthorTag(
-        parser: XmlPullParser,
-        feed: MutableFeed,
-        name: String,
-    ): Boolean {
+    private fun handleChannelImageOrAuthorTag(parser: XmlPullParser, feed: MutableFeed, name: String,): Boolean {
         when {
             name == "image" && parser.depth > 2 -> {
                 val href =
@@ -412,11 +370,7 @@ open class RssFeedClient(
     }
 
     /** Handles simple text-content channel tags: title, description, managing editor. */
-    private fun handleChannelTextTag(
-        parser: XmlPullParser,
-        feed: MutableFeed,
-        name: String,
-    ): Boolean {
+    private fun handleChannelTextTag(parser: XmlPullParser, feed: MutableFeed, name: String,): Boolean {
         when {
             name == "title" && feed.title.isBlank() -> {
                 feed.title = readSimpleText(parser)
@@ -435,12 +389,7 @@ open class RssFeedClient(
     }
 
     /** Handles the remaining channel tags: category, dates, podcast guid and type. */
-    private fun handleChannelMiscTag(
-        parser: XmlPullParser,
-        feed: MutableFeed,
-        name: String,
-        qualifiedName: String,
-    ) {
+    private fun handleChannelMiscTag(parser: XmlPullParser, feed: MutableFeed, name: String, qualifiedName: String,) {
         when {
             name == "category" && feed.genre.isNullOrBlank() -> {
                 feed.genre = parser
@@ -461,10 +410,7 @@ open class RssFeedClient(
         }
     }
 
-    private fun mergeParsedFeeds(
-        libraryFeed: ParsedRssFeed?,
-        customFeed: ParsedRssFeed?,
-    ): ParsedRssFeed? {
+    private fun mergeParsedFeeds(libraryFeed: ParsedRssFeed?, customFeed: ParsedRssFeed?,): ParsedRssFeed? {
         if (libraryFeed == null) return customFeed
         if (customFeed == null) return libraryFeed
 
@@ -476,36 +422,36 @@ open class RssFeedClient(
                     libraryEpisode.copy(
                         guid = customEpisode.guid ?: libraryEpisode.guid,
                         title =
-                            customEpisode.title.takeIf(String::isNotBlank)
-                                ?: libraryEpisode.title,
+                        customEpisode.title.takeIf(String::isNotBlank)
+                            ?: libraryEpisode.title,
                         description =
-                            listOf(
-                                libraryEpisode.description,
-                                customEpisode.description,
-                            ).maxByOrNull(String::length).orEmpty(),
+                        listOf(
+                            libraryEpisode.description,
+                            customEpisode.description,
+                        ).maxByOrNull(String::length).orEmpty(),
                         imageUrl = customEpisode.imageUrl ?: libraryEpisode.imageUrl,
                         duration =
-                            customEpisode.duration.takeIf { it > 0 }
-                                ?: libraryEpisode.duration,
+                        customEpisode.duration.takeIf { it > 0 }
+                            ?: libraryEpisode.duration,
                         publishedDate =
-                            customEpisode.publishedDate.takeIf { it > 0L }
-                                ?: libraryEpisode.publishedDate,
+                        customEpisode.publishedDate.takeIf { it > 0L }
+                            ?: libraryEpisode.publishedDate,
                         chaptersUrl = customEpisode.chaptersUrl,
                         transcriptUrl = customEpisode.transcriptUrl,
                         transcripts = customEpisode.transcripts,
                         persons = customEpisode.persons,
                         seasonNumber =
-                            customEpisode.seasonNumber
-                                ?: libraryEpisode.seasonNumber,
+                        customEpisode.seasonNumber
+                            ?: libraryEpisode.seasonNumber,
                         episodeNumber =
-                            customEpisode.episodeNumber
-                                ?: libraryEpisode.episodeNumber,
+                        customEpisode.episodeNumber
+                            ?: libraryEpisode.episodeNumber,
                         episodeType =
-                            customEpisode.episodeType
-                                ?: libraryEpisode.episodeType,
+                        customEpisode.episodeType
+                            ?: libraryEpisode.episodeType,
                         enclosureType =
-                            libraryEpisode.enclosureType
-                                ?: customEpisode.enclosureType,
+                        libraryEpisode.enclosureType
+                            ?: customEpisode.enclosureType,
                     )
                 } ?: libraryEpisode
             } + customFeed.episodes.filterNot { it.episodeId in libraryIds }
@@ -517,24 +463,20 @@ open class RssFeedClient(
             imageUrl = customFeed.imageUrl ?: libraryFeed.imageUrl,
             genre = customFeed.genre ?: libraryFeed.genre,
             podcastType =
-                customFeed.podcastType.takeIf { it == "serial" }
-                    ?: libraryFeed.podcastType,
+            customFeed.podcastType.takeIf { it == "serial" }
+                ?: libraryFeed.podcastType,
             podcastGuid = customFeed.podcastGuid ?: libraryFeed.podcastGuid,
             declaredUpdatedAt =
-                customFeed.declaredUpdatedAt
-                    ?: libraryFeed.declaredUpdatedAt,
+            customFeed.declaredUpdatedAt
+                ?: libraryFeed.declaredUpdatedAt,
             episodes =
-                mergedEpisodes
-                    .distinctBy(RssEpisodeEntity::episodeId)
-                    .sortedByDescending(RssEpisodeEntity::publishedDate),
+            mergedEpisodes
+                .distinctBy(RssEpisodeEntity::episodeId)
+                .sortedByDescending(RssEpisodeEntity::publishedDate),
         )
     }
 
-    private fun isPlayableMedia(
-        url: String,
-        type: String?,
-        medium: String?,
-    ): Boolean {
+    private fun isPlayableMedia(url: String, type: String?, medium: String?,): Boolean {
         val normalizedType = type?.lowercase(Locale.ROOT).orEmpty()
         val normalizedMedium = medium?.lowercase(Locale.ROOT).orEmpty()
         if (normalizedType.startsWith("audio/") || normalizedType.startsWith("video/")) {
@@ -545,12 +487,7 @@ open class RssFeedClient(
         return PLAYABLE_EXTENSIONS.any(path::endsWith)
     }
 
-    private fun parseEpisodeElement(
-        parser: XmlPullParser,
-        name: String,
-        qualifiedName: String,
-        episode: MutableEpisode,
-    ) {
+    private fun parseEpisodeElement(parser: XmlPullParser, name: String, qualifiedName: String, episode: MutableEpisode,) {
         when {
             qualifiedName == "media:content" -> handleMediaContentTag(parser, episode)
             name == "title" -> episode.title = readSimpleText(parser)
@@ -575,10 +512,7 @@ open class RssFeedClient(
         }
     }
 
-    private fun handleMediaContentTag(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun handleMediaContentTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val url = parser.getAttributeValue(null, "url")
         val type = parser.getAttributeValue(null, "type")
         val medium = parser.getAttributeValue(null, "medium")
@@ -588,25 +522,16 @@ open class RssFeedClient(
         }
     }
 
-    private fun handleEpisodeDescriptionTag(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun handleEpisodeDescriptionTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val text = readSimpleText(parser).cleanDescription()
         if (text.length > episode.description.length) episode.description = text
     }
 
-    private fun updateEpisodePublishedDate(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun updateEpisodePublishedDate(parser: XmlPullParser, episode: MutableEpisode,) {
         parseDate(readSimpleText(parser))?.let { episode.publishedDate = it }
     }
 
-    private fun handleEnclosureTag(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun handleEnclosureTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val url = parser.getAttributeValue(null, "url")
         val type = parser.getAttributeValue(null, "type")
         if (!url.isNullOrBlank() && isPlayableMedia(url, type, null)) {
@@ -615,10 +540,7 @@ open class RssFeedClient(
         }
     }
 
-    private fun handleEpisodeLinkTag(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun handleEpisodeLinkTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val relation = parser.getAttributeValue(null, "rel")
         val href = parser.getAttributeValue(null, "href")
         val type = parser.getAttributeValue(null, "type")
@@ -628,19 +550,13 @@ open class RssFeedClient(
         }
     }
 
-    private fun handleEpisodeImageTag(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun handleEpisodeImageTag(parser: XmlPullParser, episode: MutableEpisode,) {
         episode.imageUrl = parser.getAttributeValue(null, "href")
             ?: parser.getAttributeValue(null, "url")
             ?: readSimpleText(parser).takeIf(String::isNotBlank)
     }
 
-    private fun handleTranscriptTag(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun handleTranscriptTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val url = parser.getAttributeValue(null, "url")
         if (!url.isNullOrBlank()) {
             val type = parser.getAttributeValue(null, "type").orEmpty()
@@ -649,10 +565,7 @@ open class RssFeedClient(
         }
     }
 
-    private fun handlePersonTag(
-        parser: XmlPullParser,
-        episode: MutableEpisode,
-    ) {
+    private fun handlePersonTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val role = parser.getAttributeValue(null, "role")
         val image = parser.getAttributeValue(null, "img")
         val href = parser.getAttributeValue(null, "href")
@@ -668,23 +581,11 @@ open class RssFeedClient(
         }
     }
 
-    private fun conditionalHeadRequest(
-        url: String,
-        etag: String?,
-        lastModified: String?,
-    ): Request = conditionalRequest(url, etag, lastModified).head().build()
+    private fun conditionalHeadRequest(url: String, etag: String?, lastModified: String?,): Request = conditionalRequest(url, etag, lastModified).head().build()
 
-    private fun conditionalGetRequest(
-        url: String,
-        etag: String?,
-        lastModified: String?,
-    ): Request = conditionalRequest(url, etag, lastModified).get().build()
+    private fun conditionalGetRequest(url: String, etag: String?, lastModified: String?,): Request = conditionalRequest(url, etag, lastModified).get().build()
 
-    private fun conditionalRequest(
-        url: String,
-        etag: String?,
-        lastModified: String?,
-    ): Request.Builder {
+    private fun conditionalRequest(url: String, etag: String?, lastModified: String?,): Request.Builder {
         val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(url)
         return Request
             .Builder()
@@ -815,13 +716,13 @@ open class RssFeedClient(
             if (title.isBlank() || audioUrl.isBlank()) return null
             return RssEpisodeEntity(
                 episodeId =
-                    RssIdGenerator.episodeIdForPodcast(
-                        podcastId = podcastId,
-                        guid = guid,
-                        enclosureUrl = audioUrl,
-                        publishedDate = publishedDate,
-                        title = title,
-                    ),
+                RssIdGenerator.episodeIdForPodcast(
+                    podcastId = podcastId,
+                    guid = guid,
+                    enclosureUrl = audioUrl,
+                    publishedDate = publishedDate,
+                    title = title,
+                ),
                 podcastId = podcastId,
                 guid = guid,
                 title = title.trim(),
@@ -863,18 +764,17 @@ open class RssFeedClient(
                 ".m3u8",
             )
 
-        private fun defaultHttpClient(): OkHttpClient =
-            OkHttpClient
-                .Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(45, TimeUnit.SECONDS)
-                .callTimeout(60, TimeUnit.SECONDS)
-                .followRedirects(true)
-                // Never let OkHttp silently follow an HTTPS→HTTP downgrade redirect; execute()
-                // re-validates the final scheme, but OkHttp would otherwise complete the request
-                // over plaintext before that check ever runs.
-                .followSslRedirects(false)
-                .build()
+        private fun defaultHttpClient(): OkHttpClient = OkHttpClient
+            .Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(45, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)
+            .followRedirects(true)
+            // Never let OkHttp silently follow an HTTPS→HTTP downgrade redirect; execute()
+            // re-validates the final scheme, but OkHttp would otherwise complete the request
+            // over plaintext before that check ever runs.
+            .followSslRedirects(false)
+            .build()
     }
 }
 
@@ -894,28 +794,15 @@ object RssIdGenerator {
         return "rss:${sha256(normalized).joinToString("") { "%02x".format(it) }}"
     }
 
-    fun episodeId(
-        feedUrl: String,
-        guid: String?,
-        enclosureUrl: String?,
-        publishedDate: Long,
-        title: String,
-    ): String =
-        episodeIdForPodcast(
-            podcastId = podcastId(feedUrl),
-            guid = guid,
-            enclosureUrl = enclosureUrl,
-            publishedDate = publishedDate,
-            title = title,
-        )
+    fun episodeId(feedUrl: String, guid: String?, enclosureUrl: String?, publishedDate: Long, title: String,): String = episodeIdForPodcast(
+        podcastId = podcastId(feedUrl),
+        guid = guid,
+        enclosureUrl = enclosureUrl,
+        publishedDate = publishedDate,
+        title = title,
+    )
 
-    fun episodeIdForPodcast(
-        podcastId: String,
-        guid: String?,
-        enclosureUrl: String?,
-        publishedDate: Long,
-        title: String,
-    ): String {
+    fun episodeIdForPodcast(podcastId: String, guid: String?, enclosureUrl: String?, publishedDate: Long, title: String,): String {
         require(podcastId.startsWith("rss:")) { "RSS podcast ID must use the rss: namespace" }
         val identity =
             guid?.trim()?.takeIf(String::isNotBlank)
@@ -934,10 +821,9 @@ object RssIdGenerator {
     private fun sha256(value: String): ByteArray = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(StandardCharsets.UTF_8))
 }
 
-private fun String.cleanDescription(): String =
-    replace(Regex("<[^>]+>"), " ")
-        .replace(Regex("\\s+"), " ")
-        .trim()
+private fun String.cleanDescription(): String = replace(Regex("<[^>]+>"), " ")
+    .replace(Regex("\\s+"), " ")
+    .trim()
 
 internal fun parseDuration(value: String): Int {
     val trimmed = value.trim()

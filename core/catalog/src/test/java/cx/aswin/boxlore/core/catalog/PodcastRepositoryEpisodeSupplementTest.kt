@@ -12,6 +12,7 @@ import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -29,7 +30,6 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.ArgumentMatchers.nullable
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
-import java.util.concurrent.TimeUnit
 
 /**
  * Hermetic [PodcastRepository] PI + cached-feed merge and opted-in `/sync` skip.
@@ -83,183 +83,177 @@ class PodcastRepositoryEpisodeSupplementTest {
     }
 
     @Test
-    fun `getEpisodesPaginated offset zero unions cached extras and keeps PI sourceCount`() =
-        runTest(testDispatcher) {
-            val podcastId = "900001"
-            fakePort.episodesByPodcast[podcastId] =
-                listOf(
-                    TestFixtures.episode(
-                        id = "-203",
-                        title = "Feed only",
-                        audioUrl = "https://cdn.example/feed-only.mp3",
-                        publishedDate = 200L,
-                    ),
-                )
-            enqueueEpisodesPage(
-                id = 10,
-                title = "PI latest",
-                enclosureUrl = "https://cdn.example/pi.mp3",
-                datePublished = 100,
-                hasMore = true,
+    fun `getEpisodesPaginated offset zero unions cached extras and keeps PI sourceCount`() = runTest(testDispatcher) {
+        val podcastId = "900001"
+        fakePort.episodesByPodcast[podcastId] =
+            listOf(
+                TestFixtures.episode(
+                    id = "-203",
+                    title = "Feed only",
+                    audioUrl = "https://cdn.example/feed-only.mp3",
+                    publishedDate = 200L,
+                ),
+            )
+        enqueueEpisodesPage(
+            id = 10,
+            title = "PI latest",
+            enclosureUrl = "https://cdn.example/pi.mp3",
+            datePublished = 100,
+            hasMore = true,
+        )
+
+        val page =
+            repository.getEpisodesPaginated(
+                feedId = podcastId,
+                limit = 20,
+                offset = 0,
+                sort = "newest",
             )
 
-            val page =
-                repository.getEpisodesPaginated(
-                    feedId = podcastId,
-                    limit = 20,
-                    offset = 0,
-                    sort = "newest",
-                )
-
-            assertEquals(listOf("-203", "10"), page.episodes.map { it.id })
-            assertEquals(1, page.sourceCount)
-            assertTrue(page.hasMore)
-        }
+        assertEquals(listOf("-203", "10"), page.episodes.map { it.id })
+        assertEquals(1, page.sourceCount)
+        assertTrue(page.hasMore)
+    }
 
     @Test
-    fun `getEpisodesPaginated later pages stay PI-only`() =
-        runTest(testDispatcher) {
-            val podcastId = "900002"
-            fakePort.episodesByPodcast[podcastId] =
-                listOf(
-                    TestFixtures.episode(
-                        id = "-203",
-                        title = "Feed only",
-                        audioUrl = "https://cdn.example/feed-only.mp3",
-                        publishedDate = 200L,
-                    ),
-                )
-            enqueueEpisodesPage(
-                id = 11,
-                title = "Older PI",
-                enclosureUrl = "https://cdn.example/older.mp3",
-                datePublished = 50,
-                hasMore = false,
+    fun `getEpisodesPaginated later pages stay PI-only`() = runTest(testDispatcher) {
+        val podcastId = "900002"
+        fakePort.episodesByPodcast[podcastId] =
+            listOf(
+                TestFixtures.episode(
+                    id = "-203",
+                    title = "Feed only",
+                    audioUrl = "https://cdn.example/feed-only.mp3",
+                    publishedDate = 200L,
+                ),
+            )
+        enqueueEpisodesPage(
+            id = 11,
+            title = "Older PI",
+            enclosureUrl = "https://cdn.example/older.mp3",
+            datePublished = 50,
+            hasMore = false,
+        )
+
+        val page =
+            repository.getEpisodesPaginated(
+                feedId = podcastId,
+                limit = 20,
+                offset = 20,
+                sort = "newest",
             )
 
-            val page =
-                repository.getEpisodesPaginated(
-                    feedId = podcastId,
-                    limit = 20,
-                    offset = 20,
-                    sort = "newest",
-                )
-
-            assertEquals(listOf("11"), page.episodes.map { it.id })
-            assertEquals(1, page.sourceCount)
-        }
+        assertEquals(listOf("11"), page.episodes.map { it.id })
+        assertEquals(1, page.sourceCount)
+    }
 
     @Test
-    fun `getEpisodesPaginated mergeSupplements false stays PI-only on offset zero`() =
-        runTest(testDispatcher) {
-            val podcastId = "900030"
-            fakePort.episodesByPodcast[podcastId] =
-                listOf(
-                    TestFixtures.episode(
-                        id = "-203",
-                        title = "Feed only",
-                        audioUrl = "https://cdn.example/feed-only.mp3",
-                        publishedDate = 200L,
-                    ),
-                )
-            enqueueEpisodesPage(
-                id = 12,
-                title = "PI latest",
-                enclosureUrl = "https://cdn.example/pi.mp3",
-                datePublished = 100,
-                hasMore = false,
+    fun `getEpisodesPaginated mergeSupplements false stays PI-only on offset zero`() = runTest(testDispatcher) {
+        val podcastId = "900030"
+        fakePort.episodesByPodcast[podcastId] =
+            listOf(
+                TestFixtures.episode(
+                    id = "-203",
+                    title = "Feed only",
+                    audioUrl = "https://cdn.example/feed-only.mp3",
+                    publishedDate = 200L,
+                ),
+            )
+        enqueueEpisodesPage(
+            id = 12,
+            title = "PI latest",
+            enclosureUrl = "https://cdn.example/pi.mp3",
+            datePublished = 100,
+            hasMore = false,
+        )
+
+        val page =
+            repository.getEpisodesPaginated(
+                feedId = podcastId,
+                limit = 20,
+                offset = 0,
+                sort = "newest",
+                mergeSupplements = false,
             )
 
-            val page =
-                repository.getEpisodesPaginated(
-                    feedId = podcastId,
-                    limit = 20,
-                    offset = 0,
-                    sort = "newest",
-                    mergeSupplements = false,
-                )
-
-            assertEquals(listOf("12"), page.episodes.map { it.id })
-        }
+        assertEquals(listOf("12"), page.episodes.map { it.id })
+    }
 
     @Test
-    fun `invalidateEpisodesCache forces the next PI page to hit the network`() =
-        runTest(testDispatcher) {
-            val podcastId = "900040"
-            enqueueEpisodesPage(
-                id = 1,
-                title = "Cached",
-                enclosureUrl = "https://cdn.example/cached.mp3",
-                datePublished = 100,
-                hasMore = false,
+    fun `invalidateEpisodesCache forces the next PI page to hit the network`() = runTest(testDispatcher) {
+        val podcastId = "900040"
+        enqueueEpisodesPage(
+            id = 1,
+            title = "Cached",
+            enclosureUrl = "https://cdn.example/cached.mp3",
+            datePublished = 100,
+            hasMore = false,
+        )
+        enqueueEpisodesPage(
+            id = 2,
+            title = "Fresh",
+            enclosureUrl = "https://cdn.example/fresh.mp3",
+            datePublished = 200,
+            hasMore = false,
+        )
+
+        val cached =
+            repository.getEpisodesPaginated(
+                feedId = podcastId,
+                limit = 20,
+                offset = 0,
+                sort = "newest",
+                mergeSupplements = false,
             )
-            enqueueEpisodesPage(
-                id = 2,
-                title = "Fresh",
-                enclosureUrl = "https://cdn.example/fresh.mp3",
-                datePublished = 200,
-                hasMore = false,
+        assertEquals(listOf("1"), cached.episodes.map { it.id })
+
+        val stillCached =
+            repository.getEpisodesPaginated(
+                feedId = podcastId,
+                limit = 20,
+                offset = 0,
+                sort = "newest",
+                mergeSupplements = false,
             )
+        assertEquals(listOf("1"), stillCached.episodes.map { it.id })
 
-            val cached =
-                repository.getEpisodesPaginated(
-                    feedId = podcastId,
-                    limit = 20,
-                    offset = 0,
-                    sort = "newest",
-                    mergeSupplements = false,
-                )
-            assertEquals(listOf("1"), cached.episodes.map { it.id })
-
-            val stillCached =
-                repository.getEpisodesPaginated(
-                    feedId = podcastId,
-                    limit = 20,
-                    offset = 0,
-                    sort = "newest",
-                    mergeSupplements = false,
-                )
-            assertEquals(listOf("1"), stillCached.episodes.map { it.id })
-
-            repository.invalidateEpisodesCache(podcastId)
-            val fresh =
-                repository.getEpisodesPaginated(
-                    feedId = podcastId,
-                    limit = 20,
-                    offset = 0,
-                    sort = "newest",
-                    mergeSupplements = false,
-                )
-            assertEquals(listOf("2"), fresh.episodes.map { it.id })
-        }
+        repository.invalidateEpisodesCache(podcastId)
+        val fresh =
+            repository.getEpisodesPaginated(
+                feedId = podcastId,
+                limit = 20,
+                offset = 0,
+                sort = "newest",
+                mergeSupplements = false,
+            )
+        assertEquals(listOf("2"), fresh.episodes.map { it.id })
+    }
 
     @Test
-    fun `loadPiEpisodesForBaseline throws on HTTP failure`() =
-        runTest(testDispatcher) {
-            server.enqueue(MockResponse().setResponseCode(500))
-            val thrown =
-                runCatching { repository.loadPiEpisodesForBaseline("900041", limit = 1000) }.exceptionOrNull()
-            assertTrue(thrown is IllegalStateException)
-        }
+    fun `loadPiEpisodesForBaseline throws on HTTP failure`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(500))
+        val thrown =
+            runCatching { repository.loadPiEpisodesForBaseline("900041", limit = 1000) }.exceptionOrNull()
+        assertTrue(thrown is IllegalStateException)
+    }
 
     @Test
-    fun `searchEpisodes unions PI hits with supplement matches`() =
-        runTest(testDispatcher) {
-            val podcastId = "900003"
-            fakePort.searchByPodcast[podcastId] =
-                listOf(
-                    TestFixtures.episode(
-                        id = "-9",
-                        title = "Feed match",
-                        publishedDate = 200L,
-                    ),
-                )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setHeader("Content-Type", "application/json")
-                    .setBody(
-                        """
+    fun `searchEpisodes unions PI hits with supplement matches`() = runTest(testDispatcher) {
+        val podcastId = "900003"
+        fakePort.searchByPodcast[podcastId] =
+            listOf(
+                TestFixtures.episode(
+                    id = "-9",
+                    title = "Feed match",
+                    publishedDate = 200L,
+                ),
+            )
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """
                         {
                           "status": "true",
                           "items": [
@@ -272,33 +266,32 @@ class PodcastRepositoryEpisodeSupplementTest {
                             }
                           ]
                         }
-                        """.trimIndent(),
-                    ),
-            )
+                    """.trimIndent(),
+                ),
+        )
 
-            val results = repository.searchEpisodes(podcastId, "match")
+        val results = repository.searchEpisodes(podcastId, "match")
 
-            assertEquals(listOf("-9", "44"), results.map { it.id })
-        }
+        assertEquals(listOf("-9", "44"), results.map { it.id })
+    }
 
     @Test
-    fun `syncSubscriptions omits opted-in ids from POST and returns cached feed tip`() =
-        runTest(testDispatcher) {
-            fakePort.optedIn = setOf("900010")
-            fakePort.episodesByPodcast["900010"] =
-                listOf(
-                    TestFixtures.episode(
-                        id = "-1",
-                        title = "Feed tip",
-                        publishedDate = 300L,
-                    ),
-                )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setHeader("Content-Type", "application/json")
-                    .setBody(
-                        """
+    fun `syncSubscriptions omits opted-in ids from POST and returns cached feed tip`() = runTest(testDispatcher) {
+        fakePort.optedIn = setOf("900010")
+        fakePort.episodesByPodcast["900010"] =
+            listOf(
+                TestFixtures.episode(
+                    id = "-1",
+                    title = "Feed tip",
+                    publishedDate = 300L,
+                ),
+            )
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """
                         {
                           "items": [
                             {
@@ -313,84 +306,76 @@ class PodcastRepositoryEpisodeSupplementTest {
                             }
                           ]
                         }
-                        """.trimIndent(),
-                    ),
+                    """.trimIndent(),
+                ),
+        )
+
+        val tips = repository.syncSubscriptions(listOf("900010", "900011"))
+
+        assertEquals(setOf("900010", "900011"), tips.keys)
+        assertEquals("-1", tips.getValue("900010").id)
+        assertEquals("77", tips.getValue("900011").id)
+
+        val recorded = server.takeRequest()
+        assertEquals("POST", recorded.method)
+        assertTrue(recorded.path!!.startsWith("/sync"))
+        val body = recorded.body.readUtf8()
+        assertFalse(body.contains("900010"))
+        assertTrue(body.contains("900011"))
+    }
+
+    @Test
+    fun `syncSubscriptions skips network when every id is opted in`() = runTest(testDispatcher) {
+        fakePort.optedIn = setOf("900020")
+        fakePort.episodesByPodcast["900020"] =
+            listOf(
+                TestFixtures.episode(id = "-5", title = "Cached", publishedDate = 9L),
             )
 
-            val tips = repository.syncSubscriptions(listOf("900010", "900011"))
+        val tips = repository.syncSubscriptions(listOf("900020"))
 
-            assertEquals(setOf("900010", "900011"), tips.keys)
-            assertEquals("-1", tips.getValue("900010").id)
-            assertEquals("77", tips.getValue("900011").id)
-
-            val recorded = server.takeRequest()
-            assertEquals("POST", recorded.method)
-            assertTrue(recorded.path!!.startsWith("/sync"))
-            val body = recorded.body.readUtf8()
-            assertFalse(body.contains("900010"))
-            assertTrue(body.contains("900011"))
-        }
+        assertEquals("-5", tips.getValue("900020").id)
+        assertEquals(0, server.requestCount)
+    }
 
     @Test
-    fun `syncSubscriptions skips network when every id is opted in`() =
-        runTest(testDispatcher) {
-            fakePort.optedIn = setOf("900020")
-            fakePort.episodesByPodcast["900020"] =
-                listOf(
-                    TestFixtures.episode(id = "-5", title = "Cached", publishedDate = 9L),
-                )
-
-            val tips = repository.syncSubscriptions(listOf("900020"))
-
-            assertEquals("-5", tips.getValue("900020").id)
-            assertEquals(0, server.requestCount)
-        }
-
-    @Test
-    fun `getEpisodesPaginated uses local catalog only when ready`() =
-        runTest(testDispatcher) {
-            val catalog =
-                FakeLocalEpisodeCatalogPort(
-                    readyIds = setOf("900030"),
-                    episodes =
-                        mutableMapOf(
-                            "-1" to
-                                TestFixtures.episode(
-                                    id = "-1",
-                                    podcastId = "900030",
-                                    title = "Room",
-                                ),
+    fun `getEpisodesPaginated uses local catalog only when ready`() = runTest(testDispatcher) {
+        val catalog =
+            FakeLocalEpisodeCatalogPort(
+                readyIds = setOf("900030"),
+                episodes =
+                mutableMapOf(
+                    "-1" to
+                        TestFixtures.episode(
+                            id = "-1",
+                            podcastId = "900030",
+                            title = "Room",
                         ),
-                )
-            val readyRepo =
-                PodcastRepository(
-                    baseUrl = server.url("/").toString(),
-                    publicKey = APP_KEY,
+                ),
+            )
+        val readyRepo =
+            PodcastRepository(
+                baseUrl = server.url("/").toString(),
+                publicKey = APP_KEY,
+                context = fakeContext(),
+                rssRepository =
+                RssPodcastRepository.createForTests(
                     context = fakeContext(),
-                    rssRepository =
-                        RssPodcastRepository.createForTests(
-                            context = fakeContext(),
-                            database = fakeDatabase(),
-                        ),
-                    episodeSupplementRepository = fakePort,
-                    localEpisodeCatalog = catalog,
-                    ioDispatcher = testDispatcher,
-                    boxLoreApi = repository.api,
-                )
+                    database = fakeDatabase(),
+                ),
+                episodeSupplementRepository = fakePort,
+                localEpisodeCatalog = catalog,
+                ioDispatcher = testDispatcher,
+                boxLoreApi = repository.api,
+            )
 
-            val page = readyRepo.getEpisodesPaginated("900030", 20, 0, "newest")
+        val page = readyRepo.getEpisodesPaginated("900030", 20, 0, "newest")
 
-            assertEquals(listOf("-1"), page.episodes.map { it.id })
-            assertEquals(0, server.requestCount)
-        }
+        assertEquals(listOf("-1"), page.episodes.map { it.id })
+        assertEquals(0, server.requestCount)
+    }
 
-    private fun enqueueEpisodesPage(
-        id: Long,
-        title: String,
-        enclosureUrl: String,
-        datePublished: Long,
-        hasMore: Boolean,
-    ) {
+    private fun enqueueEpisodesPage(id: Long, title: String, enclosureUrl: String, datePublished: Long, hasMore: Boolean,) {
         server.enqueue(
             MockResponse()
                 .setResponseCode(200)
@@ -472,8 +457,7 @@ class PodcastRepositoryEpisodeSupplementTest {
 
         override suspend fun listOptedInPodcastIds(): Set<String> = optedIn
 
-        override suspend fun resolveNewestTipFromFeed(request: EpisodeSupplementPort.NewestTipRequest): Episode? =
-            episodesByPodcast[request.podcastIndexId]?.maxByOrNull { it.publishedDate }
+        override suspend fun resolveNewestTipFromFeed(request: EpisodeSupplementPort.NewestTipRequest): Episode? = episodesByPodcast[request.podcastIndexId]?.maxByOrNull { it.publishedDate }
 
         override suspend fun getEpisodesForPodcast(
             podcastIndexId: String,

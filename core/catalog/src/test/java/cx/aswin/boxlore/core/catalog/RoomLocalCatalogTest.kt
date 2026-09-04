@@ -62,157 +62,147 @@ class RoomLocalCatalogTest {
     )
 
     @Test
-    fun getLocalPodcastMapsStoredEntity() =
-        runTest {
-            podcastDao.upsert(entity("pod-1", title = "Local Show"))
+    fun getLocalPodcastMapsStoredEntity() = runTest {
+        podcastDao.upsert(entity("pod-1", title = "Local Show"))
 
-            val podcast = catalog.getLocalPodcast("pod-1")!!
-            assertEquals("Local Show", podcast.title)
-            assertEquals("Technology", podcast.genre)
-        }
-
-    @Test
-    fun getLocalPodcastReturnsNullWhenMissing() =
-        runTest {
-            assertNull(catalog.getLocalPodcast("nobody"))
-        }
+        val podcast = catalog.getLocalPodcast("pod-1")!!
+        assertEquals("Local Show", podcast.title)
+        assertEquals("Technology", podcast.genre)
+    }
 
     @Test
-    fun getSubscribedRssLinkedToReturnsSubscribedRss() =
-        runTest {
-            podcastDao.upsert(
-                entity("-9001", sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = "920"),
-            )
-
-            assertEquals("-9001", catalog.getSubscribedRssLinkedTo("920")?.id)
-        }
+    fun getLocalPodcastReturnsNullWhenMissing() = runTest {
+        assertNull(catalog.getLocalPodcast("nobody"))
+    }
 
     @Test
-    fun getSubscribedRssLinkedToIgnoresUnsubscribed() =
-        runTest {
-            podcastDao.upsert(
-                entity(
-                    "-9002",
-                    isSubscribed = false,
-                    sourceType = PodcastEntity.SOURCE_RSS,
-                    linkedPodcastIndexId = "921",
-                ),
-            )
+    fun getSubscribedRssLinkedToReturnsSubscribedRss() = runTest {
+        podcastDao.upsert(
+            entity("-9001", sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = "920"),
+        )
 
-            assertNull(catalog.getSubscribedRssLinkedTo("921"))
-        }
+        assertEquals("-9001", catalog.getSubscribedRssLinkedTo("920")?.id)
+    }
 
     @Test
-    fun upsertSubscribedPodcastUpdatesExistingSubscriptionWithDefaults() =
-        runTest {
-            podcastDao.upsert(entity("pod-new"))
+    fun getSubscribedRssLinkedToIgnoresUnsubscribed() = runTest {
+        podcastDao.upsert(
+            entity(
+                "-9002",
+                isSubscribed = false,
+                sourceType = PodcastEntity.SOURCE_RSS,
+                linkedPodcastIndexId = "921",
+            ),
+        )
 
-            catalog.upsertSubscribedPodcast(
-                Podcast(
-                    id = "pod-new",
-                    title = "New Show",
-                    artist = "Artist",
-                    imageUrl = "https://example.com/new.jpg",
-                    genre = "News",
-                ),
-            )
-
-            val stored = podcastDao.getPodcast("pod-new")!!
-            assertTrue(stored.isSubscribed)
-            assertEquals("newest", stored.preferredSort)
-            assertEquals("episodic", stored.type)
-        }
+        assertNull(catalog.getSubscribedRssLinkedTo("921"))
+    }
 
     @Test
-    fun upsertSubscribedPodcastDoesNotCreateMissingSubscription() =
-        runTest {
-            catalog.upsertSubscribedPodcast(
-                Podcast(
-                    id = "pod-missing",
-                    title = "Late Metadata",
-                    artist = "Artist",
-                    imageUrl = "https://example.com/missing.jpg",
-                ),
-            )
+    fun upsertSubscribedPodcastUpdatesExistingSubscriptionWithDefaults() = runTest {
+        podcastDao.upsert(entity("pod-new"))
 
-            assertNull(podcastDao.getPodcast("pod-missing"))
-        }
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-new",
+                title = "New Show",
+                artist = "Artist",
+                imageUrl = "https://example.com/new.jpg",
+                genre = "News",
+            ),
+        )
 
-    @Test
-    fun upsertSubscribedPodcastDoesNotResubscribeUnsubscribedPodcast() =
-        runTest {
-            podcastDao.upsert(entity("pod-retired", title = "Stored").copy(isSubscribed = false))
-
-            catalog.upsertSubscribedPodcast(
-                Podcast(
-                    id = "pod-retired",
-                    title = "Late Metadata",
-                    artist = "Artist",
-                    imageUrl = "https://example.com/late.jpg",
-                ),
-            )
-
-            val stored = podcastDao.getPodcast("pod-retired")!!
-            assertFalse(stored.isSubscribed)
-            assertEquals("Stored", stored.title)
-        }
+        val stored = podcastDao.getPodcast("pod-new")!!
+        assertTrue(stored.isSubscribed)
+        assertEquals("newest", stored.preferredSort)
+        assertEquals("episodic", stored.type)
+    }
 
     @Test
-    fun upsertSubscribedPodcastOldestSortImpliesSerial() =
-        runTest {
-            podcastDao.upsert(entity("pod-serial"))
+    fun upsertSubscribedPodcastDoesNotCreateMissingSubscription() = runTest {
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-missing",
+                title = "Late Metadata",
+                artist = "Artist",
+                imageUrl = "https://example.com/missing.jpg",
+            ),
+        )
 
-            catalog.upsertSubscribedPodcast(
-                Podcast(
-                    id = "pod-serial",
-                    title = "Serial",
-                    artist = "Artist",
-                    imageUrl = "https://example.com/s.jpg",
-                    preferredSort = "oldest",
-                ),
-            )
-
-            assertEquals("serial", podcastDao.getPodcast("pod-serial")!!.type)
-        }
+        assertNull(podcastDao.getPodcast("pod-missing"))
+    }
 
     @Test
-    fun upsertSubscribedPodcastPreservesExistingImageWhenBlank() =
-        runTest {
-            podcastDao.upsert(entity("pod-1", title = "Old").copy(imageUrl = "https://cdn/keep.jpg"))
+    fun upsertSubscribedPodcastDoesNotResubscribeUnsubscribedPodcast() = runTest {
+        podcastDao.upsert(entity("pod-retired", title = "Stored").copy(isSubscribed = false))
 
-            catalog.upsertSubscribedPodcast(
-                Podcast(
-                    id = "pod-1",
-                    title = "Updated",
-                    artist = "Artist",
-                    imageUrl = "",
-                ),
-            )
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-retired",
+                title = "Late Metadata",
+                artist = "Artist",
+                imageUrl = "https://example.com/late.jpg",
+            ),
+        )
 
-            val stored = podcastDao.getPodcast("pod-1")!!
-            assertEquals("Updated", stored.title)
-            assertEquals("https://cdn/keep.jpg", stored.imageUrl)
-        }
+        val stored = podcastDao.getPodcast("pod-retired")!!
+        assertFalse(stored.isSubscribed)
+        assertEquals("Stored", stored.title)
+    }
 
     @Test
-    fun upsertSubscribedPodcastPreservesRssIdentityFields() =
-        runTest {
-            podcastDao.upsert(
-                entity("-9003", sourceType = PodcastEntity.SOURCE_RSS).copy(feedUrl = "https://feed.xml"),
-            )
+    fun upsertSubscribedPodcastOldestSortImpliesSerial() = runTest {
+        podcastDao.upsert(entity("pod-serial"))
 
-            catalog.upsertSubscribedPodcast(
-                Podcast(
-                    id = "-9003",
-                    title = "RSS Updated",
-                    artist = "Artist",
-                    imageUrl = "https://example.com/rss.jpg",
-                    sourceType = Podcast.SOURCE_PODCAST_INDEX,
-                ),
-            )
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-serial",
+                title = "Serial",
+                artist = "Artist",
+                imageUrl = "https://example.com/s.jpg",
+                preferredSort = "oldest",
+            ),
+        )
 
-            val stored = podcastDao.getPodcast("-9003")!!
-            assertEquals(PodcastEntity.SOURCE_RSS, stored.sourceType)
-            assertEquals("https://feed.xml", stored.feedUrl)
-        }
+        assertEquals("serial", podcastDao.getPodcast("pod-serial")!!.type)
+    }
+
+    @Test
+    fun upsertSubscribedPodcastPreservesExistingImageWhenBlank() = runTest {
+        podcastDao.upsert(entity("pod-1", title = "Old").copy(imageUrl = "https://cdn/keep.jpg"))
+
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-1",
+                title = "Updated",
+                artist = "Artist",
+                imageUrl = "",
+            ),
+        )
+
+        val stored = podcastDao.getPodcast("pod-1")!!
+        assertEquals("Updated", stored.title)
+        assertEquals("https://cdn/keep.jpg", stored.imageUrl)
+    }
+
+    @Test
+    fun upsertSubscribedPodcastPreservesRssIdentityFields() = runTest {
+        podcastDao.upsert(
+            entity("-9003", sourceType = PodcastEntity.SOURCE_RSS).copy(feedUrl = "https://feed.xml"),
+        )
+
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "-9003",
+                title = "RSS Updated",
+                artist = "Artist",
+                imageUrl = "https://example.com/rss.jpg",
+                sourceType = Podcast.SOURCE_PODCAST_INDEX,
+            ),
+        )
+
+        val stored = podcastDao.getPodcast("-9003")!!
+        assertEquals(PodcastEntity.SOURCE_RSS, stored.sourceType)
+        assertEquals("https://feed.xml", stored.feedUrl)
+    }
 }

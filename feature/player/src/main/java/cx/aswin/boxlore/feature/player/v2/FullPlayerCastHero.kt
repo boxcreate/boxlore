@@ -47,12 +47,11 @@ internal fun resolveCastHeroDisplayMode(
     isRemote: Boolean,
     showInlineTranscript: Boolean,
     showCastControls: Boolean,
-): CastHeroDisplayMode =
-    when {
-        showInlineTranscript -> CastHeroDisplayMode.TRANSCRIPT
-        isRemote && showCastControls -> CastHeroDisplayMode.CAST_CONTROLS
-        else -> CastHeroDisplayMode.ARTWORK
-    }
+): CastHeroDisplayMode = when {
+    showInlineTranscript -> CastHeroDisplayMode.TRANSCRIPT
+    isRemote && showCastControls -> CastHeroDisplayMode.CAST_CONTROLS
+    else -> CastHeroDisplayMode.ARTWORK
+}
 
 internal fun canSkipFromCastHero(nextEpisodeId: String?): Boolean = !nextEpisodeId.isNullOrBlank()
 
@@ -98,23 +97,23 @@ internal fun FullPlayerCastHero(
     MaterialTheme(colorScheme = model.colorScheme) {
         Surface(
             modifier =
-                modifier
-                    .width(model.dimensions.width)
-                    .height(model.dimensions.height)
-                    .shadow(
-                        elevation = 12.dp,
-                        shape = MaterialTheme.shapes.extraLarge,
-                        clip = false,
-                    ),
+            modifier
+                .width(model.dimensions.width)
+                .height(model.dimensions.height)
+                .shadow(
+                    elevation = 12.dp,
+                    shape = MaterialTheme.shapes.extraLarge,
+                    clip = false,
+                ),
             shape = MaterialTheme.shapes.extraLarge,
             color = model.colorScheme.primaryContainer,
             contentColor = model.colorScheme.onPrimaryContainer,
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -134,9 +133,9 @@ internal fun FullPlayerCastHero(
                     }
                     Column(
                         modifier =
-                            Modifier
-                                .weight(1f)
-                                .padding(start = 12.dp),
+                        Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp),
                     ) {
                         Text(
                             text = "PLAYING ON",
@@ -165,9 +164,9 @@ internal fun FullPlayerCastHero(
                     ) {
                         Row(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 2.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -191,10 +190,10 @@ internal fun FullPlayerCastHero(
                                 },
                                 valueRange = model.route.minimumVolume.toFloat()..model.route.maximumVolume.toFloat(),
                                 steps =
-                                    castVolumeSliderSteps(
-                                        minimumVolume = model.route.minimumVolume,
-                                        maximumVolume = model.route.maximumVolume,
-                                    ),
+                                castVolumeSliderSteps(
+                                    minimumVolume = model.route.minimumVolume,
+                                    maximumVolume = model.route.maximumVolume,
+                                ),
                                 modifier = Modifier.weight(1f),
                             )
                             Icon(

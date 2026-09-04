@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -15,11 +13,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -27,25 +23,27 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import kotlinx.coroutines.delay
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import kotlinx.coroutines.delay
 
 @Composable
 fun TranscriptView(
@@ -61,7 +59,7 @@ fun TranscriptView(
     val positionMs by positionFlow.collectAsState(initial = 0L)
     val listState = rememberLazyListState()
     var clickedIndex by remember { mutableStateOf<Int?>(null) }
-    
+
     val activeIndex by remember(transcript, clickedIndex) {
         derivedStateOf {
             clickedIndex ?: transcript.indexOfFirst { positionMs >= it.startMs && positionMs <= it.endMs }
@@ -75,7 +73,7 @@ fun TranscriptView(
             onSyncEnabledChange(false)
         }
     }
-    
+
     LaunchedEffect(positionMs) {
         clickedIndex?.let { idx ->
             val segment = transcript.getOrNull(idx)
@@ -84,16 +82,16 @@ fun TranscriptView(
             }
         }
     }
-    
+
     LaunchedEffect(clickedIndex) {
         if (clickedIndex != null) {
             delay(1000)
             clickedIndex = null
         }
     }
-    
+
     TranscriptScrollEffect(listState, activeIndex, isSyncEnabled)
-    
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -179,7 +177,7 @@ private fun TranscriptScrollEffect(
             if (viewportHeight > 0) {
                 val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == activeIndex }
                 val itemHeight = itemInfo?.size ?: 100
-                val focusOffset = - (viewportHeight * 0.28f).toInt() + (itemHeight / 2)
+                val focusOffset = -(viewportHeight * 0.28f).toInt() + (itemHeight / 2)
                 listState.animateScrollToItem(activeIndex, focusOffset)
             } else {
                 val scrollIndex = (activeIndex - 2).coerceAtLeast(0)
@@ -201,7 +199,7 @@ private fun TranscriptSegmentItem(
         animationSpec = tween(durationMillis = 300),
         label = "textColor"
     )
-    
+
     val textScale by animateFloatAsState(
         targetValue = if (isActive) 1.03f else 1.0f,
         animationSpec = tween(durationMillis = 300),
@@ -212,9 +210,9 @@ private fun TranscriptSegmentItem(
         animationSpec = tween(durationMillis = 300),
         label = "textOpacity"
     )
-    
+
     val textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold)
-    
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,7 +299,7 @@ fun FullscreenTranscriptScreen(
 ) {
     val positionMs by positionFlow.collectAsState(initial = 0L)
     val containerColor = colorScheme.surface
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -332,10 +330,10 @@ fun FullscreenTranscriptScreen(
                 fontWeight = GoogleSansWeight.bold,
                 color = colorScheme.onSurface
             )
-            
+
             Spacer(modifier = Modifier.weight(1f))
         }
-        
+
         // Transcript View (Expanded)
         Box(
             modifier = Modifier
@@ -353,7 +351,7 @@ fun FullscreenTranscriptScreen(
                 transcriptUrl = transcriptUrl
             )
         }
-        
+
         // Bottom controls (Pause/Play and Seek only)
         Column(
             modifier = Modifier
@@ -393,9 +391,9 @@ fun FullscreenTranscriptScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             PlayerControls(
                 isPlaying = isPlaying,
                 isLoading = isLoading,

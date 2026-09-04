@@ -109,7 +109,7 @@ object BoxLoreLoader {
             )
         }
     }
-    
+
     /**
      * Custom Shape Loader (Fallback/Specific).
      * Rotates a specific Expressive Shape.
@@ -130,7 +130,7 @@ object BoxLoreLoader {
             ),
             label = "angle"
         )
-        
+
         Box(
             modifier = modifier
                 .size(size)

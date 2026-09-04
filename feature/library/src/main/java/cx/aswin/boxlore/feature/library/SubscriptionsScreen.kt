@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -54,6 +52,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.subscriptions.ExpressiveTabSwitcher
@@ -86,271 +85,273 @@ fun SubscriptionsScreen(
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLastSeenEpisodes provides lastSeenEpisodes
     ) {
-    val coroutineScope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        val coroutineScope = rememberCoroutineScope()
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    var searchQuery by remember { mutableStateOf("") }
-    var isSearchActive by remember { mutableStateOf(false) }
-    var isGridView by rememberSaveable { mutableStateOf(true) }
-    val useSmartRank by viewModel.useSmartRank.collectAsStateWithLifecycle()
-    val hideCompletedInSubs by viewModel.hideCompletedInSubs.collectAsStateWithLifecycle()
-    val pinnedPodcastIds by viewModel.pinnedPodcastIds.collectAsStateWithLifecycle()
-    var showSortMenu by remember { mutableStateOf(false) }
+        var searchQuery by remember { mutableStateOf("") }
+        var isSearchActive by remember { mutableStateOf(false) }
+        var isGridView by rememberSaveable { mutableStateOf(true) }
+        val useSmartRank by viewModel.useSmartRank.collectAsStateWithLifecycle()
+        val hideCompletedInSubs by viewModel.hideCompletedInSubs.collectAsStateWithLifecycle()
+        val pinnedPodcastIds by viewModel.pinnedPodcastIds.collectAsStateWithLifecycle()
+        var showSortMenu by remember { mutableStateOf(false) }
 
-    val focusRequester = remember { FocusRequester() }
-    val focusManager = LocalFocusManager.current
+        val focusRequester = remember { FocusRequester() }
+        val focusManager = LocalFocusManager.current
 
-    BackHandler(enabled = isSearchActive) {
-        if (isSearchActive) {
-            isSearchActive = false
-            searchQuery = ""
-        }
-    }
-
-    LaunchedEffect(isSearchActive) {
-        if (isSearchActive) {
-            focusRequester.requestFocus()
-        } else {
-            focusManager.clearFocus()
-        }
-    }
-
-    val isScrolled = scrollBehavior.state.overlappedFraction > 0.01f || scrollBehavior.state.collapsedFraction > 0.01f
-
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
-                if (isSearchActive) {
-                    viewModel.subDidSearch = true
-                    viewModel.subFinalSearchQuery = searchQuery
-                }
-                viewModel.trackSubscriptionsExit()
-            } else if (event == androidx.lifecycle.Lifecycle.Event.ON_START) {
-                // Live `/sync` — including open-app-to Subscriptions — not Room cache only.
-                viewModel.onScreenResume()
+        BackHandler(enabled = isSearchActive) {
+            if (isSearchActive) {
+                isSearchActive = false
+                searchQuery = ""
             }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
 
-    LaunchedEffect(Unit) {
-        val initialTabName = if (initialTab == 0) "shows" else "latest"
-        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsViewed(
-            sourceEntryPoint = "library_hub_card",
-            initialTab = initialTabName
+        LaunchedEffect(isSearchActive) {
+            if (isSearchActive) {
+                focusRequester.requestFocus()
+            } else {
+                focusManager.clearFocus()
+            }
+        }
+
+        val isScrolled = scrollBehavior.state.overlappedFraction > 0.01f || scrollBehavior.state.collapsedFraction > 0.01f
+
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+        androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+            val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                    if (isSearchActive) {
+                        viewModel.subDidSearch = true
+                        viewModel.subFinalSearchQuery = searchQuery
+                    }
+                    viewModel.trackSubscriptionsExit()
+                } else if (event == androidx.lifecycle.Lifecycle.Event.ON_START) {
+                    // Live `/sync` — including open-app-to Subscriptions — not Room cache only.
+                    viewModel.onScreenResume()
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            val initialTabName = if (initialTab == 0) "shows" else "latest"
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsViewed(
+                sourceEntryPoint = "library_hub_card",
+                initialTab = initialTabName
+            )
+        }
+
+        LaunchedEffect(pagerState.currentPage) {
+            if (pagerState.currentPage != initialTab) {
+                viewModel.subTabSwitchesCount++
+            }
+        }
+        val headerBgColor by animateColorAsState(
+            targetValue = if (isScrolled) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surface,
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            label = "headerBg"
         )
-    }
 
-    LaunchedEffect(pagerState.currentPage) {
-        if (pagerState.currentPage != initialTab) {
-            viewModel.subTabSwitchesCount++
-        }
-    }
-    val headerBgColor by animateColorAsState(
-        targetValue = if (isScrolled) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surface,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "headerBg"
-    )
+        val successState = uiState as? LibraryUiState.Success
+        val hasSubscribedPodcasts = successState != null && successState.subscribedPodcasts.isNotEmpty()
 
-    val successState = uiState as? LibraryUiState.Success
-    val hasSubscribedPodcasts = successState != null && successState.subscribedPodcasts.isNotEmpty()
-
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(headerBgColor)
-            ) {
-                TopAppBar(
-                    title = {
-                        if (isSearchActive) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester),
-                                placeholder = { Text("Search shows...") },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedBorderColor = Color.Transparent,
-                                    unfocusedBorderColor = Color.Transparent
-                                ),
-                                singleLine = true
-                            )
-                        } else {
-                            Text(
-                                text = "Subscriptions",
-                                fontWeight = GoogleSansWeight.bold
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent
-                    ),
-                    navigationIcon = {
-                        IconButton(onClick = {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(headerBgColor)
+                ) {
+                    TopAppBar(
+                        title = {
                             if (isSearchActive) {
-                                isSearchActive = false
-                                searchQuery = ""
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    placeholder = { Text("Search shows...") },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent
+                                    ),
+                                    singleLine = true
+                                )
                             } else {
-                                onBack()
+                                Text(
+                                    text = "Subscriptions",
+                                    fontWeight = GoogleSansWeight.bold
+                                )
                             }
-                        }) {
-                            Icon(
-                                Icons.AutoMirrored.Rounded.ArrowBack,
-                                contentDescription = if (isSearchActive) "Close Search" else "Back"
-                            )
-                        }
-                    },
-                    actions = {
-                        if (isSearchActive) {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Rounded.Clear, contentDescription = "Clear search")
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent
+                        ),
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                if (isSearchActive) {
+                                    isSearchActive = false
+                                    searchQuery = ""
+                                } else {
+                                    onBack()
                                 }
+                            }) {
+                                Icon(
+                                    Icons.AutoMirrored.Rounded.ArrowBack,
+                                    contentDescription = if (isSearchActive) "Close Search" else "Back"
+                                )
                             }
-                        } else {
-                            if (pagerState.currentPage == 0 && hasSubscribedPodcasts) {
-                                IconButton(onClick = {
-                                    isGridView = !isGridView
-                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(isGridView)
-                                }) {
-                                    Icon(
-                                        imageVector = if (isGridView) Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
-                                        contentDescription = if (isGridView) "List View" else "Grid View"
-                                    )
-                                }
-                            }
-                            if (hasSubscribedPodcasts) {
-                                val success = checkNotNull(successState)
-                                Box {
-                                    IconButton(onClick = { showSortMenu = true }) {
-                                        Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort")
+                        },
+                        actions = {
+                            if (isSearchActive) {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(Icons.Rounded.Clear, contentDescription = "Clear search")
                                     }
-                                    DropdownMenu(
-                                        expanded = showSortMenu,
-                                        onDismissRequest = { showSortMenu = false },
-                                        shape = RoundedCornerShape(20.dp),
-                                        offset = DpOffset(x = (-12).dp, y = 4.dp)
-                                    ) {
-                                        if (pagerState.currentPage == 0) {
-                                            ShowsSortMenuItems(
-                                                currentSort = success.currentSort,
-                                                onSortChange = { sort ->
-                                                    viewModel.setSubscriptionSort(sort)
-                                                    val analyticsName = when (sort) {
-                                                        SubscriptionSort.SmartRank -> "smart_sort"
-                                                        SubscriptionSort.RecentlyUpdated -> "recently_updated"
-                                                        SubscriptionSort.Alphabetical -> "alphabetical"
-                                                        SubscriptionSort.MostListened -> "most_listened"
-                                                        SubscriptionSort.Manual -> "manual"
-                                                    }
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
-                                                        analyticsName,
-                                                        "shows"
-                                                    )
-                                                },
-                                                onDismiss = { showSortMenu = false }
-                                            )
-                                        } else {
-                                            LatestSortMenuItems(
-                                                useSmartRank = useSmartRank,
-                                                onUseSmartRankChange = { useSmart ->
-                                                    viewModel.setUseSmartRank(useSmart)
-                                                    cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
-                                                        if (useSmart) "smart_sort" else "chronological",
-                                                        "latest"
-                                                    )
-                                                },
-                                                hideCompleted = hideCompletedInSubs,
-                                                onHideCompletedChange = viewModel::setHideCompletedInSubs,
-                                                onDismiss = { showSortMenu = false }
-                                            )
+                                }
+                            } else {
+                                if (pagerState.currentPage == 0 && hasSubscribedPodcasts) {
+                                    IconButton(onClick = {
+                                        isGridView = !isGridView
+                                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(isGridView)
+                                    }) {
+                                        Icon(
+                                            imageVector = if (isGridView) Icons.AutoMirrored.Rounded.ViewList else Icons.Rounded.GridView,
+                                            contentDescription = if (isGridView) "List View" else "Grid View"
+                                        )
+                                    }
+                                }
+                                if (hasSubscribedPodcasts) {
+                                    val success = checkNotNull(successState)
+                                    Box {
+                                        IconButton(onClick = { showSortMenu = true }) {
+                                            Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort")
+                                        }
+                                        DropdownMenu(
+                                            expanded = showSortMenu,
+                                            onDismissRequest = { showSortMenu = false },
+                                            shape = RoundedCornerShape(20.dp),
+                                            offset = DpOffset(x = (-12).dp, y = 4.dp)
+                                        ) {
+                                            if (pagerState.currentPage == 0) {
+                                                ShowsSortMenuItems(
+                                                    currentSort = success.currentSort,
+                                                    onSortChange = { sort ->
+                                                        viewModel.setSubscriptionSort(sort)
+                                                        val analyticsName = when (sort) {
+                                                            SubscriptionSort.SmartRank -> "smart_sort"
+                                                            SubscriptionSort.RecentlyUpdated -> "recently_updated"
+                                                            SubscriptionSort.Alphabetical -> "alphabetical"
+                                                            SubscriptionSort.MostListened -> "most_listened"
+                                                            SubscriptionSort.Manual -> "manual"
+                                                        }
+                                                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
+                                                            analyticsName,
+                                                            "shows"
+                                                        )
+                                                    },
+                                                    onDismiss = { showSortMenu = false }
+                                                )
+                                            } else {
+                                                LatestSortMenuItems(
+                                                    useSmartRank = useSmartRank,
+                                                    onUseSmartRankChange = { useSmart ->
+                                                        viewModel.setUseSmartRank(useSmart)
+                                                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsSortChanged(
+                                                            if (useSmart) "smart_sort" else "chronological",
+                                                            "latest"
+                                                        )
+                                                    },
+                                                    hideCompleted = hideCompletedInSubs,
+                                                    onHideCompletedChange = viewModel::setHideCompletedInSubs,
+                                                    onDismiss = { showSortMenu = false }
+                                                )
+                                            }
                                         }
                                     }
                                 }
+                                IconButton(onClick = { isSearchActive = true }) {
+                                    Icon(Icons.Rounded.Search, contentDescription = "Search")
+                                }
                             }
-                            IconButton(onClick = { isSearchActive = true }) {
-                                Icon(Icons.Rounded.Search, contentDescription = "Search")
+                        },
+                        scrollBehavior = scrollBehavior
+                    )
+
+                    val latestCount = successState?.subscribedPodcasts?.count { it.latestEpisode != null } ?: 0
+
+                    ExpressiveTabSwitcher(
+                        tabs = listOf("Shows", "New Episodes"),
+                        selectedIndex = pagerState.currentPage,
+                        badge = if (latestCount > 0) mapOf(1 to latestCount) else emptyMap(),
+                        onTabSelected = { index ->
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding).imePadding()) {
+                when (uiState) {
+                    is LibraryUiState.Loading -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    is LibraryUiState.Error -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Error loading subscriptions")
+                        }
+                    }
+                    is LibraryUiState.Success -> {
+                        val success = uiState as LibraryUiState.Success
+                        val allPodcasts = success.subscribedPodcasts
+                        val podcasts = if (searchQuery.isBlank()) {
+                            allPodcasts
+                        } else {
+                            allPodcasts.filter {
+                                it.title.contains(searchQuery, ignoreCase = true) ||
+                                    it.artist.contains(searchQuery, ignoreCase = true)
                             }
                         }
-                    },
-                    scrollBehavior = scrollBehavior
-                )
-
-                val latestCount = successState?.subscribedPodcasts?.count { it.latestEpisode != null } ?: 0
-
-                ExpressiveTabSwitcher(
-                    tabs = listOf("Shows", "New Episodes"),
-                    selectedIndex = pagerState.currentPage,
-                    badge = if (latestCount > 0) mapOf(1 to latestCount) else emptyMap(),
-                    onTabSelected = { index ->
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                )
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).imePadding()) {
-            when (uiState) {
-                is LibraryUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
-                is LibraryUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error loading subscriptions")
-                    }
-                }
-                is LibraryUiState.Success -> {
-                    val success = uiState as LibraryUiState.Success
-                    val allPodcasts = success.subscribedPodcasts
-                    val podcasts = if (searchQuery.isBlank()) allPodcasts else {
-                        allPodcasts.filter {
-                            it.title.contains(searchQuery, ignoreCase = true) ||
-                            it.artist.contains(searchQuery, ignoreCase = true)
-                        }
-                    }
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
-                        when (page) {
-                            0 -> ShowsTabContent(
-                                podcasts = podcasts,
-                                onExploreClick = onExploreClick,
-                                onPodcastClick = {
-                                    viewModel.subPodcastsClickedCount++
-                                    onPodcastClick(it)
-                                },
-                                isGridView = isGridView,
-                                canReorder = searchQuery.isBlank(),
-                                pinnedPodcastIds = pinnedPodcastIds,
-                                onReorder = viewModel::reorderSubscriptions,
-                            )
-                            1 -> {
-                                LatestTabContent(
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                            when (page) {
+                                0 -> ShowsTabContent(
                                     podcasts = podcasts,
-                                    allHistory = success.allHistory,
-                                    useSmartRank = useSmartRank,
-                                    hideCompleted = hideCompletedInSubs,
-                                    scoreEpisodes = viewModel::scoreLatestEpisodes,
-                                    actions =
+                                    onExploreClick = onExploreClick,
+                                    onPodcastClick = {
+                                        viewModel.subPodcastsClickedCount++
+                                        onPodcastClick(it)
+                                    },
+                                    isGridView = isGridView,
+                                    canReorder = searchQuery.isBlank(),
+                                    pinnedPodcastIds = pinnedPodcastIds,
+                                    onReorder = viewModel::reorderSubscriptions,
+                                )
+                                1 -> {
+                                    LatestTabContent(
+                                        podcasts = podcasts,
+                                        allHistory = success.allHistory,
+                                        useSmartRank = useSmartRank,
+                                        hideCompleted = hideCompletedInSubs,
+                                        scoreEpisodes = viewModel::scoreLatestEpisodes,
+                                        actions =
                                         LatestTabActions(
                                             onExploreClick = onExploreClick,
                                             onEpisodeClick = { ep, pod, entry ->
@@ -360,8 +361,9 @@ fun SubscriptionsScreen(
                                             onPlayEpisode = onPlayEpisode,
                                             onPlayEpisodes = onPlayEpisodes,
                                         ),
-                                    isPlayerActive = isPlayerActive,
-                                )
+                                        isPlayerActive = isPlayerActive,
+                                    )
+                                }
                             }
                         }
                     }
@@ -369,5 +371,4 @@ fun SubscriptionsScreen(
             }
         }
     }
-}
 }

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -24,14 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 @Composable
-fun BoxScope.NewEpisodeBadge(
-    modifier: Modifier = Modifier
-) {
+fun BoxScope.NewEpisodeBadge(modifier: Modifier = Modifier) {
     // Slow shimmer animation across the NEW badge background (4 seconds loop)
     val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
     val shimmerOffset by infiniteTransition.animateFloat(
@@ -46,7 +42,7 @@ fun BoxScope.NewEpisodeBadge(
 
     val baseColor = MaterialTheme.colorScheme.primary
     val shimmerColor = MaterialTheme.colorScheme.primaryContainer
-    
+
     val brush = remember(shimmerOffset, baseColor, shimmerColor) {
         Brush.linearGradient(
             colors = listOf(

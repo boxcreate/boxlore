@@ -63,14 +63,14 @@ import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetGeometryInput
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetNestedScrollLogic
 import cx.aswin.boxlore.feature.player.v2.logic.calculatePlayerSheetGeometry
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.roundToInt
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.roundToInt
 
 enum class PlayerSheetValue { Collapsed, Expanded }
 
@@ -123,8 +123,8 @@ fun PlayerSheetScaffold(
         }
     val state by stablePlayerState.collectAsStateWithLifecycle(
         initialValue =
-            cx.aswin.boxlore.core.playback
-                .PlayerState(),
+        cx.aswin.boxlore.core.playback
+            .PlayerState(),
     )
     val episode = state.currentEpisode
     val podcast = state.currentPodcast
@@ -181,39 +181,39 @@ fun PlayerSheetScaffold(
     PlayerSheetSurface(
         geometry = geometry,
         content =
-            PlayerSheetContentState(
-                playerState = state,
-                episode = episode,
-                podcast = podcast,
-                colorScheme = colorScheme,
-                isFullscreenVideo = isFullscreenVideo,
-                hasSeenSwipeDismissTip = hasSeenSwipeDismissTip,
-                hasSeenSwipeMinimizeTip = hasSeenSwipeMinimizeTip,
-            ),
+        PlayerSheetContentState(
+            playerState = state,
+            episode = episode,
+            podcast = podcast,
+            colorScheme = colorScheme,
+            isFullscreenVideo = isFullscreenVideo,
+            hasSeenSwipeDismissTip = hasSeenSwipeDismissTip,
+            hasSeenSwipeMinimizeTip = hasSeenSwipeMinimizeTip,
+        ),
         resources =
-            PlayerSheetResources(
-                playbackRepository = playbackRepository,
-                downloadRepository = downloadRepository,
-                userPrefs = userPrefs,
-                stateHolder = playerStateHolder,
-                scope = scope,
-                haptics = haptics,
-                flows =
-                    PlayerSheetFlows(
-                        nestedScrollConnection = sheetNestedScrollConnection,
-                        position = positionFlow,
-                    ),
+        PlayerSheetResources(
+            playbackRepository = playbackRepository,
+            downloadRepository = downloadRepository,
+            userPrefs = userPrefs,
+            stateHolder = playerStateHolder,
+            scope = scope,
+            haptics = haptics,
+            flows =
+            PlayerSheetFlows(
+                nestedScrollConnection = sheetNestedScrollConnection,
+                position = positionFlow,
             ),
+        ),
         callbacks =
-            PlayerSheetCallbacks(
-                onExpand = { requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
-                onCollapse = {
-                    requestSheetCollapse(sheetState, geometry.sheetOffset, layout.collapsedTargetY, scope)
-                },
-                onFullscreenVideoChange = { isFullscreenVideo = it },
-                onEpisodeInfoClick = actions.onEpisodeInfoClick,
-                onPodcastInfoClick = actions.onPodcastInfoClick,
-            ),
+        PlayerSheetCallbacks(
+            onExpand = { requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
+            onCollapse = {
+                requestSheetCollapse(sheetState, geometry.sheetOffset, layout.collapsedTargetY, scope)
+            },
+            onFullscreenVideoChange = { isFullscreenVideo = it },
+            onEpisodeInfoClick = actions.onEpisodeInfoClick,
+            onPodcastInfoClick = actions.onPodcastInfoClick,
+        ),
         sheetState = sheetState,
         containerHeight = layout.containerHeight,
         modifier = modifier,
@@ -348,39 +348,39 @@ private fun PlayerSheetSurface(
         )
     Box(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .offset { IntOffset(0, geometry.sheetOffset.roundToInt()) }
-                .graphicsLayer { clip = false }
-                .height(geometry.sheetHeight),
+        modifier
+            .fillMaxWidth()
+            .offset { IntOffset(0, geometry.sheetOffset.roundToInt()) }
+            .graphicsLayer { clip = false }
+            .height(geometry.sheetHeight),
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = geometry.horizontalPadding)
-                    .height(geometry.sheetHeight)
-                    .shadow(elevation = geometry.sheetElevation, shape = shape, clip = false)
-                    .background(color = miniSheetColor(content.colorScheme), shape = shape)
-                    .clip(shape)
-                    .anchoredDraggable(
-                        state = sheetState,
-                        orientation = Orientation.Vertical,
-                        enabled = !content.isFullscreenVideo,
-                        // Never steal taps while settling: default true-during-animation
-                        // ate mini controls for ~1–2s. Touch-slop still allows swipe-up
-                        // expand from the collapsed mini player.
-                        startDragImmediately = false,
-                    ).clickable(
-                        enabled =
-                            geometry.expansionFraction < 0.5f &&
-                                !content.isFullscreenVideo,
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) {
-                        resources.haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        callbacks.onExpand()
-                    },
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = geometry.horizontalPadding)
+                .height(geometry.sheetHeight)
+                .shadow(elevation = geometry.sheetElevation, shape = shape, clip = false)
+                .background(color = miniSheetColor(content.colorScheme), shape = shape)
+                .clip(shape)
+                .anchoredDraggable(
+                    state = sheetState,
+                    orientation = Orientation.Vertical,
+                    enabled = !content.isFullscreenVideo,
+                    // Never steal taps while settling: default true-during-animation
+                    // ate mini controls for ~1–2s. Touch-slop still allows swipe-up
+                    // expand from the collapsed mini player.
+                    startDragImmediately = false,
+                ).clickable(
+                    enabled =
+                    geometry.expansionFraction < 0.5f &&
+                        !content.isFullscreenVideo,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {
+                    resources.haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    callbacks.onExpand()
+                },
         ) {
             PlayerSheetLayers(geometry, content, resources, callbacks, containerHeight)
         }
@@ -425,38 +425,38 @@ private fun MiniPlayerLayer(
     resources.stateHolder.SaveableStateProvider("miniPlayer") {
         MiniPlayerV2(
             content =
-                MiniPlayerContent(
-                    episode = content.episode,
-                    podcastTitle = content.podcast?.title ?: "",
-                    podcastImageUrl = content.podcast?.imageUrl,
-                    isPlaying = content.playerState.isPlaying,
-                    isLoading = content.playerState.isLoading,
-                    position = position,
-                    duration = content.playerState.duration,
-                    seekBackwardSeconds = (content.playerState.seekBackwardMs / 1_000L).toInt(),
-                    seekForwardSeconds = (content.playerState.seekForwardMs / 1_000L).toInt(),
-                    isCasting = content.playerState.playbackRoute.isRemote,
-                    castDeviceName = content.playerState.playbackRoute.deviceName,
-                ),
+            MiniPlayerContent(
+                episode = content.episode,
+                podcastTitle = content.podcast?.title ?: "",
+                podcastImageUrl = content.podcast?.imageUrl,
+                isPlaying = content.playerState.isPlaying,
+                isLoading = content.playerState.isLoading,
+                position = position,
+                duration = content.playerState.duration,
+                seekBackwardSeconds = (content.playerState.seekBackwardMs / 1_000L).toInt(),
+                seekForwardSeconds = (content.playerState.seekForwardMs / 1_000L).toInt(),
+                isCasting = content.playerState.playbackRoute.isRemote,
+                castDeviceName = content.playerState.playbackRoute.deviceName,
+            ),
             colors =
-                MiniPlayerColors(
-                    colorScheme = content.colorScheme,
-                    backgroundColor = miniSheetColor(content.colorScheme),
-                ),
+            MiniPlayerColors(
+                colorScheme = content.colorScheme,
+                backgroundColor = miniSheetColor(content.colorScheme),
+            ),
             actions = miniPlayerActions(content, resources),
             swipeTip =
-                MiniPlayerSwipeTip(
-                    visible = !content.hasSeenSwipeDismissTip && !content.playerState.isPlaying,
-                    onDismissed = {
-                        resources.scope.launch { resources.userPrefs.markSwipeDismissTipSeen() }
-                    },
-                ),
+            MiniPlayerSwipeTip(
+                visible = !content.hasSeenSwipeDismissTip && !content.playerState.isPlaying,
+                onDismissed = {
+                    resources.scope.launch { resources.userPrefs.markSwipeDismissTipSeen() }
+                },
+            ),
             modifier =
-                Modifier
-                    .height(geometry.miniPlayerHeight)
-                    .fillMaxWidth()
-                    .graphicsLayer { alpha = geometry.miniAlpha }
-                    .zIndex(if (geometry.expansionFraction < 0.5f) 1f else 0f),
+            Modifier
+                .height(geometry.miniPlayerHeight)
+                .fillMaxWidth()
+                .graphicsLayer { alpha = geometry.miniAlpha }
+                .zIndex(if (geometry.expansionFraction < 0.5f) 1f else 0f),
         )
     }
 }
@@ -464,33 +464,32 @@ private fun MiniPlayerLayer(
 private fun miniPlayerActions(
     content: PlayerSheetContentState,
     resources: PlayerSheetResources,
-): MiniPlayerActions =
-    MiniPlayerActions(
-        onPlayPause = {
-            trackMiniPlayerAction("play_pause", content)
-            if (content.playerState.isPlaying) {
-                resources.playbackRepository.pause()
-            } else {
-                resources.playbackRepository.resume(
-                    android.os.Bundle().apply {
-                        putString("entry_point", "resume_mini_player")
-                    },
-                )
-            }
-        },
-        onReplay = {
-            trackMiniPlayerAction("previous", content)
-            resources.playbackRepository.skipBackward()
-        },
-        onForward = {
-            trackMiniPlayerAction("next", content)
-            resources.playbackRepository.skipForward()
-        },
-        onDismiss = {
-            trackMiniPlayerAction("dismissed", content)
-            resources.playbackRepository.clearSession()
-        },
-    )
+): MiniPlayerActions = MiniPlayerActions(
+    onPlayPause = {
+        trackMiniPlayerAction("play_pause", content)
+        if (content.playerState.isPlaying) {
+            resources.playbackRepository.pause()
+        } else {
+            resources.playbackRepository.resume(
+                android.os.Bundle().apply {
+                    putString("entry_point", "resume_mini_player")
+                },
+            )
+        }
+    },
+    onReplay = {
+        trackMiniPlayerAction("previous", content)
+        resources.playbackRepository.skipBackward()
+    },
+    onForward = {
+        trackMiniPlayerAction("next", content)
+        resources.playbackRepository.skipForward()
+    },
+    onDismiss = {
+        trackMiniPlayerAction("dismissed", content)
+        resources.playbackRepository.clearSession()
+    },
+)
 
 private fun trackMiniPlayerAction(
     action: String,
@@ -518,41 +517,41 @@ private fun FullPlayerLayer(
     resources.stateHolder.SaveableStateProvider("fullPlayer") {
         Box(
             modifier =
-                Modifier
-                    .height(containerHeight)
-                    .graphicsLayer {
-                        alpha = geometry.fullAlpha
-                        translationY = geometry.fullTranslationY
-                    }.zIndex(if (geometry.expansionFraction >= 0.5f) 1f else 0f)
-                    .offset {
-                        if (geometry.expansionFraction <= 0.01f) IntOffset(0, 10000) else IntOffset.Zero
-                    },
+            Modifier
+                .height(containerHeight)
+                .graphicsLayer {
+                    alpha = geometry.fullAlpha
+                    translationY = geometry.fullTranslationY
+                }.zIndex(if (geometry.expansionFraction >= 0.5f) 1f else 0f)
+                .offset {
+                    if (geometry.expansionFraction <= 0.01f) IntOffset(0, 10000) else IntOffset.Zero
+                },
         ) {
             FullPlayerV2(
                 dependencies =
-                    FullPlayerDependencies(
-                        playbackRepository = resources.playbackRepository,
-                        downloadRepository = resources.downloadRepository,
-                        userPrefs = resources.userPrefs,
-                    ),
+                FullPlayerDependencies(
+                    playbackRepository = resources.playbackRepository,
+                    downloadRepository = resources.downloadRepository,
+                    userPrefs = resources.userPrefs,
+                ),
                 display =
-                    FullPlayerDisplay(
-                        colorScheme = content.colorScheme,
-                        isFullscreenVideo = content.isFullscreenVideo,
-                        sheetNestedScrollConnection = resources.flows.nestedScrollConnection,
-                        isExpanded = geometry.expansionFraction >= 0.5f,
-                        showSwipeMinimizeTip = !content.hasSeenSwipeMinimizeTip,
-                    ),
+                FullPlayerDisplay(
+                    colorScheme = content.colorScheme,
+                    isFullscreenVideo = content.isFullscreenVideo,
+                    sheetNestedScrollConnection = resources.flows.nestedScrollConnection,
+                    isExpanded = geometry.expansionFraction >= 0.5f,
+                    showSwipeMinimizeTip = !content.hasSeenSwipeMinimizeTip,
+                ),
                 actions =
-                    FullPlayerActions(
-                        onFullscreenVideoChange = callbacks.onFullscreenVideoChange,
-                        onCollapse = callbacks.onCollapse,
-                        onEpisodeInfoClick = callbacks.onEpisodeInfoClick,
-                        onPodcastInfoClick = callbacks.onPodcastInfoClick,
-                        onSwipeMinimizeTipDismissed = {
-                            resources.scope.launch { resources.userPrefs.markSwipeMinimizeTipSeen() }
-                        },
-                    ),
+                FullPlayerActions(
+                    onFullscreenVideoChange = callbacks.onFullscreenVideoChange,
+                    onCollapse = callbacks.onCollapse,
+                    onEpisodeInfoClick = callbacks.onEpisodeInfoClick,
+                    onPodcastInfoClick = callbacks.onPodcastInfoClick,
+                    onSwipeMinimizeTipDismissed = {
+                        resources.scope.launch { resources.userPrefs.markSwipeMinimizeTipSeen() }
+                    },
+                ),
             )
         }
     }
@@ -672,59 +671,58 @@ private fun PlayerSheetPredictiveBack(
 private fun rememberPlayerSheetNestedScrollConnection(
     sheetState: AnchoredDraggableState<PlayerSheetValue>,
     density: Density,
-): NestedScrollConnection =
-    remember(sheetState, density) {
-        object : NestedScrollConnection {
-            private var contentOwnsGesture = false
+): NestedScrollConnection = remember(sheetState, density) {
+    object : NestedScrollConnection {
+        private var contentOwnsGesture = false
 
-            override fun onPreScroll(
-                available: Offset,
-                source: NestedScrollSource,
-            ): Offset = consumePlayerSheetPreScroll(sheetState, available)
+        override fun onPreScroll(
+            available: Offset,
+            source: NestedScrollSource,
+        ): Offset = consumePlayerSheetPreScroll(sheetState, available)
 
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource,
-            ): Offset {
-                if (source == NestedScrollSource.UserInput) {
-                    contentOwnsGesture =
-                        PlayerSheetNestedScrollLogic.contentOwnsGestureAfterScroll(
-                            contentOwnsGesture,
-                            consumed.y,
-                        )
-                }
-                return consumePlayerSheetPostScroll(
-                    sheetState = sheetState,
-                    available = available,
-                    source = source,
-                    contentOwnsGesture = contentOwnsGesture,
-                )
+        override fun onPostScroll(
+            consumed: Offset,
+            available: Offset,
+            source: NestedScrollSource,
+        ): Offset {
+            if (source == NestedScrollSource.UserInput) {
+                contentOwnsGesture =
+                    PlayerSheetNestedScrollLogic.contentOwnsGestureAfterScroll(
+                        contentOwnsGesture,
+                        consumed.y,
+                    )
             }
+            return consumePlayerSheetPostScroll(
+                sheetState = sheetState,
+                available = available,
+                source = source,
+                contentOwnsGesture = contentOwnsGesture,
+            )
+        }
 
-            override suspend fun onPreFling(available: Velocity): Velocity = settlePlayerSheetPreFling(sheetState, available, density)
+        override suspend fun onPreFling(available: Velocity): Velocity = settlePlayerSheetPreFling(sheetState, available, density)
 
-            override suspend fun onPostFling(
-                consumed: Velocity,
-                available: Velocity,
-            ): Velocity {
-                try {
-                    if (
-                        !PlayerSheetNestedScrollLogic.shouldSettleSheetOnPostFling(
-                            contentOwnsGesture = contentOwnsGesture,
-                            sheetOffset = sheetState.requireOffset(),
-                            animationRunning = sheetState.isAnimationRunning,
-                        )
-                    ) {
-                        return Velocity.Zero
-                    }
-                    return settlePlayerSheetPostFling(sheetState, available, density)
-                } finally {
-                    contentOwnsGesture = false
+        override suspend fun onPostFling(
+            consumed: Velocity,
+            available: Velocity,
+        ): Velocity {
+            try {
+                if (
+                    !PlayerSheetNestedScrollLogic.shouldSettleSheetOnPostFling(
+                        contentOwnsGesture = contentOwnsGesture,
+                        sheetOffset = sheetState.requireOffset(),
+                        animationRunning = sheetState.isAnimationRunning,
+                    )
+                ) {
+                    return Velocity.Zero
                 }
+                return settlePlayerSheetPostFling(sheetState, available, density)
+            } finally {
+                contentOwnsGesture = false
             }
         }
     }
+}
 
 private fun consumePlayerSheetPreScroll(
     sheetState: AnchoredDraggableState<PlayerSheetValue>,

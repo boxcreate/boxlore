@@ -1,13 +1,12 @@
 package cx.aswin.boxlore.feature.briefing
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,27 +26,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,9 +53,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -65,13 +60,16 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,8 +82,9 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 
@@ -115,15 +114,13 @@ fun BriefingRoute(
     val viewModel: BriefingViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return BriefingViewModel(
-                    application = application,
-                    podcastRepository = podcastRepository,
-                    playbackRepository = playbackRepository,
-                    queueManager = queueManager,
-                    initialRegion = initialRegion
-                ) as T
-            }
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = BriefingViewModel(
+                application = application,
+                podcastRepository = podcastRepository,
+                playbackRepository = playbackRepository,
+                queueManager = queueManager,
+                initialRegion = initialRegion
+            ) as T
         }
     )
 
@@ -447,7 +444,6 @@ fun BriefingScreen(
     }
 }
 
-
 @Composable
 fun BriefingContent(
     briefing: Briefing,
@@ -475,7 +471,6 @@ fun BriefingContent(
     val context = androidx.compose.ui.platform.LocalContext.current
     val morphThreshold = with(density) { 180.dp.toPx() }
     val scrollFraction = (scrollState.value.toFloat() / morphThreshold).coerceIn(0f, 1f)
-
 
     Box(
         modifier = modifier
@@ -676,8 +671,6 @@ fun BriefingContent(
                 onPlayPauseClick = onPlayPauseClick,
             )
 
-
-
             Spacer(modifier = Modifier.height(20.dp))
 
             // Sources — compact button opening bottom sheet
@@ -789,7 +782,6 @@ fun BriefingContent(
     }
 }
 
-
 @Composable
 fun ErrorContent(
     message: String,
@@ -887,8 +879,6 @@ fun VerticalRecommendedEpisodeCard(
                             )
                         )
                 )
-
-
             }
 
             // Text content

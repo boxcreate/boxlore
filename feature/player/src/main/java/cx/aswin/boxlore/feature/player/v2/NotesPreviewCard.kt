@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -24,15 +22,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 /**
@@ -58,10 +56,14 @@ fun NotesPreviewCard(
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     val cardShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 28.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 28.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 28.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 28.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 28.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 28.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 28.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 28.dp,
+        smoothnessAsPercentBR = 60
     )
 
     Surface(

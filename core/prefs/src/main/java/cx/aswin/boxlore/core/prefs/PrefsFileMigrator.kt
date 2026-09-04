@@ -47,11 +47,7 @@ object PrefsFileMigrator {
      * Open [newName], migrating from [oldName] when needed.
      * Writers always target the new file; readers dual-read when migration failed.
      */
-    fun open(
-        context: Context,
-        newName: String,
-        oldName: String,
-    ): SharedPreferences {
+    fun open(context: Context, newName: String, oldName: String,): SharedPreferences {
         val app = resolvedContext(context)
         migrateIfNeeded(app, oldName, newName)
         val neu = app.getSharedPreferences(newName, Context.MODE_PRIVATE)
@@ -69,11 +65,7 @@ object PrefsFileMigrator {
     /**
      * @return true when new file is ready (already migrated, freshly copied, or no old data).
      */
-    fun migrateIfNeeded(
-        context: Context,
-        oldName: String,
-        newName: String,
-    ): Boolean {
+    fun migrateIfNeeded(context: Context, oldName: String, newName: String,): Boolean {
         val app = resolvedContext(context)
         val neu = app.getSharedPreferences(newName, Context.MODE_PRIVATE)
         if (neu.contains(MARKER_KEY) || hasUserKeys(neu)) {
@@ -107,8 +99,7 @@ object PrefsFileMigrator {
     }
 
     /** Prefer applicationContext; fall back for Mockito fakes where it is null. */
-    private fun resolvedContext(context: Context): Context =
-        context.applicationContext ?: context
+    private fun resolvedContext(context: Context): Context = context.applicationContext ?: context
 
     private fun sharedPrefsXmlExists(context: Context, name: String): Boolean {
         val dataDir = try {
@@ -141,10 +132,7 @@ object PrefsFileMigrator {
 /**
  * Reads from [primary] first, then [fallback]. All writes go to [primary] only.
  */
-internal class DualReadSharedPreferences(
-    private val primary: SharedPreferences,
-    private val fallback: SharedPreferences,
-) : SharedPreferences {
+internal class DualReadSharedPreferences(private val primary: SharedPreferences, private val fallback: SharedPreferences,) : SharedPreferences {
 
     override fun getAll(): MutableMap<String, *> {
         val merged = LinkedHashMap<String, Any?>()
@@ -155,38 +143,56 @@ internal class DualReadSharedPreferences(
 
     override fun getString(key: String?, defValue: String?): String? {
         if (key == null) return defValue
-        return if (primary.contains(key)) primary.getString(key, defValue)
-        else fallback.getString(key, defValue)
+        return if (primary.contains(key)) {
+            primary.getString(key, defValue)
+        } else {
+            fallback.getString(key, defValue)
+        }
     }
 
     override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? {
         if (key == null) return defValues
-        return if (primary.contains(key)) primary.getStringSet(key, defValues)
-        else fallback.getStringSet(key, defValues)
+        return if (primary.contains(key)) {
+            primary.getStringSet(key, defValues)
+        } else {
+            fallback.getStringSet(key, defValues)
+        }
     }
 
     override fun getInt(key: String?, defValue: Int): Int {
         if (key == null) return defValue
-        return if (primary.contains(key)) primary.getInt(key, defValue)
-        else fallback.getInt(key, defValue)
+        return if (primary.contains(key)) {
+            primary.getInt(key, defValue)
+        } else {
+            fallback.getInt(key, defValue)
+        }
     }
 
     override fun getLong(key: String?, defValue: Long): Long {
         if (key == null) return defValue
-        return if (primary.contains(key)) primary.getLong(key, defValue)
-        else fallback.getLong(key, defValue)
+        return if (primary.contains(key)) {
+            primary.getLong(key, defValue)
+        } else {
+            fallback.getLong(key, defValue)
+        }
     }
 
     override fun getFloat(key: String?, defValue: Float): Float {
         if (key == null) return defValue
-        return if (primary.contains(key)) primary.getFloat(key, defValue)
-        else fallback.getFloat(key, defValue)
+        return if (primary.contains(key)) {
+            primary.getFloat(key, defValue)
+        } else {
+            fallback.getFloat(key, defValue)
+        }
     }
 
     override fun getBoolean(key: String?, defValue: Boolean): Boolean {
         if (key == null) return defValue
-        return if (primary.contains(key)) primary.getBoolean(key, defValue)
-        else fallback.getBoolean(key, defValue)
+        return if (primary.contains(key)) {
+            primary.getBoolean(key, defValue)
+        } else {
+            fallback.getBoolean(key, defValue)
+        }
     }
 
     override fun contains(key: String?): Boolean {
@@ -196,16 +202,12 @@ internal class DualReadSharedPreferences(
 
     override fun edit(): SharedPreferences.Editor = primary.edit()
 
-    override fun registerOnSharedPreferenceChangeListener(
-        listener: SharedPreferences.OnSharedPreferenceChangeListener?,
-    ) {
+    override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?,) {
         primary.registerOnSharedPreferenceChangeListener(listener)
         fallback.registerOnSharedPreferenceChangeListener(listener)
     }
 
-    override fun unregisterOnSharedPreferenceChangeListener(
-        listener: SharedPreferences.OnSharedPreferenceChangeListener?,
-    ) {
+    override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?,) {
         primary.unregisterOnSharedPreferenceChangeListener(listener)
         fallback.unregisterOnSharedPreferenceChangeListener(listener)
     }

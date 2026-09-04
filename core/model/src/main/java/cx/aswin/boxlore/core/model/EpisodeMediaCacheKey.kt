@@ -8,10 +8,7 @@ package cx.aswin.boxlore.core.model
  * Cache keys that ignore `v` keep playing yesterday's bytes after a same-day regen.
  */
 object EpisodeMediaCacheKey {
-    fun of(
-        episodeId: String,
-        audioUrl: String?,
-    ): String {
+    fun of(episodeId: String, audioUrl: String?,): String {
         if (!episodeId.startsWith("briefing_")) return episodeId
         val version = audioVersionQueryParam(audioUrl) ?: return episodeId
         return "${episodeId}_$version"

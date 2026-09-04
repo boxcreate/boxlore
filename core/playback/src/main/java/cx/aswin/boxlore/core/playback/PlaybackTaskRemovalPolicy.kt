@@ -3,17 +3,9 @@ package cx.aswin.boxlore.core.playback
 import androidx.media3.common.Player
 
 internal object PlaybackTaskRemovalPolicy {
-    data class Plan(
-        val persistBeforeStop: Boolean,
-        val keepServiceRunning: Boolean,
-    )
+    data class Plan(val persistBeforeStop: Boolean, val keepServiceRunning: Boolean,)
 
-    fun plan(
-        hasPlayer: Boolean,
-        playWhenReady: Boolean,
-        mediaItemCount: Int,
-        playbackState: Int,
-    ): Plan {
+    fun plan(hasPlayer: Boolean, playWhenReady: Boolean, mediaItemCount: Int, playbackState: Int,): Plan {
         if (!hasPlayer) {
             return Plan(
                 persistBeforeStop = false,

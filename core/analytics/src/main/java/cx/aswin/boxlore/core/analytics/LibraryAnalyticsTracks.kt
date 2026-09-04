@@ -11,10 +11,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackLibraryHubSession(
-        timeSpentSeconds: Float,
-        navigatedTo: String?,
-    ) {
+    fun trackLibraryHubSession(timeSpentSeconds: Float, navigatedTo: String?,) {
         val props =
             mutableMapOf<String, Any>(
                 "destination" to "hub",
@@ -24,10 +21,7 @@ internal object LibraryAnalyticsTracks {
         AnalyticsEmit.event("library_destination_viewed", props)
     }
 
-    fun trackLibrarySubscriptionsViewed(
-        sourceEntryPoint: String,
-        initialTab: String,
-    ) {
+    fun trackLibrarySubscriptionsViewed(sourceEntryPoint: String, initialTab: String,) {
         AnalyticsEmit.event(
             "library_destination_viewed",
             mapOf(
@@ -66,11 +60,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackLibraryLikedSession(
-        timeSpentSeconds: Float,
-        episodesClickedCount: Int,
-        episodesUnlikedCount: Int,
-    ) {
+    fun trackLibraryLikedSession(timeSpentSeconds: Float, episodesClickedCount: Int, episodesUnlikedCount: Int,) {
         AnalyticsEmit.event(
             "library_destination_viewed",
             mapOf(
@@ -89,11 +79,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackLibraryDownloadsSession(
-        timeSpentSeconds: Float,
-        episodesClickedCount: Int,
-        episodesDeletedCount: Int,
-    ) {
+    fun trackLibraryDownloadsSession(timeSpentSeconds: Float, episodesClickedCount: Int, episodesDeletedCount: Int,) {
         AnalyticsEmit.event(
             "library_destination_viewed",
             mapOf(
@@ -112,11 +98,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackLibraryHistorySession(
-        timeSpentSeconds: Float,
-        episodesClickedCount: Int,
-        itemsDeletedCount: Int,
-    ) {
+    fun trackLibraryHistorySession(timeSpentSeconds: Float, episodesClickedCount: Int, itemsDeletedCount: Int,) {
         AnalyticsEmit.event(
             "library_destination_viewed",
             mapOf(
@@ -135,10 +117,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackTopControlbarInteraction(
-        action: String,
-        screen: String,
-    ) {
+    fun trackTopControlbarInteraction(action: String, screen: String,) {
         AnalyticsEmit.event(
             "player_chrome_interaction",
             mapOf(
@@ -149,10 +128,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackPlaybackRouteChanged(
-        isRemote: Boolean,
-        volumeControlAvailable: Boolean,
-    ) {
+    fun trackPlaybackRouteChanged(isRemote: Boolean, volumeControlAvailable: Boolean,) {
         AnalyticsEmit.event(
             "player_chrome_interaction",
             mapOf(
@@ -173,10 +149,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackSettingsInteraction(
-        action: String,
-        value: String? = null,
-    ) {
+    fun trackSettingsInteraction(action: String, value: String? = null,) {
         val props =
             mutableMapOf<String, Any>(
                 "action" to action,
@@ -242,11 +215,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackNotificationReceived(
-        notificationType: String,
-        podcastId: String? = null,
-        episodeId: String? = null,
-    ) {
+    fun trackNotificationReceived(notificationType: String, podcastId: String? = null, episodeId: String? = null,) {
         AnalyticsEmit.event(
             "notification_received",
             buildMap {
@@ -257,12 +226,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackDownloadRequested(
-        episodeId: String,
-        podcastId: String,
-        source: String,
-        wifiOnly: Boolean? = null,
-    ) {
+    fun trackDownloadRequested(episodeId: String, podcastId: String, source: String, wifiOnly: Boolean? = null,) {
         AnalyticsEmit.event(
             "download_requested",
             buildMap {
@@ -274,12 +238,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackDownloadCompleted(
-        episodeId: String,
-        podcastId: String,
-        source: String? = null,
-        fileSizeMb: Float? = null,
-    ) {
+    fun trackDownloadCompleted(episodeId: String, podcastId: String, source: String? = null, fileSizeMb: Float? = null,) {
         AnalyticsEmit.event(
             "download_completed",
             buildMap {
@@ -294,12 +253,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackDownloadFailed(
-        errorReason: String,
-        episodeId: String? = null,
-        podcastId: String? = null,
-        source: String? = null,
-    ) {
+    fun trackDownloadFailed(errorReason: String, episodeId: String? = null, podcastId: String? = null, source: String? = null,) {
         AnalyticsEmit.event(
             "download_failed",
             buildMap {
@@ -332,10 +286,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackShowNotificationToggled(
-        podcastId: String,
-        enabled: Boolean,
-    ) {
+    fun trackShowNotificationToggled(podcastId: String, enabled: Boolean,) {
         AnalyticsEmit.event(
             "show_notification_toggled",
             mapOf(
@@ -383,12 +334,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackEpisodeLikedToggled(
-        episodeId: String,
-        podcastId: String,
-        isLiked: Boolean,
-        surface: String? = null,
-    ) {
+    fun trackEpisodeLikedToggled(episodeId: String, podcastId: String, isLiked: Boolean, surface: String? = null,) {
         AnalyticsEmit.event(
             "episode_liked_toggled",
             buildMap {
@@ -400,12 +346,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackEpisodeMarkPlayed(
-        episodeId: String,
-        podcastId: String,
-        isPlayed: Boolean,
-        surface: String? = null,
-    ) {
+    fun trackEpisodeMarkPlayed(episodeId: String, podcastId: String, isPlayed: Boolean, surface: String? = null,) {
         AnalyticsEmit.event(
             "episode_mark_played",
             buildMap {
@@ -440,10 +381,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackPlayMixClicked(
-        count: Int,
-        mixMode: String,
-    ) {
+    fun trackPlayMixClicked(count: Int, mixMode: String,) {
         AnalyticsEmit.event(
             "home_surface_tapped",
             mapOf(
@@ -464,10 +402,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackHomePodcastFiltered(
-        podcastId: String,
-        title: String,
-    ) {
+    fun trackHomePodcastFiltered(podcastId: String, title: String,) {
         AnalyticsEmit.event(
             "home_surface_tapped",
             mapOf(
@@ -490,10 +425,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackLibrarySubscriptionsSortChanged(
-        sortMethod: String,
-        tab: String,
-    ) {
+    fun trackLibrarySubscriptionsSortChanged(sortMethod: String, tab: String,) {
         AnalyticsEmit.event(
             "library_destination_viewed",
             mapOf(
@@ -505,10 +437,7 @@ internal object LibraryAnalyticsTracks {
         )
     }
 
-    fun trackLibrarySubscriptionsGenreFiltered(
-        genreName: String,
-        tab: String,
-    ) {
+    fun trackLibrarySubscriptionsGenreFiltered(genreName: String, tab: String,) {
         AnalyticsEmit.event(
             "library_destination_viewed",
             mapOf(

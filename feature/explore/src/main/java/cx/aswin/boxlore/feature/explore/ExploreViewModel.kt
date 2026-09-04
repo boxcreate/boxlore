@@ -1,43 +1,36 @@
 package cx.aswin.boxlore.feature.explore
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.getHistoryForRecommendations
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
-import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.catalog.SearchResult
-import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.PodcastRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
-import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
+import cx.aswin.boxlore.feature.explore.logic.ExploreSharedRecommendationsLogic
+import java.util.Calendar
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Calendar
-
-import cx.aswin.boxlore.core.playback.PlaybackRepository
-import cx.aswin.boxlore.core.playback.getHistoryForRecommendations
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
-import cx.aswin.boxlore.feature.explore.logic.ExploreSharedRecommendationsLogic
 
 enum class SearchTab { SHOWS, EPISODES }
 
@@ -167,12 +160,12 @@ class ExploreViewModel(
     // Seen/cached podcasts for eager zero-latency substring client-side matching
     private val _seenPodcasts = java.util.concurrent.ConcurrentHashMap<String, Podcast>()
     private val _localSubstringResults = MutableStateFlow<List<Podcast>>(emptyList())
-    
+
     // Combine local substring matches and Meili/catalog remote results (also-found stays separate)
     private val _combinedSearchResults = combine(_localSubstringResults, _searchResults) { local, remote ->
         val seenIds = mutableSetOf<String>()
         val combined = mutableListOf<Podcast>()
-        
+
         remote.forEach {
             if (seenIds.add(it.id)) {
                 combined.add(it)
@@ -187,11 +180,11 @@ class ExploreViewModel(
     }
 
     private val _isLoading = MutableStateFlow(true) // Explicit loading state
-    
+
     // Vibe Prompt State
     private val _currentVibe = MutableStateFlow<String?>(null)
     private val _suggestedVibes = MutableStateFlow<List<Pair<String, String>>>(emptyList())
-    
+
     // Search Job to cancel previous searches
     private var searchJob: Job? = null
 
@@ -214,7 +207,6 @@ class ExploreViewModel(
     // Active charts region (shown as a chip on the Trending header)
     private val _activeRegionCode = MutableStateFlow("us")
     val activeRegionCode: StateFlow<String> = _activeRegionCode.asStateFlow()
-
 
     init {
         // Preload subscriptions into _seenPodcasts cache to enable instant zero-latency filtering
@@ -321,10 +313,10 @@ class ExploreViewModel(
 
         // Search Debounce Implementation
         startSearchObserver()
-        
+
         // Initial Load
         loadAllVibes()
-        
+
         viewModelScope.launch {
             combine(_currentCategory, userPrefs.regionStream) { category, region ->
                 category to region
@@ -357,7 +349,7 @@ class ExploreViewModel(
                 fetchPersonalizedRecommendations()
             }
         }
-        
+
         // Keep active region label in sync for the charts header chip.
         viewModelScope.launch {
             userPrefs.regionStream.collect { region ->
@@ -444,11 +436,11 @@ class ExploreViewModel(
         _currentCategory.value = category
         clearVibe()
         // Clear Search when switching category to browse
-        _searchQuery.value = "" 
+        _searchQuery.value = ""
         _localSubstringResults.value = emptyList()
         _trendingPodcasts.value = emptyList() // Clear to force Skeleton
     }
-    
+
     fun onVibeSelected(vibeId: String, vibeName: String) {
         vibesClickedCount++
         _searchQuery.value = ""
@@ -459,7 +451,7 @@ class ExploreViewModel(
         _alsoFoundResults.value = emptyList()
 
         searchJob?.cancel()
-        
+
         var myJob: Job? = null
         myJob = viewModelScope.launch {
             try {
@@ -488,7 +480,7 @@ class ExploreViewModel(
         }
         searchJob = myJob
     }
-    
+
     fun clearVibe() {
         _currentVibe.value = null
         if (_searchQuery.value.isEmpty()) {
@@ -505,10 +497,10 @@ class ExploreViewModel(
         try {
             // Map "All" to null for API, and lowercase others for consistency
             val apiCategory = if (category == "All") null else category.lowercase()
-            
+
             // This hits the Turso DB (via Proxy)
             val podcasts = podcastRepository.getTrendingPodcasts(
-                country = region, 
+                country = region,
                 limit = PAGE_SIZE,
                 category = apiCategory,
                 offset = 0
@@ -566,7 +558,7 @@ class ExploreViewModel(
         } else {
             _semanticSearchResults.value = emptyList()
         }
-        
+
         var myJob: Job? = null
         myJob = viewModelScope.launch {
             _isLoading.value = true
@@ -649,27 +641,23 @@ class ExploreViewModel(
     private suspend fun rankPodcastsOrOriginal(
         results: List<Podcast>,
         history: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
-    ): List<Podcast> {
-        return try {
-            rankPodcastSearchTies(results, history)
-        } catch (error: kotlinx.coroutines.CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            results
-        }
+    ): List<Podcast> = try {
+        rankPodcastSearchTies(results, history)
+    } catch (error: kotlinx.coroutines.CancellationException) {
+        throw error
+    } catch (_: Exception) {
+        results
     }
 
     private suspend fun rankEpisodesOrOriginal(
         results: List<Episode>,
         history: List<cx.aswin.boxlore.core.database.ListeningHistoryEntity>? = null,
-    ): List<Episode> {
-        return try {
-            rankEpisodeSearchTies(results, history)
-        } catch (error: kotlinx.coroutines.CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            results
-        }
+    ): List<Episode> = try {
+        rankEpisodeSearchTies(results, history)
+    } catch (error: kotlinx.coroutines.CancellationException) {
+        throw error
+    } catch (_: Exception) {
+        results
     }
 
     private suspend fun rankPodcastSearchTies(
@@ -718,8 +706,7 @@ class ExploreViewModel(
         }
     }
 
-    private fun Episode.toSearchPodcast(): Podcast =
-        ExploreBrowseLogic.episodeToSearchPodcast(this)
+    private fun Episode.toSearchPodcast(): Podcast = ExploreBrowseLogic.episodeToSearchPodcast(this)
 
     fun setSearchTab(tab: SearchTab) {
         if (_searchTab.value == tab) return

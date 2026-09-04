@@ -51,7 +51,7 @@ fun PlayerControls(
     height: androidx.compose.ui.unit.Dp = 80.dp
 ) {
     var lastClickedId by remember { mutableStateOf<Int?>(null) }
-    
+
     // Auto-reset last clicked
     LaunchedEffect(lastClickedId) {
         if (lastClickedId != null) {
@@ -59,17 +59,17 @@ fun PlayerControls(
             lastClickedId = null
         }
     }
-    
+
     val baseWeight = 1f
     val expansionWeight = 1.15f
     val compressionWeight = 0.85f
-    
+
     fun getWeight(id: Int): Float = when (lastClickedId) {
         id -> expansionWeight
         null -> baseWeight
         else -> compressionWeight
     }
-    
+
     val weightPrev by animateFloatAsState(getWeight(0), label = "prevW")
     val weightPlay by animateFloatAsState(getWeight(1), label = "playW")
     val weightNext by animateFloatAsState(getWeight(2), label = "nextW")
@@ -176,7 +176,7 @@ private fun androidx.compose.foundation.layout.RowScope.PlayPauseButton(
             showLoader = false
         }
     }
-    
+
     val playCorner by animateDpAsState(
         targetValue = if (isPlaying) 26.dp else 60.dp,
         animationSpec = spring(
@@ -195,7 +195,7 @@ private fun androidx.compose.foundation.layout.RowScope.PlayPauseButton(
         cornerRadiusBR = playCorner,
         smoothnessAsPercentBR = 60
     )
-    
+
     Box(
         modifier = modifier
             .weight(weight)
@@ -223,6 +223,3 @@ private fun androidx.compose.foundation.layout.RowScope.PlayPauseButton(
         }
     }
 }
-
-
-

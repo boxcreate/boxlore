@@ -251,11 +251,7 @@ internal object PlaybackAnalyticsTracks {
         AnalyticsEmit.event("explore_screen_viewed", props)
     }
 
-    fun trackExploreSearchPerformed(
-        query: String,
-        resultsCount: Int,
-        searchMode: String = "show_keyword",
-    ) {
+    fun trackExploreSearchPerformed(query: String, resultsCount: Int, searchMode: String = "show_keyword",) {
         val trimmed = query.trim()
         AnalyticsEmit.event(
             "search_performed",

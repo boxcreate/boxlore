@@ -10,9 +10,7 @@ object DownloadSpeedLimiter {
     var speedLimitBps: Long = 0L // 0 means unlimited
 }
 
-class ThrottlingDataSource(
-    private val delegate: DataSource
-) : DataSource {
+class ThrottlingDataSource(private val delegate: DataSource) : DataSource {
     private var bytesReadThisSecond = 0L
     private var secondStartMs = 0L
 

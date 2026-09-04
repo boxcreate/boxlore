@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.explore.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -52,14 +50,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -98,7 +95,7 @@ fun ExplorePodcastCard(
                         .matchParentSize()
                         .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
                 )
-                
+
                 // Genre Chip (only shown when showGenreChip is true)
                 if (showGenreChip && podcast.genre.isNotEmpty()) {
                     Surface(
@@ -200,11 +197,11 @@ fun ExploreRelatedShowsRail(
                 // at the bottom-left of the rounded bounds.
                 Column(
                     modifier =
-                        Modifier
-                            .width(104.dp)
-                            .expressiveClickable {
-                                onPodcastClick(podcast, index)
-                            },
+                    Modifier
+                        .width(104.dp)
+                        .expressiveClickable {
+                            onPodcastClick(podcast, index)
+                        },
                 ) {
                     OptimizedImage(
                         url = podcast.imageUrl,
@@ -212,11 +209,11 @@ fun ExploreRelatedShowsRail(
                         contentDescription = podcast.title,
                         contentScale = ContentScale.Crop,
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -264,9 +261,9 @@ fun ExploreVibeCard(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Surface(
@@ -398,26 +395,24 @@ fun ExploreVibeChip(
     }
 }
 
-private fun vibeCatcherIcon(vibeId: String): androidx.compose.ui.graphics.vector.ImageVector =
-    moodIconForId(vibeId)
+private fun vibeCatcherIcon(vibeId: String): androidx.compose.ui.graphics.vector.ImageVector = moodIconForId(vibeId)
 
 /** Per-mood icon for For You chips and the mood results header. */
-internal fun moodIconForId(moodId: String): androidx.compose.ui.graphics.vector.ImageVector =
-    when (moodId) {
-        "morning_news" -> Icons.Rounded.Newspaper
-        "morning_motivation" -> Icons.Rounded.Bolt
-        "business_insider" -> Icons.Rounded.Work
-        "science_explainer" -> Icons.Rounded.Science
-        "tech_culture" -> Icons.Rounded.Computer
-        "creative_focus" -> Icons.Rounded.Palette
-        "comedy_gold" -> Icons.Rounded.SentimentVerySatisfied
-        "tv_film_buff" -> Icons.Rounded.Movie
-        "sports_fan" -> Icons.Rounded.SportsBaseball
-        "true_crime_sleep" -> Icons.Rounded.Fingerprint
-        "history_buff" -> Icons.Rounded.AccountBalance
-        "mystery_thriller" -> Icons.Rounded.Visibility
-        else -> Icons.Rounded.AutoAwesome
-    }
+internal fun moodIconForId(moodId: String): androidx.compose.ui.graphics.vector.ImageVector = when (moodId) {
+    "morning_news" -> Icons.Rounded.Newspaper
+    "morning_motivation" -> Icons.Rounded.Bolt
+    "business_insider" -> Icons.Rounded.Work
+    "science_explainer" -> Icons.Rounded.Science
+    "tech_culture" -> Icons.Rounded.Computer
+    "creative_focus" -> Icons.Rounded.Palette
+    "comedy_gold" -> Icons.Rounded.SentimentVerySatisfied
+    "tv_film_buff" -> Icons.Rounded.Movie
+    "sports_fan" -> Icons.Rounded.SportsBaseball
+    "true_crime_sleep" -> Icons.Rounded.Fingerprint
+    "history_buff" -> Icons.Rounded.AccountBalance
+    "mystery_thriller" -> Icons.Rounded.Visibility
+    else -> Icons.Rounded.AutoAwesome
+}
 
 @Composable
 fun ExploreEpisodeHeroCard(
@@ -535,7 +530,7 @@ fun ExploreEpisodeHeroCard(
                         )
                     )
                 }
-                
+
                 val genre = episode.podcastGenre
                 if (!genre.isNullOrBlank()) {
                     Text(
@@ -591,11 +586,11 @@ fun ExploreEpisodeBentoCard(
 
                 if (episode.duration > 0) {
                     Surface(
-                          shape = MaterialTheme.shapes.small,
-                          color = Color.Black.copy(alpha = 0.6f),
-                          modifier = Modifier
-                              .align(Alignment.BottomEnd)
-                              .padding(6.dp)
+                        shape = MaterialTheme.shapes.small,
+                        color = Color.Black.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp)
                     ) {
                         Text(
                             text = "${episode.duration / 60}m",

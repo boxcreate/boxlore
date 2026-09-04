@@ -1,15 +1,13 @@
 package cx.aswin.boxlore.feature.briefing
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,10 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Briefing
 import kotlinx.coroutines.launch
@@ -91,12 +89,11 @@ internal fun BriefingStoryCard(
 }
 
 @Composable
-private fun briefingStoryCardColor(isActive: Boolean): Color =
-    if (isActive) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
-    }
+private fun briefingStoryCardColor(isActive: Boolean): Color = if (isActive) {
+    MaterialTheme.colorScheme.primaryContainer
+} else {
+    MaterialTheme.colorScheme.surfaceContainerHigh
+}
 
 @Composable
 private fun StoryCardHeader(state: BriefingStoryCardState) {
@@ -120,22 +117,22 @@ private fun StoryCountBadge(state: BriefingStoryCardState) {
     Surface(
         shape = RoundedCornerShape(8.dp),
         color =
-            if (state.isActive) {
-                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
-            } else {
-                MaterialTheme.colorScheme.secondaryContainer
-            },
+        if (state.isActive) {
+            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
     ) {
         Text(
             text = "STORY ${state.page + 1} OF ${state.pageCount}".uppercase(),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = GoogleSansWeight.bold,
             color =
-                if (state.isActive) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                },
+            if (state.isActive) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            },
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
@@ -172,11 +169,11 @@ private fun StoryParagraph(
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = 22.sp,
                 color =
-                    if (isActive) {
-                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                if (isActive) {
+                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
         }
     }

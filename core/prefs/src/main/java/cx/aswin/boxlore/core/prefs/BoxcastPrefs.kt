@@ -21,8 +21,7 @@ class BoxcastPrefs(context: Context) {
 
     // ── Onboarding ──────────────────────────────────────────────────────────
 
-    fun isOnboardingCompleted(): Boolean =
-        prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+    fun isOnboardingCompleted(): Boolean = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
 
     fun setOnboardingCompleted(completed: Boolean = true) {
         prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
@@ -30,8 +29,7 @@ class BoxcastPrefs(context: Context) {
 
     // ── User genres / interests ──────────────────────────────────────────────
 
-    fun getUserGenres(): Set<String> =
-        prefs.getStringSet(KEY_USER_GENRES, emptySet()) ?: emptySet()
+    fun getUserGenres(): Set<String> = prefs.getStringSet(KEY_USER_GENRES, emptySet()) ?: emptySet()
 
     fun setUserGenres(genres: Set<String>) {
         prefs.edit().putStringSet(KEY_USER_GENRES, genres).apply()
@@ -39,11 +37,9 @@ class BoxcastPrefs(context: Context) {
 
     // ── Home / explore recommendation cache ─────────────────────────────────
 
-    fun getCachedRecommendationsJson(): String? =
-        prefs.getString(KEY_CACHED_RECOMMENDATIONS, null)
+    fun getCachedRecommendationsJson(): String? = prefs.getString(KEY_CACHED_RECOMMENDATIONS, null)
 
-    fun isRecommendationsFallback(default: Boolean = true): Boolean =
-        prefs.getBoolean(KEY_IS_RECOMMENDATIONS_FALLBACK, default)
+    fun isRecommendationsFallback(default: Boolean = true): Boolean = prefs.getBoolean(KEY_IS_RECOMMENDATIONS_FALLBACK, default)
 
     fun saveRecommendationsCache(serializedJson: String, isFallback: Boolean) {
         prefs.edit()
@@ -58,8 +54,7 @@ class BoxcastPrefs(context: Context) {
 
     // ── Home featured video showcase ────────────────────────────────────────
 
-    fun isFeaturedVideoShowcaseDismissed(): Boolean =
-        prefs.getBoolean(KEY_FEATURED_VIDEO_SHOWCASE_DISMISSED, false)
+    fun isFeaturedVideoShowcaseDismissed(): Boolean = prefs.getBoolean(KEY_FEATURED_VIDEO_SHOWCASE_DISMISSED, false)
 
     fun dismissFeaturedVideoShowcaseForever() {
         prefs.edit().putBoolean(KEY_FEATURED_VIDEO_SHOWCASE_DISMISSED, true).apply()
@@ -67,20 +62,13 @@ class BoxcastPrefs(context: Context) {
 
     // ── Because-you-like cache ──────────────────────────────────────────────
 
-    fun getCachedBylRecommendationsJson(): String? =
-        prefs.getString(KEY_CACHED_BYL_RECOMMENDATIONS, null)
+    fun getCachedBylRecommendationsJson(): String? = prefs.getString(KEY_CACHED_BYL_RECOMMENDATIONS, null)
 
-    fun getCachedBylPodcastsJson(): String? =
-        prefs.getString(KEY_CACHED_BYL_PODCASTS, null)
+    fun getCachedBylPodcastsJson(): String? = prefs.getString(KEY_CACHED_BYL_PODCASTS, null)
 
-    fun getCachedBylPodcastId(): String? =
-        prefs.getString(KEY_CACHED_BYL_PODCAST_ID, null)
+    fun getCachedBylPodcastId(): String? = prefs.getString(KEY_CACHED_BYL_PODCAST_ID, null)
 
-    fun saveBylCache(
-        episodesJson: String,
-        podcastsJson: String,
-        podcastId: String,
-    ) {
+    fun saveBylCache(episodesJson: String, podcastsJson: String, podcastId: String,) {
         prefs.edit()
             .putString(KEY_CACHED_BYL_RECOMMENDATIONS, episodesJson)
             .putString(KEY_CACHED_BYL_PODCASTS, podcastsJson)
@@ -101,19 +89,20 @@ class BoxcastPrefs(context: Context) {
 
     // ── Learn curiosity history ─────────────────────────────────────────────
 
-    fun getLearnCuriosityHistoryJson(): String? =
-        prefs.getString(KEY_LEARN_CURIOSITY_HISTORY, null)
+    fun getLearnCuriosityHistoryJson(): String? = prefs.getString(KEY_LEARN_CURIOSITY_HISTORY, null)
 
     fun setLearnCuriosityHistoryJson(json: String?) {
         prefs.edit().apply {
-            if (json == null) remove(KEY_LEARN_CURIOSITY_HISTORY)
-            else putString(KEY_LEARN_CURIOSITY_HISTORY, json)
+            if (json == null) {
+                remove(KEY_LEARN_CURIOSITY_HISTORY)
+            } else {
+                putString(KEY_LEARN_CURIOSITY_HISTORY, json)
+            }
             apply()
         }
     }
 
-    fun getDismissedCuriosityIds(): Set<String> =
-        prefs.getStringSet(KEY_DISMISSED_CURIOSITIES, emptySet()) ?: emptySet()
+    fun getDismissedCuriosityIds(): Set<String> = prefs.getStringSet(KEY_DISMISSED_CURIOSITIES, emptySet()) ?: emptySet()
 
     fun setDismissedCuriosityIds(ids: Set<String>) {
         prefs.edit().putStringSet(KEY_DISMISSED_CURIOSITIES, ids).apply()
@@ -128,8 +117,7 @@ class BoxcastPrefs(context: Context) {
 
     // ── Learner / ranking debug log gate ────────────────────────────────────
 
-    fun isLearnerLogEnabled(default: Boolean = false): Boolean =
-        prefs.getBoolean(KEY_LEARNER_LOG_ENABLED, default)
+    fun isLearnerLogEnabled(default: Boolean = false): Boolean = prefs.getBoolean(KEY_LEARNER_LOG_ENABLED, default)
 
     fun setLearnerLogEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_LEARNER_LOG_ENABLED, enabled).apply()

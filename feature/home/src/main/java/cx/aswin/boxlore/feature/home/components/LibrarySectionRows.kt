@@ -101,19 +101,19 @@ internal fun SelectorCover(
 
     Box(
         modifier =
-            modifier
-                .scale(scale),
+        modifier
+            .scale(scale),
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .expressiveClickable(
-                        shape = coverShape,
-                        onLongClickLabel = pin.actionLabel,
-                        onLongClick = { showPinMenu = true },
-                        onClick = onClick,
-                    ).clip(coverShape),
+            Modifier
+                .fillMaxSize()
+                .expressiveClickable(
+                    shape = coverShape,
+                    onLongClickLabel = pin.actionLabel,
+                    onLongClick = { showPinMenu = true },
+                    onClick = onClick,
+                ).clip(coverShape),
         ) {
             OptimizedImage(
                 url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
@@ -156,9 +156,9 @@ private fun SelectorCoverSelectedBorder(
     if (!visible) return
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, coverShape),
+        Modifier
+            .fillMaxSize()
+            .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, coverShape),
     )
 }
 
@@ -200,12 +200,12 @@ private fun CoverPinMenu(
 private fun HomePinnedBadge(modifier: Modifier = Modifier) {
     Box(
         modifier =
-            modifier
-                .padding(2.dp)
-                .size(18.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+        modifier
+            .padding(2.dp)
+            .size(18.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary)
+            .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -213,9 +213,9 @@ private fun HomePinnedBadge(modifier: Modifier = Modifier) {
             contentDescription = "Pinned",
             tint = MaterialTheme.colorScheme.onPrimary,
             modifier =
-                Modifier
-                    .size(10.dp)
-                    .graphicsLayer { rotationZ = 45f },
+            Modifier
+                .size(10.dp)
+                .graphicsLayer { rotationZ = 45f },
         )
     }
 }

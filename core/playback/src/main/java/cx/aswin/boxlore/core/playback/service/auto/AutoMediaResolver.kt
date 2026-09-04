@@ -9,9 +9,7 @@ import cx.aswin.boxlore.core.playback.PlaybackMediaIdPolicy
  * Resolves Auto browse MediaItems and domain episodes into playable URIs.
  * Extracted from [AutoBrowseLibraryCallback].
  */
-internal class AutoMediaResolver(
-    private val host: AutoBrowseLibraryHost,
-) {
+internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
     suspend fun resolveMediaItem(item: MediaItem): MediaItem {
         android.util.Log.d("BoxCastPlayer", "resolveMediaItem: mediaId=${item.mediaId}, initialArtworkUri=${item.mediaMetadata.artworkUri}")
         val episodeId = item.mediaId.stripEpisodePrefix()
@@ -65,23 +63,23 @@ internal class AutoMediaResolver(
                         ).setExtras(
                             CastMediaMetadata.extrasWithRemoteUri(
                                 existing =
-                                    AutoBrowseContract.mergeExtras(
-                                        item.mediaMetadata.extras,
-                                        AutoBrowseContract.itemExtras(
-                                            source =
-                                                item.mediaMetadata.extras
-                                                    ?.getString(AutoBrowseContract.EXTRA_SOURCE)
-                                                    ?: AutoBrowseContract.SOURCE_DISCOVER,
-                                            downloadStatus =
-                                                if (
-                                                    downloadCompleted
-                                                ) {
-                                                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_STATUS_DOWNLOADED
-                                                } else {
-                                                    null
-                                                },
-                                        ),
+                                AutoBrowseContract.mergeExtras(
+                                    item.mediaMetadata.extras,
+                                    AutoBrowseContract.itemExtras(
+                                        source =
+                                        item.mediaMetadata.extras
+                                            ?.getString(AutoBrowseContract.EXTRA_SOURCE)
+                                            ?: AutoBrowseContract.SOURCE_DISCOVER,
+                                        downloadStatus =
+                                        if (
+                                            downloadCompleted
+                                        ) {
+                                            androidx.media3.session.MediaConstants.EXTRAS_VALUE_STATUS_DOWNLOADED
+                                        } else {
+                                            null
+                                        },
                                     ),
+                                ),
                                 remoteUri = source.castRemoteUri,
                             ),
                         ).build(),
@@ -176,29 +174,24 @@ internal class AutoMediaResolver(
         return host.podcastRepository.getEpisode(episodeId)
     }
 
-    fun resolveDownloadRequestUri(episodeId: String): String? =
-        runCatching {
-            cx.aswin.boxlore.core.downloads.DownloadRepository
-                .getDownloadManager(host.asContext())
-                .downloadIndex
-                .getDownload(episodeId)
-                ?.request
-                ?.uri
-                ?.toString()
-        }.onFailure {
-            android.util.Log.w(
-                "AutoBrowse",
-                "Unable to resolve cached download URI for $episodeId",
-                it,
-            )
-        }.getOrNull()
+    fun resolveDownloadRequestUri(episodeId: String): String? = runCatching {
+        cx.aswin.boxlore.core.downloads.DownloadRepository
+            .getDownloadManager(host.asContext())
+            .downloadIndex
+            .getDownload(episodeId)
+            ?.request
+            ?.uri
+            ?.toString()
+    }.onFailure {
+        android.util.Log.w(
+            "AutoBrowse",
+            "Unable to resolve cached download URI for $episodeId",
+            it,
+        )
+    }.getOrNull()
 }
 
-internal data class AutoMediaSource(
-    val playbackUri: String?,
-    val castRemoteUri: String?,
-    val mimeType: String?,
-)
+internal data class AutoMediaSource(val playbackUri: String?, val castRemoteUri: String?, val mimeType: String?,)
 
 internal object AutoMediaResolutionPolicy {
     fun resolve(

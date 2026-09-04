@@ -13,11 +13,7 @@ object EpisodeSupplementListMerge {
         OLDEST,
     }
 
-    fun merge(
-        piEpisodes: List<Episode>,
-        supplements: List<Episode>,
-        sort: Sort,
-    ): List<Episode> {
+    fun merge(piEpisodes: List<Episode>, supplements: List<Episode>, sort: Sort,): List<Episode> {
         val extras = supplements.filterNot { supp ->
             piEpisodes.any { pi -> EpisodeSupplementMatcher.isDuplicateOf(supp, pi) }
         }
@@ -38,10 +34,7 @@ object EpisodeSupplementListMerge {
      * in both (id, audio URL, or dated title). Callers that want feed extras to win
      * should pass supplement matches as [preferred].
      */
-    fun unionSearchResults(
-        preferred: List<Episode>,
-        fallback: List<Episode>,
-    ): List<Episode> {
+    fun unionSearchResults(preferred: List<Episode>, fallback: List<Episode>,): List<Episode> {
         val out = ArrayList<Episode>(preferred.size + fallback.size)
         for (episode in preferred + fallback) {
             if (out.none { EpisodeSupplementMatcher.isDuplicateOf(it, episode) }) {

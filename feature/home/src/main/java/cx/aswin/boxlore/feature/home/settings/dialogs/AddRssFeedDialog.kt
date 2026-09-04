@@ -72,9 +72,9 @@ internal fun AddRssFeedDialog(
                     value = url,
                     onValueChange = onUrlChange,
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .testTag(SettingsRssTestTags.URL_FIELD),
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag(SettingsRssTestTags.URL_FIELD),
                     enabled = !isAdding,
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
@@ -82,27 +82,27 @@ internal fun AddRssFeedDialog(
                     placeholder = { Text("https://example.com/feed.xml") },
                     isError = error != null,
                     trailingIcon =
-                        if (url.isNotEmpty() && !isAdding) {
-                            {
-                                IconButton(onClick = { onUrlChange("") }) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Clear,
-                                        contentDescription = "Clear",
-                                    )
-                                }
-                            }
-                        } else {
-                            null
-                        },
-                    supportingText =
-                        error?.let { message ->
-                            {
-                                Text(
-                                    text = message,
-                                    color = MaterialTheme.colorScheme.error,
+                    if (url.isNotEmpty() && !isAdding) {
+                        {
+                            IconButton(onClick = { onUrlChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Clear,
+                                    contentDescription = "Clear",
                                 )
                             }
-                        },
+                        }
+                    } else {
+                        null
+                    },
+                    supportingText =
+                    error?.let { message ->
+                        {
+                            Text(
+                                text = message,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 )
                 AnimatedVisibility(visible = isAdding) {
@@ -165,14 +165,14 @@ internal fun RssMatchConfirmationDialog(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text =
-                        "“$rssTitle” looks like your existing subscription to " +
-                            "“$podcastIndexTitle”.",
+                    "“$rssTitle” looks like your existing subscription to " +
+                        "“$podcastIndexTitle”.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
                     text =
-                        "Use the RSS source to keep one library entry. Boxlore will carry " +
-                            "over matched progress, likes, completed episodes, downloads, and queue items.",
+                    "Use the RSS source to keep one library entry. Boxlore will carry " +
+                        "over matched progress, likes, completed episodes, downloads, and queue items.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

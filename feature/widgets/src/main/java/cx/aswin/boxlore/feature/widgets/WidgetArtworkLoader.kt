@@ -6,10 +6,10 @@ import coil.ImageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class WidgetArtworkLoader(
     context: Context,
@@ -19,20 +19,19 @@ class WidgetArtworkLoader(
     private val cacheDir: File =
         File(appContext.cacheDir, CACHE_DIR_NAME).also { it.mkdirs() }
 
-    suspend fun load(url: String?): String? =
-        withContext(Dispatchers.IO) {
-            val normalized = url?.trim().orEmpty()
-            if (normalized.isEmpty()) return@withContext null
+    suspend fun load(url: String?): String? = withContext(Dispatchers.IO) {
+        val normalized = url?.trim().orEmpty()
+        if (normalized.isEmpty()) return@withContext null
 
-            val target = cacheFileFor(normalized)
-            if (target.exists() && target.length() > 0L) {
-                return@withContext target.absolutePath
-            }
-
-            val bitmap = fetchBitmap(normalized) ?: return@withContext null
-            if (!publishAtomically(bitmap, target)) return@withContext null
-            target.takeIf { it.exists() && it.length() > 0L }?.absolutePath
+        val target = cacheFileFor(normalized)
+        if (target.exists() && target.length() > 0L) {
+            return@withContext target.absolutePath
         }
+
+        val bitmap = fetchBitmap(normalized) ?: return@withContext null
+        if (!publishAtomically(bitmap, target)) return@withContext null
+        target.takeIf { it.exists() && it.length() > 0L }?.absolutePath
+    }
 
     fun resolveCachedPath(url: String?): String? {
         val normalized = url?.trim().orEmpty()
@@ -113,18 +112,17 @@ class WidgetArtworkLoader(
         return File(cacheDir, "$digest.jpg")
     }
 
-    private fun android.graphics.drawable.Drawable.toBitmapOrNull(): Bitmap? =
-        when (this) {
-            is android.graphics.drawable.BitmapDrawable -> bitmap
-            else -> {
-                val width = intrinsicWidth.coerceAtLeast(1)
-                val height = intrinsicHeight.coerceAtLeast(1)
-                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
-                    setBounds(0, 0, width, height)
-                    draw(android.graphics.Canvas(bitmap))
-                }
+    private fun android.graphics.drawable.Drawable.toBitmapOrNull(): Bitmap? = when (this) {
+        is android.graphics.drawable.BitmapDrawable -> bitmap
+        else -> {
+            val width = intrinsicWidth.coerceAtLeast(1)
+            val height = intrinsicHeight.coerceAtLeast(1)
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
+                setBounds(0, 0, width, height)
+                draw(android.graphics.Canvas(bitmap))
             }
         }
+    }
 
     companion object {
         const val CACHE_DIR_NAME = "widget_artwork"

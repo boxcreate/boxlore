@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -23,12 +21,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberCondensedGoogleSansFamily
 import kotlinx.coroutines.delay
@@ -88,18 +86,18 @@ fun OnboardingScreen(
 
     BackHandler(
         enabled =
-            if (isOnboardingCompleted) {
-                true
-            } else {
-                !isRootStep
-            },
+        if (isOnboardingCompleted) {
+            true
+        } else {
+            !isRootStep
+        },
     ) {
         if (isOnboardingCompleted &&
             (
                 uiState.currentStep == OnboardingStep.WELCOME ||
                     uiState.currentStep == OnboardingStep.AI_ONBOARDING ||
                     uiState.currentStep == OnboardingStep.GENRES
-            )
+                )
         ) {
             onBack()
         } else {
@@ -295,12 +293,16 @@ fun OnboardingScreen(
 private const val CoverLoopCount = 6
 private const val CoverCardDp = 110
 private const val CoverGapDp = 12
+
 /** Distance from card[i] to card[i+CoverLoopCount] under spacedBy (6 cards + 6 gaps). */
 private const val CoverLoopPeriodDp = CoverLoopCount * (CoverCardDp + CoverGapDp) // 732
+
 /** Enough tiled loops for offsets without decoding a wall of Images. */
 private const val CoverLoopRepeats = 7
+
 /** Keep row translation ≤ this so the left edge never exposes empty space. */
 private const val CoverMaxTranslationDp = -48f
+
 /** Subtle entrance glide — large travel reads as janky “loading”. */
 private const val WelcomeCarouselTravelDp = 120f
 
@@ -310,6 +312,7 @@ private const val WelcomeCarouselTravelDp = 120f
  * layers only so the tree doesn’t recompose every frame.
  */
 private const val WelcomeEntranceMs = 2400
+
 /** Drift begins during cover settle so velocity never hits zero. */
 private const val WelcomeDriftDelayMs = 700L
 private const val WelcomeDriftPeriodMs = 40000
@@ -336,10 +339,10 @@ private fun WelcomeScreen(
             entranceProgress.animateTo(
                 targetValue = 1f,
                 animationSpec =
-                    tween(
-                        durationMillis = WelcomeEntranceMs,
-                        easing = LinearEasing,
-                    ),
+                tween(
+                    durationMillis = WelcomeEntranceMs,
+                    easing = LinearEasing,
+                ),
             )
         }
         launch {
@@ -351,14 +354,14 @@ private fun WelcomeScreen(
             driftProgress.animateTo(
                 targetValue = 1f,
                 animationSpec =
-                    infiniteRepeatable(
-                        animation =
-                            tween(
-                                durationMillis = WelcomeDriftPeriodMs,
-                                easing = LinearEasing,
-                            ),
-                        repeatMode = RepeatMode.Restart,
+                infiniteRepeatable(
+                    animation =
+                    tween(
+                        durationMillis = WelcomeDriftPeriodMs,
+                        easing = LinearEasing,
                     ),
+                    repeatMode = RepeatMode.Restart,
+                ),
             )
         }
     }
@@ -367,9 +370,9 @@ private fun WelcomeScreen(
     // and so foreground recomposition doesn't rebuild hundreds of Images each frame.
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface),
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         CinematicBackgroundGrid(
             entranceProgress = entranceProgress,
@@ -385,16 +388,16 @@ private fun WelcomeScreen(
                 chromeInteractive = chromeInteractive,
                 condensedFamily = condensedFamily,
                 actions =
-                    WelcomeActions(
-                        onHelpMeFind = onHelpMeFind,
-                        onSearch = onSearch,
-                        onSkip = onSkip,
-                        onImportClick = onImportClick,
-                    ),
+                WelcomeActions(
+                    onHelpMeFind = onHelpMeFind,
+                    onSearch = onSearch,
+                    onSkip = onSkip,
+                    onImportClick = onImportClick,
+                ),
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
             )
         }
     }
@@ -424,29 +427,29 @@ private fun WelcomeForeground(
         // natural height; we hide the “end of carousel” with opacity, not stretch).
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops =
-                                arrayOf(
-                                    0.0f to scrimColor.copy(alpha = 0.0f),
-                                    0.20f to scrimColor.copy(alpha = 0.0f),
-                                    0.34f to scrimColor.copy(alpha = 0.55f),
-                                    0.46f to scrimColor.copy(alpha = 0.88f),
-                                    0.56f to scrimColor.copy(alpha = 0.98f),
-                                    0.64f to scrimColor,
-                                    1.0f to scrimColor,
-                                ),
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops =
+                        arrayOf(
+                            0.0f to scrimColor.copy(alpha = 0.0f),
+                            0.20f to scrimColor.copy(alpha = 0.0f),
+                            0.34f to scrimColor.copy(alpha = 0.55f),
+                            0.46f to scrimColor.copy(alpha = 0.88f),
+                            0.56f to scrimColor.copy(alpha = 0.98f),
+                            0.64f to scrimColor,
+                            1.0f to scrimColor,
                         ),
                     ),
+                ),
         )
 
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 28.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom,
         ) {
@@ -455,14 +458,14 @@ private fun WelcomeForeground(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier =
-                    Modifier.graphicsLayer {
-                        applyWelcomeReveal(
-                            progress = entranceProgress.value,
-                            start = 0.28f,
-                            end = 0.58f,
-                            riseDp = 12f,
-                        )
-                    },
+                Modifier.graphicsLayer {
+                    applyWelcomeReveal(
+                        progress = entranceProgress.value,
+                        start = 0.28f,
+                        end = 0.58f,
+                        riseDp = 12f,
+                    )
+                },
             ) {
                 BoxLoreLogo(
                     textColor = MaterialTheme.colorScheme.primary,
@@ -488,27 +491,27 @@ private fun WelcomeForeground(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = primaryShape,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            applyWelcomeReveal(
-                                progress = entranceProgress.value,
-                                start = 0.42f,
-                                end = 0.72f,
-                                riseDp = 10f,
-                            )
-                        }.expressiveClickable(
-                            enabled = chromeInteractive,
-                            shape = primaryShape,
-                            onClick = actions.onHelpMeFind,
-                        ),
+                Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        applyWelcomeReveal(
+                            progress = entranceProgress.value,
+                            start = 0.42f,
+                            end = 0.72f,
+                            riseDp = 10f,
+                        )
+                    }.expressiveClickable(
+                        enabled = chromeInteractive,
+                        shape = primaryShape,
+                        onClick = actions.onHelpMeFind,
+                    ),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 22.dp, end = 16.dp, top = 18.dp, bottom = 18.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 22.dp, end = 16.dp, top = 18.dp, bottom = 18.dp),
                 ) {
                     Column(
                         modifier = Modifier.weight(1f),
@@ -566,17 +569,17 @@ private fun WelcomeForeground(
             val secondaryShape = RoundedCornerShape(22.dp)
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-                        .graphicsLayer {
-                            applyWelcomeReveal(
-                                progress = entranceProgress.value,
-                                start = 0.52f,
-                                end = 0.80f,
-                                riseDp = 8f,
-                            )
-                        },
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .graphicsLayer {
+                        applyWelcomeReveal(
+                            progress = entranceProgress.value,
+                            start = 0.52f,
+                            end = 0.80f,
+                            riseDp = 8f,
+                        )
+                    },
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Surface(
@@ -584,23 +587,23 @@ private fun WelcomeForeground(
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     shape = secondaryShape,
                     modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .heightIn(min = 54.dp)
-                            .expressiveClickable(
-                                enabled = chromeInteractive,
-                                shape = secondaryShape,
-                                onClick = actions.onSearch,
-                            ),
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .heightIn(min = 54.dp)
+                        .expressiveClickable(
+                            enabled = chromeInteractive,
+                            shape = secondaryShape,
+                            onClick = actions.onSearch,
+                        ),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                         modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Search,
@@ -623,23 +626,23 @@ private fun WelcomeForeground(
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     shape = secondaryShape,
                     modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .heightIn(min = 54.dp)
-                            .expressiveClickable(
-                                enabled = chromeInteractive,
-                                shape = secondaryShape,
-                                onClick = actions.onImportClick,
-                            ),
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .heightIn(min = 54.dp)
+                        .expressiveClickable(
+                            enabled = chromeInteractive,
+                            shape = secondaryShape,
+                            onClick = actions.onImportClick,
+                        ),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                         modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Upload,
@@ -664,19 +667,19 @@ private fun WelcomeForeground(
             val skipMuted = MaterialTheme.colorScheme.onSurfaceVariant
             Box(
                 modifier =
-                    Modifier
-                        .graphicsLayer {
-                            applyWelcomeReveal(
-                                progress = entranceProgress.value,
-                                start = 0.62f,
-                                end = 0.90f,
-                                riseDp = 6f,
-                            )
-                        }.expressiveClickable(
-                            enabled = chromeInteractive,
-                            shape = RoundedCornerShape(percent = 50),
-                            onClick = actions.onSkip,
-                        ).padding(horizontal = 16.dp, vertical = 10.dp),
+                Modifier
+                    .graphicsLayer {
+                        applyWelcomeReveal(
+                            progress = entranceProgress.value,
+                            start = 0.62f,
+                            end = 0.90f,
+                            riseDp = 6f,
+                        )
+                    }.expressiveClickable(
+                        enabled = chromeInteractive,
+                        shape = RoundedCornerShape(percent = 50),
+                        onClick = actions.onSkip,
+                    ).padding(horizontal = 16.dp, vertical = 10.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -758,15 +761,15 @@ private fun CinematicBackgroundGrid(
 
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    val local =
-                        ((entranceProgress.value - coverFadeStart) / (coverFadeEnd - coverFadeStart))
-                            .coerceIn(0f, 1f)
-                    val coverFade = WelcomeChromeDecelerate.transform(local)
-                    alpha = 0.55f + coverFade * 0.45f
-                },
+        Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                val local =
+                    ((entranceProgress.value - coverFadeStart) / (coverFadeEnd - coverFadeStart))
+                        .coerceIn(0f, 1f)
+                val coverFade = WelcomeChromeDecelerate.transform(local)
+                alpha = 0.55f + coverFade * 0.45f
+            },
         verticalArrangement = Arrangement.spacedBy(CoverGapDp.dp, Alignment.Top),
     ) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -829,33 +832,33 @@ private fun ScrollingRow(
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .wrapContentWidth(unbounded = true, align = Alignment.Start)
-                .graphicsLayer {
-                    // Ease into rest while drift is already running — continuous marquee, no pause.
-                    val local =
-                        ((entranceProgress.value - rowDelay) / 0.45f).coerceIn(0f, 1f)
-                    val scrollEase = WelcomeCarouselSettle.transform(local)
-                    val period = CoverLoopPeriodDp.toFloat()
-                    val translationDp =
-                        (
-                            baseOffsetDp +
-                                direction * (WelcomeCarouselTravelDp * scrollEase) +
-                                direction * (period * driftProgress.value)
+        Modifier
+            .fillMaxWidth()
+            .wrapContentWidth(unbounded = true, align = Alignment.Start)
+            .graphicsLayer {
+                // Ease into rest while drift is already running — continuous marquee, no pause.
+                val local =
+                    ((entranceProgress.value - rowDelay) / 0.45f).coerceIn(0f, 1f)
+                val scrollEase = WelcomeCarouselSettle.transform(local)
+                val period = CoverLoopPeriodDp.toFloat()
+                val translationDp =
+                    (
+                        baseOffsetDp +
+                            direction * (WelcomeCarouselTravelDp * scrollEase) +
+                            direction * (period * driftProgress.value)
                         ).coerceAtMost(CoverMaxTranslationDp)
-                    translationX = translationDp.dp.toPx()
-                },
+                translationX = translationDp.dp.toPx()
+            },
         horizontalArrangement = Arrangement.spacedBy(CoverGapDp.dp),
     ) {
         tiledCovers.forEach { drawableResId ->
             val cardShape = RoundedCornerShape(16.dp)
             Box(
                 modifier =
-                    Modifier
-                        .size(CoverCardDp.dp)
-                        .clip(cardShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                Modifier
+                    .size(CoverCardDp.dp)
+                    .clip(cardShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Image(
                     painter = painterResource(id = drawableResId),

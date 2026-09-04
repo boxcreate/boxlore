@@ -10,16 +10,9 @@ package cx.aswin.boxlore.core.designsystem.list
  * not need this pin.
  */
 object ProgressiveSearchScrollLogic {
-    data class Snapshot(
-        val query: String,
-        val topResultId: String?,
-        val hasAlsoFoundSection: Boolean,
-    )
+    data class Snapshot(val query: String, val topResultId: String?, val hasAlsoFoundSection: Boolean,)
 
-    fun shouldPinToTop(
-        previous: Snapshot?,
-        current: Snapshot,
-    ): Boolean {
+    fun shouldPinToTop(previous: Snapshot?, current: Snapshot,): Boolean {
         if (current.query.isBlank()) return false
         if (previous == null) return current.topResultId != null || current.hasAlsoFoundSection
         if (previous.query != current.query) return true

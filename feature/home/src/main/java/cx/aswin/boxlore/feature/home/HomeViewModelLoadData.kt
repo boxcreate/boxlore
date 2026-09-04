@@ -1,24 +1,23 @@
 package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.database.toScorable
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.MixtapeEngine
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.getHistoryForRecommendations
 import cx.aswin.boxlore.core.playback.resumeSessions
-import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.DiversityPolicy
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.PodcastRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
-import cx.aswin.boxlore.core.database.toScorable
-import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.feature.home.logic.HomeMixtapeCache
-import cx.aswin.boxlore.feature.home.logic.homeMixtapeCacheOrNull
-import cx.aswin.boxlore.feature.home.logic.buildHomeEditorialRows
-import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
 import cx.aswin.boxlore.feature.home.logic.HomeUiAssemblyLogic
+import cx.aswin.boxlore.feature.home.logic.buildHomeEditorialRows
 import cx.aswin.boxlore.feature.home.logic.discoverPodcastsExcluding
+import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
+import cx.aswin.boxlore.feature.home.logic.homeMixtapeCacheOrNull
 import cx.aswin.boxlore.feature.home.logic.toRecommendationPodcast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
@@ -265,11 +264,11 @@ internal fun HomeViewModel.loadData() {
                         _isBecauseYouLikeLoading,
                         _isRecommendationsFallback,
                     ) {
-                        seemsToLikePodcast,
-                        becauseYouLikeRecommendations,
-                        becauseYouLikePodcasts,
-                        isBecauseYouLikeLoading,
-                        isRecommendationsFallback,
+                            seemsToLikePodcast,
+                            becauseYouLikeRecommendations,
+                            becauseYouLikePodcasts,
+                            isBecauseYouLikeLoading,
+                            isRecommendationsFallback,
                         ->
                         HomeBecauseYouLikeSlice(
                             seemsToLikePodcast,
@@ -324,46 +323,46 @@ internal fun HomeViewModel.loadData() {
                         val trendingList =
                             adaptiveScorer.rankPodcasts(
                                 inputs =
-                                    wrapper.trending.mapIndexed { index, podcast ->
-                                        PodcastRankingInput(
-                                            podcast = podcast,
-                                            priorScore = (wrapper.trending.size - index).toDouble(),
-                                            source = CandidateSource.TRENDING,
-                                            isNovel = podcast.id !in subscribedIds,
-                                        )
-                                    },
+                                wrapper.trending.mapIndexed { index, podcast ->
+                                    PodcastRankingInput(
+                                        podcast = podcast,
+                                        priorScore = (wrapper.trending.size - index).toDouble(),
+                                        source = CandidateSource.TRENDING,
+                                        isNovel = podcast.id !in subscribedIds,
+                                    )
+                                },
                                 history = scoringHistory,
                                 objective = RankingObjective.DISCOVERY,
                                 surface = RankingSurface.HOME,
                                 diversityPolicy =
-                                    DiversityPolicy(
-                                        limit = wrapper.trending.size,
-                                        maxPerShow = 1,
-                                        reserveNovelSlot = true,
-                                    ),
+                                DiversityPolicy(
+                                    limit = wrapper.trending.size,
+                                    maxPerShow = 1,
+                                    reserveNovelSlot = true,
+                                ),
                             )
                         val rankedRecommendations =
                             adaptiveScorer.rankEpisodes(
                                 inputs =
-                                    wrapper.recommendations.mapIndexed { index, episode ->
-                                        val podcast = episode.toRecommendationPodcast()
-                                        EpisodeRankingInput(
-                                            episode = episode,
-                                            podcast = podcast,
-                                            priorScore = (wrapper.recommendations.size - index).toDouble(),
-                                            source = CandidateSource.SERVER_RECOMMENDATION,
-                                            isNovel = podcast.id !in subscribedIds,
-                                        )
-                                    },
+                                wrapper.recommendations.mapIndexed { index, episode ->
+                                    val podcast = episode.toRecommendationPodcast()
+                                    EpisodeRankingInput(
+                                        episode = episode,
+                                        podcast = podcast,
+                                        priorScore = (wrapper.recommendations.size - index).toDouble(),
+                                        source = CandidateSource.SERVER_RECOMMENDATION,
+                                        isNovel = podcast.id !in subscribedIds,
+                                    )
+                                },
                                 history = scoringHistory,
                                 objective = RankingObjective.DISCOVERY,
                                 surface = RankingSurface.HOME,
                                 diversityPolicy =
-                                    DiversityPolicy(
-                                        limit = wrapper.recommendations.size,
-                                        maxPerShow = 2,
-                                        reserveNovelSlot = true,
-                                    ),
+                                DiversityPolicy(
+                                    limit = wrapper.recommendations.size,
+                                    maxPerShow = 2,
+                                    reserveNovelSlot = true,
+                                ),
                             )
                         val resumeList = wrapper.resume
                         val subs = wrapper.subs
@@ -463,10 +462,10 @@ internal fun HomeViewModel.loadData() {
                                         recommendations = recommendations,
                                         podcastScores = scores,
                                         adaptiveRanking =
-                                            MixtapeEngine.AdaptiveRanking(
-                                                scorer = adaptiveScorer,
-                                                surface = RankingSurface.HOME,
-                                            ),
+                                        MixtapeEngine.AdaptiveRanking(
+                                            scorer = adaptiveScorer,
+                                            surface = RankingSurface.HOME,
+                                        ),
                                         staleRestartEnabled = staleRestartEnabled,
                                     )
                                 },
@@ -513,10 +512,10 @@ internal fun HomeViewModel.loadData() {
                                 subscribedPodcasts = assembled.subscribedPodcasts,
                                 selectedCategory = _selectedCategory.value,
                                 discoveryGreeting =
-                                    discoveryGreetingFor(
-                                        daypart = daypart,
-                                        date = clockContextFlow.value.date,
-                                    ),
+                                discoveryGreetingFor(
+                                    daypart = daypart,
+                                    date = clockContextFlow.value.date,
+                                ),
                                 discoverPodcasts = assembled.discoverPodcasts,
                                 recommendations = assembled.recommendations,
                                 isLoading = assembled.isLoading,
@@ -616,4 +615,3 @@ internal fun HomeViewModel.loadData() {
         }
     }
 }
-

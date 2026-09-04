@@ -20,8 +20,8 @@ import com.posthog.surveys.OnPostHogSurveyClosed
 import com.posthog.surveys.OnPostHogSurveyResponse
 import com.posthog.surveys.OnPostHogSurveyShown
 import com.posthog.surveys.PostHogDisplaySurvey
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.surveys.internal.ui.SurveySheet
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -140,9 +140,9 @@ internal class BoxcastSurveyHost(
                                 themeBrand = userPrefs.cachedThemeBrand,
                                 surfaceStyle = userPrefs.cachedSurfaceStyle,
                                 fontRoundness =
-                                    cx.aswin.boxlore.core.designsystem.theme.FontRoundness.axisValue(
-                                        userPrefs.cachedFontRoundness,
-                                    ),
+                                cx.aswin.boxlore.core.designsystem.theme.FontRoundness.axisValue(
+                                    userPrefs.cachedFontRoundness,
+                                ),
                             ) {
                                 CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
                                     SurveySheet(
@@ -248,16 +248,14 @@ internal class BoxcastSurveyHost(
         }
     }
 
-    private inline fun guard(action: String, block: () -> Unit): Boolean {
-        return try {
-            block()
-            true
-        } catch (e: Exception) {
-            PostHog.getConfig<com.posthog.PostHogConfig>()?.logger?.log(
-                "Surveys: $action failed, skipping the survey. $e",
-            )
-            false
-        }
+    private inline fun guard(action: String, block: () -> Unit): Boolean = try {
+        block()
+        true
+    } catch (e: Exception) {
+        PostHog.getConfig<com.posthog.PostHogConfig>()?.logger?.log(
+            "Surveys: $action failed, skipping the survey. $e",
+        )
+        false
     }
 
     private fun runOnMain(block: () -> Unit) {

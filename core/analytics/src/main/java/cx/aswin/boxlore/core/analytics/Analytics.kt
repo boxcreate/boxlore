@@ -13,10 +13,7 @@ import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
  */
 interface Analytics {
     /** Capture a generic event with an arbitrary property map. */
-    fun capture(
-        event: String,
-        properties: Map<String, Any> = emptyMap(),
-    )
+    fun capture(event: String, properties: Map<String, Any> = emptyMap(),)
 
     /** First-launch detection and user-property initialisation. */
     fun trackFirstLaunchIfNecessary(context: Context)
@@ -26,16 +23,9 @@ interface Analytics {
 
     fun trackAdaptiveRankingStatus(statuses: List<RankingAggregateTelemetry>)
 
-    fun trackEngagementPromptShown(
-        promptType: String,
-        source: String,
-        completedEpisodes: Int? = null,
-    )
+    fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int? = null,)
 
-    fun trackSurveyNpsEligible(
-        completedEpisodes: Int?,
-        triggerContext: String,
-    )
+    fun trackSurveyNpsEligible(completedEpisodes: Int?, triggerContext: String,)
 
     fun trackSurveyNpsManualTrigger(source: String)
 
@@ -43,8 +33,5 @@ interface Analytics {
 
     fun trackFirstEpisodePlayed()
 
-    fun trackAppCheckStatus(
-        tokenObtained: Boolean,
-        provider: String,
-    )
+    fun trackAppCheckStatus(tokenObtained: Boolean, provider: String,)
 }

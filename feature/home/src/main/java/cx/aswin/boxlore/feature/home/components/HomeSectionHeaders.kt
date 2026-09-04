@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 
 enum class HomeChildHeaderTone {
@@ -57,10 +56,10 @@ fun HomeTopLevelSectionHeader(
                 Text(
                     text = title,
                     style =
-                        MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = rememberSectionHeaderFontFamily(),
-                            fontWeight = FontWeight.Normal,
-                        ),
+                    MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = rememberSectionHeaderFontFamily(),
+                        fontWeight = FontWeight.Normal,
+                    ),
                 )
                 subtitle?.let {
                     Text(

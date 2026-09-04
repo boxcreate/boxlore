@@ -1,28 +1,24 @@
 package cx.aswin.boxlore.core.database
 
 import androidx.room.TypeConverter
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Transcript
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 
 class Converters {
     private val gson = Gson()
 
     @TypeConverter
-    fun fromEpisode(episode: Episode?): String? {
-        return episode?.let { gson.toJson(it) }
-    }
+    fun fromEpisode(episode: Episode?): String? = episode?.let { gson.toJson(it) }
 
     @TypeConverter
-    fun toEpisode(episodeString: String?): Episode? {
-        return episodeString?.let {
-            try {
-                gson.fromJson(it, Episode::class.java)
-            } catch (e: Exception) {
-                null
-            }
+    fun toEpisode(episodeString: String?): Episode? = episodeString?.let {
+        try {
+            gson.fromJson(it, Episode::class.java)
+        } catch (e: Exception) {
+            null
         }
     }
 

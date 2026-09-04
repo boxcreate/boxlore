@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +14,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -32,12 +30,11 @@ data class SeekControlDurations(
 )
 
 @Composable
-internal fun seekDurationContentDescription(seconds: Int, forward: Boolean): String =
-    pluralStringResource(
-        if (forward) R.plurals.seek_forward_seconds else R.plurals.seek_back_seconds,
-        seconds,
-        seconds,
-    )
+internal fun seekDurationContentDescription(seconds: Int, forward: Boolean): String = pluralStringResource(
+    if (forward) R.plurals.seek_forward_seconds else R.plurals.seek_back_seconds,
+    seconds,
+    seconds,
+)
 
 @Composable
 internal fun SeekDurationIcon(

@@ -7,8 +7,7 @@ object EpisodeArtworkLogic {
     fun listUrl(
         episode: Episode,
         podcastImageUrl: String? = null,
-    ): String? =
-        episode.imageUrl?.takeIf { it.isNotBlank() }
-            ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
-            ?: podcastImageUrl?.takeIf { it.isNotBlank() }
+    ): String? = episode.imageUrl?.takeIf { it.isNotBlank() }
+        ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
+        ?: podcastImageUrl?.takeIf { it.isNotBlank() }
 }

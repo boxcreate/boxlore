@@ -166,20 +166,16 @@ internal class PlaybackQueueCoordinator(
         syncQueueToDb()
     }
 
-    suspend fun loadPersistedQueueById(fallback: Map<String, Episode> = emptyMap()): Map<String, Episode> =
-        try {
-            queueRepository.getQueueSnapshot().associateBy { it.id }
-        } catch (exception: kotlinx.coroutines.CancellationException) {
-            throw exception
-        } catch (exception: Exception) {
-            android.util.Log.w("PlaybackRepo", "Unable to read persisted queue snapshot", exception)
-            fallback
-        }
+    suspend fun loadPersistedQueueById(fallback: Map<String, Episode> = emptyMap()): Map<String, Episode> = try {
+        queueRepository.getQueueSnapshot().associateBy { it.id }
+    } catch (exception: kotlinx.coroutines.CancellationException) {
+        throw exception
+    } catch (exception: Exception) {
+        android.util.Log.w("PlaybackRepo", "Unable to read persisted queue snapshot", exception)
+        fallback
+    }
 
-    fun buildEpisodeFromMediaItem(
-        item: MediaItem,
-        episodeId: String,
-    ): Episode? {
+    fun buildEpisodeFromMediaItem(item: MediaItem, episodeId: String,): Episode? {
         val metadata = item.mediaMetadata
         val title = CastMediaMetadata.queueTitle(metadata.title) ?: return null
         return Episode(
@@ -199,11 +195,7 @@ internal class PlaybackQueueCoordinator(
         )
     }
 
-    fun buildMediaItems(
-        episodes: List<Episode>,
-        podcast: Podcast,
-        entryPointContext: android.os.Bundle?,
-    ): List<MediaItem> {
+    fun buildMediaItems(episodes: List<Episode>, podcast: Podcast, entryPointContext: android.os.Bundle?,): List<MediaItem> {
         val entryPoint = PlaybackMediaIdPolicy.parseEntryPointString(entryPointContext)
         val isLearn = PlaybackMediaIdPolicy.isLearnEntryPoint(entryPoint)
         return episodes.map { episode ->
@@ -353,11 +345,7 @@ internal class PlaybackQueueCoordinator(
         }
     }
 
-    suspend fun addToQueue(
-        episode: Episode,
-        podcast: Podcast,
-        entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
-    ): Boolean {
+    suspend fun addToQueue(episode: Episode, podcast: Podcast, entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,): Boolean {
         Log.d("PlaybackRepo", "addToQueue called: episodeId=${episode.id}, title=${episode.title}, entryPoint=$entryPoint")
 
         // Prevent Duplicates in active queue (by ID)
@@ -419,17 +407,17 @@ internal class PlaybackQueueCoordinator(
             syncQueueToDb()
             rankingFeedbackRepository.recordAction(
                 target =
-                    FeedbackTarget(
-                        episodeId = episode.id,
-                        podcastId = podcast.id,
-                        genre = episode.podcastGenre ?: podcast.genre,
-                        source =
-                            if (entryPoint == PlaybackEntryPoint.LEARN) {
-                                CandidateSource.CURATED_INTENT
-                            } else {
-                                null
-                            },
-                    ),
+                FeedbackTarget(
+                    episodeId = episode.id,
+                    podcastId = podcast.id,
+                    genre = episode.podcastGenre ?: podcast.genre,
+                    source =
+                    if (entryPoint == PlaybackEntryPoint.LEARN) {
+                        CandidateSource.CURATED_INTENT
+                    } else {
+                        null
+                    },
+                ),
                 action = RankingAction.EXPLICIT_QUEUE,
             )
             return true
@@ -437,10 +425,7 @@ internal class PlaybackQueueCoordinator(
         return false
     }
 
-    suspend fun addToQueueNext(
-        episode: Episode,
-        podcast: Podcast,
-    ) {
+    suspend fun addToQueueNext(episode: Episode, podcast: Podcast,) {
         if (mediaHandle.controller == null) {
             mediaHandle.controller = mediaHandle.future?.await()
         }
@@ -504,10 +489,7 @@ internal class PlaybackQueueCoordinator(
         }
     }
 
-    suspend fun addEpisodesAfterCurrent(
-        episodes: List<Episode>,
-        podcast: Podcast,
-    ): Boolean {
+    suspend fun addEpisodesAfterCurrent(episodes: List<Episode>, podcast: Podcast,): Boolean {
         if (episodes.isEmpty()) return false
 
         val currentQueue = playerStateFlow.value.queue
@@ -606,10 +588,7 @@ internal class PlaybackQueueCoordinator(
      *   as a rejection.
      * @return removal info for undo, or null if the episode wasn't in the queue.
      */
-    suspend fun removeFromQueue(
-        episodeId: String,
-        deferSkipSignal: Boolean = false,
-    ): RemovedQueueItem? {
+    suspend fun removeFromQueue(episodeId: String, deferSkipSignal: Boolean = false,): RemovedQueueItem? {
         if (mediaHandle.controller == null) {
             mediaHandle.controller = mediaHandle.future?.await()
         }
@@ -635,10 +614,10 @@ internal class PlaybackQueueCoordinator(
                 val episode = currentQueue[queueIndex]
                 RemovedQueueItem(
                     episode =
-                        episode.copy(
-                            contextType = queueItem?.contextType ?: episode.contextType,
-                            contextSourceId = queueItem?.contextSourceId ?: episode.contextSourceId,
-                        ),
+                    episode.copy(
+                        contextType = queueItem?.contextType ?: episode.contextType,
+                        contextSourceId = queueItem?.contextSourceId ?: episode.contextSourceId,
+                    ),
                     queueIndex = queueIndex,
                     mediaIndex = mediaIndex,
                     contextType = queueItem?.contextType ?: episode.contextType,
@@ -698,12 +677,12 @@ internal class PlaybackQueueCoordinator(
             scope.launch {
                 rankingFeedbackRepository.recordAction(
                     target =
-                        FeedbackTarget(
-                            episodeId = removed.episode.id,
-                            podcastId = removed.episode.podcastId.orEmpty(),
-                            genre = removed.episode.podcastGenre,
-                            source = CandidateSource.SERVER_RECOMMENDATION,
-                        ),
+                    FeedbackTarget(
+                        episodeId = removed.episode.id,
+                        podcastId = removed.episode.podcastId.orEmpty(),
+                        genre = removed.episode.podcastGenre,
+                        source = CandidateSource.SERVER_RECOMMENDATION,
+                    ),
                     action = RankingAction.REMOVE_AUTOFILLED,
                 )
             }
@@ -779,10 +758,7 @@ internal class PlaybackQueueCoordinator(
      *
      * Indices are PlayerState.queue indices; index 0 (the playing item) is pinned.
      */
-    fun moveQueueItem(
-        fromQueueIndex: Int,
-        toQueueIndex: Int,
-    ) {
+    fun moveQueueItem(fromQueueIndex: Int, toQueueIndex: Int,) {
         val queue = playerStateFlow.value.queue
         if (fromQueueIndex == toQueueIndex) return
         if (fromQueueIndex !in queue.indices || toQueueIndex !in queue.indices) return
@@ -814,11 +790,7 @@ internal class PlaybackQueueCoordinator(
      * Persists the current queue order to Room (called once on drag end so rapid moves
      * don't thrash the DB) and emits the reorder analytics event.
      */
-    suspend fun persistQueueOrder(
-        movedEpisodeId: String? = null,
-        fromQueueIndex: Int = -1,
-        toQueueIndex: Int = -1,
-    ) {
+    suspend fun persistQueueOrder(movedEpisodeId: String? = null, fromQueueIndex: Int = -1, toQueueIndex: Int = -1,) {
         val queue = playerStateFlow.value.queue
         try {
             queueRepository.reorderQueue(queue.map { it.id })
@@ -837,17 +809,17 @@ internal class PlaybackQueueCoordinator(
             movedEpisode?.let { episode ->
                 rankingFeedbackRepository.recordAction(
                     target =
-                        FeedbackTarget(
-                            episodeId = episode.id,
-                            podcastId = episode.podcastId.orEmpty(),
-                            genre = episode.podcastGenre,
-                        ),
+                    FeedbackTarget(
+                        episodeId = episode.id,
+                        podcastId = episode.podcastId.orEmpty(),
+                        genre = episode.podcastGenre,
+                    ),
                     action =
-                        if (toQueueIndex < fromQueueIndex) {
-                            RankingAction.MOVE_UP
-                        } else {
-                            RankingAction.MOVE_DOWN
-                        },
+                    if (toQueueIndex < fromQueueIndex) {
+                        RankingAction.MOVE_UP
+                    } else {
+                        RankingAction.MOVE_DOWN
+                    },
                 )
             }
         }
@@ -910,11 +882,7 @@ internal class PlaybackQueueCoordinator(
      * Play an episode from the provided queue list, reloading into Media3 from that point.
      * Pass the queue list directly to avoid stale state issues.
      */
-    suspend fun playFromQueueIndex(
-        episodeId: String,
-        queueList: List<Episode>,
-        podcast: Podcast,
-    ) {
+    suspend fun playFromQueueIndex(episodeId: String, queueList: List<Episode>, podcast: Podcast,) {
         val index = queueList.indexOfFirst { it.id == episodeId }
 
         if (index == -1) {
@@ -935,11 +903,7 @@ internal class CastQueueSnapshotPolicy {
     private var candidateIds: List<String>? = null
     private var candidateFirstSeenAtMs: Long = 0L
 
-    fun shouldPreserveLocalQueue(
-        remoteIds: List<String>,
-        localIds: List<String>,
-        nowMs: Long,
-    ): Boolean {
+    fun shouldPreserveLocalQueue(remoteIds: List<String>, localIds: List<String>, nowMs: Long,): Boolean {
         val isStrictSubset =
             remoteIds.isNotEmpty() &&
                 remoteIds.size < localIds.size &&

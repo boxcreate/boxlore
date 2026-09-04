@@ -31,9 +31,7 @@ internal class PlaybackIntroOutroController(
     private val onNaturalCompletion: (episodeId: String, durationMs: Long) -> Job?,
     private val onClearEndOfEpisodeSleep: () -> Unit,
 ) {
-    data class SeekDiscontinuityResult(
-        val isLifecycleSeek: Boolean,
-    )
+    data class SeekDiscontinuityResult(val isLifecycleSeek: Boolean,)
 
     private var playbackActivationGeneration = 0L
     private var activeLifecycleEpisodeId: String? = null
@@ -67,14 +65,10 @@ internal class PlaybackIntroOutroController(
     val isEffectiveEndLatched: Boolean
         get() = effectiveEndLatch
 
-    fun isActiveMediaItem(mediaItem: MediaItem): Boolean =
-        lifecycleEpisodeId(mediaItem) == activeLifecycleEpisodeId &&
-            mediaItem === activeLifecycleMediaItem
+    fun isActiveMediaItem(mediaItem: MediaItem): Boolean = lifecycleEpisodeId(mediaItem) == activeLifecycleEpisodeId &&
+        mediaItem === activeLifecycleMediaItem
 
-    fun reset(
-        mediaItem: MediaItem?,
-        initialPositionMs: Long,
-    ) {
+    fun reset(mediaItem: MediaItem?, initialPositionMs: Long,) {
         playbackActivationGeneration++
         activeLifecycleEpisodeId = lifecycleEpisodeId(mediaItem)
         activeLifecycleMediaItem = mediaItem
@@ -97,10 +91,7 @@ internal class PlaybackIntroOutroController(
         effectiveEndWatchdogJob = null
     }
 
-    fun onMediaActivated(
-        player: Player,
-        mediaItem: MediaItem?,
-    ) {
+    fun onMediaActivated(player: Player, mediaItem: MediaItem?,) {
         reset(mediaItem, player.currentPosition)
         refreshActiveSkipConfiguration(player, preferenceChanged = false)
     }
@@ -114,11 +105,7 @@ internal class PlaybackIntroOutroController(
         refreshOutroBoundary(player, preferenceChanged = false)
     }
 
-    fun onSeekDiscontinuity(
-        newPositionMs: Long,
-        durationMs: Long,
-        source: String,
-    ): SeekDiscontinuityResult {
+    fun onSeekDiscontinuity(newPositionMs: Long, durationMs: Long, source: String,): SeekDiscontinuityResult {
         val isLifecycleSeek =
             source == automaticSeekSource ||
                 source == "resume" ||
@@ -215,10 +202,7 @@ internal class PlaybackIntroOutroController(
         }
     }
 
-    fun claimNaturalCompletion(
-        episodeId: String,
-        durationMs: Long,
-    ) {
+    fun claimNaturalCompletion(episodeId: String, durationMs: Long,) {
         if (claimedCompletionGeneration == playbackActivationGeneration) return
         claimedCompletionGeneration = playbackActivationGeneration
         effectiveEndLatch = true
@@ -239,12 +223,11 @@ internal class PlaybackIntroOutroController(
         effectiveEndWatchdogJob = null
     }
 
-    fun effectiveEndingTrimForCompletion(durationMs: Long): Long =
-        PlaybackSkipPolicy.effectiveEndingTrimForCompletion(
-            durationMs = durationMs,
-            skipBeginningMs = effectiveSkipBeginningMs,
-            skipEndingMs = effectiveSkipEndingMs,
-        )
+    fun effectiveEndingTrimForCompletion(durationMs: Long): Long = PlaybackSkipPolicy.effectiveEndingTrimForCompletion(
+        durationMs = durationMs,
+        skipBeginningMs = effectiveSkipBeginningMs,
+        skipEndingMs = effectiveSkipEndingMs,
+    )
 
     suspend fun awaitPendingCompletionPersistence() {
         completionPersistenceJob?.join()
@@ -258,10 +241,7 @@ internal class PlaybackIntroOutroController(
 
     fun trueEndSeekTarget(durationMs: Long): Long = (durationMs - TRUE_END_SEEK_MARGIN_MS).coerceAtLeast(0L)
 
-    private fun refreshActiveSkipConfiguration(
-        player: Player,
-        preferenceChanged: Boolean,
-    ) {
+    private fun refreshActiveSkipConfiguration(player: Player, preferenceChanged: Boolean,) {
         val episodeId = activeLifecycleEpisodeId ?: return
         val generation = playbackActivationGeneration
         scope.launch {
@@ -359,20 +339,13 @@ internal class PlaybackIntroOutroController(
         introTargetResolved = true
     }
 
-    private fun performAutomaticSeek(
-        player: Player,
-        targetMs: Long,
-        source: String,
-    ) {
+    private fun performAutomaticSeek(player: Player, targetMs: Long, source: String,) {
         automaticSeekSource = source
         AnalyticsHelper.setSeekSource(source)
         player.seekTo(targetMs)
     }
 
-    private fun refreshOutroBoundary(
-        player: Player,
-        preferenceChanged: Boolean,
-    ) {
+    private fun refreshOutroBoundary(player: Player, preferenceChanged: Boolean,) {
         val durationMs = player.duration
         activeLifecycleDurationMs = durationMs.takeIf {
             it > 0L && it != C.TIME_UNSET
@@ -415,10 +388,7 @@ internal class PlaybackIntroOutroController(
         return PlaybackSkipPolicy.outroBoundaryMs(durationMs, effectiveSkipEndingMs)
     }
 
-    private fun updateOutroArmingAfterManualSeek(
-        positionMs: Long,
-        durationMs: Long,
-    ) {
+    private fun updateOutroArmingAfterManualSeek(positionMs: Long, durationMs: Long,) {
         activeLifecycleDurationMs = durationMs.takeIf {
             it > 0L && it != C.TIME_UNSET
         } ?: 0L

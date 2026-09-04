@@ -20,17 +20,13 @@ internal suspend fun PodcastRepository.mergeCachedSupplementsIntoPage(
     return page.copy(episodes = merged)
 }
 
-internal suspend fun PodcastRepository.mergeCachedSupplementsNewest(
-    podcastId: String,
-    piEpisodes: List<Episode>,
-): List<Episode> =
-    PodcastEpisodeSupplementMerge.mergePage(
-        podcastId = podcastId,
-        piEpisodes = piEpisodes,
-        supplements = loadCachedSupplements(podcastId),
-        sort = PodcastEpisodeSupplementMerge.sortFromQuery("newest"),
-        injectExtras = true,
-    )
+internal suspend fun PodcastRepository.mergeCachedSupplementsNewest(podcastId: String, piEpisodes: List<Episode>,): List<Episode> = PodcastEpisodeSupplementMerge.mergePage(
+    podcastId = podcastId,
+    piEpisodes = piEpisodes,
+    supplements = loadCachedSupplements(podcastId),
+    sort = PodcastEpisodeSupplementMerge.sortFromQuery("newest"),
+    injectExtras = true,
+)
 
 internal suspend fun PodcastRepository.unionCachedSupplementSearch(
     podcastId: String,
@@ -69,15 +65,14 @@ internal suspend fun PodcastRepository.loadCachedSupplements(podcastId: String):
     }
 }
 
-internal suspend fun PodcastRepository.loadOptedInPodcastIds(): Set<String> =
-    try {
-        episodeSupplementRepository?.listOptedInPodcastIds().orEmpty()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        android.util.Log.e("PodcastRepository", "Failed to load supplement opt-ins", e)
-        emptySet()
-    }
+internal suspend fun PodcastRepository.loadOptedInPodcastIds(): Set<String> = try {
+    episodeSupplementRepository?.listOptedInPodcastIds().orEmpty()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    android.util.Log.e("PodcastRepository", "Failed to load supplement opt-ins", e)
+    emptySet()
+}
 
 internal suspend fun PodcastRepository.fetchPiSyncTips(podcastIndexIds: List<String>): Map<String, Episode> {
     if (podcastIndexIds.isEmpty()) return emptyMap()

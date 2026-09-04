@@ -31,12 +31,12 @@ class OnboardingSuggestionsPresentationTest {
                 OnboardingUiState(
                     isAiLoading = true,
                     aiCurriculumRows =
-                        listOf(
-                            OnboardingCurriculumRowDto(
-                                rowTitle = "Lane",
-                                podcasts = listOf(OnboardingCurriculumPodcastDto(id = 1, title = "A")),
-                            ),
+                    listOf(
+                        OnboardingCurriculumRowDto(
+                            rowTitle = "Lane",
+                            podcasts = listOf(OnboardingCurriculumPodcastDto(id = 1, title = "A")),
                         ),
+                    ),
                 ),
             ),
         )
@@ -49,17 +49,17 @@ class OnboardingSuggestionsPresentationTest {
                 OnboardingCurriculumRowDto(
                     rowTitle = "Seeds only",
                     podcasts =
-                        listOf(
-                            OnboardingCurriculumPodcastDto(id = 1, title = "Seed"),
-                        ),
+                    listOf(
+                        OnboardingCurriculumPodcastDto(id = 1, title = "Seed"),
+                    ),
                 ),
                 OnboardingCurriculumRowDto(
                     rowTitle = "Mixed",
                     podcasts =
-                        listOf(
-                            OnboardingCurriculumPodcastDto(id = 1, title = "Seed"),
-                            OnboardingCurriculumPodcastDto(id = 2, title = "New"),
-                        ),
+                    listOf(
+                        OnboardingCurriculumPodcastDto(id = 1, title = "Seed"),
+                        OnboardingCurriculumPodcastDto(id = 2, title = "New"),
+                    ),
                 ),
             )
         val filtered =
@@ -126,15 +126,15 @@ class OnboardingSuggestionsPresentationTest {
         val withExtras =
             seedOnly.copy(
                 aiCurriculumRows =
-                    listOf(
-                        OnboardingCurriculumRowDto(
-                            rowTitle = "Similar",
-                            podcasts =
-                                listOf(
-                                    OnboardingCurriculumPodcastDto(id = 9, title = "Rec"),
-                                ),
+                listOf(
+                    OnboardingCurriculumRowDto(
+                        rowTitle = "Similar",
+                        podcasts =
+                        listOf(
+                            OnboardingCurriculumPodcastDto(id = 9, title = "Rec"),
                         ),
                     ),
+                ),
                 subscribedPodcastIds = setOf("s1", "s2", "9"),
             )
         assertEquals(
@@ -168,12 +168,12 @@ class OnboardingSuggestionsPresentationTest {
                 OnboardingUiState(
                     onboardingError = "boom",
                     aiCurriculumRows =
-                        listOf(
-                            OnboardingCurriculumRowDto(
-                                rowTitle = "Lane",
-                                podcasts = listOf(OnboardingCurriculumPodcastDto(id = 1, title = "A")),
-                            ),
+                    listOf(
+                        OnboardingCurriculumRowDto(
+                            rowTitle = "Lane",
+                            podcasts = listOf(OnboardingCurriculumPodcastDto(id = 1, title = "A")),
                         ),
+                    ),
                 ),
             ),
         )
@@ -182,7 +182,7 @@ class OnboardingSuggestionsPresentationTest {
                 OnboardingUiState(
                     onboardingError = "boom",
                     genreChartsPodcasts =
-                        listOf(Podcast(id = "c1", title = "Chart", artist = "Host", imageUrl = "")),
+                    listOf(Podcast(id = "c1", title = "Chart", artist = "Host", imageUrl = "")),
                 ),
             ),
         )
@@ -194,22 +194,22 @@ class OnboardingSuggestionsPresentationTest {
         val cleared =
             OnboardingSuggestionsPresentation.withClearedSuggestionPayload(
                 state =
-                    OnboardingUiState(
-                        selectedPodcasts = mapOf(pick.id to pick),
-                        searchQuery = "news",
-                        aiCurriculumRows =
-                            listOf(
-                                OnboardingCurriculumRowDto(
-                                    rowTitle = "Stale",
-                                    podcasts = listOf(OnboardingCurriculumPodcastDto(id = 9, title = "X")),
-                                ),
-                            ),
-                        isAiLoading = true,
-                        isSynthesizing = true,
-                        suggestionSeedCount = 2,
-                        onboardingError = "boom",
-                        reachedSuggestionsViaSearchFlow = true,
+                OnboardingUiState(
+                    selectedPodcasts = mapOf(pick.id to pick),
+                    searchQuery = "news",
+                    aiCurriculumRows =
+                    listOf(
+                        OnboardingCurriculumRowDto(
+                            rowTitle = "Stale",
+                            podcasts = listOf(OnboardingCurriculumPodcastDto(id = 9, title = "X")),
+                        ),
                     ),
+                    isAiLoading = true,
+                    isSynthesizing = true,
+                    suggestionSeedCount = 2,
+                    onboardingError = "boom",
+                    reachedSuggestionsViaSearchFlow = true,
+                ),
                 nextStep = OnboardingStep.SEARCH,
             )
         assertEquals(OnboardingStep.SEARCH, cleared.currentStep)
@@ -229,12 +229,12 @@ class OnboardingSuggestionsPresentationTest {
                 cleared.copy(
                     subscribedPodcastIds = setOf(pick.id),
                     aiCurriculumRows =
-                        listOf(
-                            OnboardingCurriculumRowDto(
-                                rowTitle = "Later AI",
-                                podcasts = listOf(OnboardingCurriculumPodcastDto(id = 9, title = "X")),
-                            ),
+                    listOf(
+                        OnboardingCurriculumRowDto(
+                            rowTitle = "Later AI",
+                            podcasts = listOf(OnboardingCurriculumPodcastDto(id = 9, title = "X")),
                         ),
+                    ),
                     reachedSuggestionsViaAiFlow = true,
                 ),
                 selectedCount = 1,

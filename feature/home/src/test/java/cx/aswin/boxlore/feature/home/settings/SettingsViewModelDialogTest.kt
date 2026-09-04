@@ -62,35 +62,31 @@ class SettingsViewModelDialogTest {
     }
 
     @Test
-    fun `keepRssMatchSeparate is no-op without pending match`() =
-        runTest {
-            val vm = SettingsViewModelAssembler.create(FakePorts.rss(), FakePorts.ranking())
+    fun `keepRssMatchSeparate is no-op without pending match`() = runTest {
+        val vm = SettingsViewModelAssembler.create(FakePorts.rss(), FakePorts.ranking())
 
-            vm.events.test {
-                vm.keepRssMatchSeparate()
-                expectNoEvents()
-            }
+        vm.events.test {
+            vm.keepRssMatchSeparate()
+            expectNoEvents()
         }
+    }
 
     private object FakePorts {
-        fun rss(): RssSubscriptionPort =
-            object : RssSubscriptionPort {
-                override suspend fun addSubscription(rawUrl: String): cx.aswin.boxlore.core.domain.RssSubscriptionResult {
-                    kotlinx.coroutines.delay(Long.MAX_VALUE)
-                    error("unreachable")
-                }
-
-                override suspend fun confirmPodcastIndexLink(
-                    rssPodcastId: String,
-                    podcastIndexId: String,
-                ): cx.aswin.boxlore.core.model.Podcast =
-                    cx.aswin.boxlore.core.testing.TestFixtures
-                        .podcast()
+        fun rss(): RssSubscriptionPort = object : RssSubscriptionPort {
+            override suspend fun addSubscription(rawUrl: String): cx.aswin.boxlore.core.domain.RssSubscriptionResult {
+                kotlinx.coroutines.delay(Long.MAX_VALUE)
+                error("unreachable")
             }
 
-        fun ranking(): RankingResetPort =
-            object : RankingResetPort {
-                override suspend fun reset(): Boolean = true
-            }
+            override suspend fun confirmPodcastIndexLink(
+                rssPodcastId: String,
+                podcastIndexId: String,
+            ): cx.aswin.boxlore.core.model.Podcast = cx.aswin.boxlore.core.testing.TestFixtures
+                .podcast()
+        }
+
+        fun ranking(): RankingResetPort = object : RankingResetPort {
+            override suspend fun reset(): Boolean = true
+        }
     }
 }

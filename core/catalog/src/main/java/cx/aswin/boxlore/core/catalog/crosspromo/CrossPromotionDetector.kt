@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.core.catalog.crosspromo
 
-import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.CrossPromotionConfidence
 import cx.aswin.boxlore.core.model.CrossPromotionIndicator
 import cx.aswin.boxlore.core.model.CrossPromotionResult
+import cx.aswin.boxlore.core.model.Episode
 
 class CrossPromotionDetector {
 
@@ -172,10 +172,7 @@ class CrossPromotionDetector {
         )
     }
 
-    private fun extractShowNameFromDescription(
-        description: String,
-        hostPodcastTitle: String
-    ): String? {
+    private fun extractShowNameFromDescription(description: String, hostPodcastTitle: String): String? {
         if (description.isBlank()) return null
 
         descriptionSubscribeRegex.findAll(description).forEach { match ->
@@ -191,13 +188,11 @@ class CrossPromotionDetector {
         return null
     }
 
-    private fun cleanExtractedName(raw: String): String {
-        return raw
-            .trim()
-            .trim('"', '\'', '“', '”', '‘', '’', '.', ',', '!', '?')
-            .replace(Regex("""\s+"""), " ")
-            .trim()
-    }
+    private fun cleanExtractedName(raw: String): String = raw
+        .trim()
+        .trim('"', '\'', '“', '”', '‘', '’', '.', ',', '!', '?')
+        .replace(Regex("""\s+"""), " ")
+        .trim()
 
     private fun isPromotableShowName(extractedName: String, hostPodcastTitle: String): Boolean {
         if (extractedName.length < 3) return false

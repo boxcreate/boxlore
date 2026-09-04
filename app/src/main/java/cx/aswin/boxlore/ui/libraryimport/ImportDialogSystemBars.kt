@@ -14,11 +14,7 @@ import androidx.core.view.WindowCompat
  */
 internal object ImportDialogSystemBars {
     @Suppress("DEPRECATION")
-    fun apply(
-        window: Window,
-        backgroundArgb: Int,
-        darkTheme: Boolean,
-    ) {
+    fun apply(window: Window, backgroundArgb: Int, darkTheme: Boolean,) {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.setBackgroundDrawable(ColorDrawable(backgroundArgb))
         window.attributes =

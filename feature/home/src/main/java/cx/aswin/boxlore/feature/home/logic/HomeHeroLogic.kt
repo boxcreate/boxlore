@@ -1,8 +1,8 @@
 package cx.aswin.boxlore.feature.home.logic
 
-import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 
@@ -36,18 +36,18 @@ internal object HomeHeroLogic {
             genre = "Podcast",
             resumeProgress = ratio,
             latestEpisode =
-                Episode(
-                    id = session.episodeId,
-                    title = session.episodeTitle,
-                    description = "",
-                    imageUrl = epImage ?: "",
-                    audioUrl = session.audioUrl ?: "",
-                    duration = (session.durationMs / 1000).toInt(),
-                    publishedDate = 0L,
-                    podcastTitle = finalPodTitle,
-                    podcastId = finalPodId,
-                    enclosureType = session.enclosureType,
-                ),
+            Episode(
+                id = session.episodeId,
+                title = session.episodeTitle,
+                description = "",
+                imageUrl = epImage ?: "",
+                audioUrl = session.audioUrl ?: "",
+                duration = (session.durationMs / 1000).toInt(),
+                publishedDate = 0L,
+                podcastTitle = finalPodTitle,
+                podcastId = finalPodId,
+                enclosureType = session.enclosureType,
+            ),
         )
     }
 
@@ -180,16 +180,14 @@ internal object HomeHeroLogic {
         spotlightAddedCount: Int,
         region: String,
         genre: String,
-    ): String =
-        when {
-            spotlightAddedCount == 0 -> "#1 IN ${marketLabelForRegion(region)}"
-            genre.isNotEmpty() && !genre.equals("Podcast", ignoreCase = true) ->
-                "TRENDING IN ${genre.uppercase()}"
-            else -> "TRENDING"
-        }
+    ): String = when {
+        spotlightAddedCount == 0 -> "#1 IN ${marketLabelForRegion(region)}"
+        genre.isNotEmpty() && !genre.equals("Podcast", ignoreCase = true) ->
+            "TRENDING IN ${genre.uppercase()}"
+        else -> "TRENDING"
+    }
 
-    private fun marketLabelForRegion(region: String): String =
-        REGION_MARKET_LABELS[region.lowercase().trim()] ?: "US"
+    private fun marketLabelForRegion(region: String): String = REGION_MARKET_LABELS[region.lowercase().trim()] ?: "US"
 
     private val REGION_MARKET_LABELS =
         mapOf(

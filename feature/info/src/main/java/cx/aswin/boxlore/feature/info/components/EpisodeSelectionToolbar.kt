@@ -96,19 +96,19 @@ internal fun EpisodeSelectionToolbar(
             ) {
                 Icon(
                     imageVector =
-                        if (state.markAsUnplayed) {
-                            Icons.Rounded.RadioButtonUnchecked
-                        } else {
-                            Icons.Rounded.DoneAll
-                        },
+                    if (state.markAsUnplayed) {
+                        Icons.Rounded.RadioButtonUnchecked
+                    } else {
+                        Icons.Rounded.DoneAll
+                    },
                     contentDescription =
-                        stringResource(
-                            if (state.markAsUnplayed) {
-                                R.string.episode_selection_mark_unplayed
-                            } else {
-                                R.string.episode_selection_mark_completed
-                            },
-                        ),
+                    stringResource(
+                        if (state.markAsUnplayed) {
+                            R.string.episode_selection_mark_unplayed
+                        } else {
+                            R.string.episode_selection_mark_completed
+                        },
+                    ),
                 )
             }
             FilledIconButton(onClick = actions.onPlay) {

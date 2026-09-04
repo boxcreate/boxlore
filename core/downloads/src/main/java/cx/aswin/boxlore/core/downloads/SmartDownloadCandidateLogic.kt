@@ -6,37 +6,35 @@ import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
-internal fun PodcastEntity.toDownloadManagerPodcast(): Podcast {
-    return Podcast(
-        id = this.podcastId,
-        title = this.title,
-        artist = this.author,
-        imageUrl = this.imageUrl,
-        fallbackImageUrl = this.latestEpisode?.imageUrl ?: "",
-        description = this.description,
-        genre = this.genre ?: "Podcast",
-        type = this.type,
-        latestEpisode = this.latestEpisode,
-        subscribedAt = this.subscribedAt,
-        podcastGuid = this.podcastGuid,
-        fundingUrl = this.fundingUrl,
-        fundingMessage = this.fundingMessage,
-        medium = this.medium,
-        hasValue = this.hasValue,
-        updateFrequency = this.updateFrequency,
-        location = this.location,
-        license = this.license,
-        isLocked = this.isLocked,
-        preferredSort = this.preferredSort,
-        notificationsEnabled = this.notificationsEnabled,
-        autoDownloadEnabled = this.autoDownloadEnabled,
-        sourceType = this.sourceType,
-        feedUrl = this.feedUrl,
-        rssRefreshCapability = this.rssRefreshCapability,
-        rssCatalogStale = this.rssCatalogStale,
-        rssHasNewEpisodes = this.rssHasNewEpisodes,
-    )
-}
+internal fun PodcastEntity.toDownloadManagerPodcast(): Podcast = Podcast(
+    id = this.podcastId,
+    title = this.title,
+    artist = this.author,
+    imageUrl = this.imageUrl,
+    fallbackImageUrl = this.latestEpisode?.imageUrl ?: "",
+    description = this.description,
+    genre = this.genre ?: "Podcast",
+    type = this.type,
+    latestEpisode = this.latestEpisode,
+    subscribedAt = this.subscribedAt,
+    podcastGuid = this.podcastGuid,
+    fundingUrl = this.fundingUrl,
+    fundingMessage = this.fundingMessage,
+    medium = this.medium,
+    hasValue = this.hasValue,
+    updateFrequency = this.updateFrequency,
+    location = this.location,
+    license = this.license,
+    isLocked = this.isLocked,
+    preferredSort = this.preferredSort,
+    notificationsEnabled = this.notificationsEnabled,
+    autoDownloadEnabled = this.autoDownloadEnabled,
+    sourceType = this.sourceType,
+    feedUrl = this.feedUrl,
+    rssRefreshCapability = this.rssRefreshCapability,
+    rssCatalogStale = this.rssCatalogStale,
+    rssHasNewEpisodes = this.rssHasNewEpisodes,
+)
 
 internal object SmartDownloadCandidateLogic {
     private const val ESTIMATED_BYTES_PER_SECOND = 12_000L
@@ -52,11 +50,7 @@ internal object SmartDownloadCandidateLogic {
         val durationMs: Long = 0L
     )
 
-    internal data class DownloadQuotas(
-        val subscriptionQuota: Int,
-        val recommendationQuota: Int,
-        val trendingQuota: Int,
-    )
+    internal data class DownloadQuotas(val subscriptionQuota: Int, val recommendationQuota: Int, val trendingQuota: Int,)
 
     internal fun scoreInProgressCandidate(lastPlayedAt: Long, nowMs: Long): Double {
         val hoursSinceLastPlay = (nowMs - lastPlayedAt).toDouble() / (1000.0 * 3600.0)
@@ -133,12 +127,7 @@ internal object SmartDownloadCandidateLogic {
         }
     }
 
-    internal fun scoreUnplayedDropCandidate(
-        pod: PodcastEntity,
-        episode: Episode,
-        podScoresMap: Map<String, Double>,
-        nowMs: Long,
-    ): Double {
+    internal fun scoreUnplayedDropCandidate(pod: PodcastEntity, episode: Episode, podScoresMap: Map<String, Double>, nowMs: Long,): Double {
         val nowSeconds = nowMs / 1000.0
         val isRecent = (nowSeconds - episode.publishedDate) / 3600.0 <= 168.0
         val releasedAfterSub = episode.publishedDate > (pod.subscribedAt / 1000L) || isRecent
@@ -249,23 +238,19 @@ internal object SmartDownloadCandidateLogic {
         return deduplicateAndOrderMixtapeCandidates(inProgress, unplayed)
     }
 
-    internal fun estimateDownloadSize(download: DownloadedEpisodeEntity): Long {
-        return if (download.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
-            download.sizeBytes
-        } else if (download.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING) {
-            val durSec = download.durationMs / 1000L
-            if (durSec > 0) durSec * ESTIMATED_BYTES_PER_SECOND else DEFAULT_EPISODE_SIZE_BYTES
-        } else {
-            0L
-        }
+    internal fun estimateDownloadSize(download: DownloadedEpisodeEntity): Long = if (download.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
+        download.sizeBytes
+    } else if (download.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING) {
+        val durSec = download.durationMs / 1000L
+        if (durSec > 0) durSec * ESTIMATED_BYTES_PER_SECOND else DEFAULT_EPISODE_SIZE_BYTES
+    } else {
+        0L
     }
 
-    internal fun estimateEpisodeSize(episode: Episode): Long {
-        return if (episode.duration > 0) {
-            episode.duration.toLong() * ESTIMATED_BYTES_PER_SECOND
-        } else {
-            DEFAULT_EPISODE_SIZE_BYTES
-        }
+    internal fun estimateEpisodeSize(episode: Episode): Long = if (episode.duration > 0) {
+        episode.duration.toLong() * ESTIMATED_BYTES_PER_SECOND
+    } else {
+        DEFAULT_EPISODE_SIZE_BYTES
     }
 
     internal fun computeDownloadQuotas(maxCount: Int): DownloadQuotas {

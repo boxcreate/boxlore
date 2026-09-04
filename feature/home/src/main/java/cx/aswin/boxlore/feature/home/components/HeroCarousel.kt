@@ -52,9 +52,9 @@ fun HeroCarousel(
         itemSpacing = 16.dp,
         contentPadding = PaddingValues(0.dp),
         modifier =
-            modifier
-                .fillMaxWidth()
-                .height(420.dp),
+        modifier
+            .fillMaxWidth()
+            .height(420.dp),
     ) { i ->
         val item = heroItems.list[i]
 

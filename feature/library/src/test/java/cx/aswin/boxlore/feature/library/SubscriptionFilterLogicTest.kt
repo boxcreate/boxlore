@@ -10,13 +10,13 @@ import cx.aswin.boxlore.feature.library.subscriptions.getChronologicalHeader
 import cx.aswin.boxlore.feature.library.subscriptions.latestSortLabel
 import cx.aswin.boxlore.feature.library.subscriptions.resolveSubscriptionGenreItem
 import cx.aswin.boxlore.feature.library.subscriptions.showsSortLabel
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 
 class SubscriptionFilterLogicTest {
 

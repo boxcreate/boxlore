@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.domain.RssSubscriptionResult
 import cx.aswin.boxlore.core.domain.ports.RankingResetPort
 import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 /** RSS "add feed" and Podcast Index match-confirmation state owned by [SettingsViewModel]. */
 data class SettingsRssUiState(
@@ -137,22 +137,20 @@ class SettingsViewModel(
     }
 }
 
-private fun subscriptionAddedMessage(subscription: RssSubscriptionResult): String =
-    when {
-        subscription.linkedPodcastIndexId != null ->
-            "Switched ${subscription.podcast.title} to its RSS source."
-        subscription.automaticUpdateChecksSupported ->
-            "Added ${subscription.podcast.title} (${subscription.episodeCount} episodes)."
-        else ->
-            "Added ${subscription.podcast.title}. To check for new episodes, open the podcast and refresh."
-    }
+private fun subscriptionAddedMessage(subscription: RssSubscriptionResult): String = when {
+    subscription.linkedPodcastIndexId != null ->
+        "Switched ${subscription.podcast.title} to its RSS source."
+    subscription.automaticUpdateChecksSupported ->
+        "Added ${subscription.podcast.title} (${subscription.episodeCount} episodes)."
+    else ->
+        "Added ${subscription.podcast.title}. To check for new episodes, open the podcast and refresh."
+}
 
-private fun Throwable.toRssErrorMessage(): String =
-    when (this) {
-        is IllegalArgumentException ->
-            "Check that this is a valid HTTPS podcast RSS feed."
-        is IOException ->
-            "The RSS feed could not be downloaded. Check your connection and try again."
-        else ->
-            "We couldn't add this RSS feed."
-    }
+private fun Throwable.toRssErrorMessage(): String = when (this) {
+    is IllegalArgumentException ->
+        "Check that this is a valid HTTPS podcast RSS feed."
+    is IOException ->
+        "The RSS feed could not be downloaded. Check your connection and try again."
+    else ->
+        "We couldn't add this RSS feed."
+}

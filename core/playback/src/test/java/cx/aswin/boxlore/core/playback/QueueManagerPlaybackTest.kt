@@ -45,10 +45,7 @@ class QueueManagerPlaybackTest {
         return value
     }
 
-    private fun <T> safeCapture(
-        captor: ArgumentCaptor<T>,
-        fallback: T,
-    ): T {
+    private fun <T> safeCapture(captor: ArgumentCaptor<T>, fallback: T,): T {
         captor.capture()
         return fallback
     }
@@ -68,133 +65,130 @@ class QueueManagerPlaybackTest {
     }
 
     @Test
-    fun `playEpisode propagates preferredSort and explicit contextSourceId`() =
-        runTest(testDispatcher) {
-            val queueManager = QueueManager(queueRepository, playbackRepository)
-            val episodeItem =
-                EpisodeItem(
-                    id = 101L,
-                    title = "Test Episode",
-                    enclosureUrl = "https://example.com/audio.mp3",
-                )
-            val podcast =
-                Podcast(
-                    id = "pod-1",
-                    title = "Test Podcast",
-                    artist = "Test Artist",
-                    imageUrl = "https://example.com/art.png",
-                    preferredSort = "newest",
-                )
-            val bundle =
-                Bundle().apply {
-                    putString("source_entry_point", "podcast_detail")
-                }
-
-            queueManager.playEpisode(
-                episode = episodeItem,
-                podcast = podcast,
-                preferredSort = "oldest",
-                entryPointContext = bundle,
+    fun `playEpisode propagates preferredSort and explicit contextSourceId`() = runTest(testDispatcher) {
+        val queueManager = QueueManager(queueRepository, playbackRepository)
+        val episodeItem =
+            EpisodeItem(
+                id = 101L,
+                title = "Test Episode",
+                enclosureUrl = "https://example.com/audio.mp3",
             )
-            advanceUntilIdle()
-
-            val podcastCaptor = ArgumentCaptor.forClass(Podcast::class.java)
-
-            @Suppress("UNCHECKED_CAST")
-            val episodeListCaptor = ArgumentCaptor.forClass(List::class.java) as ArgumentCaptor<List<Episode>>
-
-            verify(queueRepository).clearQueue()
-            verify(queueRepository).addToQueue(
-                safeEq(episodeItem),
-                safeCapture(podcastCaptor, podcast),
-                safeEq(null),
-                safeEq("podcast_detail"),
+        val podcast =
+            Podcast(
+                id = "pod-1",
+                title = "Test Podcast",
+                artist = "Test Artist",
+                imageUrl = "https://example.com/art.png",
+                preferredSort = "newest",
             )
-            assertEquals("oldest", podcastCaptor.value.preferredSort)
+        val bundle =
+            Bundle().apply {
+                putString("source_entry_point", "podcast_detail")
+            }
 
-            verify(queueCoordinator).playQueue(
-                safeCapture(episodeListCaptor, emptyList()),
-                safeCapture(podcastCaptor, podcast),
-                safeEq(0),
-                safeEq(PlaybackEntryPoint.GENERIC),
-                safeEq(null),
-                safeEq(bundle),
-            )
-            assertEquals("podcast_detail", episodeListCaptor.value.first().contextSourceId)
-            assertEquals("oldest", podcastCaptor.value.preferredSort)
-        }
+        queueManager.playEpisode(
+            episode = episodeItem,
+            podcast = podcast,
+            preferredSort = "oldest",
+            entryPointContext = bundle,
+        )
+        advanceUntilIdle()
+
+        val podcastCaptor = ArgumentCaptor.forClass(Podcast::class.java)
+
+        @Suppress("UNCHECKED_CAST")
+        val episodeListCaptor = ArgumentCaptor.forClass(List::class.java) as ArgumentCaptor<List<Episode>>
+
+        verify(queueRepository).clearQueue()
+        verify(queueRepository).addToQueue(
+            safeEq(episodeItem),
+            safeCapture(podcastCaptor, podcast),
+            safeEq(null),
+            safeEq("podcast_detail"),
+        )
+        assertEquals("oldest", podcastCaptor.value.preferredSort)
+
+        verify(queueCoordinator).playQueue(
+            safeCapture(episodeListCaptor, emptyList()),
+            safeCapture(podcastCaptor, podcast),
+            safeEq(0),
+            safeEq(PlaybackEntryPoint.GENERIC),
+            safeEq(null),
+            safeEq(bundle),
+        )
+        assertEquals("podcast_detail", episodeListCaptor.value.first().contextSourceId)
+        assertEquals("oldest", podcastCaptor.value.preferredSort)
+    }
 
     @Test
-    fun `playEpisode falls back to entry_point bundle string when source_entry_point is missing`() =
-        runTest(testDispatcher) {
-            val queueManager = QueueManager(queueRepository, playbackRepository)
-            val episodeItem =
-                EpisodeItem(
-                    id = 102L,
-                    title = "Fallback Episode",
-                    enclosureUrl = "https://example.com/audio2.mp3",
-                )
-            val podcast =
-                Podcast(
-                    id = "pod-2",
-                    title = "Fallback Podcast",
-                    artist = "Artist",
-                    imageUrl = "https://example.com/art.png",
-                )
-            val bundle =
-                Bundle().apply {
-                    putString("entry_point", "home_for_you")
-                }
-
-            queueManager.playEpisode(
-                episode = episodeItem,
-                podcast = podcast,
-                preferredSort = null,
-                entryPointContext = bundle,
+    fun `playEpisode falls back to entry_point bundle string when source_entry_point is missing`() = runTest(testDispatcher) {
+        val queueManager = QueueManager(queueRepository, playbackRepository)
+        val episodeItem =
+            EpisodeItem(
+                id = 102L,
+                title = "Fallback Episode",
+                enclosureUrl = "https://example.com/audio2.mp3",
             )
-            advanceUntilIdle()
-
-            verify(queueRepository).addToQueue(
-                safeEq(episodeItem),
-                safeEq(podcast),
-                safeEq(null),
-                safeEq("home_for_you"),
+        val podcast =
+            Podcast(
+                id = "pod-2",
+                title = "Fallback Podcast",
+                artist = "Artist",
+                imageUrl = "https://example.com/art.png",
             )
-        }
+        val bundle =
+            Bundle().apply {
+                putString("entry_point", "home_for_you")
+            }
+
+        queueManager.playEpisode(
+            episode = episodeItem,
+            podcast = podcast,
+            preferredSort = null,
+            entryPointContext = bundle,
+        )
+        advanceUntilIdle()
+
+        verify(queueRepository).addToQueue(
+            safeEq(episodeItem),
+            safeEq(podcast),
+            safeEq(null),
+            safeEq("home_for_you"),
+        )
+    }
 
     @Test
-    fun `playEpisode falls back to coarse entryPoint name when bundle is null`() =
-        runTest(testDispatcher) {
-            val queueManager = QueueManager(queueRepository, playbackRepository)
-            val episodeItem =
-                EpisodeItem(
-                    id = 103L,
-                    title = "No Bundle Episode",
-                    enclosureUrl = "https://example.com/audio3.mp3",
-                )
-            val podcast =
-                Podcast(
-                    id = "pod-3",
-                    title = "No Bundle Podcast",
-                    artist = "Artist",
-                    imageUrl = "https://example.com/art.png",
-                )
-
-            queueManager.playEpisode(
-                episode = episodeItem,
-                podcast = podcast,
-                preferredSort = null,
-                entryPointContext = null,
+    fun `playEpisode falls back to coarse entryPoint name when bundle is null`() = runTest(testDispatcher) {
+        val queueManager = QueueManager(queueRepository, playbackRepository)
+        val episodeItem =
+            EpisodeItem(
+                id = 103L,
+                title = "No Bundle Episode",
+                enclosureUrl = "https://example.com/audio3.mp3",
             )
-            advanceUntilIdle()
-
-            verify(queueRepository).addToQueue(
-                safeEq(episodeItem),
-                safeEq(podcast),
-                safeEq(null),
-                safeEq("generic"),
+        val podcast =
+            Podcast(
+                id = "pod-3",
+                title = "No Bundle Podcast",
+                artist = "Artist",
+                imageUrl = "https://example.com/art.png",
             )
-        }
+
+        queueManager.playEpisode(
+            episode = episodeItem,
+            podcast = podcast,
+            preferredSort = null,
+            entryPointContext = null,
+        )
+        advanceUntilIdle()
+
+        verify(queueRepository).addToQueue(
+            safeEq(episodeItem),
+            safeEq(podcast),
+            safeEq(null),
+            safeEq("generic"),
+        )
+    }
 
     @Test
     fun `setOutputVolume sets device volume when remote route and command available`() {
@@ -209,12 +203,12 @@ class QueueManagerPlaybackTest {
             MutableStateFlow(
                 PlayerState(
                     playbackRoute =
-                        PlaybackRouteState(
-                            deviceName = "Living Room TV",
-                            isRemote = true,
-                            volume = 10,
-                            maximumVolume = 20,
-                        ),
+                    PlaybackRouteState(
+                        deviceName = "Living Room TV",
+                        isRemote = true,
+                        volume = 10,
+                        maximumVolume = 20,
+                    ),
                 ),
             )
 
@@ -239,12 +233,12 @@ class QueueManagerPlaybackTest {
             MutableStateFlow(
                 PlayerState(
                     playbackRoute =
-                        PlaybackRouteState(
-                            deviceName = "Living Room TV",
-                            isRemote = true,
-                            volume = 10,
-                            maximumVolume = 20,
-                        ),
+                    PlaybackRouteState(
+                        deviceName = "Living Room TV",
+                        isRemote = true,
+                        volume = 10,
+                        maximumVolume = 20,
+                    ),
                 ),
             )
 
@@ -269,12 +263,12 @@ class QueueManagerPlaybackTest {
             MutableStateFlow(
                 PlayerState(
                     playbackRoute =
-                        PlaybackRouteState(
-                            deviceName = "Phone Speaker",
-                            isRemote = false,
-                            volume = 10,
-                            maximumVolume = 20,
-                        ),
+                    PlaybackRouteState(
+                        deviceName = "Phone Speaker",
+                        isRemote = false,
+                        volume = 10,
+                        maximumVolume = 20,
+                    ),
                 ),
             )
 

@@ -73,8 +73,8 @@ class EpisodeInfoViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    kotlinx.coroutines.flow.SharingStarted
-                        .WhileSubscribed(5_000),
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
 
@@ -83,8 +83,8 @@ class EpisodeInfoViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    kotlinx.coroutines.flow.SharingStarted
-                        .WhileSubscribed(5_000),
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
 
@@ -696,12 +696,12 @@ class EpisodeInfoViewModel(
                             finalSuccess.copy(
                                 crossPromoLoading = false,
                                 crossPromotion =
-                                    cx.aswin.boxlore.core.model.ResolvedCrossPromotion(
-                                        extractedShowName = extractedName,
-                                        confidence = result.confidence,
-                                        targetPodcast = targetPodcast,
-                                        matchedIndicators = result.matchedIndicators,
-                                    ),
+                                cx.aswin.boxlore.core.model.ResolvedCrossPromotion(
+                                    extractedShowName = extractedName,
+                                    confidence = result.confidence,
+                                    targetPodcast = targetPodcast,
+                                    matchedIndicators = result.matchedIndicators,
+                                ),
                             )
                     }
                 } else {

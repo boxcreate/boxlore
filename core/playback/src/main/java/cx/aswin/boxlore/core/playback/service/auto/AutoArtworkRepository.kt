@@ -6,10 +6,7 @@ import java.io.File
 import java.security.MessageDigest
 
 internal object AutoArtworkRepository {
-    fun remoteUri(
-        context: Context,
-        remoteUrl: String?,
-    ): Uri? {
+    fun remoteUri(context: Context, remoteUrl: String?,): Uri? {
         val source = remoteUrl?.takeIf { it.isNotBlank() } ?: return null
         val localFile =
             when {
@@ -32,10 +29,7 @@ internal object AutoArtworkRepository {
             .build()
     }
 
-    private fun localUri(
-        context: Context,
-        file: File,
-    ): Uri? {
+    private fun localUri(context: Context, file: File,): Uri? {
         val canonicalFile = runCatching(file::getCanonicalFile).getOrNull() ?: return null
         val allowedRoots =
             listOfNotNull(
@@ -56,11 +50,7 @@ internal object AutoArtworkRepository {
             .build()
     }
 
-    fun collageUri(
-        context: Context,
-        folderId: String,
-        version: String? = null,
-    ): Uri? {
+    fun collageUri(context: Context, folderId: String, version: String? = null,): Uri? {
         val filename = "${folderId.safeFileName()}.png"
         val collageDir = File(context.cacheDir, "auto_collages")
         val file = File(collageDir, filename)

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.subscriptions
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -40,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 
 @Composable
@@ -99,10 +98,11 @@ internal fun RowScope.TabItemContent(
     onTabSelected: (Int) -> Unit
 ) {
     val textColor by animateColorAsState(
-        targetValue = if (isSelected)
+        targetValue = if (isSelected) {
             MaterialTheme.colorScheme.onPrimaryContainer
-        else
-            MaterialTheme.colorScheme.onSurfaceVariant,
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "tabText"
     )
@@ -131,10 +131,16 @@ internal fun RowScope.TabItemContent(
             if (badgeCount != null && badgeCount > 0) {
                 Spacer(modifier = Modifier.width(6.dp))
                 Badge(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outline,
-                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                  else MaterialTheme.colorScheme.surface
+                    containerColor = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+                    contentColor = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
                 ) {
                     Text("$badgeCount")
                 }
@@ -151,8 +157,7 @@ internal fun showsSortLabel(sort: SubscriptionSort): String = when (sort) {
     SubscriptionSort.Manual -> "Manual"
 }
 
-internal fun latestSortLabel(useSmartRank: Boolean): String =
-    if (useSmartRank) "Smart" else "Chronological"
+internal fun latestSortLabel(useSmartRank: Boolean): String = if (useSmartRank) "Smart" else "Chronological"
 
 /**
  * Explore-style genre pills only (icons + short labels). Sort / hide-played live in the top bar.

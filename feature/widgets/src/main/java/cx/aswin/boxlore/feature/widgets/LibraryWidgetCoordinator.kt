@@ -4,11 +4,11 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import cx.aswin.boxlore.feature.widgets.logic.LibraryWidgetLogic
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicReference
 
 object LibraryWidgetCoordinator {
     private val collectJob = AtomicReference<Job?>(null)
@@ -44,16 +44,16 @@ object LibraryWidgetCoordinator {
                             shows.map { row ->
                                 row.copy(
                                     artworkCachePath =
-                                        row.artworkCachePath
-                                            ?: artworkLoader.resolveCachedPath(row.artworkUrl),
+                                    row.artworkCachePath
+                                        ?: artworkLoader.resolveCachedPath(row.artworkUrl),
                                 )
                             }
                         val withDiskCacheEpisodes =
                             episodes.map { row ->
                                 row.copy(
                                     artworkCachePath =
-                                        row.artworkCachePath
-                                            ?: artworkLoader.resolveCachedPath(row.artworkUrl),
+                                    row.artworkCachePath
+                                        ?: artworkLoader.resolveCachedPath(row.artworkUrl),
                                 )
                             }
                         val mergedShows =

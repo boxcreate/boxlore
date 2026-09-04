@@ -5,11 +5,7 @@ package cx.aswin.boxlore.core.playback
  * Extracted from Android Auto browse voice-search paths in [cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback].
  */
 object AutoVoiceSearchLogic {
-    fun searchScore(
-        primary: String,
-        secondary: String?,
-        query: String,
-    ): Int {
+    fun searchScore(primary: String, secondary: String?, query: String,): Int {
         val title = primary.lowercase()
         val subtitle = secondary.orEmpty().lowercase()
         return when {
@@ -54,11 +50,7 @@ object AutoVoiceSearchLogic {
         return normalized
     }
 
-    fun voiceMatchScore(
-        title: String,
-        author: String?,
-        query: String,
-    ): Int {
+    fun voiceMatchScore(title: String, author: String?, query: String,): Int {
         val basicScore = searchScore(title, author, query)
         if (basicScore > 0) return basicScore
         val normalizedTitle = title.lowercase()

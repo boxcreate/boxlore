@@ -39,11 +39,7 @@ class QueueDaoInMemoryTest {
         database.close()
     }
 
-    private fun item(
-        episodeId: String,
-        position: Int,
-        podcastId: String = "pod-1",
-    ) = QueueItem(
+    private fun item(episodeId: String, position: Int, podcastId: String = "pod-1",) = QueueItem(
         episodeId = episodeId,
         title = "Episode $episodeId",
         podcastId = podcastId,
@@ -57,79 +53,71 @@ class QueueDaoInMemoryTest {
     )
 
     @Test
-    fun insertAndGetAllOrderedByPosition() =
-        runTest {
-            dao.insertQueueItem(item("b", position = 2))
-            dao.insertQueueItem(item("a", position = 1))
-            dao.insertQueueItem(item("c", position = 3))
+    fun insertAndGetAllOrderedByPosition() = runTest {
+        dao.insertQueueItem(item("b", position = 2))
+        dao.insertQueueItem(item("a", position = 1))
+        dao.insertQueueItem(item("c", position = 3))
 
-            assertEquals(listOf("a", "b", "c"), dao.getAllQueueItemsSync().map { it.episodeId })
-            assertEquals(listOf("a", "b", "c"), dao.getAllQueueItems().first().map { it.episodeId })
-        }
-
-    @Test
-    fun insertQueueItemsBulk() =
-        runTest {
-            dao.insertQueueItems(listOf(item("a", 1), item("b", 2)))
-            assertEquals(2, dao.getAllQueueItemsSync().size)
-        }
+        assertEquals(listOf("a", "b", "c"), dao.getAllQueueItemsSync().map { it.episodeId })
+        assertEquals(listOf("a", "b", "c"), dao.getAllQueueItems().first().map { it.episodeId })
+    }
 
     @Test
-    fun getMaxPositionReflectsHighest() =
-        runTest {
-            assertNull(dao.getMaxPosition())
-            dao.insertQueueItems(listOf(item("a", 1), item("b", 5)))
-            assertEquals(5, dao.getMaxPosition())
-        }
+    fun insertQueueItemsBulk() = runTest {
+        dao.insertQueueItems(listOf(item("a", 1), item("b", 2)))
+        assertEquals(2, dao.getAllQueueItemsSync().size)
+    }
 
     @Test
-    fun countEpisodeAndLookupByEpisodeId() =
-        runTest {
-            dao.insertQueueItem(item("a", 1))
-            assertEquals(1, dao.countEpisode("a"))
-            assertEquals(0, dao.countEpisode("missing"))
-            assertEquals("Episode a", dao.getQueueItemByEpisodeId("a")?.title)
-            assertNull(dao.getQueueItemByEpisodeId("missing"))
-        }
+    fun getMaxPositionReflectsHighest() = runTest {
+        assertNull(dao.getMaxPosition())
+        dao.insertQueueItems(listOf(item("a", 1), item("b", 5)))
+        assertEquals(5, dao.getMaxPosition())
+    }
 
     @Test
-    fun deleteQueueItemByGeneratedId() =
-        runTest {
-            dao.insertQueueItem(item("a", 1))
-            val stored = dao.getQueueItemByEpisodeId("a")!!
-            dao.deleteQueueItem(stored.id)
-            assertNull(dao.getQueueItemByEpisodeId("a"))
-        }
+    fun countEpisodeAndLookupByEpisodeId() = runTest {
+        dao.insertQueueItem(item("a", 1))
+        assertEquals(1, dao.countEpisode("a"))
+        assertEquals(0, dao.countEpisode("missing"))
+        assertEquals("Episode a", dao.getQueueItemByEpisodeId("a")?.title)
+        assertNull(dao.getQueueItemByEpisodeId("missing"))
+    }
 
     @Test
-    fun clearQueueRemovesEverything() =
-        runTest {
-            dao.insertQueueItems(listOf(item("a", 1), item("b", 2)))
-            dao.clearQueue()
-            assertTrue(dao.getAllQueueItemsSync().isEmpty())
-        }
+    fun deleteQueueItemByGeneratedId() = runTest {
+        dao.insertQueueItem(item("a", 1))
+        val stored = dao.getQueueItemByEpisodeId("a")!!
+        dao.deleteQueueItem(stored.id)
+        assertNull(dao.getQueueItemByEpisodeId("a"))
+    }
 
     @Test
-    fun updateQueuePositionsPersistsNewOrder() =
-        runTest {
-            dao.insertQueueItems(listOf(item("a", 1), item("b", 2)))
-            val stored = dao.getAllQueueItemsSync()
-            val reordered =
-                stored.map {
-                    if (it.episodeId == "a") it.copy(position = 5) else it.copy(position = 0)
-                }
-
-            dao.updateQueuePositions(reordered)
-
-            assertEquals(listOf("b", "a"), dao.getAllQueueItemsSync().map { it.episodeId })
-        }
+    fun clearQueueRemovesEverything() = runTest {
+        dao.insertQueueItems(listOf(item("a", 1), item("b", 2)))
+        dao.clearQueue()
+        assertTrue(dao.getAllQueueItemsSync().isEmpty())
+    }
 
     @Test
-    fun updateQueueItemMutatesRow() =
-        runTest {
-            dao.insertQueueItem(item("a", 1))
-            val stored = dao.getQueueItemByEpisodeId("a")!!
-            dao.updateQueueItem(stored.copy(title = "Renamed"))
-            assertEquals("Renamed", dao.getQueueItemByEpisodeId("a")?.title)
-        }
+    fun updateQueuePositionsPersistsNewOrder() = runTest {
+        dao.insertQueueItems(listOf(item("a", 1), item("b", 2)))
+        val stored = dao.getAllQueueItemsSync()
+        val reordered =
+            stored.map {
+                if (it.episodeId == "a") it.copy(position = 5) else it.copy(position = 0)
+            }
+
+        dao.updateQueuePositions(reordered)
+
+        assertEquals(listOf("b", "a"), dao.getAllQueueItemsSync().map { it.episodeId })
+    }
+
+    @Test
+    fun updateQueueItemMutatesRow() = runTest {
+        dao.insertQueueItem(item("a", 1))
+        val stored = dao.getQueueItemByEpisodeId("a")!!
+        dao.updateQueueItem(stored.copy(title = "Renamed"))
+        assertEquals("Renamed", dao.getQueueItemByEpisodeId("a")?.title)
+    }
 }

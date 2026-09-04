@@ -14,24 +14,19 @@ import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import kotlinx.coroutines.CancellationException
 
-private suspend inline fun <T> runSuspendCatching(crossinline block: suspend () -> T): Result<T> =
-    try {
-        Result.success(block())
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Throwable) {
-        Result.failure(e)
-    }
+private suspend inline fun <T> runSuspendCatching(crossinline block: suspend () -> T): Result<T> = try {
+    Result.success(block())
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Throwable) {
+    Result.failure(e)
+}
 
 /**
  * Represents an episode in the queue along with its podcast context.
  * This is needed because fallback episodes may come from different podcasts.
  */
-data class QueueEntry(
-    val episode: EpisodeItem,
-    val podcast: Podcast,
-    val source: String,
-)
+data class QueueEntry(val episode: EpisodeItem, val podcast: Podcast, val source: String,)
 
 interface SmartQueueEngine {
     companion object {
@@ -85,8 +80,7 @@ interface SmartQueueEngine {
             )
 
         /** True when Tier 0 may queue a deep run of same-show episodes after [contextSourceId]. */
-        fun allowsSamePodcastContinuation(contextSourceId: String?): Boolean =
-            contextSourceId == null || contextSourceId in SHOW_BINGE_SOURCES
+        fun allowsSamePodcastContinuation(contextSourceId: String?): Boolean = contextSourceId == null || contextSourceId in SHOW_BINGE_SOURCES
     }
 
     /**
@@ -218,10 +212,7 @@ class DefaultSmartQueueEngine(
         return batch.distinctBy { it.episode.id }
     }
 
-    private suspend fun buildExcludeSet(
-        currentEpisode: EpisodeItem,
-        excludeEpisodeIds: Set<String>,
-    ): MutableSet<String> {
+    private suspend fun buildExcludeSet(currentEpisode: EpisodeItem, excludeEpisodeIds: Set<String>,): MutableSet<String> {
         val skippedEpisodes = skipMemory?.skippedEpisodeIds() ?: emptySet()
         val completed = runSuspendCatching { sources.getCompletedEpisodeIds() }.getOrDefault(emptySet())
         val currentId = currentEpisode.id.toString()
@@ -293,35 +284,32 @@ class DefaultSmartQueueEngine(
         return rankFallbackEntries(fallback, recentPodcasts)
     }
 
-    private suspend fun rankFallbackEntries(
-        fallback: List<QueueEntry>,
-        recentPodcastIds: Set<String>,
-    ): List<QueueEntry> {
+    private suspend fun rankFallbackEntries(fallback: List<QueueEntry>, recentPodcastIds: Set<String>,): List<QueueEntry> {
         val scorer = adaptiveScorer ?: return fallback
         val history = runSuspendCatching { sources.getRecentHistory(300) }.getOrDefault(emptyList())
         val rankedEpisodes =
             runSuspendCatching {
                 scorer.rankEpisodes(
                     inputs =
-                        fallback.mapIndexed { index, entry ->
-                            EpisodeRankingInput(
-                                episode = entry.toRankingEpisode(),
-                                podcast = entry.podcast,
-                                priorScore = (fallback.size - index).toDouble(),
-                                source = entry.source.toCandidateSource(),
-                                isNovel = entry.podcast.id !in recentPodcastIds,
-                            )
-                        },
+                    fallback.mapIndexed { index, entry ->
+                        EpisodeRankingInput(
+                            episode = entry.toRankingEpisode(),
+                            podcast = entry.podcast,
+                            priorScore = (fallback.size - index).toDouble(),
+                            source = entry.source.toCandidateSource(),
+                            isNovel = entry.podcast.id !in recentPodcastIds,
+                        )
+                    },
                     history = history,
                     objective = RankingObjective.CONTINUATION,
                     surface = RankingSurface.QUEUE,
                     diversityPolicy =
-                        DiversityPolicy(
-                            limit = fallback.size,
-                            maxPerShow = 2,
-                            recentPodcastIds = recentPodcastIds,
-                            reserveNovelSlot = true,
-                        ),
+                    DiversityPolicy(
+                        limit = fallback.size,
+                        maxPerShow = 2,
+                        recentPodcastIds = recentPodcastIds,
+                        reserveNovelSlot = true,
+                    ),
                 )
             }.getOrElse {
                 android.util.Log.w(LOG_TAG, "Adaptive fallback ranking failed", it)
@@ -331,11 +319,10 @@ class DefaultSmartQueueEngine(
         return rankedEpisodes.mapNotNull { entryByEpisode[it.id] }
     }
 
-    private fun sortBriefingFallback(fallback: List<QueueEntry>): List<QueueEntry> =
-        fallback.sortedBy { entry ->
-            val duration = entry.episode.duration ?: 0
-            if (duration in 1..SHORT_EPISODE_MAX_SECONDS) 0 else 1
-        }
+    private fun sortBriefingFallback(fallback: List<QueueEntry>): List<QueueEntry> = fallback.sortedBy { entry ->
+        val duration = entry.episode.duration ?: 0
+        if (duration in 1..SHORT_EPISODE_MAX_SECONDS) 0 else 1
+    }
 
     // ── Tier 0 ─────────────────────────────────────────────────────────────
 
@@ -382,23 +369,15 @@ class DefaultSmartQueueEngine(
         return picks
     }
 
-    private fun effectiveContinuationSort(
-        preferredSort: String?,
-        podcast: Podcast,
-    ): String {
+    private fun effectiveContinuationSort(preferredSort: String?, podcast: Podcast,): String {
         preferredSort?.takeIf { it.isNotBlank() }?.let { return it }
         podcast.preferredSort?.takeIf { it.isNotBlank() }?.let { return it }
         return if (podcast.type == "serial") "oldest" else "newest"
     }
 
-    private fun continuationAnchorDate(
-        allEpisodes: List<Episode>,
-        currentId: String,
-        currentEpisode: EpisodeItem,
-    ): Long =
-        allEpisodes.firstOrNull { it.id == currentId }?.publishedDate
-            ?: currentEpisode.datePublished
-            ?: 0L
+    private fun continuationAnchorDate(allEpisodes: List<Episode>, currentId: String, currentEpisode: EpisodeItem,): Long = allEpisodes.firstOrNull { it.id == currentId }?.publishedDate
+        ?: currentEpisode.datePublished
+        ?: 0L
 
     private fun continuationCandidates(
         allEpisodes: List<Episode>,
@@ -440,10 +419,7 @@ class DefaultSmartQueueEngine(
         )
     }
 
-    private fun logTier0Picks(
-        picks: List<QueueEntry>,
-        newestFirst: Boolean,
-    ) {
+    private fun logTier0Picks(picks: List<QueueEntry>, newestFirst: Boolean,) {
         if (!android.util.Log.isLoggable(LOG_TAG, android.util.Log.DEBUG)) return
         if (picks.isNotEmpty()) {
             android.util.Log.d(
@@ -461,10 +437,7 @@ class DefaultSmartQueueEngine(
 
     // ── Tier 1 ─────────────────────────────────────────────────────────────
 
-    private suspend fun resumeCandidates(
-        currentPodcast: Podcast,
-        exclude: MutableSet<String>,
-    ): List<QueueEntry> {
+    private suspend fun resumeCandidates(currentPodcast: Podcast, exclude: MutableSet<String>,): List<QueueEntry> {
         val cutoff = nowMs() - RESUME_WINDOW_MS
         val picks =
             runSuspendCatching { sources.getResumeCandidates() }
@@ -594,45 +567,30 @@ class DefaultSmartQueueEngine(
     }
 
     /** True when [episode] is a well-formed, not-yet-excluded, non-trailer playable candidate. */
-    private fun isCandidateEligible(
-        episode: Episode,
-        exclude: Set<String>,
-    ): Boolean =
-        episode.id !in exclude &&
-            episode.episodeType != "trailer" &&
-            episode.audioUrl.isNotBlank() &&
-            episode.id.toLongOrNull() != null
+    private fun isCandidateEligible(episode: Episode, exclude: Set<String>,): Boolean = episode.id !in exclude &&
+        episode.episodeType != "trailer" &&
+        episode.audioUrl.isNotBlank() &&
+        episode.id.toLongOrNull() != null
 
     /** Cheap path: reuse a subscription's cached latest episode, skipping a feed fetch entirely. */
-    private fun cachedSubscriptionEntry(
-        sub: Podcast,
-        exclude: Set<String>,
-    ): QueueEntry? =
-        runCatching {
-            sub.latestEpisode
-                ?.takeIf { isCandidateEligible(it, exclude) }
-                ?.toQueueEntry(sub, SmartQueueEngine.SOURCE_SUBSCRIPTION)
-        }.onFailure {
-            android.util.Log.e(LOG_TAG, "Skipping malformed cached episode for ${sub.id}", it)
-        }.getOrNull()
+    private fun cachedSubscriptionEntry(sub: Podcast, exclude: Set<String>,): QueueEntry? = runCatching {
+        sub.latestEpisode
+            ?.takeIf { isCandidateEligible(it, exclude) }
+            ?.toQueueEntry(sub, SmartQueueEngine.SOURCE_SUBSCRIPTION)
+    }.onFailure {
+        android.util.Log.e(LOG_TAG, "Skipping malformed cached episode for ${sub.id}", it)
+    }.getOrNull()
 
-    private suspend fun fetchQueueCandidate(
-        sub: Podcast,
-        exclude: Set<String>,
-    ): Episode? =
-        runSuspendCatching {
-            sources.getQueueCandidates(sub.id, SUBSCRIPTION_CANDIDATE_LIMIT)
-        }.onFailure {
-            android.util.Log.e(LOG_TAG, "Tier 2 candidates failed for ${sub.id}", it)
-        }.getOrDefault(emptyList())
-            .firstOrNull { isCandidateEligible(it, exclude) }
+    private suspend fun fetchQueueCandidate(sub: Podcast, exclude: Set<String>,): Episode? = runSuspendCatching {
+        sources.getQueueCandidates(sub.id, SUBSCRIPTION_CANDIDATE_LIMIT)
+    }.onFailure {
+        android.util.Log.e(LOG_TAG, "Tier 2 candidates failed for ${sub.id}", it)
+    }.getOrDefault(emptyList())
+        .firstOrNull { isCandidateEligible(it, exclude) }
 
     // ── Tier 3 ─────────────────────────────────────────────────────────────
 
-    private data class Tier3Result(
-        val entries: List<QueueEntry>,
-        val usedEpisodeSimilar: Boolean,
-    )
+    private data class Tier3Result(val entries: List<QueueEntry>, val usedEpisodeSimilar: Boolean,)
 
     private suspend fun networkTier3(
         currentEpisode: EpisodeItem,
@@ -692,10 +650,10 @@ class DefaultSmartQueueEngine(
                     country = region,
                     subscribedPodcastIds = subs.map { it.id },
                     subscribedGenres =
-                        subs
-                            .map { it.genre }
-                            .filter { it.isNotBlank() && it != "Podcast" }
-                            .distinct(),
+                    subs
+                        .map { it.genre }
+                        .filter { it.isNotBlank() && it != "Podcast" }
+                        .distinct(),
                 )
             }.getOrDefault(emptyList())
 
@@ -761,20 +719,13 @@ class DefaultSmartQueueEngine(
         return picks
     }
 
-    private fun hasSimilarMetadata(
-        episode: EpisodeItem,
-        podcast: Podcast,
-    ): Boolean =
-        episode.id != 0L &&
-            podcast.id.isNotBlank() &&
-            !episode.title.isNullOrBlank()
+    private fun hasSimilarMetadata(episode: EpisodeItem, podcast: Podcast,): Boolean = episode.id != 0L &&
+        podcast.id.isNotBlank() &&
+        !episode.title.isNullOrBlank()
 
     // ── Tier 3.5: liked-episode similarity boost ───────────────────────────
 
-    private suspend fun likedSimilarBoost(
-        exclude: MutableSet<String>,
-        region: String,
-    ): List<QueueEntry> {
+    private suspend fun likedSimilarBoost(exclude: MutableSet<String>, region: String,): List<QueueEntry> {
         val recentLike =
             runSuspendCatching { sources.getRecentHistory(100) }
                 .getOrDefault(emptyList())
@@ -846,14 +797,10 @@ class DefaultSmartQueueEngine(
         return results
     }
 
-    private fun isTrendingCandidate(
-        episode: Episode,
-        exclude: Set<String>,
-    ): Boolean =
-        episode.id !in exclude &&
-            episode.episodeType != "trailer" &&
-            episode.audioUrl.isNotBlank() &&
-            episode.id.toLongOrNull() != null
+    private fun isTrendingCandidate(episode: Episode, exclude: Set<String>,): Boolean = episode.id !in exclude &&
+        episode.episodeType != "trailer" &&
+        episode.audioUrl.isNotBlank() &&
+        episode.id.toLongOrNull() != null
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -865,19 +812,15 @@ class DefaultSmartQueueEngine(
             ?.takeIf { it.isNotBlank() && it != "Podcast" }
     }
 
-    private fun podcastFromEpisode(episode: Episode): Podcast =
-        Podcast(
-            id = episode.podcastId ?: "",
-            title = episode.podcastTitle ?: "Podcast",
-            artist = episode.podcastArtist ?: "",
-            imageUrl = episode.podcastImageUrl ?: episode.imageUrl ?: "",
-            genre = episode.podcastGenre ?: "Podcast",
-        )
+    private fun podcastFromEpisode(episode: Episode): Podcast = Podcast(
+        id = episode.podcastId ?: "",
+        title = episode.podcastTitle ?: "Podcast",
+        artist = episode.podcastArtist ?: "",
+        imageUrl = episode.podcastImageUrl ?: episode.imageUrl ?: "",
+        genre = episode.podcastGenre ?: "Podcast",
+    )
 
-    private fun Episode.toQueueEntry(
-        podcast: Podcast,
-        source: String,
-    ): QueueEntry {
+    private fun Episode.toQueueEntry(podcast: Podcast, source: String,): QueueEntry {
         val episodeItem =
             EpisodeItem(
                 id = this.id.toLongOrNull() ?: 0L,
@@ -896,33 +839,31 @@ class DefaultSmartQueueEngine(
         return QueueEntry(episode = episodeItem, podcast = podcast, source = source)
     }
 
-    private fun QueueEntry.toRankingEpisode(): Episode =
-        Episode(
-            id = episode.id.toString(),
-            title = episode.title,
-            description = episode.description.orEmpty(),
-            audioUrl = episode.enclosureUrl.orEmpty(),
-            imageUrl = episode.image,
-            podcastImageUrl = episode.feedImage ?: podcast.imageUrl,
-            podcastTitle = podcast.title,
-            podcastId = podcast.id,
-            podcastGenre = podcast.genre,
-            podcastArtist = podcast.artist,
-            duration = episode.duration ?: 0,
-            publishedDate = episode.datePublished ?: 0L,
-            episodeType = episode.episodeType,
-            enclosureType = episode.enclosureType,
-        )
+    private fun QueueEntry.toRankingEpisode(): Episode = Episode(
+        id = episode.id.toString(),
+        title = episode.title,
+        description = episode.description.orEmpty(),
+        audioUrl = episode.enclosureUrl.orEmpty(),
+        imageUrl = episode.image,
+        podcastImageUrl = episode.feedImage ?: podcast.imageUrl,
+        podcastTitle = podcast.title,
+        podcastId = podcast.id,
+        podcastGenre = podcast.genre,
+        podcastArtist = podcast.artist,
+        duration = episode.duration ?: 0,
+        publishedDate = episode.datePublished ?: 0L,
+        episodeType = episode.episodeType,
+        enclosureType = episode.enclosureType,
+    )
 
-    private fun String.toCandidateSource(): CandidateSource =
-        when (this) {
-            SmartQueueEngine.SOURCE_RESUME,
-            SmartQueueEngine.SOURCE_RESUME_STALE,
-            -> CandidateSource.LOCAL_HISTORY
-            SmartQueueEngine.SOURCE_SUBSCRIPTION,
-            SmartQueueEngine.SOURCE_SAME_PODCAST,
-            -> CandidateSource.SUBSCRIPTION
-            SmartQueueEngine.SOURCE_TRENDING -> CandidateSource.TRENDING
-            else -> CandidateSource.SERVER_RECOMMENDATION
-        }
+    private fun String.toCandidateSource(): CandidateSource = when (this) {
+        SmartQueueEngine.SOURCE_RESUME,
+        SmartQueueEngine.SOURCE_RESUME_STALE,
+        -> CandidateSource.LOCAL_HISTORY
+        SmartQueueEngine.SOURCE_SUBSCRIPTION,
+        SmartQueueEngine.SOURCE_SAME_PODCAST,
+        -> CandidateSource.SUBSCRIPTION
+        SmartQueueEngine.SOURCE_TRENDING -> CandidateSource.TRENDING
+        else -> CandidateSource.SERVER_RECOMMENDATION
+    }
 }

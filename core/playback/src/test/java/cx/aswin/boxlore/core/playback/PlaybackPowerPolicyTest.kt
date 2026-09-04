@@ -126,30 +126,29 @@ class PlaybackPowerPolicyTest {
     }
 
     @Test
-    fun `resumed playback is not torn down after suspended progress persistence`() =
-        runTest {
-            val persistenceStarted = CompletableDeferred<Unit>()
-            val allowPersistenceToFinish = CompletableDeferred<Unit>()
-            var isIdle = true
-            var wasTornDown = false
+    fun `resumed playback is not torn down after suspended progress persistence`() = runTest {
+        val persistenceStarted = CompletableDeferred<Unit>()
+        val allowPersistenceToFinish = CompletableDeferred<Unit>()
+        var isIdle = true
+        var wasTornDown = false
 
-            val teardown =
-                launch {
-                    PlaybackPowerPolicy.persistThenTearDownIfStillIdle(
-                        persistProgress = {
-                            persistenceStarted.complete(Unit)
-                            allowPersistenceToFinish.await()
-                        },
-                        isStillIdle = { isIdle },
-                        tearDown = { wasTornDown = true },
-                    )
-                }
+        val teardown =
+            launch {
+                PlaybackPowerPolicy.persistThenTearDownIfStillIdle(
+                    persistProgress = {
+                        persistenceStarted.complete(Unit)
+                        allowPersistenceToFinish.await()
+                    },
+                    isStillIdle = { isIdle },
+                    tearDown = { wasTornDown = true },
+                )
+            }
 
-            persistenceStarted.await()
-            isIdle = false
-            allowPersistenceToFinish.complete(Unit)
-            teardown.join()
+        persistenceStarted.await()
+        isIdle = false
+        allowPersistenceToFinish.complete(Unit)
+        teardown.join()
 
-            assertFalse(wasTornDown)
-        }
+        assertFalse(wasTornDown)
+    }
 }

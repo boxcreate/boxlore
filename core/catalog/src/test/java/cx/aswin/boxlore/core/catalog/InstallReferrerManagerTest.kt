@@ -22,14 +22,13 @@ import org.robolectric.annotation.Config
 class InstallReferrerManagerTest {
     private fun manager(): InstallReferrerManager = InstallReferrerManager(ApplicationProvider.getApplicationContext<Context>())
 
-    private fun parse(referrer: String): ReferralIntent =
-        runBlocking {
-            val mgr = manager()
-            withTimeout(2_000) {
-                mgr.handleReferrer(referrer)
-                mgr.referralFlow.first()
-            }
+    private fun parse(referrer: String): ReferralIntent = runBlocking {
+        val mgr = manager()
+        withTimeout(2_000) {
+            mgr.handleReferrer(referrer)
+            mgr.referralFlow.first()
         }
+    }
 
     @Test
     fun parsesQueryStyleReferrerWithTimestamp() {

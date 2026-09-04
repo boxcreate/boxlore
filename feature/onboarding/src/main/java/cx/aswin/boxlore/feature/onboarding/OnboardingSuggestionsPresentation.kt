@@ -14,10 +14,9 @@ internal object OnboardingSuggestionsPresentation {
             uiState.genreChartsPodcasts.isEmpty()
     }
 
-    fun isError(uiState: OnboardingUiState): Boolean =
-        uiState.onboardingError != null &&
-            uiState.aiCurriculumRows.isEmpty() &&
-            uiState.genreChartsPodcasts.isEmpty()
+    fun isError(uiState: OnboardingUiState): Boolean = uiState.onboardingError != null &&
+        uiState.aiCurriculumRows.isEmpty() &&
+        uiState.genreChartsPodcasts.isEmpty()
 
     /**
      * Drops seed / already-picked show IDs from similar-shows curriculum rows so the
@@ -70,52 +69,49 @@ internal object OnboardingSuggestionsPresentation {
         val subtitle: String,
     )
 
-    fun loadingCopy(uiState: OnboardingUiState): LoadingCopy =
-        when {
-            uiState.reachedSuggestionsViaOpmlFlow ->
-                LoadingCopy(
-                    title = "Import complete",
-                    subtitle = "Finding shows inspired by your library…",
-                )
-            uiState.reachedSuggestionsViaSearchFlow ->
-                LoadingCopy(
-                    title =
-                        if (uiState.suggestionSeedCount > 0) {
-                            "Subscribed to ${uiState.suggestionSeedCount} " +
-                                if (uiState.suggestionSeedCount == 1) "show" else "shows"
-                        } else {
-                            "Shows subscribed"
-                        },
-                    subtitle = "Looking for more you might like…",
-                )
-            else ->
-                LoadingCopy(
-                    title = "Designing your feed",
-                    subtitle = "Matching shows to your taste…",
-                )
-        }
+    fun loadingCopy(uiState: OnboardingUiState): LoadingCopy = when {
+        uiState.reachedSuggestionsViaOpmlFlow ->
+            LoadingCopy(
+                title = "Import complete",
+                subtitle = "Finding shows inspired by your library…",
+            )
+        uiState.reachedSuggestionsViaSearchFlow ->
+            LoadingCopy(
+                title =
+                if (uiState.suggestionSeedCount > 0) {
+                    "Subscribed to ${uiState.suggestionSeedCount} " +
+                        if (uiState.suggestionSeedCount == 1) "show" else "shows"
+                } else {
+                    "Shows subscribed"
+                },
+                subtitle = "Looking for more you might like…",
+            )
+        else ->
+            LoadingCopy(
+                title = "Designing your feed",
+                subtitle = "Matching shows to your taste…",
+            )
+    }
 
     /** Whether back from suggestions should wipe curriculum/charts (search / OPML paths). */
-    fun shouldClearSuggestionPayloadOnBack(nextStep: OnboardingStep): Boolean =
-        nextStep == OnboardingStep.SEARCH || nextStep == OnboardingStep.WELCOME
+    fun shouldClearSuggestionPayloadOnBack(nextStep: OnboardingStep): Boolean = nextStep == OnboardingStep.SEARCH || nextStep == OnboardingStep.WELCOME
 
     /** Clears suggestion payloads / loading flags while preserving picks and search query. */
     fun withClearedSuggestionPayload(
         state: OnboardingUiState,
         nextStep: OnboardingStep,
-    ): OnboardingUiState =
-        state.copy(
-            currentStep = nextStep,
-            aiCurriculumRows = emptyList(),
-            genreChartsPodcasts = emptyList(),
-            isAiLoading = false,
-            isSynthesizing = false,
-            isLoadingPodcasts = false,
-            aiLoadingStage = AiLoadingStage.IDLE,
-            onboardingError = null,
-            suggestionSeedCount = 0,
-            reachedSuggestionsViaSearchFlow = false,
-            reachedSuggestionsViaOpmlFlow = false,
-            reachedSuggestionsViaAiFlow = false,
-        )
+    ): OnboardingUiState = state.copy(
+        currentStep = nextStep,
+        aiCurriculumRows = emptyList(),
+        genreChartsPodcasts = emptyList(),
+        isAiLoading = false,
+        isSynthesizing = false,
+        isLoadingPodcasts = false,
+        aiLoadingStage = AiLoadingStage.IDLE,
+        onboardingError = null,
+        suggestionSeedCount = 0,
+        reachedSuggestionsViaSearchFlow = false,
+        reachedSuggestionsViaOpmlFlow = false,
+        reachedSuggestionsViaAiFlow = false,
+    )
 }

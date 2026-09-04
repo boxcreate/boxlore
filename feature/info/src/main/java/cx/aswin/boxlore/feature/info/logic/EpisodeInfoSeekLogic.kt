@@ -13,21 +13,20 @@ object EpisodeInfoSeekLogic {
         durationMs: Long,
         isLiked: Boolean,
         lastPlayedAt: Long,
-    ): ListeningHistoryUpsertLogic.ProgressSaveInput =
-        ListeningHistoryUpsertLogic.ProgressSaveInput(
-            podcastId = podcastId,
-            episodeId = episode.id,
-            positionMs = positionMs,
-            durationMs = durationMs,
-            episodeTitle = episode.title,
-            episodeImageUrl = episode.imageUrl,
-            podcastImageUrl = episode.podcastImageUrl,
-            episodeAudioUrl = episode.audioUrl,
-            podcastName = podcastTitle,
-            isCompleted = false,
-            isLiked = isLiked,
-            lastPlayedAt = lastPlayedAt,
-            enclosureType = episode.enclosureType,
-            episodeDescription = episode.description,
-        )
+    ): ListeningHistoryUpsertLogic.ProgressSaveInput = ListeningHistoryUpsertLogic.ProgressSaveInput(
+        podcastId = podcastId,
+        episodeId = episode.id,
+        positionMs = positionMs,
+        durationMs = durationMs,
+        episodeTitle = episode.title,
+        episodeImageUrl = episode.imageUrl,
+        podcastImageUrl = episode.podcastImageUrl,
+        episodeAudioUrl = episode.audioUrl,
+        podcastName = podcastTitle,
+        isCompleted = false,
+        isLiked = isLiked,
+        lastPlayedAt = lastPlayedAt,
+        enclosureType = episode.enclosureType,
+        episodeDescription = episode.description,
+    )
 }

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.briefing
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,10 +21,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import java.net.URI
@@ -51,16 +49,13 @@ internal fun formatBriefingListenDuration(durationMs: Long): String? {
     return "$minutes min listen"
 }
 
-internal fun getDomainName(url: String): String {
-    return try {
-        val uri = URI(url)
-        val domain = uri.host ?: ""
-        if (domain.startsWith("www.")) domain.substring(4) else domain
-    } catch (e: Exception) {
-        url
-    }
+internal fun getDomainName(url: String): String = try {
+    val uri = URI(url)
+    val domain = uri.host ?: ""
+    if (domain.startsWith("www.")) domain.substring(4) else domain
+} catch (e: Exception) {
+    url
 }
-
 
 @Composable
 internal fun CompactEpisodeChip(
@@ -75,8 +70,11 @@ internal fun CompactEpisodeChip(
         color = compactEpisodeChipColor(isActiveCard),
         border = BorderStroke(
             0.5.dp,
-            if (isActiveCard) MaterialTheme.colorScheme.outline
-            else MaterialTheme.colorScheme.outlineVariant
+            if (isActiveCard) {
+                MaterialTheme.colorScheme.outline
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            }
         ),
         modifier = modifier
             .width(260.dp)
@@ -101,12 +99,11 @@ internal fun CompactEpisodeChip(
 }
 
 @Composable
-private fun compactEpisodeChipColor(isActiveCard: Boolean): Color =
-    if (isActiveCard) {
-        MaterialTheme.colorScheme.surfaceContainerHighest
-    } else {
-        MaterialTheme.colorScheme.surfaceContainer
-    }
+private fun compactEpisodeChipColor(isActiveCard: Boolean): Color = if (isActiveCard) {
+    MaterialTheme.colorScheme.surfaceContainerHighest
+} else {
+    MaterialTheme.colorScheme.surfaceContainer
+}
 
 @Composable
 private fun CompactEpisodeImage(episode: Episode) {
@@ -121,9 +118,8 @@ private fun CompactEpisodeImage(episode: Episode) {
     )
 }
 
-private fun compactEpisodeImageUrl(episode: Episode): String? =
-    episode.imageUrl?.takeIf { it.isNotEmpty() }
-        ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
+private fun compactEpisodeImageUrl(episode: Episode): String? = episode.imageUrl?.takeIf { it.isNotEmpty() }
+    ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
 
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.CompactEpisodeDetails(
@@ -195,20 +191,19 @@ private fun CompactEpisodeInfo(
         text = infoText,
         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
         color =
-            if (isActiveCard) {
-                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-            },
+        if (isActiveCard) {
+            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+        },
         maxLines = 1
     )
 }
 
-private fun compactEpisodeInfoText(episode: Episode): String =
-    listOfNotNull(
-        episode.duration.takeIf { it > 0 }?.let { "${it / 60} min" },
-        formattedEpisodeDate(episode.publishedDate),
-    ).joinToString(" • ")
+private fun compactEpisodeInfoText(episode: Episode): String = listOfNotNull(
+    episode.duration.takeIf { it > 0 }?.let { "${it / 60} min" },
+    formattedEpisodeDate(episode.publishedDate),
+).joinToString(" • ")
 
 private fun formattedEpisodeDate(publishedDate: Long): String? {
     if (publishedDate <= 0) return null

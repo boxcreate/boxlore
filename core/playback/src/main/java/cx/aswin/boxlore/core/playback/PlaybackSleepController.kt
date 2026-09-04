@@ -66,10 +66,7 @@ internal class PlaybackSleepController(
         }
     }
 
-    fun setSleepTimer(
-        durationMinutes: Int,
-        dismissNudge: Boolean = true,
-    ) {
+    fun setSleepTimer(durationMinutes: Int, dismissNudge: Boolean = true,) {
         Log.d("PlaybackRepo", "setSleepTimer called: $durationMinutes minutes, dismissNudge=$dismissNudge")
         sleepTimerJob?.cancel()
 
@@ -118,10 +115,7 @@ internal class PlaybackSleepController(
             }
     }
 
-    private fun startFixedSleepTimer(
-        durationMinutes: Int,
-        dismissNudge: Boolean,
-    ) {
+    private fun startFixedSleepTimer(durationMinutes: Int, dismissNudge: Boolean,) {
         val endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
         Log.d("PlaybackRepo", "Sleep timer: Fixed ${durationMinutes}m, endTime=$endTime")
         SleepTimerHolder.activeSleepTimerEndMs = endTime

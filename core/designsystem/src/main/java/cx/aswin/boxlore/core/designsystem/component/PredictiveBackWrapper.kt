@@ -38,12 +38,7 @@ import kotlinx.coroutines.launch
  * the start destination must not leave the next screen at 0.9 scale.
  */
 @Composable
-fun PredictiveBackWrapper(
-    enabled: Boolean,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
+fun PredictiveBackWrapper(enabled: Boolean, onBack: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit,) {
     val scope = rememberCoroutineScope()
 
     var swipeEdge by remember { mutableFloatStateOf(0f) }
@@ -89,26 +84,25 @@ fun PredictiveBackWrapper(
 
     Box(
         modifier =
-            modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    this.translationX = translationX
-                    shape = RoundedCornerShape(cornerRadius.dp)
-                    clip = animatedProgress.value > 0.01f
-                    shadowElevation = elevation
-                }.background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(cornerRadius.dp),
-                ),
+        modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.translationX = translationX
+                shape = RoundedCornerShape(cornerRadius.dp)
+                clip = animatedProgress.value > 0.01f
+                shadowElevation = elevation
+            }.background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(cornerRadius.dp),
+            ),
     ) {
         content()
     }
 }
 
-private fun predictiveBackRestSpring() =
-    spring<Float>(
-        dampingRatio = Spring.DampingRatioNoBouncy,
-        stiffness = Spring.StiffnessMedium,
-    )
+private fun predictiveBackRestSpring() = spring<Float>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMedium,
+)

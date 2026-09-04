@@ -9,8 +9,7 @@ import cx.aswin.boxlore.core.model.Podcast
  */
 object ExploreBrowseLogic {
     /** Mood chips for For You — same catalog as Home daypart rails, time-sorted. */
-    fun vibesForHour(hourOfDay: Int): List<Pair<String, String>> =
-        CuratedMoods.forHourOfDay(hourOfDay).map { it.id to it.title }
+    fun vibesForHour(hourOfDay: Int): List<Pair<String, String>> = CuratedMoods.forHourOfDay(hourOfDay).map { it.id to it.title }
 
     fun filterPodcastsBySubstring(query: String, podcasts: Collection<Podcast>): List<Podcast> {
         val trimmed = query.trim()

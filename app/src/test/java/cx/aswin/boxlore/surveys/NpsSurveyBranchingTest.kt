@@ -110,16 +110,12 @@ class NpsSurveyBranchingTest {
         )
     }
 
-    private fun open(
-        id: String,
-        question: String,
-    ): PostHogDisplayOpenQuestion =
-        PostHogDisplayOpenQuestion(
-            id = id,
-            question = question,
-            questionDescription = null,
-            questionDescriptionContentType = PostHogDisplaySurveyTextContentType.TEXT,
-            isOptional = true,
-            buttonText = null,
-        )
+    private fun open(id: String, question: String,): PostHogDisplayOpenQuestion = PostHogDisplayOpenQuestion(
+        id = id,
+        question = question,
+        questionDescription = null,
+        questionDescriptionContentType = PostHogDisplaySurveyTextContentType.TEXT,
+        isOptional = true,
+        buttonText = null,
+    )
 }

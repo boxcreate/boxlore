@@ -16,34 +16,32 @@ class SameShowContinuationLogicTest {
         publishedDate: Long = 1000L,
         episodeType: String? = "full",
         audioUrl: String = "https://example.com/audio/$id.mp3",
-    ): Episode =
-        Episode(
-            id = id,
-            title = "Episode $id",
-            description = "Description $id",
-            audioUrl = audioUrl,
-            podcastId = podcastId,
-            podcastTitle = podcastTitle,
-            publishedDate = publishedDate,
-            episodeType = episodeType,
-            contextSourceId = contextSourceId,
-        )
+    ): Episode = Episode(
+        id = id,
+        title = "Episode $id",
+        description = "Description $id",
+        audioUrl = audioUrl,
+        podcastId = podcastId,
+        podcastTitle = podcastTitle,
+        publishedDate = publishedDate,
+        episodeType = episodeType,
+        contextSourceId = contextSourceId,
+    )
 
     private fun testPodcast(
         id: String = "pod-1",
         type: String = "episodic",
         preferredSort: String? = null,
         genre: String = "Technology",
-    ): Podcast =
-        Podcast(
-            id = id,
-            title = "Test Show",
-            artist = "Test Artist",
-            imageUrl = "https://example.com/art.jpg",
-            type = type,
-            preferredSort = preferredSort,
-            genre = genre,
-        )
+    ): Podcast = Podcast(
+        id = id,
+        title = "Test Show",
+        artist = "Test Artist",
+        imageUrl = "https://example.com/art.jpg",
+        type = type,
+        preferredSort = preferredSort,
+        genre = genre,
+    )
 
     @Test
     fun `canShowBanner returns false when episode is null`() {

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,10 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.player.v2.logic.queueSourceLabel
@@ -52,10 +50,14 @@ fun UpNextCard(
     if (queuedEpisodes.isEmpty()) return
 
     val cardShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 28.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 28.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 28.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 28.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 28.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 28.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 28.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 28.dp,
+        smoothnessAsPercentBR = 60
     )
 
     Surface(
@@ -141,10 +143,14 @@ private fun QueuePreviewRow(
                 .size(60.dp)
                 .clip(
                     AbsoluteSmoothCornerShape(
-                        cornerRadiusTL = 16.dp, smoothnessAsPercentTL = 60,
-                        cornerRadiusTR = 16.dp, smoothnessAsPercentTR = 60,
-                        cornerRadiusBL = 16.dp, smoothnessAsPercentBL = 60,
-                        cornerRadiusBR = 16.dp, smoothnessAsPercentBR = 60
+                        cornerRadiusTL = 16.dp,
+                        smoothnessAsPercentTL = 60,
+                        cornerRadiusTR = 16.dp,
+                        smoothnessAsPercentTR = 60,
+                        cornerRadiusBL = 16.dp,
+                        smoothnessAsPercentBL = 60,
+                        cornerRadiusBR = 16.dp,
+                        smoothnessAsPercentBR = 60
                     )
                 )
                 .background(colorScheme.surfaceVariant)

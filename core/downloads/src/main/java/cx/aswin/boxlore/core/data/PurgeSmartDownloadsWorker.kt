@@ -8,7 +8,4 @@ import androidx.work.WorkerParameters
  * [cx.aswin.boxlore.core.downloads.PurgeSmartDownloadsWorker].
  */
 @Deprecated("Permanent upgrade bridge; use cx.aswin.boxlore.core.downloads.PurgeSmartDownloadsWorker")
-class PurgeSmartDownloadsWorker(
-    appContext: Context,
-    params: WorkerParameters,
-) : cx.aswin.boxlore.core.downloads.PurgeSmartDownloadsWorker(appContext, params)
+class PurgeSmartDownloadsWorker(appContext: Context, params: WorkerParameters,) : cx.aswin.boxlore.core.downloads.PurgeSmartDownloadsWorker(appContext, params)

@@ -25,14 +25,13 @@ internal fun homeMixtapeCacheOrNull(
     episodes: List<Episode>?,
     subSignature: Set<String>?,
     staleRestartEnabled: Boolean?,
-): HomeMixtapeCache? =
-    HomeMixtapeCache(
-        podcasts = podcasts ?: return null,
-        unplayedCount = unplayedCount ?: return null,
-        episodes = episodes ?: return null,
-        subSignature = subSignature ?: return null,
-        staleRestartEnabled = staleRestartEnabled ?: return null,
-    )
+): HomeMixtapeCache? = HomeMixtapeCache(
+    podcasts = podcasts ?: return null,
+    unplayedCount = unplayedCount ?: return null,
+    episodes = episodes ?: return null,
+    subSignature = subSignature ?: return null,
+    staleRestartEnabled = staleRestartEnabled ?: return null,
+)
 
 internal data class HomeUiAssemblyResult(
     val heroItems: List<SmartHeroItem>,

@@ -4,10 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ITunesSearchResponse(
-    val resultCount: Int,
-    val results: List<ITunesPodcastDto>
-)
+data class ITunesSearchResponse(val resultCount: Int, val results: List<ITunesPodcastDto>)
 
 @Serializable
 data class ITunesPodcastDto(

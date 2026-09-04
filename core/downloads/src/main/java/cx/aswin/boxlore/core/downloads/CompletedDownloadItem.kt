@@ -4,29 +4,23 @@ import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
-data class CompletedDownloadItem(
-    val episode: Episode,
-    val podcast: Podcast,
-    val downloadedAt: Long,
-)
+data class CompletedDownloadItem(val episode: Episode, val podcast: Podcast, val downloadedAt: Long,)
 
 internal object CompletedDownloadItems {
-    fun from(rows: List<DownloadedEpisodeEntity>): List<CompletedDownloadItem> =
-        rows
-            .asSequence()
-            .filter { it.status == DownloadedEpisodeEntity.STATUS_COMPLETED }
-            .sortedWith(
-                compareByDescending<DownloadedEpisodeEntity>(::releaseOrderKeyMillis)
-                    .thenByDescending(DownloadedEpisodeEntity::downloadedAt)
-                    .thenBy(DownloadedEpisodeEntity::episodeId),
-            ).map { row -> row.toCompletedDownloadItem() }
-            .toList()
+    fun from(rows: List<DownloadedEpisodeEntity>): List<CompletedDownloadItem> = rows
+        .asSequence()
+        .filter { it.status == DownloadedEpisodeEntity.STATUS_COMPLETED }
+        .sortedWith(
+            compareByDescending<DownloadedEpisodeEntity>(::releaseOrderKeyMillis)
+                .thenByDescending(DownloadedEpisodeEntity::downloadedAt)
+                .thenBy(DownloadedEpisodeEntity::episodeId),
+        ).map { row -> row.toCompletedDownloadItem() }
+        .toList()
 
-    private fun releaseOrderKeyMillis(row: DownloadedEpisodeEntity): Long =
-        row.publishedDate
-            .takeIf { it > 0L }
-            ?.let { seconds -> seconds * MILLIS_PER_SECOND }
-            ?: row.downloadedAt
+    private fun releaseOrderKeyMillis(row: DownloadedEpisodeEntity): Long = row.publishedDate
+        .takeIf { it > 0L }
+        ?.let { seconds -> seconds * MILLIS_PER_SECOND }
+        ?: row.downloadedAt
 
     private fun DownloadedEpisodeEntity.toCompletedDownloadItem(): CompletedDownloadItem {
         val podcast =

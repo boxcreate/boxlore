@@ -75,12 +75,11 @@ class HomeDiscoveryLogicTest {
         assertEquals(emptyList<String>(), result?.map { it.id })
     }
 
-    private fun editorialRow(podcast: Podcast): HomeEditorialRow =
-        HomeEditorialRow(
-            providerId = "science_explainer",
-            title = "Worth knowing",
-            subtitle = "Clear answers",
-            icon = HomeEditorialIcon.SCIENCE,
-            podcasts = listOf(podcast),
-        )
+    private fun editorialRow(podcast: Podcast): HomeEditorialRow = HomeEditorialRow(
+        providerId = "science_explainer",
+        title = "Worth knowing",
+        subtitle = "Clear answers",
+        icon = HomeEditorialIcon.SCIENCE,
+        podcasts = listOf(podcast),
+    )
 }

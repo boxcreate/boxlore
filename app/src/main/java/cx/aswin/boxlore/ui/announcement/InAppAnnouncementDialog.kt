@@ -1,12 +1,10 @@
 package cx.aswin.boxlore.ui.announcement
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,14 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 
 private val ActionShape = RoundedCornerShape(16.dp)
 private val DialogShape = RoundedCornerShape(28.dp)
@@ -52,11 +50,7 @@ private val ImageShape = RoundedCornerShape(16.dp)
 private val ActionHeight = 52.dp
 
 @Composable
-fun InAppAnnouncementDialog(
-    announcement: Announcement,
-    onDismiss: () -> Unit,
-    onAction: (route: String) -> Unit,
-) {
+fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, onAction: (route: String) -> Unit,) {
     val hasImage = !announcement.imageUrl.isNullOrBlank()
     val hasAction = announcement.showActionInApp && !announcement.route.isNullOrBlank()
     val style = remember(announcement.category) { announcementLayoutStyle(announcement.category) }
@@ -81,11 +75,11 @@ fun InAppAnnouncementDialog(
     Dialog(
         onDismissRequest = { /* outside / back do not dismiss */ },
         properties =
-            DialogProperties(
-                dismissOnBackPress = false,
-                dismissOnClickOutside = false,
-                usePlatformDefaultWidth = false,
-            ),
+        DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false,
+        ),
     ) {
         AnnouncementDialogCard(
             announcement = announcement,
@@ -120,18 +114,18 @@ private fun AnnouncementDialogCard(
         tonalElevation = 6.dp,
         border = surfaceBorder,
         modifier =
-            Modifier
-                .fillMaxWidth(0.94f)
-                .heightIn(max = 560.dp)
-                .padding(horizontal = 12.dp, vertical = 16.dp),
+        Modifier
+            .fillMaxWidth(0.94f)
+            .heightIn(max = 560.dp)
+            .padding(horizontal = 12.dp, vertical = 16.dp),
     ) {
         Box {
             IconButton(
                 onClick = onDismissExplicitly,
                 modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp),
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
@@ -165,18 +159,15 @@ private fun AnnouncementDialogCard(
 }
 
 @Composable
-private fun AnnouncementCategoryChip(
-    category: String,
-    style: AnnouncementLayoutStyle,
-) {
+private fun AnnouncementCategoryChip(category: String, style: AnnouncementLayoutStyle,) {
     val chipContainer = chipContainerColor(style)
     val chipContent = chipContentColor(style)
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(end = 36.dp, bottom = 12.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(end = 36.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AssistChip(
@@ -198,53 +189,47 @@ private fun AnnouncementCategoryChip(
                 )
             },
             colors =
-                AssistChipDefaults.assistChipColors(
-                    containerColor = chipContainer,
-                    labelColor = chipContent,
-                    leadingIconContentColor = chipContent,
-                ),
+            AssistChipDefaults.assistChipColors(
+                containerColor = chipContainer,
+                labelColor = chipContent,
+                leadingIconContentColor = chipContent,
+            ),
             border = null,
         )
     }
 }
 
 @Composable
-private fun chipContainerColor(style: AnnouncementLayoutStyle): Color =
-    when {
-        style.useErrorChip -> MaterialTheme.colorScheme.errorContainer
-        style.useTertiaryChip -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.primaryContainer
-    }
+private fun chipContainerColor(style: AnnouncementLayoutStyle): Color = when {
+    style.useErrorChip -> MaterialTheme.colorScheme.errorContainer
+    style.useTertiaryChip -> MaterialTheme.colorScheme.tertiaryContainer
+    else -> MaterialTheme.colorScheme.primaryContainer
+}
 
 @Composable
-private fun chipContentColor(style: AnnouncementLayoutStyle): Color =
-    when {
-        style.useErrorChip -> MaterialTheme.colorScheme.onErrorContainer
-        style.useTertiaryChip -> MaterialTheme.colorScheme.onTertiaryContainer
-        else -> MaterialTheme.colorScheme.onPrimaryContainer
-    }
+private fun chipContentColor(style: AnnouncementLayoutStyle): Color = when {
+    style.useErrorChip -> MaterialTheme.colorScheme.onErrorContainer
+    style.useTertiaryChip -> MaterialTheme.colorScheme.onTertiaryContainer
+    else -> MaterialTheme.colorScheme.onPrimaryContainer
+}
 
 @Composable
-private fun ColumnScope.AnnouncementScrollBody(
-    announcement: Announcement,
-    style: AnnouncementLayoutStyle,
-    hasImage: Boolean,
-) {
+private fun ColumnScope.AnnouncementScrollBody(announcement: Announcement, style: AnnouncementLayoutStyle, hasImage: Boolean,) {
     Column(
         modifier =
-            Modifier
-                .weight(1f, fill = false)
-                .verticalScroll(rememberScrollState()),
+        Modifier
+            .weight(1f, fill = false)
+            .verticalScroll(rememberScrollState()),
     ) {
         if (hasImage) {
             AsyncImage(
                 model = announcement.imageUrl,
                 contentDescription = null,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(style.imageHeight)
-                        .clip(ImageShape),
+                Modifier
+                    .fillMaxWidth()
+                    .height(style.imageHeight)
+                    .clip(ImageShape),
                 contentScale = ContentScale.Crop,
             )
             Spacer(modifier = Modifier.height(if (style.emphasizeImage) 12.dp else 16.dp))
@@ -254,11 +239,11 @@ private fun ColumnScope.AnnouncementScrollBody(
             text = announcement.title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight =
-                if (style.layout == AnnouncementLayout.Tip) {
-                    GoogleSansWeight.medium
-                } else {
-                    GoogleSansWeight.semiBold
-                },
+            if (style.layout == AnnouncementLayout.Tip) {
+                GoogleSansWeight.medium
+            } else {
+                GoogleSansWeight.semiBold
+            },
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 12.dp),
         )
@@ -271,10 +256,7 @@ private fun ColumnScope.AnnouncementScrollBody(
 }
 
 @Composable
-private fun AnnouncementBodyBlocks(
-    body: String,
-    style: AnnouncementLayoutStyle,
-) {
+private fun AnnouncementBodyBlocks(body: String, style: AnnouncementLayoutStyle,) {
     val blocks = remember(body) { parseBodyToBlocks(body) }
     val bodySpacing = if (style.emphasizeBullets) 8.dp else 10.dp
     val bulletColor =
@@ -302,11 +284,7 @@ private fun AnnouncementBodyBlocks(
 }
 
 @Composable
-private fun AnnouncementBodyBlockRow(
-    block: BodyBlock,
-    bulletColor: Color,
-    bulletTextStyle: androidx.compose.ui.text.TextStyle,
-) {
+private fun AnnouncementBodyBlockRow(block: BodyBlock, bulletColor: Color, bulletTextStyle: androidx.compose.ui.text.TextStyle,) {
     when {
         block.isSpacer -> Spacer(modifier = Modifier.height(6.dp))
         block.isBullet -> {
@@ -372,14 +350,14 @@ private fun AnnouncementActions(
                     onAction(route)
                 },
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(ActionHeight),
+                Modifier
+                    .fillMaxWidth()
+                    .height(ActionHeight),
                 shape = ActionShape,
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = containerColor,
-                    ),
+                ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                ),
             ) {
                 Text(
                     text = buttonText,
@@ -394,9 +372,9 @@ private fun AnnouncementActions(
         OutlinedButton(
             onClick = onDismissExplicitly,
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(ActionHeight),
+            Modifier
+                .fillMaxWidth()
+                .height(ActionHeight),
             shape = ActionShape,
         ) {
             Text(

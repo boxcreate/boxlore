@@ -10,18 +10,13 @@ object HomePinnedShows {
         AtCapacity,
     }
 
-    fun sanitize(ids: List<String>): List<String> {
-        return ids
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .take(MAX)
-    }
+    fun sanitize(ids: List<String>): List<String> = ids
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+        .take(MAX)
 
-    fun toggle(
-        current: List<String>,
-        podcastId: String,
-    ): Pair<List<String>, ToggleResult> {
+    fun toggle(current: List<String>, podcastId: String,): Pair<List<String>, ToggleResult> {
         val id = podcastId.trim()
         if (id.isEmpty()) return sanitize(current) to ToggleResult.Unpinned
         val sanitized = sanitize(current)

@@ -17,6 +17,8 @@ import cx.aswin.boxlore.feature.widgets.WidgetEpisodeRow
 import cx.aswin.boxlore.feature.widgets.WidgetLibrarySource
 import cx.aswin.boxlore.feature.widgets.WidgetShowRow
 import cx.aswin.boxlore.feature.widgets.logic.LibraryWidgetLogic
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,8 +28,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 /**
  * Projects Library → Subscriptions (Shows + Latest) into widget rows.
@@ -41,10 +41,7 @@ class WidgetLibrarySourceAdapter(
     private val adaptiveScorer: AdaptiveCandidateScorer,
     scope: CoroutineScope,
 ) : WidgetLibrarySource {
-    private data class Projection(
-        val subscriptions: List<WidgetShowRow>,
-        val newEpisodes: List<WidgetEpisodeRow>,
-    )
+    private data class Projection(val subscriptions: List<WidgetShowRow>, val newEpisodes: List<WidgetEpisodeRow>,)
 
     private val projection: Flow<Projection> =
         combine(
@@ -126,50 +123,41 @@ class WidgetLibrarySourceAdapter(
         val lastSeen: Map<String, String>,
     )
 
-    private suspend fun sortShows(
-        podcasts: List<Podcast>,
-        history: List<ListeningHistoryEntity>,
-        sort: ShowSort,
-    ): List<Podcast> =
-        when (sort) {
-            ShowSort.SmartRank -> {
-                val scores =
-                    try {
-                        adaptiveScorer.scorePodcasts(
-                            podcasts = podcasts.map { it.toScorable() },
-                            history = history,
-                            objective = RankingObjective.YOUR_SHOWS,
-                            surface = RankingSurface.LIBRARY,
-                        )
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (_: Exception) {
-                        emptyMap()
-                    }
-                podcasts
-                    .map { pod ->
-                        val fallback = pod.latestEpisode?.publishedDate?.toDouble() ?: 0.0
-                        pod to (scores[pod.id] ?: fallback)
-                    }.sortedWith(
-                        compareByDescending<Pair<Podcast, Double>> { it.second }
-                            .thenBy { it.first.title },
-                    ).map { it.first }
-            }
-            ShowSort.RecentlyUpdated ->
-                podcasts.sortedByDescending { it.latestEpisode?.publishedDate ?: 0L }
-            ShowSort.Alphabetical ->
-                podcasts.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-            ShowSort.MostListened -> {
-                val counts = history.groupBy { it.podcastId }.mapValues { it.value.size }
-                podcasts.sortedByDescending { counts[it.id] ?: 0 }
-            }
+    private suspend fun sortShows(podcasts: List<Podcast>, history: List<ListeningHistoryEntity>, sort: ShowSort,): List<Podcast> = when (sort) {
+        ShowSort.SmartRank -> {
+            val scores =
+                try {
+                    adaptiveScorer.scorePodcasts(
+                        podcasts = podcasts.map { it.toScorable() },
+                        history = history,
+                        objective = RankingObjective.YOUR_SHOWS,
+                        surface = RankingSurface.LIBRARY,
+                    )
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    emptyMap()
+                }
+            podcasts
+                .map { pod ->
+                    val fallback = pod.latestEpisode?.publishedDate?.toDouble() ?: 0.0
+                    pod to (scores[pod.id] ?: fallback)
+                }.sortedWith(
+                    compareByDescending<Pair<Podcast, Double>> { it.second }
+                        .thenBy { it.first.title },
+                ).map { it.first }
         }
+        ShowSort.RecentlyUpdated ->
+            podcasts.sortedByDescending { it.latestEpisode?.publishedDate ?: 0L }
+        ShowSort.Alphabetical ->
+            podcasts.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+        ShowSort.MostListened -> {
+            val counts = history.groupBy { it.podcastId }.mapValues { it.value.size }
+            podcasts.sortedByDescending { counts[it.id] ?: 0 }
+        }
+    }
 
-    private suspend fun sortLatest(
-        podcasts: List<Podcast>,
-        history: List<ListeningHistoryEntity>,
-        useSmart: Boolean,
-    ): List<Podcast> {
+    private suspend fun sortLatest(podcasts: List<Podcast>, history: List<ListeningHistoryEntity>, useSmart: Boolean,): List<Podcast> {
         if (!useSmart) {
             return podcasts.sortedByDescending { it.latestEpisode!!.publishedDate }
         }
@@ -207,71 +195,53 @@ class WidgetLibrarySourceAdapter(
         MostListened,
     }
 
-    private fun parseSort(name: String): ShowSort =
-        runCatching { ShowSort.valueOf(name) }.getOrDefault(ShowSort.SmartRank)
+    private fun parseSort(name: String): ShowSort = runCatching { ShowSort.valueOf(name) }.getOrDefault(ShowSort.SmartRank)
 
     companion object {
-        fun enrichWithHistory(
-            podcasts: List<Podcast>,
-            allHistory: List<ListeningHistoryEntity>,
-        ): List<Podcast> =
-            podcasts.map { podcast ->
-                val episode = podcast.latestEpisode ?: return@map podcast
-                val history = allHistory.find { it.episodeId == episode.id }
-                when {
-                    history == null || (history.progressMs == 0L && !history.isCompleted) ->
-                        podcast.copy(episodeStatus = EpisodeStatus.UNPLAYED)
-                    !history.isCompleted && history.progressMs > 0L -> {
-                        val progress =
-                            if (history.durationMs > 0) {
-                                (history.progressMs.toFloat() / history.durationMs).coerceIn(0f, 1f)
-                            } else {
-                                0f
-                            }
-                        podcast.copy(
-                            resumeProgress = progress,
-                            episodeStatus = EpisodeStatus.IN_PROGRESS,
-                        )
-                    }
-                    history.isCompleted ->
-                        podcast.copy(
-                            resumeProgress = 1f,
-                            episodeStatus = EpisodeStatus.COMPLETED,
-                        )
-                    else -> podcast
+        fun enrichWithHistory(podcasts: List<Podcast>, allHistory: List<ListeningHistoryEntity>,): List<Podcast> = podcasts.map { podcast ->
+            val episode = podcast.latestEpisode ?: return@map podcast
+            val history = allHistory.find { it.episodeId == episode.id }
+            when {
+                history == null || (history.progressMs == 0L && !history.isCompleted) ->
+                    podcast.copy(episodeStatus = EpisodeStatus.UNPLAYED)
+                !history.isCompleted && history.progressMs > 0L -> {
+                    val progress =
+                        if (history.durationMs > 0) {
+                            (history.progressMs.toFloat() / history.durationMs).coerceIn(0f, 1f)
+                        } else {
+                            0f
+                        }
+                    podcast.copy(
+                        resumeProgress = progress,
+                        episodeStatus = EpisodeStatus.IN_PROGRESS,
+                    )
                 }
+                history.isCompleted ->
+                    podcast.copy(
+                        resumeProgress = 1f,
+                        episodeStatus = EpisodeStatus.COMPLETED,
+                    )
+                else -> podcast
             }
+        }
 
-        fun podcastDeepLink(podcastId: String): String =
-            "boxlore://podcast/${encode(podcastId)}"
+        fun podcastDeepLink(podcastId: String): String = "boxlore://podcast/${encode(podcastId)}"
 
-        fun episodeDeepLink(
-            episodeId: String,
-            podcastId: String,
-            podcastTitle: String,
-        ): String =
-            "boxlore://episode/${encode(episodeId)}" +
-                "?autoplay=false" +
-                "&podcastId=${encode(podcastId)}" +
-                "&podcastTitle=${encode(podcastTitle)}"
+        fun episodeDeepLink(episodeId: String, podcastId: String, podcastTitle: String,): String = "boxlore://episode/${encode(episodeId)}" +
+            "?autoplay=false" +
+            "&podcastId=${encode(podcastId)}" +
+            "&podcastTitle=${encode(podcastTitle)}"
 
         /** JVM-safe path segment encoding (spaces as %20). */
-        private fun encode(value: String): String =
-            URLEncoder.encode(value, StandardCharsets.UTF_8.name()).replace("+", "%20")
+        private fun encode(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8.name()).replace("+", "%20")
 
-        fun subscriptionsDeepLink(tab: Int): String =
-            "boxlore://library/subscriptions?tab=$tab"
+        fun subscriptionsDeepLink(tab: Int): String = "boxlore://library/subscriptions?tab=$tab"
 
-        fun artworkUrlFor(podcast: Podcast): String? =
-            podcast.imageUrl
-                .takeIf { it.isNotBlank() }
-                ?: podcast.fallbackImageUrl?.takeIf { it.isNotBlank() }
+        fun artworkUrlFor(podcast: Podcast): String? = podcast.imageUrl
+            .takeIf { it.isNotBlank() }
+            ?: podcast.fallbackImageUrl?.takeIf { it.isNotBlank() }
 
-        fun episodeArtUrl(
-            episodeImageUrl: String?,
-            podcast: Podcast,
-        ): String? =
-            episodeImageUrl?.takeIf { it.isNotBlank() }
-                ?: artworkUrlFor(podcast)
+        fun episodeArtUrl(episodeImageUrl: String?, podcast: Podcast,): String? = episodeImageUrl?.takeIf { it.isNotBlank() }
+            ?: artworkUrlFor(podcast)
     }
 }

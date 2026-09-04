@@ -7,24 +7,14 @@ package cx.aswin.boxlore.core.playback
 object HistoryRecommendationLogic {
     const val MIN_PROGRESS_MS = 60_000L
 
-    fun isEligible(
-        isManualCompletion: Boolean,
-        isBulkCompletion: Boolean,
-        progressMs: Long,
-        isCompleted: Boolean,
-    ): Boolean {
+    fun isEligible(isManualCompletion: Boolean, isBulkCompletion: Boolean, progressMs: Long, isCompleted: Boolean,): Boolean {
         if (isManualCompletion || isBulkCompletion) return false
         return progressMs >= MIN_PROGRESS_MS || isCompleted
     }
 
-    fun <T> selectEligible(
-        raw: List<T>,
-        limit: Int,
-        isEligible: (T) -> Boolean,
-    ): List<T> =
-        raw
-            .asSequence()
-            .filter(isEligible)
-            .take(limit)
-            .toList()
+    fun <T> selectEligible(raw: List<T>, limit: Int, isEligible: (T) -> Boolean,): List<T> = raw
+        .asSequence()
+        .filter(isEligible)
+        .take(limit)
+        .toList()
 }

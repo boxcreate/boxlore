@@ -31,8 +31,7 @@ class EngagementPromptCoordinator(
         private set
 
     /** Returns true when playback is idle and no proactive prompt has shown this session. */
-    fun canShowProactivePrompt(isPlaying: Boolean): Boolean =
-        !isPlaying && !sessionProactivePromptShown
+    fun canShowProactivePrompt(isPlaying: Boolean): Boolean = !isPlaying && !sessionProactivePromptShown
 
     /** Marks the current session as having shown a proactive prompt and persists cooldown. */
     fun recordProactivePromptShown() {

@@ -34,43 +34,38 @@ class ConsentManagerTest {
     }
 
     @Test
-    fun defaultsOptInForBothConsentFlags() =
-        runTest {
-            assertTrue(manager.isCrashReportingConsented.first())
-            assertTrue(manager.isUsageAnalyticsConsented.first())
-        }
+    fun defaultsOptInForBothConsentFlags() = runTest {
+        assertTrue(manager.isCrashReportingConsented.first())
+        assertTrue(manager.isUsageAnalyticsConsented.first())
+    }
 
     @Test
-    fun hasUserSetConsentAlwaysTrue() =
-        runTest {
-            assertTrue(manager.hasUserSetConsent.first())
-        }
+    fun hasUserSetConsentAlwaysTrue() = runTest {
+        assertTrue(manager.hasUserSetConsent.first())
+    }
 
     @Test
-    fun setConsentPersistsBothFlags() =
-        runTest {
-            manager.setConsent(crashReporting = false, usageAnalytics = true)
+    fun setConsentPersistsBothFlags() = runTest {
+        manager.setConsent(crashReporting = false, usageAnalytics = true)
 
-            assertFalse(manager.isCrashReportingConsented.first())
-            assertTrue(manager.isUsageAnalyticsConsented.first())
-        }
-
-    @Test
-    fun setConsentAllOffPersists() =
-        runTest {
-            manager.setConsent(crashReporting = false, usageAnalytics = false)
-
-            assertFalse(manager.isCrashReportingConsented.first())
-            assertFalse(manager.isUsageAnalyticsConsented.first())
-        }
+        assertFalse(manager.isCrashReportingConsented.first())
+        assertTrue(manager.isUsageAnalyticsConsented.first())
+    }
 
     @Test
-    fun clearConsentRestoresOptOutDefaults() =
-        runTest {
-            manager.setConsent(crashReporting = false, usageAnalytics = false)
-            manager.clearConsent()
+    fun setConsentAllOffPersists() = runTest {
+        manager.setConsent(crashReporting = false, usageAnalytics = false)
 
-            assertTrue(manager.isCrashReportingConsented.first())
-            assertTrue(manager.isUsageAnalyticsConsented.first())
-        }
+        assertFalse(manager.isCrashReportingConsented.first())
+        assertFalse(manager.isUsageAnalyticsConsented.first())
+    }
+
+    @Test
+    fun clearConsentRestoresOptOutDefaults() = runTest {
+        manager.setConsent(crashReporting = false, usageAnalytics = false)
+        manager.clearConsent()
+
+        assertTrue(manager.isCrashReportingConsented.first())
+        assertTrue(manager.isUsageAnalyticsConsented.first())
+    }
 }

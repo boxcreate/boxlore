@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -50,10 +48,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.player.formatTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -274,10 +272,10 @@ internal fun VideoTransportControls(
             seconds = seekBackwardSeconds,
             forward = false,
             contentDescription =
-                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                    seekBackwardSeconds,
-                    forward = false,
-                ),
+            cx.aswin.boxlore.feature.player.seekDurationContentDescription(
+                seekBackwardSeconds,
+                forward = false,
+            ),
             onClick = actions.onReplay,
         )
         Box(
@@ -299,10 +297,10 @@ internal fun VideoTransportControls(
             seconds = seekForwardSeconds,
             forward = true,
             contentDescription =
-                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                    seekForwardSeconds,
-                    forward = true,
-                ),
+            cx.aswin.boxlore.feature.player.seekDurationContentDescription(
+                seekForwardSeconds,
+                forward = true,
+            ),
             onClick = actions.onForward,
         )
     }

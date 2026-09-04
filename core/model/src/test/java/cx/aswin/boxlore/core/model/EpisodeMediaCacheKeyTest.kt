@@ -23,7 +23,7 @@ class EpisodeMediaCacheKeyTest {
             EpisodeMediaCacheKey.of(
                 episodeId = "briefing_in_2026-07-28",
                 audioUrl =
-                    "https://api.aswin.cx/briefings/audio/in?d=2026-07-28&v=602f1072&exp=1&sig=x",
+                "https://api.aswin.cx/briefings/audio/in?d=2026-07-28&v=602f1072&exp=1&sig=x",
             ),
         )
     }

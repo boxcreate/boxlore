@@ -252,9 +252,9 @@ internal fun ExploreIconTitleHeader(
 ) {
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp, bottom = 8.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
@@ -279,10 +279,10 @@ internal fun ExploreIconTitleHeader(
             Text(
                 text = title,
                 style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = rememberSectionHeaderFontFamily(),
-                        fontWeight = GoogleSansWeight.semiBold,
-                    ),
+                MaterialTheme.typography.titleLarge.copy(
+                    fontFamily = rememberSectionHeaderFontFamily(),
+                    fontWeight = GoogleSansWeight.semiBold,
+                ),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -345,4 +345,3 @@ internal fun ExploreSearchHeader() {
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     )
 }
-

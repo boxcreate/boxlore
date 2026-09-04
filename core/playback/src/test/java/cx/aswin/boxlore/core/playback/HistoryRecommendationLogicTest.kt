@@ -56,10 +56,7 @@ class HistoryRecommendationLogicTest {
 
     @Test
     fun `selectEligible preserves order and respects limit`() {
-        data class Row(
-            val id: String,
-            val ok: Boolean,
-        )
+        data class Row(val id: String, val ok: Boolean,)
         val raw =
             listOf(
                 Row("a", true),

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -21,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.delay
 
 sealed class ChatMessage {
@@ -149,49 +147,49 @@ internal fun AiChatOnboardingScreen(
 
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
     ) {
         // Gradient backgrounds for visual depth
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .background(
-                        androidx.compose.ui.graphics.Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    primaryColor.copy(alpha = 0.08f),
-                                    secondaryColor.copy(alpha = 0.03f),
-                                    Color.Transparent,
-                                ),
-                            center =
-                                androidx.compose.ui.geometry
-                                    .Offset(x = 1000f, y = -100f),
-                            radius = 1000f,
+            Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        colors =
+                        listOf(
+                            primaryColor.copy(alpha = 0.08f),
+                            secondaryColor.copy(alpha = 0.03f),
+                            Color.Transparent,
                         ),
+                        center =
+                        androidx.compose.ui.geometry
+                            .Offset(x = 1000f, y = -100f),
+                        radius = 1000f,
                     ),
+                ),
         )
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        androidx.compose.ui.graphics.Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    tertiaryColor.copy(alpha = 0.06f),
-                                    primaryColor.copy(alpha = 0.02f),
-                                    Color.Transparent,
-                                ),
-                            center =
-                                androidx.compose.ui.geometry
-                                    .Offset(x = -200f, y = 1600f),
-                            radius = 1200f,
+            Modifier
+                .fillMaxSize()
+                .background(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        colors =
+                        listOf(
+                            tertiaryColor.copy(alpha = 0.06f),
+                            primaryColor.copy(alpha = 0.02f),
+                            Color.Transparent,
                         ),
+                        center =
+                        androidx.compose.ui.geometry
+                            .Offset(x = -200f, y = 1600f),
+                        radius = 1200f,
                     ),
+                ),
         )
 
         Scaffold(
@@ -235,28 +233,28 @@ internal fun AiChatOnboardingScreen(
                         }
                     },
                     colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                        ),
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                    ),
                 )
             },
         ) { innerPadding ->
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .imePadding(),
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .imePadding(),
             ) {
                 LazyColumn(
                     state = listState,
                     modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .pointerInput(Unit) {
-                                detectTapGestures(onTap = { focusManager.clearFocus() })
-                            },
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = { focusManager.clearFocus() })
+                        },
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
@@ -333,9 +331,9 @@ internal fun AiChatOnboardingScreen(
                     item(key = "bottom_spacer") {
                         Spacer(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(if (suggestionsVisible && !isKeyboardVisible) 140.dp else 16.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .height(if (suggestionsVisible && !isKeyboardVisible) 140.dp else 16.dp),
                         )
                     }
                 }

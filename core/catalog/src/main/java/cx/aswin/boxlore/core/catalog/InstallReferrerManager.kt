@@ -24,9 +24,7 @@ data class ReferralIntent(
     val end: Long? = null,
 )
 
-class InstallReferrerManager(
-    private val context: Context,
-) {
+class InstallReferrerManager(private val context: Context,) {
     private val _referralFlow = MutableSharedFlow<ReferralIntent>(replay = 1)
     val referralFlow: SharedFlow<ReferralIntent> = _referralFlow.asSharedFlow()
 

@@ -80,25 +80,23 @@ object PodcastScoring {
                     subRecencyScore +
                     notificationsBoost +
                     autoDownloadBoost
-            )
+                )
         }
     }
 }
 
-fun Podcast.toScorable() =
-    ScorablePodcast(
-        id = id,
-        subscribedAt = subscribedAt,
-        latestEpisode = latestEpisode,
-        notificationsEnabled = notificationsEnabled,
-        autoDownloadEnabled = autoDownloadEnabled,
-    )
+fun Podcast.toScorable() = ScorablePodcast(
+    id = id,
+    subscribedAt = subscribedAt,
+    latestEpisode = latestEpisode,
+    notificationsEnabled = notificationsEnabled,
+    autoDownloadEnabled = autoDownloadEnabled,
+)
 
-fun PodcastEntity.toScorable() =
-    ScorablePodcast(
-        id = podcastId,
-        subscribedAt = subscribedAt,
-        latestEpisode = latestEpisode,
-        notificationsEnabled = notificationsEnabled,
-        autoDownloadEnabled = autoDownloadEnabled,
-    )
+fun PodcastEntity.toScorable() = ScorablePodcast(
+    id = podcastId,
+    subscribedAt = subscribedAt,
+    latestEpisode = latestEpisode,
+    notificationsEnabled = notificationsEnabled,
+    autoDownloadEnabled = autoDownloadEnabled,
+)

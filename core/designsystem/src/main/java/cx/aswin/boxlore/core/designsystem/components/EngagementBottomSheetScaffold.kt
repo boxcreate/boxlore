@@ -62,23 +62,23 @@ fun EngagementBottomSheetScaffold(
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            start = 24.dp,
-                            end = 24.dp,
-                            top = if (showCloseButton) 48.dp else 24.dp,
-                            bottom = 36.dp,
-                        ),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = if (showCloseButton) 48.dp else 24.dp,
+                        bottom = 36.dp,
+                    ),
                 content = content,
             )
             if (showCloseButton) {
                 IconButton(
                     onClick = onCloseClick,
                     modifier =
-                        Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 4.dp, end = 4.dp),
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 4.dp, end = 4.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,

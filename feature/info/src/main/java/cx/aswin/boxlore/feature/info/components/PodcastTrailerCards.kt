@@ -102,25 +102,25 @@ private fun SingleTrailerContent(
     val isSelected = episode.id in selection.selectedEpisodeIds
     OutlinedCard(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .expressiveClickable(
-                    onLongClickLabel = "Select episode",
-                    onLongClick = { selection.onLongPress(episode) },
-                    onClick = {
-                        if (selection.isActive) selection.onToggle(episode) else onEpisodeClick(episode, globalIndex)
-                    },
-                ),
+        modifier
+            .fillMaxWidth()
+            .expressiveClickable(
+                onLongClickLabel = "Select episode",
+                onLongClick = { selection.onLongPress(episode) },
+                onClick = {
+                    if (selection.isActive) selection.onToggle(episode) else onEpisodeClick(episode, globalIndex)
+                },
+            ),
         shape = MaterialTheme.shapes.large,
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor =
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerLow
-                    },
-            ),
+        CardDefaults.outlinedCardColors(
+            containerColor =
+            if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            },
+        ),
         border = trailerBorder(isSelected),
         elevation = CardDefaults.outlinedCardElevation(defaultElevation = 1.dp),
     ) {
@@ -159,19 +159,19 @@ internal fun TrailerStackCard(
     val selectedCount = group.trailers.count { (episode, _) -> episode.id in selection.selectedEpisodeIds }
     OutlinedCard(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
+        modifier
+            .fillMaxWidth()
+            .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
         shape = MaterialTheme.shapes.large,
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor =
-                    if (selectedCount > 0) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerLow
-                    },
-            ),
+        CardDefaults.outlinedCardColors(
+            containerColor =
+            if (selectedCount > 0) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            },
+        ),
         border = trailerBorder(selectedCount > 0),
         elevation = CardDefaults.outlinedCardElevation(defaultElevation = 1.dp),
     ) {
@@ -231,11 +231,11 @@ private fun TrailerStackHeader(
                 )
                 Text(
                     text =
-                        if (selectedCount > 0) {
-                            "$selectedCount of $trailerCount selected"
-                        } else {
-                            "$trailerCount trailers"
-                        },
+                    if (selectedCount > 0) {
+                        "$selectedCount of $trailerCount selected"
+                    } else {
+                        "$trailerCount trailers"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -259,9 +259,9 @@ private fun TrailerStackContent(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         group.trailers.forEachIndexed { index, (episode, globalIndex) ->
             TrailerStackRow(
@@ -295,16 +295,16 @@ private fun TrailerStackRow(
         val isSelected = episode.id in selection.selectedEpisodeIds
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                    .expressiveClickable(
-                        onLongClickLabel = "Select episode",
-                        onLongClick = { selection.onLongPress(episode) },
-                        onClick = {
-                            if (selection.isActive) selection.onToggle(episode) else onEpisodeClick(episode, globalIndex)
-                        },
-                    ).padding(horizontal = 16.dp, vertical = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                .expressiveClickable(
+                    onLongClickLabel = "Select episode",
+                    onLongClick = { selection.onLongPress(episode) },
+                    onClick = {
+                        if (selection.isActive) selection.onToggle(episode) else onEpisodeClick(episode, globalIndex)
+                    },
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TrailerLeadButton(
@@ -345,15 +345,15 @@ private fun TrailerLeadButton(
         shape = CircleShape,
         color = visuals.containerColor,
         modifier =
-            Modifier
-                .size(size)
-                .then(
-                    if (selection.isActive) {
-                        Modifier
-                    } else {
-                        Modifier.expressiveClickable(isolate = true) { onPlayClick(episode) }
-                    },
-                ),
+        Modifier
+            .size(size)
+            .then(
+                if (selection.isActive) {
+                    Modifier
+                } else {
+                    Modifier.expressiveClickable(isolate = true) { onPlayClick(episode) }
+                },
+            ),
     ) {
         visuals.icon?.let { icon ->
             Icon(
@@ -371,44 +371,43 @@ private fun trailerLeadVisuals(
     isSelected: Boolean,
     selectionActive: Boolean,
     playback: TrailerPlaybackUi,
-): TrailerLeadVisuals =
-    when {
-        isSelected ->
-            TrailerLeadVisuals(
-                containerColor = MaterialTheme.colorScheme.primary,
-                icon = Icons.Rounded.Check,
-                contentDescription = "Selected",
-                iconTint = MaterialTheme.colorScheme.onPrimary,
-            )
-        selectionActive ->
-            TrailerLeadVisuals(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                icon = null,
-                contentDescription = null,
-                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        playback.isPlaying ->
-            TrailerLeadVisuals(
-                containerColor = MaterialTheme.colorScheme.primary,
-                icon = Icons.Rounded.Pause,
-                contentDescription = "Pause",
-                iconTint = MaterialTheme.colorScheme.onPrimary,
-            )
-        playback.isResume ->
-            TrailerLeadVisuals(
-                containerColor = MaterialTheme.colorScheme.primary,
-                icon = Icons.Rounded.PlayArrow,
-                contentDescription = "Play",
-                iconTint = MaterialTheme.colorScheme.onPrimary,
-            )
-        else ->
-            TrailerLeadVisuals(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                icon = Icons.Rounded.PlayArrow,
-                contentDescription = "Play",
-                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-    }
+): TrailerLeadVisuals = when {
+    isSelected ->
+        TrailerLeadVisuals(
+            containerColor = MaterialTheme.colorScheme.primary,
+            icon = Icons.Rounded.Check,
+            contentDescription = "Selected",
+            iconTint = MaterialTheme.colorScheme.onPrimary,
+        )
+    selectionActive ->
+        TrailerLeadVisuals(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            icon = null,
+            contentDescription = null,
+            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    playback.isPlaying ->
+        TrailerLeadVisuals(
+            containerColor = MaterialTheme.colorScheme.primary,
+            icon = Icons.Rounded.Pause,
+            contentDescription = "Pause",
+            iconTint = MaterialTheme.colorScheme.onPrimary,
+        )
+    playback.isResume ->
+        TrailerLeadVisuals(
+            containerColor = MaterialTheme.colorScheme.primary,
+            icon = Icons.Rounded.PlayArrow,
+            contentDescription = "Play",
+            iconTint = MaterialTheme.colorScheme.onPrimary,
+        )
+    else ->
+        TrailerLeadVisuals(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            icon = Icons.Rounded.PlayArrow,
+            contentDescription = "Play",
+            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+}
 
 @Composable
 private fun TrailerSummary(
@@ -453,11 +452,10 @@ private fun TrailerSummary(
 }
 
 @Composable
-private fun trailerBorder(isSelected: Boolean): BorderStroke =
-    BorderStroke(
-        width = if (isSelected) 2.dp else 0.5.dp,
-        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-    )
+private fun trailerBorder(isSelected: Boolean): BorderStroke = BorderStroke(
+    width = if (isSelected) 2.dp else 0.5.dp,
+    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+)
 
 private fun trailerDurationText(episode: Episode): String {
     if (episode.duration <= 0) return "Trailer"

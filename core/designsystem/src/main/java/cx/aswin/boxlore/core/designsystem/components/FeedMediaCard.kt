@@ -56,9 +56,9 @@ fun FeedMediaCard(
         Column {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
             ) {
                 OptimizedImage(
                     url = imageUrl,
@@ -66,9 +66,9 @@ fun FeedMediaCard(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier =
-                        Modifier
-                            .matchParentSize()
-                            .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
+                    Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
                 )
 
                 if (imageChrome != null) {
@@ -80,13 +80,13 @@ fun FeedMediaCard(
                 // Equal-height posters: reserve [lines] title lines; vertically center shorter titles.
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(
-                                FeedPosterSpacing.textFootHeight(lines) +
-                                    FeedPosterSpacing.CardTextPadding * 2,
-                            )
-                            .padding(FeedPosterSpacing.CardTextPadding),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            FeedPosterSpacing.textFootHeight(lines) +
+                                FeedPosterSpacing.CardTextPadding * 2,
+                        )
+                        .padding(FeedPosterSpacing.CardTextPadding),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Text(
@@ -99,9 +99,9 @@ fun FeedMediaCard(
             } else {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(FeedPosterSpacing.CardTextPadding),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(FeedPosterSpacing.CardTextPadding),
                 ) {
                     Text(
                         text = title,

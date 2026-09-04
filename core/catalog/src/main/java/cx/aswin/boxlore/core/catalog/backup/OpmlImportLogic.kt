@@ -5,9 +5,7 @@ import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
 import cx.aswin.boxlore.core.model.Podcast
 
 internal sealed interface OpmlCatalogDecision {
-    data class Found(
-        val podcast: Podcast,
-    ) : OpmlCatalogDecision
+    data class Found(val podcast: Podcast,) : OpmlCatalogDecision
 
     data object ConfirmedAbsent : OpmlCatalogDecision
 
@@ -56,18 +54,14 @@ internal object OpmlImportLogic {
         return match?.let { OpmlCatalogDecision.Found(it) } ?: OpmlCatalogDecision.ConfirmedAbsent
     }
 
-    fun preferLookup(
-        initial: ExactPodcastLookupResult,
-        redirected: ExactPodcastLookupResult,
-    ): ExactPodcastLookupResult =
-        when {
-            redirected is ExactPodcastLookupResult.Found -> redirected
-            initial is ExactPodcastLookupResult.Found -> initial
-            initial is ExactPodcastLookupResult.Failed ||
-                redirected is ExactPodcastLookupResult.Failed ->
-                ExactPodcastLookupResult.Failed
-            else -> ExactPodcastLookupResult.NotFound
-        }
+    fun preferLookup(initial: ExactPodcastLookupResult, redirected: ExactPodcastLookupResult,): ExactPodcastLookupResult = when {
+        redirected is ExactPodcastLookupResult.Found -> redirected
+        initial is ExactPodcastLookupResult.Found -> initial
+        initial is ExactPodcastLookupResult.Failed ||
+            redirected is ExactPodcastLookupResult.Failed ->
+            ExactPodcastLookupResult.Failed
+        else -> ExactPodcastLookupResult.NotFound
+    }
 
     fun collapseCandidateLookups(results: List<ExactPodcastLookupResult>): ExactPodcastLookupResult {
         results.filterIsInstance<ExactPodcastLookupResult.Found>().firstOrNull()?.let { return it }
@@ -91,12 +85,7 @@ internal object OpmlImportLogic {
         return collapseCandidateLookups(seen)
     }
 
-    fun catalogMatch(
-        opmlTitle: String,
-        opmlXmlUrl: String,
-        urlLookup: Podcast?,
-        titleSearch: List<Podcast>,
-    ): Podcast? {
+    fun catalogMatch(opmlTitle: String, opmlXmlUrl: String, urlLookup: Podcast?, titleSearch: List<Podcast>,): Podcast? {
         urlLookup?.takeUnless { it.isRss }?.let { return it }
         val titleKey = normalizeTitle(opmlTitle)
         val feedKey = canonicalFeedUrl(opmlXmlUrl)
@@ -141,24 +130,20 @@ internal object OpmlImportLogic {
         return value.trimEnd('/').lowercase()
     }
 
-    private fun addSlashVariants(
-        out: MutableSet<String>,
-        url: String,
-    ) {
+    private fun addSlashVariants(out: MutableSet<String>, url: String,) {
         out += url
         val noSlash = url.trimEnd('/')
         out += noSlash
         if (noSlash == url) out += "$url/"
     }
 
-    private fun schemeSwap(url: String): String? =
-        when {
-            url.startsWith("http://", ignoreCase = true) ->
-                "https://" + url.substring("http://".length)
-            url.startsWith("https://", ignoreCase = true) ->
-                "http://" + url.substring("https://".length)
-            else -> null
-        }
+    private fun schemeSwap(url: String): String? = when {
+        url.startsWith("http://", ignoreCase = true) ->
+            "https://" + url.substring("http://".length)
+        url.startsWith("https://", ignoreCase = true) ->
+            "http://" + url.substring("https://".length)
+        else -> null
+    }
 
     private fun wwwToggle(url: String): String? {
         val schemeEnd = url.indexOf("://").takeIf { it >= 0 } ?: return null

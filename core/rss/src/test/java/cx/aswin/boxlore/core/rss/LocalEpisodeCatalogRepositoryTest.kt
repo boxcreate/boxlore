@@ -107,181 +107,173 @@ class LocalEpisodeCatalogRepositoryTest {
     }
 
     @Test
-    fun refreshFailsForBlankOrRssPodcastId() =
-        runTest {
-            val repo = catalogRepo()
-            val blank =
-                repo.refresh(
-                    LocalEpisodeCatalogPort.RefreshRequest(
-                        podcastIndexId = "",
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
-                )
-            val rss =
-                repo.refresh(
-                    LocalEpisodeCatalogPort.RefreshRequest(
-                        podcastIndexId = "rss:show",
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
-                )
-            assertTrue(blank is RefreshOutcome.Failure)
-            assertTrue(rss is RefreshOutcome.Failure)
-        }
-
-    @Test
-    fun refreshReturnsUnchangedWhenValidatorsMatch() =
-        runTest {
-            val dao = FakeCatalogDao()
-            dao.feeds["100"] =
-                LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml").copy(
-                    feedEtag = "etag-1",
-                    feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
-                    needsFullBackfill = false,
-                    ready = true,
-                    fetchedAt = 1L,
-                )
-            val repo = catalogRepo(dao = dao, isFeedUnchanged = { _, _, _ -> true })
-            val outcome =
-                repo.refresh(
-                    LocalEpisodeCatalogPort.RefreshRequest(
-                        podcastIndexId = "100",
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
-                )
-            assertTrue(outcome is RefreshOutcome.Unchanged)
-        }
-
-    @Test
-    fun refreshFailsWhenParsedFeedHasNoEpisodes() =
-        runTest {
-            val repo = catalogRepo(feedClient = EmptyFeedClient())
-            val outcome =
-                repo.refresh(
-                    LocalEpisodeCatalogPort.RefreshRequest(
-                        podcastIndexId = "100",
-                        feedUrl = "https://feeds.example/show.xml",
-                    ),
-                )
-            assertTrue(outcome is RefreshOutcome.Failure)
-        }
-
-    @Test
-    fun isPublisherFeedUnchangedIsFalseWhenFeedUrlChanges() =
-        runTest {
-            val dao = FakeCatalogDao()
-            dao.feeds["100"] =
-                LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/old.xml").copy(
-                    feedEtag = "etag-1",
-                    feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
-                )
-            var headCalls = 0
-            val repo =
-                catalogRepo(
-                    dao = dao,
-                    isFeedUnchanged = { _, _, _ ->
-                        headCalls++
-                        true
-                    },
-                )
-            assertFalse(
-                repo.isPublisherFeedUnchanged("100", "https://feeds.example/new.xml"),
+    fun refreshFailsForBlankOrRssPodcastId() = runTest {
+        val repo = catalogRepo()
+        val blank =
+            repo.refresh(
+                LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = "",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
             )
-            assertEquals(0, headCalls)
-        }
-
-    @Test
-    fun isPublisherFeedUnchangedIsFalseWhileCatalogNeedsRepair() =
-        runTest {
-            val dao = FakeCatalogDao()
-            dao.feeds["100"] =
-                LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml").copy(
-                    feedEtag = "etag-1",
-                    feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
-                    needsFullBackfill = false,
-                    itemCount = 100,
-                    ready = false,
-                )
-            var headCalls = 0
-            val repo =
-                catalogRepo(
-                    dao = dao,
-                    isFeedUnchanged = { _, _, _ ->
-                        headCalls++
-                        true
-                    },
-                )
-
-            assertFalse(
-                repo.isPublisherFeedUnchanged("100", "https://feeds.example/show.xml"),
+        val rss =
+            repo.refresh(
+                LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = "rss:show",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
             )
-            assertEquals(0, headCalls)
-        }
+        assertTrue(blank is RefreshOutcome.Failure)
+        assertTrue(rss is RefreshOutcome.Failure)
+    }
 
     @Test
-    fun getWindowNeverExceedsBound() =
-        runTest {
-            val dao = FakeCatalogDao()
-            dao.episodes +=
-                (1..12).map { index ->
-                    localEpisode(episodeId = "-$index", publishedDate = index.toLong())
-                }
-            val repo = catalogRepo(dao = dao)
-            val window =
-                repo.getWindow(
-                    podcastId = "100",
-                    sort = "newest",
-                    bound = 5,
-                    aroundEpisodeId = null,
-                )
-            assertEquals(5, window.size)
-        }
+    fun refreshReturnsUnchangedWhenValidatorsMatch() = runTest {
+        val dao = FakeCatalogDao()
+        dao.feeds["100"] =
+            LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml").copy(
+                feedEtag = "etag-1",
+                feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
+                needsFullBackfill = false,
+                ready = true,
+                fetchedAt = 1L,
+            )
+        val repo = catalogRepo(dao = dao, isFeedUnchanged = { _, _, _ -> true })
+        val outcome =
+            repo.refresh(
+                LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = "100",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+        assertTrue(outcome is RefreshOutcome.Unchanged)
+    }
 
     @Test
-    fun sweepExpiredSkipsCatalogWhenTtlClearedAfterScan() =
-        runTest {
-            val dao = FakeCatalogDao()
-            dao.feeds["100"] =
-                LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml").copy(
-                    ttlExpiresAt = 1L,
-                )
-            dao.episodes += localEpisode(episodeId = "-1")
-            dao.clearTtlAfterListingExpired = true
-            val repo = catalogRepo(dao = dao)
-            repo.sweepExpired(nowMillis = 10L)
-            assertEquals(1, dao.episodes.size)
-            assertTrue(dao.feeds.containsKey("100"))
-        }
+    fun refreshFailsWhenParsedFeedHasNoEpisodes() = runTest {
+        val repo = catalogRepo(feedClient = EmptyFeedClient())
+        val outcome =
+            repo.refresh(
+                LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = "100",
+                    feedUrl = "https://feeds.example/show.xml",
+                ),
+            )
+        assertTrue(outcome is RefreshOutcome.Failure)
+    }
 
     @Test
-    fun getWindowWithAroundEpisodeIdReturnsAnchorAndSubsequentEpisodes() =
-        runTest {
-            val dao = FakeCatalogDao()
-            dao.feeds["100"] = LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml")
-            dao.episodes +=
-                listOf(
-                    localEpisode(episodeId = "-1", publishedDate = 1000L),
-                    localEpisode(episodeId = "-2", publishedDate = 2000L),
-                    localEpisode(episodeId = "-3", publishedDate = 3000L),
-                    localEpisode(episodeId = "-4", publishedDate = 500L),
-                )
-            val meta =
-                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta(
-                    title = "Show",
-                    imageUrl = "https://example.com/art.jpg",
-                    genre = "News",
-                    artist = "Author",
-                )
-            val repo = catalogRepo(dao)
-            val window =
-                repo.getWindow(
-                    podcastId = "100",
-                    sort = "newest",
-                    bound = 10,
-                    aroundEpisodeId = "-1",
-                    meta = meta,
-                )
-            assertEquals(listOf("-1", "-2", "-3"), window.map { it.id })
-        }
+    fun isPublisherFeedUnchangedIsFalseWhenFeedUrlChanges() = runTest {
+        val dao = FakeCatalogDao()
+        dao.feeds["100"] =
+            LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/old.xml").copy(
+                feedEtag = "etag-1",
+                feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
+            )
+        var headCalls = 0
+        val repo =
+            catalogRepo(
+                dao = dao,
+                isFeedUnchanged = { _, _, _ ->
+                    headCalls++
+                    true
+                },
+            )
+        assertFalse(
+            repo.isPublisherFeedUnchanged("100", "https://feeds.example/new.xml"),
+        )
+        assertEquals(0, headCalls)
+    }
+
+    @Test
+    fun isPublisherFeedUnchangedIsFalseWhileCatalogNeedsRepair() = runTest {
+        val dao = FakeCatalogDao()
+        dao.feeds["100"] =
+            LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml").copy(
+                feedEtag = "etag-1",
+                feedLastModified = "Wed, 01 Jan 2020 00:00:00 GMT",
+                needsFullBackfill = false,
+                itemCount = 100,
+                ready = false,
+            )
+        var headCalls = 0
+        val repo =
+            catalogRepo(
+                dao = dao,
+                isFeedUnchanged = { _, _, _ ->
+                    headCalls++
+                    true
+                },
+            )
+
+        assertFalse(
+            repo.isPublisherFeedUnchanged("100", "https://feeds.example/show.xml"),
+        )
+        assertEquals(0, headCalls)
+    }
+
+    @Test
+    fun getWindowNeverExceedsBound() = runTest {
+        val dao = FakeCatalogDao()
+        dao.episodes +=
+            (1..12).map { index ->
+                localEpisode(episodeId = "-$index", publishedDate = index.toLong())
+            }
+        val repo = catalogRepo(dao = dao)
+        val window =
+            repo.getWindow(
+                podcastId = "100",
+                sort = "newest",
+                bound = 5,
+                aroundEpisodeId = null,
+            )
+        assertEquals(5, window.size)
+    }
+
+    @Test
+    fun sweepExpiredSkipsCatalogWhenTtlClearedAfterScan() = runTest {
+        val dao = FakeCatalogDao()
+        dao.feeds["100"] =
+            LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml").copy(
+                ttlExpiresAt = 1L,
+            )
+        dao.episodes += localEpisode(episodeId = "-1")
+        dao.clearTtlAfterListingExpired = true
+        val repo = catalogRepo(dao = dao)
+        repo.sweepExpired(nowMillis = 10L)
+        assertEquals(1, dao.episodes.size)
+        assertTrue(dao.feeds.containsKey("100"))
+    }
+
+    @Test
+    fun getWindowWithAroundEpisodeIdReturnsAnchorAndSubsequentEpisodes() = runTest {
+        val dao = FakeCatalogDao()
+        dao.feeds["100"] = LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml")
+        dao.episodes +=
+            listOf(
+                localEpisode(episodeId = "-1", publishedDate = 1000L),
+                localEpisode(episodeId = "-2", publishedDate = 2000L),
+                localEpisode(episodeId = "-3", publishedDate = 3000L),
+                localEpisode(episodeId = "-4", publishedDate = 500L),
+            )
+        val meta =
+            cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta(
+                title = "Show",
+                imageUrl = "https://example.com/art.jpg",
+                genre = "News",
+                artist = "Author",
+            )
+        val repo = catalogRepo(dao)
+        val window =
+            repo.getWindow(
+                podcastId = "100",
+                sort = "newest",
+                bound = 10,
+                aroundEpisodeId = "-1",
+                meta = meta,
+            )
+        assertEquals(listOf("-1", "-2", "-3"), window.map { it.id })
+    }
 
     private fun catalogRepo(
         dao: FakeCatalogDao = FakeCatalogDao(),
@@ -297,19 +289,14 @@ class LocalEpisodeCatalogRepositoryTest {
     )
 
     private class EmptyFeedClient : RssFeedClient() {
-        override suspend fun fetch(url: String) =
-            RssFetchResult(
-                finalUrl = url,
-                etag = null,
-                lastModified = null,
-                body = ByteArray(0),
-            )
+        override suspend fun fetch(url: String) = RssFetchResult(
+            finalUrl = url,
+            etag = null,
+            lastModified = null,
+            body = ByteArray(0),
+        )
 
-        override suspend fun parse(
-            feedUrl: String,
-            bytes: ByteArray,
-            podcastId: String,
-        ) = ParsedRssFeed(
+        override suspend fun parse(feedUrl: String, bytes: ByteArray, podcastId: String,) = ParsedRssFeed(
             title = "Empty",
             author = "",
             description = null,
@@ -340,52 +327,31 @@ class LocalEpisodeCatalogRepositoryTest {
 
         private fun findEpisode(id: String) = episodes.find { it.episodeId == id }
 
-        override suspend fun getByGuid(
-            podcastId: String,
-            guid: String,
-        ): LocalEpisodeEntity? = episodes.firstOrNull { it.podcastId == podcastId && it.guid == guid }
+        override suspend fun getByGuid(podcastId: String, guid: String,): LocalEpisodeEntity? = episodes.firstOrNull { it.podcastId == podcastId && it.guid == guid }
 
-        override suspend fun getByAudioUrl(
-            podcastId: String,
-            audioUrl: String,
-        ): LocalEpisodeEntity? = episodes.firstOrNull { it.podcastId == podcastId && it.audioUrl == audioUrl }
+        override suspend fun getByAudioUrl(podcastId: String, audioUrl: String,): LocalEpisodeEntity? = episodes.firstOrNull { it.podcastId == podcastId && it.audioUrl == audioUrl }
 
-        override suspend fun listIdentities(podcastId: String): List<LocalEpisodeIdentity> =
-            episodes.filter { it.podcastId == podcastId }.map {
-                LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl)
-            }
+        override suspend fun listIdentities(podcastId: String): List<LocalEpisodeIdentity> = episodes.filter { it.podcastId == podcastId }.map {
+            LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl)
+        }
 
-        override suspend fun getNewestPage(
-            podcastId: String,
-            limit: Int,
-            offset: Int,
-        ): List<LocalEpisodeEntity> =
-            episodes
-                .filter { it.podcastId == podcastId }
-                .sortedWith(compareByDescending<LocalEpisodeEntity> { it.publishedDate }.thenBy { it.episodeId })
-                .drop(offset)
-                .take(limit)
+        override suspend fun getNewestPage(podcastId: String, limit: Int, offset: Int,): List<LocalEpisodeEntity> = episodes
+            .filter { it.podcastId == podcastId }
+            .sortedWith(compareByDescending<LocalEpisodeEntity> { it.publishedDate }.thenBy { it.episodeId })
+            .drop(offset)
+            .take(limit)
 
-        override suspend fun getOldestPage(
-            podcastId: String,
-            limit: Int,
-            offset: Int,
-        ): List<LocalEpisodeEntity> =
-            episodes
-                .filter { it.podcastId == podcastId }
-                .sortedWith(compareBy<LocalEpisodeEntity> { it.publishedDate }.thenByDescending { it.episodeId })
-                .drop(offset)
-                .take(limit)
+        override suspend fun getOldestPage(podcastId: String, limit: Int, offset: Int,): List<LocalEpisodeEntity> = episodes
+            .filter { it.podcastId == podcastId }
+            .sortedWith(compareBy<LocalEpisodeEntity> { it.publishedDate }.thenByDescending { it.episodeId })
+            .drop(offset)
+            .take(limit)
 
-        override suspend fun getNewest(podcastId: String): LocalEpisodeEntity? =
-            getNewestPage(podcastId, limit = 1, offset = 0).firstOrNull()
+        override suspend fun getNewest(podcastId: String): LocalEpisodeEntity? = getNewestPage(podcastId, limit = 1, offset = 0).firstOrNull()
 
         override suspend fun count(podcastId: String): Int = episodes.count { it.podcastId == podcastId }
 
-        override suspend fun search(
-            podcastId: String,
-            query: String,
-        ): List<LocalEpisodeEntity> = emptyList()
+        override suspend fun search(podcastId: String, query: String,): List<LocalEpisodeEntity> = emptyList()
 
         override suspend fun getEpisodesAfter(
             podcastId: String,
@@ -416,17 +382,11 @@ class LocalEpisodeCatalogRepositoryTest {
             limit: Int,
         ): List<LocalEpisodeEntity> = emptyList()
 
-        override suspend fun setTtl(
-            podcastId: String,
-            ttlExpiresAt: Long?,
-        ) {
+        override suspend fun setTtl(podcastId: String, ttlExpiresAt: Long?,) {
             feeds[podcastId] = feeds.getValue(podcastId).copy(ttlExpiresAt = ttlExpiresAt)
         }
 
-        override suspend fun setFeedUrlLookupAt(
-            podcastId: String,
-            atMillis: Long,
-        ) {
+        override suspend fun setFeedUrlLookupAt(podcastId: String, atMillis: Long,) {
             feeds[podcastId] = feeds.getValue(podcastId).copy(feedUrlLookupAt = atMillis)
         }
 
@@ -452,10 +412,7 @@ class LocalEpisodeCatalogRepositoryTest {
         }
     }
 
-    private fun localEpisode(
-        episodeId: String,
-        publishedDate: Long = 1L,
-    ) = LocalEpisodeEntity(
+    private fun localEpisode(episodeId: String, publishedDate: Long = 1L,) = LocalEpisodeEntity(
         episodeId = episodeId,
         podcastId = "100",
         guid = "g$episodeId",

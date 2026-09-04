@@ -24,45 +24,43 @@ class EpisodeToDomainArtworkTest {
         assertNull(rssItem(imageUrl = null).toEpisode().imageUrl)
     }
 
-    private fun supplementItem(imageUrl: String?) =
-        EpisodeSupplementItemEntity(
-            episodeId = "-1",
-            podcastId = "123",
-            guid = "g",
-            title = "T",
-            description = "",
-            audioUrl = "https://cdn/a.mp3",
-            imageUrl = imageUrl,
-            duration = 60,
-            publishedDate = 1L,
-            chaptersUrl = null,
-            transcriptUrl = null,
-            transcripts = null,
-            persons = null,
-            seasonNumber = null,
-            episodeNumber = null,
-            episodeType = null,
-            enclosureType = null,
-        )
+    private fun supplementItem(imageUrl: String?) = EpisodeSupplementItemEntity(
+        episodeId = "-1",
+        podcastId = "123",
+        guid = "g",
+        title = "T",
+        description = "",
+        audioUrl = "https://cdn/a.mp3",
+        imageUrl = imageUrl,
+        duration = 60,
+        publishedDate = 1L,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
 
-    private fun rssItem(imageUrl: String?) =
-        RssEpisodeEntity(
-            episodeId = "-1",
-            podcastId = "rss:show",
-            guid = "g",
-            title = "T",
-            description = "",
-            audioUrl = "https://cdn/a.mp3",
-            imageUrl = imageUrl,
-            duration = 60,
-            publishedDate = 1L,
-            chaptersUrl = null,
-            transcriptUrl = null,
-            transcripts = null,
-            persons = null,
-            seasonNumber = null,
-            episodeNumber = null,
-            episodeType = null,
-            enclosureType = null,
-        )
+    private fun rssItem(imageUrl: String?) = RssEpisodeEntity(
+        episodeId = "-1",
+        podcastId = "rss:show",
+        guid = "g",
+        title = "T",
+        description = "",
+        audioUrl = "https://cdn/a.mp3",
+        imageUrl = imageUrl,
+        duration = 60,
+        publishedDate = 1L,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
 }

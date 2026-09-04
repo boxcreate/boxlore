@@ -11,47 +11,41 @@ data class ContentCatalogSnapshot(
     val validUntil: Long,
     val intents: List<ContentIntent>,
 ) {
-    fun isSupported(now: Long): Boolean {
-        return schemaVersion == SUPPORTED_SCHEMA_VERSION &&
-            catalogVersion.isNotBlank() &&
-            validUntil > now &&
-            intents.isNotEmpty() &&
-            intents.map(ContentIntent::id).distinct().size == intents.size
-    }
+    fun isSupported(now: Long): Boolean = schemaVersion == SUPPORTED_SCHEMA_VERSION &&
+        catalogVersion.isNotBlank() &&
+        validUntil > now &&
+        intents.isNotEmpty() &&
+        intents.map(ContentIntent::id).distinct().size == intents.size
 
     companion object {
         const val SUPPORTED_SCHEMA_VERSION = 1
 
-        fun anytimeFallback(now: Long): ContentCatalogSnapshot {
-            return ContentCatalogSnapshot(
-                schemaVersion = SUPPORTED_SCHEMA_VERSION,
-                catalogVersion = "embedded-anytime-v1",
-                validUntil = Long.MAX_VALUE,
-                intents = listOf(
-                    ContentIntent(
-                        id = "anytime",
-                        objective = RankingObjective.DISCOVERY,
-                        eligibleSurfaces = setOf(
-                            RankingSurface.HOME,
-                            RankingSurface.EXPLORE,
-                            RankingSurface.ANDROID_AUTO,
-                        ),
-                        title = "Anytime picks",
-                        subtitle = "A balanced mix for whenever you’re listening.",
-                        layout = ContentLayout.PODCAST_RAIL,
-                        refreshPolicy = ContentRefreshPolicy.SESSION,
-                        minimumItems = 1,
-                        maximumItems = 10,
+        fun anytimeFallback(now: Long): ContentCatalogSnapshot = ContentCatalogSnapshot(
+            schemaVersion = SUPPORTED_SCHEMA_VERSION,
+            catalogVersion = "embedded-anytime-v1",
+            validUntil = Long.MAX_VALUE,
+            intents = listOf(
+                ContentIntent(
+                    id = "anytime",
+                    objective = RankingObjective.DISCOVERY,
+                    eligibleSurfaces = setOf(
+                        RankingSurface.HOME,
+                        RankingSurface.EXPLORE,
+                        RankingSurface.ANDROID_AUTO,
                     ),
+                    title = "Anytime picks",
+                    subtitle = "A balanced mix for whenever you’re listening.",
+                    layout = ContentLayout.PODCAST_RAIL,
+                    refreshPolicy = ContentRefreshPolicy.SESSION,
+                    minimumItems = 1,
+                    maximumItems = 10,
                 ),
-            )
-        }
+            ),
+        )
     }
 }
 
-class ContentContextEngine(
-    private val clock: Clock = Clock.systemDefaultZone(),
-) {
+class ContentContextEngine(private val clock: Clock = Clock.systemDefaultZone(),) {
     fun currentDaypart(): ContentDaypart {
         val local = ZonedDateTime.now(clock)
         return (local.hour * 60 + local.minute).toDaypart()

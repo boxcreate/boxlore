@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,6 +24,7 @@ import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -54,37 +53,37 @@ fun BecauseYouLikeSection(
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 88.dp)
-                    .expressiveClickable(onClick = { onPodcastClick(podcast) }),
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 88.dp)
+                .expressiveClickable(onClick = { onPodcastClick(podcast) }),
         ) {
             Box {
                 Box(
                     modifier =
-                        Modifier
-                            .matchParentSize()
-                            .clip(MaterialTheme.shapes.extraLarge),
+                    Modifier
+                        .matchParentSize()
+                        .clip(MaterialTheme.shapes.extraLarge),
                 ) {
                     Box(
                         modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = 20.dp, y = (-34).dp)
-                                .size(104.dp)
-                                .rotate(10f)
-                                .clip(ExpressiveShapes.SoftBurst)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.055f)),
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 20.dp, y = (-34).dp)
+                            .size(104.dp)
+                            .rotate(10f)
+                            .clip(ExpressiveShapes.SoftBurst)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.055f)),
                     )
                     Box(
                         modifier =
-                            Modifier
-                                .align(Alignment.BottomStart)
-                                .offset(x = 78.dp, y = 38.dp)
-                                .size(84.dp)
-                                .rotate(-12f)
-                                .clip(ExpressiveShapes.Cookie6)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.055f)),
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .offset(x = 78.dp, y = 38.dp)
+                            .size(84.dp)
+                            .rotate(-12f)
+                            .clip(ExpressiveShapes.Cookie6)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.055f)),
                     )
                 }
 
@@ -98,19 +97,19 @@ fun BecauseYouLikeSection(
                             shape = MaterialTheme.shapes.large,
                             shadowElevation = 3.dp,
                             modifier =
-                                Modifier
-                                    .align(Alignment.Center)
-                                    .size(56.dp)
-                                    .rotate(-3f),
+                            Modifier
+                                .align(Alignment.Center)
+                                .size(56.dp)
+                                .rotate(-3f),
                         ) {
                             OptimizedImage(
                                 url = podcast.imageUrl,
                                 proxyWidth = 120,
                                 contentDescription = null,
                                 modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .clip(MaterialTheme.shapes.large),
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(MaterialTheme.shapes.large),
                             )
                         }
                         Surface(
@@ -119,9 +118,9 @@ fun BecauseYouLikeSection(
                             contentColor = MaterialTheme.colorScheme.onPrimary,
                             shadowElevation = 2.dp,
                             modifier =
-                                Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .size(24.dp),
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(24.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -213,8 +212,8 @@ fun BecauseYouLikeSection(
                                 title = episode.podcastTitle ?: "Podcast",
                                 artist = "",
                                 imageUrl =
-                                    episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() }
-                                        ?: "",
+                                episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() }
+                                    ?: "",
                                 description = "",
                                 genre = episode.podcastGenre ?: "Podcast",
                             )

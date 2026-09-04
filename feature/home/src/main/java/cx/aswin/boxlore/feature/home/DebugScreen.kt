@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -44,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -52,8 +49,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.PodcastEntity
-import cx.aswin.boxlore.core.playback.isInNightWindow
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.isInNightWindow
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveRankingRepository
 import kotlinx.coroutines.delay
@@ -78,17 +76,16 @@ fun DebugScreen(
     val viewModel: DebugViewModel =
         viewModel(
             factory =
-                object : ViewModelProvider.Factory {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                        DebugViewModel(
-                            application = application,
-                            playbackRepository = playbackRepository,
-                            subscriptionRepository = subscriptionRepository,
-                            userPrefs = userPreferencesRepository,
-                            adaptiveRankingRepository = adaptiveRankingRepository,
-                        ) as T
-                },
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = DebugViewModel(
+                    application = application,
+                    playbackRepository = playbackRepository,
+                    subscriptionRepository = subscriptionRepository,
+                    userPrefs = userPreferencesRepository,
+                    adaptiveRankingRepository = adaptiveRankingRepository,
+                ) as T
+            },
         )
 
     val playerState by playbackRepository.playerState.collectAsStateWithLifecycle()
@@ -126,10 +123,10 @@ fun DebugScreen(
                     }
                 },
                 colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    ),
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -137,19 +134,19 @@ fun DebugScreen(
         DebugScreenContent(
             viewModel = viewModel,
             state =
-                DebugScreenContentState(
-                    skipSleepWindow = skipSleepWindow,
-                    isInNightWindow = isInNightWindow,
-                    playerState = playerState,
-                    learnerSnapshot = learnerSnapshot,
-                    learnerLoading = learnerLoading,
-                    learningEvents = learningEvents,
-                    logEnabled = logEnabled,
-                    shadowDiagnostics = shadowDiagnostics,
-                    history = history,
-                    podcasts = podcasts,
-                    scrollBottomPadding = scrollBottomPadding,
-                ),
+            DebugScreenContentState(
+                skipSleepWindow = skipSleepWindow,
+                isInNightWindow = isInNightWindow,
+                playerState = playerState,
+                learnerSnapshot = learnerSnapshot,
+                learnerLoading = learnerLoading,
+                learningEvents = learningEvents,
+                logEnabled = logEnabled,
+                shadowDiagnostics = shadowDiagnostics,
+                history = history,
+                podcasts = podcasts,
+                scrollBottomPadding = scrollBottomPadding,
+            ),
             modifier = Modifier.padding(paddingValues),
         )
     }
@@ -163,12 +160,12 @@ internal fun DebugTabScrollPane(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
-            PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 16.dp,
-                bottom = bottomContentPadding,
-            ),
+        PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp,
+            bottom = bottomContentPadding,
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item { content() }
@@ -302,9 +299,9 @@ internal fun DbInspectorSection(
         }
         LazyColumn(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 520.dp),
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 520.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (selectedTabIndex == 0) {

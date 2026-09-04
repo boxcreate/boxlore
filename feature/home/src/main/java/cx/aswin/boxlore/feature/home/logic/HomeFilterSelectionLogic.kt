@@ -23,26 +23,25 @@ internal object HomeFilterSelectionLogic {
         currentSelectedId: String?,
         subs: List<Podcast>,
         filterSelectionIsAuto: Boolean,
-    ): FilterSelectionAction =
-        when {
-            subs.isEmpty() -> {
-                if (currentSelectedId != null) FilterSelectionAction.Clear else FilterSelectionAction.Keep
-            }
-            subs.size == 1 -> {
-                val only = subs.first()
-                if (currentSelectedId != only.id) {
-                    FilterSelectionAction.AutoSelect(only)
-                } else {
-                    FilterSelectionAction.Keep
-                }
-            }
-            else -> {
-                val subIds = subs.map { it.id }.toSet()
-                if (currentSelectedId != null && (currentSelectedId !in subIds || filterSelectionIsAuto)) {
-                    FilterSelectionAction.Clear
-                } else {
-                    FilterSelectionAction.Keep
-                }
+    ): FilterSelectionAction = when {
+        subs.isEmpty() -> {
+            if (currentSelectedId != null) FilterSelectionAction.Clear else FilterSelectionAction.Keep
+        }
+        subs.size == 1 -> {
+            val only = subs.first()
+            if (currentSelectedId != only.id) {
+                FilterSelectionAction.AutoSelect(only)
+            } else {
+                FilterSelectionAction.Keep
             }
         }
+        else -> {
+            val subIds = subs.map { it.id }.toSet()
+            if (currentSelectedId != null && (currentSelectedId !in subIds || filterSelectionIsAuto)) {
+                FilterSelectionAction.Clear
+            } else {
+                FilterSelectionAction.Keep
+            }
+        }
+    }
 }

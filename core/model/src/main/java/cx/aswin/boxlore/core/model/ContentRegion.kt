@@ -4,12 +4,7 @@ package cx.aswin.boxlore.core.model
  * Chart storefront countries + content-language helpers for discovery APIs.
  * Keep aligned with proxy `contentLanguages.ts`.
  */
-data class ContentRegion(
-    val code: String,
-    val label: String,
-    val aliases: Set<String>,
-    val recommendedLanguages: List<String>,
-)
+data class ContentRegion(val code: String, val label: String, val aliases: Set<String>, val recommendedLanguages: List<String>,)
 
 object ContentRegions {
     const val MAX_LANGUAGES = 4
@@ -69,8 +64,7 @@ object ContentRegions {
 
     fun displayLabel(code: String): String = find(code)?.label ?: "USA"
 
-    fun recommendedLanguages(country: String): List<String> =
-        find(country)?.recommendedLanguages ?: listOf("en")
+    fun recommendedLanguages(country: String): List<String> = find(country)?.recommendedLanguages ?: listOf("en")
 
     /**
      * Language chips for UI: recommended-for-country first (includes `en`), then the rest.
@@ -81,19 +75,13 @@ object ContentRegions {
         return LanguageGroups(recommended = recommended, more = more)
     }
 
-    data class LanguageGroups(
-        val recommended: List<String>,
-        val more: List<String>,
-    )
+    data class LanguageGroups(val recommended: List<String>, val more: List<String>,)
 
     /**
      * Force `en`, allowlist, max [MAX_LANGUAGES].
      * Empty / all-invalid → country recommended set.
      */
-    fun normalizeLanguages(
-        input: List<String>,
-        country: String,
-    ): List<String> {
+    fun normalizeLanguages(input: List<String>, country: String,): List<String> {
         val recommended = recommendedLanguages(country)
         val cleaned =
             input
@@ -126,10 +114,7 @@ object ContentRegions {
         return if (out.isEmpty()) listOf("en") else out.toList()
     }
 
-    fun isOffMarketLanguage(
-        language: String,
-        country: String,
-    ): Boolean {
+    fun isOffMarketLanguage(language: String, country: String,): Boolean {
         val code = language.trim().lowercase().substringBefore('-')
         if (code !in LANGUAGE_ALLOWLIST) return true
         return code !in recommendedLanguages(country)
@@ -137,12 +122,11 @@ object ContentRegions {
 
     fun encodeLanguages(languages: List<String>): String = languages.joinToString(",")
 
-    fun decodeLanguages(raw: String?): List<String> =
-        raw
-            ?.split(',')
-            ?.map { it.trim() }
-            ?.filter { it.isNotEmpty() }
-            .orEmpty()
+    fun decodeLanguages(raw: String?): List<String> = raw
+        ?.split(',')
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        .orEmpty()
 
     /** Locale country → initial content region (extended 11-market set). */
     fun localeDefaultRegion(localeCountry: String): String {

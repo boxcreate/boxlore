@@ -202,21 +202,21 @@ fun HomeRoute(
     val viewModel: HomeViewModel =
         viewModel(
             factory =
-                HomeViewModelAssembler.factory(
-                    application = application,
-                    deps =
-                        HomeViewModelDeps(
-                            podcastRepository = podcastRepository,
-                            playbackRepository = playbackRepository,
-                            engagementCoordinator = engagementPromptCoordinator,
-                            subscriptionRepository = subscriptionRepository,
-                            downloadRepository = downloadRepository,
-                            rssRepository = rssPodcastRepository,
-                            adaptiveScorer = adaptiveCandidateScorer,
-                            localCatalog = localCatalog,
-                            userPreferencesRepository = userPreferencesRepository,
-                        ),
+            HomeViewModelAssembler.factory(
+                application = application,
+                deps =
+                HomeViewModelDeps(
+                    podcastRepository = podcastRepository,
+                    playbackRepository = playbackRepository,
+                    engagementCoordinator = engagementPromptCoordinator,
+                    subscriptionRepository = subscriptionRepository,
+                    downloadRepository = downloadRepository,
+                    rssRepository = rssPodcastRepository,
+                    adaptiveScorer = adaptiveCandidateScorer,
+                    localCatalog = localCatalog,
+                    userPreferencesRepository = userPreferencesRepository,
                 ),
+            ),
         )
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -316,36 +316,36 @@ fun HomeRoute(
         ) {
             HomeScreenCallbacks(
                 feed =
-                    HomeFeedCallbacks(
-                        onPodcastClick = { podcast, entryPoint, category, index ->
-                            podcast.latestEpisode?.id?.let { episodeId ->
-                                viewModel.markPodcastEpisodeAsSeen(podcast.id, episodeId)
-                            }
-                            onPodcastClick(podcast, entryPoint, category, index)
-                        },
-                        onHeroArrowClick = onHeroArrowClick,
-                        onEpisodeClick = onEpisodeClick,
-                        onPlayClick = onPlayClick,
-                        onNavigateToLibrary = onNavigateToLibrary,
-                        onNavigateToDownloads = onNavigateToDownloads,
-                        onNavigateToExplore = onNavigateToExplore,
-                        onToggleSubscription = viewModel::toggleSubscription,
-                        onTogglePlayback = viewModel::togglePlayback,
-                        onSelectCategory = viewModel::selectCategory,
-                        onPodcastSelected = viewModel::selectPodcast,
-                        onPlayMix = viewModel::playMix,
-                        onMixModeChanged = viewModel::setHomeMixMode,
-                        onPlayEpisode = viewModel::playEpisode,
-                        onImportClick = onImportClick,
-                        onAiOnboardingClick = onAiOnboardingClick,
-                        onDismissImportBanner = viewModel::dismissHomeImportBanner,
-                        onBriefingClick = onBriefingClick,
-                        onDismissBriefing = viewModel::dismissBriefingForToday,
-                        onDismissBriefingForever = viewModel::dismissBriefingForever,
-                        onFeedbackClick = viewModel::triggerFeedback,
-                        onToggleHomePin = viewModel::toggleHomePin,
-                        onDismissFeaturedVideoShowcaseForever = viewModel::dismissFeaturedVideoShowcaseForever,
-                    ),
+                HomeFeedCallbacks(
+                    onPodcastClick = { podcast, entryPoint, category, index ->
+                        podcast.latestEpisode?.id?.let { episodeId ->
+                            viewModel.markPodcastEpisodeAsSeen(podcast.id, episodeId)
+                        }
+                        onPodcastClick(podcast, entryPoint, category, index)
+                    },
+                    onHeroArrowClick = onHeroArrowClick,
+                    onEpisodeClick = onEpisodeClick,
+                    onPlayClick = onPlayClick,
+                    onNavigateToLibrary = onNavigateToLibrary,
+                    onNavigateToDownloads = onNavigateToDownloads,
+                    onNavigateToExplore = onNavigateToExplore,
+                    onToggleSubscription = viewModel::toggleSubscription,
+                    onTogglePlayback = viewModel::togglePlayback,
+                    onSelectCategory = viewModel::selectCategory,
+                    onPodcastSelected = viewModel::selectPodcast,
+                    onPlayMix = viewModel::playMix,
+                    onMixModeChanged = viewModel::setHomeMixMode,
+                    onPlayEpisode = viewModel::playEpisode,
+                    onImportClick = onImportClick,
+                    onAiOnboardingClick = onAiOnboardingClick,
+                    onDismissImportBanner = viewModel::dismissHomeImportBanner,
+                    onBriefingClick = onBriefingClick,
+                    onDismissBriefing = viewModel::dismissBriefingForToday,
+                    onDismissBriefingForever = viewModel::dismissBriefingForever,
+                    onFeedbackClick = viewModel::triggerFeedback,
+                    onToggleHomePin = viewModel::toggleHomePin,
+                    onDismissFeaturedVideoShowcaseForever = viewModel::dismissFeaturedVideoShowcaseForever,
+                ),
                 onNavigateToSettings = onNavigateToSettings,
                 onForceReviewPrompt = viewModel::forceReviewPrompt,
                 onForceSurveyNps = viewModel::forceSurveyNps,
@@ -374,28 +374,28 @@ fun HomeRoute(
             uiState = uiState,
             showTopBarShortcuts = !homeShortcutsInLibrary,
             playback =
-                HomePlaybackUi(
-                    currentPlayingPodcastId = currentPlayingPodcastId,
-                    currentPlayingEpisodeId = currentPlayingEpisodeId,
-                    isPlaying = isPlaying,
-                    isPlayerLoading = isPlayerLoading,
-                    downloadedEpisodeIds = downloadedEpisodeIds,
-                    completedDownloads = StableCompletedDownloadList(completedDownloadItems),
-                    homeMixMode = homeMixMode,
-                ),
+            HomePlaybackUi(
+                currentPlayingPodcastId = currentPlayingPodcastId,
+                currentPlayingEpisodeId = currentPlayingEpisodeId,
+                isPlaying = isPlaying,
+                isPlayerLoading = isPlayerLoading,
+                downloadedEpisodeIds = downloadedEpisodeIds,
+                completedDownloads = StableCompletedDownloadList(completedDownloadItems),
+                homeMixMode = homeMixMode,
+            ),
             sheets =
-                HomeSheetUi(
-                    showReviewPrompt = showReviewPrompt,
-                    reviewPromptVariant = reviewPromptVariant,
-                    showPostReview = showPostReview,
-                    showFeedback = showFeedback,
-                    candidatePodcasts = candidatePodcasts,
-                ),
+            HomeSheetUi(
+                showReviewPrompt = showReviewPrompt,
+                reviewPromptVariant = reviewPromptVariant,
+                showPostReview = showPostReview,
+                showFeedback = showFeedback,
+                candidatePodcasts = candidatePodcasts,
+            ),
             featuredVideos =
-                HomeFeaturedVideoState(
-                    podcasts = StablePodcastList(featuredVideoPodcasts),
-                    isDismissed = featuredVideoShowcaseDismissed,
-                ),
+            HomeFeaturedVideoState(
+                podcasts = StablePodcastList(featuredVideoPodcasts),
+                isDismissed = featuredVideoShowcaseDismissed,
+            ),
             callbacks = callbacks,
             snackbarHostState = snackbarHostState,
             modifier = modifier,
@@ -431,48 +431,48 @@ private fun HomeScreenFeedContent(
 
     PodcastFeed(
         content =
-            PodcastFeedContent(
-                heroItems = StableHeroList(uiState.heroItems),
-                latestItems = StablePodcastList(uiState.latestEpisodes),
-                subscribedItems = StablePodcastList(uiState.subscribedPodcasts),
-                editorialRows = StableEditorialRowList(uiState.editorialRows),
-                gridItems = StablePodcastList(uiState.discoverPodcasts),
-                recommendations = StableEpisodeList(uiState.recommendations),
-                selectedPodcastEpisodes = StableEpisodeList(uiState.selectedPodcastEpisodes),
-            ),
+        PodcastFeedContent(
+            heroItems = StableHeroList(uiState.heroItems),
+            latestItems = StablePodcastList(uiState.latestEpisodes),
+            subscribedItems = StablePodcastList(uiState.subscribedPodcasts),
+            editorialRows = StableEditorialRowList(uiState.editorialRows),
+            gridItems = StablePodcastList(uiState.discoverPodcasts),
+            recommendations = StableEpisodeList(uiState.recommendations),
+            selectedPodcastEpisodes = StableEpisodeList(uiState.selectedPodcastEpisodes),
+        ),
         feedState =
-            PodcastFeedUiState(
-                discoveryGreeting = uiState.discoveryGreeting,
-                selectedCategory = uiState.selectedCategory,
-                selectedPodcastId = uiState.selectedPodcastId,
-                briefing = uiState.briefing,
-                briefingChapters = uiState.briefingChapters,
-                seemsToLikePodcast = uiState.seemsToLikePodcast,
-                showImportBanner = uiState.showImportBanner,
-                pinnedPodcastIds = uiState.pinnedPodcastIds,
-            ),
+        PodcastFeedUiState(
+            discoveryGreeting = uiState.discoveryGreeting,
+            selectedCategory = uiState.selectedCategory,
+            selectedPodcastId = uiState.selectedPodcastId,
+            briefing = uiState.briefing,
+            briefingChapters = uiState.briefingChapters,
+            seemsToLikePodcast = uiState.seemsToLikePodcast,
+            showImportBanner = uiState.showImportBanner,
+            pinnedPodcastIds = uiState.pinnedPodcastIds,
+        ),
         recommendationState =
-            PodcastFeedRecommendationState(
-                becauseYouLikeRecommendations = StableEpisodeList(uiState.becauseYouLikeRecommendations),
-                becauseYouLikePodcasts = StablePodcastList(uiState.becauseYouLikePodcasts),
-                isRecommendationsLoading = uiState.isRecommendationsLoading,
-                isRecommendationsFallback = uiState.isRecommendationsFallback,
-                onChangePodcastClick = onChangePodcastClick,
-            ),
+        PodcastFeedRecommendationState(
+            becauseYouLikeRecommendations = StableEpisodeList(uiState.becauseYouLikeRecommendations),
+            becauseYouLikePodcasts = StablePodcastList(uiState.becauseYouLikePodcasts),
+            isRecommendationsLoading = uiState.isRecommendationsLoading,
+            isRecommendationsFallback = uiState.isRecommendationsFallback,
+            onChangePodcastClick = onChangePodcastClick,
+        ),
         loadingState =
-            PodcastFeedLoadingState(
-                isEditorialRowsLoading = uiState.isEditorialRowsLoading,
-                isFilterLoading = uiState.isFilterLoading,
-                isSelectedPodcastLoading = uiState.isSelectedPodcastLoading,
-                isSelectedRssRefreshing = uiState.isSelectedRssRefreshing,
-                isLoading = uiState.isLoading,
-            ),
+        PodcastFeedLoadingState(
+            isEditorialRowsLoading = uiState.isEditorialRowsLoading,
+            isFilterLoading = uiState.isFilterLoading,
+            isSelectedPodcastLoading = uiState.isSelectedPodcastLoading,
+            isSelectedRssRefreshing = uiState.isSelectedRssRefreshing,
+            isLoading = uiState.isLoading,
+        ),
         playback =
-            PodcastFeedPlayback(
-                player = playback,
-                episodePlaybackState = StablePlaybackStateMap(uiState.episodePlaybackState),
-                softExpireProgressEpisodeIds = uiState.softExpireProgressEpisodeIds,
-            ),
+        PodcastFeedPlayback(
+            player = playback,
+            episodePlaybackState = StablePlaybackStateMap(uiState.episodePlaybackState),
+            softExpireProgressEpisodeIds = uiState.softExpireProgressEpisodeIds,
+        ),
         callbacks = callbacks,
         featuredVideos = featuredVideos,
         layout = PodcastFeedLayout(gridState = gridState),
@@ -640,37 +640,37 @@ fun HomeImportBanner(
 ) {
     Card(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         shape = MaterialTheme.shapes.extraLarge,
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
+        CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
         border =
-            BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-            ),
+        BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant,
+        ),
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
         ) {
             // Dismiss button in top right
             IconButton(
                 onClick = onDismiss,
                 modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .size(32.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            shape = CircleShape,
-                        ),
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .size(32.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = CircleShape,
+                    ),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
@@ -691,17 +691,17 @@ fun HomeImportBanner(
                     Text(
                         text = "it's a bit quiet in here...",
                         style =
-                            MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = GoogleSansWeight.bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            ),
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = GoogleSansWeight.bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
                     )
                     Text(
                         text = "let's find your favorite shows so we can build your daily mix and curate better episode recommendations.",
                         style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
                     )
                 }
 
@@ -715,9 +715,9 @@ fun HomeImportBanner(
                         color = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .expressiveClickable(shape = CircleShape, onClick = onAiOnboardingClick),
+                        Modifier
+                            .fillMaxWidth()
+                            .expressiveClickable(shape = CircleShape, onClick = onAiOnboardingClick),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -733,9 +733,9 @@ fun HomeImportBanner(
                             Text(
                                 text = "Find shows with AI",
                                 style =
-                                    MaterialTheme.typography.labelLarge.copy(
-                                        fontWeight = GoogleSansWeight.bold,
-                                    ),
+                                MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = GoogleSansWeight.bold,
+                                ),
                             )
                         }
                     }
@@ -751,9 +751,9 @@ fun HomeImportBanner(
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .expressiveClickable(shape = CircleShape, onClick = onSearchClick),
+                            Modifier
+                                .weight(1f)
+                                .expressiveClickable(shape = CircleShape, onClick = onSearchClick),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -769,10 +769,10 @@ fun HomeImportBanner(
                                 Text(
                                     text = "Search",
                                     style =
-                                        MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = GoogleSansWeight.bold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        ),
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
                                 )
                             }
                         }
@@ -783,9 +783,9 @@ fun HomeImportBanner(
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .expressiveClickable(shape = CircleShape, onClick = onImportClick),
+                            Modifier
+                                .weight(1f)
+                                .expressiveClickable(shape = CircleShape, onClick = onImportClick),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -801,10 +801,10 @@ fun HomeImportBanner(
                                 Text(
                                     text = "Import",
                                     style =
-                                        MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = GoogleSansWeight.bold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        ),
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
                                 )
                             }
                         }
