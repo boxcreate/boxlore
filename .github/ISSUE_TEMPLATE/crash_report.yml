@@ -1,7 +1,7 @@
 name: 💥 Crash or ANR Report
 description: Report an application crash, freeze, or ANR (Application Not Responding)
 title: "[Crash]: "
-labels: ["type: bug", "priority: P1", "user-impact-critical"]
+labels: ["bug", "P1"]
 body:
   - type: markdown
     attributes:
@@ -27,15 +27,20 @@ body:
       required: true
 
   - type: dropdown
-    id: crash-context
+    id: area
     attributes:
-      label: When does the crash or freeze occur?
+      label: Which area did the crash happen in?
+      description: "Matches roadmap project categories"
       options:
-        - App startup / launch
-        - During audio playback or lockscreen controls
-        - Navigating to show details / episode list
-        - During OPML import or library restore
-        - In the background or during sync
+        - Playback
+        - Player UI
+        - Library & Offline
+        - Search & Explore
+        - Home & Recommendations
+        - Onboarding
+        - Widgets
+        - Platform (Wear/TV/Tablet/Cast)
+        - Backend & Catalog
         - Other
     validations:
       required: true

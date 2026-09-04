@@ -13,6 +13,7 @@ concurrency:
 permissions:
   issues: write
   pull-requests: write
+  repository-projects: write
 
 jobs:
   triage:
@@ -34,6 +35,9 @@ jobs:
             const labelsToAdd = new Set();
             const labelsToRemove = new Set();
 
+            const knownTypes = ['bug', 'feature', 'perf', 'docs', 'refactor', 'chore'];
+            const knownPriorities = ['P0', 'P1', 'P2', 'P3'];
+
             const impactLabels = [
               'user-impact-critical',
               'user-impact-high',
@@ -46,14 +50,14 @@ jobs:
               // --- PULL REQUEST TRIAGE ---
 
               // 1. Infer type from Conventional Commit prefix
-              const hasType = currentLabels.some(l => l.startsWith('type: '));
+              const hasType = currentLabels.some(l => knownTypes.includes(l));
               if (!hasType) {
-                if (/^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('type: bug');
-                else if (/^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('type: feature');
-                else if (/^perf(\(.*\))?:/i.test(title)) labelsToAdd.add('type: perf');
-                else if (/^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('type: refactor');
-                else if (/^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('type: docs');
-                else if (/^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('type: chore');
+                if (/^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('bug');
+                else if (/^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('feature');
+                else if (/^perf(\(.*\))?:/i.test(title)) labelsToAdd.add('perf');
+                else if (/^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('refactor');
+                else if (/^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('docs');
+                else if (/^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('chore');
               }
 
               // 2. Infer user impact from checkboxes: - [x] `user-impact-...` or - [x] user-impact-...
@@ -67,7 +71,6 @@ jobs:
               }
 
               if (checkedImpact) {
-                // Ensure only the selected user-impact label is present
                 for (const impact of impactLabels) {
                   if (impact === checkedImpact) {
                     if (!currentLabels.includes(impact)) labelsToAdd.add(impact);
@@ -86,56 +89,56 @@ jobs:
             } else {
               // --- ISSUE TRIAGE ---
 
-              // 1. Infer type from issue template prefix or title
-              const hasType = currentLabels.some(l => l.startsWith('type: '));
+              // 1. Infer type from title prefix
+              const hasType = currentLabels.some(l => knownTypes.includes(l));
               if (!hasType) {
-                if (/^\[Crash\]/i.test(title)) labelsToAdd.add('type: bug');
-                else if (/^\[Bug\]/i.test(title) || /^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('type: bug');
-                else if (/^\[Feature\]/i.test(title) || /^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('type: feature');
-                else if (/^\[Docs\]/i.test(title) || /^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('type: docs');
-                else if (/^\[Refactor\]/i.test(title) || /^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('type: refactor');
-                else if (/^\[Chore\]/i.test(title) || /^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('type: chore');
+                if (/^\[Crash\]/i.test(title)) labelsToAdd.add('bug');
+                else if (/^\[Bug\]/i.test(title) || /^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('bug');
+                else if (/^\[Feature\]/i.test(title) || /^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('feature');
+                else if (/^\[Docs\]/i.test(title) || /^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('docs');
+                else if (/^\[Refactor\]/i.test(title) || /^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('refactor');
+                else if (/^\[Chore\]/i.test(title) || /^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('chore');
               }
 
-              // 2. Infer user impact from dropdown / body text
-              let detectedImpact = null;
-              if (body.includes('user-impact-critical') || /^\[Crash\]/i.test(title)) {
-                detectedImpact = 'user-impact-critical';
-              } else if (body.includes('user-impact-high')) {
-                detectedImpact = 'user-impact-high';
-              } else if (body.includes('user-impact-medium')) {
-                detectedImpact = 'user-impact-medium';
-              } else if (body.includes('user-impact-low')) {
-                detectedImpact = 'user-impact-low';
-              }
-
-              if (detectedImpact) {
-                for (const impact of impactLabels) {
-                  if (impact === detectedImpact) {
-                    if (!currentLabels.includes(impact)) labelsToAdd.add(impact);
-                  } else if (currentLabels.includes(impact)) {
-                    labelsToRemove.add(impact);
-                  }
-                }
-              }
-
-              // 3. Infer priority if none set
-              const hasPriority = currentLabels.some(l => l.startsWith('priority: '));
+              // 2. Infer priority from title / dropdown
+              const hasPriority = currentLabels.some(l => knownPriorities.includes(l));
               if (!hasPriority) {
-                const isCritical = detectedImpact === 'user-impact-critical' || /^\[Crash\]/i.test(title);
-                const isHigh = detectedImpact === 'user-impact-high';
-                const isBug = labelsToAdd.has('type: bug') || currentLabels.includes('type: bug');
-                const isFeature = labelsToAdd.has('type: feature') || currentLabels.includes('type: feature');
-
-                if (isCritical) {
-                  labelsToAdd.add('priority: P1');
-                } else if (isBug && isHigh) {
-                  labelsToAdd.add('priority: P1');
-                } else if (isBug) {
-                  labelsToAdd.add('priority: P2');
-                } else if (isFeature) {
-                  labelsToAdd.add('priority: P3');
+                if (/^\[Crash\]/i.test(title) || body.includes('Critical / Blocking') || body.includes('user-impact-critical')) {
+                  labelsToAdd.add('P1');
+                } else if (body.includes('Minor / Cosmetic') || body.includes('user-impact-low') || /^\[Feature\]/i.test(title)) {
+                  labelsToAdd.add('P3');
+                } else if (labelsToAdd.has('bug') || currentLabels.includes('bug')) {
+                  labelsToAdd.add('P2');
+                } else {
+                  labelsToAdd.add('P3');
                 }
+              }
+
+              // Clean up any stray user-impact labels accidentally placed on issues
+              for (const impact of impactLabels) {
+                if (currentLabels.includes(impact)) {
+                  labelsToRemove.add(impact);
+                }
+              }
+
+              // 3. GitHub Projects Integration: Auto-add to "boxlore roadmap" (Project 2)
+              try {
+                const projectNodeId = 'PVT_kwDOEkjj9s4BgJ6E';
+                if (target.node_id) {
+                  await github.graphql(`
+                    mutation($projectId: ID!, $contentId: ID!) {
+                      addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                        item { id }
+                      }
+                    }
+                  `, {
+                    projectId: projectNodeId,
+                    contentId: target.node_id
+                  });
+                  console.log(`Ensured #${number} is added to Project 2 (boxlore roadmap).`);
+                }
+              } catch (projectErr) {
+                console.log(`Project auto-add note for #${number}:`, projectErr.message);
               }
             }
 

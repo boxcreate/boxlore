@@ -1,7 +1,7 @@
 name: 🐛 Bug Report
 description: Report a reproducible bug or unexpected behavior in boxlore
 title: "[Bug]: "
-labels: ["type: bug"]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
@@ -12,7 +12,7 @@ body:
     id: app-version
     attributes:
       label: App Version
-      description: "Which version of boxlore are you running? (Found in Settings > About or the app info page)"
+      description: "Which version of boxlore are you running? (Found in Settings > About or app info page)"
       placeholder: "e.g. v0.0.24"
     validations:
       required: true
@@ -30,13 +30,18 @@ body:
     id: area
     attributes:
       label: Which area is affected?
+      description: "Matches roadmap project categories"
       options:
-        - Playback / Queue / Mini-Player
-        - Explore / Search / Recommendations
-        - Library / Subscriptions / Downloads
-        - OPML Import / Export / Backup
-        - Settings / Theme / UI
-        - Notifications / Background Sync
+        - Playback
+        - Player UI
+        - Search & Explore
+        - Home & Recommendations
+        - Library & Offline
+        - Onboarding
+        - Widgets
+        - Platform (Wear/TV/Tablet/Cast)
+        - Backend & Catalog
+        - Developer / CI
         - Other
     validations:
       required: true
@@ -44,12 +49,12 @@ body:
   - type: dropdown
     id: severity
     attributes:
-      label: User Impact / Severity
-      description: "How severely does this affect your listening experience?"
+      label: Severity / Urgency
+      description: "How severely does this affect listening?"
       options:
-        - "user-impact-low (Cosmetic glitch, minor styling, or rare edge-case)"
-        - "user-impact-medium (Affects normal usage, but workaround is available)"
-        - "user-impact-high (Major functionality broken or prevents listening to podcasts)"
+        - "Minor / Cosmetic (UI glitch, minor styling, or edge case) -> P3"
+        - "Standard Bug (Normal feature impaired, workaround exists) -> P2"
+        - "Critical / Blocking (Audio broken, crash, or data loss) -> P1"
     validations:
       required: true
 

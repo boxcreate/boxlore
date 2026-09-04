@@ -1,7 +1,7 @@
 name: 💡 Feature Request
 description: Propose a new feature, improvement, or idea for boxlore
 title: "[Feature]: "
-labels: ["type: feature"]
+labels: ["feature", "P3"]
 body:
   - type: markdown
     attributes:
@@ -12,29 +12,22 @@ body:
     id: area
     attributes:
       label: Which area does this relate to?
+      description: "Matches roadmap project categories"
       options:
-        - Playback / Queue / Smart Queue
-        - Explore / Discover / Recommendations
-        - Library / Downloads / Episode Management
-        - OPML / Feed Integration / Backup
-        - UI / Layout / Themes / Widgets
-        - Performance & Caching
-        - New Feature / Capability
+        - Playback
+        - Player UI
+        - Search & Explore
+        - Home & Recommendations
+        - Library & Offline
+        - Onboarding
+        - Widgets
+        - Platform (Wear/TV/Tablet/Cast)
+        - iOS
+        - Backend & Catalog
+        - Analytics
         - Other
     validations:
       required: true
-
-  - type: dropdown
-    id: user-impact
-    attributes:
-      label: Anticipated User Impact
-      description: "How much value would this bring to listeners?"
-      options:
-        - "user-impact-high (Essential daily podcasting feature or major enhancement)"
-        - "user-impact-medium (Great improvement for regular users)"
-        - "user-impact-low (Nice-to-have quality-of-life polish or niche preference)"
-    validations:
-      required: false
 
   - type: textarea
     id: description
