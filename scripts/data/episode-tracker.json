@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-04T08:11:15.410Z",
+  "lastRun": "2026-09-04T12:50:19.237Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788462411107
     },
     "385117": {
-      "lastRssKey": "f2bde410-a837-11f1-bb58-530a881b9ff3",
-      "lastEpisodeTitle": "4AM ET 09/04/2026 Newscast",
+      "lastRssKey": "79be8796-a859-11f1-a440-d72cab70a4fb",
+      "lastEpisodeTitle": "8AM ET 09/04/2026 Newscast",
       "lastEpisodeId": "59876025467",
-      "lastCheckedAt": 1788509485782
+      "lastCheckedAt": 1788526225959
     },
     "386911": {
       "lastEpisodeId": "59666491926",
@@ -102,10 +102,10 @@
       "lastCheckedAt": 1786765059294
     },
     "437685": {
-      "lastRssKey": "843b26d4-8d60-11f1-adef-9797d4ac6a65",
-      "lastEpisodeTitle": "The Divided Island of Hispaniola",
-      "lastEpisodeId": "59883955929",
-      "lastCheckedAt": 1788435078948
+      "lastRssKey": "8458d88c-8d60-11f1-adef-0b4cbd6fd81a",
+      "lastEpisodeTitle": "The 1920 Wall Street Bombing",
+      "lastEpisodeId": "59931787092",
+      "lastCheckedAt": 1788526227409
     },
     "444331": {
       "lastRssKey": "b9872600-a645-11f1-9beb-bf0f1220ae69",
@@ -195,16 +195,16 @@
       "lastCheckedAt": 1788039088805
     },
     "724143": {
-      "lastRssKey": "d3e27a18-a7df-11f1-8b0a-6bb7ca90fff7",
-      "lastEpisodeTitle": "A proposta de Gilmar sobre delegados no STF, o depoimento de Vorcaro e o áudio de Nikolas Ferreira",
+      "lastRssKey": "fa0eb7fa-a849-11f1-bbde-239f57525a53",
+      "lastEpisodeTitle": "Crise no STF escala; Moraes contra-ataca Mendonça; começa o Rock in Rio",
       "lastEpisodeId": "59842264790",
-      "lastCheckedAt": 1788472149543
+      "lastCheckedAt": 1788526232896
     },
     "743229": {
-      "lastEpisodeId": "59884605894",
-      "lastEpisodeTitle": "A.I. Is Outsmarting Its Creators",
-      "lastRssKey": "842d9b23-026f-4ebd-9c94-e19b3224f0a1",
-      "lastCheckedAt": 1788435091219
+      "lastEpisodeId": "59932493831",
+      "lastEpisodeTitle": "The Intertwined Legacies of Gloria Steinem and Dolly Parton",
+      "lastRssKey": "4e16892d-3e2a-423c-bd8d-f3e26194a309",
+      "lastCheckedAt": 1788526233062
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -494,10 +494,10 @@
       "lastCheckedAt": 1787951210628
     },
     "5716308": {
+      "lastRssKey": "urn:bbc:podcast:p0p7z1kx",
+      "lastEpisodeTitle": "Preview 26/27: Brighton (A)",
       "lastEpisodeId": "59622148405",
-      "lastEpisodeTitle": "Preview 26/27: Brentford (H)",
-      "lastRssKey": "urn:bbc:podcast:p0p6sfbg",
-      "lastCheckedAt": 1787951210785
+      "lastCheckedAt": 1788526253174
     },
     "5724334": {
       "lastRssKey": "466b10ac-9d4c-11f1-a8cd-53ff0d3a8a5f",
@@ -517,10 +517,10 @@
       "lastCheckedAt": 1787951211378
     },
     "5972153": {
-      "lastRssKey": "af311efa-a770-11f1-8b3c-7ffeea798ae5",
-      "lastEpisodeTitle": "Iran midterms impact, Xi in Egypt and Denmark's Greenland conscripts",
+      "lastRssKey": "306d7796-a83b-11f1-a738-6bb4c97acf6b",
+      "lastEpisodeTitle": "Nepal rescue, Nvidia's bet and Texas vs big tech",
       "lastEpisodeId": "59712792909",
-      "lastCheckedAt": 1788435117499
+      "lastCheckedAt": 1788526254303
     },
     "6456494": {
       "lastEpisodeId": "59912911833",
@@ -577,10 +577,10 @@
       "lastCheckedAt": 1788083207524
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59780258",
-      "lastEpisodeTitle": "Lives Of Harry Lime - Violets Sweet Violets",
+      "lastRssKey": "https://api.spreaker.com/episode/59780251",
+      "lastEpisodeTitle": "Campbell Playhouse - Huckleberry Finn",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1788435121034
+      "lastCheckedAt": 1788526256539
     },
     "6912659": {
       "lastRssKey": "dd62a2e8-4eff-49e9-80d1-efa0be56c290",
@@ -690,10 +690,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "d62cd31d-b90d-4bc1-84d3-bc21b08508aa",
-      "lastEpisodeTitle": "Revelation 8",
-      "lastEpisodeId": "59883546883",
-      "lastCheckedAt": 1788435126801
+      "lastRssKey": "a4dae159-1076-49de-b807-a2a49fac0b11",
+      "lastEpisodeTitle": "Revelation 9",
+      "lastEpisodeId": "59931273010",
+      "lastCheckedAt": 1788526261149
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
