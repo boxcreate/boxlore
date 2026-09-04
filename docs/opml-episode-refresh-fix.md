@@ -1,84 +1,81 @@
-# How to Fix Podcast Refresh & Missing Episodes in boxlore
+# How to Fix Podcast Refresh for OPML-Imported Libraries in boxlore
 
-If new episodes of your subscribed podcasts only appear when you manually open the individual show's page—rather than automatically showing up on your **Home** screen—your library may have been affected by a feed configuration issue from an older build.
-
-This guide walks you through fixing it in just a couple of minutes.
-
----
-
-> [!NOTE]
-> **Check First (Avoid False Positives):**
-> Under normal operation, **boxlore** checks and refreshes all your subscribed podcasts within **at most 30 seconds of opening the app**.
-> 
-> If you open the app and your new episodes show up within 30 seconds, **your library is healthy and you do NOT need to reset anything.**
-> 
-> Only follow this guide if new episodes consistently fail to appear on your Home screen even after waiting 30 seconds, and only show up when you tap into that show's specific page.
+> [!IMPORTANT]
+> **Who is this guide for?**
+> This guide is specifically for listeners who **imported their podcasts from another app using an OPML file** during older versions of **boxlore** (`v0.0.13` or earlier) and are experiencing missing new episodes on their Home screen.
+>
+> **Who is this NOT for?**
+> If you subscribed to podcasts directly inside **boxlore** (by searching for them), or if your shows normally refresh new episodes within **30 seconds of opening the app**, **your library is healthy and you do not need to do anything!**
 
 ---
 
-## Why Is This Happening?
+## The Issue: What Happened with Older OPML Imports?
 
-In older versions of **boxlore** (`v0.0.13` and earlier), podcasts imported from another app using an **OPML file** were mistakenly saved as generic, standalone RSS feeds rather than being linked to our central podcast directory.
+In older versions of **boxlore** (`v0.0.13` and earlier), podcast subscriptions imported via **OPML files** were saved as standalone RSS feeds instead of being connected to our central podcast catalog.
 
-* **What went wrong:** Standalone feeds were not included in the app's automatic background refresh. The app only checked for new episodes when you explicitly opened that specific podcast's detail screen.
-* **Why did the automatic update not fix it?** Recent versions included an automatic repair tool to fix this in the background, but because podcast feeds frequently change their web addresses or use redirects, some feeds could not be safely matched without risking corrupting your library.
-* **Why can't I restore my JSON backup?** Restoring a backup created while in this broken state will restore the old, faulty feed links, bringing the problem right back.
-
----
-
-## Step-by-Step Fix
-
-To permanently restore automatic background refreshes, follow these 4 simple steps:
-
-### Step 1: Make sure your app is up to date
-Verify that you are running the latest version of **boxlore**:
-- **`v0.0.24`** or newer if you installed via **GitHub releases** (APK).
-- **`v0.0.18`** or newer if you installed via **Google Play Store**.
-
-*(You can check your version in **boxlore** under **Settings → About**).*
+Because of this:
+* **Background sync was skipped:** The app's automated background refresh only synced catalog-connected shows. It did not automatically query new episodes for those standalone OPML feeds.
+* **Episodes only showed up manually:** New episodes would only be checked and fetched when you explicitly navigated to that podcast's individual show page.
+* **Why automated repair didn't catch every show:** We shipped an automatic repair tool in newer releases to match and fix these feeds, but because many publisher feeds use web redirects or changed URLs over time, some feeds could not be safely matched without risking library errors.
+* **Why you cannot restore a JSON backup:** Older JSON backups retain the broken standalone feed format. Restoring an old backup re-imports the problem.
 
 ---
 
-### Step 2: Clear App Data (Reset the app)
-To wipe the old, broken feed connections:
-1. Open your phone's **Settings**.
-2. Tap **Apps** (or **App Management**) → **boxlore**.
+## 4-Step Resolution for Affected OPML Users
+
+Follow these steps to permanently reconnect your OPML library to our live catalog and restore automatic background episode syncing.
+
+### Step 1: Update boxlore
+Ensure your app is running on the latest build:
+* **`v0.0.24`** or newer if you use the **GitHub release** (APK).
+* **`v0.0.18`** or newer if you installed via **Google Play Store**.
+
+*(Check your installed version inside **boxlore** under **Settings → About**).*
+
+---
+
+### Step 2: Clear App Storage
+To wipe out the legacy standalone feed entries:
+1. Open your device's **Android Settings**.
+2. Go to **Apps** → **boxlore**.
 3. Tap **Storage & cache**.
 4. Tap **Clear storage** (or **Clear data**) and confirm.
 
 > [!WARNING]
 > **DO NOT RESTORE A JSON BACKUP.**
-> Restoring a JSON backup will bring back the faulty feed settings and break automatic updates again.
->
-> We sincerely apologize for this inconvenience, as clearing data will reset your local listening history and progress. However, starting clean is necessary to permanently fix the automatic refresh pipeline.
+> Restoring a JSON backup exported from older builds will bring back the broken feed state.
+> 
+> *We sincerely apologize for this inconvenience, as clearing data will reset your local listening history and episode progress. However, starting clean is required to permanently reconnect your shows to the automatic refresh engine.*
 
 ---
 
-### Step 3: Launch Fresh to the Welcome Screen
+### Step 3: Confirm Fresh Launch
 1. Open **boxlore**.
-2. Ensure you see the fresh **Welcome / Onboarding screen**.
-3. Proceed through initial setup.
+2. Verify that the app opens directly to the fresh **Welcome / Onboarding screen**.
 
 ---
 
 ### Step 4: Re-import Your OPML File
-1. Import your original `.opml` or `.xml` file (either during onboarding or by going to **Settings → Library → Import OPML**).
-2. Allow the import to complete.
+1. Re-import your `.opml` or `.xml` file during onboarding, or go to **Settings → Library → Import OPML**.
+2. Wait a few moments for the import to finish.
 
-On modern builds of **boxlore**, imported podcasts are automatically connected to the live directory and publisher feeds. Your Home screen will now update automatically with new episodes!
+On modern builds, **boxlore** intelligently matches every OPML feed against our catalog and live publisher feeds right from the start. All your shows will now refresh new episodes automatically in the background and on your Home screen!
 
 ---
 
 ## Frequently Asked Questions (FAQ)
 
-### Will this issue happen again?
-**No.** Current builds completely overhaul how OPML files and podcast subscriptions are processed. All imported shows are now properly linked to live publisher feeds right from the start.
+### How can I tell if my shows are already refreshing normally?
+Under normal conditions, **boxlore** checks and refreshes all your subscribed podcasts within **at most 30 seconds of opening the app**. If you open the app and your new episodes appear on Home within 30 seconds, your library is working properly.
 
-### What if I don't have my original OPML file?
-If you still have your previous podcast app (like Pocket Casts, AntennaPod, Apple Podcasts, etc.), you can easily export a fresh OPML file from its settings menu and import it into **boxlore**.
+### What if I don't have my original OPML file anymore?
+If you still have your previous podcast app (such as Pocket Casts, AntennaPod, Apple Podcasts, etc.), you can export a fresh OPML file anytime from its settings and import it into **boxlore**.
 
-### What about private or patron-only RSS feeds?
-If you manually added a private RSS feed (e.g. Patreon), it will continue to work as a direct RSS subscription. You can refresh it anytime directly from its podcast page.
+### Will this ever happen again?
+**No.** Current builds completely resolved OPML processing. Newly imported OPML shows are linked to live publisher feeds immediately.
+
+### What about private or patron-only feeds?
+If you subscribe to private RSS feeds (like Patreon) that are not in the public directory, they will continue to function as direct RSS feeds. You can refresh them anytime on their podcast page.
 
 ### Still having trouble?
-If you followed these steps and are still experiencing issues with new episodes, please let us know by [opening an issue on GitHub](https://github.com/boxcreate/boxlore/issues).
+If you completed these steps and are still experiencing refresh issues, please let us know by [opening an issue on GitHub](https://github.com/boxcreate/boxlore/issues).
