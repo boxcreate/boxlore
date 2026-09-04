@@ -5,8 +5,21 @@ import org.junit.jupiter.api.Test
 
 class LegacyRssRepairLaunchGateTest {
     @Test
-    fun `upgraded installs enable repair through version 24 except version 20`() {
-        for (versionName in listOf("0.0.18", "0.0.19", "0.0.21", "0.0.22", "0.0.23", "0.0.24")) {
+    fun `upgraded installs enable repair through version 30 except version 20`() {
+        for (versionName in listOf(
+            "0.0.18",
+            "0.0.19",
+            "0.0.21",
+            "0.0.22",
+            "0.0.23",
+            "0.0.24",
+            "0.0.25",
+            "0.0.26",
+            "0.0.27",
+            "0.0.28",
+            "0.0.29",
+            "0.0.30",
+        )) {
             assertEquals(
                 LegacyRssRepairLaunchDecision.Enabled,
                 LegacyRssRepairLaunchGate.evaluate(
@@ -16,7 +29,7 @@ class LegacyRssRepairLaunchGateTest {
                 ),
             )
         }
-        for (versionName in listOf("0.0.20", "0.0.25")) {
+        for (versionName in listOf("0.0.20", "0.0.31")) {
             assertEquals(
                 LegacyRssRepairLaunchDecision.Disabled,
                 LegacyRssRepairLaunchGate.evaluate(
@@ -38,7 +51,19 @@ class LegacyRssRepairLaunchGateTest {
                 lastUpdateTime = 100L,
             ),
         )
-        for (versionName in listOf("0.0.19", "0.0.21", "0.0.22", "0.0.23", "0.0.24")) {
+        for (versionName in listOf(
+            "0.0.19",
+            "0.0.21",
+            "0.0.22",
+            "0.0.23",
+            "0.0.24",
+            "0.0.25",
+            "0.0.26",
+            "0.0.27",
+            "0.0.28",
+            "0.0.29",
+            "0.0.30",
+        )) {
             assertEquals(
                 LegacyRssRepairLaunchDecision.SettleWithoutRepair,
                 LegacyRssRepairLaunchGate.evaluate(
