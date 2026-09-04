@@ -852,10 +852,12 @@ class PodcastInfoViewModel(
         when (
             PodcastInfoPullRefreshLogic.target(
                 isRss = currentState.podcast.isRss,
+                isSubscribed = currentState.isSubscribed,
                 chip = currentState.directFeedChip,
             )
         ) {
             PodcastInfoPullRefreshLogic.Target.RSS_CATALOG -> refreshTrueRssCatalog(currentState)
+            PodcastInfoPullRefreshLogic.Target.SUBSCRIBED_DIRECT_FEED -> refreshSubscribedDirectFeedCatalogFromPull(currentState)
             PodcastInfoPullRefreshLogic.Target.DIRECT_FEED -> refreshDirectFeedFromPull(currentState)
             PodcastInfoPullRefreshLogic.Target.PI_CATALOG -> refreshPiCatalogFromPull(currentState)
             PodcastInfoPullRefreshLogic.Target.NONE -> Unit
@@ -886,6 +888,97 @@ class PodcastInfoViewModel(
         }
     }
 
+    private fun refreshSubscribedDirectFeedCatalogFromPull(currentState: PodcastInfoUiState.Success) {
+        val targetPodcastId = currentState.podcast.id
+        _uiState.value = currentState.copy(isLoadingMore = true, isRssRefreshing = true)
+        viewModelScope.launch {
+            try {
+                executeSubscribedDirectFeedRefresh(currentState, targetPodcastId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Pull-to-refresh subscribed direct-feed failed", e)
+                clearPullRefreshing(targetPodcastId)
+            }
+        }
+    }
+
+    private suspend fun executeSubscribedDirectFeedRefresh(
+        currentState: PodcastInfoUiState.Success,
+        targetPodcastId: String,
+    ) {
+        val catalog = repository.localEpisodeCatalog
+        val entity = subscriptionRepository.getPodcastEntity(targetPodcastId)
+        val feedUrl =
+            cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(
+                entity?.feedUrl ?: currentState.podcast.feedUrl,
+            )
+        if (catalog == null || feedUrl == null) {
+            repository.invalidateEpisodesCache(targetPodcastId)
+            if (PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+                val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return
+                applyFirstPageRefresh(latestState, targetPodcastId)
+            }
+            return
+        }
+        performDirectCatalogRefresh(catalog, currentState.podcast, targetPodcastId, feedUrl)
+    }
+
+    private suspend fun performDirectCatalogRefresh(
+        catalog: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort,
+        podcast: Podcast,
+        targetPodcastId: String,
+        feedUrl: String,
+    ) {
+        repository.invalidateEpisodesCache(targetPodcastId)
+        val meta =
+            cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta(
+                title = podcast.title,
+                imageUrl = podcast.imageUrl,
+                genre = podcast.genre,
+                artist = podcast.artist,
+            )
+        val needsBaseline = !catalog.isReady(targetPodcastId)
+        val outcome =
+            catalog.refresh(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = targetPodcastId,
+                    feedUrl = feedUrl,
+                    meta = meta,
+                    loadPiBaseline =
+                    if (needsBaseline) {
+                        {
+                            repository.loadPiEpisodesForBaseline(
+                                feedId = targetPodcastId,
+                                limit =
+                                cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
+                                    .DIRECT_FEED_BASELINE_LIMIT,
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                ),
+            )
+        if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
+            return
+        }
+        val tip = PodcastInfoPullRefreshLogic.extractTip(outcome)
+        if (outcome is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Failure) {
+            Log.w(TAG, "Subscribed direct-feed catalog refresh failed: ${outcome.message}")
+        }
+        tip?.let { episode ->
+            subscriptionRepository.updateLatestEpisode(
+                podcastId = targetPodcastId,
+                episode = episode,
+                markAsNew = false,
+                publisherFeedAuthoritative = true,
+            )
+        }
+        val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return
+        applyFirstPageRefresh(latestState, targetPodcastId)
+    }
+
     private fun refreshPiCatalogFromPull(currentState: PodcastInfoUiState.Success) {
         val targetPodcastId = currentState.podcast.id
         _uiState.value = currentState.copy(isLoadingMore = true, isRssRefreshing = true)
@@ -910,19 +1003,48 @@ class PodcastInfoViewModel(
         latestState: PodcastInfoUiState.Success,
         targetPodcastId: String,
     ) {
-        val limit = if (latestState.currentSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
+        val activeInitialState =
+            (_uiState.value as? PodcastInfoUiState.Success)
+                ?.takeIf { it.podcast.id == targetPodcastId }
+                ?: latestState
+        val limit = if (activeInitialState.currentSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
         val sortParam =
-            if (latestState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
-        val podcast = repository.getPodcastDetails(targetPodcastId) ?: latestState.podcast
+            if (activeInitialState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
+        val podcast = repository.getPodcastDetails(targetPodcastId) ?: activeInitialState.podcast
         val page = repository.getEpisodesPaginated(targetPodcastId, limit, 0, sortParam)
         if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
             return
         }
+        val activeState =
+            (_uiState.value as? PodcastInfoUiState.Success)
+                ?.takeIf { it.podcast.id == targetPodcastId }
+                ?: activeInitialState
+        if (!PodcastInfoPullRefreshLogic.shouldAcceptPageSort(activeInitialState.currentSort, activeState.currentSort)) {
+            _uiState.value = activeState.copy(isLoadingMore = false, isRssRefreshing = false)
+            return
+        }
+        val localPodcast = localCatalog.getLocalPodcast(targetPodcastId)
+        val preservedPodcast =
+            cx.aswin.boxlore.feature.info.logic.PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = podcast,
+                latestPodcast = activeState.podcast,
+                localPodcast = localPodcast,
+                isSubscribed = activeState.isSubscribed,
+            ).let { p ->
+                if (p.latestEpisode == null) {
+                    val newestPageEpisode =
+                        cx.aswin.boxlore.feature.info.logic.PodcastInfoEnrichLogic
+                            .resolveLatestFromPage(page.episodes, sortParam)
+                    p.copy(latestEpisode = newestPageEpisode)
+                } else {
+                    p
+                }
+            }
         currentOffset = page.sourceCount
         _uiState.value =
             supplementSupport
                 .remountWithSupplements(
-                    state = latestState.copy(podcast = podcast),
+                    state = activeState.copy(podcast = preservedPodcast),
                     piEpisodes = page.episodes,
                     hasMoreEpisodes = page.hasMore,
                     isLoadingMore = false,

@@ -452,7 +452,7 @@ class RssPodcastRepository private constructor(
         podcastArtist = podcast?.author,
     )
 
-    private fun PodcastEntity.toPodcast(): Podcast = Podcast(
+    internal fun PodcastEntity.toPodcast(): Podcast = Podcast(
         id = podcastId,
         title = title,
         artist = author,
@@ -473,8 +473,8 @@ class RssPodcastRepository private constructor(
         license = license,
         isLocked = isLocked,
         preferredSort = preferredSort,
-        notificationsEnabled = false,
-        autoDownloadEnabled = false,
+        notificationsEnabled = notificationsEnabled,
+        autoDownloadEnabled = autoDownloadEnabled,
         skipBeginningOverrideMs = skipBeginningOverrideMs,
         skipEndingOverrideMs = skipEndingOverrideMs,
         sourceType = sourceType,

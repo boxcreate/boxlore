@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -90,6 +91,25 @@ class RssPodcastRepositoryTest {
             )
 
         assertEquals(listOf("-1", "-2", "-3"), window.map { it.id })
+    }
+
+    @Test
+    fun toPodcastPreservesNotificationAndAutoDownloadFlags() {
+        val entity =
+            PodcastEntity(
+                podcastId = "rss:test-preserved-flags",
+                title = "Test Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "Desc",
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+            )
+        with(repository) {
+            val podcast = entity.toPodcast()
+            assertTrue(podcast.notificationsEnabled)
+            assertTrue(podcast.autoDownloadEnabled)
+        }
     }
 
     private fun rssEpisode(episodeId: String, podcastId: String, publishedDate: Long,) = RssEpisodeEntity(

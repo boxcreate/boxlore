@@ -150,6 +150,172 @@ class PodcastInfoViewModelLogicTest {
     }
 
     @Test
+    fun `pull refresh on subscribed non-RSS show targets subscribed direct feed`() {
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.SUBSCRIBED_DIRECT_FEED,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = false,
+                isSubscribed = true,
+                chip = DirectFeedChipState.Hidden,
+            ),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.SUBSCRIBED_DIRECT_FEED,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = false,
+                isSubscribed = true,
+                chip = DirectFeedChipState.Updated,
+            ),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.NONE,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = false,
+                isSubscribed = true,
+                chip = DirectFeedChipState.Fetching,
+            ),
+        )
+        assertEquals(
+            PodcastInfoPullRefreshLogic.Target.RSS_CATALOG,
+            PodcastInfoPullRefreshLogic.target(
+                isRss = true,
+                isSubscribed = true,
+                chip = DirectFeedChipState.Hidden,
+            ),
+        )
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties preserves all local subscription toggles and settings`() {
+        val rawApiPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                subscribedAt = 0L,
+                skipBeginningOverrideMs = null,
+                skipEndingOverrideMs = null,
+                fallbackImageUrl = null,
+                preferredSort = null,
+            )
+        val latestPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                subscribedAt = 123456L,
+                skipBeginningOverrideMs = 15_000L,
+                skipEndingOverrideMs = 30_000L,
+                fallbackImageUrl = "https://example.com/fallback.jpg",
+                preferredSort = "oldest",
+            )
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = null,
+                isSubscribed = true,
+            )
+
+        assertTrue(preserved.notificationsEnabled)
+        assertTrue(preserved.autoDownloadEnabled)
+        assertEquals(123456L, preserved.subscribedAt)
+        assertEquals(15_000L, preserved.skipBeginningOverrideMs)
+        assertEquals(30_000L, preserved.skipEndingOverrideMs)
+        assertEquals("https://example.com/fallback.jpg", preserved.fallbackImageUrl)
+        assertEquals("oldest", preserved.preferredSort)
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties enriches from localPodcast fallback when available`() {
+        val rawApiPodcast = TestFixtures.podcast(id = "p1")
+        val latestPodcast = TestFixtures.podcast(id = "p1")
+        val localPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                subscribedAt = 987654L,
+                skipBeginningOverrideMs = 5_000L,
+                skipEndingOverrideMs = 10_000L,
+                fallbackImageUrl = "https://example.com/local_art.jpg",
+                preferredSort = "newest",
+            )
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = localPodcast,
+                isSubscribed = true,
+            )
+
+        assertTrue(preserved.notificationsEnabled)
+        assertTrue(preserved.autoDownloadEnabled)
+        assertEquals(987654L, preserved.subscribedAt)
+        assertEquals(5_000L, preserved.skipBeginningOverrideMs)
+        assertEquals(10_000L, preserved.skipEndingOverrideMs)
+        assertEquals("https://example.com/local_art.jpg", preserved.fallbackImageUrl)
+        assertEquals("newest", preserved.preferredSort)
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties keeps notifications off when explicitly disabled`() {
+        val rawApiPodcast = TestFixtures.podcast(id = "p1")
+        val latestPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                subscribedAt = 12345L,
+            )
+        val localPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                subscribedAt = 12345L,
+            )
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = localPodcast,
+                isSubscribed = true,
+            )
+
+        assertFalse(preserved.notificationsEnabled)
+        assertFalse(preserved.autoDownloadEnabled)
+        assertEquals(12345L, preserved.subscribedAt)
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties latest disabled flags override stale local enabled flags`() {
+        val rawApiPodcast = TestFixtures.podcast(id = "p1")
+        val latestPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                subscribedAt = 12345L,
+            )
+        val localPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                subscribedAt = 12345L,
+            )
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = localPodcast,
+                isSubscribed = true,
+            )
+
+        assertFalse(preserved.notificationsEnabled)
+        assertFalse(preserved.autoDownloadEnabled)
+        assertEquals(12345L, preserved.subscribedAt)
+    }
+
+    @Test
     fun `late refresh preserves an unsubscribe completed while it was loading`() {
         val current =
             PodcastInfoUiState.Success(
@@ -160,6 +326,10 @@ class PodcastInfoViewModelLogicTest {
                         subscribedAt = 0L,
                         notificationsEnabled = false,
                         autoDownloadEnabled = false,
+                        skipBeginningOverrideMs = 5_000L,
+                        skipEndingOverrideMs = 10_000L,
+                        fallbackImageUrl = "cur.png",
+                        preferredSort = "oldest",
                     ),
                 episodes = emptyList(),
                 isSubscribed = false,
@@ -174,6 +344,10 @@ class PodcastInfoViewModelLogicTest {
                         subscribedAt = 99L,
                         notificationsEnabled = true,
                         autoDownloadEnabled = true,
+                        skipBeginningOverrideMs = null,
+                        skipEndingOverrideMs = null,
+                        fallbackImageUrl = null,
+                        preferredSort = null,
                     ),
                 episodes = listOf(TestFixtures.episode(id = "new")),
                 isSubscribed = true,
@@ -191,7 +365,197 @@ class PodcastInfoViewModelLogicTest {
         assertEquals(0L, applied.podcast.subscribedAt)
         assertFalse(applied.podcast.notificationsEnabled)
         assertFalse(applied.podcast.autoDownloadEnabled)
+        assertEquals(5_000L, applied.podcast.skipBeginningOverrideMs)
+        assertEquals(10_000L, applied.podcast.skipEndingOverrideMs)
+        assertEquals("cur.png", applied.podcast.fallbackImageUrl)
+        assertEquals("oldest", applied.podcast.preferredSort)
         assertEquals(DirectFeedChipState.Offer, applied.directFeedChip)
         assertEquals(listOf("new"), applied.episodes.map { it.id })
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties respects explicit unsubscribed state and clears flags`() {
+        val rawApiPodcast = TestFixtures.podcast(id = "p1")
+        val latestPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                subscribedAt = 12345L,
+            )
+        val localPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                subscribedAt = 12345L,
+            )
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = localPodcast,
+                isSubscribed = false,
+            )
+
+        assertFalse(preserved.notificationsEnabled)
+        assertFalse(preserved.autoDownloadEnabled)
+        assertEquals(0L, preserved.subscribedAt)
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties prioritizes newest episode from local direct feed over older api episode`() {
+        val olderApiEpisode = TestFixtures.episode(id = "ep-old").copy(publishedDate = 1000L)
+        val newerFeedEpisode = TestFixtures.episode(id = "ep-new").copy(publishedDate = 2000L)
+
+        val rawApiPodcast = TestFixtures.podcast(id = "p1").copy(latestEpisode = olderApiEpisode)
+        val latestPodcast = TestFixtures.podcast(id = "p1").copy(latestEpisode = olderApiEpisode)
+        val localPodcast = TestFixtures.podcast(id = "p1").copy(latestEpisode = newerFeedEpisode)
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = localPodcast,
+                isSubscribed = true,
+            )
+
+        assertEquals("ep-new", preserved.latestEpisode?.id)
+        assertEquals(2000L, preserved.latestEpisode?.publishedDate)
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties filters out blank feedUrl and preferredSort fallbacks`() {
+        val rawApiPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                feedUrl = "",
+                preferredSort = "",
+            )
+        val latestPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                feedUrl = "https://example.com/latest_feed.xml",
+                preferredSort = "newest",
+            )
+        val localPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                feedUrl = "https://example.com/local_feed.xml",
+                preferredSort = "oldest",
+            )
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = localPodcast,
+                isSubscribed = true,
+            )
+
+        assertEquals("https://example.com/latest_feed.xml", preserved.feedUrl)
+        assertEquals("newest", preserved.preferredSort)
+    }
+
+    @Test
+    fun `enrichPodcastWithFallback keeps toggles disabled when show is not subscribed`() {
+        val apiPodcast = TestFixtures.podcast(id = "p1")
+        val currentPodcast = TestFixtures.podcast(id = "p1").copy(subscribedAt = 0L, notificationsEnabled = false)
+        val localPodcast = TestFixtures.podcast(id = "p1").copy(subscribedAt = 0L, notificationsEnabled = true)
+
+        val enriched =
+            PodcastInfoEnrichLogic.enrichPodcastWithFallback(
+                apiPodcast = apiPodcast,
+                currentPodcast = currentPodcast,
+                localPodcast = localPodcast,
+                pageEpisodes = emptyList(),
+                sortParam = "newest",
+            )
+
+        assertFalse(enriched.notificationsEnabled)
+        assertFalse(enriched.autoDownloadEnabled)
+        assertEquals(0L, enriched.subscribedAt)
+    }
+
+    @Test
+    fun `enrichPodcastWithFallback picks newer episode from local podcast over older api episode`() {
+        val olderApiEpisode = TestFixtures.episode(id = "ep-old").copy(publishedDate = 1000L)
+        val newerLocalEpisode = TestFixtures.episode(id = "ep-new").copy(publishedDate = 2000L)
+
+        val apiPodcast = TestFixtures.podcast(id = "p1").copy(latestEpisode = olderApiEpisode)
+        val currentPodcast = TestFixtures.podcast(id = "p1").copy(subscribedAt = 100L)
+        val localPodcast = TestFixtures.podcast(id = "p1").copy(subscribedAt = 100L, latestEpisode = newerLocalEpisode)
+
+        val enriched =
+            PodcastInfoEnrichLogic.enrichPodcastWithFallback(
+                apiPodcast = apiPodcast,
+                currentPodcast = currentPodcast,
+                localPodcast = localPodcast,
+                pageEpisodes = emptyList(),
+                sortParam = "newest",
+            )
+
+        assertEquals("ep-new", enriched.latestEpisode?.id)
+        assertEquals(2000L, enriched.latestEpisode?.publishedDate)
+    }
+
+    @Test
+    fun `shouldAcceptPageSort only accepts matching sort snapshot`() {
+        assertTrue(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.NEWEST,
+                EpisodeSort.NEWEST,
+            ),
+        )
+        assertTrue(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.OLDEST,
+                EpisodeSort.OLDEST,
+            ),
+        )
+        assertFalse(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.NEWEST,
+                EpisodeSort.OLDEST,
+            ),
+        )
+        assertFalse(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.OLDEST,
+                EpisodeSort.NEWEST,
+            ),
+        )
+    }
+
+    @Test
+    fun `extractTip resolves newest episode across outcomes`() {
+        val ep = TestFixtures.episode(id = "ep-1")
+        assertEquals(
+            ep,
+            PodcastInfoPullRefreshLogic.extractTip(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success(
+                    newest = ep,
+                    itemCount = 1,
+                    ready = true,
+                ),
+            ),
+        )
+        assertEquals(
+            ep,
+            PodcastInfoPullRefreshLogic.extractTip(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(ep),
+            ),
+        )
+        assertNull(
+            PodcastInfoPullRefreshLogic.extractTip(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Failure(
+                    "Network error",
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `shouldPersistLibraryTip only persists when subscribed and tip exists`() {
+        assertTrue(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = true))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = false, hasTip = true))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = false))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = false, hasTip = false))
     }
 }
