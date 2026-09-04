@@ -279,12 +279,13 @@ internal class PlaybackQueueCoordinator(
                     } else {
                         null
                     }
-            val mediaItems = buildMediaItems(uniqueEpisodes, podcast, entryPointContext)
+            val episodesWithSource = enrichWithContextSourceId(uniqueEpisodes, entryPoint, sourceContext)
+            val mediaItems = buildMediaItems(episodesWithSource, podcast, entryPointContext)
 
-            val startEpisodeId = uniqueEpisodes.getOrNull(uniqueStartIndex)?.id
+            val startEpisodeId = episodesWithSource.getOrNull(uniqueStartIndex)?.id
             val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint, entryPointContext)
 
-            val currentEp = uniqueEpisodes.getOrNull(uniqueStartIndex)
+            val currentEp = episodesWithSource.getOrNull(uniqueStartIndex)
             if (currentEp != null) {
                 // playQueue optimistically flips isPlaying=true here, ahead of the real
                 // MediaController callback, so the onIsPlayingChanged edge-trigger below
@@ -297,7 +298,7 @@ internal class PlaybackQueueCoordinator(
                         isPlaying = true,
                         position = startPosMs,
                         duration = currentEp.duration.toLong() * 1000,
-                        queue = uniqueEpisodes,
+                        queue = episodesWithSource,
                         isLiked = initialLikeState,
                     )
                 playerStateFlow.value =
@@ -324,6 +325,31 @@ internal class PlaybackQueueCoordinator(
             controller.play()
             syncQueueToDb()
             ensureCurrentHistoryRow()
+        }
+    }
+
+    private fun enrichWithContextSourceId(
+        episodes: List<Episode>,
+        entryPoint: PlaybackEntryPoint,
+        sourceContext: android.os.Bundle?,
+    ): List<Episode> {
+        val entryPointFallback =
+            if (entryPoint != PlaybackEntryPoint.GENERIC) {
+                entryPoint.name.lowercase()
+            } else {
+                null
+            }
+        val sourceId =
+            sourceContext?.getString("source_entry_point")
+                ?: sourceContext?.getString("entry_point")
+                ?: entryPointFallback
+                ?: return episodes
+        return episodes.map { ep ->
+            if (ep.contextSourceId == null) {
+                ep.copy(contextSourceId = sourceId)
+            } else {
+                ep
+            }
         }
     }
 
@@ -476,6 +502,96 @@ internal class PlaybackQueueCoordinator(
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
             syncQueueToDb()
         }
+    }
+
+    suspend fun addEpisodesAfterCurrent(
+        episodes: List<Episode>,
+        podcast: Podcast,
+    ): Boolean {
+        if (episodes.isEmpty()) return false
+
+        val currentQueue = playerStateFlow.value.queue
+        val playingId = playerStateFlow.value.currentEpisode?.id
+        val existingIds = currentQueue.map { it.id }.toSet()
+
+        val uniqueCandidates =
+            episodes
+                .distinctBy { it.id }
+                .filter { it.id != playingId && it.id !in existingIds }
+        if (uniqueCandidates.isEmpty()) return false
+
+        val spaceLeft = (queueMaxSize - currentQueue.size).coerceAtLeast(0)
+        val episodesToAdd = uniqueCandidates.take(spaceLeft)
+        if (episodesToAdd.isEmpty()) return false
+
+        val taggedEpisodes =
+            episodesToAdd.map { ep ->
+                ep.copy(
+                    contextType = "AUTO_FILL",
+                    contextSourceId = SmartQueueEngine.SOURCE_SAME_PODCAST,
+                    podcastTitle = ep.podcastTitle ?: podcast.title,
+                    podcastId = ep.podcastId ?: podcast.id,
+                )
+            }
+
+        if (mediaHandle.controller == null) {
+            mediaHandle.controller = mediaHandle.future?.await()
+        }
+
+        val controller = mediaHandle.controller
+        if (controller == null) {
+            Log.w("PlaybackRepo", "addEpisodesAfterCurrent: mediaHandle.controller NULL after await!")
+            return false
+        }
+
+        val mediaItems =
+            taggedEpisodes.map { ep ->
+                val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(ep, podcast)
+                val metadata =
+                    androidx.media3.common.MediaMetadata
+                        .Builder()
+                        .setTitle(ep.title)
+                        .setArtist(podcast.title)
+                        .setArtworkUri(android.net.Uri.parse(resolvedUrl))
+                        .setDisplayTitle(ep.title)
+                        .setSubtitle(podcast.title)
+                        .setGenre(ep.podcastGenre ?: podcast.genre)
+                        .build()
+
+                MediaItem
+                    .Builder()
+                    .setUri(ep.audioUrl)
+                    .setMimeType(ep.enclosureType)
+                    .setMediaMetadata(metadata)
+                    .setMediaId(ep.id)
+                    .setCustomCacheKey(
+                        PlaybackMediaIdPolicy.customCacheKey(ep.id, ep.audioUrl),
+                    ).build()
+            }
+
+        val insertIndex =
+            if (controller.mediaItemCount > 0) {
+                (controller.currentMediaItemIndex + 1).coerceIn(0, controller.mediaItemCount)
+            } else {
+                0
+            }
+        controller.addMediaItems(insertIndex, mediaItems)
+
+        val newQueue =
+            if (currentQueue.isNotEmpty()) {
+                val mutable = currentQueue.toMutableList()
+                val currentIndex =
+                    if (playingId != null) mutable.indexOfFirst { it.id == playingId } else -1
+                val targetIndex = if (currentIndex != -1) currentIndex + 1 else 1.coerceAtMost(mutable.size)
+                mutable.addAll(targetIndex, taggedEpisodes)
+                mutable.toList()
+            } else {
+                listOfNotNull(playerStateFlow.value.currentEpisode) + taggedEpisodes
+            }
+
+        playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
+        syncQueueToDb()
+        return true
     }
 
     /**

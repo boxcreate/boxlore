@@ -363,6 +363,47 @@ class SmartQueueEngineTest {
         }
 
     @Test
+    fun `same-show continuation succeeds for podcast page entry point`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = (1L..6L).map { episode(it) }
+
+            val batch =
+                engine(sources).getNextEpisodes(
+                    currentItem(3),
+                    podcast("pod1", type = "serial"),
+                    currentContextSourceId = "podcast_detail",
+                )
+            assertTrue(batch.isNotEmpty())
+            assertTrue(batch.all { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST })
+            assertEquals(listOf(4L, 5L, 6L), batch.map { it.episode.id })
+        }
+
+    @Test
+    fun `same-show continuation is bypassed for recommendation entry point keeping queue mixed`() =
+        runTest {
+            val sources = FakeSources()
+            sources.episodesByPodcast["pod1"] = (1L..10L).map { episode(it) }
+            sources.subscriptions = listOf(podcast("sub1"))
+            sources.episodesByPodcast["sub1"] = listOf(episode(901, "sub1"))
+
+            val batch =
+                engine(sources).getNextEpisodes(
+                    currentItem(1),
+                    podcast("pod1", type = "serial"),
+                    currentContextSourceId = "home_for_you",
+                )
+            assertTrue(
+                batch.none { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST },
+                "Tier 0 same show continuation must be bypassed for home_for_you recommendation entry point",
+            )
+            assertTrue(
+                batch.any { it.source == SmartQueueEngine.SOURCE_SUBSCRIPTION },
+                "Queue must fall back to mixed diverse shows (e.g. subscription)",
+            )
+        }
+
+    @Test
     fun `same-show-only still continues a serial mid-show`() =
         runTest {
             val sources = FakeSources()
@@ -485,13 +526,15 @@ class SmartQueueEngineTest {
                     ),
                 )
 
-            val batch = engine(sources, staleRestartEnabled = true)
-                .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+            val batch =
+                engine(sources, staleRestartEnabled = true)
+                    .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            val resumes = batch.filter {
-                it.source == SmartQueueEngine.SOURCE_RESUME ||
-                    it.source == SmartQueueEngine.SOURCE_RESUME_STALE
-            }
+            val resumes =
+                batch.filter {
+                    it.source == SmartQueueEngine.SOURCE_RESUME ||
+                        it.source == SmartQueueEngine.SOURCE_RESUME_STALE
+                }
             assertEquals(1, resumes.size)
             assertEquals(SmartQueueEngine.SOURCE_RESUME_STALE, resumes.first().source)
         }
@@ -511,13 +554,15 @@ class SmartQueueEngineTest {
                     ),
                 )
 
-            val batch = engine(sources, staleRestartEnabled = false)
-                .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
+            val batch =
+                engine(sources, staleRestartEnabled = false)
+                    .getNextEpisodes(currentItem(1), podcast("pod1", type = "serial"))
 
-            val resumes = batch.filter {
-                it.source == SmartQueueEngine.SOURCE_RESUME ||
-                    it.source == SmartQueueEngine.SOURCE_RESUME_STALE
-            }
+            val resumes =
+                batch.filter {
+                    it.source == SmartQueueEngine.SOURCE_RESUME ||
+                        it.source == SmartQueueEngine.SOURCE_RESUME_STALE
+                }
             assertEquals(1, resumes.size)
             assertEquals(SmartQueueEngine.SOURCE_RESUME, resumes.first().source)
         }
@@ -916,5 +961,29 @@ class SmartQueueEngineTest {
                 "fallback batch of ${batch.size} must be <= ${DefaultSmartQueueEngine.FALLBACK_BATCH_TARGET}",
             )
             assertFalse(batch.isEmpty())
+        }
+
+    @Test
+    fun `continuation preserves forward episodes sharing the anchor timestamp`() =
+        runTest {
+            val sources = FakeSources()
+            val ep1 = episode(1, publishedDate = 1000L)
+            val ep2 = episode(2, publishedDate = 2000L)
+            val ep3 = episode(3, publishedDate = 2000L)
+            val ep4 = episode(4, publishedDate = 3000L)
+            sources.episodesByPodcast["pod1"] = listOf(ep1, ep2, ep3, ep4)
+
+            val batch =
+                engine(sources).getNextEpisodes(
+                    currentItem(2),
+                    podcast("pod1", type = "episodic", preferredSort = "newest"),
+                    currentContextSourceId = "podcast_detail",
+                )
+
+            val samePodIds =
+                batch
+                    .filter { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST }
+                    .map { it.episode.id }
+            assertTrue(3L in samePodIds, "Expected ep3 (same timestamp as anchor) to be included in continuation")
         }
 }

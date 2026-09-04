@@ -177,13 +177,12 @@
         <error line="118" column="69" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/catalog/RoomLocalCatalog.kt">
-        <error line="16" column="65" source="standard:function-signature" />
-        <error line="20" column="19" source="standard:chain-method-continuation" />
-        <error line="38" column="32" source="standard:multiline-expression-wrapping" />
-        <error line="55" column="43" source="standard:multiline-expression-wrapping" />
-        <error line="57" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="65" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="70" column="40" source="standard:multiline-expression-wrapping" />
+        <error line="17" column="65" source="standard:function-signature" />
+        <error line="21" column="19" source="standard:chain-method-continuation" />
+        <error line="42" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="58" column="47" source="standard:multiline-expression-wrapping" />
+        <error line="60" column="44" source="standard:multiline-expression-wrapping" />
+        <error line="72" column="44" source="standard:multiline-expression-wrapping" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/catalog/SharedAppDependencies.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -268,7 +267,6 @@
     <file name="src/main/java/cx/aswin/boxlore/core/catalog/backup/LibraryBackupDirectFeed.kt">
         <error line="37" column="13" source="standard:chain-method-continuation" />
         <error line="57" column="13" source="standard:chain-method-continuation" />
-        <error line="68" column="71" source="standard:function-signature" />
     </file>
     <file name="src/main/java/cx/aswin/boxlore/core/catalog/backup/LibraryBackupDirectFeedRestore.kt">
         <error line="39" column="20" source="standard:chain-method-continuation" />

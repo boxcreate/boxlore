@@ -434,7 +434,7 @@ class RssPodcastRepository private constructor(
                     listOf(around)
                 } else {
                     listOf(around) +
-                        episodeDao.getNewerThan(
+                        episodeDao.getEpisodesAfter(
                             podcastId,
                             around.publishedDate,
                             around.episodeId,

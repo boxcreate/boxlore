@@ -36,17 +36,34 @@ class QueueManager(
             android.util.Log.d(TAG, "playEpisode called: ${episode.title}, sort=$preferredSort")
 
             if (podcast != null) {
+                val effectivePodcast =
+                    if (preferredSort != null) {
+                        podcast.copy(preferredSort = preferredSort)
+                    } else {
+                        podcast
+                    }
+                val entryPoint = resolveEntryPoint(entryPointContext)
+                val contextSourceId =
+                    entryPointContext?.getString("source_entry_point")
+                        ?: entryPointContext?.getString("entry_point")
+                        ?: entryPoint.name.lowercase()
+
                 // 1. Clear current queue for a fresh start
                 queueRepository.clearQueue()
 
                 // 2. Add selected episode & Persist
-                queueRepository.addToQueue(episode, podcast)
+                queueRepository.addToQueue(episode, effectivePodcast, contextSourceId = contextSourceId)
 
                 // 3. Start playback IMMEDIATELY with just the current episode
                 // The playback service auto-fills more episodes when the queue runs low
-                val domainEpisode = episode.toDomain(podcast)
-                val entryPoint = resolveEntryPoint(entryPointContext)
-                playbackRepository.playQueue(listOf(domainEpisode), podcast, 0, entryPoint, sourceContext = entryPointContext)
+                val domainEpisode = episode.toDomain(effectivePodcast).copy(contextSourceId = contextSourceId)
+                playbackRepository.playQueue(
+                    listOf(domainEpisode),
+                    effectivePodcast,
+                    0,
+                    entryPoint,
+                    sourceContext = entryPointContext,
+                )
             } else {
                 android.util.Log.e(TAG, "Podcast is null!")
             }
@@ -146,6 +163,16 @@ class QueueManager(
                 queueRepository.replaceQueue(episodes)
                 playbackRepository.playQueue(episodes, fallbackPodcast, startIndex)
             }
+        }
+    }
+
+    fun dismissSameShowContinuation() {
+        playbackRepository.dismissSameShowContinuation()
+    }
+
+    fun addSameShowContinuationEpisodes() {
+        scope.launch {
+            playbackRepository.addSameShowContinuationEpisodes()
         }
     }
 

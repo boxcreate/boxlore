@@ -209,6 +209,19 @@ class QueueRepositoryTest {
             assertNull(repository.getQueueItemByEpisodeId("missing"))
         }
 
+    @Test
+    fun addToQueueAndReplaceQueuePersistContextSourceId() =
+        runTest {
+            repository.addToQueue(episodeItem(1), podcast(), contextSourceId = "podcast_detail")
+            val item = database.queueDao().getQueueItemByEpisodeId("1")
+            assertEquals("podcast_detail", item?.contextSourceId)
+
+            val domainEp = domainEpisode("2").copy(contextSourceId = "podcast_detail")
+            repository.replaceQueue(listOf(domainEp))
+            val replaced = database.queueDao().getQueueItemByEpisodeId("2")
+            assertEquals("podcast_detail", replaced?.contextSourceId)
+        }
+
     private fun domainEpisode(id: String) =
         Episode(
             id = id,

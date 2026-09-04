@@ -69,6 +69,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp)
+    testImplementation("org.mockito:mockito-core:5.14.2")
     // Real XmlPullParser implementation backing the android.util.Xml test stub so the
     // custom RSS parser can be exercised hermetically off-device.
     testImplementation("net.sf.kxml:kxml2:2.3.0")

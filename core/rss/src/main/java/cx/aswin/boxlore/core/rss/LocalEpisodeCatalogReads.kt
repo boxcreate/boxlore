@@ -184,17 +184,12 @@ internal fun LocalEpisodeEntity.toCatalogEpisode(meta: PodcastMeta): Episode =
 internal suspend fun continuationRows(
     dao: LocalEpisodeCatalogDao,
     podcastId: String,
-    sort: String,
+    @Suppress("UNUSED_PARAMETER") sort: String,
     around: LocalEpisodeEntity,
     limit: Int,
 ): List<LocalEpisodeEntity> {
     val restLimit = (limit - 1).coerceAtLeast(0)
     if (restLimit == 0) return listOf(around)
-    val rest =
-        if (sort == "oldest") {
-            dao.getOlderThan(podcastId, around.publishedDate, around.episodeId, restLimit)
-        } else {
-            dao.getNewerThan(podcastId, around.publishedDate, around.episodeId, restLimit)
-        }
+    val rest = dao.getEpisodesAfter(podcastId, around.publishedDate, around.episodeId, restLimit)
     return listOf(around) + rest
 }

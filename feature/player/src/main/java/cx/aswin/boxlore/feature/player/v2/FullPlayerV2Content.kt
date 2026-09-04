@@ -39,6 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.playback.addSameShowContinuationEpisodes
+import cx.aswin.boxlore.core.playback.dismissSameShowContinuation
 import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.skipBackward
@@ -346,6 +348,12 @@ internal data class PlayerQueueSheetResources(
     val sheetState: SheetState
 )
 
+internal data class PlayerQueueSheetCallbacks(
+    val onEnableSmartQueue: () -> Unit = {},
+    val onAddSameShowEpisodes: () -> Unit = {},
+    val onDismissSameShowBanner: () -> Unit = {},
+)
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 internal fun PlayerQueueSheet(
@@ -353,7 +361,8 @@ internal fun PlayerQueueSheet(
     userPrefs: UserPreferencesRepository,
     model: PlayerQueueSheetModel,
     resources: PlayerQueueSheetResources,
-    ui: FullPlayerUiState
+    ui: FullPlayerUiState,
+    actions: FullPlayerActions? = null,
 ) {
     val sameShowQueueOnly by userPrefs.sameShowQueueOnlyStream
         .collectAsStateWithLifecycle(initialValue = false)
@@ -369,14 +378,26 @@ internal fun PlayerQueueSheet(
             currentPodcast = model.podcast,
             colorScheme = model.colorScheme,
             smartQueueEnabled = !sameShowQueueOnly,
+            sameShowContinuation = model.state.sameShowContinuation,
             actions = queueSheetActions(
                 playbackRepository = playbackRepository,
                 podcast = model.podcast,
                 resources = resources,
                 ui = ui,
-                onEnableSmartQueue = {
-                    resources.scope.launch { userPrefs.setSameShowQueueOnly(false) }
-                },
+                actions = actions,
+                callbacks = PlayerQueueSheetCallbacks(
+                    onEnableSmartQueue = {
+                        resources.scope.launch { userPrefs.setSameShowQueueOnly(false) }
+                    },
+                    onAddSameShowEpisodes = {
+                        resources.scope.launch {
+                            playbackRepository.addSameShowContinuationEpisodes()
+                        }
+                    },
+                    onDismissSameShowBanner = {
+                        playbackRepository.dismissSameShowContinuation()
+                    },
+                ),
             ),
         )
     }
@@ -386,7 +407,8 @@ internal fun queueSheetActions(
     podcast: Podcast,
     resources: PlayerQueueSheetResources,
     ui: FullPlayerUiState,
-    onEnableSmartQueue: () -> Unit = {},
+    actions: FullPlayerActions? = null,
+    callbacks: PlayerQueueSheetCallbacks = PlayerQueueSheetCallbacks(),
 ) = QueueSheetActions(
     onPlayEpisode = { episode ->
         resources.scope.launch {
@@ -417,7 +439,15 @@ internal fun queueSheetActions(
             )
         }
     },
-    onEnableSmartQueue = onEnableSmartQueue,
+    onEnableSmartQueue = callbacks.onEnableSmartQueue,
+    onAddSameShowEpisodes = callbacks.onAddSameShowEpisodes,
+    onDismissSameShowBanner = callbacks.onDismissSameShowBanner,
+    onEpisodeInfoClick = { episode ->
+        cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("episode_info")
+        ui.showQueueSheet = false
+        actions?.onCollapse?.invoke()
+        actions?.onEpisodeInfoClick?.invoke(episode)
+    },
 )
 
 internal suspend fun handleQueueRemoval(

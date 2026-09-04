@@ -131,6 +131,23 @@ class RssEpisodeDaoInMemoryTest {
         }
 
     @Test
+    fun getEpisodesAfterOrdersByPublishedDateAsc() =
+        runTest {
+            seedPodcast()
+            dao.upsertAll(
+                listOf(
+                    episode("-1", publishedDate = 100L),
+                    episode("-2", publishedDate = 300L),
+                    episode("-3", publishedDate = 200L),
+                    episode("-4", publishedDate = 50L),
+                ),
+            )
+
+            val after = dao.getEpisodesAfter("-1001", publishedDate = 100L, episodeId = "-1", limit = 10)
+            assertEquals(listOf("-3", "-2"), after.map { it.episodeId })
+        }
+
+    @Test
     fun getAllNewestReturnsEveryEpisode() =
         runTest {
             seedPodcast()

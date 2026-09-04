@@ -28,6 +28,7 @@ interface SmartQueueSources : HistoryRecommendationSource {
     suspend fun getEpisodesAround(
         podcastId: String,
         aroundEpisodeId: String,
+        preferredSort: String? = null,
     ): List<Episode> = getEpisodes(podcastId)
 
     /**
@@ -98,7 +99,13 @@ class DefaultSmartQueueSources(
     override suspend fun getEpisodesAround(
         podcastId: String,
         aroundEpisodeId: String,
-    ): List<Episode> = podcastRepository.getEpisodeWindow(podcastId, aroundEpisodeId)
+        preferredSort: String?,
+    ): List<Episode> =
+        podcastRepository.getEpisodeWindow(
+            feedId = podcastId,
+            aroundEpisodeId = aroundEpisodeId,
+            sort = preferredSort ?: "newest",
+        )
 
     override suspend fun getQueueCandidates(
         podcastId: String,

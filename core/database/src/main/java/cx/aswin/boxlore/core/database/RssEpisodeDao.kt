@@ -66,6 +66,25 @@ interface RssEpisodeDao {
         SELECT * FROM rss_episodes
         WHERE podcastId = :podcastId
           AND (
+            publishedDate > :publishedDate
+            OR (publishedDate = :publishedDate AND episodeId < :episodeId)
+          )
+        ORDER BY publishedDate ASC, episodeId DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun getEpisodesAfter(
+        podcastId: String,
+        publishedDate: Long,
+        episodeId: String,
+        limit: Int,
+    ): List<RssEpisodeEntity>
+
+    @Query(
+        """
+        SELECT * FROM rss_episodes
+        WHERE podcastId = :podcastId
+          AND (
             publishedDate < :publishedDate
             OR (publishedDate = :publishedDate AND episodeId > :episodeId)
           )

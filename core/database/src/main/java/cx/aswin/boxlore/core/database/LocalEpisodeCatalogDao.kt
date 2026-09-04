@@ -124,6 +124,25 @@ interface LocalEpisodeCatalogDao {
         LIMIT :limit
         """,
     )
+    suspend fun getEpisodesAfter(
+        podcastId: String,
+        publishedDate: Long,
+        episodeId: String,
+        limit: Int,
+    ): List<LocalEpisodeEntity>
+
+    @Query(
+        """
+        SELECT * FROM local_episodes
+        WHERE podcastId = :podcastId
+          AND (
+            publishedDate > :publishedDate
+            OR (publishedDate = :publishedDate AND episodeId < :episodeId)
+          )
+        ORDER BY publishedDate ASC, episodeId DESC
+        LIMIT :limit
+        """,
+    )
     suspend fun getOlderThan(
         podcastId: String,
         publishedDate: Long,

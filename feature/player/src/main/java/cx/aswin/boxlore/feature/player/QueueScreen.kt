@@ -17,15 +17,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.playback.SameShowContinuationState
 import cx.aswin.boxlore.feature.player.v2.logic.queueSourceLabel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -37,6 +52,9 @@ data class QueueSheetActions(
     val onMove: (fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _ -> },
     val onDragEnd: (episodeId: String, fromUiIndex: Int, toUiIndex: Int) -> Unit = { _, _, _ -> },
     val onEnableSmartQueue: () -> Unit = {},
+    val onAddSameShowEpisodes: () -> Unit = {},
+    val onDismissSameShowBanner: () -> Unit = {},
+    val onEpisodeInfoClick: (Episode) -> Unit = {},
 )
 
 data class QueueItemDisplay(
@@ -61,6 +79,7 @@ fun QueueSheetContent(
     actions: QueueSheetActions,
     modifier: Modifier = Modifier,
     smartQueueEnabled: Boolean = true,
+    sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
 ) {
     val lazyListState = rememberLazyListState()
     val dragStartIndex = remember { mutableIntStateOf(-1) }
@@ -103,6 +122,16 @@ fun QueueSheetContent(
             color = colorScheme.outlineVariant.copy(alpha = 0.3f),
             modifier = Modifier.padding(horizontal = 20.dp)
         )
+
+        if (sameShowContinuation.visible && sameShowContinuation.availableCount > 0) {
+            SameShowContinuationBanner(
+                state = sameShowContinuation,
+                onAddEpisodes = actions.onAddSameShowEpisodes,
+                onDismiss = actions.onDismissSameShowBanner,
+                colorScheme = colorScheme,
+                onEpisodeClick = actions.onEpisodeInfoClick,
+            )
+        }
 
         if (queue.isEmpty()) {
             QueueEmptyState(
@@ -278,6 +307,256 @@ fun QueueItemRow(
                     .size(40.dp)
                     .padding(8.dp)
             )
+        }
+    }
+}
+
+object SameShowContinuationBannerDefaults {
+    fun buttonText(availableCount: Int): String = "Add next $availableCount from this show"
+
+    fun titleText(podcastTitle: String): String =
+        if (podcastTitle.isNotBlank()) "Continue $podcastTitle?" else "Continue this show?"
+
+    const val EXPLANATION_TEXT =
+        "We skipped newer episodes from this show as you played it from recommendations."
+
+    fun previewToggleText(availableCount: Int, isExpanded: Boolean): String =
+        if (isExpanded) {
+            "Hide preview"
+        } else if (availableCount == 1) {
+            "Preview 1 upcoming episode"
+        } else {
+            "Preview $availableCount upcoming episodes"
+        }
+
+    fun formatDuration(seconds: Int): String {
+        if (seconds <= 0) return ""
+        val hrs = seconds / 3600
+        val mins = (seconds % 3600) / 60
+        return if (hrs > 0) "${hrs}h ${mins}m" else "${mins} min"
+    }
+}
+
+@Composable
+private fun SameShowContinuationBannerHeader(
+    podcastTitle: String,
+    colorScheme: ColorScheme,
+    onDismiss: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = SameShowContinuationBannerDefaults.titleText(podcastTitle),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = GoogleSansWeight.bold,
+            color = colorScheme.onSurface,
+            maxLines = 1,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .basicMarquee(),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = "Dismiss",
+                tint = colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SameShowContinuationPreviewList(
+    episodes: List<Episode>,
+    colorScheme: ColorScheme,
+    modifier: Modifier = Modifier,
+    onEpisodeClick: (Episode) -> Unit = {},
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        episodes.forEach { episode ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            color = colorScheme.surfaceContainerHighest,
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        .expressiveClickable { onEpisodeClick(episode) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AsyncImage(
+                    model =
+                        episode.imageUrl?.takeIf { it.isNotBlank() }
+                            ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = episode.title.replace("+", " "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = GoogleSansWeight.medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                val duration = SameShowContinuationBannerDefaults.formatDuration(episode.duration)
+                if (duration.isNotBlank()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = duration,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SameShowContinuationAccordionToggle(
+    availableCount: Int,
+    isExpanded: Boolean,
+    colorScheme: ColorScheme,
+    onToggle: () -> Unit,
+) {
+    FilledTonalButton(
+        onClick = onToggle,
+        shape = CircleShape,
+        colors =
+            ButtonDefaults.filledTonalButtonColors(
+                containerColor = colorScheme.surfaceContainerHighest,
+                contentColor = colorScheme.primary,
+            ),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = SameShowContinuationBannerDefaults.previewToggleText(availableCount, isExpanded),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = GoogleSansWeight.semiBold,
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Icon(
+            imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
+@Composable
+fun SameShowContinuationBanner(
+    state: SameShowContinuationState,
+    onAddEpisodes: () -> Unit,
+    onDismiss: () -> Unit,
+    colorScheme: ColorScheme,
+    modifier: Modifier = Modifier,
+    onEpisodeClick: (Episode) -> Unit = {},
+) {
+    if (!state.visible || state.availableCount <= 0) return
+
+    var isExpanded by rememberSaveable { mutableStateOf(false) }
+    val buttonText = SameShowContinuationBannerDefaults.buttonText(state.availableCount)
+
+    Card(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = colorScheme.surfaceContainerHigh,
+                contentColor = colorScheme.onSurface,
+            ),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            SameShowContinuationBannerHeader(
+                podcastTitle = state.podcastTitle,
+                colorScheme = colorScheme,
+                onDismiss = onDismiss,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = SameShowContinuationBannerDefaults.EXPLANATION_TEXT,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            SameShowContinuationAccordionToggle(
+                availableCount = state.availableCount,
+                isExpanded = isExpanded,
+                colorScheme = colorScheme,
+                onToggle = { isExpanded = !isExpanded },
+            )
+
+            // Accordion preview content (full card width)
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                SameShowContinuationPreviewList(
+                    episodes = state.nextEpisodes.take(state.availableCount),
+                    colorScheme = colorScheme,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
+                    onEpisodeClick = onEpisodeClick,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            Button(
+                onClick = onAddEpisodes,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary,
+                    ),
+                shape = CircleShape,
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = buttonText,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = GoogleSansWeight.bold,
+                )
+            }
         }
     }
 }

@@ -252,6 +252,37 @@ class LocalEpisodeCatalogRepositoryTest {
             assertTrue(dao.feeds.containsKey("100"))
         }
 
+    @Test
+    fun getWindowWithAroundEpisodeIdReturnsAnchorAndSubsequentEpisodes() =
+        runTest {
+            val dao = FakeCatalogDao()
+            dao.feeds["100"] = LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml")
+            dao.episodes +=
+                listOf(
+                    localEpisode(episodeId = "-1", publishedDate = 1000L),
+                    localEpisode(episodeId = "-2", publishedDate = 2000L),
+                    localEpisode(episodeId = "-3", publishedDate = 3000L),
+                    localEpisode(episodeId = "-4", publishedDate = 500L),
+                )
+            val meta =
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.PodcastMeta(
+                    title = "Show",
+                    imageUrl = "https://example.com/art.jpg",
+                    genre = "News",
+                    artist = "Author",
+                )
+            val repo = catalogRepo(dao)
+            val window =
+                repo.getWindow(
+                    podcastId = "100",
+                    sort = "newest",
+                    bound = 10,
+                    aroundEpisodeId = "-1",
+                    meta = meta,
+                )
+            assertEquals(listOf("-1", "-2", "-3"), window.map { it.id })
+        }
+
     private fun catalogRepo(
         dao: FakeCatalogDao = FakeCatalogDao(),
         isFeedUnchanged: suspend (String, String?, String?) -> Boolean = { _, _, _ -> false },
@@ -355,6 +386,21 @@ class LocalEpisodeCatalogRepositoryTest {
             podcastId: String,
             query: String,
         ): List<LocalEpisodeEntity> = emptyList()
+
+        override suspend fun getEpisodesAfter(
+            podcastId: String,
+            publishedDate: Long,
+            episodeId: String,
+            limit: Int,
+        ): List<LocalEpisodeEntity> {
+            val comparator = compareBy<LocalEpisodeEntity> { it.publishedDate }.thenByDescending { it.episodeId }
+            val matching =
+                episodes.filter {
+                    it.podcastId == podcastId &&
+                        (it.publishedDate > publishedDate || (it.publishedDate == publishedDate && it.episodeId < episodeId))
+                }
+            return matching.sortedWith(comparator).take(limit)
+        }
 
         override suspend fun getOlderThan(
             podcastId: String,
