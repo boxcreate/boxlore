@@ -48,7 +48,7 @@ README_AI_NOTICE = (
     "</p>"
 )
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "openai/gpt-oss-120b"
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_USER_AGENT = "boxlore-changelog/1.4"
 CATEGORY_ORDER = ("Added", "Changed", "Fixed", "Deprecated", "Removed", "Security")
 README_GROUP_ORDER = (
@@ -446,6 +446,23 @@ def _require_env(name: str) -> str:
     return value
 
 
+def _clean_pr_body(body: str) -> str:
+    """Strip template noise, test plans, checkboxes, and agent prompts from PR description."""
+    if not body:
+        return ""
+    # Strip <details> blocks (e.g. AI agent prompts from reviews)
+    cleaned = re.sub(r"<details>.*?</details>", "", body, flags=re.DOTALL | re.IGNORECASE)
+    # Strip HTML comments
+    cleaned = re.sub(r"<!--.*?-->", "", cleaned, flags=re.DOTALL)
+    # Strip Test plan section onwards
+    cleaned = re.split(r"(?i)##\s*Test\s+plan", cleaned)[0]
+    # Strip checkbox lines like - [x] or - [ ]
+    cleaned = re.sub(r"^\s*-\s*\[[ xX]\].*$", "", cleaned, flags=re.MULTILINE)
+    # Strip excessive blank lines
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 def _groq_entries(api_key: str, pr_number: int, pr_title: str, pr_body: str) -> dict[str, list[str]]:
     system_prompt = """You write Keep a Changelog entries for boxlore (Android/Kotlin podcast app).
 Return ONLY valid JSON with optional keys: Added, Changed, Fixed, Deprecated, Removed, Security.
@@ -463,13 +480,22 @@ Rules:
 - Do not invent changes unsupported by the PR title/body.
 - Omit empty categories.
 - No version headers, dates, PR numbers, or markdown in bullets.
-- Aim for 1–6 bullets total per PR (at least one)."""
+- Aim for 1–6 bullets total per PR (at least one).
 
+Examples:
+- Bugfix PR:
+  Input: Title: fix(queue): restore same-show playback continuation (#1017)
+  Output: {"Fixed": ["Fixed same-show continuation in SmartQueueEngine by restoring forward chronological queries in LocalEpisodeCatalogDao and RssEpisodeDao"]}
+- Feature PR:
+  Input: Title: feat(info): add direct publisher feed refresh on pull-down (#1016)
+  Output: {"Added": ["Added direct-feed refresh for subscribed catalog podcasts on pull-to-refresh", "Preserved notification and download settings across pull-to-refresh"]}"""
+
+    cleaned_body = _clean_pr_body(pr_body)
     user_prompt = f"""PR #{pr_number}
 Title: {pr_title}
 
 Description:
-{pr_body or "(no description)"}
+{cleaned_body or "(no description)"}
 
 Generate changelog bullets for the [Unreleased] section."""
 
@@ -523,10 +549,20 @@ def _fallback_entries_from_title(pr_title: str) -> dict[str, list[str]]:
 
 
 def _extract_pr_number(bullet: str) -> int | None:
-    match = re.search(r"\(#(\d+)\)", bullet)
+    # 1. Full markdown pull request link: [#1019](https://github.com/.../pull/1019)
+    match = re.search(r"\[#(\d+)\]\(https://github\.com/[^/]+/[^/]+/pull/\1\)", bullet)
     if match:
         return int(match.group(1))
-    match = re.search(r"\[#(\d+)\]\(https://github\.com/[^/]+/[^/]+/pull/\1\)", bullet)
+    # 2. Trailing PR reference at the end of the bullet: (#1019) before comments or end of string
+    match = re.search(r"\(#(\d+)\)\s*(?:<!--.*-->)?\s*$", bullet)
+    if match:
+        return int(match.group(1))
+    # 3. Any markdown pull link
+    match = re.search(r"\[#(\d+)\]\([^)]*pull/\1\)", bullet)
+    if match:
+        return int(match.group(1))
+    # 4. Fallback to any (#123)
+    match = re.search(r"\(#(\d+)\)", bullet)
     if match:
         return int(match.group(1))
     return None
@@ -1126,6 +1162,12 @@ def _format_readme_bullet(text: str, pr_number: int | None) -> str:
     cleaned = text.strip()
     if not cleaned:
         return cleaned
+    cleaned = re.sub(
+        r"^(?:\[(?:Fixed|Added|Changed|Improved|Fix|Add|Change|Security)\]|(?:Fixed|Added|Changed|Improved|Fix|Add|Change|Security):)\s*",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    ).strip()
     if pr_number is not None and not _pr_already_present(cleaned, pr_number):
         cleaned = f"{cleaned} {_pr_suffix(pr_number)}"
     return cleaned
@@ -1757,24 +1799,25 @@ def sync_readme_upcoming(api_key: str) -> bool:
     else:
         locked_groups, locked_prs = _locked_readme_groups_from_changelog(changelog_content)
         unlocked = _sections_excluding_prs(unreleased, locked_prs)
+        unlocked_clusters = [c for c in _cluster_sections_by_pr(unlocked) if _readme_eligible(c)]
         ai_groups: list[dict[str, list[str]]] = []
-        if any(unlocked.values()):
+        if unlocked_clusters:
             print("Curating README from unlocked [Unreleased] changelog entries...")
             ai_groups = _groq_curate_readme_upcoming(api_key, unlocked)
             if not ai_groups:
                 print("Grouped curation empty; falling back to cluster bullets.")
-                clusters = _cluster_sections_by_pr(unlocked)
-                ai_groups = _fallback_readme_from_clusters(clusters)
+                ai_groups = _fallback_readme_from_clusters(unlocked_clusters)
             ai_groups = _drop_prs_from_readme_groups(ai_groups, locked_prs)
         elif locked_groups:
             print("Using verbatim README copy; skipping Groq README curation.")
         else:
-            print("Curating README from all [Unreleased] changelog entries...")
-            ai_groups = _groq_curate_readme_upcoming(api_key, unreleased)
-            if not ai_groups:
-                print("Grouped curation empty; falling back to cluster bullets.")
-                clusters = _cluster_sections_by_pr(unreleased)
-                ai_groups = _fallback_readme_from_clusters(clusters)
+            all_clusters = [c for c in _cluster_sections_by_pr(unreleased) if _readme_eligible(c)]
+            if all_clusters:
+                print("Curating README from all [Unreleased] changelog entries...")
+                ai_groups = _groq_curate_readme_upcoming(api_key, unreleased)
+                if not ai_groups:
+                    print("Grouped curation empty; falling back to cluster bullets.")
+                    ai_groups = _fallback_readme_from_clusters(all_clusters)
 
         groups = _merge_readme_groups(locked_groups, ai_groups)
         include_ai_notice = bool(ai_groups)

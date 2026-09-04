@@ -279,5 +279,64 @@ class LockedChangelogFlowTest(unittest.TestCase):
             groq.assert_not_called()
 
 
+class ChangelogSanitizationAndExtractionTest(unittest.TestCase):
+    def test_extract_pr_number_prioritizes_pr_link_over_issue_number(self) -> None:
+        bullet_with_issue_and_pr = (
+            "- Fixed same-show continuation in `SmartQueueEngine` by restoring forward "
+            "chronological queries in `LocalEpisodeCatalogDao` and `RssEpisodeDao` (#1017). "
+            "([#1019](https://github.com/boxcreate/boxlore/pull/1019)) "
+            "<!-- impact:user-impact-critical --> <!-- copy:locked -->"
+        )
+        self.assertEqual(uc._extract_pr_number(bullet_with_issue_and_pr), 1019)
+
+    def test_extract_pr_number_handles_standard_trailing_pr(self) -> None:
+        bullet_trailing = "- Enabled Gradle configuration cache ([#1021](https://github.com/boxcreate/boxlore/pull/1021))"
+        self.assertEqual(uc._extract_pr_number(bullet_trailing), 1021)
+        simple_pr = "- Some minor polish (#999)"
+        self.assertEqual(uc._extract_pr_number(simple_pr), 999)
+
+    def test_clean_pr_body_strips_test_plans_checkboxes_and_prompts(self) -> None:
+        noisy_body = """## Summary
+Real summary text.
+
+<details>
+<summary>🤖 Prompt for AI Agents</summary>
+Noise that should be stripped.
+</details>
+
+<!-- release-copy:changelog:start -->
+<!-- release-copy:changelog:end -->
+
+## Impact
+- [x] user-impact-critical
+- [ ] user-impact-high
+
+### Listener impact
+Important listener note.
+
+## Test plan
+- [x] Built / installed locally
+- [x] Tested on device
+"""
+        cleaned = uc._clean_pr_body(noisy_body)
+        self.assertIn("Real summary text.", cleaned)
+        self.assertIn("Important listener note.", cleaned)
+        self.assertNotIn("Prompt for AI Agents", cleaned)
+        self.assertNotIn("Noise that should be stripped", cleaned)
+        self.assertNotIn("user-impact-critical", cleaned)
+        self.assertNotIn("Test plan", cleaned)
+        self.assertNotIn("Built / installed locally", cleaned)
+
+    def test_format_readme_bullet_strips_category_prefixes(self) -> None:
+        self.assertEqual(
+            uc._format_readme_bullet("[Fixed] Fixed broken queue", 1019),
+            "Fixed broken queue ([#1019](https://github.com/boxcreate/boxlore/pull/1019))",
+        )
+        self.assertEqual(
+            uc._format_readme_bullet("Added: Brand new explore screen", 1020),
+            "Brand new explore screen ([#1020](https://github.com/boxcreate/boxlore/pull/1020))",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
