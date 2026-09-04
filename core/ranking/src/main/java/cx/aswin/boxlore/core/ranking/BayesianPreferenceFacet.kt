@@ -11,15 +11,8 @@ enum class PreferenceFacetType {
     INTENT,
 }
 
-data class BayesianPreferenceFacet(
-    val positiveEvidence: Double = 0.0,
-    val negativeEvidence: Double = 0.0,
-    val updatedAt: Long,
-) {
-    fun decayed(
-        now: Long,
-        halfLifeMillis: Long = DEFAULT_HALF_LIFE_MILLIS,
-    ): BayesianPreferenceFacet {
+data class BayesianPreferenceFacet(val positiveEvidence: Double = 0.0, val negativeEvidence: Double = 0.0, val updatedAt: Long,) {
+    fun decayed(now: Long, halfLifeMillis: Long = DEFAULT_HALF_LIFE_MILLIS,): BayesianPreferenceFacet {
         if (now <= updatedAt) return copy(updatedAt = now)
         val elapsed = now - updatedAt
         val factor = 2.0.pow(-elapsed.toDouble() / halfLifeMillis)
@@ -30,10 +23,7 @@ data class BayesianPreferenceFacet(
         )
     }
 
-    fun update(
-        reward: Double,
-        now: Long,
-    ): BayesianPreferenceFacet {
+    fun update(reward: Double, now: Long,): BayesianPreferenceFacet {
         val current = decayed(now)
         val boundedReward = reward.coerceIn(-1.0, 1.0)
         return current.copy(
@@ -42,10 +32,7 @@ data class BayesianPreferenceFacet(
         )
     }
 
-    fun affinity(
-        now: Long,
-        priorStrength: Double = 2.0,
-    ): Double {
+    fun affinity(now: Long, priorStrength: Double = 2.0,): Double {
         val current = decayed(now)
         val boundedPrior = priorStrength.coerceAtLeast(0.001)
         val alpha = boundedPrior / 2.0 + current.positiveEvidence

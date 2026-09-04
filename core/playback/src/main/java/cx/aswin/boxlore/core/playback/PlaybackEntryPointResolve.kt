@@ -9,14 +9,12 @@ import cx.aswin.boxlore.core.model.PlaybackEntryPoint
  * forwarded as sourceContext for `playback_*` attribution.
  */
 internal object PlaybackEntryPointResolve {
-    fun fromEntryPointString(raw: String?): PlaybackEntryPoint =
-        when (raw?.trim()?.lowercase()) {
-            "home_mixtape" -> PlaybackEntryPoint.HOME_MIXTAPE
-            "learn", "learn_history" -> PlaybackEntryPoint.LEARN
-            "briefing" -> PlaybackEntryPoint.BRIEFING
-            else -> PlaybackEntryPoint.GENERIC
-        }
+    fun fromEntryPointString(raw: String?): PlaybackEntryPoint = when (raw?.trim()?.lowercase()) {
+        "home_mixtape" -> PlaybackEntryPoint.HOME_MIXTAPE
+        "learn", "learn_history" -> PlaybackEntryPoint.LEARN
+        "briefing" -> PlaybackEntryPoint.BRIEFING
+        else -> PlaybackEntryPoint.GENERIC
+    }
 
-    fun fromSourceContext(entryPointContext: Bundle?): PlaybackEntryPoint =
-        fromEntryPointString(entryPointContext?.getString("entry_point"))
+    fun fromSourceContext(entryPointContext: Bundle?): PlaybackEntryPoint = fromEntryPointString(entryPointContext?.getString("entry_point"))
 }

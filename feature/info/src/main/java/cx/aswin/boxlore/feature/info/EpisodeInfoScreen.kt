@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -66,7 +64,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -79,6 +76,7 @@ import coil.request.ImageRequest
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.ControlStyle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import kotlinx.coroutines.delay
 
@@ -241,11 +239,11 @@ fun EpisodeInfoScreen(
             val painter =
                 rememberAsyncImagePainter(
                     model =
-                        ImageRequest
-                            .Builder(context)
-                            .data(state.episode.podcastImageUrl?.ifEmpty { state.episode.imageUrl?.ifEmpty { null } })
-                            .allowHardware(false)
-                            .build(),
+                    ImageRequest
+                        .Builder(context)
+                        .data(state.episode.podcastImageUrl?.ifEmpty { state.episode.imageUrl?.ifEmpty { null } })
+                        .allowHardware(false)
+                        .build(),
                 )
             LaunchedEffect(painter.state) {
                 val painterState = painter.state
@@ -261,39 +259,39 @@ fun EpisodeInfoScreen(
                 // Blurred Background Header
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(collapsedHeaderHeight + 240.dp)
-                            .graphicsLayer {
-                                translationY = -scrollOffset * 0.5f
-                                alpha = 1f - scrollFraction
-                            },
+                    Modifier
+                        .fillMaxWidth()
+                        .height(collapsedHeaderHeight + 240.dp)
+                        .graphicsLayer {
+                            translationY = -scrollOffset * 0.5f
+                            alpha = 1f - scrollFraction
+                        },
                 ) {
                     OptimizedImage(
                         url = state.episode.imageUrl?.ifEmpty { state.episode.podcastImageUrl },
                         proxyWidth = 200,
                         contentDescription = null,
                         modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .alpha(0.5f)
-                                .blur(50.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded),
+                        Modifier
+                            .fillMaxSize()
+                            .alpha(0.5f)
+                            .blur(50.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded),
                         contentScale = ContentScale.Crop,
                     )
                     // Gradient overlay to blend into the background
                     Box(
                         modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(
-                                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                androidx.compose.ui.graphics.Color.Transparent,
-                                                MaterialTheme.colorScheme.background,
-                                            ),
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors =
+                                    listOf(
+                                        androidx.compose.ui.graphics.Color.Transparent,
+                                        MaterialTheme.colorScheme.background,
                                     ),
                                 ),
+                            ),
                     )
                 }
                 // Content List
@@ -301,19 +299,19 @@ fun EpisodeInfoScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding =
-                        PaddingValues(
-                            top = collapsedHeaderHeight + 16.dp,
-                            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
-                        ),
+                    PaddingValues(
+                        top = collapsedHeaderHeight + 16.dp,
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
+                    ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     // HERO SECTION (Artwork + Title + Podcast Link + Metadata)
                     item {
                         Column(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             // Artwork
@@ -337,9 +335,9 @@ fun EpisodeInfoScreen(
                                         shape = CircleShape,
                                         color = Color.Black.copy(alpha = 0.55f),
                                         modifier =
-                                            Modifier
-                                                .padding(8.dp)
-                                                .align(Alignment.TopEnd),
+                                        Modifier
+                                            .padding(8.dp)
+                                            .align(Alignment.TopEnd),
                                     ) {
                                         Box(
                                             modifier = Modifier.padding(6.dp),
@@ -375,11 +373,11 @@ fun EpisodeInfoScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
                                 modifier =
-                                    Modifier
-                                        .expressiveClickable {
-                                            viewModel.onPodcastLinkClicked()
-                                            onPodcastClick(state.podcastId)
-                                        }.padding(vertical = 4.dp, horizontal = 8.dp),
+                                Modifier
+                                    .expressiveClickable {
+                                        viewModel.onPodcastLinkClicked()
+                                        onPodcastClick(state.podcastId)
+                                    }.padding(vertical = 4.dp, horizontal = 8.dp),
                             ) {
                                 Text(
                                     text = state.podcastTitle,
@@ -582,10 +580,10 @@ fun EpisodeInfoScreen(
                     item {
                         Column(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp)
-                                    .padding(top = 16.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                                .padding(top = 16.dp),
                         ) {
                             // Prepare Progress Data
                             val progress =
@@ -614,8 +612,8 @@ fun EpisodeInfoScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth(),
+                                Modifier
+                                    .fillMaxWidth(),
                             ) {
                                 // Action Buttons Row (Material3 Tonal) on the Left
                                 cx.aswin.boxlore.core.designsystem.components.AdvancedPlayerControls(
@@ -644,18 +642,18 @@ fun EpisodeInfoScreen(
                                 cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton(
                                     onClick = { viewModel.onMainActionClick(entryPointContext) },
                                     state =
-                                        cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
-                                            isPlaying = isPlaying,
-                                            isResume = state.resumePositionMs > 0,
-                                            isLoading = state.isPlaybackLoading,
-                                            progress = progress,
-                                            timeText = formatRemaining(remainingSeconds),
-                                        ),
+                                    cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
+                                        isPlaying = isPlaying,
+                                        isResume = state.resumePositionMs > 0,
+                                        isLoading = state.isPlaybackLoading,
+                                        progress = progress,
+                                        timeText = formatRemaining(remainingSeconds),
+                                    ),
                                     accentColor = accentColor, // Use extracted album art color
                                     modifier =
-                                        Modifier
-                                            .height(56.dp)
-                                            .weight(1f), // Takes up remaining width (lots of area for Resume text)
+                                    Modifier
+                                        .height(56.dp)
+                                        .weight(1f), // Takes up remaining width (lots of area for Resume text)
                                 )
                             }
                         }
@@ -675,22 +673,22 @@ fun EpisodeInfoScreen(
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = tipVisible,
                                 enter =
-                                    androidx.compose.animation.fadeIn(
-                                        androidx.compose.animation.core
-                                            .tween(300),
-                                    ) +
-                                        androidx.compose.animation.slideInVertically(initialOffsetY = { -it / 2 }),
+                                androidx.compose.animation.fadeIn(
+                                    androidx.compose.animation.core
+                                        .tween(300),
+                                ) +
+                                    androidx.compose.animation.slideInVertically(initialOffsetY = { -it / 2 }),
                                 exit =
-                                    androidx.compose.animation.fadeOut(
-                                        androidx.compose.animation.core
-                                            .tween(500),
-                                    ),
+                                androidx.compose.animation.fadeOut(
+                                    androidx.compose.animation.core
+                                        .tween(500),
+                                ),
                             ) {
                                 Box(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(start = 24.dp, bottom = 8.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 24.dp, bottom = 8.dp),
                                     // Align with the controls on the left
                                     contentAlignment = Alignment.CenterStart,
                                 ) {
@@ -719,8 +717,8 @@ fun EpisodeInfoScreen(
                                 crossPromotion = crossPromo,
                                 onPodcastClick = onPodcastClick,
                                 modifier =
-                                    Modifier
-                                        .padding(horizontal = 16.dp),
+                                Modifier
+                                    .padding(horizontal = 16.dp),
                             )
                         }
                     }
@@ -766,11 +764,11 @@ fun EpisodeInfoScreen(
             // HEADER OVERLAY (Back button + animated background)
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(collapsedHeaderHeight)
-                        .background(headerColor)
-                        .statusBarsPadding(),
+                Modifier
+                    .fillMaxWidth()
+                    .height(collapsedHeaderHeight)
+                    .background(headerColor)
+                    .statusBarsPadding(),
             ) {
                 // Back Button
                 IconButton(
@@ -841,13 +839,13 @@ fun EpisodeInfoScreen(
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = titleHorizontalPadding)
-                        .graphicsLayer {
-                            translationY = titleTranslationY
-                            alpha = titleAlpha
-                        },
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = titleHorizontalPadding)
+                    .graphicsLayer {
+                        translationY = titleTranslationY
+                        alpha = titleAlpha
+                    },
             )
         }
     }

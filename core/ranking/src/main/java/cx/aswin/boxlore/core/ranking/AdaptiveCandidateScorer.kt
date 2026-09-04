@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.core.ranking
 
 import android.content.Context
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastScoring
 import cx.aswin.boxlore.core.database.ScorablePodcast
-import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.PodcastGenres
@@ -333,12 +333,9 @@ class AdaptiveCandidateScorer private constructor(
         return ranked
     }
 
-    private fun List<ScorablePodcast>.associateIndexedScores(
-        scores: List<RankingScore>,
-    ): Map<String, Double> =
-        mapIndexed { index, podcast ->
-            podcast.id to scores[index].finalScore
-        }.toMap()
+    private fun List<ScorablePodcast>.associateIndexedScores(scores: List<RankingScore>,): Map<String, Double> = mapIndexed { index, podcast ->
+        podcast.id to scores[index].finalScore
+    }.toMap()
 
     private fun normalizePriors(scores: Map<String, Double>): Map<String, Double> {
         val finite = scores.filterValues { it.isFinite() && it >= 0.0 }
@@ -346,16 +343,15 @@ class AdaptiveCandidateScorer private constructor(
         if (max <= 0.0) return scores.mapValues { 0.0 }
         val denominator = ln(1.0 + max)
         return scores.mapValues { (_, value) ->
-            if (!value.isFinite() || value <= 0.0) 0.0
-            else (ln(1.0 + value) / denominator).coerceIn(0.0, 1.0)
+            if (!value.isFinite() || value <= 0.0) {
+                0.0
+            } else {
+                (ln(1.0 + value) / denominator).coerceIn(0.0, 1.0)
+            }
         }
     }
 
-    private fun recordShadowComparison(
-        objective: RankingObjective,
-        priors: Map<String, Double>,
-        adaptive: Map<String, Double>,
-    ) {
+    private fun recordShadowComparison(objective: RankingObjective, priors: Map<String, Double>, adaptive: Map<String, Double>,) {
         if (!runtimeControls.isShadowDiagnosticsEnabled()) return
         RankingShadowDiagnostics.record(
             objective = objective,
@@ -370,23 +366,18 @@ class AdaptiveCandidateScorer private constructor(
         @Volatile
         private var instance: AdaptiveCandidateScorer? = null
 
-        fun create(
-            rankingRepository: AdaptiveRankingRepository,
-            runtimeControls: RankingRuntimeControls,
-        ): AdaptiveCandidateScorer = AdaptiveCandidateScorer(rankingRepository, runtimeControls)
+        fun create(rankingRepository: AdaptiveRankingRepository, runtimeControls: RankingRuntimeControls,): AdaptiveCandidateScorer = AdaptiveCandidateScorer(rankingRepository, runtimeControls)
 
         fun install(value: AdaptiveCandidateScorer) {
             instance = value
         }
 
         /** Prefer AppContainer / SharedAppDependenciesHolder in production. */
-        fun getInstance(context: Context): AdaptiveCandidateScorer {
-            return instance ?: synchronized(this) {
-                instance ?: create(
-                    AdaptiveRankingRepository.getInstance(context.applicationContext),
-                    RankingRuntimeControls.getInstance(context.applicationContext),
-                ).also { instance = it }
-            }
+        fun getInstance(context: Context): AdaptiveCandidateScorer = instance ?: synchronized(this) {
+            instance ?: create(
+                AdaptiveRankingRepository.getInstance(context.applicationContext),
+                RankingRuntimeControls.getInstance(context.applicationContext),
+            ).also { instance = it }
         }
     }
 }

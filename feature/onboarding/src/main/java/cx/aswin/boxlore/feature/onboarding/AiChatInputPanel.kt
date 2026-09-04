@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -25,13 +23,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -65,18 +63,18 @@ internal fun AiChatInputPanel(
 // Input / Synthesis Loader / Error Card Area
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors =
-                            listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-                                MaterialTheme.colorScheme.background,
-                            ),
+        Modifier
+            .fillMaxWidth()
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors =
+                    listOf(
+                        Color.Transparent,
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                        MaterialTheme.colorScheme.background,
                     ),
-                ).padding(horizontal = 24.dp, vertical = 12.dp),
+                ),
+            ).padding(horizontal = 24.dp, vertical = 12.dp),
     ) {
         val isFinalSynthesis = uiState.isSynthesizing
         val onboardingError = uiState.onboardingError
@@ -85,14 +83,14 @@ internal fun AiChatInputPanel(
             // Error Card layout
             Card(
                 colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    ),
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
                 border =
-                    BorderStroke(
-                        width = 1.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                    ),
+                BorderStroke(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                ),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             ) {
@@ -147,9 +145,9 @@ internal fun AiChatInputPanel(
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(24.dp),
                             colors =
-                                ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                         ) {
                             Text("Choose Topics Manually", fontWeight = GoogleSansWeight.bold)
                         }
@@ -159,9 +157,9 @@ internal fun AiChatInputPanel(
         } else if (isFinalSynthesis) {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
             ) {
                 FinalSynthesisLoadingPanel(
                     stage = uiState.aiLoadingStage,
@@ -173,32 +171,32 @@ internal fun AiChatInputPanel(
             // Reveal Suggestions Card Panel (Synthesis Complete)
             Card(
                 colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    ),
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
                 border =
-                    BorderStroke(
-                        width = 1.5.dp,
-                        brush =
-                            androidx.compose.ui.graphics.Brush.linearGradient(
-                                colors =
-                                    listOf(
-                                        primaryColor,
-                                        tertiaryColor,
-                                    ),
-                            ),
+                BorderStroke(
+                    width = 1.5.dp,
+                    brush =
+                    androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors =
+                        listOf(
+                            primaryColor,
+                            tertiaryColor,
+                        ),
                     ),
+                ),
                 shape = RoundedCornerShape(24.dp),
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
             ) {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
@@ -206,18 +204,18 @@ internal fun AiChatInputPanel(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier =
-                            Modifier
-                                .background(
-                                    brush =
-                                        androidx.compose.ui.graphics.Brush.linearGradient(
-                                            colors =
-                                                listOf(
-                                                    primaryColor.copy(alpha = 0.12f),
-                                                    tertiaryColor.copy(alpha = 0.12f),
-                                                ),
-                                        ),
-                                    shape = RoundedCornerShape(percent = 50),
-                                ).padding(horizontal = 12.dp, vertical = 6.dp),
+                        Modifier
+                            .background(
+                                brush =
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors =
+                                    listOf(
+                                        primaryColor.copy(alpha = 0.12f),
+                                        tertiaryColor.copy(alpha = 0.12f),
+                                    ),
+                                ),
+                                shape = RoundedCornerShape(percent = 50),
+                            ).padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.AutoAwesome,
@@ -228,10 +226,10 @@ internal fun AiChatInputPanel(
                         Text(
                             text = "AI SYNTHESIS COMPLETE",
                             style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = GoogleSansWeight.bold,
-                                    letterSpacing = 1.2.sp,
-                                ),
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = GoogleSansWeight.bold,
+                                letterSpacing = 1.2.sp,
+                            ),
                             color = primaryColor,
                         )
                     }
@@ -239,10 +237,10 @@ internal fun AiChatInputPanel(
                     Text(
                         text = "Done! I've analyzed your preferences and curated a personalized feed of recommended podcasts for you.",
                         style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp,
-                            ),
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                        ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 8.dp),
@@ -250,13 +248,13 @@ internal fun AiChatInputPanel(
 
                     Row(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .background(primaryColor, shape = RoundedCornerShape(25.dp))
-                                .expressiveClickable(shape = RoundedCornerShape(25.dp)) {
-                                    onRevealSuggestions()
-                                },
+                        Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .background(primaryColor, shape = RoundedCornerShape(25.dp))
+                            .expressiveClickable(shape = RoundedCornerShape(25.dp)) {
+                                onRevealSuggestions()
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
@@ -280,29 +278,29 @@ internal fun AiChatInputPanel(
             // Reveal Build My Feed Card Panel (AI decided it has enough context)
             Card(
                 colors =
-                    CardDefaults.cardColors(
-                        containerColor =
-                            MaterialTheme.colorScheme.primaryContainer
-                                .copy(
-                                    alpha = 0.15f,
-                                ).compositeOver(MaterialTheme.colorScheme.surface),
-                    ),
+                CardDefaults.cardColors(
+                    containerColor =
+                    MaterialTheme.colorScheme.primaryContainer
+                        .copy(
+                            alpha = 0.15f,
+                        ).compositeOver(MaterialTheme.colorScheme.surface),
+                ),
                 border =
-                    BorderStroke(
-                        width = 1.5.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                    ),
+                BorderStroke(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                ),
                 shape = RoundedCornerShape(24.dp),
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
             ) {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
@@ -310,11 +308,11 @@ internal fun AiChatInputPanel(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier =
-                            Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                    shape = RoundedCornerShape(percent = 50),
-                                ).padding(horizontal = 12.dp, vertical = 6.dp),
+                        Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(percent = 50),
+                            ).padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.AutoAwesome,
@@ -325,10 +323,10 @@ internal fun AiChatInputPanel(
                         Text(
                             text = "INFO SYNTHESIS READY",
                             style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = GoogleSansWeight.bold,
-                                    letterSpacing = 1.2.sp,
-                                ),
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = GoogleSansWeight.bold,
+                                letterSpacing = 1.2.sp,
+                            ),
                             color = primaryColor,
                         )
                     }
@@ -336,10 +334,10 @@ internal fun AiChatInputPanel(
                     Text(
                         text = "I've got a great understanding of your podcast vibe! Let's generate your custom audio guide.",
                         style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp,
-                            ),
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                        ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 8.dp),
@@ -347,13 +345,13 @@ internal fun AiChatInputPanel(
 
                     Row(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .background(primaryColor, shape = RoundedCornerShape(25.dp))
-                                .expressiveClickable(shape = RoundedCornerShape(25.dp)) {
-                                    onContinue()
-                                },
+                        Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .background(primaryColor, shape = RoundedCornerShape(25.dp))
+                            .expressiveClickable(shape = RoundedCornerShape(25.dp)) {
+                                onContinue()
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
@@ -384,9 +382,9 @@ internal fun AiChatInputPanel(
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
                     ) {
                         uiState.aiOptions.forEach { opt ->
                             val isSelected = opt.isNotEmpty() && opt in uiState.aiSelectedOptions
@@ -415,22 +413,22 @@ internal fun AiChatInputPanel(
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
                     ) {
                         uiState.aiSearchSuggestion?.let { suggestion ->
                             Row(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .background(
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(16.dp),
-                                        ).expressiveClickable(shape = RoundedCornerShape(16.dp)) {
-                                            focusManager.clearFocus()
-                                            onSearchInstead(suggestion)
-                                        }.padding(horizontal = 16.dp, vertical = 12.dp),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(16.dp),
+                                    ).expressiveClickable(shape = RoundedCornerShape(16.dp)) {
+                                        focusManager.clearFocus()
+                                        onSearchInstead(suggestion)
+                                    }.padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(
@@ -473,19 +471,19 @@ internal fun AiChatInputPanel(
                         if (uiState.aiCurrentTurn >= 4) {
                             Row(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
                                     text = "AI will auto-build once it has enough context",
                                     style =
-                                        MaterialTheme.typography.bodySmall.copy(
-                                            fontSize = 11.sp,
-                                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                        ),
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = 11.sp,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     modifier = Modifier.weight(1f),
                                 )
@@ -493,10 +491,10 @@ internal fun AiChatInputPanel(
                                 Text(
                                     text = "or",
                                     style =
-                                        MaterialTheme.typography.bodySmall.copy(
-                                            fontSize = 11.sp,
-                                            fontWeight = GoogleSansWeight.bold,
-                                        ),
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = GoogleSansWeight.bold,
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 )
 
@@ -533,38 +531,38 @@ internal fun AiChatInputPanel(
                 (uiState.aiSelectedOptions.isNotEmpty() || uiState.aiCustomInputText.isNotBlank()) && !uiState.isAiLoading
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .background(
-                            color =
-                                if (isTextFieldFocused) {
-                                    MaterialTheme.colorScheme.surfaceContainerHigh
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceContainer
-                                },
-                            shape = RoundedCornerShape(28.dp),
-                        ).border(
-                            width = if (isTextFieldFocused) 2.dp else 1.dp,
-                            color =
-                                if (isTextFieldFocused) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.outlineVariant
-                                },
-                            shape = RoundedCornerShape(28.dp),
-                        ).padding(horizontal = 16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(
+                        color =
+                        if (isTextFieldFocused) {
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainer
+                        },
+                        shape = RoundedCornerShape(28.dp),
+                    ).border(
+                        width = if (isTextFieldFocused) 2.dp else 1.dp,
+                        color =
+                        if (isTextFieldFocused) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                        shape = RoundedCornerShape(28.dp),
+                    ).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Rounded.AutoAwesome,
                     contentDescription = null,
                     tint =
-                        if (isTextFieldFocused) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        },
+                    if (isTextFieldFocused) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    },
                     modifier = Modifier.size(20.dp),
                 )
 
@@ -578,27 +576,27 @@ internal fun AiChatInputPanel(
                         val exampleText = "I love listening to true crime while I sleep and news when I commute"
                         Text(
                             text =
-                                if (isTextFieldFocused) {
-                                    "e.g. $exampleText..."
-                                } else {
-                                    "OR just type in your preferences"
-                                },
+                            if (isTextFieldFocused) {
+                                "e.g. $exampleText..."
+                            } else {
+                                "OR just type in your preferences"
+                            },
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .then(
-                                        if (isTextFieldFocused) {
-                                            Modifier.clickable {
-                                                onCustomInputChange(exampleText)
-                                            }
-                                        } else {
-                                            Modifier
-                                        },
-                                    ),
+                            Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (isTextFieldFocused) {
+                                        Modifier.clickable {
+                                            onCustomInputChange(exampleText)
+                                        }
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
                         )
                     }
 
@@ -607,42 +605,42 @@ internal fun AiChatInputPanel(
                         onValueChange = onCustomInputChange,
                         enabled = !uiState.isAiLoading,
                         textStyle =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            ),
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
                         cursorBrush = SolidColor(primaryColor),
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .onFocusChanged { focusState ->
-                                    onTextFieldFocusChange(focusState.isFocused)
-                                    if (focusState.isFocused) {
-                                        coroutineScope.launch {
-                                            delay(250)
-                                            if (chatMessageCount > 1) {
-                                                listState.animateScrollToItem(chatMessageCount + 1)
-                                            } else if (chatMessageCount > 0) {
-                                                listState.animateScrollToItem(0)
-                                            }
+                        Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                onTextFieldFocusChange(focusState.isFocused)
+                                if (focusState.isFocused) {
+                                    coroutineScope.launch {
+                                        delay(250)
+                                        if (chatMessageCount > 1) {
+                                            listState.animateScrollToItem(chatMessageCount + 1)
+                                        } else if (chatMessageCount > 0) {
+                                            listState.animateScrollToItem(0)
                                         }
                                     }
-                                },
+                                }
+                            },
                         singleLine = true,
                         keyboardOptions =
-                            KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Sentences,
-                                imeAction = ImeAction.Send,
-                            ),
+                        KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Send,
+                        ),
                         keyboardActions =
-                            KeyboardActions(
-                                onSend = {
-                                    if (canContinue) {
-                                        focusManager.clearFocus()
-                                        onContinue()
-                                    }
-                                },
-                            ),
+                        KeyboardActions(
+                            onSend = {
+                                if (canContinue) {
+                                    focusManager.clearFocus()
+                                    onContinue()
+                                }
+                            },
+                        ),
                     )
                 }
 
@@ -675,9 +673,9 @@ internal fun AiChatInputPanel(
                     },
                     enabled = canContinue,
                     modifier =
-                        Modifier
-                            .size(36.dp)
-                            .background(sendBtnBgColor, shape = CircleShape),
+                    Modifier
+                        .size(36.dp)
+                        .background(sendBtnBgColor, shape = CircleShape),
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.Send,

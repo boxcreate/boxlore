@@ -18,14 +18,14 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.FeedbackTarget
 import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
+import java.io.File
+import java.util.concurrent.Executors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
-import java.io.File
-import java.util.concurrent.Executors
 
 class DownloadRepository(
     private val context: Context,
@@ -96,12 +96,7 @@ class DownloadRepository(
         )
     }
 
-    private fun downloadArtworkLocally(
-        context: Context,
-        imageUrl: String?,
-        subDir: String,
-        fileName: String,
-    ): String? {
+    private fun downloadArtworkLocally(context: Context, imageUrl: String?, subDir: String, fileName: String,): String? {
         if (imageUrl.isNullOrBlank()) return null
         try {
             val cleanUrlStr = if (imageUrl.startsWith("//")) "https:$imageUrl" else imageUrl
@@ -142,11 +137,7 @@ class DownloadRepository(
         }
     }
 
-    fun addDownload(
-        episode: Episode,
-        podcast: Podcast,
-        isSmartDownloaded: Boolean = false,
-    ) {
+    fun addDownload(episode: Episode, podcast: Podcast, isSmartDownloaded: Boolean = false,) {
         val source = if (isSmartDownloaded) "smart" else "manual"
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDownloadRequested(
             episode.id,
@@ -237,11 +228,11 @@ class DownloadRepository(
             if (!isSmartDownloaded) {
                 rankingFeedbackRepository.recordAction(
                     target =
-                        FeedbackTarget(
-                            episodeId = episode.id,
-                            podcastId = podcast.id,
-                            genre = episode.podcastGenre ?: podcast.genre,
-                        ),
+                    FeedbackTarget(
+                        episodeId = episode.id,
+                        podcastId = podcast.id,
+                        genre = episode.podcastGenre ?: podcast.genre,
+                    ),
                     action = RankingAction.MANUAL_DOWNLOAD,
                 )
             }
@@ -369,15 +360,13 @@ class DownloadRepository(
 
         private const val STREAM_CACHE_MAX_BYTES = 250L * 1024 * 1024 // 250 MB
 
-        fun mediaDownloadServiceClass(): Class<out DownloadService> =
-            cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
-                .require()
-                .mediaDownloadServiceClass()
+        fun mediaDownloadServiceClass(): Class<out DownloadService> = cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
+            .require()
+            .mediaDownloadServiceClass()
 
-        fun getDownloadManager(context: Context): DownloadManager =
-            downloadManager ?: synchronized(this) {
-                downloadManager ?: createDownloadManager(context).also { downloadManager = it }
-            }
+        fun getDownloadManager(context: Context): DownloadManager = downloadManager ?: synchronized(this) {
+            downloadManager ?: createDownloadManager(context).also { downloadManager = it }
+        }
 
         private fun createDownloadManager(context: Context): DownloadManager {
             val databaseProvider = getDatabaseProvider(context)
@@ -404,20 +393,18 @@ class DownloadRepository(
             )
         }
 
-        private fun getDatabaseProvider(context: Context): DatabaseProvider =
-            databaseProvider ?: StandaloneDatabaseProvider(context).also {
-                databaseProvider = it
-            }
+        private fun getDatabaseProvider(context: Context): DatabaseProvider = databaseProvider ?: StandaloneDatabaseProvider(context).also {
+            databaseProvider = it
+        }
 
         /** Permanent cache for user-downloaded episodes. No eviction. */
         @Synchronized
-        fun getDownloadCache(context: Context): Cache =
-            cache ?: run {
-                val cacheDir = File(context.filesDir, "downloads")
-                val evictor = NoOpCacheEvictor()
-                val provider = getDatabaseProvider(context)
-                SimpleCache(cacheDir, evictor, provider).also { cache = it }
-            }
+        fun getDownloadCache(context: Context): Cache = cache ?: run {
+            val cacheDir = File(context.filesDir, "downloads")
+            val evictor = NoOpCacheEvictor()
+            val provider = getDatabaseProvider(context)
+            SimpleCache(cacheDir, evictor, provider).also { cache = it }
+        }
 
         // Keep old name for backward compat
         @Synchronized
@@ -425,15 +412,14 @@ class DownloadRepository(
 
         /** LRU-evicted cache for streaming playback. Auto-cleans when exceeding 250 MB. */
         @Synchronized
-        fun getStreamCache(context: Context): Cache =
-            streamCache ?: run {
-                val cacheDir = File(context.cacheDir, "stream_cache")
-                val dbProvider = streamDatabaseProvider ?: StandaloneDatabaseProvider(context).also { streamDatabaseProvider = it }
-                val evictor =
-                    androidx.media3.datasource.cache
-                        .LeastRecentlyUsedCacheEvictor(STREAM_CACHE_MAX_BYTES)
-                SimpleCache(cacheDir, evictor, dbProvider).also { streamCache = it }
-            }
+        fun getStreamCache(context: Context): Cache = streamCache ?: run {
+            val cacheDir = File(context.cacheDir, "stream_cache")
+            val dbProvider = streamDatabaseProvider ?: StandaloneDatabaseProvider(context).also { streamDatabaseProvider = it }
+            val evictor =
+                androidx.media3.datasource.cache
+                    .LeastRecentlyUsedCacheEvictor(STREAM_CACHE_MAX_BYTES)
+            SimpleCache(cacheDir, evictor, dbProvider).also { streamCache = it }
+        }
 
         /**
          * Media3's [Cache] has no key-rename API, so linking a Podcast Index download to its
@@ -446,11 +432,7 @@ class DownloadRepository(
          * Returns true only when the destination has cached spans. It is idempotent after a
          * process death between this move and the caller's Room transaction.
          */
-        fun relinkDownloadCache(
-            context: Context,
-            oldEpisodeId: String,
-            newEpisodeId: String,
-        ): Boolean {
+        fun relinkDownloadCache(context: Context, oldEpisodeId: String, newEpisodeId: String,): Boolean {
             if (oldEpisodeId == newEpisodeId) return true
             val cache = getDownloadCache(context)
             // Tracked separately from content length: ContentMetadata.getContentLength() can
@@ -502,11 +484,7 @@ class DownloadRepository(
          * through [Cache.startFile] without that lock can race with another active writer for
          * the same key/offset/length.
          */
-        private fun copyCachedSpanToNewKey(
-            cache: Cache,
-            span: androidx.media3.datasource.cache.CacheSpan,
-            newEpisodeId: String,
-        ) {
+        private fun copyCachedSpanToNewKey(cache: Cache, span: androidx.media3.datasource.cache.CacheSpan, newEpisodeId: String,) {
             val destSpan = cache.startReadWrite(newEpisodeId, span.position, span.length)
             if (destSpan.isCached) return // already present at the destination key/offset
             try {
@@ -519,11 +497,7 @@ class DownloadRepository(
         }
 
         /** Best-effort: re-registers the Media3 download index entry under the new id. */
-        private fun relinkDownloadIndexEntry(
-            context: Context,
-            oldEpisodeId: String,
-            newEpisodeId: String,
-        ) {
+        private fun relinkDownloadIndexEntry(context: Context, oldEpisodeId: String, newEpisodeId: String,) {
             runCatching {
                 val manager = getDownloadManager(context)
                 val existing = manager.downloadIndex.getDownload(oldEpisodeId) ?: return@runCatching

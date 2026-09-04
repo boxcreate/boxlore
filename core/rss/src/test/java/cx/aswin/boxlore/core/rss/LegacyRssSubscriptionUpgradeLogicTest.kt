@@ -105,27 +105,23 @@ class LegacyRssSubscriptionUpgradeLogicTest {
         assertTrue(entity.rssHasNewEpisodes)
     }
 
-    private fun snapshot(
-        sourceUrl: String,
-        podcastGuid: String? = null,
-    ): LegacyRssFeedSnapshot =
-        LegacyRssFeedSnapshot(
-            sourceFeedUrl = sourceUrl,
-            finalFeedUrl = sourceUrl,
+    private fun snapshot(sourceUrl: String, podcastGuid: String? = null,): LegacyRssFeedSnapshot = LegacyRssFeedSnapshot(
+        sourceFeedUrl = sourceUrl,
+        finalFeedUrl = sourceUrl,
+        podcastGuid = podcastGuid,
+        etag = null,
+        lastModified = null,
+        parsed =
+        ParsedRssFeed(
+            title = "Show",
+            author = "Author",
+            description = null,
+            imageUrl = null,
+            genre = null,
+            podcastType = Podcast.SOURCE_PODCAST_INDEX,
             podcastGuid = podcastGuid,
-            etag = null,
-            lastModified = null,
-            parsed =
-                ParsedRssFeed(
-                    title = "Show",
-                    author = "Author",
-                    description = null,
-                    imageUrl = null,
-                    genre = null,
-                    podcastType = Podcast.SOURCE_PODCAST_INDEX,
-                    podcastGuid = podcastGuid,
-                    declaredUpdatedAt = null,
-                    episodes = emptyList(),
-                ),
-        )
+            declaredUpdatedAt = null,
+            episodes = emptyList(),
+        ),
+    )
 }

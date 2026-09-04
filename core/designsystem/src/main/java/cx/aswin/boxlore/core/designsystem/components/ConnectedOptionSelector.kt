@@ -51,27 +51,27 @@ fun <T> ConnectedOptionSelector(
                 checked = isSelected(key, selected),
                 onCheckedChange = { checked -> if (checked) onSelect(key) },
                 modifier =
-                    Modifier
-                        .weight(1f)
-                        .semantics { role = Role.RadioButton },
+                Modifier
+                    .weight(1f)
+                    .semantics { role = Role.RadioButton },
                 shapes =
-                    when (index) {
-                        0 ->
-                            ButtonGroupDefaults.connectedLeadingButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                        options.lastIndex ->
-                            ButtonGroupDefaults.connectedTrailingButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                        else ->
-                            ButtonGroupDefaults.connectedMiddleButtonShapes(
-                                pressedShape = roundedPressShape,
-                                checkedShape = checkedShape,
-                            )
-                    },
+                when (index) {
+                    0 ->
+                        ButtonGroupDefaults.connectedLeadingButtonShapes(
+                            pressedShape = roundedPressShape,
+                            checkedShape = checkedShape,
+                        )
+                    options.lastIndex ->
+                        ButtonGroupDefaults.connectedTrailingButtonShapes(
+                            pressedShape = roundedPressShape,
+                            checkedShape = checkedShape,
+                        )
+                    else ->
+                        ButtonGroupDefaults.connectedMiddleButtonShapes(
+                            pressedShape = roundedPressShape,
+                            checkedShape = checkedShape,
+                        )
+                },
                 contentPadding = contentPadding,
             ) {
                 Text(

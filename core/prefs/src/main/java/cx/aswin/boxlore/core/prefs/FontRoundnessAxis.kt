@@ -23,12 +23,11 @@ object FontRoundnessAxis {
         }
     }
 
-    fun axisValue(key: String?): Int =
-        when (sanitizeKey(key)) {
-            CRISP -> AXIS_CRISP
-            SOFT -> AXIS_SOFT
-            else -> AXIS_ROUND
-        }
+    fun axisValue(key: String?): Int = when (sanitizeKey(key)) {
+        CRISP -> AXIS_CRISP
+        SOFT -> AXIS_SOFT
+        else -> AXIS_ROUND
+    }
 
     fun cachedAxisValue(context: Context): Int {
         val prefs = context.getSharedPreferences(THEME_FAST_CACHE, Context.MODE_PRIVATE)

@@ -31,11 +31,7 @@ internal object AutoArtworkSourceStore {
      * @return true when the in-memory mapping is published and prefs [commit] succeeded
      * within [COMMIT_WAIT_MS].
      */
-    fun put(
-        context: Context,
-        key: String,
-        value: String,
-    ): Boolean {
+    fun put(context: Context, key: String, value: String,): Boolean {
         memory[key] = value
         val appContext = context.applicationContext
         val committed = AtomicBoolean(false)
@@ -71,10 +67,7 @@ internal object AutoArtworkSourceStore {
         return true
     }
 
-    fun get(
-        context: Context,
-        key: String,
-    ): String? {
+    fun get(context: Context, key: String,): String? {
         memory[key]?.let { return it }
         val persisted =
             context

@@ -18,9 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
@@ -118,9 +118,7 @@ fun OptimizedImage(
 }
 
 @Composable
-private fun BoxScope.OptimizedImageFailureContent(
-    errorContent: (@Composable BoxScope.() -> Unit)?,
-) {
+private fun BoxScope.OptimizedImageFailureContent(errorContent: (@Composable BoxScope.() -> Unit)?,) {
     if (errorContent != null) {
         errorContent()
     } else {

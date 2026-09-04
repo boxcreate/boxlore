@@ -149,10 +149,10 @@ fun SettingsScreen(
     val settingsViewModel: SettingsViewModel =
         viewModel(
             factory =
-                SettingsViewModelAssembler.factory(
-                    rssSubscriptionPort = repositories.rssPodcastRepository,
-                    rankingResetPort = repositories.rankingFeedbackRepository,
-                ),
+            SettingsViewModelAssembler.factory(
+                rssSubscriptionPort = repositories.rssPodcastRepository,
+                rankingResetPort = repositories.rankingFeedbackRepository,
+            ),
         )
     val rssState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -237,12 +237,12 @@ fun SettingsScreen(
                     },
                     onAddRssClick = { settingsViewModel.openAddRssDialog() },
                     backupActions =
-                        trackedLibraryBackupActions(
-                            exportJsonLauncher,
-                            exportOpmlLauncher,
-                            importJsonLauncher,
-                            importOpmlLauncher,
-                        ),
+                    trackedLibraryBackupActions(
+                        exportJsonLauncher,
+                        exportOpmlLauncher,
+                        importJsonLauncher,
+                        importOpmlLauncher,
+                    ),
                     onBack = returnToHub,
                 )
 
@@ -272,15 +272,15 @@ fun SettingsScreen(
                     deletionId = deletionId,
                     isDeletionExpanded = isDeletionExpanded,
                     actions =
-                        PrivacySettingsActions(
-                            onDeletionExpandedChange = { isDeletionExpanded = it },
-                            onResetIdentityClick = { showResetDialog = true },
-                            onResetRecommendationsClick = settingsViewModel::resetRecommendations,
-                            onCopyDeletionId = { copyDeletionId(context, deletionId) },
-                            onEmailDeletionRequest = {
-                                requestAnalyticsDeletionByEmail(context, deletionId)
-                            },
-                        ),
+                    PrivacySettingsActions(
+                        onDeletionExpandedChange = { isDeletionExpanded = it },
+                        onResetIdentityClick = { showResetDialog = true },
+                        onResetRecommendationsClick = settingsViewModel::resetRecommendations,
+                        onCopyDeletionId = { copyDeletionId(context, deletionId) },
+                        onEmailDeletionRequest = {
+                            requestAnalyticsDeletionByEmail(context, deletionId)
+                        },
+                    ),
                     onBack = returnToHub,
                 )
 
@@ -355,74 +355,72 @@ private fun trackedLibraryBackupActions(
     exportOpmlLauncher: androidx.activity.result.ActivityResultLauncher<String>,
     importJsonLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>,
     importOpmlLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>,
-): LibraryBackupActions =
-    LibraryBackupActions(
-        onExportJson = {
-            AnalyticsHelper.trackSettingsInteraction("library_export")
-            exportJsonLauncher.launch("boxlore_backup_${System.currentTimeMillis()}.json")
-        },
-        onExportOpml = {
-            AnalyticsHelper.trackSettingsInteraction("library_export_opml")
-            exportOpmlLauncher.launch("boxlore_subscriptions_${System.currentTimeMillis()}.opml")
-        },
-        onImportJson = {
-            AnalyticsHelper.trackSettingsInteraction("library_import_json")
-            importJsonLauncher.launch(arrayOf("application/json"))
-        },
-        onImportOpml = {
-            AnalyticsHelper.trackSettingsInteraction("library_import_opml")
-            importOpmlLauncher.launch(arrayOf("*/*"))
-        },
-    )
+): LibraryBackupActions = LibraryBackupActions(
+    onExportJson = {
+        AnalyticsHelper.trackSettingsInteraction("library_export")
+        exportJsonLauncher.launch("boxlore_backup_${System.currentTimeMillis()}.json")
+    },
+    onExportOpml = {
+        AnalyticsHelper.trackSettingsInteraction("library_export_opml")
+        exportOpmlLauncher.launch("boxlore_subscriptions_${System.currentTimeMillis()}.opml")
+    },
+    onImportJson = {
+        AnalyticsHelper.trackSettingsInteraction("library_import_json")
+        importJsonLauncher.launch(arrayOf("application/json"))
+    },
+    onImportOpml = {
+        AnalyticsHelper.trackSettingsInteraction("library_import_opml")
+        importOpmlLauncher.launch(arrayOf("*/*"))
+    },
+)
 
 /** Wraps the appearance callbacks with their analytics tracking, without changing behavior. */
-private fun AppearanceActions.trackedForAnalytics(): AppearanceActions =
-    AppearanceActions(
-        onSetThemeConfig = {
-            AnalyticsHelper.trackSettingsInteraction("theme_mode_changed", it)
-            onSetThemeConfig(it)
-        },
-        onToggleDynamicColor = {
-            AnalyticsHelper.trackSettingsInteraction("dynamic_color_toggled", it.toString())
-            onToggleDynamicColor(it)
-        },
-        onSetThemeBrand = {
-            AnalyticsHelper.trackSettingsInteraction("theme_brand_changed", it)
-            onSetThemeBrand(it)
-        },
-        onSetSurfaceStyle = {
-            AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
-            onSetSurfaceStyle(it)
-        },
-        onSetFontRoundness = {
-            AnalyticsHelper.trackSettingsInteraction("font_roundness_changed", it)
-            onSetFontRoundness(it)
-        },
-        onSetNavigationStyle = {
-            AnalyticsHelper.trackSettingsInteraction("navigation_style_changed", it)
-            onSetNavigationStyle(it)
-        },
-        onSetOpenAppTo = {
-            AnalyticsHelper.trackSettingsInteraction("open_app_to_changed", it)
-            onSetOpenAppTo(it)
-        },
-        onSetHomeShortcutsInLibrary = {
-            AnalyticsHelper.trackSettingsInteraction("home_shortcuts_in_library_toggled", it.toString())
-            onSetHomeShortcutsInLibrary(it)
-        },
-        onSetWidgetAppearance = {
-            AnalyticsHelper.trackSettingsInteraction("widget_appearance_changed", it)
-            onSetWidgetAppearance(it)
-        },
-        onSetExploreDefaultTab = {
-            AnalyticsHelper.trackSettingsInteraction("explore_default_tab_changed", it)
-            onSetExploreDefaultTab(it)
-        },
-        onSetSubscriptionsDefaultTab = {
-            AnalyticsHelper.trackSettingsInteraction("subscriptions_default_tab_changed", it)
-            onSetSubscriptionsDefaultTab(it)
-        },
-    )
+private fun AppearanceActions.trackedForAnalytics(): AppearanceActions = AppearanceActions(
+    onSetThemeConfig = {
+        AnalyticsHelper.trackSettingsInteraction("theme_mode_changed", it)
+        onSetThemeConfig(it)
+    },
+    onToggleDynamicColor = {
+        AnalyticsHelper.trackSettingsInteraction("dynamic_color_toggled", it.toString())
+        onToggleDynamicColor(it)
+    },
+    onSetThemeBrand = {
+        AnalyticsHelper.trackSettingsInteraction("theme_brand_changed", it)
+        onSetThemeBrand(it)
+    },
+    onSetSurfaceStyle = {
+        AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
+        onSetSurfaceStyle(it)
+    },
+    onSetFontRoundness = {
+        AnalyticsHelper.trackSettingsInteraction("font_roundness_changed", it)
+        onSetFontRoundness(it)
+    },
+    onSetNavigationStyle = {
+        AnalyticsHelper.trackSettingsInteraction("navigation_style_changed", it)
+        onSetNavigationStyle(it)
+    },
+    onSetOpenAppTo = {
+        AnalyticsHelper.trackSettingsInteraction("open_app_to_changed", it)
+        onSetOpenAppTo(it)
+    },
+    onSetHomeShortcutsInLibrary = {
+        AnalyticsHelper.trackSettingsInteraction("home_shortcuts_in_library_toggled", it.toString())
+        onSetHomeShortcutsInLibrary(it)
+    },
+    onSetWidgetAppearance = {
+        AnalyticsHelper.trackSettingsInteraction("widget_appearance_changed", it)
+        onSetWidgetAppearance(it)
+    },
+    onSetExploreDefaultTab = {
+        AnalyticsHelper.trackSettingsInteraction("explore_default_tab_changed", it)
+        onSetExploreDefaultTab(it)
+    },
+    onSetSubscriptionsDefaultTab = {
+        AnalyticsHelper.trackSettingsInteraction("subscriptions_default_tab_changed", it)
+        onSetSubscriptionsDefaultTab(it)
+    },
+)
 
 @Composable
 private fun rememberAppInfo(context: Context): AppInfo {
@@ -450,9 +448,9 @@ private fun rememberAppInfo(context: Context): AppInfo {
             versionCode = versionCode,
             packageName = context.packageName,
             androidRelease =
-                android.os.Build.VERSION.RELEASE
-                    .orEmpty()
-                    .ifBlank { "?" },
+            android.os.Build.VERSION.RELEASE
+                .orEmpty()
+                .ifBlank { "?" },
             sdkInt = android.os.Build.VERSION.SDK_INT,
         )
     }
@@ -508,13 +506,12 @@ private fun openChangelog(context: Context) {
     }
 }
 
-private fun String?.toSettingsDestination(): ProfileSettingsDestination =
-    when (this?.trim()?.lowercase()) {
-        "library" -> ProfileSettingsDestination.Library
-        "appearance" -> ProfileSettingsDestination.Appearance
-        "playback" -> ProfileSettingsDestination.Playback
-        "downloads" -> ProfileSettingsDestination.Downloads
-        "privacy" -> ProfileSettingsDestination.Privacy
-        "about" -> ProfileSettingsDestination.About
-        else -> ProfileSettingsDestination.Hub
-    }
+private fun String?.toSettingsDestination(): ProfileSettingsDestination = when (this?.trim()?.lowercase()) {
+    "library" -> ProfileSettingsDestination.Library
+    "appearance" -> ProfileSettingsDestination.Appearance
+    "playback" -> ProfileSettingsDestination.Playback
+    "downloads" -> ProfileSettingsDestination.Downloads
+    "privacy" -> ProfileSettingsDestination.Privacy
+    "about" -> ProfileSettingsDestination.About
+    else -> ProfileSettingsDestination.Hub
+}

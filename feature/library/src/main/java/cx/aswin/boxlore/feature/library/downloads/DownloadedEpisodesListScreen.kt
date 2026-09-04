@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.downloads
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,11 +47,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.DownloadsSortOrder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
@@ -137,7 +135,6 @@ fun DownloadedEpisodesScreen(
     var deleteConfirmSelectedDialog by rememberSaveable { mutableStateOf(false) }
 
     val totalSizeBytes = remember(downloads) { downloads.sumOf { it.sizeBytes } }
-
 
     val listBottomPadding = remember(downloads, isSelectionMode, isPlayerActive) {
         if (downloads.isNotEmpty() && !isSelectionMode) {
@@ -337,24 +334,24 @@ fun DownloadedEpisodesScreen(
                                         viewModel.playQueue(eps, pod)
                                     },
                                     selection =
-                                        DownloadShowCardSelection(
-                                            active = isSelectionMode,
-                                            selected = isSelected,
-                                            onSelectedChange = { selected ->
-                                                if (selected) {
-                                                    selectedPodcastIds.add(group.podcastId)
-                                                } else {
-                                                    selectedPodcastIds.remove(group.podcastId)
-                                                }
-                                            },
-                                            onLongClick = {
-                                                isSelectionMode =
-                                                    selectedPodcastIds.applyLongPressDownloadSelection(
-                                                        isSelectionMode,
-                                                        group.podcastId,
-                                                    )
-                                            },
-                                        ),
+                                    DownloadShowCardSelection(
+                                        active = isSelectionMode,
+                                        selected = isSelected,
+                                        onSelectedChange = { selected ->
+                                            if (selected) {
+                                                selectedPodcastIds.add(group.podcastId)
+                                            } else {
+                                                selectedPodcastIds.remove(group.podcastId)
+                                            }
+                                        },
+                                        onLongClick = {
+                                            isSelectionMode =
+                                                selectedPodcastIds.applyLongPressDownloadSelection(
+                                                    isSelectionMode,
+                                                    group.podcastId,
+                                                )
+                                        },
+                                    ),
                                 )
                             }
                         }

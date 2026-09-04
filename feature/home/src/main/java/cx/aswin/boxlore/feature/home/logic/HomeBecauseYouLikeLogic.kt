@@ -5,25 +5,23 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 
 internal object HomeBecauseYouLikeLogic {
-    fun toAffinitySignal(item: HomeListeningHistoryItem): PodcastAffinityLogic.HistorySignal =
-        PodcastAffinityLogic.HistorySignal(
-            podcastId = item.podcastId,
-            podcastName = item.podcastName,
-            podcastImageUrl = item.podcastImageUrl,
-            progressMs = item.progressMs,
-            lastPlayedAt = item.lastPlayedAt,
-            isCompleted = item.isCompleted,
-            isLiked = item.isLiked,
-        )
+    fun toAffinitySignal(item: HomeListeningHistoryItem): PodcastAffinityLogic.HistorySignal = PodcastAffinityLogic.HistorySignal(
+        podcastId = item.podcastId,
+        podcastName = item.podcastName,
+        podcastImageUrl = item.podcastImageUrl,
+        progressMs = item.progressMs,
+        lastPlayedAt = item.lastPlayedAt,
+        isCompleted = item.isCompleted,
+        isLiked = item.isLiked,
+    )
 
     fun <T> distinctByIdAndTitle(
         items: List<T>,
         id: (T) -> String,
         title: (T) -> String,
-    ): List<T> =
-        items
-            .distinctBy(id)
-            .distinctBy { title(it).lowercase().trim() }
+    ): List<T> = items
+        .distinctBy(id)
+        .distinctBy { title(it).lowercase().trim() }
 
     fun sortPodcastsByEpisodeScores(
         podcasts: List<Podcast>,

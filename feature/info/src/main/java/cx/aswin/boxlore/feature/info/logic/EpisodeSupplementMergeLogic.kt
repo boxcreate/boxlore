@@ -12,25 +12,22 @@ object EpisodeSupplementMergeLogic {
         piEpisodes: List<Episode>,
         supplements: List<Episode>,
         sort: EpisodeSort,
-    ): List<Episode> =
-        EpisodeSupplementListMerge.merge(
-            piEpisodes = piEpisodes,
-            supplements = supplements,
-            sort = when (sort) {
-                EpisodeSort.NEWEST -> EpisodeSupplementListMerge.Sort.NEWEST
-                EpisodeSort.OLDEST -> EpisodeSupplementListMerge.Sort.OLDEST
-            },
-        )
+    ): List<Episode> = EpisodeSupplementListMerge.merge(
+        piEpisodes = piEpisodes,
+        supplements = supplements,
+        sort = when (sort) {
+            EpisodeSort.NEWEST -> EpisodeSupplementListMerge.Sort.NEWEST
+            EpisodeSort.OLDEST -> EpisodeSupplementListMerge.Sort.OLDEST
+        },
+    )
 
     fun unionSearchResults(
         preferred: List<Episode>,
         fallback: List<Episode>,
-    ): List<Episode> =
-        EpisodeSupplementListMerge.unionSearchResults(
-            preferred = preferred,
-            fallback = fallback,
-        )
+    ): List<Episode> = EpisodeSupplementListMerge.unionSearchResults(
+        preferred = preferred,
+        fallback = fallback,
+    )
 
-    fun sorted(episodes: List<Episode>, sort: EpisodeSort): List<Episode> =
-        merge(episodes, emptyList(), sort)
+    fun sorted(episodes: List<Episode>, sort: EpisodeSort): List<Episode> = merge(episodes, emptyList(), sort)
 }

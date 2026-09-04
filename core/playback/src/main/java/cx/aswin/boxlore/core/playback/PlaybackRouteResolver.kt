@@ -6,12 +6,7 @@ import androidx.media3.cast.Cast
 import androidx.media3.common.DeviceInfo
 
 internal object PlaybackRouteResolver {
-    fun resolve(
-        context: Context,
-        deviceInfo: DeviceInfo,
-        volume: Int,
-        isMuted: Boolean,
-    ): PlaybackRouteState {
+    fun resolve(context: Context, deviceInfo: DeviceInfo, volume: Int, isMuted: Boolean,): PlaybackRouteState {
         val isRemote = deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE
         val deviceName =
             if (isRemote) {
@@ -48,24 +43,20 @@ internal object PlaybackRouteResolver {
         )
     }
 
-    private fun resolveDeviceName(
-        context: Context,
-        routingControllerId: String?,
-    ): String? =
-        runCatching {
-            Cast
-                .getSingletonInstance(context)
-                .currentCastSession
-                ?.castDevice
-                ?.friendlyName
-                ?: routingControllerId?.let { controllerId ->
-                    MediaRouter2
-                        .getInstance(context)
-                        .getController(controllerId)
-                        ?.selectedRoutes
-                        ?.firstOrNull()
-                        ?.name
-                        ?.toString()
-                }
-        }.getOrNull()
+    private fun resolveDeviceName(context: Context, routingControllerId: String?,): String? = runCatching {
+        Cast
+            .getSingletonInstance(context)
+            .currentCastSession
+            ?.castDevice
+            ?.friendlyName
+            ?: routingControllerId?.let { controllerId ->
+                MediaRouter2
+                    .getInstance(context)
+                    .getController(controllerId)
+                    ?.selectedRoutes
+                    ?.firstOrNull()
+                    ?.name
+                    ?.toString()
+            }
+    }.getOrNull()
 }

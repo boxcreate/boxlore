@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -11,11 +9,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -31,15 +29,15 @@ fun FeaturedCuratedCard(
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier =
-            modifier
-                .fillMaxWidth()
-                .expressiveClickable(onClick = onClick),
+        modifier
+            .fillMaxWidth()
+            .expressiveClickable(onClick = onClick),
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Text Content (Left)
@@ -105,9 +103,9 @@ fun FeaturedCuratedCard(
             // Artwork (Right, Square)
             Box(
                 modifier =
-                    Modifier
-                        .size(110.dp)
-                        .clip(MaterialTheme.shapes.large),
+                Modifier
+                    .size(110.dp)
+                    .clip(MaterialTheme.shapes.large),
             ) {
                 OptimizedImage(
                     url = (episode.imageUrl ?: "").ifEmpty { podcast.imageUrl },

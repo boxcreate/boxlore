@@ -11,28 +11,18 @@ import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 object PlaybackMediaIdPolicy {
     fun stripMediaIdPrefixes(mediaId: String): String = QueueMath.stripMediaIdPrefixes(mediaId)
 
-    fun encodeMediaId(
-        episodeId: String,
-        useLearnPrefix: Boolean,
-    ): String = if (useLearnPrefix) "${QueueMath.LEARN_PREFIX}$episodeId" else episodeId
+    fun encodeMediaId(episodeId: String, useLearnPrefix: Boolean,): String = if (useLearnPrefix) "${QueueMath.LEARN_PREFIX}$episodeId" else episodeId
 
     /** Media3 customCacheKey — briefing keys include audio `v=` so same-day regen busts cache. */
-    fun customCacheKey(
-        episodeId: String,
-        audioUrl: String?,
-    ): String = EpisodeMediaCacheKey.of(episodeId, audioUrl)
+    fun customCacheKey(episodeId: String, audioUrl: String?,): String = EpisodeMediaCacheKey.of(episodeId, audioUrl)
     fun isLearnEntryPoint(entryPoint: String?): Boolean = entryPoint == "learn"
 
     fun isLearnEntryPoint(entryPoint: PlaybackEntryPoint): Boolean = entryPoint == PlaybackEntryPoint.LEARN
 
-    fun parseEntryPointString(
-        entrypoint: String?,
-        entryPointLegacy: String?,
-    ): String? = entrypoint ?: entryPointLegacy
+    fun parseEntryPointString(entrypoint: String?, entryPointLegacy: String?,): String? = entrypoint ?: entryPointLegacy
 
-    fun parseEntryPointString(bundle: Bundle?): String? =
-        parseEntryPointString(
-            entrypoint = bundle?.getString("entrypoint"),
-            entryPointLegacy = bundle?.getString("entry_point"),
-        )
+    fun parseEntryPointString(bundle: Bundle?): String? = parseEntryPointString(
+        entrypoint = bundle?.getString("entrypoint"),
+        entryPointLegacy = bundle?.getString("entry_point"),
+    )
 }

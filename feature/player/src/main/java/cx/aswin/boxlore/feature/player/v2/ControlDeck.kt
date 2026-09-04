@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.SizeTransform
@@ -50,17 +48,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.SleepTimerConstants
 import cx.aswin.boxlore.feature.player.v2.logic.formatSpeedLabel
 import cx.aswin.boxlore.feature.player.v2.logic.targetControlWeight
@@ -127,16 +125,24 @@ fun PrimaryControls(
         label = "forwardWidth"
     )
     val replayShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 34.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 14.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 34.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 14.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 34.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 14.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 34.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 14.dp,
+        smoothnessAsPercentBR = 60
     )
     val forwardShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 14.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 34.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 14.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 34.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 14.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 34.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 14.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 34.dp,
+        smoothnessAsPercentBR = 60
     )
 
     Row(
@@ -151,10 +157,10 @@ fun PrimaryControls(
                 seconds = seekDurations.backwardSeconds,
                 forward = false,
                 contentDescription =
-                    cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                        seekDurations.backwardSeconds,
-                        forward = false,
-                    ),
+                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
+                    seekDurations.backwardSeconds,
+                    forward = false,
+                ),
                 size = 40.dp
             ),
             colorScheme = colorScheme,
@@ -188,10 +194,10 @@ fun PrimaryControls(
                 seconds = seekDurations.forwardSeconds,
                 forward = true,
                 contentDescription =
-                    cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                        seekDurations.forwardSeconds,
-                        forward = true,
-                    ),
+                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
+                    seekDurations.forwardSeconds,
+                    forward = true,
+                ),
                 size = 40.dp
             ),
             colorScheme = colorScheme,
@@ -230,8 +236,11 @@ private fun TransportButton(
         modifier = modifier
             .clip(shape)
             .background(
-                if (quiet) colorScheme.surface.copy(alpha = 0.42f)
-                else colorScheme.primary.copy(alpha = 0.15f)
+                if (quiet) {
+                    colorScheme.surface.copy(alpha = 0.42f)
+                } else {
+                    colorScheme.primary.copy(alpha = 0.15f)
+                }
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -277,10 +286,14 @@ private fun MorphingPlayButton(
         label = "playCorner"
     )
     val shape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = corner, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = corner, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = corner, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = corner, smoothnessAsPercentBR = 60
+        cornerRadiusTL = corner,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = corner,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = corner,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = corner,
+        smoothnessAsPercentBR = 60
     )
     val haptics = LocalHapticFeedback.current
     Box(
@@ -379,40 +392,64 @@ fun SecondaryRail(
 ) {
     var controlMode by rememberSaveable { mutableStateOf(QuickControlMode.ACTIONS) }
     val groupTrayShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 32.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 32.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 32.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 32.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 32.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 32.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 32.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 32.dp,
+        smoothnessAsPercentBR = 60
     )
     val groupTopStartShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 24.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 24.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
     )
     val groupMiddleShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
     )
     val groupTopEndShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 24.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 24.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
     )
     val groupBottomStartShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 24.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 9.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 24.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 9.dp,
+        smoothnessAsPercentBR = 60
     )
     val groupBottomEndShape = AbsoluteSmoothCornerShape(
-        cornerRadiusTL = 9.dp, smoothnessAsPercentTL = 60,
-        cornerRadiusTR = 9.dp, smoothnessAsPercentTR = 60,
-        cornerRadiusBL = 9.dp, smoothnessAsPercentBL = 60,
-        cornerRadiusBR = 24.dp, smoothnessAsPercentBR = 60
+        cornerRadiusTL = 9.dp,
+        smoothnessAsPercentTL = 60,
+        cornerRadiusTR = 9.dp,
+        smoothnessAsPercentTR = 60,
+        cornerRadiusBL = 9.dp,
+        smoothnessAsPercentBL = 60,
+        cornerRadiusBR = 24.dp,
+        smoothnessAsPercentBR = 60
     )
     val selectorShapes = QuickControlShapes(
         topStart = groupTopStartShape,

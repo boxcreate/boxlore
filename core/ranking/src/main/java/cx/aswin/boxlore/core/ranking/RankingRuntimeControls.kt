@@ -13,9 +13,7 @@ data class RankingShadowSnapshot(
 )
 
 object RankingRolloutPolicy {
-    fun isEnabledByDefault(surface: RankingSurface): Boolean {
-        return surface == RankingSurface.HOME
-    }
+    fun isEnabledByDefault(surface: RankingSurface): Boolean = surface == RankingSurface.HOME
 }
 
 class RankingRuntimeControls private constructor(context: Context) {
@@ -24,21 +22,14 @@ class RankingRuntimeControls private constructor(context: Context) {
         Context.MODE_PRIVATE,
     )
 
-    fun isAdaptiveEnabled(
-        objective: RankingObjective,
-        surface: RankingSurface,
-    ): Boolean {
-        return preferences.getBoolean(ADAPTIVE_ENABLED, true) &&
-            preferences.getBoolean(objectiveKey(objective), true) &&
-            preferences.getBoolean(
-                surfaceKey(surface),
-                RankingRolloutPolicy.isEnabledByDefault(surface),
-            )
-    }
+    fun isAdaptiveEnabled(objective: RankingObjective, surface: RankingSurface,): Boolean = preferences.getBoolean(ADAPTIVE_ENABLED, true) &&
+        preferences.getBoolean(objectiveKey(objective), true) &&
+        preferences.getBoolean(
+            surfaceKey(surface),
+            RankingRolloutPolicy.isEnabledByDefault(surface),
+        )
 
-    fun isShadowDiagnosticsEnabled(): Boolean {
-        return preferences.getBoolean(SHADOW_DIAGNOSTICS_ENABLED, true)
-    }
+    fun isShadowDiagnosticsEnabled(): Boolean = preferences.getBoolean(SHADOW_DIAGNOSTICS_ENABLED, true)
 
     fun setAdaptiveEnabled(enabled: Boolean) {
         preferences.edit().putBoolean(ADAPTIVE_ENABLED, enabled).apply()
@@ -64,27 +55,20 @@ class RankingRuntimeControls private constructor(context: Context) {
         @Volatile
         private var instance: RankingRuntimeControls? = null
 
-        fun create(context: Context): RankingRuntimeControls =
-            RankingRuntimeControls(context.applicationContext)
+        fun create(context: Context): RankingRuntimeControls = RankingRuntimeControls(context.applicationContext)
 
         fun install(value: RankingRuntimeControls) {
             instance = value
         }
 
         /** Prefer AppContainer in production. */
-        fun getInstance(context: Context): RankingRuntimeControls {
-            return instance ?: synchronized(this) {
-                instance ?: create(context).also { instance = it }
-            }
+        fun getInstance(context: Context): RankingRuntimeControls = instance ?: synchronized(this) {
+            instance ?: create(context).also { instance = it }
         }
 
-        private fun objectiveKey(objective: RankingObjective): String {
-            return "objective_${objective.name.lowercase()}_enabled"
-        }
+        private fun objectiveKey(objective: RankingObjective): String = "objective_${objective.name.lowercase()}_enabled"
 
-        private fun surfaceKey(surface: RankingSurface): String {
-            return "surface_${surface.name.lowercase()}_enabled"
-        }
+        private fun surfaceKey(surface: RankingSurface): String = "surface_${surface.name.lowercase()}_enabled"
     }
 }
 
@@ -115,9 +99,7 @@ object RankingShadowDiagnostics {
         )
     }
 
-    fun snapshots(): List<RankingShadowSnapshot> {
-        return latest.values.sortedBy(RankingShadowSnapshot::objective)
-    }
+    fun snapshots(): List<RankingShadowSnapshot> = latest.values.sortedBy(RankingShadowSnapshot::objective)
 
     fun clear() {
         latest.clear()

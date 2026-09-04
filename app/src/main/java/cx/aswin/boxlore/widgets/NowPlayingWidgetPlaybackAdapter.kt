@@ -111,9 +111,9 @@ internal fun PlayerState.toWidgetPlaybackState(): WidgetPlaybackState {
         episodeTitle = episode?.title,
         podcastTitle = podcast?.title ?: episode?.podcastTitle,
         artworkUrl =
-            episode?.imageUrl?.takeIf { it.isNotBlank() }
-                ?: episode?.podcastImageUrl?.takeIf { it.isNotBlank() }
-                ?: podcast?.imageUrl?.takeIf { it.isNotBlank() },
+        episode?.imageUrl?.takeIf { it.isNotBlank() }
+            ?: episode?.podcastImageUrl?.takeIf { it.isNotBlank() }
+            ?: podcast?.imageUrl?.takeIf { it.isNotBlank() },
         isPlaying = isPlaying,
         isLoading = isLoading,
         positionMs = position,

@@ -45,64 +45,61 @@ fun resolveAnnouncementLayout(category: String): AnnouncementLayout {
     }
 }
 
-fun announcementLayoutStyle(category: String): AnnouncementLayoutStyle {
-    return when (resolveAnnouncementLayout(category)) {
-        AnnouncementLayout.WhatsNew ->
-            AnnouncementLayoutStyle(
-                layout = AnnouncementLayout.WhatsNew,
-                icon = Icons.Rounded.NewReleases,
-                imageHeight = 140.dp,
-                emphasizeImage = false,
-                emphasizeBullets = true,
-                useErrorChip = false,
-                useTertiaryChip = false,
-            )
-        AnnouncementLayout.NewFeature ->
-            AnnouncementLayoutStyle(
-                layout = AnnouncementLayout.NewFeature,
-                icon = Icons.Rounded.Star,
-                imageHeight = 200.dp,
-                emphasizeImage = true,
-                emphasizeBullets = false,
-                useErrorChip = false,
-                useTertiaryChip = false,
-            )
-        AnnouncementLayout.Tip ->
-            AnnouncementLayoutStyle(
-                layout = AnnouncementLayout.Tip,
-                icon = Icons.Rounded.Lightbulb,
-                imageHeight = 140.dp,
-                emphasizeImage = false,
-                emphasizeBullets = false,
-                useErrorChip = false,
-                useTertiaryChip = true,
-            )
-        AnnouncementLayout.Important ->
-            AnnouncementLayoutStyle(
-                layout = AnnouncementLayout.Important,
-                icon = Icons.Rounded.Warning,
-                imageHeight = 140.dp,
-                emphasizeImage = false,
-                emphasizeBullets = false,
-                useErrorChip = true,
-                useTertiaryChip = false,
-            )
-        AnnouncementLayout.General ->
-            AnnouncementLayoutStyle(
-                layout = AnnouncementLayout.General,
-                icon = Icons.Rounded.Campaign,
-                imageHeight = 168.dp,
-                emphasizeImage = false,
-                emphasizeBullets = false,
-                useErrorChip = false,
-                useTertiaryChip = false,
-            )
-    }
+fun announcementLayoutStyle(category: String): AnnouncementLayoutStyle = when (resolveAnnouncementLayout(category)) {
+    AnnouncementLayout.WhatsNew ->
+        AnnouncementLayoutStyle(
+            layout = AnnouncementLayout.WhatsNew,
+            icon = Icons.Rounded.NewReleases,
+            imageHeight = 140.dp,
+            emphasizeImage = false,
+            emphasizeBullets = true,
+            useErrorChip = false,
+            useTertiaryChip = false,
+        )
+    AnnouncementLayout.NewFeature ->
+        AnnouncementLayoutStyle(
+            layout = AnnouncementLayout.NewFeature,
+            icon = Icons.Rounded.Star,
+            imageHeight = 200.dp,
+            emphasizeImage = true,
+            emphasizeBullets = false,
+            useErrorChip = false,
+            useTertiaryChip = false,
+        )
+    AnnouncementLayout.Tip ->
+        AnnouncementLayoutStyle(
+            layout = AnnouncementLayout.Tip,
+            icon = Icons.Rounded.Lightbulb,
+            imageHeight = 140.dp,
+            emphasizeImage = false,
+            emphasizeBullets = false,
+            useErrorChip = false,
+            useTertiaryChip = true,
+        )
+    AnnouncementLayout.Important ->
+        AnnouncementLayoutStyle(
+            layout = AnnouncementLayout.Important,
+            icon = Icons.Rounded.Warning,
+            imageHeight = 140.dp,
+            emphasizeImage = false,
+            emphasizeBullets = false,
+            useErrorChip = true,
+            useTertiaryChip = false,
+        )
+    AnnouncementLayout.General ->
+        AnnouncementLayoutStyle(
+            layout = AnnouncementLayout.General,
+            icon = Icons.Rounded.Campaign,
+            imageHeight = 168.dp,
+            emphasizeImage = false,
+            emphasizeBullets = false,
+            useErrorChip = false,
+            useTertiaryChip = false,
+        )
 }
 
 /**
  * GitHub APK "What's New" / release download CTAs are meaningless on Play installs.
  * Tip / Important / other categories are not gated.
  */
-fun Context.shouldSuppressWhatsNewOnPlay(category: String): Boolean =
-    isInstalledFromPlayStore() && resolveAnnouncementLayout(category) == AnnouncementLayout.WhatsNew
+fun Context.shouldSuppressWhatsNewOnPlay(category: String): Boolean = isInstalledFromPlayStore() && resolveAnnouncementLayout(category) == AnnouncementLayout.WhatsNew

@@ -12,10 +12,10 @@ class PodcastScoringTest {
         val scores =
             PodcastScoring.calculateScores(
                 podcasts =
-                    listOf(
-                        scorable("fresh", nowMs),
-                        scorable("idle", nowMs - 200L * 24 * 3_600_000L),
-                    ),
+                listOf(
+                    scorable("fresh", nowMs),
+                    scorable("idle", nowMs - 200L * 24 * 3_600_000L),
+                ),
                 allHistory = emptyList(),
                 nowMs = nowMs,
             )
@@ -51,21 +51,21 @@ class PodcastScoringTest {
             PodcastScoring.calculateScores(
                 podcasts = listOf(scorable("fresh", nowMs)),
                 allHistory =
-                    listOf(
-                        ListeningHistoryEntity(
-                            episodeId = "episode",
-                            podcastId = "fresh",
-                            episodeTitle = "Episode",
-                            episodeImageUrl = null,
-                            podcastImageUrl = null,
-                            episodeAudioUrl = null,
-                            podcastName = "Fresh",
-                            progressMs = 1_000L,
-                            durationMs = 10_000L,
-                            isCompleted = false,
-                            lastPlayedAt = nowMs,
-                        ),
+                listOf(
+                    ListeningHistoryEntity(
+                        episodeId = "episode",
+                        podcastId = "fresh",
+                        episodeTitle = "Episode",
+                        episodeImageUrl = null,
+                        podcastImageUrl = null,
+                        episodeAudioUrl = null,
+                        podcastName = "Fresh",
+                        progressMs = 1_000L,
+                        durationMs = 10_000L,
+                        isCompleted = false,
+                        lastPlayedAt = nowMs,
                     ),
+                ),
                 includeSubscriptionRecency = false,
                 nowMs = nowMs,
             )
@@ -73,10 +73,7 @@ class PodcastScoringTest {
         assertEquals(262.0, scores.getValue("fresh"), 1e-9)
     }
 
-    private fun scorable(
-        id: String,
-        subscribedAt: Long,
-    ) = ScorablePodcast(
+    private fun scorable(id: String, subscribedAt: Long,) = ScorablePodcast(
         id = id,
         subscribedAt = subscribedAt,
         latestEpisode = null,

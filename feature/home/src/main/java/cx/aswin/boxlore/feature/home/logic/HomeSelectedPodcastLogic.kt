@@ -54,12 +54,11 @@ internal object HomeSelectedPodcastLogic {
         episodes: List<Episode>,
         hideCompleted: Boolean,
         completedIds: Set<String>,
-    ): List<Episode> =
-        if (hideCompleted) {
-            episodes.filter { it.id !in completedIds }
-        } else {
-            episodes
-        }
+    ): List<Episode> = if (hideCompleted) {
+        episodes.filter { it.id !in completedIds }
+    } else {
+        episodes
+    }
 
     /**
      * Skeleton only when switching chips or the stream is still empty.

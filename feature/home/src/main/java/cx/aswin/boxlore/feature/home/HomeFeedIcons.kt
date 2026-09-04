@@ -38,21 +38,19 @@ private val homeSectionIcons: Map<String, ImageVector> =
         "explore" to Icons.Rounded.Explore,
     )
 
-internal fun String?.toHomeSectionIcon(): ImageVector =
-    homeSectionIcons[this?.lowercase()] ?: Icons.Rounded.School
+internal fun String?.toHomeSectionIcon(): ImageVector = homeSectionIcons[this?.lowercase()] ?: Icons.Rounded.School
 
-internal fun HomeEditorialIcon.toHomeEditorialIcon(): ImageVector =
-    when (this) {
-        HomeEditorialIcon.HEADLINES -> Icons.AutoMirrored.Rounded.Article
-        HomeEditorialIcon.UPLIFTING -> Icons.Rounded.Bolt
-        HomeEditorialIcon.BUSINESS -> Icons.Rounded.Work
-        HomeEditorialIcon.SCIENCE -> Icons.Rounded.Science
-        HomeEditorialIcon.TECHNOLOGY -> Icons.Rounded.Devices
-        HomeEditorialIcon.CREATIVITY -> Icons.Rounded.Palette
-        HomeEditorialIcon.COMEDY -> Icons.Rounded.SentimentVerySatisfied
-        HomeEditorialIcon.SCREEN -> Icons.Rounded.Movie
-        HomeEditorialIcon.SPORTS -> Icons.Rounded.SportsSoccer
-        HomeEditorialIcon.TRUE_CRIME -> Icons.Rounded.Search
-        HomeEditorialIcon.HISTORY -> Icons.Rounded.HistoryEdu
-        HomeEditorialIcon.MYSTERY -> Icons.Rounded.NightsStay
-    }
+internal fun HomeEditorialIcon.toHomeEditorialIcon(): ImageVector = when (this) {
+    HomeEditorialIcon.HEADLINES -> Icons.AutoMirrored.Rounded.Article
+    HomeEditorialIcon.UPLIFTING -> Icons.Rounded.Bolt
+    HomeEditorialIcon.BUSINESS -> Icons.Rounded.Work
+    HomeEditorialIcon.SCIENCE -> Icons.Rounded.Science
+    HomeEditorialIcon.TECHNOLOGY -> Icons.Rounded.Devices
+    HomeEditorialIcon.CREATIVITY -> Icons.Rounded.Palette
+    HomeEditorialIcon.COMEDY -> Icons.Rounded.SentimentVerySatisfied
+    HomeEditorialIcon.SCREEN -> Icons.Rounded.Movie
+    HomeEditorialIcon.SPORTS -> Icons.Rounded.SportsSoccer
+    HomeEditorialIcon.TRUE_CRIME -> Icons.Rounded.Search
+    HomeEditorialIcon.HISTORY -> Icons.Rounded.HistoryEdu
+    HomeEditorialIcon.MYSTERY -> Icons.Rounded.NightsStay
+}

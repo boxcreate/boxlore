@@ -61,93 +61,83 @@ class DownloadedEpisodeDaoInMemoryTest {
     )
 
     @Test
-    fun insertAndGetDownload() =
-        runTest {
-            dao.insert(download("ep-1"))
-            assertEquals("Episode ep-1", dao.getDownload("ep-1")?.episodeTitle)
-            assertNull(dao.getDownload("missing"))
-        }
+    fun insertAndGetDownload() = runTest {
+        dao.insert(download("ep-1"))
+        assertEquals("Episode ep-1", dao.getDownload("ep-1")?.episodeTitle)
+        assertNull(dao.getDownload("missing"))
+    }
 
     @Test
-    fun getAllDownloadsOrderedByDownloadedAtDesc() =
-        runTest {
-            dao.insert(download("a", downloadedAt = 1L))
-            dao.insert(download("b", downloadedAt = 3L))
-            dao.insert(download("c", downloadedAt = 2L))
+    fun getAllDownloadsOrderedByDownloadedAtDesc() = runTest {
+        dao.insert(download("a", downloadedAt = 1L))
+        dao.insert(download("b", downloadedAt = 3L))
+        dao.insert(download("c", downloadedAt = 2L))
 
-            assertEquals(listOf("b", "c", "a"), dao.getAllDownloads().first().map { it.episodeId })
-            assertEquals(3, dao.getAllDownloadsSync().size)
-        }
-
-    @Test
-    fun getCompletedDownloadsFiltersByStatus() =
-        runTest {
-            dao.insert(download("done", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
-            dao.insert(download("queued", status = DownloadedEpisodeEntity.STATUS_QUEUED))
-            dao.insert(download("failed", status = DownloadedEpisodeEntity.STATUS_FAILED))
-
-            assertEquals(listOf("done"), dao.getCompletedDownloads().map { it.episodeId })
-        }
+        assertEquals(listOf("b", "c", "a"), dao.getAllDownloads().first().map { it.episodeId })
+        assertEquals(3, dao.getAllDownloadsSync().size)
+    }
 
     @Test
-    fun getDownloadsForPodcast() =
-        runTest {
-            dao.insert(download("a", podcastId = "p1"))
-            dao.insert(download("b", podcastId = "p2"))
-            assertEquals(listOf("a"), dao.getDownloadsForPodcast("p1").map { it.episodeId })
-        }
+    fun getCompletedDownloadsFiltersByStatus() = runTest {
+        dao.insert(download("done", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
+        dao.insert(download("queued", status = DownloadedEpisodeEntity.STATUS_QUEUED))
+        dao.insert(download("failed", status = DownloadedEpisodeEntity.STATUS_FAILED))
+
+        assertEquals(listOf("done"), dao.getCompletedDownloads().map { it.episodeId })
+    }
 
     @Test
-    fun isDownloadedFlowCountsCompletedOnly() =
-        runTest {
-            dao.insert(download("ep-1", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
-            assertEquals(1, dao.isDownloadedFlow("ep-1").first())
-            assertEquals(0, dao.isDownloadingFlow("ep-1").first())
-        }
+    fun getDownloadsForPodcast() = runTest {
+        dao.insert(download("a", podcastId = "p1"))
+        dao.insert(download("b", podcastId = "p2"))
+        assertEquals(listOf("a"), dao.getDownloadsForPodcast("p1").map { it.episodeId })
+    }
 
     @Test
-    fun isDownloadingFlowCountsQueuedAndDownloading() =
-        runTest {
-            dao.insert(download("ep-1", status = DownloadedEpisodeEntity.STATUS_DOWNLOADING))
-            assertEquals(1, dao.isDownloadingFlow("ep-1").first())
-            assertEquals(0, dao.isDownloadedFlow("ep-1").first())
-        }
+    fun isDownloadedFlowCountsCompletedOnly() = runTest {
+        dao.insert(download("ep-1", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
+        assertEquals(1, dao.isDownloadedFlow("ep-1").first())
+        assertEquals(0, dao.isDownloadingFlow("ep-1").first())
+    }
 
     @Test
-    fun totalSizeBytesSumsAllRows() =
-        runTest {
-            assertEquals(0L, dao.getTotalSizeBytes().first())
-            dao.insert(download("a", sizeBytes = 100L))
-            dao.insert(download("b", sizeBytes = 250L))
-            assertEquals(350L, dao.getTotalSizeBytes().first())
-        }
+    fun isDownloadingFlowCountsQueuedAndDownloading() = runTest {
+        dao.insert(download("ep-1", status = DownloadedEpisodeEntity.STATUS_DOWNLOADING))
+        assertEquals(1, dao.isDownloadingFlow("ep-1").first())
+        assertEquals(0, dao.isDownloadedFlow("ep-1").first())
+    }
 
     @Test
-    fun countOthersByPodcastIdExcludesGivenEpisode() =
-        runTest {
-            dao.insert(download("a", podcastId = "p1"))
-            dao.insert(download("b", podcastId = "p1"))
-            dao.insert(download("c", podcastId = "p2"))
-
-            assertEquals(1, dao.countOthersByPodcastId("p1", excludeEpisodeId = "a"))
-            assertEquals(0, dao.countOthersByPodcastId("p2", excludeEpisodeId = "c"))
-        }
+    fun totalSizeBytesSumsAllRows() = runTest {
+        assertEquals(0L, dao.getTotalSizeBytes().first())
+        dao.insert(download("a", sizeBytes = 100L))
+        dao.insert(download("b", sizeBytes = 250L))
+        assertEquals(350L, dao.getTotalSizeBytes().first())
+    }
 
     @Test
-    fun deleteRemovesRow() =
-        runTest {
-            dao.insert(download("ep-1"))
-            dao.delete("ep-1")
-            assertNull(dao.getDownload("ep-1"))
-            assertTrue(dao.getAllDownloadsSync().isEmpty())
-        }
+    fun countOthersByPodcastIdExcludesGivenEpisode() = runTest {
+        dao.insert(download("a", podcastId = "p1"))
+        dao.insert(download("b", podcastId = "p1"))
+        dao.insert(download("c", podcastId = "p2"))
+
+        assertEquals(1, dao.countOthersByPodcastId("p1", excludeEpisodeId = "a"))
+        assertEquals(0, dao.countOthersByPodcastId("p2", excludeEpisodeId = "c"))
+    }
 
     @Test
-    fun insertReplacesOnConflict() =
-        runTest {
-            dao.insert(download("ep-1", sizeBytes = 100L))
-            dao.insert(download("ep-1", sizeBytes = 200L))
-            assertEquals(200L, dao.getDownload("ep-1")?.sizeBytes)
-            assertEquals(1, dao.getAllDownloadsSync().size)
-        }
+    fun deleteRemovesRow() = runTest {
+        dao.insert(download("ep-1"))
+        dao.delete("ep-1")
+        assertNull(dao.getDownload("ep-1"))
+        assertTrue(dao.getAllDownloadsSync().isEmpty())
+    }
+
+    @Test
+    fun insertReplacesOnConflict() = runTest {
+        dao.insert(download("ep-1", sizeBytes = 100L))
+        dao.insert(download("ep-1", sizeBytes = 200L))
+        assertEquals(200L, dao.getDownload("ep-1")?.sizeBytes)
+        assertEquals(1, dao.getAllDownloadsSync().size)
+    }
 }

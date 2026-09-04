@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.ui.announcement
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,19 +32,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.R
-import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.component.ExpressiveAnimatedBackground
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.launch
 
 /** Full-screen PostHog-gated feature announcement overlay (e.g. Android Auto). */
 @Composable
-fun FeatureAnnouncementOverlay(
-    featureAnnouncementId: String,
-    userPrefs: UserPreferencesRepository,
-) {
+fun FeatureAnnouncementOverlay(featureAnnouncementId: String, userPrefs: UserPreferencesRepository,) {
     val scope = rememberCoroutineScope()
     val overlayAlpha = remember { Animatable(0f) }
     val phase1 = remember { Animatable(0f) }

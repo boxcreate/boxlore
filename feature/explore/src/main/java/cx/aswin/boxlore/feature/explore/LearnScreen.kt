@@ -1,11 +1,5 @@
 package cx.aswin.boxlore.feature.explore
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
-import cx.aswin.boxlore.core.playback.togglePlayPause
-import cx.aswin.boxlore.core.playback.playQueue
-import cx.aswin.boxlore.core.playback.PlaybackRepository
-
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -13,7 +7,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,14 +43,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.request.ImageRequest
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
-import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.playQueue
+import cx.aswin.boxlore.core.playback.togglePlayPause
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -393,26 +389,26 @@ private fun LoreStateCard(
 
 internal fun extractDominantColor(bitmap: android.graphics.Bitmap): Color {
     val palette = androidx.palette.graphics.Palette.from(bitmap).generate()
-    
+
     // 1. Get the absolute dominant swatch from the image palette
     val dominantSwatch = palette.dominantSwatch
         ?: palette.vibrantSwatch
         ?: palette.mutedSwatch
         ?: palette.lightMutedSwatch
         ?: palette.darkMutedSwatch
-        
+
     val rgb = dominantSwatch?.rgb ?: 0xFF6200EE.toInt()
-    
+
     // 2. Convert RGB to HSL to tweak vibrancy and lightness
     val hsl = FloatArray(3)
     androidx.core.graphics.ColorUtils.colorToHSL(rgb, hsl)
-    
+
     // 3. Boost saturation to make the glow rich and colorful (minimum 40% saturation)
     hsl[1] = hsl[1].coerceIn(0.40f, 0.85f)
-    
+
     // 4. Clamp lightness to keep the glow visually pleasant (between 25% and 55%)
     hsl[2] = hsl[2].coerceIn(0.25f, 0.55f)
-    
+
     // 5. Convert back to RGB and then Compose Color
     val colorInt = androidx.core.graphics.ColorUtils.HSLToColor(hsl)
     return Color(colorInt)

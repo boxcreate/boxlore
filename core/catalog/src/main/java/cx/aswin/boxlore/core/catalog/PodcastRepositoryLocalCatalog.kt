@@ -52,10 +52,7 @@ internal suspend fun PodcastRepository.getLocalCatalogPage(
     )
 }
 
-internal suspend fun PodcastRepository.searchLocalCatalog(
-    podcastId: String,
-    query: String,
-): List<Episode> {
+internal suspend fun PodcastRepository.searchLocalCatalog(podcastId: String, query: String,): List<Episode> {
     val catalog = localEpisodeCatalog ?: return emptyList()
     return catalog.search(podcastId, query, localCatalogMeta(podcastId))
 }
@@ -70,11 +67,7 @@ internal suspend fun PodcastRepository.loadLocalCatalogTips(podcastIndexIds: Lis
         }.toMap()
 }
 
-internal suspend fun PodcastRepository.getLocalCatalogWindow(
-    podcastId: String,
-    sort: String,
-    aroundEpisodeId: String?,
-): List<Episode> {
+internal suspend fun PodcastRepository.getLocalCatalogWindow(podcastId: String, sort: String, aroundEpisodeId: String?,): List<Episode> {
     val catalog = localEpisodeCatalog ?: return emptyList()
     return catalog.getWindow(
         podcastId = podcastId,
@@ -85,12 +78,11 @@ internal suspend fun PodcastRepository.getLocalCatalogWindow(
     )
 }
 
-internal suspend fun PodcastRepository.getLocalCatalogEpisode(episodeId: String): Episode? =
-    try {
-        localEpisodeCatalog?.getEpisode(episodeId)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        android.util.Log.e("PodcastRepository", "local catalog getEpisode failed for $episodeId", e)
-        null
-    }
+internal suspend fun PodcastRepository.getLocalCatalogEpisode(episodeId: String): Episode? = try {
+    localEpisodeCatalog?.getEpisode(episodeId)
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    android.util.Log.e("PodcastRepository", "local catalog getEpisode failed for $episodeId", e)
+    null
+}

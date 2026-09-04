@@ -18,10 +18,8 @@ internal fun confirmationVisibility(
     else -> ConfirmationVisibility.UNCHANGED
 }
 
-internal fun shouldConfirmDismiss(offset: Float, threshold: Float): Boolean =
-    abs(offset) > threshold
+internal fun shouldConfirmDismiss(offset: Float, threshold: Float): Boolean = abs(offset) > threshold
 
 internal fun dismissDirection(offset: Float): Int = if (offset < 0f) -1 else 1
 
-internal fun confirmationTarget(offset: Float, threshold: Float): Float =
-    dismissDirection(offset) * threshold * 1.5f
+internal fun confirmationTarget(offset: Float, threshold: Float): Float = dismissDirection(offset) * threshold * 1.5f

@@ -11,13 +11,13 @@ class PlaybackHistorySeedPolicyTest {
             PlaybackHistorySeedPolicy.build(
                 snapshot = snapshot(episodeTitle = "Player title"),
                 sources =
-                    listOf(
-                        PlaybackHistorySeedSource(episodeTitle = "  "),
-                        PlaybackHistorySeedSource(
-                            podcastId = "podcast",
-                            episodeTitle = "Catalog title",
-                        ),
+                listOf(
+                    PlaybackHistorySeedSource(episodeTitle = "  "),
+                    PlaybackHistorySeedSource(
+                        podcastId = "podcast",
+                        episodeTitle = "Catalog title",
                     ),
+                ),
                 podcast = null,
                 telemetry = PlaybackHistorySeedSource(episodeTitle = "Telemetry title"),
                 nowMs = 123L,
@@ -33,13 +33,13 @@ class PlaybackHistorySeedPolicyTest {
             PlaybackHistorySeedPolicy.build(
                 snapshot = snapshot(episodeTitle = null, durationMs = 0L),
                 sources =
-                    listOf(
-                        PlaybackHistorySeedSource(durationMs = 0L),
-                        PlaybackHistorySeedSource(
-                            episodeTitle = "Downloaded title",
-                            durationMs = 3_600_000L,
-                        ),
+                listOf(
+                    PlaybackHistorySeedSource(durationMs = 0L),
+                    PlaybackHistorySeedSource(
+                        episodeTitle = "Downloaded title",
+                        durationMs = 3_600_000L,
                     ),
+                ),
                 podcast = null,
                 telemetry = null,
                 nowMs = 123L,
@@ -61,10 +61,7 @@ class PlaybackHistorySeedPolicyTest {
         )
     }
 
-    private fun snapshot(
-        episodeTitle: String?,
-        durationMs: Long = 1_000L,
-    ) = PlaybackProgressSnapshot(
+    private fun snapshot(episodeTitle: String?, durationMs: Long = 1_000L,) = PlaybackProgressSnapshot(
         sequence = 1L,
         episodeId = "episode",
         positionMs = 500L,

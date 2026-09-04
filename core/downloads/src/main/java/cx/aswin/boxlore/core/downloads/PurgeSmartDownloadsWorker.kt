@@ -1,17 +1,13 @@
 package cx.aswin.boxlore.core.downloads
 
-import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
-
 import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 
-open class PurgeSmartDownloadsWorker(
-    appContext: Context,
-    params: WorkerParameters
-) : CoroutineWorker(appContext, params) {
+open class PurgeSmartDownloadsWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
         Log.i("BoxLore_BackgroundTrace", "[Worker] PurgeSmartDownloadsWorker started.")

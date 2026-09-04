@@ -17,9 +17,7 @@ import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal class AutoBrowseLibraryCallback(
-    private val host: AutoBrowseLibraryHost,
-) : MediaLibrarySession.Callback {
+internal class AutoBrowseLibraryCallback(private val host: AutoBrowseLibraryHost,) : MediaLibrarySession.Callback {
     private val mediaResolver = AutoMediaResolver(host)
     private val treeBuilder = AutoBrowseTreeBuilder(host, mediaResolver)
     private val voiceSearch = AutoVoiceSearchHandler(host, treeBuilder)
@@ -66,10 +64,7 @@ internal class AutoBrowseLibraryCallback(
             Bundle.EMPTY,
         )
 
-    override fun onConnect(
-        session: MediaSession,
-        controller: MediaSession.ControllerInfo,
-    ): MediaSession.ConnectionResult {
+    override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo,): MediaSession.ConnectionResult {
         connectedAtMs[controller] = System.currentTimeMillis()
         AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
         val defaultResult = super.onConnect(session, controller)
@@ -91,10 +86,7 @@ internal class AutoBrowseLibraryCallback(
             .build()
     }
 
-    override fun onDisconnected(
-        session: MediaSession,
-        controller: MediaSession.ControllerInfo,
-    ) {
+    override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo,) {
         val started = connectedAtMs.remove(controller)
         val durationSeconds =
             started?.let { ((System.currentTimeMillis() - it) / 1000L).toInt().coerceAtLeast(0) }
@@ -221,10 +213,7 @@ internal class AutoBrowseLibraryCallback(
         )
     }
 
-    private suspend fun addEpisodeToQueue(
-        episodeId: String,
-        player: Player,
-    ): Boolean {
+    private suspend fun addEpisodeToQueue(episodeId: String, player: Player,): Boolean {
         val existingQueue = host.queueRepository.getQueueSnapshot()
         val queuedEpisode = existingQueue.firstOrNull { it.id == episodeId }
         val episode = queuedEpisode ?: mediaResolver.resolveDomainEpisode(episodeId) ?: return false
@@ -238,10 +227,10 @@ internal class AutoBrowseLibraryCallback(
                     episode = episode,
                     source = AutoBrowseContract.SOURCE_QUEUE,
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            episode.imageUrl ?: episode.podcastImageUrl,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        episode.imageUrl ?: episode.podcastImageUrl,
+                    ),
                     mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
                 ),
             )
@@ -253,11 +242,7 @@ internal class AutoBrowseLibraryCallback(
     }
 
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-    override fun onMediaButtonEvent(
-        session: MediaSession,
-        controllerInfo: MediaSession.ControllerInfo,
-        intent: Intent,
-    ): Boolean {
+    override fun onMediaButtonEvent(session: MediaSession, controllerInfo: MediaSession.ControllerInfo, intent: Intent,): Boolean {
         val keyEvent =
             androidx.core.content.IntentCompat.getParcelableExtra(
                 intent,
@@ -455,7 +440,7 @@ internal class AutoBrowseLibraryCallback(
                             treeBuilder.getHomeChildren() +
                             treeBuilder.getLibraryChildren() +
                             treeBuilder.getDiscoverChildren()
-                    ).firstOrNull { it.mediaId == mediaId }
+                        ).firstOrNull { it.mediaId == mediaId }
                         ?: AutoMediaItemFactory.browsable(
                             id = mediaId,
                             title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name),
@@ -471,10 +456,7 @@ internal class AutoBrowseLibraryCallback(
      * listener (shared host.isRefilling flag), so Auto no longer bypasses dedup/ranking
      * or persists rows without provenance.
      */
-    private fun buildAndAppendQueueAsync(
-        episodeId: String,
-        mediaSession: MediaSession,
-    ) {
+    private fun buildAndAppendQueueAsync(episodeId: String, mediaSession: MediaSession,) {
         host.serviceScope.launch {
             try {
                 val player = mediaSession.player

@@ -14,17 +14,17 @@ class NowPlayingWidgetLogicTest {
         val snapshot =
             NowPlayingWidgetMapper.fromPlayback(
                 state =
-                    WidgetPlaybackState(
-                        episodeId = "ep-1",
-                        episodeTitle = "Episode title",
-                        podcastTitle = "Podcast title",
-                        artworkUrl = "https://example.com/art.jpg",
-                        isPlaying = true,
-                        positionMs = 12_000L,
-                        durationMs = 60_000L,
-                        seekForwardMs = 30_000L,
-                        seekBackwardMs = 10_000L,
-                    ),
+                WidgetPlaybackState(
+                    episodeId = "ep-1",
+                    episodeTitle = "Episode title",
+                    podcastTitle = "Podcast title",
+                    artworkUrl = "https://example.com/art.jpg",
+                    isPlaying = true,
+                    positionMs = 12_000L,
+                    durationMs = 60_000L,
+                    seekForwardMs = 30_000L,
+                    seekBackwardMs = 10_000L,
+                ),
                 nowMs = 1_000L,
             )
 

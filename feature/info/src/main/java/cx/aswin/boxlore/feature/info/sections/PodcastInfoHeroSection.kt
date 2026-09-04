@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.sections
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,11 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
@@ -34,7 +31,6 @@ import cx.aswin.boxlore.feature.info.components.PodcastInfoMetadataChipsRow
 import cx.aswin.boxlore.feature.info.components.calculateUpdateFrequencyData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
 
 @Composable
 internal fun PodcastInfoHeroSection(
@@ -48,9 +44,9 @@ internal fun PodcastInfoHeroSection(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // 1. Centered Large Image
@@ -147,4 +143,3 @@ internal fun PodcastInfoHeroSection(
         )
     }
 }
-

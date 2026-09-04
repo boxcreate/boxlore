@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import kotlin.random.Random
 
 data class PlacedShape(val x: Float, val y: Float, val size: Int, val shape: androidx.compose.ui.graphics.Shape)
@@ -36,7 +35,6 @@ fun AnimatedShapesFallback() {
     // Random positions and sizes calculated once per composition
     val shapes = remember { calculateFallbackPlacedShapes() }
 
-    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -56,7 +54,7 @@ fun AnimatedShapesFallback() {
                         outline
                     )
                 }
-                
+
                 onDrawBehind {
                     cachedOutlines.forEach { (xPx, yPx, outline) ->
                         translate(left = xPx, top = yPx) {
@@ -84,16 +82,16 @@ fun AnimatedShapesFallback() {
 
 internal fun calculateFallbackPlacedShapes(): List<PlacedShape> {
     val allShapes = ExpressiveShapes.Decorative.shuffled()
-    
+
     val placedShapes = mutableListOf<PlacedShape>()
     val availableShapes = allShapes.toMutableList()
-    
+
     for (i in 0 until 100) {
         if (placedShapes.size >= 6 || availableShapes.isEmpty()) break
-        
+
         val x = Random.nextFloat() * 350f
         val y = Random.nextFloat() * 600f
-        
+
         if (!isOverlappingWithPlaced(x, y, placedShapes)) {
             val size = 180 + Random.nextInt(170)
             placedShapes.add(PlacedShape(x, y, size, availableShapes.removeAt(0)))
@@ -110,17 +108,11 @@ internal fun isOverlappingWithPlaced(x: Float, y: Float, placedShapes: List<Plac
     return false
 }
 
-
-
 /**
  * Custom drawOutline extension function to draw Outline primitives directly,
  * bypassing version/import discrepancies in compose graphics libraries.
  */
-fun DrawScope.drawOutline(
-    outline: Outline,
-    color: Color,
-    alpha: Float = 1.0f
-) {
+fun DrawScope.drawOutline(outline: Outline, color: Color, alpha: Float = 1.0f) {
     when (outline) {
         is Outline.Rectangle -> {
             drawRect(

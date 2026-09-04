@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.RssEpisodeDao
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -25,7 +26,6 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.ArgumentMatchers.nullable
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
-import java.util.concurrent.TimeUnit
 
 /**
  * Hermetic [PodcastRepository] catalog paths against MockWebServer (B2).
@@ -80,129 +80,122 @@ class PodcastRepositoryCatalogTest {
     }
 
     @Test
-    fun `getTrendingPodcasts maps feeds from MockWebServer`() =
-        runTest(testDispatcher) {
-            enqueueFixture("fixtures/trending.json")
+    fun `getTrendingPodcasts maps feeds from MockWebServer`() = runTest(testDispatcher) {
+        enqueueFixture("fixtures/trending.json")
 
-            val podcasts = repository.getTrendingPodcasts(country = "us", limit = 10, category = "News")
+        val podcasts = repository.getTrendingPodcasts(country = "us", limit = 10, category = "News")
 
-            assertEquals(1, podcasts.size)
-            assertEquals("920666", podcasts.single().id)
-            assertEquals("The Daily", podcasts.single().title)
-            assertEquals("The New York Times", podcasts.single().artist)
+        assertEquals(1, podcasts.size)
+        assertEquals("920666", podcasts.single().id)
+        assertEquals("The Daily", podcasts.single().title)
+        assertEquals("The New York Times", podcasts.single().artist)
 
-            val recorded = server.takeRequest()
-            assertTrue(recorded.path!!.startsWith("/trending"))
-            assertEquals("us", recorded.requestUrl?.queryParameter("country"))
-            assertEquals(APP_KEY, recorded.getHeader("X-App-Key"))
-        }
-
-    @Test
-    fun `getTrendingPodcasts returns empty list on HTTP error`() =
-        runTest(testDispatcher) {
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(500)
-                    .setBody("""{"status":"false","error":"boom"}"""),
-            )
-
-            val podcasts = repository.getTrendingPodcasts(country = "us")
-
-            assertTrue(podcasts.isEmpty())
-        }
+        val recorded = server.takeRequest()
+        assertTrue(recorded.path!!.startsWith("/trending"))
+        assertEquals("us", recorded.requestUrl?.queryParameter("country"))
+        assertEquals(APP_KEY, recorded.getHeader("X-App-Key"))
+    }
 
     @Test
-    fun `getHomeBootstrapDataFast maps trending and briefing`() =
-        runTest(testDispatcher) {
-            enqueueFixture("fixtures/bootstrap.json")
+    fun `getTrendingPodcasts returns empty list on HTTP error`() = runTest(testDispatcher) {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(500)
+                .setBody("""{"status":"false","error":"boom"}"""),
+        )
 
-            val data = repository.getHomeBootstrapDataFast(country = "us")
+        val podcasts = repository.getTrendingPodcasts(country = "us")
 
-            assertEquals("Morning Brief", data.briefing?.title)
-            assertEquals(1, data.trending.size)
-            assertEquals("Trending Show", data.trending.single().title)
-            assertEquals(false, data.isRecommendationsFallback)
-
-            val recorded = server.takeRequest()
-            assertEquals("GET", recorded.method)
-            assertTrue(recorded.path!!.startsWith("/home/bootstrap"))
-            assertEquals("us", recorded.requestUrl?.queryParameter("country"))
-        }
+        assertTrue(podcasts.isEmpty())
+    }
 
     @Test
-    fun `getHomeBootstrapDataFast returns empty shell on transport failure`() =
-        runTest(testDispatcher) {
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(503)
-                    .setBody("""{"error":"unavailable"}"""),
-            )
+    fun `getHomeBootstrapDataFast maps trending and briefing`() = runTest(testDispatcher) {
+        enqueueFixture("fixtures/bootstrap.json")
 
-            val data = repository.getHomeBootstrapDataFast(country = "us")
+        val data = repository.getHomeBootstrapDataFast(country = "us")
 
-            assertEquals(null, data.briefing)
-            assertTrue(data.trending.isEmpty())
-            assertTrue(data.recommendations.isEmpty())
-        }
+        assertEquals("Morning Brief", data.briefing?.title)
+        assertEquals(1, data.trending.size)
+        assertEquals("Trending Show", data.trending.single().title)
+        assertEquals(false, data.isRecommendationsFallback)
+
+        val recorded = server.takeRequest()
+        assertEquals("GET", recorded.method)
+        assertTrue(recorded.path!!.startsWith("/home/bootstrap"))
+        assertEquals("us", recorded.requestUrl?.queryParameter("country"))
+    }
 
     @Test
-    fun `searchPodcastsGrouped merges typeahead catalog and hybrid also-found`() =
-        runTest(testDispatcher) {
-            server.dispatcher =
-                object : Dispatcher() {
-                    override fun dispatch(request: RecordedRequest): MockResponse {
-                        val path = request.path.orEmpty()
-                        return when {
-                            path.startsWith("/search/typeahead") ->
-                                fixtureBody("fixtures/search-typeahead.json")
-                            path.startsWith("/search") ->
-                                fixtureBody("fixtures/search.json")
-                            else -> MockResponse().setResponseCode(404)
-                        }
+    fun `getHomeBootstrapDataFast returns empty shell on transport failure`() = runTest(testDispatcher) {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setBody("""{"error":"unavailable"}"""),
+        )
+
+        val data = repository.getHomeBootstrapDataFast(country = "us")
+
+        assertEquals(null, data.briefing)
+        assertTrue(data.trending.isEmpty())
+        assertTrue(data.recommendations.isEmpty())
+    }
+
+    @Test
+    fun `searchPodcastsGrouped merges typeahead catalog and hybrid also-found`() = runTest(testDispatcher) {
+        server.dispatcher =
+            object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    val path = request.path.orEmpty()
+                    return when {
+                        path.startsWith("/search/typeahead") ->
+                            fixtureBody("fixtures/search-typeahead.json")
+                        path.startsWith("/search") ->
+                            fixtureBody("fixtures/search.json")
+                        else -> MockResponse().setResponseCode(404)
                     }
                 }
+            }
 
-            val grouped = repository.searchPodcastsGrouped("serial")
+        val grouped = repository.searchPodcastsGrouped("serial")
 
-            assertEquals(listOf("745392"), grouped.catalog.map { it.id })
-            assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
-            assertEquals("Serial", grouped.catalog.single().title)
-            assertEquals("Reply All", grouped.alsoFound.single().title)
-        }
-
-    @Test
-    fun `searchPodcastsGrouped returns empty groups for blank query`() =
-        runTest(testDispatcher) {
-            val grouped = repository.searchPodcastsGrouped("   ")
-            assertTrue(grouped.catalog.isEmpty())
-            assertTrue(grouped.alsoFound.isEmpty())
-            assertEquals(0, server.requestCount)
-        }
+        assertEquals(listOf("745392"), grouped.catalog.map { it.id })
+        assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
+        assertEquals("Serial", grouped.catalog.single().title)
+        assertEquals("Reply All", grouped.alsoFound.single().title)
+    }
 
     @Test
-    fun `searchPodcastsGrouped keeps hybrid when typeahead fails`() =
-        runTest(testDispatcher) {
-            server.dispatcher =
-                object : Dispatcher() {
-                    override fun dispatch(request: RecordedRequest): MockResponse {
-                        val path = request.path.orEmpty()
-                        return when {
-                            path.startsWith("/search/typeahead") ->
-                                MockResponse()
-                                    .setResponseCode(500)
-                                    .setBody("""{"status":"false"}""")
-                            path.startsWith("/search") ->
-                                fixtureBody("fixtures/search.json")
-                            else -> MockResponse().setResponseCode(404)
-                        }
+    fun `searchPodcastsGrouped returns empty groups for blank query`() = runTest(testDispatcher) {
+        val grouped = repository.searchPodcastsGrouped("   ")
+        assertTrue(grouped.catalog.isEmpty())
+        assertTrue(grouped.alsoFound.isEmpty())
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun `searchPodcastsGrouped keeps hybrid when typeahead fails`() = runTest(testDispatcher) {
+        server.dispatcher =
+            object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    val path = request.path.orEmpty()
+                    return when {
+                        path.startsWith("/search/typeahead") ->
+                            MockResponse()
+                                .setResponseCode(500)
+                                .setBody("""{"status":"false"}""")
+                        path.startsWith("/search") ->
+                            fixtureBody("fixtures/search.json")
+                        else -> MockResponse().setResponseCode(404)
                     }
                 }
+            }
 
-            val grouped = repository.searchPodcastsGrouped("reply")
+        val grouped = repository.searchPodcastsGrouped("reply")
 
-            assertTrue(grouped.catalog.isEmpty())
-            assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
-        }
+        assertTrue(grouped.catalog.isEmpty())
+        assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
+    }
 
     private fun fixtureBody(resourcePath: String): MockResponse {
         val json =

@@ -23,11 +23,7 @@ object ExploreDefaultTab {
      * A genre [hasCategory] or an explicit nav tab (`trending` / `top` / `for_you`) wins
      * over [preferred].
      */
-    fun resolveIndex(
-        navTab: String?,
-        hasCategory: Boolean,
-        preferred: String?,
-    ): Int {
+    fun resolveIndex(navTab: String?, hasCategory: Boolean, preferred: String?,): Int {
         if (hasCategory) return INDEX_TOP
         return when (navTab?.trim()?.lowercase()) {
             "trending", TOP -> INDEX_TOP
@@ -62,12 +58,8 @@ object SubscriptionsDefaultTab {
         }
     }
 
-    fun resolveIndex(
-        navTab: Int,
-        preferred: String?,
-    ): Int =
-        when (navTab) {
-            INDEX_SHOWS, INDEX_NEW_EPISODES -> navTab
-            else -> if (sanitize(preferred) == NEW_EPISODES) INDEX_NEW_EPISODES else INDEX_SHOWS
-        }
+    fun resolveIndex(navTab: Int, preferred: String?,): Int = when (navTab) {
+        INDEX_SHOWS, INDEX_NEW_EPISODES -> navTab
+        else -> if (sanitize(preferred) == NEW_EPISODES) INDEX_NEW_EPISODES else INDEX_SHOWS
+    }
 }

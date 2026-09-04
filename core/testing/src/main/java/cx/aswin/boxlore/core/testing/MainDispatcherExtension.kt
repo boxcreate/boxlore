@@ -14,9 +14,8 @@ import org.junit.jupiter.api.extension.ExtensionContext
  * JUnit 5 extension that installs a [TestDispatcher] as [Dispatchers.Main] for each test.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainDispatcherExtension(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
-) : BeforeEachCallback,
+class MainDispatcherExtension(private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),) :
+    BeforeEachCallback,
     AfterEachCallback {
     override fun beforeEach(context: ExtensionContext) {
         Dispatchers.setMain(dispatcher)

@@ -5,8 +5,8 @@ import coil.Coil
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
-import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 
 /** Configures the process-wide Coil [ImageLoader] (memory + disk cache, OkHttp timeouts). */
 object CoilImageLoaderSetup {

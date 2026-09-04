@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.animateContentSize
@@ -27,13 +25,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.component.HtmlText
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Person
 
@@ -178,54 +176,51 @@ private fun buildSocialLinkFromHost(
     host: String,
     url: String,
     handle: String?,
-): SocialLink =
-    getMediaSocialLink(host, url, handle)
-        ?: getCommunitySocialLink(host, url, handle)
-        ?: buildGenericWebLink(host, url)
+): SocialLink = getMediaSocialLink(host, url, handle)
+    ?: getCommunitySocialLink(host, url, handle)
+    ?: buildGenericWebLink(host, url)
 
 private fun getMediaSocialLink(
     host: String,
     url: String,
     handle: String?,
-): SocialLink? =
-    when {
-        host.contains("youtube.com") || host.contains("youtu.be") ->
-            SocialLink(if (handle != null) "YouTube: $handle" else "YouTube", url, Color(0xFFFF0000), Icons.Rounded.PlayCircle)
-        host.contains("instagram.com") ->
-            SocialLink(if (handle != null) "Instagram: $handle" else "Instagram", url, Color(0xFFE4405F), Icons.Rounded.CameraAlt)
-        host.contains("twitter.com") || host.contains("x.com") ->
-            SocialLink(if (handle != null) "X: $handle" else "X", url, Color(0xFF1DA1F2), Icons.Rounded.Tag)
-        host.contains("threads.net") ->
-            SocialLink(if (handle != null) "Threads: $handle" else "Threads", url, Color(0xFF101010), Icons.Rounded.AlternateEmail)
-        host.contains("spotify.com") || host.contains("open.spotify.com") ->
-            SocialLink("Spotify", url, Color(0xFF1DB954), Icons.Rounded.MusicNote)
-        host.contains("podcasts.apple.com") ->
-            SocialLink("Apple Podcasts", url, Color(0xFF9933CC), Icons.Rounded.Podcasts)
-        else -> null
-    }
+): SocialLink? = when {
+    host.contains("youtube.com") || host.contains("youtu.be") ->
+        SocialLink(if (handle != null) "YouTube: $handle" else "YouTube", url, Color(0xFFFF0000), Icons.Rounded.PlayCircle)
+    host.contains("instagram.com") ->
+        SocialLink(if (handle != null) "Instagram: $handle" else "Instagram", url, Color(0xFFE4405F), Icons.Rounded.CameraAlt)
+    host.contains("twitter.com") || host.contains("x.com") ->
+        SocialLink(if (handle != null) "X: $handle" else "X", url, Color(0xFF1DA1F2), Icons.Rounded.Tag)
+    host.contains("threads.net") ->
+        SocialLink(if (handle != null) "Threads: $handle" else "Threads", url, Color(0xFF101010), Icons.Rounded.AlternateEmail)
+    host.contains("spotify.com") || host.contains("open.spotify.com") ->
+        SocialLink("Spotify", url, Color(0xFF1DB954), Icons.Rounded.MusicNote)
+    host.contains("podcasts.apple.com") ->
+        SocialLink("Apple Podcasts", url, Color(0xFF9933CC), Icons.Rounded.Podcasts)
+    else -> null
+}
 
 private fun getCommunitySocialLink(
     host: String,
     url: String,
     handle: String?,
-): SocialLink? =
-    when {
-        host.contains("patreon.com") ->
-            SocialLink(if (handle != null) "Patreon: $handle" else "Patreon", url, Color(0xFFF96854), Icons.Rounded.Loyalty)
-        host.contains("tiktok.com") ->
-            SocialLink(if (handle != null) "TikTok: $handle" else "TikTok", url, Color(0xFFEE1D52), Icons.Rounded.Videocam)
-        host.contains("facebook.com") || host.contains("fb.com") ->
-            SocialLink(if (handle != null) "Facebook: $handle" else "Facebook", url, Color(0xFF1877F2), Icons.Rounded.People)
-        host.contains("discord.com") || host.contains(DISCORD_GG_HOST) ->
-            SocialLink(if (handle != null) "Discord: $handle" else "Discord", url, Color(0xFF5865F2), Icons.Rounded.Forum)
-        host.contains("linkedin.com") ->
-            SocialLink("LinkedIn", url, Color(0xFF0A66C2), Icons.Rounded.Work)
-        host.contains("twitch.tv") ->
-            SocialLink(if (handle != null) "Twitch: $handle" else "Twitch", url, Color(0xFF9146FF), Icons.Rounded.Videocam)
-        host.contains("reddit.com") ->
-            SocialLink(if (handle != null) "Reddit: $handle" else "Reddit", url, Color(0xFFFF4500), Icons.Rounded.Forum)
-        else -> null
-    }
+): SocialLink? = when {
+    host.contains("patreon.com") ->
+        SocialLink(if (handle != null) "Patreon: $handle" else "Patreon", url, Color(0xFFF96854), Icons.Rounded.Loyalty)
+    host.contains("tiktok.com") ->
+        SocialLink(if (handle != null) "TikTok: $handle" else "TikTok", url, Color(0xFFEE1D52), Icons.Rounded.Videocam)
+    host.contains("facebook.com") || host.contains("fb.com") ->
+        SocialLink(if (handle != null) "Facebook: $handle" else "Facebook", url, Color(0xFF1877F2), Icons.Rounded.People)
+    host.contains("discord.com") || host.contains(DISCORD_GG_HOST) ->
+        SocialLink(if (handle != null) "Discord: $handle" else "Discord", url, Color(0xFF5865F2), Icons.Rounded.Forum)
+    host.contains("linkedin.com") ->
+        SocialLink("LinkedIn", url, Color(0xFF0A66C2), Icons.Rounded.Work)
+    host.contains("twitch.tv") ->
+        SocialLink(if (handle != null) "Twitch: $handle" else "Twitch", url, Color(0xFF9146FF), Icons.Rounded.Videocam)
+    host.contains("reddit.com") ->
+        SocialLink(if (handle != null) "Reddit: $handle" else "Reddit", url, Color(0xFFFF4500), Icons.Rounded.Forum)
+    else -> null
+}
 
 private fun buildGenericWebLink(
     host: String,
@@ -263,26 +258,26 @@ internal fun EpisodeDescriptionCard(
 
     Surface(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .expressiveClickable(enabled = isLong) { expanded = !expanded },
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .expressiveClickable(enabled = isLong) { expanded = !expanded },
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .animateContentSize(
-                        animationSpec =
-                            spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMedium,
-                            ),
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .animateContentSize(
+                    animationSpec =
+                    spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium,
                     ),
+                ),
         ) {
             // --- Cast & Crew (Person chips) ---
             if (!persons.isNullOrEmpty()) {
@@ -372,9 +367,9 @@ internal fun EpisodeDescriptionCard(
                 HtmlText(
                     text = formattedDescription,
                     style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            lineHeight = 20.sp,
-                        ),
+                    MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 20.sp,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = if (expanded || !isLong) Int.MAX_VALUE else 4,
                     modifier = Modifier.fillMaxWidth(),
@@ -393,19 +388,19 @@ internal fun EpisodeDescriptionCard(
                 if (!expanded && isLong) {
                     Box(
                         modifier =
-                            Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth()
-                                .height(28.dp)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                Color.Transparent,
-                                                MaterialTheme.colorScheme.surfaceContainerLow,
-                                            ),
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(28.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.surfaceContainerLow,
                                     ),
                                 ),
+                            ),
                     )
                 }
             }
@@ -414,10 +409,10 @@ internal fun EpisodeDescriptionCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .expressiveClickable(shape = RoundedCornerShape(8.dp)) { expanded = !expanded }
-                            .padding(vertical = 4.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .expressiveClickable(shape = RoundedCornerShape(8.dp)) { expanded = !expanded }
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -555,20 +550,20 @@ internal fun PersonChip(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = ExpressiveShapes.Pill,
         modifier =
-            Modifier.expressiveClickable(
-                enabled = !person.href.isNullOrBlank(),
-                isolate = true,
-                onClick = onClick,
-            ),
+        Modifier.expressiveClickable(
+            enabled = !person.href.isNullOrBlank(),
+            isolate = true,
+            onClick = onClick,
+        ),
     ) {
         Row(
             modifier =
-                Modifier.padding(
-                    start = 4.dp,
-                    end = 14.dp,
-                    top = 4.dp,
-                    bottom = 4.dp,
-                ),
+            Modifier.padding(
+                start = 4.dp,
+                end = 14.dp,
+                top = 4.dp,
+                bottom = 4.dp,
+            ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -579,19 +574,19 @@ internal fun PersonChip(
                     proxyWidth = 80, // 32dp * ~2.5x density
                     contentDescription = person.name,
                     modifier =
-                        Modifier
-                            .size(32.dp)
-                            .clip(CircleShape),
+                    Modifier
+                        .size(32.dp)
+                        .clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )
             } else {
                 // Fallback avatar with initial
                 Box(
                     modifier =
-                        Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
+                    Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -639,8 +634,8 @@ private fun SocialChip(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = ExpressiveShapes.Pill,
         modifier =
-            Modifier
-                .expressiveClickable(isolate = true, onClick = onClick),
+        Modifier
+            .expressiveClickable(isolate = true, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

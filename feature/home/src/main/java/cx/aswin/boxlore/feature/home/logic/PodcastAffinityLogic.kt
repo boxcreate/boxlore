@@ -85,13 +85,12 @@ object PodcastAffinityLogic {
         return topEntry.key
     }
 
-    fun podcastFromHistorySignal(signal: HistorySignal): Podcast =
-        Podcast(
-            id = signal.podcastId,
-            title = signal.podcastName,
-            artist = "",
-            imageUrl = signal.podcastImageUrl ?: "",
-            fallbackImageUrl = "",
-            description = "",
-        )
+    fun podcastFromHistorySignal(signal: HistorySignal): Podcast = Podcast(
+        id = signal.podcastId,
+        title = signal.podcastName,
+        artist = "",
+        imageUrl = signal.podcastImageUrl ?: "",
+        fallbackImageUrl = "",
+        description = "",
+    )
 }

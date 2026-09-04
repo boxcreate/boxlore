@@ -1,8 +1,8 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -10,8 +10,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
@@ -131,9 +130,9 @@ internal fun HomeMixModule(
         }
     Column(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
     ) {
         HomeMixHeader(
             mode = mode,
@@ -198,21 +197,21 @@ private fun HomeMixRail(
                         initialScale = 0.96f,
                         animationSpec = tween(durationMillis = 380),
                     )
-            ) togetherWith
+                ) togetherWith
                 (
                     slideOutHorizontally(
                         animationSpec = tween(durationMillis = 240),
                         targetOffsetX = { width -> -direction * width / 4 },
                     ) +
                         fadeOut(animationSpec = tween(durationMillis = 180))
-                )
+                    )
         },
         contentKey = { activeMode -> activeMode.name },
         label = "home_mix_mode_content",
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(124.dp),
+        Modifier
+            .fillMaxWidth()
+            .height(124.dp),
     ) { activeMode ->
         when (activeMode) {
             HomeMixMode.DAILY ->
@@ -289,11 +288,11 @@ private fun DailyMixRail(
                         )
                     },
                     overrideStatus =
-                        if (softExpire) {
-                            EpisodeStatus.UNPLAYED
-                        } else {
-                            playbackState?.first
-                        },
+                    if (softExpire) {
+                        EpisodeStatus.UNPLAYED
+                    } else {
+                        playbackState?.first
+                    },
                     overrideProgress = if (softExpire) 0f else playbackState?.second,
                     currentPlayingEpisodeId = currentPlayingEpisodeId,
                     isPlaying = isPlaying,
@@ -371,15 +370,15 @@ private fun HomeMixHeader(
             HomeMixDropdownHeading(
                 mode = mode,
                 subtitle =
-                    when (mode) {
-                        HomeMixMode.DAILY -> stringResource(R.string.home_mix_daily_subtitle)
-                        HomeMixMode.OFFLINE ->
-                            pluralStringResource(
-                                R.plurals.home_mix_offline_subtitle,
-                                offlineCount,
-                                offlineCount,
-                            )
-                    },
+                when (mode) {
+                    HomeMixMode.DAILY -> stringResource(R.string.home_mix_daily_subtitle)
+                    HomeMixMode.OFFLINE ->
+                        pluralStringResource(
+                            R.plurals.home_mix_offline_subtitle,
+                            offlineCount,
+                            offlineCount,
+                        )
+                },
                 enabled = canOfferOffline,
                 onModeSelected = onModeSelected,
                 modifier = Modifier.weight(1f),
@@ -425,18 +424,18 @@ private fun HomeMixDropdownHeading(
     Box(modifier = modifier) {
         Column(
             modifier =
-                if (enabled) {
-                    Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .semantics { role = Role.Button }
-                        .expressiveClickable(
-                            shape = RoundedCornerShape(10.dp),
-                            onClick = { expanded = true },
-                        )
-                        .padding(end = 4.dp)
-                } else {
-                    Modifier
-                },
+            if (enabled) {
+                Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .semantics { role = Role.Button }
+                    .expressiveClickable(
+                        shape = RoundedCornerShape(10.dp),
+                        onClick = { expanded = true },
+                    )
+                    .padding(end = 4.dp)
+            } else {
+                Modifier
+            },
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -449,9 +448,9 @@ private fun HomeMixDropdownHeading(
                         contentDescription = stringResource(R.string.home_mix_change_mode),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier =
-                            Modifier
-                                .size(20.dp)
-                                .rotate(chevronRotation),
+                        Modifier
+                            .size(20.dp)
+                            .rotate(chevronRotation),
                     )
                 }
             }
@@ -489,12 +488,12 @@ private fun HomeMixDropdownMenu(
                 text = {
                     Text(
                         text =
-                            stringResource(
-                                when (option) {
-                                    HomeMixMode.DAILY -> R.string.home_mix_daily_title
-                                    HomeMixMode.OFFLINE -> R.string.home_mix_offline_title
-                                },
-                            ),
+                        stringResource(
+                            when (option) {
+                                HomeMixMode.DAILY -> R.string.home_mix_daily_title
+                                HomeMixMode.OFFLINE -> R.string.home_mix_offline_title
+                            },
+                        ),
                         fontWeight = if (selected) GoogleSansWeight.bold else GoogleSansWeight.regular,
                     )
                 },
@@ -502,24 +501,24 @@ private fun HomeMixDropdownMenu(
                 leadingIcon = {
                     Icon(
                         imageVector =
-                            when (option) {
-                                HomeMixMode.DAILY -> Icons.AutoMirrored.Rounded.QueueMusic
-                                HomeMixMode.OFFLINE -> Icons.Outlined.DownloadDone
-                            },
+                        when (option) {
+                            HomeMixMode.DAILY -> Icons.AutoMirrored.Rounded.QueueMusic
+                            HomeMixMode.OFFLINE -> Icons.Outlined.DownloadDone
+                        },
                         contentDescription = null,
                     )
                 },
                 trailingIcon =
-                    if (selected) {
-                        {
-                            Icon(
-                                imageVector = Icons.Rounded.Check,
-                                contentDescription = null,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+                if (selected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                        )
+                    }
+                } else {
+                    null
+                },
             )
         }
     }
@@ -557,9 +556,9 @@ private fun OfflineMixEpisodeCard(
 private fun HomeMixEmptyState() {
     Row(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 22.dp),
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = 22.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -589,24 +588,24 @@ private fun ViewAllDownloadsCard(onClick: () -> Unit) {
     Card(
         shape = RoundedCornerShape(20.dp),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ),
+        CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
         modifier =
-            Modifier
-                .width(148.dp)
-                .height(116.dp)
-                .expressiveClickable(
-                    shape = RoundedCornerShape(20.dp),
-                    onClick = onClick,
-                ),
+        Modifier
+            .width(148.dp)
+            .height(116.dp)
+            .expressiveClickable(
+                shape = RoundedCornerShape(20.dp),
+                onClick = onClick,
+            ),
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -645,13 +644,13 @@ internal fun MixtapeSelectorCover(
     val scale by animateFloatAsState(targetValue = if (isSelected) 1.05f else 0.95f, label = "scale")
     val alpha by animateFloatAsState(
         targetValue =
-            if (isSelected) {
-                1f
-            } else if (isAnyPodcastSelected) {
-                0.6f
-            } else {
-                1f
-            },
+        if (isSelected) {
+            1f
+        } else if (isAnyPodcastSelected) {
+            0.6f
+        } else {
+            1f
+        },
         label = "alpha",
     )
     val cornerRadius by animateDpAsState(targetValue = if (isSelected) 16.dp else 12.dp, label = "cornerRadius")
@@ -659,24 +658,24 @@ internal fun MixtapeSelectorCover(
 
     Box(
         modifier =
-            modifier
-                .scale(scale),
+        modifier
+            .scale(scale),
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .expressiveClickable(
-                        shape = RoundedCornerShape(cornerRadius),
-                        onClick = onClick,
-                    ).clip(RoundedCornerShape(cornerRadius)),
+            Modifier
+                .fillMaxSize()
+                .expressiveClickable(
+                    shape = RoundedCornerShape(cornerRadius),
+                    onClick = onClick,
+                ).clip(RoundedCornerShape(cornerRadius)),
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .alpha(alpha),
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .alpha(alpha),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -690,9 +689,9 @@ internal fun MixtapeSelectorCover(
             if (isSelected) {
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerRadius)),
+                    Modifier
+                        .fillMaxSize()
+                        .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, RoundedCornerShape(cornerRadius)),
                 )
             }
         }
@@ -723,36 +722,36 @@ internal fun MixtapeEpisodeCard(
     Card(
         shape = RoundedCornerShape(20.dp),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+        CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
         modifier =
-            modifier
-                .width(264.dp)
-                .height(116.dp)
-                .expressiveClickable(shape = RoundedCornerShape(20.dp), onClick = onClick),
+        modifier
+            .width(264.dp)
+            .height(116.dp)
+            .expressiveClickable(shape = RoundedCornerShape(20.dp), onClick = onClick),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(10.dp),
+                Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Left: Cover art with download & played badges
                 Box(
                     modifier =
-                        Modifier
-                            .size(76.dp)
-                            .clip(RoundedCornerShape(14.dp)),
+                    Modifier
+                        .size(76.dp)
+                        .clip(RoundedCornerShape(14.dp)),
                 ) {
                     OptimizedImage(
                         url = (
                             episode.imageUrl?.takeIf { it.isNotEmpty() } ?: podcast.imageUrl.takeIf { it.isNotEmpty() }
                                 ?: podcast.fallbackImageUrl
-                        ),
+                            ),
                         proxyWidth = 152,
                         contentDescription = episode.title,
                         contentScale = ContentScale.Crop,
@@ -762,11 +761,11 @@ internal fun MixtapeEpisodeCard(
                     if (isCompleted) {
                         Box(
                             modifier =
-                                Modifier
-                                    .align(Alignment.TopEnd)
-                                        .padding(4.dp)
-                                        .size(18.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(18.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
@@ -781,12 +780,12 @@ internal fun MixtapeEpisodeCard(
                     if (isDownloaded) {
                         Box(
                             modifier =
-                                Modifier
-                                    .align(Alignment.TopStart)
-                                        .padding(4.dp)
-                                        .size(18.dp)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
-                                    .border(0.5.dp, MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.3f), CircleShape),
+                            Modifier
+                                .align(Alignment.TopStart)
+                                .padding(4.dp)
+                                .size(18.dp)
+                                .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
+                                .border(0.5.dp, MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.3f), CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
@@ -800,9 +799,9 @@ internal fun MixtapeEpisodeCard(
 
                     Box(
                         modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(4.dp),
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(4.dp),
                     ) {
                         Surface(
                             onClick = onPlay,
@@ -818,11 +817,11 @@ internal fun MixtapeEpisodeCard(
                             ) {
                                 Icon(
                                     imageVector =
-                                        if (isCurrentPlaying) {
-                                            Icons.Rounded.Pause
-                                        } else {
-                                            Icons.Rounded.PlayArrow
-                                        },
+                                    if (isCurrentPlaying) {
+                                        Icons.Rounded.Pause
+                                    } else {
+                                        Icons.Rounded.PlayArrow
+                                    },
                                     contentDescription = if (isCurrentPlaying) "Pause" else "Play",
                                     modifier = Modifier.size(19.dp),
                                 )
@@ -848,10 +847,10 @@ internal fun MixtapeEpisodeCard(
                     Text(
                         text = episode.title,
                         style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = GoogleSansWeight.bold,
-                                lineHeight = 18.sp,
-                            ),
+                        MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = GoogleSansWeight.bold,
+                            lineHeight = 18.sp,
+                        ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -868,19 +867,19 @@ internal fun MixtapeEpisodeCard(
                         if (isNew) {
                             Box(
                                 modifier =
-                                    Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(MaterialTheme.colorScheme.primaryContainer)
-                                        .padding(horizontal = 5.dp, vertical = 1.dp),
+                                Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .padding(horizontal = 5.dp, vertical = 1.dp),
                             ) {
                                 Text(
                                     text = "NEW",
                                     style =
-                                        MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = GoogleSansWeight.bold,
-                                            fontSize = 9.sp,
-                                            letterSpacing = 0.4.sp,
-                                        ),
+                                    MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = GoogleSansWeight.bold,
+                                        fontSize = 9.sp,
+                                        letterSpacing = 0.4.sp,
+                                    ),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
@@ -919,16 +918,15 @@ internal fun MixtapeEpisodeCard(
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = GoogleSansWeight.medium,
                                 color =
-                                    if (isInProgress) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
+                                if (isInProgress) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                             )
                         }
                     }
                 }
-
             }
 
             // Absolute Bottom: Progress Bar spanning full card width
@@ -936,10 +934,10 @@ internal fun MixtapeEpisodeCard(
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(3.dp),
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(3.dp),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                     drawStopIndicator = {},

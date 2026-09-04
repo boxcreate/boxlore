@@ -1,17 +1,16 @@
 package cx.aswin.boxlore.feature.home
 
+import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.getRecentHistoryList
-
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
 import cx.aswin.boxlore.feature.home.logic.PodcastAffinityLogic
 import cx.aswin.boxlore.feature.home.logic.toRecommendationPodcast
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -182,4 +181,3 @@ internal suspend fun HomeViewModel.rankBecauseYouLike(
     return HomeBecauseYouLikeLogic.sortPodcastsByEpisodeScores(podcasts, podcastScores) to
         HomeBecauseYouLikeLogic.sortEpisodesByScores(episodes, episodeScores)
 }
-

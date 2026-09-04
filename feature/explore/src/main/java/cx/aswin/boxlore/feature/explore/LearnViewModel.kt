@@ -24,14 +24,14 @@ import kotlinx.coroutines.launch
 
 sealed interface LearnUiState {
     data object Loading : LearnUiState
-    
+
     data class Success(
         val questionsStack: List<LearnCuriosityCard>,
         val isRefreshing: Boolean = false
     ) : LearnUiState
 
     data class CaughtUp(val isRefreshing: Boolean = false) : LearnUiState
-    
+
     data class Error(val message: String) : LearnUiState
 }
 

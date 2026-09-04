@@ -11,24 +11,24 @@ import androidx.room.PrimaryKey
 data class PodcastEntity(
     @PrimaryKey
     val podcastId: String,
-    
+
     val title: String,
     val author: String,
     val imageUrl: String,
     val description: String?,
-    
+
     // Subscription State
     val isSubscribed: Boolean = false,
     val subscribedAt: Long = 0L,
-    
+
     val genre: String? = null,
     val type: String = "episodic",
-    
+
     val lastRefreshed: Long = 0,
-    
+
     // Cached latest episode for instantaneous home screen rendering
     val latestEpisode: cx.aswin.boxlore.core.model.Episode? = null,
-    
+
     // Podcasting 2.0 Fields
     val podcastGuid: String? = null,
     val fundingUrl: String? = null,
@@ -39,7 +39,7 @@ data class PodcastEntity(
     val location: String? = null,
     val license: String? = null,
     val isLocked: Boolean = false,
-    
+
     // User listening style preference: "newest" / "oldest" / null (use type-based default)
     val preferredSort: String? = null,
     val notificationsEnabled: Boolean = false,

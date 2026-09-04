@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.ui
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,19 +17,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.launch
 
 /** Conflict dialog when starting a Lore queue over an existing normal queue. */
 @Composable
-fun LoreQueueConflictDialog(
-    pendingLoreEpisode: Episode,
-    onDismiss: () -> Unit,
-    onConfirmStart: suspend (Episode) -> Unit,
-) {
+fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, onConfirmStart: suspend (Episode) -> Unit,) {
     val scope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = {

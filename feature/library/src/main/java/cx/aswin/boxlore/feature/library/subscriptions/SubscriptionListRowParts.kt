@@ -37,12 +37,12 @@ import cx.aswin.boxlore.core.model.Podcast
 internal fun SubscriptionPinnedBadge(modifier: Modifier = Modifier) {
     Box(
         modifier =
-            modifier
-                .padding(5.dp)
-                .size(22.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+        modifier
+            .padding(5.dp)
+            .size(22.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary)
+            .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -50,9 +50,9 @@ internal fun SubscriptionPinnedBadge(modifier: Modifier = Modifier) {
             contentDescription = "Pinned",
             tint = MaterialTheme.colorScheme.onPrimary,
             modifier =
-                Modifier
-                    .size(12.dp)
-                    .graphicsLayer { rotationZ = 45f },
+            Modifier
+                .size(12.dp)
+                .graphicsLayer { rotationZ = 45f },
         )
     }
 }
@@ -76,9 +76,9 @@ internal fun SubscriptionListRowText(
             Text(
                 text = title,
                 style =
-                    MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = GoogleSansWeight.semiBold,
-                    ),
+                MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = GoogleSansWeight.semiBold,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -87,10 +87,10 @@ internal fun SubscriptionListRowText(
                 Text(
                     text = "NEW",
                     style =
-                        MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            fontSize = 10.sp,
-                        ),
+                    MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = GoogleSansWeight.bold,
+                        fontSize = 10.sp,
+                    ),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -128,25 +128,25 @@ internal fun SubscriptionListArtwork(
 ) {
     Box(
         modifier =
-            dragModifier
-                .size(64.dp)
-                .zIndex(if (isDragging) 1f else 0f)
-                .graphicsLayer {
-                    scaleX = dragScale
-                    scaleY = dragScale
-                    shape = artworkShape
-                    clip = true
-                }.shadow(elevation = dragElevation, shape = artworkShape, clip = false)
-                .clip(artworkShape),
+        dragModifier
+            .size(64.dp)
+            .zIndex(if (isDragging) 1f else 0f)
+            .graphicsLayer {
+                scaleX = dragScale
+                scaleY = dragScale
+                shape = artworkShape
+                clip = true
+            }.shadow(elevation = dragElevation, shape = artworkShape, clip = false)
+            .clip(artworkShape),
     ) {
         OptimizedImage(
             url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
             proxyWidth = 400,
             contentDescription = podcast.title,
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .clip(artworkShape),
+            Modifier
+                .fillMaxSize()
+                .clip(artworkShape),
             errorContent = {
                 ArtworkTitleFallback(title = podcast.title)
             },

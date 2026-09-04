@@ -109,12 +109,7 @@ class RssSourceMatcherTest {
         podcastGuid = podcastGuid,
     )
 
-    private fun episode(
-        id: String,
-        title: String,
-        audioUrl: String,
-        publishedDate: Long,
-    ) = RssEpisodeEntity(
+    private fun episode(id: String, title: String, audioUrl: String, publishedDate: Long,) = RssEpisodeEntity(
         episodeId = id,
         podcastId = "rss:test",
         guid = null,

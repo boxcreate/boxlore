@@ -9,10 +9,7 @@ import kotlinx.coroutines.selects.select
  * Android Auto voice search and play-all / play-from handlers.
  * Extracted from [AutoBrowseLibraryCallback].
  */
-internal class AutoVoiceSearchHandler(
-    private val host: AutoBrowseLibraryHost,
-    private val treeBuilder: AutoBrowseTreeBuilder,
-) {
+internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, private val treeBuilder: AutoBrowseTreeBuilder,) {
     private val SUBSCRIPTION_PREFIX = AutoBrowseContract.SUBSCRIPTION_PREFIX
 
     suspend fun buildSearchResults(query: String): List<MediaItem> {
@@ -31,19 +28,19 @@ internal class AutoVoiceSearchHandler(
                         history = history,
                         source = AutoBrowseContract.SOURCE_SEARCH,
                         artworkUri =
-                            AutoArtworkRepository.remoteUri(
-                                host.asContext(),
-                                history.episodeImageUrl ?: history.podcastImageUrl,
-                            ),
+                        AutoArtworkRepository.remoteUri(
+                            host.asContext(),
+                            history.episodeImageUrl ?: history.podcastImageUrl,
+                        ),
                         subtitle =
-                            AutoMediaItemFactory.buildDurationSubtitle(
-                                history.podcastName,
-                                history.durationMs,
-                            ),
+                        AutoMediaItemFactory.buildDurationSubtitle(
+                            history.podcastName,
+                            history.durationMs,
+                        ),
                         groupTitle =
-                            host.getString(
-                                cx.aswin.boxlore.core.catalog.R.string.auto_group_search,
-                            ),
+                        host.getString(
+                            cx.aswin.boxlore.core.catalog.R.string.auto_group_search,
+                        ),
                     )
             }.sortedByDescending { it.first }
             .take(8)
@@ -61,10 +58,10 @@ internal class AutoVoiceSearchHandler(
                         title = podcast.title,
                         subtitle = podcast.author,
                         artworkUri =
-                            AutoArtworkRepository.remoteUri(
-                                host.asContext(),
-                                podcast.imageUrl,
-                            ),
+                        AutoArtworkRepository.remoteUri(
+                            host.asContext(),
+                            podcast.imageUrl,
+                        ),
                         mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                     )
             }.sortedByDescending { it.first }
@@ -84,10 +81,10 @@ internal class AutoVoiceSearchHandler(
                                 title = podcast.title,
                                 subtitle = podcast.artist,
                                 artworkUri =
-                                    AutoArtworkRepository.remoteUri(
-                                        host.asContext(),
-                                        podcast.imageUrl,
-                                    ),
+                                AutoArtworkRepository.remoteUri(
+                                    host.asContext(),
+                                    podcast.imageUrl,
+                                ),
                                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                             )
                     }
@@ -103,25 +100,14 @@ internal class AutoVoiceSearchHandler(
             .take(30)
     }
 
-    private fun searchScore(
-        primary: String,
-        secondary: String?,
-        query: String,
-    ): Int =
-        cx.aswin.boxlore.core.playback.AutoVoiceSearchLogic
-            .searchScore(primary, secondary, query)
+    private fun searchScore(primary: String, secondary: String?, query: String,): Int = cx.aswin.boxlore.core.playback.AutoVoiceSearchLogic
+        .searchScore(primary, secondary, query)
 
-    private fun normalizeVoiceQuery(query: String): String =
-        cx.aswin.boxlore.core.playback.AutoVoiceSearchLogic
-            .normalizeVoiceQuery(query)
+    private fun normalizeVoiceQuery(query: String): String = cx.aswin.boxlore.core.playback.AutoVoiceSearchLogic
+        .normalizeVoiceQuery(query)
 
-    private fun voiceMatchScore(
-        title: String,
-        author: String?,
-        query: String,
-    ): Int =
-        cx.aswin.boxlore.core.playback.AutoVoiceSearchLogic
-            .voiceMatchScore(title, author, query)
+    private fun voiceMatchScore(title: String, author: String?, query: String,): Int = cx.aswin.boxlore.core.playback.AutoVoiceSearchLogic
+        .voiceMatchScore(title, author, query)
 
     suspend fun handleVoiceSearchQuery(searchQuery: String): MutableList<MediaItem> {
         val rawQuery = searchQuery.lowercase()
@@ -147,10 +133,7 @@ internal class AutoVoiceSearchHandler(
         }
     }
 
-    private suspend fun handleVoiceQueryQuickFallbacks(
-        rawQuery: String,
-        normalizedQuery: String,
-    ): MutableList<MediaItem>? {
+    private suspend fun handleVoiceQueryQuickFallbacks(rawQuery: String, normalizedQuery: String,): MutableList<MediaItem>? {
         if (rawQuery.contains("download") || rawQuery.contains("offline")) {
             return treeBuilder.getDownloadEpisodeItems().toMutableList()
         }
@@ -224,60 +207,58 @@ internal class AutoVoiceSearchHandler(
         return null
     }
 
-    private suspend fun searchPodcastMatch(normalizedQuery: String): MediaItem? =
-        try {
-            val podcast =
-                host.podcastRepository
-                    .searchPodcasts(normalizedQuery)
-                    .maxByOrNull {
-                        voiceMatchScore(it.title, it.artist, normalizedQuery)
-                    }
-            podcast?.let {
-                val episode =
-                    it.latestEpisode
-                        ?: host.podcastRepository.getEpisodes(it.id).firstOrNull()
-                episode?.let { match ->
-                    voiceEpisodeItem(
-                        episode = match,
-                        podcastTitle = it.title,
-                        podcastImageUrl = it.imageUrl,
-                    )
-                }
-            }
-        } catch (error: kotlinx.coroutines.CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            android.util.Log.w(
-                "AutoBrowse",
-                "Voice podcast search unavailable",
-                error,
-            )
-            null
-        }
-
-    private suspend fun searchEpisodeMatch(normalizedQuery: String): MediaItem? =
-        try {
-            val region = host.smartQueueSources.getRegion()
+    private suspend fun searchPodcastMatch(normalizedQuery: String): MediaItem? = try {
+        val podcast =
             host.podcastRepository
-                .searchEpisodesSemantic(normalizedQuery, region)
-                .firstOrNull()
-                ?.let {
-                    voiceEpisodeItem(
-                        episode = it,
-                        podcastTitle = it.podcastTitle,
-                        podcastImageUrl = it.podcastImageUrl,
-                    )
+                .searchPodcasts(normalizedQuery)
+                .maxByOrNull {
+                    voiceMatchScore(it.title, it.artist, normalizedQuery)
                 }
-        } catch (error: kotlinx.coroutines.CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            android.util.Log.w(
-                "AutoBrowse",
-                "Voice episode search unavailable",
-                error,
-            )
-            null
+        podcast?.let {
+            val episode =
+                it.latestEpisode
+                    ?: host.podcastRepository.getEpisodes(it.id).firstOrNull()
+            episode?.let { match ->
+                voiceEpisodeItem(
+                    episode = match,
+                    podcastTitle = it.title,
+                    podcastImageUrl = it.imageUrl,
+                )
+            }
         }
+    } catch (error: kotlinx.coroutines.CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        android.util.Log.w(
+            "AutoBrowse",
+            "Voice podcast search unavailable",
+            error,
+        )
+        null
+    }
+
+    private suspend fun searchEpisodeMatch(normalizedQuery: String): MediaItem? = try {
+        val region = host.smartQueueSources.getRegion()
+        host.podcastRepository
+            .searchEpisodesSemantic(normalizedQuery, region)
+            .firstOrNull()
+            ?.let {
+                voiceEpisodeItem(
+                    episode = it,
+                    podcastTitle = it.podcastTitle,
+                    podcastImageUrl = it.podcastImageUrl,
+                )
+            }
+    } catch (error: kotlinx.coroutines.CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        android.util.Log.w(
+            "AutoBrowse",
+            "Voice episode search unavailable",
+            error,
+        )
+        null
+    }
 
     private suspend fun handleVoiceQueryRemoteSearch(normalizedQuery: String): MutableList<MediaItem>? {
         val remoteItem =
@@ -316,36 +297,34 @@ internal class AutoVoiceSearchHandler(
         episode: cx.aswin.boxlore.core.model.Episode,
         podcastTitle: String?,
         podcastImageUrl: String?,
-    ): MediaItem =
-        AutoMediaItemFactory.fromEpisode(
-            episode = episode,
-            source = AutoBrowseContract.SOURCE_SEARCH,
-            artworkUri =
-                AutoArtworkRepository.remoteUri(
-                    host.asContext(),
-                    episode.imageUrl ?: episode.podcastImageUrl ?: podcastImageUrl,
-                ),
-            podcastTitle = podcastTitle,
-            groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_search),
-        )
+    ): MediaItem = AutoMediaItemFactory.fromEpisode(
+        episode = episode,
+        source = AutoBrowseContract.SOURCE_SEARCH,
+        artworkUri =
+        AutoArtworkRepository.remoteUri(
+            host.asContext(),
+            episode.imageUrl ?: episode.podcastImageUrl ?: podcastImageUrl,
+        ),
+        podcastTitle = podcastTitle,
+        groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_search),
+    )
 
-    private fun voiceHistoryItem(history: cx.aswin.boxlore.core.database.ListeningHistoryEntity): MediaItem =
-        AutoMediaItemFactory.fromHistory(
-            history = history,
-            source = AutoBrowseContract.SOURCE_CONTINUE,
-            artworkUri =
-                AutoArtworkRepository.remoteUri(
-                    host.asContext(),
-                    history.episodeImageUrl ?: history.podcastImageUrl,
-                ),
-            subtitle =
-                treeBuilder.buildProgressSubtitle(
-                    history.podcastName,
-                    history.progressMs,
-                    history.durationMs,
-                ),
-            groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_continue),
-        )
+    private fun voiceHistoryItem(history: cx.aswin.boxlore.core.database.ListeningHistoryEntity): MediaItem = AutoMediaItemFactory.fromHistory(
+        history = history,
+        source = AutoBrowseContract.SOURCE_CONTINUE,
+        artworkUri =
+        AutoArtworkRepository.remoteUri(
+            host.asContext(),
+            history.episodeImageUrl ?: history.podcastImageUrl,
+        ),
+        subtitle =
+        treeBuilder.buildProgressSubtitle(
+            history.podcastName,
+            history.progressMs,
+            history.durationMs,
+        ),
+        groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_continue),
+    )
 
     suspend fun handlePlayAllNewEpisodes(): MutableList<MediaItem> {
         android.util.Log.d("AutoBrowse", "Play All New Episodes triggered")
@@ -366,10 +345,10 @@ internal class AutoVoiceSearchHandler(
                     episode = episode,
                     source = AutoBrowseContract.SOURCE_NEW,
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            episode.imageUrl ?: podcast.imageUrl,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        episode.imageUrl ?: podcast.imageUrl,
+                    ),
                     podcastTitle = podcast.title,
                 )
             }.toMutableList()
@@ -387,15 +366,15 @@ internal class AutoVoiceSearchHandler(
                     history = history,
                     source = AutoBrowseContract.SOURCE_LIKED,
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            history.episodeImageUrl ?: history.podcastImageUrl,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        history.episodeImageUrl ?: history.podcastImageUrl,
+                    ),
                     subtitle =
-                        AutoMediaItemFactory.buildDurationSubtitle(
-                            history.podcastName,
-                            history.durationMs,
-                        ),
+                    AutoMediaItemFactory.buildDurationSubtitle(
+                        history.podcastName,
+                        history.durationMs,
+                    ),
                     groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_liked),
                 )
             }.toMutableList()
@@ -458,10 +437,10 @@ internal class AutoVoiceSearchHandler(
                     episode = episode,
                     source = AutoBrowseContract.SOURCE_QUEUE,
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            episode.imageUrl ?: episode.podcastImageUrl,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        episode.imageUrl ?: episode.podcastImageUrl,
+                    ),
                     mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
                     groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue),
                 )

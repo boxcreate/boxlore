@@ -45,21 +45,20 @@ class OnboardingCurriculumLogicTest {
     private fun row(
         title: String,
         ids: List<Long>,
-    ): OnboardingCurriculumRowDto =
-        OnboardingCurriculumRowDto(
-            rowTitle = title,
-            podcasts =
-                ids.map { id ->
-                    OnboardingCurriculumPodcastDto(
-                        id = id,
-                        title = "P$id",
-                        author = "A",
-                        image = "",
-                        artwork = "",
-                        categories = emptyMap(),
-                        description = null,
-                    )
-                },
-            episodes = emptyList(),
-        )
+    ): OnboardingCurriculumRowDto = OnboardingCurriculumRowDto(
+        rowTitle = title,
+        podcasts =
+        ids.map { id ->
+            OnboardingCurriculumPodcastDto(
+                id = id,
+                title = "P$id",
+                author = "A",
+                image = "",
+                artwork = "",
+                categories = emptyMap(),
+                description = null,
+            )
+        },
+        episodes = emptyList(),
+    )
 }

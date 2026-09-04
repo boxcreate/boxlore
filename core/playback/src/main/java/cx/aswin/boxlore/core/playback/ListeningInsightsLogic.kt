@@ -27,23 +27,18 @@ object ListeningSessionRecordLogic {
         val zoneId: ZoneId = ZoneId.systemDefault(),
     )
 
-    fun timeBucketForHour(hour: Int): Int =
-        when (hour) {
-            in 5..10 -> 0
-            in 11..16 -> 1
-            in 17..21 -> 2
-            else -> 3
-        }
+    fun timeBucketForHour(hour: Int): Int = when (hour) {
+        in 5..10 -> 0
+        in 11..16 -> 1
+        in 17..21 -> 2
+        else -> 3
+    }
 
-    fun localDay(
-        epochMs: Long,
-        zoneId: ZoneId = ZoneId.systemDefault(),
-    ): Long =
-        Instant
-            .ofEpochMilli(epochMs)
-            .atZone(zoneId)
-            .toLocalDate()
-            .toEpochDay()
+    fun localDay(epochMs: Long, zoneId: ZoneId = ZoneId.systemDefault(),): Long = Instant
+        .ofEpochMilli(epochMs)
+        .atZone(zoneId)
+        .toLocalDate()
+        .toEpochDay()
 
     fun shouldPersist(consumedMs: Long): Boolean = consumedMs >= MIN_CONSUMED_MS
 
@@ -63,10 +58,7 @@ object ListeningSessionRecordLogic {
         )
     }
 
-    fun retentionCutoffEndedAtExclusive(
-        nowMs: Long,
-        zoneId: ZoneId = ZoneId.systemDefault(),
-    ): Long {
+    fun retentionCutoffEndedAtExclusive(nowMs: Long, zoneId: ZoneId = ZoneId.systemDefault(),): Long {
         val today = Instant.ofEpochMilli(nowMs).atZone(zoneId).toLocalDate()
         val cutoffDay = today.minusDays(RETENTION_DAYS)
         return cutoffDay.atStartOfDay(zoneId).toInstant().toEpochMilli()
@@ -89,10 +81,7 @@ object ListeningSessionRecordLogic {
 }
 
 object ListeningInsightsLogic {
-    data class PodcastMeta(
-        val name: String,
-        val imageUrl: String?,
-    )
+    data class PodcastMeta(val name: String, val imageUrl: String?,)
 
     data class HistoryActivityRow(
         val podcastId: String,
@@ -118,21 +107,14 @@ object ListeningInsightsLogic {
         val zoneId: ZoneId = ZoneId.systemDefault(),
     )
 
-    fun periodStartDay(
-        period: ListeningPeriod,
-        today: LocalDate,
-    ): Long? =
-        when (period) {
-            ListeningPeriod.DAYS_7 -> today.minusDays(6).toEpochDay()
-            ListeningPeriod.DAYS_30 -> today.minusDays(29).toEpochDay()
-            ListeningPeriod.DAYS_180 -> today.minusDays(179).toEpochDay()
-            ListeningPeriod.ALL -> null
-        }
+    fun periodStartDay(period: ListeningPeriod, today: LocalDate,): Long? = when (period) {
+        ListeningPeriod.DAYS_7 -> today.minusDays(6).toEpochDay()
+        ListeningPeriod.DAYS_30 -> today.minusDays(29).toEpochDay()
+        ListeningPeriod.DAYS_180 -> today.minusDays(179).toEpochDay()
+        ListeningPeriod.ALL -> null
+    }
 
-    fun previousPeriodBounds(
-        period: ListeningPeriod,
-        today: LocalDate,
-    ): Pair<Long, Long>? {
+    fun previousPeriodBounds(period: ListeningPeriod, today: LocalDate,): Pair<Long, Long>? {
         val start = periodStartDay(period, today) ?: return null
         val lengthDays =
             when (period) {
@@ -146,11 +128,7 @@ object ListeningInsightsLogic {
         return prevStart to prevEnd
     }
 
-    fun estimatedMsFromHistoryRow(
-        isCompletedFlag: Boolean,
-        progressMs: Long,
-        durationMs: Long,
-    ): Long {
+    fun estimatedMsFromHistoryRow(isCompletedFlag: Boolean, progressMs: Long, durationMs: Long,): Long {
         val completed =
             cx.aswin.boxlore.core.model.ListeningCompletionLogic.isCompleted(
                 isCompletedFlag,
@@ -221,7 +199,7 @@ object ListeningInsightsLogic {
             (
                 filteredSessions.map { it.localDay } +
                     filteredRollups.map { it.localDay }
-            ).toSet()
+                ).toSet()
         val historyActiveDays =
             filteredHistory
                 .map {
@@ -320,10 +298,7 @@ object ListeningInsightsLogic {
         }
     }
 
-    fun computeStreak(
-        activeDays: Set<Long>,
-        todayEpochDay: Long,
-    ): Int {
+    fun computeStreak(activeDays: Set<Long>, todayEpochDay: Long,): Int {
         if (activeDays.isEmpty()) return 0
         val yesterday = todayEpochDay - 1
         val start =
@@ -346,10 +321,7 @@ object ListeningInsightsLogic {
         rollups: List<ListeningRollupEntity>,
         podcastMetaById: Map<String, PodcastMeta>,
     ): ListeningTopShow? {
-        data class Acc(
-            var consumed: Long = 0,
-            var sessions: Int = 0,
-        )
+        data class Acc(var consumed: Long = 0, var sessions: Int = 0,)
 
         val byPodcast = mutableMapOf<String, Acc>()
         sessions.forEach {
@@ -375,11 +347,7 @@ object ListeningInsightsLogic {
     }
 
     private fun topShowByHistoryPlays(rows: List<HistoryActivityRow>): ListeningTopShow? {
-        data class Acc(
-            var plays: Int = 0,
-            var name: String = "",
-            var image: String? = null,
-        )
+        data class Acc(var plays: Int = 0, var name: String = "", var image: String? = null,)
 
         val byPodcast = mutableMapOf<String, Acc>()
         rows.forEach { row ->

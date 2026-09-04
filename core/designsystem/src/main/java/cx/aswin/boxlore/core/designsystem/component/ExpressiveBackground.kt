@@ -17,12 +17,9 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
  * Uses clearly defined design system shapes with premium floating motion.
  */
 @Composable
-fun ExpressiveAnimatedBackground(
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colorScheme.surface
-) {
+fun ExpressiveAnimatedBackground(modifier: Modifier = Modifier, backgroundColor: Color = MaterialTheme.colorScheme.surface) {
     val infiniteTransition = rememberInfiniteTransition(label = "expressive_bg")
-    
+
     // Slow, smooth floating motion
     val floatX by infiniteTransition.animateFloat(
         initialValue = -15f,
@@ -33,7 +30,7 @@ fun ExpressiveAnimatedBackground(
         ),
         label = "floatX"
     )
-    
+
     val floatY by infiniteTransition.animateFloat(
         initialValue = -20f,
         targetValue = 20f,
@@ -74,7 +71,7 @@ fun ExpressiveAnimatedBackground(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .offset(
-                    x = 40.dp + floatX.dp, 
+                    x = 40.dp + floatX.dp,
                     y = 60.dp + floatY.dp
                 )
         )
@@ -88,7 +85,7 @@ fun ExpressiveAnimatedBackground(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .offset(
-                    x = (-20).dp - floatX.dp, 
+                    x = (-20).dp - floatX.dp,
                     y = (-40).dp + floatY.dp
                 )
         )
@@ -102,7 +99,7 @@ fun ExpressiveAnimatedBackground(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .offset(
-                    x = 20.dp + (floatX * 0.5f).dp, 
+                    x = 20.dp + (floatX * 0.5f).dp,
                     y = 40.dp - floatY.dp
                 )
         )
@@ -110,13 +107,7 @@ fun ExpressiveAnimatedBackground(
 }
 
 @Composable
-private fun FloatingBox(
-    shape: Shape,
-    rotation: Float,
-    color: Color,
-    size: Dp,
-    modifier: Modifier = Modifier
-) {
+private fun FloatingBox(shape: Shape, rotation: Float, color: Color, size: Dp, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(size)

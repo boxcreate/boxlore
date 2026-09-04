@@ -144,10 +144,11 @@ private fun rememberPodcastFeedDerivedState(
 private fun hasBecauseYouLike(
     feedState: PodcastFeedUiState,
     recommendationState: PodcastFeedRecommendationState,
-): Boolean =
-    feedState.seemsToLikePodcast != null &&
-        (recommendationState.becauseYouLikeRecommendations.list.isNotEmpty() ||
-            recommendationState.becauseYouLikePodcasts.list.isNotEmpty())
+): Boolean = feedState.seemsToLikePodcast != null &&
+    (
+        recommendationState.becauseYouLikeRecommendations.list.isNotEmpty() ||
+            recommendationState.becauseYouLikePodcasts.list.isNotEmpty()
+        )
 
 private fun LazyStaggeredGridScope.smartHeroItem(
     content: PodcastFeedContent,

@@ -41,11 +41,11 @@ fun CuratedEpisodeCard(
             if (isNew) {
                 Box(
                     modifier =
-                        Modifier
-                            .padding(6.dp)
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .background(MaterialTheme.colorScheme.primary)
-                            .align(Alignment.TopStart),
+                    Modifier
+                        .padding(6.dp)
+                        .clip(MaterialTheme.shapes.extraSmall)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .align(Alignment.TopStart),
                 ) {
                     Text(
                         text = "NEW",

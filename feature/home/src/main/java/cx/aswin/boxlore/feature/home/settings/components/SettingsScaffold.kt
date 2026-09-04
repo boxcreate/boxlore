@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -31,9 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,9 +53,9 @@ internal fun SettingsScaffold(
 
     Scaffold(
         modifier =
-            modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             LargeTopAppBar(
@@ -77,45 +75,45 @@ internal fun SettingsScaffold(
                 },
                 scrollBehavior = scrollBehavior,
                 colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    ),
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
             )
         },
     ) { innerPadding ->
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 720.dp)
-                        .verticalScroll(rememberScrollState())
-                        .padding(
-                            start = 16.dp,
-                            top = 8.dp,
-                            end = 16.dp,
-                            bottom = 200.dp,
-                        ).then(
-                            if (onUnconsumedTap != null) {
-                                Modifier.pointerInput(Unit) {
-                                    awaitEachGesture {
-                                        awaitFirstDown(requireUnconsumed = true)
-                                        if (waitForUpOrCancellation() != null) {
-                                            currentOnUnconsumedTap.value?.invoke()
-                                        }
+                Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 720.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        start = 16.dp,
+                        top = 8.dp,
+                        end = 16.dp,
+                        bottom = 200.dp,
+                    ).then(
+                        if (onUnconsumedTap != null) {
+                            Modifier.pointerInput(Unit) {
+                                awaitEachGesture {
+                                    awaitFirstDown(requireUnconsumed = true)
+                                    if (waitForUpOrCancellation() != null) {
+                                        currentOnUnconsumedTap.value?.invoke()
                                     }
                                 }
-                            } else {
-                                Modifier
-                            },
-                        ),
+                            }
+                        } else {
+                            Modifier
+                        },
+                    ),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 content = content,
             )

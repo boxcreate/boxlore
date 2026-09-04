@@ -1,14 +1,12 @@
 package cx.aswin.boxlore.feature.library
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,25 +19,20 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Videocam
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,27 +48,26 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
 /**
@@ -361,7 +353,7 @@ fun LibraryMenuCard(
                 ) {
                     LibraryCardCollage(images = images, shapes = shapes)
                 }
-                
+
                 // Scrim to ensure text readability if images slide under text
                 Box(
                     modifier = Modifier
@@ -401,7 +393,7 @@ fun LibraryMenuCard(
 
 @Composable
 private fun LibraryCardCollage(
-    images: List<String>, 
+    images: List<String>,
     shapes: List<androidx.compose.ui.graphics.Shape>
 ) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -412,17 +404,17 @@ private fun LibraryCardCollage(
             ExpressiveShapes.Diamond
         )
         val finalShapes = if (shapes.isNotEmpty()) shapes else fallbackShapes
-        
+
         // Filter out empty URLs
         val validImages = images.filter { it.isNotEmpty() }.take(3)
         val N = validImages.size
-        
+
         // Reverse order so first image is on top
         validImages.reversed().forEachIndexed { index, imageUrl ->
             // Calculate index within the taken sublist (0=Top, N-1=Bottom)
             val stackIndex = N - 1 - index
             val shape = finalShapes.getOrElse(stackIndex) { finalShapes.first() }
-            
+
             // Dynamic offsets for "pile" effect
             val xOffset = (stackIndex * 20).dp
             val yOffset = if (stackIndex % 2 == 0) 10.dp else (-10).dp
@@ -467,26 +459,26 @@ fun ExpressiveSolarSystemEmptyState(
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = GoogleSansWeight.bold,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         Text(
             text = description,
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         if (!actionText.isNullOrEmpty()) {
             Spacer(modifier = Modifier.height(48.dp))
-            
+
             Box(
                 modifier = Modifier
                     .height(56.dp)
@@ -500,7 +492,7 @@ fun ExpressiveSolarSystemEmptyState(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = actionText, 
+                    text = actionText,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = GoogleSansWeight.bold
@@ -569,9 +561,9 @@ fun LibraryPodcastCard(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Text Content with Padding
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
@@ -582,9 +574,9 @@ fun LibraryPodcastCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Text(
                     text = podcast.artist,
                     style = MaterialTheme.typography.bodySmall,
@@ -611,11 +603,11 @@ private fun LibraryHubShortcutButton(
             imageVector = icon,
             contentDescription = contentDescription,
             modifier =
-                Modifier.combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick,
-                    role = Role.Button,
-                ),
+            Modifier.combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+                role = Role.Button,
+            ),
         )
     }
 }

@@ -62,8 +62,8 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.CastMediaEligibility
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
-import cx.aswin.boxlore.core.playback.skipToNextEpisode
 import cx.aswin.boxlore.core.playback.setOutputVolume
+import cx.aswin.boxlore.core.playback.skipToNextEpisode
 import cx.aswin.boxlore.core.playback.stopCasting
 import cx.aswin.boxlore.feature.player.v2.logic.calculateResponsiveHeroLayout
 import kotlinx.coroutines.flow.Flow
@@ -221,28 +221,28 @@ fun FullPlayerV2(
 
     FullPlayerBody(
         model =
-            FullPlayerBodyModel(
-                state = state,
-                episode = episode,
-                podcast = podcast,
-                nextEpisode = nextEpisode,
-                isVideo = isVideo,
-                isVideoPodcast = isVideoPodcast,
-                download = FullPlayerDownloadState(isDownloaded, isDownloading),
-            ),
+        FullPlayerBodyModel(
+            state = state,
+            episode = episode,
+            podcast = podcast,
+            nextEpisode = nextEpisode,
+            isVideo = isVideo,
+            isVideoPodcast = isVideoPodcast,
+            download = FullPlayerDownloadState(isDownloaded, isDownloading),
+        ),
         dependencies = dependencies,
         display = display,
         actions = actions,
         flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
         ui = ui,
         resources =
-            FullPlayerBodyResources(
-                scope,
-                queueSnackbarHostState,
-                statusBarPadding,
-                navBarPadding,
-                modifier,
-            ),
+        FullPlayerBodyResources(
+            scope,
+            queueSnackbarHostState,
+            statusBarPadding,
+            navBarPadding,
+            modifier,
+        ),
     )
 
     // ------------------------------------------------------------------
@@ -252,23 +252,23 @@ fun FullPlayerV2(
     FullPlayerModalSheets(
         dependencies = dependencies,
         model =
-            FullPlayerModalModel(
-                state,
-                episode,
-                podcast,
-                colorScheme,
-                positionFlow,
-                canGenerateTranscript,
-            ),
+        FullPlayerModalModel(
+            state,
+            episode,
+            podcast,
+            colorScheme,
+            positionFlow,
+            canGenerateTranscript,
+        ),
         ui = ui,
         resources =
-            FullPlayerModalResources(
-                scope,
-                queueSnackbarHostState,
-                queueSheetState,
-                chaptersSheetState,
-                context,
-            ),
+        FullPlayerModalResources(
+            scope,
+            queueSnackbarHostState,
+            queueSheetState,
+            chaptersSheetState,
+            context,
+        ),
         actions = actions,
     )
 
@@ -318,9 +318,9 @@ private fun FullPlayerBody(
 ) {
     Box(
         modifier =
-            resources.modifier
-                .fillMaxSize()
-                .playerCanvas(display.colorScheme),
+        resources.modifier
+            .fillMaxSize()
+            .playerCanvas(display.colorScheme),
     ) {
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
@@ -329,9 +329,9 @@ private fun FullPlayerBody(
 
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(top = resources.statusBarPadding, bottom = resources.navBarPadding),
+            Modifier
+                .fillMaxSize()
+                .padding(top = resources.statusBarPadding, bottom = resources.navBarPadding),
         ) {
             PlayerTopBar(
                 colorScheme = display.colorScheme,
@@ -340,21 +340,21 @@ private fun FullPlayerBody(
                 isCasting = model.state.playbackRoute.isRemote,
                 canCast = CastMediaEligibility.isCastable(model.episode.audioUrl),
                 actions =
-                    PlayerTopBarActions(
-                        onSwipeMinimizeTipDismissed = actions.onSwipeMinimizeTipDismissed,
-                        onCollapse = {
-                            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
-                                .logAction("collapsed")
-                            actions.onCollapse()
-                        },
-                        onShare = { ui.showShareSheet = true },
-                    ),
+                PlayerTopBarActions(
+                    onSwipeMinimizeTipDismissed = actions.onSwipeMinimizeTipDismissed,
+                    onCollapse = {
+                        cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
+                            .logAction("collapsed")
+                        actions.onCollapse()
+                    },
+                    onShare = { ui.showShareSheet = true },
+                ),
             )
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(display.sheetNestedScrollConnection),
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(display.sheetNestedScrollConnection),
             ) {
                 val layoutValues = calculateResponsiveHeroLayout(screenWidth, finalMaxHeight, model.isVideo)
                 FullPlayerScrollableContent(
@@ -365,19 +365,19 @@ private fun FullPlayerBody(
                     flows = flows,
                     ui = ui,
                     resources =
-                        FullPlayerScrollResources(
-                            resources.scope,
-                            layoutValues,
-                        ),
+                    FullPlayerScrollResources(
+                        resources.scope,
+                        layoutValues,
+                    ),
                 )
             }
         }
         SnackbarHost(
             hostState = resources.snackbarHostState,
             modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp),
+            Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
         )
     }
 }
@@ -402,23 +402,23 @@ private fun FullPlayerScrollableContent(
 
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 24.dp),
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(if (resources.layout.isCompact) 6.dp else 14.dp))
         FullPlayerHeroSection(
             model =
-                FullPlayerHeroModel(
-                    state = model.state,
-                    episode = model.episode,
-                    podcast = model.podcast,
-                    nextEpisode = model.nextEpisode,
-                    isVideo = model.isVideo,
-                    dimensions = resources.layout.dimensions,
-                ),
+            FullPlayerHeroModel(
+                state = model.state,
+                episode = model.episode,
+                podcast = model.podcast,
+                nextEpisode = model.nextEpisode,
+                isVideo = model.isVideo,
+                dimensions = resources.layout.dimensions,
+            ),
             positionFlow = flows.position,
             playbackRepository = dependencies.playbackRepository,
             display = display,
@@ -431,15 +431,15 @@ private fun FullPlayerScrollableContent(
         Spacer(modifier = Modifier.height(if (resources.layout.isCompact) 8.dp else 14.dp))
         FullPlayerControls(
             model =
-                FullPlayerControlModel(
-                    state = model.state,
-                    episode = model.episode,
-                    podcast = model.podcast,
-                    colorScheme = display.colorScheme,
-                    isDownloaded = model.download.isDownloaded,
-                    isDownloading = model.download.isDownloading,
-                    isCompact = resources.layout.isCompact,
-                ),
+            FullPlayerControlModel(
+                state = model.state,
+                episode = model.episode,
+                podcast = model.podcast,
+                colorScheme = display.colorScheme,
+                isDownloaded = model.download.isDownloaded,
+                isDownloading = model.download.isDownloading,
+                isCompact = resources.layout.isCompact,
+            ),
             dependencies = dependencies,
             flows = flows,
             ui = ui,
@@ -578,53 +578,53 @@ private fun FullPlayerHeroModeContent(
         CastHeroDisplayMode.TRANSCRIPT ->
             InlineTranscriptHero(
                 content =
-                    InlineTranscriptContent(
-                        transcript = model.state.currentTranscript,
-                        positionFlow = bindings.positionFlow,
-                        transcriptUrl = model.episode.transcriptUrl,
-                        artworkUrl =
-                            model.episode.imageUrl?.takeIf { it.isNotBlank() }
-                                ?: model.podcast.imageUrl,
-                    ),
+                InlineTranscriptContent(
+                    transcript = model.state.currentTranscript,
+                    positionFlow = bindings.positionFlow,
+                    transcriptUrl = model.episode.transcriptUrl,
+                    artworkUrl =
+                    model.episode.imageUrl?.takeIf { it.isNotBlank() }
+                        ?: model.podcast.imageUrl,
+                ),
                 colorScheme = bindings.display.colorScheme,
                 isSyncEnabled = bindings.ui.isSyncEnabled,
                 actions =
-                    InlineTranscriptActions(
-                        onSyncEnabledChange = { bindings.ui.isSyncEnabled = it },
-                        onSeek = { seekPosition ->
-                            cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                                .setSeekSource("transcript_tap")
-                            bindings.playbackRepository.seekTo(seekPosition)
-                        },
-                        onShowArtwork = { bindings.ui.showInlineTranscript = false },
-                        onFullscreen = { bindings.ui.showFullscreenTranscript = true },
-                    ),
+                InlineTranscriptActions(
+                    onSyncEnabledChange = { bindings.ui.isSyncEnabled = it },
+                    onSeek = { seekPosition ->
+                        cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                            .setSeekSource("transcript_tap")
+                        bindings.playbackRepository.seekTo(seekPosition)
+                    },
+                    onShowArtwork = { bindings.ui.showInlineTranscript = false },
+                    onFullscreen = { bindings.ui.showFullscreenTranscript = true },
+                ),
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(maxOf(model.dimensions.height, if (bindings.isCompact) 220.dp else 250.dp)),
+                Modifier
+                    .fillMaxWidth()
+                    .height(maxOf(model.dimensions.height, if (bindings.isCompact) 220.dp else 250.dp)),
             )
 
         CastHeroDisplayMode.CAST_CONTROLS ->
             FullPlayerCastHero(
                 model =
-                    FullPlayerCastHeroModel(
-                        route = model.state.playbackRoute,
-                        dimensions = model.dimensions,
-                        canSkipNext = canSkipFromCastHero(model.nextEpisode?.id),
-                        colorScheme = bindings.display.colorScheme,
-                    ),
+                FullPlayerCastHeroModel(
+                    route = model.state.playbackRoute,
+                    dimensions = model.dimensions,
+                    canSkipNext = canSkipFromCastHero(model.nextEpisode?.id),
+                    colorScheme = bindings.display.colorScheme,
+                ),
                 actions =
-                    FullPlayerCastHeroActions(
-                        onVolumeChange = bindings.playbackRepository::setOutputVolume,
-                        onChangeDevice = onChangeCastDevice,
-                        onSkipNext = {
-                            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
-                                .logAction("skip_next_episode")
-                            bindings.playbackRepository.skipToNextEpisode()
-                        },
-                        onStopCasting = bindings.playbackRepository::stopCasting,
-                    ),
+                FullPlayerCastHeroActions(
+                    onVolumeChange = bindings.playbackRepository::setOutputVolume,
+                    onChangeDevice = onChangeCastDevice,
+                    onSkipNext = {
+                        cx.aswin.boxlore.core.analytics.PlayerSessionAggregator
+                            .logAction("skip_next_episode")
+                        bindings.playbackRepository.skipToNextEpisode()
+                    },
+                    onStopCasting = bindings.playbackRepository::stopCasting,
+                ),
             )
 
         CastHeroDisplayMode.ARTWORK ->
@@ -704,26 +704,26 @@ private fun ArtworkPlayerHero(
 ) {
     PlayerHero(
         artwork =
-            PlayerHeroArtwork(
-                episodeId = model.episode.id,
-                artworkUrl = model.episode.imageUrl?.takeIf { it.isNotBlank() } ?: model.podcast.imageUrl,
-                nextArtworkUrl =
-                    model.nextEpisode?.imageUrl?.takeIf { it.isNotBlank() }
-                        ?: model.nextEpisode?.podcastImageUrl?.takeIf { it.isNotBlank() },
-                nextEpisodeTitle = model.nextEpisode?.title,
-                chapterArtFlow =
-                    remember(model.state.currentChapters, positionFlow) {
-                        chapterArtFlow(positionFlow, model.state.currentChapters)
-                    },
-            ),
+        PlayerHeroArtwork(
+            episodeId = model.episode.id,
+            artworkUrl = model.episode.imageUrl?.takeIf { it.isNotBlank() } ?: model.podcast.imageUrl,
+            nextArtworkUrl =
+            model.nextEpisode?.imageUrl?.takeIf { it.isNotBlank() }
+                ?: model.nextEpisode?.podcastImageUrl?.takeIf { it.isNotBlank() },
+            nextEpisodeTitle = model.nextEpisode?.title,
+            chapterArtFlow =
+            remember(model.state.currentChapters, positionFlow) {
+                chapterArtFlow(positionFlow, model.state.currentChapters)
+            },
+        ),
         playback =
-            PlayerHeroPlayback(
-                isPlaying = model.state.isPlaying,
-                isVideo = model.isVideo,
-                isFullscreenVideo = display.isFullscreenVideo,
-                controller = playbackRepository.controller,
-                isExpanded = display.isExpanded,
-            ),
+        PlayerHeroPlayback(
+            isPlaying = model.state.isPlaying,
+            isVideo = model.isVideo,
+            isFullscreenVideo = display.isFullscreenVideo,
+            controller = playbackRepository.controller,
+            isExpanded = display.isExpanded,
+        ),
         dimensions = model.dimensions,
         colorScheme = display.colorScheme,
         onSkipNextEpisode = {

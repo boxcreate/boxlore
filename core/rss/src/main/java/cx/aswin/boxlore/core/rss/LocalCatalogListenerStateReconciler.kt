@@ -20,10 +20,7 @@ internal data class LocalCatalogListenerReference(
  * episode id was restored without the old supplement/catalog identity row.
  */
 internal object LocalCatalogListenerRemapLogic {
-    fun mappings(
-        catalogRows: List<LocalEpisodeEntity>,
-        references: List<LocalCatalogListenerReference>,
-    ): Map<String, LocalEpisodeEntity> {
+    fun mappings(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Map<String, LocalEpisodeEntity> {
         val catalogIds = catalogRows.mapTo(mutableSetOf(), LocalEpisodeEntity::episodeId)
         val candidates =
             catalogRows.map { row ->
@@ -62,10 +59,7 @@ internal class LocalCatalogListenerStateReconciler(
     private val database: BoxLoreDatabase,
     private val downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
 ) {
-    suspend fun reconcile(
-        podcastId: String,
-        catalogRows: List<LocalEpisodeEntity>,
-    ) {
+    suspend fun reconcile(podcastId: String, catalogRows: List<LocalEpisodeEntity>,) {
         val history = database.listeningHistoryDao().getHistoryForPodcast(podcastId)
         val downloads = database.downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
         val queue = database.queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
@@ -104,10 +98,7 @@ internal class LocalCatalogListenerStateReconciler(
         }
     }
 
-    private suspend fun migrateHistory(
-        oldId: String,
-        target: LocalEpisodeEntity,
-    ) {
+    private suspend fun migrateHistory(oldId: String, target: LocalEpisodeEntity,) {
         val dao = database.listeningHistoryDao()
         val old = dao.getHistoryItem(oldId) ?: return
         val existing = dao.getHistoryItem(target.episodeId)
@@ -115,10 +106,7 @@ internal class LocalCatalogListenerStateReconciler(
         dao.delete(oldId)
     }
 
-    private suspend fun migrateDownload(
-        oldId: String,
-        target: LocalEpisodeEntity,
-    ) {
+    private suspend fun migrateDownload(oldId: String, target: LocalEpisodeEntity,) {
         val dao = database.downloadedEpisodeDao()
         val old = dao.getDownload(oldId) ?: return
         val existing = dao.getDownload(target.episodeId)
@@ -138,10 +126,7 @@ internal class LocalCatalogListenerStateReconciler(
         dao.delete(oldId)
     }
 
-    private suspend fun migrateQueue(
-        oldId: String,
-        target: LocalEpisodeEntity,
-    ) {
+    private suspend fun migrateQueue(oldId: String, target: LocalEpisodeEntity,) {
         val dao = database.queueDao()
         dao
             .getAllQueueItemsSync()
@@ -167,10 +152,7 @@ internal class LocalCatalogListenerStateReconciler(
             }
     }
 
-    private suspend fun migrateRollups(
-        oldId: String,
-        newId: String,
-    ) {
+    private suspend fun migrateRollups(oldId: String, newId: String,) {
         val dao = database.listeningRollupDao()
         val oldRows = dao.getRollupsForEpisode(oldId)
         for (old in oldRows) {
@@ -185,27 +167,26 @@ internal fun mergeHistory(
     old: ListeningHistoryEntity,
     existing: ListeningHistoryEntity?,
     target: LocalEpisodeEntity,
-): ListeningHistoryEntity =
-    old.copy(
-        episodeId = target.episodeId,
-        episodeTitle = target.title,
-        episodeImageUrl = target.imageUrl ?: existing?.episodeImageUrl ?: old.episodeImageUrl,
-        episodeAudioUrl = target.audioUrl,
-        progressMs = maxOf(old.progressMs, existing?.progressMs ?: 0L),
-        durationMs = maxOf(old.durationMs, existing?.durationMs ?: 0L),
-        isCompleted = old.isCompleted || existing?.isCompleted == true,
-        isLiked = old.isLiked || existing?.isLiked == true,
-        lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
-        isDirty = true,
-        syncedAt = 0L,
-        enclosureType = target.enclosureType ?: existing?.enclosureType ?: old.enclosureType,
-        isManualCompletion = old.isManualCompletion || existing?.isManualCompletion == true,
-        isBulkCompletion = old.isBulkCompletion || existing?.isBulkCompletion == true,
-        episodeDescription =
-            target.description.ifBlank {
-                existing?.episodeDescription ?: old.episodeDescription.orEmpty()
-            },
-    )
+): ListeningHistoryEntity = old.copy(
+    episodeId = target.episodeId,
+    episodeTitle = target.title,
+    episodeImageUrl = target.imageUrl ?: existing?.episodeImageUrl ?: old.episodeImageUrl,
+    episodeAudioUrl = target.audioUrl,
+    progressMs = maxOf(old.progressMs, existing?.progressMs ?: 0L),
+    durationMs = maxOf(old.durationMs, existing?.durationMs ?: 0L),
+    isCompleted = old.isCompleted || existing?.isCompleted == true,
+    isLiked = old.isLiked || existing?.isLiked == true,
+    lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
+    isDirty = true,
+    syncedAt = 0L,
+    enclosureType = target.enclosureType ?: existing?.enclosureType ?: old.enclosureType,
+    isManualCompletion = old.isManualCompletion || existing?.isManualCompletion == true,
+    isBulkCompletion = old.isBulkCompletion || existing?.isBulkCompletion == true,
+    episodeDescription =
+    target.description.ifBlank {
+        existing?.episodeDescription ?: old.episodeDescription.orEmpty()
+    },
+)
 
 internal fun mergeDownload(
     old: DownloadedEpisodeEntity,
@@ -225,11 +206,11 @@ internal fun mergeDownload(
         episodeDescription = target.description,
         episodeImageUrl = target.imageUrl ?: preferred.episodeImageUrl,
         durationMs =
-            target.duration
-                .toLong()
-                .takeIf { it > 0L }
-                ?.times(1_000L)
-                ?: preferred.durationMs,
+        target.duration
+            .toLong()
+            .takeIf { it > 0L }
+            ?.times(1_000L)
+            ?: preferred.durationMs,
         publishedDate = target.publishedDate,
         downloadedAt = maxOf(old.downloadedAt, existing?.downloadedAt ?: 0L),
         sizeBytes = maxOf(old.sizeBytes, existing?.sizeBytes ?: 0L),
@@ -238,33 +219,24 @@ internal fun mergeDownload(
     )
 }
 
-private fun preferredDownloadStatus(
-    first: Int,
-    second: Int?,
-): Int =
-    listOfNotNull(first, second)
-        .minBy { status ->
-            when (status) {
-                DownloadedEpisodeEntity.STATUS_COMPLETED -> 0
-                DownloadedEpisodeEntity.STATUS_DOWNLOADING -> 1
-                DownloadedEpisodeEntity.STATUS_QUEUED -> 2
-                else -> 3
-            }
+private fun preferredDownloadStatus(first: Int, second: Int?,): Int = listOfNotNull(first, second)
+    .minBy { status ->
+        when (status) {
+            DownloadedEpisodeEntity.STATUS_COMPLETED -> 0
+            DownloadedEpisodeEntity.STATUS_DOWNLOADING -> 1
+            DownloadedEpisodeEntity.STATUS_QUEUED -> 2
+            else -> 3
         }
+    }
 
-internal fun mergeRollup(
-    old: ListeningRollupEntity,
-    existing: ListeningRollupEntity?,
-    newEpisodeId: String,
-): ListeningRollupEntity =
-    old.copy(
-        episodeId = newEpisodeId,
-        consumedMs = old.consumedMs + (existing?.consumedMs ?: 0L),
-        sessionCount = old.sessionCount + (existing?.sessionCount ?: 0),
-        completionCount = old.completionCount + (existing?.completionCount ?: 0),
-        lastListenedAt = maxOf(old.lastListenedAt, existing?.lastListenedAt ?: 0L),
-        morningMs = old.morningMs + (existing?.morningMs ?: 0L),
-        afternoonMs = old.afternoonMs + (existing?.afternoonMs ?: 0L),
-        eveningMs = old.eveningMs + (existing?.eveningMs ?: 0L),
-        nightMs = old.nightMs + (existing?.nightMs ?: 0L),
-    )
+internal fun mergeRollup(old: ListeningRollupEntity, existing: ListeningRollupEntity?, newEpisodeId: String,): ListeningRollupEntity = old.copy(
+    episodeId = newEpisodeId,
+    consumedMs = old.consumedMs + (existing?.consumedMs ?: 0L),
+    sessionCount = old.sessionCount + (existing?.sessionCount ?: 0),
+    completionCount = old.completionCount + (existing?.completionCount ?: 0),
+    lastListenedAt = maxOf(old.lastListenedAt, existing?.lastListenedAt ?: 0L),
+    morningMs = old.morningMs + (existing?.morningMs ?: 0L),
+    afternoonMs = old.afternoonMs + (existing?.afternoonMs ?: 0L),
+    eveningMs = old.eveningMs + (existing?.eveningMs ?: 0L),
+    nightMs = old.nightMs + (existing?.nightMs ?: 0L),
+)

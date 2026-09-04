@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,10 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.EngagementBottomSheetScaffold
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.launch
 
 /**
@@ -136,14 +134,14 @@ fun ReviewPromptSheet(
             Button(
                 onClick = onNavigateToReview,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ThumbUp,
@@ -162,9 +160,9 @@ fun ReviewPromptSheet(
             OutlinedButton(
                 onClick = onSecondaryClick,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Text(
@@ -205,10 +203,10 @@ fun PostReviewSheet(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 36.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Surface(
@@ -250,14 +248,14 @@ fun PostReviewSheet(
             Button(
                 onClick = onNavigateToFeedback,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Lightbulb,
@@ -292,9 +290,9 @@ fun PostReviewSheet(
                     }
                 },
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Icon(
@@ -311,9 +309,9 @@ fun PostReviewSheet(
             TextButton(
                 onClick = onDismissRequest,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
             ) {
                 Text(
                     text = "Maybe later",
@@ -363,11 +361,11 @@ fun FeedbackSheet(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 24.dp),
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
         ) {
             // Header row
             Row(
@@ -396,9 +394,9 @@ fun FeedbackSheet(
                 // Success state
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -463,17 +461,17 @@ fun FeedbackSheet(
                     value = message,
                     onValueChange = { if (it.length <= 2000) message = it },
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(140.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(140.dp),
                     placeholder = {
                         Text(
                             text =
-                                when (selectedCategory) {
-                                    "feature" -> "Describe the feature you'd like to see..."
-                                    "bug" -> "What happened and how can we reproduce it?"
-                                    else -> "Tell us what's on your mind..."
-                                },
+                            when (selectedCategory) {
+                                "feature" -> "Describe the feature you'd like to see..."
+                                "bug" -> "What happened and how can we reproduce it?"
+                                else -> "Tell us what's on your mind..."
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -481,10 +479,10 @@ fun FeedbackSheet(
                     shape = RoundedCornerShape(16.dp),
                     textStyle = MaterialTheme.typography.bodyMedium,
                     colors =
-                        OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    ),
                 )
 
                 // Character count
@@ -493,9 +491,9 @@ fun FeedbackSheet(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
                     textAlign = TextAlign.End,
                 )
 
@@ -503,11 +501,11 @@ fun FeedbackSheet(
 
                 Text(
                     text =
-                        when (selectedCategory) {
-                            "feature" -> "Mind sharing your email? We'd love to follow up and chat more about your idea."
-                            "bug" -> "Mind sharing your email? We may need a few more details to help squash this bug."
-                            else -> "Mind sharing your email? We really appreciate the feedback and may reach out."
-                        },
+                    when (selectedCategory) {
+                        "feature" -> "Mind sharing your email? We'd love to follow up and chat more about your idea."
+                        "bug" -> "Mind sharing your email? We may need a few more details to help squash this bug."
+                        else -> "Mind sharing your email? We really appreciate the feedback and may reach out."
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = MaterialTheme.typography.labelMedium.lineHeight,
@@ -520,9 +518,9 @@ fun FeedbackSheet(
                     value = email,
                     onValueChange = { email = it },
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     placeholder = {
                         Text(
                             text = "you@example.com (optional)",
@@ -534,10 +532,10 @@ fun FeedbackSheet(
                     textStyle = MaterialTheme.typography.bodyMedium,
                     singleLine = true,
                     colors =
-                        OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    ),
                 )
 
                 if (errorMsg != null) {
@@ -583,15 +581,15 @@ fun FeedbackSheet(
                         }
                     },
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
                     enabled = !isSubmitting && message.isNotBlank(),
                     colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
                 ) {
                     if (isSubmitting) {
                         CircularProgressIndicator(
@@ -611,9 +609,9 @@ fun FeedbackSheet(
                 OutlinedButton(
                     onClick = onRateInstead,
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
                 ) {
                     Icon(

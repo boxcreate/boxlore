@@ -41,11 +41,11 @@ internal fun LazyStaggeredGridScope.editorialFeedItems(
             EditorialRow(
                 row = row,
                 tone =
-                    if (index % 2 == 0) {
-                        HomeChildHeaderTone.PRIMARY
-                    } else {
-                        HomeChildHeaderTone.TERTIARY
-                    },
+                if (index % 2 == 0) {
+                    HomeChildHeaderTone.PRIMARY
+                } else {
+                    HomeChildHeaderTone.TERTIARY
+                },
                 isLast = index == content.editorialRows.list.lastIndex,
                 callbacks = callbacks,
             )
@@ -68,9 +68,9 @@ private fun EditorialRow(
     }
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(bottom = if (isLast) 20.dp else 12.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(bottom = if (isLast) 20.dp else 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         HomeChildSectionHeader(

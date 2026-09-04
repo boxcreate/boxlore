@@ -39,90 +39,85 @@ class RoomEpisodeOfflineLookupTest {
     }
 
     @Test
-    fun fromDownloadMapsLocalFilePathAsAudioUrl() =
-        runTest {
-            database.downloadedEpisodeDao().insert(
-                DownloadedEpisodeEntity(
-                    episodeId = "ep-1",
-                    podcastId = "pod-1",
-                    episodeTitle = "Downloaded Episode",
-                    episodeDescription = "desc",
-                    episodeImageUrl = "https://example.com/ep.jpg",
-                    podcastName = "Podcast",
-                    podcastImageUrl = null,
-                    durationMs = 1_000L,
-                    publishedDate = 0L,
-                    localFilePath = "/tmp/ep-1.mp3",
-                    downloadId = 1L,
-                    downloadedAt = 0L,
-                    sizeBytes = 100L,
-                    status = DownloadedEpisodeEntity.STATUS_COMPLETED,
-                ),
-            )
+    fun fromDownloadMapsLocalFilePathAsAudioUrl() = runTest {
+        database.downloadedEpisodeDao().insert(
+            DownloadedEpisodeEntity(
+                episodeId = "ep-1",
+                podcastId = "pod-1",
+                episodeTitle = "Downloaded Episode",
+                episodeDescription = "desc",
+                episodeImageUrl = "https://example.com/ep.jpg",
+                podcastName = "Podcast",
+                podcastImageUrl = null,
+                durationMs = 1_000L,
+                publishedDate = 0L,
+                localFilePath = "/tmp/ep-1.mp3",
+                downloadId = 1L,
+                downloadedAt = 0L,
+                sizeBytes = 100L,
+                status = DownloadedEpisodeEntity.STATUS_COMPLETED,
+            ),
+        )
 
-            val snapshot = lookup.fromDownload("ep-1")!!
-            assertEquals("pod-1", snapshot.podcastId)
-            assertEquals("Downloaded Episode", snapshot.episodeTitle)
-            assertEquals("/tmp/ep-1.mp3", snapshot.audioUrl)
-            assertEquals(1_000L, snapshot.durationMs)
-        }
-
-    @Test
-    fun fromDownloadReturnsNullWhenMissing() =
-        runTest {
-            assertNull(lookup.fromDownload("missing"))
-        }
+        val snapshot = lookup.fromDownload("ep-1")!!
+        assertEquals("pod-1", snapshot.podcastId)
+        assertEquals("Downloaded Episode", snapshot.episodeTitle)
+        assertEquals("/tmp/ep-1.mp3", snapshot.audioUrl)
+        assertEquals(1_000L, snapshot.durationMs)
+    }
 
     @Test
-    fun fromHistoryMapsHistoryRow() =
-        runTest {
-            database.listeningHistoryDao().upsert(
-                ListeningHistoryEntity(
-                    episodeId = "ep-2",
-                    podcastId = "pod-2",
-                    episodeTitle = "History Episode",
-                    episodeImageUrl = null,
-                    podcastImageUrl = null,
-                    episodeAudioUrl = "https://example.com/ep2.mp3",
-                    podcastName = "Podcast",
-                    progressMs = 500L,
-                    durationMs = 2_000L,
-                    isCompleted = false,
-                    lastPlayedAt = 0L,
-                ),
-            )
-
-            val snapshot = lookup.fromHistory("ep-2")!!
-            assertEquals("pod-2", snapshot.podcastId)
-            assertEquals("History Episode", snapshot.episodeTitle)
-            assertEquals("https://example.com/ep2.mp3", snapshot.audioUrl)
-        }
+    fun fromDownloadReturnsNullWhenMissing() = runTest {
+        assertNull(lookup.fromDownload("missing"))
+    }
 
     @Test
-    fun fromHistoryUsesEmptyAudioUrlWhenNull() =
-        runTest {
-            database.listeningHistoryDao().upsert(
-                ListeningHistoryEntity(
-                    episodeId = "ep-3",
-                    podcastId = "pod-3",
-                    episodeTitle = "No Audio",
-                    episodeImageUrl = null,
-                    podcastImageUrl = null,
-                    episodeAudioUrl = null,
-                    podcastName = "Podcast",
-                    progressMs = 0L,
-                    durationMs = 0L,
-                    isCompleted = false,
-                    lastPlayedAt = 0L,
-                ),
-            )
+    fun fromHistoryMapsHistoryRow() = runTest {
+        database.listeningHistoryDao().upsert(
+            ListeningHistoryEntity(
+                episodeId = "ep-2",
+                podcastId = "pod-2",
+                episodeTitle = "History Episode",
+                episodeImageUrl = null,
+                podcastImageUrl = null,
+                episodeAudioUrl = "https://example.com/ep2.mp3",
+                podcastName = "Podcast",
+                progressMs = 500L,
+                durationMs = 2_000L,
+                isCompleted = false,
+                lastPlayedAt = 0L,
+            ),
+        )
 
-            assertEquals("", lookup.fromHistory("ep-3")!!.audioUrl)
-        }
+        val snapshot = lookup.fromHistory("ep-2")!!
+        assertEquals("pod-2", snapshot.podcastId)
+        assertEquals("History Episode", snapshot.episodeTitle)
+        assertEquals("https://example.com/ep2.mp3", snapshot.audioUrl)
+    }
 
     @Test
-    fun fromHistoryReturnsNullWhenMissing() =
-        runTest {
-            assertNull(lookup.fromHistory("missing"))
-        }
+    fun fromHistoryUsesEmptyAudioUrlWhenNull() = runTest {
+        database.listeningHistoryDao().upsert(
+            ListeningHistoryEntity(
+                episodeId = "ep-3",
+                podcastId = "pod-3",
+                episodeTitle = "No Audio",
+                episodeImageUrl = null,
+                podcastImageUrl = null,
+                episodeAudioUrl = null,
+                podcastName = "Podcast",
+                progressMs = 0L,
+                durationMs = 0L,
+                isCompleted = false,
+                lastPlayedAt = 0L,
+            ),
+        )
+
+        assertEquals("", lookup.fromHistory("ep-3")!!.audioUrl)
+    }
+
+    @Test
+    fun fromHistoryReturnsNullWhenMissing() = runTest {
+        assertNull(lookup.fromHistory("missing"))
+    }
 }

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -25,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import kotlinx.coroutines.delay
 
@@ -62,29 +61,29 @@ internal fun ChoiceRow(
 
     Card(
         modifier =
-            modifier
-                .clip(RoundedCornerShape(16.dp))
-                .graphicsLayer { alpha = if (enabled) 1.0f else 0.38f }
-                .expressiveClickable(enabled = enabled, onClick = onClick),
+        modifier
+            .clip(RoundedCornerShape(16.dp))
+            .graphicsLayer { alpha = if (enabled) 1.0f else 0.38f }
+            .expressiveClickable(enabled = enabled, onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = borderStroke,
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .size(40.dp)
-                        .background(
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
-                            shape = CircleShape,
-                        ),
+                Modifier
+                    .size(40.dp)
+                    .background(
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
+                        shape = CircleShape,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -115,16 +114,16 @@ internal fun ChoiceRow(
 
             Box(
                 modifier =
-                    Modifier
-                        .size(24.dp)
-                        .background(
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = CircleShape,
-                        ).border(
-                            width = 2.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            shape = CircleShape,
-                        ),
+                Modifier
+                    .size(24.dp)
+                    .background(
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = CircleShape,
+                    ).border(
+                        width = 2.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        shape = CircleShape,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 if (isSelected) {
@@ -144,23 +143,23 @@ internal fun ChoiceRow(
 internal fun AiAvatar(modifier: Modifier = Modifier) {
     Box(
         modifier =
-            modifier
-                .size(36.dp)
-                .background(
-                    brush =
-                        androidx.compose.ui.graphics.Brush.linearGradient(
-                            colors =
-                                listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.tertiary,
-                                ),
-                        ),
-                    shape = CircleShape,
-                ).border(
-                    width = 1.5.dp,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = CircleShape,
+        modifier
+            .size(36.dp)
+            .background(
+                brush =
+                androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors =
+                    listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.tertiary,
+                    ),
                 ),
+                shape = CircleShape,
+            ).border(
+                width = 1.5.dp,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = CircleShape,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -181,9 +180,9 @@ internal fun AiMessageBubble(
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .graphicsLayer { this.alpha = alpha },
+        Modifier
+            .fillMaxWidth()
+            .graphicsLayer { this.alpha = alpha },
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.Top,
     ) {
@@ -196,38 +195,38 @@ internal fun AiMessageBubble(
 
         Box(
             modifier =
-                Modifier
-                    .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
-                    .background(
-                        if (isCompact) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant,
-                    ).border(
-                        width = 1.dp,
-                        color =
-                            if (isCompact) {
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
-                            } else {
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            },
-                        shape = RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp),
-                    ).padding(
-                        horizontal = if (isCompact) 12.dp else 16.dp,
-                        vertical = if (isCompact) 8.dp else 12.dp,
-                    ),
+            Modifier
+                .weight(1f, fill = false)
+                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                .background(
+                    if (isCompact) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant,
+                ).border(
+                    width = 1.dp,
+                    color =
+                    if (isCompact) {
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    },
+                    shape = RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp),
+                ).padding(
+                    horizontal = if (isCompact) 12.dp else 16.dp,
+                    vertical = if (isCompact) 8.dp else 12.dp,
+                ),
         ) {
             Text(
                 text = text,
                 style =
-                    MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = if (isCompact) 13.sp else 15.sp,
-                        lineHeight = if (isCompact) 18.sp else 22.sp,
-                    ),
+                MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = if (isCompact) 13.sp else 15.sp,
+                    lineHeight = if (isCompact) 18.sp else 22.sp,
+                ),
                 color =
-                    if (isCompact) {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                if (isCompact) {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
             )
         }
     }
@@ -242,30 +241,30 @@ internal fun UserMessageBubble(
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .graphicsLayer { this.alpha = alpha },
+        Modifier
+            .fillMaxWidth()
+            .graphicsLayer { this.alpha = alpha },
         horizontalArrangement = Arrangement.End,
     ) {
         Box(
             modifier =
-                Modifier
-                    .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 4.dp, bottomStart = 20.dp))
-                    .background(
-                        if (isCompact) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
-                    ).padding(
-                        horizontal = if (isCompact) 12.dp else 16.dp,
-                        vertical = if (isCompact) 8.dp else 12.dp,
-                    ),
+            Modifier
+                .weight(1f, fill = false)
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 4.dp, bottomStart = 20.dp))
+                .background(
+                    if (isCompact) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
+                ).padding(
+                    horizontal = if (isCompact) 12.dp else 16.dp,
+                    vertical = if (isCompact) 8.dp else 12.dp,
+                ),
         ) {
             Text(
                 text = text,
                 style =
-                    MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = if (isCompact) 13.sp else 15.sp,
-                        lineHeight = if (isCompact) 18.sp else 22.sp,
-                    ),
+                MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = if (isCompact) 13.sp else 15.sp,
+                    lineHeight = if (isCompact) 18.sp else 22.sp,
+                ),
                 fontWeight = if (isCompact) FontWeight.Normal else GoogleSansWeight.medium,
                 color = if (isCompact) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary,
             )
@@ -280,14 +279,14 @@ internal fun DelayBypassBanner(
 ) {
     Card(
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+        CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
         border =
-            BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-            ),
+        BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant,
+        ),
         shape = RoundedCornerShape(16.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -304,9 +303,9 @@ internal fun DelayBypassBanner(
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier =
-                        Modifier
-                            .size(16.dp)
-                            .padding(top = 1.dp),
+                    Modifier
+                        .size(16.dp)
+                        .padding(top = 1.dp),
                 )
                 Text(
                     text = "Taking longer than expected? You can skip the chat and customize your feed directly by picking your favorite topics.",
@@ -318,16 +317,16 @@ internal fun DelayBypassBanner(
             FilledTonalButton(
                 onClick = onSwitchToManual,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(34.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(34.dp),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
                 shape = RoundedCornerShape(17.dp),
                 colors =
-                    ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
+                ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
             ) {
                 Text(
                     text = "Choose Topics Manually",
@@ -360,15 +359,15 @@ internal fun AiLoadingBubble(
         Spacer(modifier = Modifier.width(8.dp))
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp),
-                    ).padding(horizontal = 16.dp, vertical = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp),
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ThinkingIndicator(stage = stage, elapsedSeconds = elapsedSeconds)
@@ -397,10 +396,10 @@ internal fun TypingIndicator() {
                 initialValue = 0.2f,
                 targetValue = 1f,
                 animationSpec =
-                    infiniteRepeatable(
-                        animation = tween(600, delayMillis = index * 150, easing = LinearEasing),
-                        repeatMode = RepeatMode.Reverse,
-                    ),
+                infiniteRepeatable(
+                    animation = tween(600, delayMillis = index * 150, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
                 label = "dotAlpha_$index",
             )
         }
@@ -412,10 +411,10 @@ internal fun TypingIndicator() {
         dotAlphas.forEach { alpha ->
             Box(
                 modifier =
-                    Modifier
-                        .size(6.dp)
-                        .graphicsLayer { this.alpha = alpha.value }
-                        .background(MaterialTheme.colorScheme.primary, shape = CircleShape),
+                Modifier
+                    .size(6.dp)
+                    .graphicsLayer { this.alpha = alpha.value }
+                    .background(MaterialTheme.colorScheme.primary, shape = CircleShape),
             )
         }
     }
@@ -532,22 +531,22 @@ internal fun FinalSynthesisLoadingPanel(
 ) {
     Card(
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
+        CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
         border =
-            BorderStroke(
-                width = 1.5.dp,
-                color = MaterialTheme.colorScheme.primary,
-            ),
+        BorderStroke(
+            width = 1.5.dp,
+            color = MaterialTheme.colorScheme.primary,
+        ),
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -556,20 +555,20 @@ internal fun FinalSynthesisLoadingPanel(
                 initialValue = 0.6f,
                 targetValue = 1.2f,
                 animationSpec =
-                    infiniteRepeatable(
-                        animation = tween(1400, easing = FastOutSlowInEasing),
-                        repeatMode = RepeatMode.Reverse,
-                    ),
+                infiniteRepeatable(
+                    animation = tween(1400, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
                 label = "pulseScale1",
             )
             val pulseScale2 by infiniteTransition.animateFloat(
                 initialValue = 0.4f,
                 targetValue = 1.0f,
                 animationSpec =
-                    infiniteRepeatable(
-                        animation = tween(1800, easing = FastOutSlowInEasing),
-                        repeatMode = RepeatMode.Reverse,
-                    ),
+                infiniteRepeatable(
+                    animation = tween(1800, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
                 label = "pulseScale2",
             )
 
@@ -591,19 +590,19 @@ internal fun FinalSynthesisLoadingPanel(
                 }
                 Box(
                     modifier =
-                        Modifier
-                            .size(36.dp)
-                            .background(
-                                brush =
-                                    androidx.compose.ui.graphics.Brush.linearGradient(
-                                        colors =
-                                            listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.tertiary,
-                                            ),
-                                    ),
-                                shape = CircleShape,
+                    Modifier
+                        .size(36.dp)
+                        .background(
+                            brush =
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary,
+                                ),
                             ),
+                            shape = CircleShape,
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -640,19 +639,19 @@ internal fun AnimatedMessageContainer(content: @Composable () -> Unit) {
     AnimatedVisibility(
         visible = true,
         enter =
-            fadeIn(animationSpec = tween(durationMillis = 500)) +
-                slideInVertically(
-                    initialOffsetY = { it / 2 },
-                    animationSpec =
-                        spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessLow,
-                        ),
-                ) +
-                scaleIn(
-                    initialScale = 0.95f,
-                    animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
+        fadeIn(animationSpec = tween(durationMillis = 500)) +
+            slideInVertically(
+                initialOffsetY = { it / 2 },
+                animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow,
                 ),
+            ) +
+            scaleIn(
+                initialScale = 0.95f,
+                animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
+            ),
         exit = fadeOut(animationSpec = tween(durationMillis = 300)),
     ) {
         content()
@@ -691,50 +690,50 @@ internal fun SuggestionBubble(
 
     OutlinedCard(
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor = containerColor,
-            ),
+        CardDefaults.outlinedCardColors(
+            containerColor = containerColor,
+        ),
         shape = RoundedCornerShape(16.dp),
         elevation =
-            CardDefaults.outlinedCardElevation(
-                defaultElevation = if (isSelected && enabled) 3.dp else 0.dp,
-            ),
+        CardDefaults.outlinedCardElevation(
+            defaultElevation = if (isSelected && enabled) 3.dp else 0.dp,
+        ),
         border =
-            BorderStroke(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-            ),
+        BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        ),
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 64.dp)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = if (enabled) 1.0f else 0.38f
-                }.then(
-                    if (enabled) {
-                        Modifier.expressiveClickable { onClick() }
-                    } else {
-                        Modifier
-                    },
-                ),
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                alpha = if (enabled) 1.0f else 0.38f
+            }.then(
+                if (enabled) {
+                    Modifier.expressiveClickable { onClick() }
+                } else {
+                    Modifier
+                },
+            ),
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .size(36.dp)
-                        .background(
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                        ),
+                Modifier
+                    .size(36.dp)
+                    .background(
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -761,16 +760,16 @@ internal fun SuggestionBubble(
 
             Box(
                 modifier =
-                    Modifier
-                        .size(22.dp)
-                        .background(
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                        ).border(
-                            width = 2.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                        ),
+                Modifier
+                    .size(22.dp)
+                    .background(
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                    ).border(
+                        width = 2.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 if (isSelected) {
@@ -800,44 +799,44 @@ internal fun BuildFeedNowChip(
 
     OutlinedCard(
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor = containerColor,
-            ),
+        CardDefaults.outlinedCardColors(
+            containerColor = containerColor,
+        ),
         shape = RoundedCornerShape(16.dp),
         border =
-            BorderStroke(
-                width = 1.5.dp,
-                color = MaterialTheme.colorScheme.primary,
-            ),
+        BorderStroke(
+            width = 1.5.dp,
+            color = MaterialTheme.colorScheme.primary,
+        ),
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 60.dp)
-                .graphicsLayer {
-                    alpha = if (enabled) 1.0f else 0.38f
-                }.then(
-                    if (enabled) {
-                        Modifier.expressiveClickable { onClick() }
-                    } else {
-                        Modifier
-                    },
-                ),
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 60.dp)
+            .graphicsLayer {
+                alpha = if (enabled) 1.0f else 0.38f
+            }.then(
+                if (enabled) {
+                    Modifier.expressiveClickable { onClick() }
+                } else {
+                    Modifier
+                },
+            ),
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .size(36.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                            shape = CircleShape,
-                        ),
+                Modifier
+                    .size(36.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = CircleShape,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

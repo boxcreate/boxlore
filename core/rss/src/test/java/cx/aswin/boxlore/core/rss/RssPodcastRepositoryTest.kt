@@ -40,64 +40,59 @@ class RssPodcastRepositoryTest {
     }
 
     @Test
-    fun getEpisodesAroundReturnsAnchorAndSubsequentEpisodes() =
-        runTest {
-            val podcastId = "-1001"
-            val podcast =
-                PodcastEntity(
-                    podcastId = podcastId,
-                    title = "Test RSS Show",
-                    author = "Test Author",
-                    imageUrl = "https://example.com/image.jpg",
-                    description = "Description",
-                    sourceType = PodcastEntity.SOURCE_RSS,
-                )
-            `when`(podcastDao.getPodcast(podcastId)).thenReturn(podcast)
+    fun getEpisodesAroundReturnsAnchorAndSubsequentEpisodes() = runTest {
+        val podcastId = "-1001"
+        val podcast =
+            PodcastEntity(
+                podcastId = podcastId,
+                title = "Test RSS Show",
+                author = "Test Author",
+                imageUrl = "https://example.com/image.jpg",
+                description = "Description",
+                sourceType = PodcastEntity.SOURCE_RSS,
+            )
+        `when`(podcastDao.getPodcast(podcastId)).thenReturn(podcast)
 
-            val anchor =
-                rssEpisode(
-                    episodeId = "-1",
-                    podcastId = podcastId,
-                    publishedDate = 1000L,
-                )
-            val subsequent1 =
-                rssEpisode(
-                    episodeId = "-2",
-                    podcastId = podcastId,
-                    publishedDate = 2000L,
-                )
-            val subsequent2 =
-                rssEpisode(
-                    episodeId = "-3",
-                    podcastId = podcastId,
-                    publishedDate = 3000L,
-                )
+        val anchor =
+            rssEpisode(
+                episodeId = "-1",
+                podcastId = podcastId,
+                publishedDate = 1000L,
+            )
+        val subsequent1 =
+            rssEpisode(
+                episodeId = "-2",
+                podcastId = podcastId,
+                publishedDate = 2000L,
+            )
+        val subsequent2 =
+            rssEpisode(
+                episodeId = "-3",
+                podcastId = podcastId,
+                publishedDate = 3000L,
+            )
 
-            `when`(episodeDao.getEpisode("-1")).thenReturn(anchor)
-            `when`(
-                episodeDao.getEpisodesAfter(
-                    podcastId = podcastId,
-                    publishedDate = 1000L,
-                    episodeId = "-1",
-                    limit = 9,
-                ),
-            ).thenReturn(listOf(subsequent1, subsequent2))
+        `when`(episodeDao.getEpisode("-1")).thenReturn(anchor)
+        `when`(
+            episodeDao.getEpisodesAfter(
+                podcastId = podcastId,
+                publishedDate = 1000L,
+                episodeId = "-1",
+                limit = 9,
+            ),
+        ).thenReturn(listOf(subsequent1, subsequent2))
 
-            val window =
-                repository.getEpisodesAround(
-                    podcastId = podcastId,
-                    bound = 10,
-                    aroundEpisodeId = "-1",
-                )
+        val window =
+            repository.getEpisodesAround(
+                podcastId = podcastId,
+                bound = 10,
+                aroundEpisodeId = "-1",
+            )
 
-            assertEquals(listOf("-1", "-2", "-3"), window.map { it.id })
-        }
+        assertEquals(listOf("-1", "-2", "-3"), window.map { it.id })
+    }
 
-    private fun rssEpisode(
-        episodeId: String,
-        podcastId: String,
-        publishedDate: Long,
-    ) = RssEpisodeEntity(
+    private fun rssEpisode(episodeId: String, podcastId: String, publishedDate: Long,) = RssEpisodeEntity(
         episodeId = episodeId,
         podcastId = podcastId,
         guid = "guid-$episodeId",

@@ -19,15 +19,14 @@ internal fun resolveBriefingPlaybackAction(
     isCurrentBriefing: Boolean,
     isPlaying: Boolean,
     requestedPositionMs: Long?,
-): BriefingPlaybackAction =
-    when {
-        !isCurrentBriefing -> BriefingPlaybackAction.StartBriefing(requestedPositionMs)
-        requestedPositionMs != null ->
-            BriefingPlaybackAction.SeekToStory(
-                positionMs = requestedPositionMs,
-                resumeAfterSeek = !isPlaying,
-            )
+): BriefingPlaybackAction = when {
+    !isCurrentBriefing -> BriefingPlaybackAction.StartBriefing(requestedPositionMs)
+    requestedPositionMs != null ->
+        BriefingPlaybackAction.SeekToStory(
+            positionMs = requestedPositionMs,
+            resumeAfterSeek = !isPlaying,
+        )
 
-        isPlaying -> BriefingPlaybackAction.Pause
-        else -> BriefingPlaybackAction.Resume
-    }
+    isPlaying -> BriefingPlaybackAction.Pause
+    else -> BriefingPlaybackAction.Resume
+}

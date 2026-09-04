@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.surveys.internal.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -51,20 +50,16 @@ private sealed interface SurveySubmitStep {
 }
 
 /** Determines the next UI step after a survey answer is submitted. */
-private fun surveySubmitStep(
-    next: PostHogNextSurveyQuestion?,
-    displayThankYouMessage: Boolean,
-): SurveySubmitStep =
-    when {
-        next == null -> SurveySubmitStep.Dismiss
-        next.isSurveyCompleted ->
-            if (displayThankYouMessage) {
-                SurveySubmitStep.ShowConfirmation
-            } else {
-                SurveySubmitStep.Dismiss
-            }
-        else -> SurveySubmitStep.NextQuestion(next.questionIndex)
-    }
+private fun surveySubmitStep(next: PostHogNextSurveyQuestion?, displayThankYouMessage: Boolean,): SurveySubmitStep = when {
+    next == null -> SurveySubmitStep.Dismiss
+    next.isSurveyCompleted ->
+        if (displayThankYouMessage) {
+            SurveySubmitStep.ShowConfirmation
+        } else {
+            SurveySubmitStep.Dismiss
+        }
+    else -> SurveySubmitStep.NextQuestion(next.questionIndex)
+}
 
 /**
  * Root NPS survey bottom sheet: question flow, rating capture, and optional thank-you screen.
@@ -140,9 +135,9 @@ internal fun SurveySheet(
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (showingConfirmation || question == null) {
@@ -160,11 +155,7 @@ internal fun SurveySheet(
 }
 
 @Composable
-private fun SurveyQuestionBody(
-    question: PostHogDisplaySurveyQuestion,
-    onSubmit: (PostHogSurveyResponse) -> Unit,
-    onClose: () -> Unit,
-) {
+private fun SurveyQuestionBody(question: PostHogDisplaySurveyQuestion, onSubmit: (PostHogSurveyResponse) -> Unit, onClose: () -> Unit,) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -198,11 +189,7 @@ private fun SurveyQuestionBody(
 }
 
 @Composable
-private fun RatingQuestionBody(
-    question: PostHogDisplayRatingQuestion,
-    onSubmit: (PostHogSurveyResponse) -> Unit,
-    onClose: () -> Unit,
-) {
+private fun RatingQuestionBody(question: PostHogDisplayRatingQuestion, onSubmit: (PostHogSurveyResponse) -> Unit, onClose: () -> Unit,) {
     var rating by rememberSaveable(question.id) { mutableStateOf<Int?>(null) }
     val canSubmit = question.isOptional || rating != null
 
@@ -227,10 +214,7 @@ private fun RatingQuestionBody(
 }
 
 @Composable
-private fun OpenTextQuestionBody(
-    question: PostHogDisplayOpenQuestion,
-    onSubmit: (PostHogSurveyResponse) -> Unit,
-) {
+private fun OpenTextQuestionBody(question: PostHogDisplayOpenQuestion, onSubmit: (PostHogSurveyResponse) -> Unit,) {
     var text by rememberSaveable(question.id) { mutableStateOf("") }
     val canSubmit = question.isOptional || text.isNotBlank()
 
@@ -247,15 +231,12 @@ private fun OpenTextQuestionBody(
 }
 
 @Composable
-private fun UnsupportedQuestionPlaceholder(
-    buttonLabel: String,
-    onClose: () -> Unit,
-) {
+private fun UnsupportedQuestionPlaceholder(buttonLabel: String, onClose: () -> Unit,) {
     val appearance = localAppearance()
     androidx.compose.material3.Text(
         text =
-            "This question type is not yet supported in the app survey UI. " +
-                "Please update the app to respond to this survey.",
+        "This question type is not yet supported in the app survey UI. " +
+            "Please update the app to respond to this survey.",
         style = MaterialTheme.typography.bodyMedium,
         color = appearance.textColor,
         modifier = Modifier.fillMaxWidth(),

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.dialogs
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -17,8 +15,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 object SettingsResetAnalyticsTestTags {
     const val CONFIRM = "settings_reset_analytics_confirm"

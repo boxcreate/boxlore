@@ -27,10 +27,7 @@ fun DownloadBandwidthEffect(isPlaying: Boolean) {
     }
     DisposableEffect(connectivityManager) {
         val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onCapabilitiesChanged(
-                network: Network,
-                networkCapabilities: NetworkCapabilities,
-            ) {
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities,) {
                 isConnectionFast = networkCapabilities.linkDownstreamBandwidthKbps > 15000
             }
         }

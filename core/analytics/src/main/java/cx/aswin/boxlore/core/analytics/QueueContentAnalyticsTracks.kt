@@ -18,12 +18,7 @@ internal object QueueContentAnalyticsTracks {
         AnalyticsEmit.event("queue_modified", props)
     }
 
-    fun trackQueueReordered(
-        episodeId: String,
-        fromPosition: Int,
-        toPosition: Int,
-        contextType: String?,
-    ) {
+    fun trackQueueReordered(episodeId: String, fromPosition: Int, toPosition: Int, contextType: String?,) {
         AnalyticsEmit.event(
             "queue_modified",
             mapOf(
@@ -36,10 +31,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackLoreQueueConflictShown(
-        episodeId: String,
-        normalQueueSize: Int,
-    ) {
+    fun trackLoreQueueConflictShown(episodeId: String, normalQueueSize: Int,) {
         AnalyticsEmit.event(
             "queue_modified",
             mapOf(
@@ -51,10 +43,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackLoreQueueConflictResult(
-        episodeId: String,
-        result: String,
-    ) {
+    fun trackLoreQueueConflictResult(episodeId: String, result: String,) {
         AnalyticsEmit.event(
             "queue_modified",
             mapOf(
@@ -65,11 +54,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackSmartQueueEpisodeSkipped(
-        episodeId: String,
-        recommendationSource: String,
-        positionInQueue: Int,
-    ) {
+    fun trackSmartQueueEpisodeSkipped(episodeId: String, recommendationSource: String, positionInQueue: Int,) {
         AnalyticsEmit.event(
             "queue_modified",
             mapOf(
@@ -96,45 +81,32 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackAutoChaptersRequested(
-        episodeId: String,
-        podcastId: String?,
-        audioUrl: String,
-    ) {
+    fun trackAutoChaptersRequested(episodeId: String, podcastId: String?, audioUrl: String,) {
         PhaseCAnalyticsTracks.trackAutoChaptersLifecycle(
             stage = "requested",
             episodeId = episodeId,
             errorMessage =
-                listOfNotNull(
-                    podcastId?.let { "podcast_id=$it" },
-                    audioUrl.takeIf { it.isNotBlank() }?.let { "has_audio=true" },
-                ).joinToString(";").ifBlank { null },
+            listOfNotNull(
+                podcastId?.let { "podcast_id=$it" },
+                audioUrl.takeIf { it.isNotBlank() }?.let { "has_audio=true" },
+            ).joinToString(";").ifBlank { null },
         )
     }
 
-    fun trackAutoChaptersCompleted(
-        episodeId: String,
-        podcastId: String?,
-        durationSeconds: Float,
-        chaptersCount: Int,
-    ) {
+    fun trackAutoChaptersCompleted(episodeId: String, podcastId: String?, durationSeconds: Float, chaptersCount: Int,) {
         PhaseCAnalyticsTracks.trackAutoChaptersLifecycle(
             stage = "completed",
             episodeId = episodeId,
             errorMessage =
-                listOfNotNull(
-                    podcastId?.let { "podcast_id=$it" },
-                    "chapters=$chaptersCount",
-                    "duration=$durationSeconds",
-                ).joinToString(";"),
+            listOfNotNull(
+                podcastId?.let { "podcast_id=$it" },
+                "chapters=$chaptersCount",
+                "duration=$durationSeconds",
+            ).joinToString(";"),
         )
     }
 
-    fun trackAutoChaptersFailed(
-        episodeId: String,
-        podcastId: String?,
-        errorMessage: String,
-    ) {
+    fun trackAutoChaptersFailed(episodeId: String, podcastId: String?, errorMessage: String,) {
         PhaseCAnalyticsTracks.trackAutoChaptersLifecycle(
             stage = "failed",
             episodeId = episodeId,
@@ -142,45 +114,32 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackAutoTranscriptRequested(
-        episodeId: String,
-        podcastId: String?,
-        audioUrl: String,
-    ) {
+    fun trackAutoTranscriptRequested(episodeId: String, podcastId: String?, audioUrl: String,) {
         PhaseCAnalyticsTracks.trackAutoTranscriptLifecycle(
             stage = "requested",
             episodeId = episodeId,
             errorMessage =
-                listOfNotNull(
-                    podcastId?.let { "podcast_id=$it" },
-                    audioUrl.takeIf { it.isNotBlank() }?.let { "has_audio=true" },
-                ).joinToString(";").ifBlank { null },
+            listOfNotNull(
+                podcastId?.let { "podcast_id=$it" },
+                audioUrl.takeIf { it.isNotBlank() }?.let { "has_audio=true" },
+            ).joinToString(";").ifBlank { null },
         )
     }
 
-    fun trackAutoTranscriptCompleted(
-        episodeId: String,
-        podcastId: String?,
-        durationSeconds: Float,
-        linesCount: Int,
-    ) {
+    fun trackAutoTranscriptCompleted(episodeId: String, podcastId: String?, durationSeconds: Float, linesCount: Int,) {
         PhaseCAnalyticsTracks.trackAutoTranscriptLifecycle(
             stage = "completed",
             episodeId = episodeId,
             errorMessage =
-                listOfNotNull(
-                    podcastId?.let { "podcast_id=$it" },
-                    "lines=$linesCount",
-                    "duration=$durationSeconds",
-                ).joinToString(";"),
+            listOfNotNull(
+                podcastId?.let { "podcast_id=$it" },
+                "lines=$linesCount",
+                "duration=$durationSeconds",
+            ).joinToString(";"),
         )
     }
 
-    fun trackAutoTranscriptFailed(
-        episodeId: String,
-        podcastId: String?,
-        errorMessage: String,
-    ) {
+    fun trackAutoTranscriptFailed(episodeId: String, podcastId: String?, errorMessage: String,) {
         PhaseCAnalyticsTracks.trackAutoTranscriptLifecycle(
             stage = "failed",
             episodeId = episodeId,
@@ -188,10 +147,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackDailyBriefingBannerTapped(
-        region: String,
-        date: String,
-    ) {
+    fun trackDailyBriefingBannerTapped(region: String, date: String,) {
         AnalyticsEmit.event(
             "daily_briefing_action",
             mapOf("action" to "banner_tapped", "region" to region, "date" to date),
@@ -206,11 +162,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackDailyBriefingPlayClicked(
-        region: String,
-        date: String,
-        source: String,
-    ) {
+    fun trackDailyBriefingPlayClicked(region: String, date: String, source: String,) {
         AnalyticsEmit.event(
             "daily_briefing_action",
             mapOf(
@@ -230,11 +182,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackDailyBriefingPauseClicked(
-        region: String,
-        date: String,
-        source: String,
-    ) {
+    fun trackDailyBriefingPauseClicked(region: String, date: String, source: String,) {
         AnalyticsEmit.event(
             "daily_briefing_action",
             mapOf(
@@ -246,12 +194,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackDailyBriefingInteraction(
-        action: String,
-        region: String,
-        date: String,
-        extraProps: Map<String, Any> = emptyMap(),
-    ) {
+    fun trackDailyBriefingInteraction(action: String, region: String, date: String, extraProps: Map<String, Any> = emptyMap(),) {
         val props =
             mutableMapOf<String, Any>(
                 "action" to action,
@@ -262,11 +205,7 @@ internal object QueueContentAnalyticsTracks {
         AnalyticsEmit.event("daily_briefing_action", props)
     }
 
-    fun trackDailyBriefingRegionChanged(
-        previousRegion: String,
-        newRegion: String,
-        date: String,
-    ) {
+    fun trackDailyBriefingRegionChanged(previousRegion: String, newRegion: String, date: String,) {
         AnalyticsEmit.event(
             "daily_briefing_action",
             mapOf(
@@ -303,11 +242,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackDailyBriefingCardImpression(
-        region: String,
-        date: String,
-        playbackStatus: String,
-    ) {
+    fun trackDailyBriefingCardImpression(region: String, date: String, playbackStatus: String,) {
         AnalyticsEmit.event(
             "daily_briefing_action",
             mapOf(
@@ -326,11 +261,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackDailyBriefingScreenViewed(
-        region: String,
-        date: String,
-        source: String? = null,
-    ) {
+    fun trackDailyBriefingScreenViewed(region: String, date: String, source: String? = null,) {
         val props =
             mutableMapOf<String, Any>(
                 "action" to "screen_viewed",
@@ -360,10 +291,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackNavTabClicked(
-        tabName: String,
-        previousTab: String? = null,
-    ) {
+    fun trackNavTabClicked(tabName: String, previousTab: String? = null,) {
         AnalyticsEmit.event(
             "nav_tab_clicked",
             buildMap {
@@ -397,37 +325,19 @@ internal object QueueContentAnalyticsTracks {
         AnalyticsEmit.event("learn_card_action", props)
     }
 
-    fun trackLearnCardDismissed(
-        episodeId: String,
-        episodeTitle: String?,
-        podcastId: String?,
-        podcastTitle: String?,
-    ) {
+    fun trackLearnCardDismissed(episodeId: String, episodeTitle: String?, podcastId: String?, podcastTitle: String?,) {
         trackLearnCardAction("dismiss", episodeId, episodeTitle, podcastId, podcastTitle)
     }
 
-    fun trackLearnCardQueued(
-        episodeId: String,
-        episodeTitle: String?,
-        podcastId: String?,
-        podcastTitle: String?,
-    ) {
+    fun trackLearnCardQueued(episodeId: String, episodeTitle: String?, podcastId: String?, podcastTitle: String?,) {
         trackLearnCardAction("queue", episodeId, episodeTitle, podcastId, podcastTitle)
     }
 
-    fun trackLearnCardInfoClicked(
-        episodeId: String,
-        episodeTitle: String?,
-        podcastId: String?,
-        podcastTitle: String?,
-    ) {
+    fun trackLearnCardInfoClicked(episodeId: String, episodeTitle: String?, podcastId: String?, podcastTitle: String?,) {
         trackLearnCardAction("info", episodeId, episodeTitle, podcastId, podcastTitle)
     }
 
-    fun trackLearnCardPodcastClicked(
-        podcastId: String?,
-        podcastTitle: String?,
-    ) {
+    fun trackLearnCardPodcastClicked(podcastId: String?, podcastTitle: String?,) {
         AnalyticsEmit.event(
             "learn_card_action",
             buildMap {
@@ -439,12 +349,7 @@ internal object QueueContentAnalyticsTracks {
         )
     }
 
-    fun trackLearnCardPlayClicked(
-        episodeId: String,
-        episodeTitle: String?,
-        podcastId: String?,
-        podcastTitle: String?,
-    ) {
+    fun trackLearnCardPlayClicked(episodeId: String, episodeTitle: String?, podcastId: String?, podcastTitle: String?,) {
         trackLearnCardAction("play", episodeId, episodeTitle, podcastId, podcastTitle)
     }
 
@@ -462,7 +367,7 @@ internal object QueueContentAnalyticsTracks {
                 "cards_available" to (
                     cardsDismissedCount + cardsQueuedCount + playsCount +
                         podcastsClickedCount + infosClickedCount
-                ),
+                    ),
                 "time_spent_seconds" to timeSpentSeconds,
                 "cards_dismissed_count" to cardsDismissedCount,
                 "cards_queued_count" to cardsQueuedCount,

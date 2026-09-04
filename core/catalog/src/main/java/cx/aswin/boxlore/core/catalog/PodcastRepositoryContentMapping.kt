@@ -1,21 +1,17 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
-import cx.aswin.boxlore.core.ranking.RankingSurface
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
-import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.ranking.RankingSurface
 
-fun mapRegionForBriefing(region: String): String =
-    cx.aswin.boxlore.core.model.ContentRegions.briefingMarket(region)
+fun mapRegionForBriefing(region: String): String = cx.aswin.boxlore.core.model.ContentRegions.briefingMarket(region)
 
 /** Normalize + expand prefs languages for discovery query params / recs bodies. */
-internal fun resolveContentLanguagesForQuery(
-    languages: List<String>?,
-    country: String,
-): List<String> {
+internal fun resolveContentLanguagesForQuery(languages: List<String>?, country: String,): List<String> {
     val normalized =
         cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(
             languages.orEmpty(),
@@ -24,10 +20,7 @@ internal fun resolveContentLanguagesForQuery(
     return cx.aswin.boxlore.core.model.ContentRegions.expandLanguagesForQuery(normalized)
 }
 
-data class SearchResult(
-    val podcasts: List<cx.aswin.boxlore.core.model.Podcast>,
-    val correctedQuery: String? = null
-)
+data class SearchResult(val podcasts: List<cx.aswin.boxlore.core.model.Podcast>, val correctedQuery: String? = null)
 
 /** Meili catalog + hybrid “Also found” groups for progressive show search. */
 typealias GroupedShowSearch = cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
@@ -41,30 +34,22 @@ internal val semanticMarkupPattern = Regex("<[^>]+>")
 internal val semanticUrlPattern = Regex("""https?://\S+""", RegexOption.IGNORE_CASE)
 internal val semanticWhitespacePattern = Regex("\\s+")
 
-internal fun String?.toSemanticFallback(): String? {
-    return this
-        ?.replace(semanticMarkupPattern, " ")
-        ?.replace(semanticUrlPattern, " ")
-        ?.replace(semanticWhitespacePattern, " ")
-        ?.trim()
-        ?.take(800)
-        ?.takeIf(String::isNotEmpty)
-}
+internal fun String?.toSemanticFallback(): String? = this
+    ?.replace(semanticMarkupPattern, " ")
+    ?.replace(semanticUrlPattern, " ")
+    ?.replace(semanticWhitespacePattern, " ")
+    ?.trim()
+    ?.take(800)
+    ?.takeIf(String::isNotEmpty)
 
-internal fun List<String>.toBoundedPositiveIds(
-    maximum: Int = 250,
-): List<Long> {
-    return asSequence()
-        .mapNotNull(String::toLongOrNull)
-        .filter { it > 0L }
-        .distinct()
-        .take(maximum)
-        .toList()
-}
+internal fun List<String>.toBoundedPositiveIds(maximum: Int = 250,): List<Long> = asSequence()
+    .mapNotNull(String::toLongOrNull)
+    .filter { it > 0L }
+    .distinct()
+    .take(maximum)
+    .toList()
 
-internal fun List<String>.toBoundedLanguageCodes(): List<String> {
-    return cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(this, "us")
-}
+internal fun List<String>.toBoundedLanguageCodes(): List<String> = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(this, "us")
 
 internal fun cx.aswin.boxlore.core.network.model.ContentCatalogResponse.toContentCatalogSnapshot(
     fetchedAt: Long,
@@ -122,45 +107,36 @@ internal fun cx.aswin.boxlore.core.network.model.ContentCatalogResponse.toConten
     )
 }
 
-internal fun String.toRankingSurface(): cx.aswin.boxlore.core.ranking.RankingSurface? {
-    return when (lowercase()) {
-        "home" -> cx.aswin.boxlore.core.ranking.RankingSurface.HOME
-        "explore" -> cx.aswin.boxlore.core.ranking.RankingSurface.EXPLORE
-        "auto" -> cx.aswin.boxlore.core.ranking.RankingSurface.ANDROID_AUTO
-        else -> null
-    }
+internal fun String.toRankingSurface(): cx.aswin.boxlore.core.ranking.RankingSurface? = when (lowercase()) {
+    "home" -> cx.aswin.boxlore.core.ranking.RankingSurface.HOME
+    "explore" -> cx.aswin.boxlore.core.ranking.RankingSurface.EXPLORE
+    "auto" -> cx.aswin.boxlore.core.ranking.RankingSurface.ANDROID_AUTO
+    else -> null
 }
 
-internal fun String.toContentDaypart(): cx.aswin.boxlore.core.catalog.content.ContentDaypart? {
-    return when (lowercase()) {
-        "early_morning", "morning", "commute" ->
-            cx.aswin.boxlore.core.catalog.content.ContentDaypart.MORNING
-        "afternoon" -> cx.aswin.boxlore.core.catalog.content.ContentDaypart.AFTERNOON
-        "evening" -> cx.aswin.boxlore.core.catalog.content.ContentDaypart.EVENING
-        "late_night" -> cx.aswin.boxlore.core.catalog.content.ContentDaypart.LATE_NIGHT
-        else -> null
-    }
+internal fun String.toContentDaypart(): cx.aswin.boxlore.core.catalog.content.ContentDaypart? = when (lowercase()) {
+    "early_morning", "morning", "commute" ->
+        cx.aswin.boxlore.core.catalog.content.ContentDaypart.MORNING
+    "afternoon" -> cx.aswin.boxlore.core.catalog.content.ContentDaypart.AFTERNOON
+    "evening" -> cx.aswin.boxlore.core.catalog.content.ContentDaypart.EVENING
+    "late_night" -> cx.aswin.boxlore.core.catalog.content.ContentDaypart.LATE_NIGHT
+    else -> null
 }
 
-internal fun String.toContentLayout(): cx.aswin.boxlore.core.catalog.content.ContentLayout? {
-    return when (lowercase()) {
-        "episode_rail" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.EPISODE_RAIL
-        "podcast_rail" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.PODCAST_RAIL
-        "compact_list" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.COMPACT_LIST
-        "protected_card" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.PROTECTED_CARD
-        else -> null
-    }
+internal fun String.toContentLayout(): cx.aswin.boxlore.core.catalog.content.ContentLayout? = when (lowercase()) {
+    "episode_rail" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.EPISODE_RAIL
+    "podcast_rail" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.PODCAST_RAIL
+    "compact_list" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.COMPACT_LIST
+    "protected_card" -> cx.aswin.boxlore.core.catalog.content.ContentLayout.PROTECTED_CARD
+    else -> null
 }
 
-internal fun String?.toContentRefreshPolicy():
-    cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy? {
-    return when (this?.lowercase()) {
-        "session" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.SESSION
-        "manual" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.MANUAL
-        "daypart" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.DAYPART
-        "daily" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.DAILY
-        else -> null
-    }
+internal fun String?.toContentRefreshPolicy(): cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy? = when (this?.lowercase()) {
+    "session" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.SESSION
+    "manual" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.MANUAL
+    "daypart" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.DAYPART
+    "daily" -> cx.aswin.boxlore.core.catalog.content.ContentRefreshPolicy.DAILY
+    else -> null
 }
 
 data class HomeBootstrapData(
@@ -172,7 +148,4 @@ data class HomeBootstrapData(
     val isRecommendationsFallback: Boolean = true
 )
 
-data class BecauseYouLikeData(
-    val podcasts: List<Podcast> = emptyList(),
-    val episodes: List<Episode> = emptyList()
-)
+data class BecauseYouLikeData(val podcasts: List<Podcast> = emptyList(), val episodes: List<Episode> = emptyList())

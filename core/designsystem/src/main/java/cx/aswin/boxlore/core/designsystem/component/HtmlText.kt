@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.core.designsystem.component
 
-import android.text.Html
-import android.text.method.LinkMovementMethod
 import android.util.TypedValue
 import android.widget.TextView
 import androidx.compose.material3.LocalContentColor
@@ -15,7 +13,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
 import cx.aswin.boxlore.core.designsystem.theme.LocalFontRoundness

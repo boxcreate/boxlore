@@ -53,12 +53,7 @@ internal object GrowthSessionAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingAbandoned(
-        lastStep: String,
-        flowType: String,
-        timeSpentSeconds: Int? = null,
-        subscribedCount: Int? = null,
-    ) {
+    fun trackOnboardingAbandoned(lastStep: String, flowType: String, timeSpentSeconds: Int? = null, subscribedCount: Int? = null,) {
         AnalyticsEmit.event(
             "onboarding_abandoned",
             buildMap {
@@ -70,12 +65,7 @@ internal object GrowthSessionAnalyticsTracks {
         )
     }
 
-    fun trackSessionRestorePrompt(
-        action: String,
-        episodeId: String? = null,
-        podcastId: String? = null,
-        positionSeconds: Float? = null,
-    ) {
+    fun trackSessionRestorePrompt(action: String, episodeId: String? = null, podcastId: String? = null, positionSeconds: Float? = null,) {
         AnalyticsEmit.event(
             "session_restore_prompt",
             buildMap {
@@ -87,10 +77,7 @@ internal object GrowthSessionAnalyticsTracks {
         )
     }
 
-    fun trackLaunchPersonEnrichment(
-        onboardingStatus: String? = null,
-        subscriptionCountBucket: String? = null,
-    ) {
+    fun trackLaunchPersonEnrichment(onboardingStatus: String? = null, subscriptionCountBucket: String? = null,) {
         if (onboardingStatus == null && subscriptionCountBucket == null) return
         AnalyticsEmit.personSet(
             buildMap {

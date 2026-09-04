@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.core.testing.architecture
 
+import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.io.File
 
 /**
  * CSV ↔ [AnalyticsGlossary] allowlist parity and emission/sdk_backed coverage inventory.
@@ -56,7 +56,7 @@ class GlossaryCoverageGuardTest {
                     mode.startsWith("emission:") ||
                         mode.startsWith("sdk_backed:") ||
                         mode == "person_props_only"
-                )
+                    )
             }
         assertTrue(
             invalid.isEmpty(),
@@ -100,10 +100,7 @@ class GlossaryCoverageGuardTest {
         return phaseAUnionB + phaseC
     }
 
-    private fun extractSetLiteral(
-        text: String,
-        marker: String,
-    ): Set<String> {
+    private fun extractSetLiteral(text: String, marker: String,): Set<String> {
         val idx = text.indexOf(marker)
         if (idx < 0) return emptySet()
         val after = text.substring(idx)

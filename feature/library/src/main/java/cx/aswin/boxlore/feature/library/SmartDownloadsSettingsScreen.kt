@@ -1,45 +1,42 @@
 package cx.aswin.boxlore.feature.library
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.lerp
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.launch
 
@@ -268,7 +265,9 @@ fun SmartDownloadsSettingsScreen(
                                                     modifier = Modifier.size(FilterChipDefaults.IconSize)
                                                 )
                                             }
-                                        } else null
+                                        } else {
+                                            null
+                                        }
                                     )
                                 }
                             }
@@ -317,7 +316,9 @@ fun SmartDownloadsSettingsScreen(
                                                     modifier = Modifier.size(FilterChipDefaults.IconSize)
                                                 )
                                             }
-                                        } else null
+                                        } else {
+                                            null
+                                        }
                                     )
                                 }
                             }
@@ -539,7 +540,9 @@ fun SmartDownloadsSettingsScreen(
                                                 modifier = Modifier.size(FilterChipDefaults.IconSize)
                                             )
                                         }
-                                    } else null
+                                    } else {
+                                        null
+                                    }
                                 )
                             }
                         }

@@ -2,12 +2,12 @@ package cx.aswin.boxlore.core.ranking
 
 import android.content.Context
 import androidx.room.withTransaction
+import cx.aswin.boxlore.core.model.PodcastGenres
+import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
 import cx.aswin.boxlore.core.ranking.database.AdaptiveModelEntity
 import cx.aswin.boxlore.core.ranking.database.AdaptiveRankingDatabase
 import cx.aswin.boxlore.core.ranking.database.PreferenceFacetEntity
 import cx.aswin.boxlore.core.ranking.database.RankingExposureEntity
-import cx.aswin.boxlore.core.model.PodcastGenres
-import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -58,10 +58,7 @@ data class LearnerExposureDebug(
     val resolved: Boolean,
 )
 
-data class LearnerFeatureWeightDebug(
-    val slot: FeatureSlot,
-    val weight: Double,
-)
+data class LearnerFeatureWeightDebug(val slot: FeatureSlot, val weight: Double,)
 
 data class LearnerInspectorSnapshot(
     val objectives: List<RankingDebugSnapshot>,
@@ -74,15 +71,9 @@ data class LearnerInspectorSnapshot(
     val capturedAt: Long,
 )
 
-data class RankingScoreInput(
-    val features: RankingFeatures,
-    val priorScore: Double,
-)
+data class RankingScoreInput(val features: RankingFeatures, val priorScore: Double,)
 
-data class PreferenceFacetKey(
-    val type: PreferenceFacetType,
-    val key: String,
-)
+data class PreferenceFacetKey(val type: PreferenceFacetType, val key: String,)
 
 data class AdaptiveRankingBackup(
     val version: Int = 1,
@@ -99,25 +90,16 @@ class AdaptiveRankingRepository private constructor(
     private val objectiveLocks = ConcurrentHashMap<RankingObjective, Mutex>()
     private val exposureInsertCount = AtomicLong()
 
-    suspend fun score(
-        objective: RankingObjective,
-        features: RankingFeatures,
-        priorScore: Double,
-    ): RankingScore {
-        return objectiveLock(objective).withLock {
-            model.score(
-                objective = objective,
-                features = features,
-                priorScore = priorScore,
-                state = loadState(objective),
-            )
-        }
+    suspend fun score(objective: RankingObjective, features: RankingFeatures, priorScore: Double,): RankingScore = objectiveLock(objective).withLock {
+        model.score(
+            objective = objective,
+            features = features,
+            priorScore = priorScore,
+            state = loadState(objective),
+        )
     }
 
-    suspend fun scoreBatch(
-        objective: RankingObjective,
-        inputs: List<RankingScoreInput>,
-    ): List<RankingScore> {
+    suspend fun scoreBatch(objective: RankingObjective, inputs: List<RankingScoreInput>,): List<RankingScore> {
         if (inputs.isEmpty()) return emptyList()
         return objectiveLock(objective).withLock {
             val state = loadState(objective)
@@ -192,10 +174,7 @@ class AdaptiveRankingRepository private constructor(
             )
         }.getOrNull() ?: return false
         return objectiveLock(objective).withLock {
-            data class ResolveResult(
-                val previous: AdaptiveModelState,
-                val updated: AdaptiveModelState,
-            )
+            data class ResolveResult(val previous: AdaptiveModelState, val updated: AdaptiveModelState,)
             val result = database.withTransaction {
                 val changed = dao.resolveExposure(
                     exposureId = exposureId,
@@ -259,11 +238,7 @@ class AdaptiveRankingRepository private constructor(
         return resolveExposure(exposure.exposureId, reward, listenSeconds, resolvedAt)
     }
 
-    suspend fun facetAffinity(
-        type: PreferenceFacetType,
-        key: String,
-        now: Long = System.currentTimeMillis(),
-    ): Double {
+    suspend fun facetAffinity(type: PreferenceFacetType, key: String, now: Long = System.currentTimeMillis(),): Double {
         val normalizedKey = key.normalizedFacetKey()
         if (normalizedKey.isEmpty()) return 0.0
         return dao.getFacet(type.name, normalizedKey)
@@ -272,10 +247,7 @@ class AdaptiveRankingRepository private constructor(
             ?: 0.0
     }
 
-    suspend fun facetAffinities(
-        keys: Set<PreferenceFacetKey>,
-        now: Long = System.currentTimeMillis(),
-    ): Map<PreferenceFacetKey, Double> {
+    suspend fun facetAffinities(keys: Set<PreferenceFacetKey>, now: Long = System.currentTimeMillis(),): Map<PreferenceFacetKey, Double> {
         if (keys.isEmpty()) return emptyMap()
         val stored = dao.getAllFacets().associateBy { entity ->
             entity.facetType to entity.facetKey
@@ -292,9 +264,7 @@ class AdaptiveRankingRepository private constructor(
      * Returns only a bounded, decayed genre summary suitable for personalization requests.
      * Stored facet evidence and the underlying behavioral timeline never leave this repository.
      */
-    suspend fun genreAffinities(
-        now: Long = System.currentTimeMillis(),
-    ): Map<String, Double> {
+    suspend fun genreAffinities(now: Long = System.currentTimeMillis(),): Map<String, Double> {
         val aggregate = mutableMapOf<String, Double>()
         dao.getFacetsByType(PreferenceFacetType.GENRE.name).forEach { entity ->
             val genre = PodcastGenres.canonicalize(entity.facetKey) ?: return@forEach
@@ -310,12 +280,7 @@ class AdaptiveRankingRepository private constructor(
         }.toMap()
     }
 
-    suspend fun updateFacet(
-        type: PreferenceFacetType,
-        key: String,
-        reward: Double,
-        now: Long = System.currentTimeMillis(),
-    ) {
+    suspend fun updateFacet(type: PreferenceFacetType, key: String, reward: Double, now: Long = System.currentTimeMillis(),) {
         // Placeholder genres like "Podcast" are missing-category defaults, not taste.
         val normalizedKey = when (type) {
             PreferenceFacetType.GENRE -> PodcastGenres.canonicalize(key) ?: return
@@ -353,10 +318,7 @@ class AdaptiveRankingRepository private constructor(
     }
 
     /** Keeps learned show affinity when a legacy `rss:` subscription adopts its PI identity. */
-    suspend fun migrateShowFacet(
-        oldPodcastId: String,
-        newPodcastId: String,
-    ) {
+    suspend fun migrateShowFacet(oldPodcastId: String, newPodcastId: String,) {
         val oldKey = oldPodcastId.normalizedFacetKey()
         val newKey = newPodcastId.normalizedFacetKey()
         if (oldKey.isEmpty() || newKey.isEmpty() || oldKey == newKey) return
@@ -367,11 +329,11 @@ class AdaptiveRankingRepository private constructor(
                 oldFacetType = PreferenceFacetType.SHOW.name,
                 oldFacetKey = oldKey,
                 replacement =
-                    ShowFacetMigrationLogic.merge(
-                        old = old,
-                        existingTarget = existingTarget,
-                        newPodcastId = newKey,
-                    ),
+                ShowFacetMigrationLogic.merge(
+                    old = old,
+                    existingTarget = existingTarget,
+                    newPodcastId = newKey,
+                ),
             )
         }
     }
@@ -466,9 +428,7 @@ class AdaptiveRankingRepository private constructor(
     /**
      * Rich local-only snapshot for the debug inspector. Never leave the device.
      */
-    suspend fun learnerInspectorSnapshot(
-        now: Long = System.currentTimeMillis(),
-    ): LearnerInspectorSnapshot = withContext(Dispatchers.Default) {
+    suspend fun learnerInspectorSnapshot(now: Long = System.currentTimeMillis(),): LearnerInspectorSnapshot = withContext(Dispatchers.Default) {
         pruneNonCanonicalGenreFacets()
         val objectives = RankingObjective.entries.map { debugSnapshot(it) }
         val telemetry = aggregateTelemetry()
@@ -535,30 +495,26 @@ class AdaptiveRankingRepository private constructor(
         )
     }
 
-    suspend fun aggregateTelemetry(): List<RankingAggregateTelemetry> {
-        return RankingObjective.entries.map { objective ->
-            val state = loadState(objective)
-            RankingAggregateTelemetry(
-                objective = objective.name,
-                rankerVersion = RankingFeatureSchema.VERSION,
-                learningStage = when {
-                    state.updateCount == 0L -> "cold_start"
-                    state.updateCount < 50L -> "learning"
-                    else -> "adaptive"
-                },
-                outcomeCountBucket = state.updateCount.toOutcomeCountBucket(),
-                explorationEligible = objective.allowsExploration && state.updateCount >= 50L,
-            )
-        }
-    }
-
-    suspend fun exportBackup(): AdaptiveRankingBackup {
-        return AdaptiveRankingBackup(
-            models = dao.getAllModels(),
-            facets = dao.getAllFacets(),
-            exposures = dao.getAllExposures(),
+    suspend fun aggregateTelemetry(): List<RankingAggregateTelemetry> = RankingObjective.entries.map { objective ->
+        val state = loadState(objective)
+        RankingAggregateTelemetry(
+            objective = objective.name,
+            rankerVersion = RankingFeatureSchema.VERSION,
+            learningStage = when {
+                state.updateCount == 0L -> "cold_start"
+                state.updateCount < 50L -> "learning"
+                else -> "adaptive"
+            },
+            outcomeCountBucket = state.updateCount.toOutcomeCountBucket(),
+            explorationEligible = objective.allowsExploration && state.updateCount >= 50L,
         )
     }
+
+    suspend fun exportBackup(): AdaptiveRankingBackup = AdaptiveRankingBackup(
+        models = dao.getAllModels(),
+        facets = dao.getAllFacets(),
+        exposures = dao.getAllExposures(),
+    )
 
     suspend fun restoreBackup(backup: AdaptiveRankingBackup) {
         require(backup.version == ADAPTIVE_BACKUP_VERSION) {
@@ -613,9 +569,7 @@ class AdaptiveRankingRepository private constructor(
         dao.pruneExposuresToCount(MAX_EXPOSURES)
     }
 
-    private fun objectiveLock(objective: RankingObjective): Mutex {
-        return objectiveLocks.getOrPut(objective) { Mutex() }
-    }
+    private fun objectiveLock(objective: RankingObjective): Mutex = objectiveLocks.getOrPut(objective) { Mutex() }
 
     companion object {
         private const val ADAPTIVE_BACKUP_VERSION = 1
@@ -637,88 +591,71 @@ class AdaptiveRankingRepository private constructor(
         }
 
         /** Prefer AppContainer / SharedAppDependenciesHolder in production. */
-        fun getInstance(context: Context): AdaptiveRankingRepository {
-            return instance ?: synchronized(this) {
-                instance ?: create(context).also { instance = it }
-            }
+        fun getInstance(context: Context): AdaptiveRankingRepository = instance ?: synchronized(this) {
+            instance ?: create(context).also { instance = it }
         }
     }
 }
 
-private fun isValidBackupModel(model: AdaptiveModelEntity): Boolean {
-    return runCatching {
-        RankingObjective.valueOf(model.objective)
-        model.featureSchemaVersion == RankingFeatureSchema.VERSION &&
-            model.dimension == RankingFeatureSchema.dimension &&
-            model.updateCount >= 0L &&
-            RankingSerialization.decode(
-                model.covariance,
-                model.dimension * model.dimension,
-            ).all(Double::isFinite) &&
-            RankingSerialization.decode(
-                model.inverseCovariance,
-                model.dimension * model.dimension,
-            ).all(Double::isFinite) &&
-            RankingSerialization.decode(model.rewardVector, model.dimension).all(Double::isFinite)
-    }.getOrDefault(false)
-}
+private fun isValidBackupModel(model: AdaptiveModelEntity): Boolean = runCatching {
+    RankingObjective.valueOf(model.objective)
+    model.featureSchemaVersion == RankingFeatureSchema.VERSION &&
+        model.dimension == RankingFeatureSchema.dimension &&
+        model.updateCount >= 0L &&
+        RankingSerialization.decode(
+            model.covariance,
+            model.dimension * model.dimension,
+        ).all(Double::isFinite) &&
+        RankingSerialization.decode(
+            model.inverseCovariance,
+            model.dimension * model.dimension,
+        ).all(Double::isFinite) &&
+        RankingSerialization.decode(model.rewardVector, model.dimension).all(Double::isFinite)
+}.getOrDefault(false)
 
-private fun isValidBackupFacet(facet: PreferenceFacetEntity): Boolean {
-    return runCatching {
-        PreferenceFacetType.valueOf(facet.facetType)
-        facet.facetKey.isNotBlank() &&
-            facet.facetKey.length <= 200 &&
-            facet.positiveEvidence.isFinite() &&
-            facet.positiveEvidence >= 0.0 &&
-            facet.negativeEvidence.isFinite() &&
-            facet.negativeEvidence >= 0.0
-    }.getOrDefault(false)
-}
+private fun isValidBackupFacet(facet: PreferenceFacetEntity): Boolean = runCatching {
+    PreferenceFacetType.valueOf(facet.facetType)
+    facet.facetKey.isNotBlank() &&
+        facet.facetKey.length <= 200 &&
+        facet.positiveEvidence.isFinite() &&
+        facet.positiveEvidence >= 0.0 &&
+        facet.negativeEvidence.isFinite() &&
+        facet.negativeEvidence >= 0.0
+}.getOrDefault(false)
 
-private fun isValidBackupExposure(exposure: RankingExposureEntity): Boolean {
-    return runCatching {
-        RankingObjective.valueOf(exposure.objective)
-        RankingSurface.valueOf(exposure.surface)
-        CandidateSource.valueOf(exposure.source)
-        exposure.exposureId.isNotBlank() &&
-            exposure.episodeId.isNotBlank() &&
-            exposure.featureSchemaVersion == RankingFeatureSchema.VERSION &&
-            exposure.listenSeconds >= 0L &&
-            (exposure.reward == null || exposure.reward.isFinite()) &&
-            RankingSerialization.decode(
-                exposure.featureVector,
-                RankingFeatureSchema.dimension,
-            ).all(Double::isFinite)
-    }.getOrDefault(false)
-}
+private fun isValidBackupExposure(exposure: RankingExposureEntity): Boolean = runCatching {
+    RankingObjective.valueOf(exposure.objective)
+    RankingSurface.valueOf(exposure.surface)
+    CandidateSource.valueOf(exposure.source)
+    exposure.exposureId.isNotBlank() &&
+        exposure.episodeId.isNotBlank() &&
+        exposure.featureSchemaVersion == RankingFeatureSchema.VERSION &&
+        exposure.listenSeconds >= 0L &&
+        (exposure.reward == null || exposure.reward.isFinite()) &&
+        RankingSerialization.decode(
+            exposure.featureVector,
+            RankingFeatureSchema.dimension,
+        ).all(Double::isFinite)
+}.getOrDefault(false)
 
-private fun AdaptiveModelState.toEntity(
-    objective: RankingObjective,
-    now: Long,
-): AdaptiveModelEntity {
-    return AdaptiveModelEntity(
-        objective = objective.name,
-        featureSchemaVersion = featureSchemaVersion,
-        dimension = dimension,
-        covariance = RankingSerialization.encode(covariance),
-        inverseCovariance = RankingSerialization.encode(inverseCovariance),
-        rewardVector = RankingSerialization.encode(rewardVector),
-        updateCount = updateCount,
-        updatedAt = now,
-    )
-}
+private fun AdaptiveModelState.toEntity(objective: RankingObjective, now: Long,): AdaptiveModelEntity = AdaptiveModelEntity(
+    objective = objective.name,
+    featureSchemaVersion = featureSchemaVersion,
+    dimension = dimension,
+    covariance = RankingSerialization.encode(covariance),
+    inverseCovariance = RankingSerialization.encode(inverseCovariance),
+    rewardVector = RankingSerialization.encode(rewardVector),
+    updateCount = updateCount,
+    updatedAt = now,
+)
 
-private fun PreferenceFacetEntity.toFacet(): BayesianPreferenceFacet {
-    return BayesianPreferenceFacet(
-        positiveEvidence = positiveEvidence,
-        negativeEvidence = negativeEvidence,
-        updatedAt = updatedAt,
-    )
-}
+private fun PreferenceFacetEntity.toFacet(): BayesianPreferenceFacet = BayesianPreferenceFacet(
+    positiveEvidence = positiveEvidence,
+    negativeEvidence = negativeEvidence,
+    updatedAt = updatedAt,
+)
 
-private fun String.normalizedFacetKey(): String {
-    return trim().lowercase().replace(Regex("\\s+"), " ").take(200)
-}
+private fun String.normalizedFacetKey(): String = trim().lowercase().replace(Regex("\\s+"), " ").take(200)
 
 private fun Long.toOutcomeCountBucket(): String = when {
     this == 0L -> "0"

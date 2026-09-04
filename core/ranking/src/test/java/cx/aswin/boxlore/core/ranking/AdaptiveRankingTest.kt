@@ -164,11 +164,11 @@ class AdaptiveRankingTest {
             RankingReward.calculate(
                 RankingOutcome(
                     actions =
-                        setOf(
-                            RankingAction.LIKE,
-                            RankingAction.SUBSCRIBE,
-                            RankingAction.COMPLETE,
-                        ),
+                    setOf(
+                        RankingAction.LIKE,
+                        RankingAction.SUBSCRIBE,
+                        RankingAction.COMPLETE,
+                    ),
                     listenSeconds = 3_600,
                     durationSeconds = 3_600,
                 ),
@@ -180,10 +180,10 @@ class AdaptiveRankingTest {
             RankingReward.calculate(
                 RankingOutcome(
                     actions =
-                        setOf(
-                            RankingAction.EARLY_SKIP,
-                            RankingAction.REMOVE_AUTOFILLED,
-                        ),
+                    setOf(
+                        RankingAction.EARLY_SKIP,
+                        RankingAction.REMOVE_AUTOFILLED,
+                    ),
                 ),
             ),
             0.0,
@@ -223,17 +223,17 @@ class AdaptiveRankingTest {
         val ranked =
             DiversityReranker.rerank(
                 candidates =
-                    listOf(
-                        RankedCandidate("top", "1", "show-a", "news", 1.0),
-                        RankedCandidate("evicted", "2", "show-b", "science", 0.9),
-                        RankedCandidate("novel", "3", "show-b", "science", 0.1, isNovel = true),
-                    ),
+                listOf(
+                    RankedCandidate("top", "1", "show-a", "news", 1.0),
+                    RankedCandidate("evicted", "2", "show-b", "science", 0.9),
+                    RankedCandidate("novel", "3", "show-b", "science", 0.1, isNovel = true),
+                ),
                 policy =
-                    DiversityPolicy(
-                        limit = 2,
-                        maxPerShow = 1,
-                        reserveNovelSlot = true,
-                    ),
+                DiversityPolicy(
+                    limit = 2,
+                    maxPerShow = 1,
+                    reserveNovelSlot = true,
+                ),
             )
 
         assertEquals(listOf("top", "novel"), ranked.map(RankedCandidate<String>::value))

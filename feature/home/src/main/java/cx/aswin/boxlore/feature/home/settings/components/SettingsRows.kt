@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,9 +45,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import kotlin.math.roundToInt
 
 private val CategoryCardHeight = 104.dp
@@ -71,20 +70,20 @@ internal fun SettingsCategoryCard(
     val shape = MaterialTheme.shapes.extraLarge
     Card(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .height(CategoryCardHeight)
-                .expressiveClickable(shape = shape, onClick = onClick),
+        modifier
+            .fillMaxWidth()
+            .height(CategoryCardHeight)
+            .expressiveClickable(shape = shape, onClick = onClick),
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(horizontal = 18.dp, vertical = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SettingsIconContainer(
@@ -153,9 +152,9 @@ internal fun SettingsGroup(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.extraLarge,
             colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Column(
@@ -194,9 +193,9 @@ internal fun SettingsInfoTip(
                 imageVector = Icons.Rounded.Info,
                 contentDescription = null,
                 modifier =
-                    Modifier
-                        .padding(top = 1.dp)
-                        .size(20.dp),
+                Modifier
+                    .padding(top = 1.dp)
+                    .size(20.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
@@ -216,9 +215,9 @@ internal fun SettingsContent(
 ) {
     Column(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         content = content,
     )
 }
@@ -255,9 +254,9 @@ internal fun SettingsDurationSliderRow(
 
     Column(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(
@@ -301,11 +300,11 @@ internal fun SettingsDurationSliderRow(
             valueRange = value.range.first.toFloat()..value.range.last.toFloat(),
             steps = 0,
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .semantics {
-                        contentDescription = "$title, $valueLabel"
-                    },
+            Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = "$title, $valueLabel"
+                },
         )
     }
 }
@@ -395,10 +394,10 @@ internal fun SettingsChoiceRow(
 ) {
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier
+            .fillMaxWidth()
+            .expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SettingsRowItemGap),
     ) {
@@ -468,37 +467,37 @@ internal fun SettingsActionRow(
         }
     SettingsRowScaffold(
         text =
-            SettingsRowTextStyle(
-                title = title,
-                titleColor = accent,
-                supportingText = supportingText,
-                supportingColor =
-                    if (destructive) {
-                        MaterialTheme.colorScheme.error.copy(alpha = 0.82f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            ),
+        SettingsRowTextStyle(
+            title = title,
+            titleColor = accent,
+            supportingText = supportingText,
+            supportingColor =
+            if (destructive) {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.82f)
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        ),
         onClick = onClick,
         modifier = modifier,
         icon =
-            icon?.let {
-                SettingsRowIcon(
-                    icon = it,
-                    containerColor =
-                        if (destructive) {
-                            MaterialTheme.colorScheme.errorContainer
-                        } else {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        },
-                    contentColor =
-                        if (destructive) {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        },
-                )
-            },
+        icon?.let {
+            SettingsRowIcon(
+                icon = it,
+                containerColor =
+                if (destructive) {
+                    MaterialTheme.colorScheme.errorContainer
+                } else {
+                    MaterialTheme.colorScheme.secondaryContainer
+                },
+                contentColor =
+                if (destructive) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                },
+            )
+        },
         trailing = trailing,
     )
 }
@@ -530,12 +529,12 @@ private fun SettingsRowScaffold(
     val supportingColor = text.supportingColor.takeOrElse { MaterialTheme.colorScheme.onSurfaceVariant }
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .defaultMinSize(
-                    minHeight = if (text.supportingText != null) SettingsRowHeight else SettingsRowHeightCompact,
-                ).expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier
+            .fillMaxWidth()
+            .defaultMinSize(
+                minHeight = if (text.supportingText != null) SettingsRowHeight else SettingsRowHeightCompact,
+            ).expressiveClickable(shape = MaterialTheme.shapes.medium, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SettingsRowItemGap),
     ) {
@@ -581,9 +580,9 @@ internal fun AccentSwatchGrid(
 ) {
     Column(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         seeds.chunked(columns).forEach { rowSeeds ->
@@ -620,18 +619,18 @@ private fun AccentSwatch(
     ) {
         Surface(
             modifier =
-                Modifier
-                    .size(if (selected) 44.dp else 48.dp)
-                    .expressiveClickable(shape = androidx.compose.foundation.shape.CircleShape, onClick = onClick),
+            Modifier
+                .size(if (selected) 44.dp else 48.dp)
+                .expressiveClickable(shape = androidx.compose.foundation.shape.CircleShape, onClick = onClick),
             shape = androidx.compose.foundation.shape.CircleShape,
             color = color,
             contentColor = color.contrastColor(),
             border =
-                if (selected) {
-                    androidx.compose.foundation.BorderStroke(3.dp, ringColor)
-                } else {
-                    null
-                },
+            if (selected) {
+                androidx.compose.foundation.BorderStroke(3.dp, ringColor)
+            } else {
+                null
+            },
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (selected) {
@@ -667,9 +666,9 @@ internal fun SettingsIconContainer(
                 contentDescription = null,
                 tint = contentColor,
                 modifier =
-                    Modifier
-                        .size(size * 0.5f)
-                        .graphicsLayer(scaleX = if (mirrorIcon) -1f else 1f),
+                Modifier
+                    .size(size * 0.5f)
+                    .graphicsLayer(scaleX = if (mirrorIcon) -1f else 1f),
             )
         }
     }

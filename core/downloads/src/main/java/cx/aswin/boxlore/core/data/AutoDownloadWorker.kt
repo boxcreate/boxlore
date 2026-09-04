@@ -8,7 +8,4 @@ import androidx.work.WorkerParameters
  * [cx.aswin.boxlore.core.downloads.AutoDownloadWorker].
  */
 @Deprecated("Permanent upgrade bridge; use cx.aswin.boxlore.core.downloads.AutoDownloadWorker")
-class AutoDownloadWorker(
-    appContext: Context,
-    params: WorkerParameters,
-) : cx.aswin.boxlore.core.downloads.AutoDownloadWorker(appContext, params)
+class AutoDownloadWorker(appContext: Context, params: WorkerParameters,) : cx.aswin.boxlore.core.downloads.AutoDownloadWorker(appContext, params)

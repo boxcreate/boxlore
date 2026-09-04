@@ -1,41 +1,33 @@
 package cx.aswin.boxlore.ui.announcement
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
-internal data class BodyBlock(
-    val text: AnnotatedString,
-    val isBullet: Boolean,
-    val isSpacer: Boolean = false,
-)
+internal data class BodyBlock(val text: AnnotatedString, val isBullet: Boolean, val isSpacer: Boolean = false,)
 
 /** Parses bold (`**…**`) and italic (`*…*`) markers into an [AnnotatedString]. */
-internal fun parseSimpleMarkdownInline(text: String): AnnotatedString {
-    return buildAnnotatedString {
-        var currentIndex = 0
-        val regex = Regex("\\*\\*(.*?)\\*\\*|\\*(.*?)\\*")
-        val matches = regex.findAll(text)
-        for (match in matches) {
-            append(text.substring(currentIndex, match.range.first))
-            if (match.groups[1] != null) {
-                withStyle(SpanStyle(fontWeight = GoogleSansWeight.bold)) {
-                    append(match.groupValues[1])
-                }
-            } else if (match.groups[2] != null) {
-                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                    append(match.groupValues[2])
-                }
+internal fun parseSimpleMarkdownInline(text: String): AnnotatedString = buildAnnotatedString {
+    var currentIndex = 0
+    val regex = Regex("\\*\\*(.*?)\\*\\*|\\*(.*?)\\*")
+    val matches = regex.findAll(text)
+    for (match in matches) {
+        append(text.substring(currentIndex, match.range.first))
+        if (match.groups[1] != null) {
+            withStyle(SpanStyle(fontWeight = GoogleSansWeight.bold)) {
+                append(match.groupValues[1])
             }
-            currentIndex = match.range.last + 1
+        } else if (match.groups[2] != null) {
+            withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                append(match.groupValues[2])
+            }
         }
-        append(text.substring(currentIndex))
+        currentIndex = match.range.last + 1
     }
+    append(text.substring(currentIndex))
 }
 
 /** Splits announcement body into paragraphs, bullets, and blank-line spacers. */

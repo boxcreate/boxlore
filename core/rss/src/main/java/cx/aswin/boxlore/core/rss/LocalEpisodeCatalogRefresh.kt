@@ -20,10 +20,7 @@ internal data class LocalCatalogRefreshDeps(
     val megaGetGate: Semaphore,
 )
 
-internal suspend fun refreshLocalCatalogLocked(
-    deps: LocalCatalogRefreshDeps,
-    request: RefreshRequest,
-): RefreshOutcome {
+internal suspend fun refreshLocalCatalogLocked(deps: LocalCatalogRefreshDeps, request: RefreshRequest,): RefreshOutcome {
     if (request.podcastIndexId.isBlank() || request.podcastIndexId.startsWith("rss:")) {
         return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
     }
@@ -47,11 +44,7 @@ internal suspend fun refreshLocalCatalogLocked(
     return fetchAndPersist(deps, request, url, existing)
 }
 
-private suspend fun publisherFeedUnchanged(
-    deps: LocalCatalogRefreshDeps,
-    podcastId: String,
-    url: String,
-): Boolean {
+private suspend fun publisherFeedUnchanged(deps: LocalCatalogRefreshDeps, podcastId: String, url: String,): Boolean {
     val existing = deps.dao.getFeed(podcastId) ?: return false
     if (!LocalCatalogReadyLogic.isReady(existing)) return false
     if (existing.feedEtag.isNullOrBlank() && existing.feedLastModified.isNullOrBlank()) {
@@ -71,8 +64,7 @@ private suspend fun publisherFeedUnchanged(
     }
 }
 
-internal fun shouldLoadPiBaseline(existing: LocalEpisodeFeedEntity?): Boolean =
-    existing == null || !LocalCatalogReadyLogic.isReady(existing)
+internal fun shouldLoadPiBaseline(existing: LocalEpisodeFeedEntity?): Boolean = existing == null || !LocalCatalogReadyLogic.isReady(existing)
 
 internal fun shouldSkipQuiet(existing: LocalEpisodeFeedEntity?): Boolean {
     if (existing == null) return false
@@ -91,30 +83,29 @@ private suspend fun fetchAndPersist(
     request: RefreshRequest,
     url: String,
     existing: LocalEpisodeFeedEntity?,
-): RefreshOutcome =
-    try {
-        deps.megaGetGate.withPermit {
-            val fetched = deps.feedClient.fetch(url)
-            val rssNamespaceId = RssIdGenerator.podcastId(fetched.finalUrl)
-            val parsed =
-                deps.feedClient.parse(
-                    feedUrl = fetched.finalUrl,
-                    bytes = fetched.body,
-                    podcastId = rssNamespaceId,
-                )
-            val baseline =
-                if (shouldLoadPiBaseline(existing)) {
-                    request.loadPiBaseline?.invoke()
-                } else {
-                    null
-                }
-            persistParsed(deps, request, existing, fetched, rssNamespaceId, parsed, baseline)
-        }
-    } catch (error: CancellationException) {
-        throw error
-    } catch (_: Exception) {
-        RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
+): RefreshOutcome = try {
+    deps.megaGetGate.withPermit {
+        val fetched = deps.feedClient.fetch(url)
+        val rssNamespaceId = RssIdGenerator.podcastId(fetched.finalUrl)
+        val parsed =
+            deps.feedClient.parse(
+                feedUrl = fetched.finalUrl,
+                bytes = fetched.body,
+                podcastId = rssNamespaceId,
+            )
+        val baseline =
+            if (shouldLoadPiBaseline(existing)) {
+                request.loadPiBaseline?.invoke()
+            } else {
+                null
+            }
+        persistParsed(deps, request, existing, fetched, rssNamespaceId, parsed, baseline)
     }
+} catch (error: CancellationException) {
+    throw error
+} catch (_: Exception) {
+    RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
+}
 
 private suspend fun persistParsed(
     deps: LocalCatalogRefreshDeps,

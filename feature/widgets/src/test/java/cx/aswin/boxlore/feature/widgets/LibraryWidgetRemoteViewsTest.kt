@@ -24,25 +24,25 @@ class LibraryWidgetSnapshotStoreTest {
         val snapshot =
             LibraryWidgetSnapshot(
                 subscriptions =
-                    listOf(
-                        WidgetShowRow(
-                            podcastId = "p1",
-                            title = "Show",
-                            subtitle = "Artist",
-                            deepLinkUri = "boxlore://podcast/p1",
-                            isNew = true,
-                        ),
+                listOf(
+                    WidgetShowRow(
+                        podcastId = "p1",
+                        title = "Show",
+                        subtitle = "Artist",
+                        deepLinkUri = "boxlore://podcast/p1",
+                        isNew = true,
                     ),
+                ),
                 newEpisodes =
-                    listOf(
-                        WidgetEpisodeRow(
-                            episodeId = "e1",
-                            episodeTitle = "Episode",
-                            podcastId = "p1",
-                            podcastTitle = "Show",
-                            deepLinkUri = "boxlore://episode/e1",
-                        ),
+                listOf(
+                    WidgetEpisodeRow(
+                        episodeId = "e1",
+                        episodeTitle = "Episode",
+                        podcastId = "p1",
+                        podcastTitle = "Show",
+                        deepLinkUri = "boxlore://episode/e1",
                     ),
+                ),
                 updatedAtMs = 42L,
             )
         store.write(snapshot)
@@ -100,18 +100,18 @@ class LibraryWidgetRemoteViewsTest {
                 context = context,
                 appWidgetId = 2,
                 snapshot =
-                    LibraryWidgetSnapshot(
-                        newEpisodes =
-                            listOf(
-                                WidgetEpisodeRow(
-                                    episodeId = "e1",
-                                    episodeTitle = "Episode",
-                                    podcastId = "p1",
-                                    podcastTitle = "Show",
-                                    deepLinkUri = "boxlore://episode/e1",
-                                ),
-                            ),
+                LibraryWidgetSnapshot(
+                    newEpisodes =
+                    listOf(
+                        WidgetEpisodeRow(
+                            episodeId = "e1",
+                            episodeTitle = "Episode",
+                            podcastId = "p1",
+                            podcastTitle = "Show",
+                            deepLinkUri = "boxlore://episode/e1",
+                        ),
                     ),
+                ),
                 kind = LibraryWidgetKind.NEW_EPISODES,
             )
         assertEquals(R.layout.library_widget_list, views.layoutId)
@@ -125,17 +125,17 @@ class LibraryWidgetRemoteViewsTest {
                 context = context,
                 appWidgetId = 3,
                 snapshot =
-                    LibraryWidgetSnapshot(
-                        subscriptions =
-                            listOf(
-                                WidgetShowRow(
-                                    podcastId = "p1",
-                                    title = "A show with a long title",
-                                    subtitle = "Publisher",
-                                    deepLinkUri = "boxlore://podcast/p1",
-                                ),
-                            ),
+                LibraryWidgetSnapshot(
+                    subscriptions =
+                    listOf(
+                        WidgetShowRow(
+                            podcastId = "p1",
+                            title = "A show with a long title",
+                            subtitle = "Publisher",
+                            deepLinkUri = "boxlore://podcast/p1",
+                        ),
                     ),
+                ),
                 kind = LibraryWidgetKind.SUBSCRIPTIONS,
             )
         val root = views.apply(context, FrameLayout(context))
@@ -160,26 +160,26 @@ class LibraryWidgetRemoteViewsTest {
         store.write(
             LibraryWidgetSnapshot(
                 subscriptions =
-                    listOf(
-                        WidgetShowRow(
-                            podcastId = "p1",
-                            title = "A subscription title that remains on one line",
-                            subtitle = "Publisher",
-                            deepLinkUri = "boxlore://podcast/p1",
-                        ),
+                listOf(
+                    WidgetShowRow(
+                        podcastId = "p1",
+                        title = "A subscription title that remains on one line",
+                        subtitle = "Publisher",
+                        deepLinkUri = "boxlore://podcast/p1",
                     ),
+                ),
                 newEpisodes =
-                    listOf(
-                        WidgetEpisodeRow(
-                            episodeId = "e1",
-                            episodeTitle =
-                                "An exceptionally long episode title that needs a second line " +
-                                    "before it is truncated",
-                            podcastId = "p1",
-                            podcastTitle = "A show name",
-                            deepLinkUri = "boxlore://episode/e1",
-                        ),
+                listOf(
+                    WidgetEpisodeRow(
+                        episodeId = "e1",
+                        episodeTitle =
+                        "An exceptionally long episode title that needs a second line " +
+                            "before it is truncated",
+                        podcastId = "p1",
+                        podcastTitle = "A show name",
+                        deepLinkUri = "boxlore://episode/e1",
                     ),
+                ),
             ),
         )
 

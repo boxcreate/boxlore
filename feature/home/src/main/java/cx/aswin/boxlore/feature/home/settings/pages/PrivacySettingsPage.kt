@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,9 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.home.settings.components.SettingsGroup
@@ -78,16 +76,16 @@ internal fun PrivacySettingsPage(
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(
                         text =
-                            "Analytics can suggest a rough sketch (rough place, device, podcast taste) — " +
-                                "never a precise profile, and never age or gender. We don’t ask for name or " +
-                                "email, and there’s no account; your library stays on this device.",
+                        "Analytics can suggest a rough sketch (rough place, device, podcast taste) — " +
+                            "never a precise profile, and never age or gender. We don’t ask for name or " +
+                            "email, and there’s no account; your library stays on this device.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text =
-                            "The only personal details that show up are ones you type into search or " +
-                                "AI chat. Please don’t.",
+                        "The only personal details that show up are ones you type into search or " +
+                            "AI chat. Please don’t.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -105,16 +103,16 @@ internal fun PrivacySettingsPage(
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Analytics,
                 collected =
-                    "Screen opens, feature taps, settings changes, and rough time spent. " +
-                        "Things like home carousel swipes, explore searches, library visits, " +
-                        "settings opens, mini-player taps — and a few more of that kind.",
+                "Screen opens, feature taps, settings changes, and rough time spent. " +
+                    "Things like home carousel swipes, explore searches, library visits, " +
+                    "settings opens, mini-player taps — and a few more of that kind.",
                 reason =
-                    "So we can see how many people are actually using boxlore, which parts feel alive, " +
-                        "and which ones flop — so we can make better product calls. " +
-                        "And honestly, so we can watch the charts and feel happy that people are using something we built.",
+                "So we can see how many people are actually using boxlore, which parts feel alive, " +
+                    "and which ones flop — so we can make better product calls. " +
+                    "And honestly, so we can watch the charts and feel happy that people are using something we built.",
                 example =
-                    "Earlier builds had a Radio feature. Usage showed almost nobody used it, " +
-                        "so we removed it instead of keeping dead weight in the app.",
+                "Earlier builds had a Radio feature. Usage showed almost nobody used it, " +
+                    "so we removed it instead of keeping dead weight in the app.",
             )
         }
 
@@ -122,20 +120,20 @@ internal fun PrivacySettingsPage(
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Search,
                 collected =
-                    "Search queries and what the app returns, plus AI onboarding chat text. " +
-                        "AI onboarding runs on Groq using $GroqOnboardingModel.",
+                "Search queries and what the app returns, plus AI onboarding chat text. " +
+                    "AI onboarding runs on Groq using $GroqOnboardingModel.",
                 reason =
-                    "Podcast Index and Apple’s APIs lean hard on exact-word matching. " +
-                        "Search quality is one of the biggest pain points we’re trying to fix, " +
-                        "so seeing real queries and responses is critical. " +
-                        "Same for AI onboarding — we need to know whether prompts are understood " +
-                        "and answers stay relevant.",
+                "Podcast Index and Apple’s APIs lean hard on exact-word matching. " +
+                    "Search quality is one of the biggest pain points we’re trying to fix, " +
+                    "so seeing real queries and responses is critical. " +
+                    "Same for AI onboarding — we need to know whether prompts are understood " +
+                    "and answers stay relevant.",
                 example =
-                    "A lot of people typed real podcast names and treated the AI like a search box. " +
-                        "The model kept asking generic taste questions instead of helping. " +
-                        "So we added a layer that checks if the text is basically a show name, " +
-                        "validates it against the chat context, and offers “use search instead” with that title " +
-                        "so you can subscribe — while the AI still uses it as a taste baseline and the chat continues.",
+                "A lot of people typed real podcast names and treated the AI like a search box. " +
+                    "The model kept asking generic taste questions instead of helping. " +
+                    "So we added a layer that checks if the text is basically a show name, " +
+                    "validates it against the chat context, and offers “use search instead” with that title " +
+                    "so you can subscribe — while the AI still uses it as a taste baseline and the chat continues.",
             )
         }
 
@@ -143,12 +141,12 @@ internal fun PrivacySettingsPage(
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Podcasts,
                 collected =
-                    "Podcast and episode details, playback progress, likes, subscriptions, downloads, " +
-                        "and related listening signals.",
+                "Podcast and episode details, playback progress, likes, subscriptions, downloads, " +
+                    "and related listening signals.",
                 reason =
-                    "Podcast Index charts aren’t great for this, and Apple charts don’t really give us " +
-                        "the play-level signal we need. We use this to understand listening activity, " +
-                        "and to build community charts that are native to boxlore.",
+                "Podcast Index charts aren’t great for this, and Apple charts don’t really give us " +
+                    "the play-level signal we need. We use this to understand listening activity, " +
+                    "and to build community charts that are native to boxlore.",
                 example = null,
             )
         }
@@ -158,8 +156,8 @@ internal fun PrivacySettingsPage(
                 icon = Icons.Rounded.Devices,
                 collected = "App version, OS, device details, local hour, and your analytics ID.",
                 reason =
-                    "We don’t really need this for product decisions — PostHog tracks it by default, " +
-                        "and we don’t currently have a clean way to turn that part off.",
+                "We don’t really need this for product decisions — PostHog tracks it by default, " +
+                    "and we don’t currently have a clean way to turn that part off.",
                 example = null,
             )
         }
@@ -176,16 +174,16 @@ internal fun PrivacySettingsPage(
         SettingsGroup(
             title = "On-device recommendations",
             footer =
-                "Your learned taste profile and ranking model stay on this device. " +
-                    "They are not uploaded. JSON backups you create include this state so an " +
-                    "imported install can continue with the same learning.",
+            "Your learned taste profile and ranking model stay on this device. " +
+                "They are not uploaded. JSON backups you create include this state so an " +
+                "imported install can continue with the same learning.",
         ) {
             SettingsContent {
                 AnalyticsControlCard(
                     title = "Reset recommendations",
                     body =
-                        "Forget inferred tastes and start learning again. " +
-                            "This does not remove subscriptions, downloads, likes, or listening history.",
+                    "Forget inferred tastes and start learning again. " +
+                        "This does not remove subscriptions, downloads, likes, or listening history.",
                     icon = Icons.Rounded.Refresh,
                     destructive = false,
                     actionLabel = "Reset",
@@ -198,9 +196,9 @@ internal fun PrivacySettingsPage(
         SettingsGroup(
             title = "Your analytics ID",
             footer =
-                "Analytics starts with the app and there’s no in-app opt-out. " +
-                    "These actions only touch PostHog — not your library, downloads, or data " +
-                    "sent for recommendations / transcripts.",
+            "Analytics starts with the app and there’s no in-app opt-out. " +
+                "These actions only touch PostHog — not your library, downloads, or data " +
+                "sent for recommendations / transcripts.",
         ) {
             SettingsContent {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -224,19 +222,19 @@ internal fun PrivacySettingsPage(
                             actions.onDeletionExpandedChange(!isDeletionExpanded)
                         },
                         expansion =
-                            AnalyticsCardExpansion(
-                                expanded = isDeletionExpanded,
-                                onToggleExpand = {
-                                    actions.onDeletionExpandedChange(!isDeletionExpanded)
-                                },
-                                content = {
-                                    DeletionRequestPanel(
-                                        deletionId = deletionId,
-                                        onCopyDeletionId = actions.onCopyDeletionId,
-                                        onEmailDeletionRequest = actions.onEmailDeletionRequest,
-                                    )
-                                },
-                            ),
+                        AnalyticsCardExpansion(
+                            expanded = isDeletionExpanded,
+                            onToggleExpand = {
+                                actions.onDeletionExpandedChange(!isDeletionExpanded)
+                            },
+                            content = {
+                                DeletionRequestPanel(
+                                    deletionId = deletionId,
+                                    onCopyDeletionId = actions.onCopyDeletionId,
+                                    onEmailDeletionRequest = actions.onEmailDeletionRequest,
+                                )
+                            },
+                        ),
                     )
                 }
             }
@@ -283,8 +281,8 @@ private fun PromiseCard() {
 
             Text(
                 text =
-                    "boxlore isn’t meant for monetary gain. It’s a few friends finishing a childhood dream — " +
-                        "watching code turn into magic on screens.",
+                "boxlore isn’t meant for monetary gain. It’s a few friends finishing a childhood dream — " +
+                    "watching code turn into magic on screens.",
                 style = MaterialTheme.typography.bodyLarge,
             )
 
@@ -300,19 +298,19 @@ private fun PromiseCard() {
                 )
                 PromisePillRow(
                     pills =
-                        listOf(
-                            "Never sold",
-                            "Never for ads",
-                            "No ads in boxlore",
-                            "Usage only",
-                        ),
+                    listOf(
+                        "Never sold",
+                        "Never for ads",
+                        "No ads in boxlore",
+                        "Usage only",
+                    ),
                 )
                 Text(
                     text =
-                        "Whatever we collect will never be sold, never used to push ads, " +
-                            "and never used for the other creepy things people do with data. " +
-                            "It’s only to understand how many people use the app, how they use it, " +
-                            "and which features work or don’t.",
+                    "Whatever we collect will never be sold, never used to push ads, " +
+                        "and never used for the other creepy things people do with data. " +
+                        "It’s only to understand how many people use the app, how they use it, " +
+                        "and which features work or don’t.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.92f),
                 )
@@ -412,9 +410,9 @@ private fun ExampleCallout(text: String) {
                 imageVector = Icons.Rounded.Lightbulb,
                 contentDescription = null,
                 modifier =
-                    Modifier
-                        .padding(top = 2.dp)
-                        .size(20.dp),
+                Modifier
+                    .padding(top = 2.dp)
+                    .size(20.dp),
                 tint = MaterialTheme.colorScheme.tertiary,
             )
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -447,22 +445,21 @@ private data class AnalyticsCardColors(
 )
 
 @Composable
-private fun analyticsCardColors(destructive: Boolean): AnalyticsCardColors =
-    if (destructive) {
-        AnalyticsCardColors(
-            container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
-            onContainer = MaterialTheme.colorScheme.onErrorContainer,
-            iconContainer = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
-            iconContent = MaterialTheme.colorScheme.error,
-        )
-    } else {
-        AnalyticsCardColors(
-            container = MaterialTheme.colorScheme.surface,
-            onContainer = MaterialTheme.colorScheme.onSurface,
-            iconContainer = MaterialTheme.colorScheme.secondaryContainer,
-            iconContent = MaterialTheme.colorScheme.onSecondaryContainer,
-        )
-    }
+private fun analyticsCardColors(destructive: Boolean): AnalyticsCardColors = if (destructive) {
+    AnalyticsCardColors(
+        container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
+        onContainer = MaterialTheme.colorScheme.onErrorContainer,
+        iconContainer = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
+        iconContent = MaterialTheme.colorScheme.error,
+    )
+} else {
+    AnalyticsCardColors(
+        container = MaterialTheme.colorScheme.surface,
+        onContainer = MaterialTheme.colorScheme.onSurface,
+        iconContainer = MaterialTheme.colorScheme.secondaryContainer,
+        iconContent = MaterialTheme.colorScheme.onSecondaryContainer,
+    )
+}
 
 @Composable
 private fun AnalyticsCardActionButton(
@@ -474,10 +471,10 @@ private fun AnalyticsCardActionButton(
         Button(
             onClick = onAction,
             colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
-                ),
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            ),
         ) {
             Text(actionLabel)
         }
@@ -536,11 +533,11 @@ private fun AnalyticsCardFooter(
         if (expansion != null) {
             Icon(
                 imageVector =
-                    if (expansion.expanded) {
-                        Icons.Rounded.KeyboardArrowUp
-                    } else {
-                        Icons.Rounded.KeyboardArrowDown
-                    },
+                if (expansion.expanded) {
+                    Icons.Rounded.KeyboardArrowUp
+                } else {
+                    Icons.Rounded.KeyboardArrowDown
+                },
                 contentDescription = null,
                 tint = onContainer.copy(alpha = 0.7f),
             )
@@ -609,12 +606,12 @@ private fun DeletionRequestPanel(
         )
         Surface(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .expressiveClickable(
-                        shape = MaterialTheme.shapes.small,
-                        onClick = onCopyDeletionId,
-                    ),
+            Modifier
+                .fillMaxWidth()
+                .expressiveClickable(
+                    shape = MaterialTheme.shapes.small,
+                    onClick = onCopyDeletionId,
+                ),
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.surface,
         ) {
@@ -644,10 +641,10 @@ private fun DeletionRequestPanel(
             onClick = onEmailDeletionRequest,
             modifier = Modifier.fillMaxWidth(),
             colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
-                ),
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            ),
         ) {
             Icon(
                 imageVector = Icons.Rounded.Email,

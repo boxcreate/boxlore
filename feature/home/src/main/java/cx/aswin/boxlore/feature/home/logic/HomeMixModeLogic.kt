@@ -12,8 +12,7 @@ enum class HomeMixMode {
         get() = name.lowercase()
 
     companion object {
-        fun fromPersistedValue(value: String): HomeMixMode =
-            entries.firstOrNull { it.analyticsValue == value } ?: DAILY
+        fun fromPersistedValue(value: String): HomeMixMode = entries.firstOrNull { it.analyticsValue == value } ?: DAILY
     }
 }
 
@@ -28,12 +27,11 @@ object HomeMixModeLogic {
     fun resolveMode(
         requested: HomeMixMode,
         canOfferOffline: Boolean,
-    ): HomeMixMode =
-        if (requested == HomeMixMode.OFFLINE && !canOfferOffline) {
-            HomeMixMode.DAILY
-        } else {
-            requested
-        }
+    ): HomeMixMode = if (requested == HomeMixMode.OFFLINE && !canOfferOffline) {
+        HomeMixMode.DAILY
+    } else {
+        requested
+    }
 
     fun visibleOfflineItems(items: List<CompletedDownloadItem>): List<CompletedDownloadItem> = items.take(HOME_ITEM_LIMIT)
 
@@ -46,9 +44,8 @@ object HomeMixModeLogic {
         mode: HomeMixMode,
         dailyEpisodes: List<Episode>,
         completedDownloads: List<CompletedDownloadItem>,
-    ): List<Episode> =
-        when (mode) {
-            HomeMixMode.DAILY -> dailyEpisodes
-            HomeMixMode.OFFLINE -> visibleOfflineItems(completedDownloads).map(CompletedDownloadItem::episode)
-        }
+    ): List<Episode> = when (mode) {
+        HomeMixMode.DAILY -> dailyEpisodes
+        HomeMixMode.OFFLINE -> visibleOfflineItems(completedDownloads).map(CompletedDownloadItem::episode)
+    }
 }

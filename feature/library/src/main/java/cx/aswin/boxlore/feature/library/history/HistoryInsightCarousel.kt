@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.history
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -31,6 +29,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningTimeBucket
 import cx.aswin.boxlore.feature.library.R
@@ -70,9 +69,9 @@ fun HistoryInsightCarousel(
         metrics.chunked(2).forEach { rowCards ->
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Max),
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 rowCards.forEach { card ->
@@ -80,9 +79,9 @@ fun HistoryInsightCarousel(
                         card = card,
                         wide = rowCards.size == 1,
                         modifier =
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                     )
                 }
             }
@@ -102,28 +101,25 @@ private fun buildInsightCards(insights: ListeningInsightSummary): List<InsightCa
 }
 
 @Composable
-private fun peakBucketLabel(insights: ListeningInsightSummary): String =
-    insights.peakBucket?.let { timeBucketLabel(it) }
-        ?: stringResource(R.string.history_waiting_for_plays)
+private fun peakBucketLabel(insights: ListeningInsightSummary): String = insights.peakBucket?.let { timeBucketLabel(it) }
+    ?: stringResource(R.string.history_waiting_for_plays)
 
-private fun peakBucketConsumedMs(insights: ListeningInsightSummary): Long =
-    when (insights.peakBucket) {
-        ListeningTimeBucket.MORNING -> insights.morningMs
-        ListeningTimeBucket.AFTERNOON -> insights.afternoonMs
-        ListeningTimeBucket.EVENING -> insights.eveningMs
-        ListeningTimeBucket.NIGHT -> insights.nightMs
-        null -> 0L
-    }
+private fun peakBucketConsumedMs(insights: ListeningInsightSummary): Long = when (insights.peakBucket) {
+    ListeningTimeBucket.MORNING -> insights.morningMs
+    ListeningTimeBucket.AFTERNOON -> insights.afternoonMs
+    ListeningTimeBucket.EVENING -> insights.eveningMs
+    ListeningTimeBucket.NIGHT -> insights.nightMs
+    null -> 0L
+}
 
 private fun peakBucketShare(
     insights: ListeningInsightSummary,
     peakConsumedMs: Long,
-): Int? =
-    if (insights.peakBucket != null && insights.totalConsumedMs > 0L) {
-        ((peakConsumedMs * 100L) / insights.totalConsumedMs).toInt().coerceIn(0, 100)
-    } else {
-        null
-    }
+): Int? = if (insights.peakBucket != null && insights.totalConsumedMs > 0L) {
+    ((peakConsumedMs * 100L) / insights.totalConsumedMs).toInt().coerceIn(0, 100)
+} else {
+    null
+}
 
 @Composable
 private fun MutableList<InsightCard>.addTopShowCard(insights: ListeningInsightSummary) {
@@ -132,17 +128,17 @@ private fun MutableList<InsightCard>.addTopShowCard(insights: ListeningInsightSu
         InsightCard.TopShow(
             name = topShow.podcastName,
             detail =
-                if (topShow.consumedMs > 0) {
-                    stringResource(
-                        R.string.history_top_show_listened,
-                        formatDuration(topShow.consumedMs),
-                    )
-                } else {
-                    stringResource(
-                        R.string.history_top_show_play_count,
-                        topShow.sessionCount,
-                    )
-                },
+            if (topShow.consumedMs > 0) {
+                stringResource(
+                    R.string.history_top_show_listened,
+                    formatDuration(topShow.consumedMs),
+                )
+            } else {
+                stringResource(
+                    R.string.history_top_show_play_count,
+                    topShow.sessionCount,
+                )
+            },
             imageUrl = topShow.podcastImageUrl,
         ),
     )
@@ -168,10 +164,10 @@ private fun MutableList<InsightCard>.addMetricCards(
             label = stringResource(R.string.history_card_completion),
             value = insights.completedCount.toString(),
             detail =
-                stringResource(
-                    R.string.history_completion_in_progress,
-                    insights.inProgressCount,
-                ),
+            stringResource(
+                R.string.history_completion_in_progress,
+                insights.inProgressCount,
+            ),
             icon = Icons.Rounded.CheckCircle,
         ),
     )
@@ -180,15 +176,15 @@ private fun MutableList<InsightCard>.addMetricCards(
             label = stringResource(R.string.history_card_window),
             value = peakLabel,
             detail =
-                when {
-                    peakShare != null && peakConsumedMs > 0L ->
-                        stringResource(
-                            R.string.history_window_share,
-                            formatDuration(peakConsumedMs),
-                            peakShare,
-                        )
-                    else -> null
-                },
+            when {
+                peakShare != null && peakConsumedMs > 0L ->
+                    stringResource(
+                        R.string.history_window_share,
+                        formatDuration(peakConsumedMs),
+                        peakShare,
+                    )
+                else -> null
+            },
             icon = Icons.Rounded.Schedule,
         ),
     )
@@ -208,10 +204,10 @@ private fun MutableList<InsightCard>.addMetricCards(
                 label = stringResource(R.string.history_card_sessions),
                 value = formatDuration(insights.averageSessionMs),
                 detail =
-                    stringResource(
-                        R.string.history_sessions_longest,
-                        formatDuration(insights.longestSessionMs),
-                    ),
+                stringResource(
+                    R.string.history_sessions_longest,
+                    formatDuration(insights.longestSessionMs),
+                ),
                 icon = Icons.Rounded.Headphones,
             ),
         )
@@ -304,11 +300,11 @@ private fun MetricValueAndDetail(card: InsightCard.Metric) {
     Text(
         text = card.value,
         style =
-            if (card.value.length > 10) {
-                MaterialTheme.typography.titleLarge
-            } else {
-                MaterialTheme.typography.headlineMedium
-            },
+        if (card.value.length > 10) {
+            MaterialTheme.typography.titleLarge
+        } else {
+            MaterialTheme.typography.headlineMedium
+        },
         fontWeight = GoogleSansWeight.bold,
         color = MaterialTheme.colorScheme.onSurface,
         maxLines = 2,
@@ -342,9 +338,9 @@ private fun TopShowCardBody(card: InsightCard.TopShow) {
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier =
-                        Modifier
-                            .size(72.dp)
-                            .clip(RoundedCornerShape(18.dp)),
+                    Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(18.dp)),
                 )
             }
             Column(

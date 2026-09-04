@@ -27,9 +27,8 @@ import kotlinx.coroutines.launch
 class BoxLoreFcmService : FirebaseMessagingService() {
     private val CHANNEL_ID = "boxlore_announcements_v2"
 
-    private fun userPreferences(): UserPreferencesRepository =
-        (application as? BoxLoreApplication)?.userPreferencesRepository
-            ?: SharedAppDependenciesHolder.require().userPreferencesRepository
+    private fun userPreferences(): UserPreferencesRepository = (application as? BoxLoreApplication)?.userPreferencesRepository
+        ?: SharedAppDependenciesHolder.require().userPreferencesRepository
 
     // Firebase Messaging still delivers rotation callbacks here; TokenWatcher migration is follow-up.
     @Suppress("DEPRECATION")
@@ -106,15 +105,15 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                         payloadEnclosureUrl = FcmPayloadParser.enclosureUrl(data),
                         payloadGuid = FcmPayloadParser.guid(data),
                         sources =
-                            NewEpisodePushHydration.Sources(
-                                subscriptionRepository = deps.subscriptionRepository,
-                                episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
-                                localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
-                                loadPiBaseline =
-                                    NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
-                                        deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
-                                    },
-                            ),
+                        NewEpisodePushHydration.Sources(
+                            subscriptionRepository = deps.subscriptionRepository,
+                            episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
+                            localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
+                            loadPiBaseline =
+                            NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
+                                deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
+                            },
+                        ),
                     )
                 } else {
                     null
@@ -244,10 +243,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         notificationManager.notify(podcastId.hashCode(), notificationBuilder.build())
     }
 
-    private fun triggerAutoDownload(
-        podcastId: String,
-        episodeId: String,
-    ) {
+    private fun triggerAutoDownload(podcastId: String, episodeId: String,) {
         try {
             android.util.Log.i(
                 "BoxLore_BackgroundTrace",
@@ -424,37 +420,31 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
     }
 
-    private data class PushChannelConfig(
-        val id: String,
-        val name: String,
-        val soundUri: Uri?,
-        val importance: Int,
-    )
+    private data class PushChannelConfig(val id: String, val name: String, val soundUri: Uri?, val importance: Int,)
 
-    private fun getPushChannelConfig(sound: String?): PushChannelConfig =
-        when (sound) {
-            "chime" ->
-                PushChannelConfig(
-                    id = "boxlore_new_episodes_v1",
-                    name = "New Episode Alerts",
-                    soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime"),
-                    importance = NotificationManager.IMPORTANCE_DEFAULT,
-                )
-            "silent" ->
-                PushChannelConfig(
-                    id = "boxlore_silent_v1",
-                    name = "Silent Notifications",
-                    soundUri = null,
-                    importance = NotificationManager.IMPORTANCE_LOW,
-                )
-            else ->
-                PushChannelConfig(
-                    id = "boxlore_announcements_v2",
-                    name = "Announcements",
-                    soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_announcement_chime"),
-                    importance = NotificationManager.IMPORTANCE_DEFAULT,
-                )
-        }
+    private fun getPushChannelConfig(sound: String?): PushChannelConfig = when (sound) {
+        "chime" ->
+            PushChannelConfig(
+                id = "boxlore_new_episodes_v1",
+                name = "New Episode Alerts",
+                soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime"),
+                importance = NotificationManager.IMPORTANCE_DEFAULT,
+            )
+        "silent" ->
+            PushChannelConfig(
+                id = "boxlore_silent_v1",
+                name = "Silent Notifications",
+                soundUri = null,
+                importance = NotificationManager.IMPORTANCE_LOW,
+            )
+        else ->
+            PushChannelConfig(
+                id = "boxlore_announcements_v2",
+                name = "Announcements",
+                soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_announcement_chime"),
+                importance = NotificationManager.IMPORTANCE_DEFAULT,
+            )
+    }
 
     private fun createPushIntent(
         route: String?,
@@ -487,10 +477,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
-    private fun loadPushImage(
-        builder: NotificationCompat.Builder,
-        imageUrl: String?,
-    ) {
+    private fun loadPushImage(builder: NotificationCompat.Builder, imageUrl: String?,) {
         if (imageUrl.isNullOrBlank()) return
         try {
             val optimizedUrl = imageUrl.optimizedImageUrl(500)

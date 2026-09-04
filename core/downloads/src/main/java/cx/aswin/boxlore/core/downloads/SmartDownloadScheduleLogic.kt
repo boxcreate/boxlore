@@ -14,21 +14,13 @@ internal object SmartDownloadScheduleLogic {
         CANCEL,
     }
 
-    fun reconcile(
-        enabledInPrefs: Boolean,
-        hasActiveScheduledWork: Boolean,
-    ): ReconcileAction =
-        when {
-            hasActiveScheduledWork && !enabledInPrefs -> ReconcileAction.ENABLE_AND_SCHEDULE
-            enabledInPrefs -> ReconcileAction.SCHEDULE
-            else -> ReconcileAction.CANCEL
-        }
+    fun reconcile(enabledInPrefs: Boolean, hasActiveScheduledWork: Boolean,): ReconcileAction = when {
+        hasActiveScheduledWork && !enabledInPrefs -> ReconcileAction.ENABLE_AND_SCHEDULE
+        enabledInPrefs -> ReconcileAction.SCHEDULE
+        else -> ReconcileAction.CANCEL
+    }
 
-    fun shouldRunSync(
-        isManual: Boolean,
-        lastSuccessfulSyncMs: Long,
-        nowMs: Long,
-    ): Boolean {
+    fun shouldRunSync(isManual: Boolean, lastSuccessfulSyncMs: Long, nowMs: Long,): Boolean {
         if (isManual || lastSuccessfulSyncMs <= 0L) return true
         if (lastSuccessfulSyncMs > nowMs) return true
         return nowMs - lastSuccessfulSyncMs >= AUTOMATIC_SYNC_INTERVAL_MS

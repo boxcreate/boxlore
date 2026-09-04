@@ -19,19 +19,12 @@ object TrackedPodcastRtdbLogic {
      * Attach RTDB `feedUrl` only when we have a Room tip the Action can seed
      * `lastRssKey` from. No tip → stay on PI `lastEpisodeId`.
      */
-    fun attachableFeedUrl(
-        feedUrl: String?,
-        latestEpisodeId: String?,
-    ): String? {
+    fun attachableFeedUrl(feedUrl: String?, latestEpisodeId: String?,): String? {
         if (latestEpisodeId.isNullOrBlank()) return null
         return httpsFeedUrl(feedUrl)
     }
 
-    fun payload(
-        title: String,
-        imageUrl: String,
-        feedUrl: String? = null,
-    ): Map<String, String> {
+    fun payload(title: String, imageUrl: String, feedUrl: String? = null,): Map<String, String> {
         val data =
             linkedMapOf(
                 "title" to title,

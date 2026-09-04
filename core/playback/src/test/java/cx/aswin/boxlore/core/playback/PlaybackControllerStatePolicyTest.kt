@@ -17,12 +17,12 @@ class PlaybackControllerStatePolicyTest {
             PlaybackControllerStatePolicy.mergeProgress(
                 previous = restoredState,
                 snapshot =
-                    PlaybackControllerStatePolicy.Snapshot(
-                        hasMedia = false,
-                        positionMs = 0L,
-                        bufferedPositionMs = 0L,
-                        durationMs = -1L,
-                    ),
+                PlaybackControllerStatePolicy.Snapshot(
+                    hasMedia = false,
+                    positionMs = 0L,
+                    bufferedPositionMs = 0L,
+                    durationMs = -1L,
+                ),
             )
 
         assertEquals(restoredState, merged)
@@ -34,12 +34,12 @@ class PlaybackControllerStatePolicyTest {
             PlaybackControllerStatePolicy.mergeProgress(
                 previous = restoredState,
                 snapshot =
-                    PlaybackControllerStatePolicy.Snapshot(
-                        hasMedia = true,
-                        positionMs = 0L,
-                        bufferedPositionMs = 0L,
-                        durationMs = -1L,
-                    ),
+                PlaybackControllerStatePolicy.Snapshot(
+                    hasMedia = true,
+                    positionMs = 0L,
+                    bufferedPositionMs = 0L,
+                    durationMs = -1L,
+                ),
             )
 
         assertEquals(3_600_000L, merged.position)
@@ -53,12 +53,12 @@ class PlaybackControllerStatePolicyTest {
             PlaybackControllerStatePolicy.mergeProgress(
                 previous = restoredState,
                 snapshot =
-                    PlaybackControllerStatePolicy.Snapshot(
-                        hasMedia = true,
-                        positionMs = 0L,
-                        bufferedPositionMs = 250_000L,
-                        durationMs = 7_300_000L,
-                    ),
+                PlaybackControllerStatePolicy.Snapshot(
+                    hasMedia = true,
+                    positionMs = 0L,
+                    bufferedPositionMs = 250_000L,
+                    durationMs = 7_300_000L,
+                ),
             )
 
         assertEquals(0L, merged.position)
@@ -72,12 +72,12 @@ class PlaybackControllerStatePolicyTest {
             PlaybackControllerStatePolicy.mergeProgress(
                 previous = restoredState,
                 snapshot =
-                    PlaybackControllerStatePolicy.Snapshot(
-                        hasMedia = true,
-                        positionMs = 3_610_000L,
-                        bufferedPositionMs = 3_720_000L,
-                        durationMs = -1L,
-                    ),
+                PlaybackControllerStatePolicy.Snapshot(
+                    hasMedia = true,
+                    positionMs = 3_610_000L,
+                    bufferedPositionMs = 3_720_000L,
+                    durationMs = -1L,
+                ),
             )
 
         assertEquals(3_610_000L, merged.position)

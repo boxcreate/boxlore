@@ -4,10 +4,7 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-internal data class RecentSectionIntentRecord(
-    val id: String,
-    val exposedAt: Long,
-)
+internal data class RecentSectionIntentRecord(val id: String, val exposedAt: Long,)
 
 internal fun pruneRecentSectionIntents(
     records: List<RecentSectionIntentRecord>,
@@ -39,10 +36,7 @@ class RecentSectionIntentStore(context: Context) {
     private val recordListType = object : TypeToken<List<RecentSectionIntentRecord>>() {}.type
 
     @Synchronized
-    fun recordVisible(
-        sectionId: String,
-        now: Long = System.currentTimeMillis(),
-    ) {
+    fun recordVisible(sectionId: String, now: Long = System.currentTimeMillis(),) {
         val normalizedId = sectionId.trim()
         if (normalizedId.isEmpty() || normalizedId.length > MAX_SECTION_ID_LENGTH) return
         val updated = pruneRecentSectionIntents(

@@ -12,6 +12,7 @@ import cx.aswin.boxlore.core.network.model.OnboardingHistoryEntry
 import cx.aswin.boxlore.core.network.model.toPodcast
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentHashMap
 
 class OnboardingViewModel(
     application: Application,
@@ -424,24 +424,22 @@ class OnboardingViewModel(
         )
     }
 
-    private fun lastStepName(step: OnboardingStep): String =
-        when (step) {
-            OnboardingStep.WELCOME -> "welcome"
-            OnboardingStep.GENRES -> "genres"
-            OnboardingStep.SUB_GENRES -> "sub_genres"
-            OnboardingStep.ACTIVITY_PICKER -> "activities"
-            OnboardingStep.LENGTH_PICKER -> "lengths"
-            OnboardingStep.SEARCH -> "search"
-            OnboardingStep.AI_ONBOARDING -> "ai_chat"
-            OnboardingStep.AI_SUGGESTIONS -> "ai_suggestions"
-        }
+    private fun lastStepName(step: OnboardingStep): String = when (step) {
+        OnboardingStep.WELCOME -> "welcome"
+        OnboardingStep.GENRES -> "genres"
+        OnboardingStep.SUB_GENRES -> "sub_genres"
+        OnboardingStep.ACTIVITY_PICKER -> "activities"
+        OnboardingStep.LENGTH_PICKER -> "lengths"
+        OnboardingStep.SEARCH -> "search"
+        OnboardingStep.AI_ONBOARDING -> "ai_chat"
+        OnboardingStep.AI_SUGGESTIONS -> "ai_suggestions"
+    }
 
-    private fun abandonFlowType(state: OnboardingUiState): String =
-        when {
-            state.reachedSuggestionsViaAiFlow || state.currentStep == OnboardingStep.AI_ONBOARDING -> "ai_chat"
-            state.reachedSuggestionsViaSearchFlow || state.currentStep == OnboardingStep.SEARCH -> "search"
-            state.reachedSuggestionsViaOpmlFlow -> "import"
-            state.currentStep == OnboardingStep.WELCOME -> "welcome"
-            else -> "manual_genre"
-        }
+    private fun abandonFlowType(state: OnboardingUiState): String = when {
+        state.reachedSuggestionsViaAiFlow || state.currentStep == OnboardingStep.AI_ONBOARDING -> "ai_chat"
+        state.reachedSuggestionsViaSearchFlow || state.currentStep == OnboardingStep.SEARCH -> "search"
+        state.reachedSuggestionsViaOpmlFlow -> "import"
+        state.currentStep == OnboardingStep.WELCOME -> "welcome"
+        else -> "manual_genre"
+    }
 }

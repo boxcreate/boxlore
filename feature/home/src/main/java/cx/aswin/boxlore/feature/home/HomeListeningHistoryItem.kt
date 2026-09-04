@@ -14,15 +14,14 @@ data class HomeListeningHistoryItem(
     val lastPlayedAt: Long,
 )
 
-internal fun ListeningHistoryEntity.toHomeListeningHistoryItem(): HomeListeningHistoryItem =
-    HomeListeningHistoryItem(
-        episodeId = episodeId,
-        podcastId = podcastId,
-        podcastName = podcastName,
-        podcastImageUrl = podcastImageUrl,
-        progressMs = progressMs,
-        durationMs = durationMs,
-        isCompleted = isCompleted,
-        isLiked = isLiked,
-        lastPlayedAt = lastPlayedAt,
-    )
+internal fun ListeningHistoryEntity.toHomeListeningHistoryItem(): HomeListeningHistoryItem = HomeListeningHistoryItem(
+    episodeId = episodeId,
+    podcastId = podcastId,
+    podcastName = podcastName,
+    podcastImageUrl = podcastImageUrl,
+    progressMs = progressMs,
+    durationMs = durationMs,
+    isCompleted = isCompleted,
+    isLiked = isLiked,
+    lastPlayedAt = lastPlayedAt,
+)

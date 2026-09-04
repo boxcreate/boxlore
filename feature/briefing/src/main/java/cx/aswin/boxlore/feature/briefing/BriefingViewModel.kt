@@ -3,23 +3,23 @@ package cx.aswin.boxlore.feature.briefing
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.playback.PlaybackRepository
-import cx.aswin.boxlore.core.playback.getSession
-import cx.aswin.boxlore.core.playback.pause
-import cx.aswin.boxlore.core.playback.resume
-import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.ChapterRepository
+import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.getSession
+import cx.aswin.boxlore.core.playback.pause
+import cx.aswin.boxlore.core.playback.resume
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import cx.aswin.boxlore.core.catalog.BuildConfig
 
 class BriefingViewModel(
     application: Application,
@@ -103,7 +103,7 @@ class BriefingViewModel(
                     briefing != null -> {
                         val briefingEpisodeId = getBriefingEpisodeId(briefing)
                         val isCurrentBriefing = playerState.currentEpisode?.id == briefingEpisodeId
-                        
+
                         val currentPos = if (isCurrentBriefing) playerState.position else (savedSession?.positionMs ?: 0L)
                         val dur = if (isCurrentBriefing) playerState.duration else (savedSession?.durationMs ?: 0L)
 
@@ -138,7 +138,7 @@ class BriefingViewModel(
             val result = podcastRepository.getBriefingMetadata(mapRegionForBriefing(region))
             if (result != null) {
                 _briefingState.value = result
-                
+
                 // Fetch saved session progress
                 val briefingEpisodeId = getBriefingEpisodeId(result)
                 _savedSession.value = playbackRepository.getSession(briefingEpisodeId)
@@ -226,9 +226,9 @@ class BriefingViewModel(
                 // Glossary canonical entry_point — keeps playback_* attributable without
                 // renaming daily_briefing_action (dashboards already use that event).
                 entryPointContext =
-                    android.os.Bundle().apply {
-                        putString("entry_point", "briefing")
-                    },
+                android.os.Bundle().apply {
+                    putString("entry_point", "briefing")
+                },
             )
         }
     }

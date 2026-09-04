@@ -154,13 +154,13 @@ class PodcastInfoViewModelLogicTest {
         val current =
             PodcastInfoUiState.Success(
                 podcast =
-                    TestFixtures
-                        .podcast(id = "p1")
-                        .copy(
-                            subscribedAt = 0L,
-                            notificationsEnabled = false,
-                            autoDownloadEnabled = false,
-                        ),
+                TestFixtures
+                    .podcast(id = "p1")
+                    .copy(
+                        subscribedAt = 0L,
+                        notificationsEnabled = false,
+                        autoDownloadEnabled = false,
+                    ),
                 episodes = emptyList(),
                 isSubscribed = false,
                 directFeedChip = DirectFeedChipState.Offer,
@@ -168,13 +168,13 @@ class PodcastInfoViewModelLogicTest {
         val staleResult =
             PodcastInfoUiState.Success(
                 podcast =
-                    TestFixtures
-                        .podcast(id = "p1")
-                        .copy(
-                            subscribedAt = 99L,
-                            notificationsEnabled = true,
-                            autoDownloadEnabled = true,
-                        ),
+                TestFixtures
+                    .podcast(id = "p1")
+                    .copy(
+                        subscribedAt = 99L,
+                        notificationsEnabled = true,
+                        autoDownloadEnabled = true,
+                    ),
                 episodes = listOf(TestFixtures.episode(id = "new")),
                 isSubscribed = true,
                 directFeedChip = DirectFeedChipState.Hidden,

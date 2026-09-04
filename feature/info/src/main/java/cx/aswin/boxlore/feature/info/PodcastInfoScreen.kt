@@ -251,8 +251,8 @@ fun PodcastInfoScreen(
     val headerTitleYPx = with(density) { (statusBarHeight + 18.dp).toPx() }
     val titleTranslationY by animateFloatAsState(
         targetValue =
-            androidx.compose.ui.util
-                .lerp(bodyTitleYPx, headerTitleYPx, scrollFraction),
+        androidx.compose.ui.util
+            .lerp(bodyTitleYPx, headerTitleYPx, scrollFraction),
         animationSpec = spring(stiffness = Spring.StiffnessMedium, dampingRatio = 0.85f),
         label = "titleY",
     )
@@ -265,15 +265,15 @@ fun PodcastInfoScreen(
     // Horizontal padding
     val titleStartPadding by animateDpAsState(
         targetValue =
-            androidx.compose.ui.unit
-                .lerp(20.dp, 56.dp, scrollFraction),
+        androidx.compose.ui.unit
+            .lerp(20.dp, 56.dp, scrollFraction),
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "titleStartPadding",
     )
     val titleEndPadding by animateDpAsState(
         targetValue =
-            androidx.compose.ui.unit
-                .lerp(20.dp, 112.dp, scrollFraction),
+        androidx.compose.ui.unit
+            .lerp(20.dp, 112.dp, scrollFraction),
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "titleEndPadding",
     )
@@ -316,39 +316,39 @@ fun PodcastInfoScreen(
                 // Blurred Background Header
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(collapsedHeaderHeight + 240.dp)
-                            .graphicsLayer {
-                                translationY = -scrollOffset * 0.5f
-                                alpha = 1f - scrollFraction
-                            },
+                    Modifier
+                        .fillMaxWidth()
+                        .height(collapsedHeaderHeight + 240.dp)
+                        .graphicsLayer {
+                            translationY = -scrollOffset * 0.5f
+                            alpha = 1f - scrollFraction
+                        },
                 ) {
                     OptimizedImage(
                         url = state.podcast.imageUrl.takeIf { it.isNotEmpty() } ?: state.podcast.fallbackImageUrl,
                         proxyWidth = 200,
                         contentDescription = null,
                         modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .alpha(0.5f)
-                                .blur(50.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded),
+                        Modifier
+                            .fillMaxSize()
+                            .alpha(0.5f)
+                            .blur(50.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded),
                         contentScale = ContentScale.Crop,
                     )
                     // Gradient overlay to blend into the background
                     Box(
                         modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(
-                                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                Color.Transparent,
-                                                MaterialTheme.colorScheme.background,
-                                            ),
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.background,
                                     ),
                                 ),
+                            ),
                     )
                 }
 
@@ -489,14 +489,14 @@ fun PodcastInfoScreen(
                         state = listState,
                         modifier = episodeListModifier,
                         contentPadding =
-                            PaddingValues(
-                                top = collapsedHeaderHeight + 16.dp,
-                                bottom =
-                                    WindowInsets.navigationBars
-                                        .asPaddingValues()
-                                        .calculateBottomPadding() + bottomContentPadding +
-                                        if (selectionActive) 92.dp else 16.dp,
-                            ),
+                        PaddingValues(
+                            top = collapsedHeaderHeight + 16.dp,
+                            bottom =
+                            WindowInsets.navigationBars
+                                .asPaddingValues()
+                                .calculateBottomPadding() + bottomContentPadding +
+                                if (selectionActive) 92.dp else 16.dp,
+                        ),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         // HERO SECTION: Centered Layout
@@ -579,38 +579,38 @@ fun PodcastInfoScreen(
                                 feedItem = feedItem,
                                 viewModel = viewModel,
                                 ui =
-                                    EpisodeFeedRowUi(
-                                        accentColor = accentColor,
-                                        indicators = episodeListIndicators,
-                                        autoScrolledEpisodeId = autoScrolledEpisodeId,
-                                        podcastImageUrl =
-                                            state.podcast.imageUrl.takeIf { it.isNotEmpty() }
-                                                ?: state.podcast.fallbackImageUrl,
-                                    ),
+                                EpisodeFeedRowUi(
+                                    accentColor = accentColor,
+                                    indicators = episodeListIndicators,
+                                    autoScrolledEpisodeId = autoScrolledEpisodeId,
+                                    podcastImageUrl =
+                                    state.podcast.imageUrl.takeIf { it.isNotEmpty() }
+                                        ?: state.podcast.fallbackImageUrl,
+                                ),
                                 onEpisodeClick = onEpisodeClick,
                                 selection =
-                                    EpisodeSelectionUi(
-                                        selectedEpisodeIds = selectedEpisodeIdSet,
-                                        isActive = selectionActive,
-                                        onToggle = { episode ->
-                                            val updated =
-                                                PodcastEpisodeSelectionLogic.toggle(
-                                                    selectedIds = selectedEpisodeIdSet,
-                                                    episodeId = episode.id,
-                                                )
-                                            selectedEpisodeIds = updated.toList()
-                                            selectionAnchorEpisodeId = episode.id.takeIf { updated.isNotEmpty() }
-                                        },
-                                        onLongPress = { episode ->
-                                            selectedEpisodeIds =
-                                                PodcastEpisodeSelectionLogic
-                                                    .toggle(
+                                EpisodeSelectionUi(
+                                    selectedEpisodeIds = selectedEpisodeIdSet,
+                                    isActive = selectionActive,
+                                    onToggle = { episode ->
+                                        val updated =
+                                            PodcastEpisodeSelectionLogic.toggle(
                                                 selectedIds = selectedEpisodeIdSet,
                                                 episodeId = episode.id,
-                                                    ).toList()
-                                            selectionAnchorEpisodeId = episode.id
-                                        },
-                                    ),
+                                            )
+                                        selectedEpisodeIds = updated.toList()
+                                        selectionAnchorEpisodeId = episode.id.takeIf { updated.isNotEmpty() }
+                                    },
+                                    onLongPress = { episode ->
+                                        selectedEpisodeIds =
+                                            PodcastEpisodeSelectionLogic
+                                                .toggle(
+                                                    selectedIds = selectedEpisodeIdSet,
+                                                    episodeId = episode.id,
+                                                ).toList()
+                                        selectionAnchorEpisodeId = episode.id
+                                    },
+                                ),
                             )
 
                             if (state.searchResults == null &&
@@ -628,9 +628,9 @@ fun PodcastInfoScreen(
                             item {
                                 Box(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(24.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     BoxLoreLoader.CircularWavy(size = 32.dp)
@@ -642,9 +642,9 @@ fun PodcastInfoScreen(
                             item {
                                 Box(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(48.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(48.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
@@ -668,9 +668,9 @@ fun PodcastInfoScreen(
                             state = pullToRefreshState,
                             isRefreshing = state.isRssRefreshing,
                             modifier =
-                                Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(top = collapsedHeaderHeight),
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = collapsedHeaderHeight),
                         )
                     },
                 ) {
@@ -685,108 +685,108 @@ fun PodcastInfoScreen(
                     hideCompleted = hideCompleted,
                     context = context,
                     actions =
-                        PodcastInfoTopOverlayActions(
-                            onBack = if (selectionActive) clearEpisodeSelection else onBack,
-                            onMarkAllPlayed = { showMarkAllPlayedDialog = true },
-                            onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
-                            onToggleHideCompleted = { viewModel.toggleHideCompleted() },
-                            onPlaybackSettings = { showPodcastPlaybackSettings = true },
-                            isSubscribed = state.isSubscribed,
-                            isPinnedToHome = isPinnedToHome,
-                            onToggleHomePin = viewModel::toggleHomePin,
-                        ),
+                    PodcastInfoTopOverlayActions(
+                        onBack = if (selectionActive) clearEpisodeSelection else onBack,
+                        onMarkAllPlayed = { showMarkAllPlayedDialog = true },
+                        onMarkAllUnplayed = { showMarkAllUnplayedDialog = true },
+                        onToggleHideCompleted = { viewModel.toggleHideCompleted() },
+                        onPlaybackSettings = { showPodcastPlaybackSettings = true },
+                        isSubscribed = state.isSubscribed,
+                        isPinnedToHome = isPinnedToHome,
+                        onToggleHomePin = viewModel::toggleHomePin,
+                    ),
                     missingEpisodesChip =
-                        MissingEpisodesChip(
-                            visible = scrollFraction < 0.5f,
-                            state = state.directFeedChip,
-                            onClick = {
-                                if (state.directFeedChip == DirectFeedChipState.Offer) {
-                                    showMissingEpisodesConfirm = true
-                                }
-                            },
-                        ),
+                    MissingEpisodesChip(
+                        visible = scrollFraction < 0.5f,
+                        state = state.directFeedChip,
+                        onClick = {
+                            if (state.directFeedChip == DirectFeedChipState.Offer) {
+                                showMissingEpisodesConfirm = true
+                            }
+                        },
+                    ),
                 )
 
                 AnimatedVisibility(
                     visible = selectionActive,
                     modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(
-                                start = 12.dp,
-                                end = 12.dp,
-                                bottom =
-                                    WindowInsets.navigationBars
-                                        .asPaddingValues()
-                                        .calculateBottomPadding() + bottomContentPadding + 12.dp,
-                            ),
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            start = 12.dp,
+                            end = 12.dp,
+                            bottom =
+                            WindowInsets.navigationBars
+                                .asPaddingValues()
+                                .calculateBottomPadding() + bottomContentPadding + 12.dp,
+                        ),
                     enter = slideInVertically { height -> height } + fadeIn(),
                     exit = slideOutVertically { height -> height } + fadeOut(),
                 ) {
                     EpisodeSelectionToolbar(
                         state =
-                            EpisodeSelectionToolbarState(
-                                selectedCount = selectedEpisodeIds.size,
-                                canDownload =
-                                    selectedEpisodes.any {
-                                        it.id !in downloadedEpisodeIds && it.id !in downloadingEpisodeIds
-                                    },
-                                markAsUnplayed = markSelectionAsUnplayed,
-                                canAddToQueue = selectedEpisodes.any { it.id !in queuedEpisodeIds },
-                                hasRangeAnchor =
-                                    selectionAnchorEpisodeId != null &&
-                                        (selectionEpisodePool + state.episodes).any {
-                                            it.id == selectionAnchorEpisodeId
-                                        },
-                                isLoadingFullSelection = isLoadingFullSelection,
-                            ),
+                        EpisodeSelectionToolbarState(
+                            selectedCount = selectedEpisodeIds.size,
+                            canDownload =
+                            selectedEpisodes.any {
+                                it.id !in downloadedEpisodeIds && it.id !in downloadingEpisodeIds
+                            },
+                            markAsUnplayed = markSelectionAsUnplayed,
+                            canAddToQueue = selectedEpisodes.any { it.id !in queuedEpisodeIds },
+                            hasRangeAnchor =
+                            selectionAnchorEpisodeId != null &&
+                                (selectionEpisodePool + state.episodes).any {
+                                    it.id == selectionAnchorEpisodeId
+                                },
+                            isLoadingFullSelection = isLoadingFullSelection,
+                        ),
                         actions =
-                            EpisodeSelectionToolbarActions(
-                                onClear = clearEpisodeSelection,
-                                onDownload = {
-                                    viewModel.downloadEpisodes(selectedEpisodes)
-                                    clearEpisodeSelection()
-                                },
-                                onToggleCompletion = {
-                                    if (markSelectionAsUnplayed) {
-                                        viewModel.markEpisodesUncompleted(selectedEpisodes)
-                                    } else {
-                                        viewModel.markEpisodesCompleted(selectedEpisodes)
-                                    }
-                                    clearEpisodeSelection()
-                                },
-                                onPlay = {
-                                    viewModel.playEpisodes(selectedEpisodes)
-                                    clearEpisodeSelection()
-                                },
-                                onAddToQueue = {
-                                    viewModel.addEpisodesToQueue(selectedEpisodes)
-                                    clearEpisodeSelection()
-                                },
-                                onSelectVisible = {
-                                    val visibleItemKeys =
-                                        listState.layoutInfo.visibleItemsInfo
-                                            .mapNotNull { item -> item.key as? String }
-                                            .toSet()
-                                    val visibleEpisodes =
-                                        PodcastEpisodeSelectionLogic
-                                            .visibleEpisodes(feedItems, visibleItemKeys)
-                                            .filterNot { hideCompleted && it.id in completedEpisodeIds }
-                                    selectionEpisodePool =
-                                        (selectionEpisodePool + visibleEpisodes).distinctBy(Episode::id)
-                                    selectedEpisodeIds =
-                                        (selectedEpisodeIdSet + visibleEpisodes.map(Episode::id)).toList()
-                                },
-                                onSelectAll = {
-                                    selectFullRange(EpisodeSelectionRange.ALL)
-                                },
-                                onSelectOlder = {
-                                    selectFullRange(EpisodeSelectionRange.OLDER)
-                                },
-                                onSelectNewer = {
-                                    selectFullRange(EpisodeSelectionRange.NEWER)
-                                },
-                            ),
+                        EpisodeSelectionToolbarActions(
+                            onClear = clearEpisodeSelection,
+                            onDownload = {
+                                viewModel.downloadEpisodes(selectedEpisodes)
+                                clearEpisodeSelection()
+                            },
+                            onToggleCompletion = {
+                                if (markSelectionAsUnplayed) {
+                                    viewModel.markEpisodesUncompleted(selectedEpisodes)
+                                } else {
+                                    viewModel.markEpisodesCompleted(selectedEpisodes)
+                                }
+                                clearEpisodeSelection()
+                            },
+                            onPlay = {
+                                viewModel.playEpisodes(selectedEpisodes)
+                                clearEpisodeSelection()
+                            },
+                            onAddToQueue = {
+                                viewModel.addEpisodesToQueue(selectedEpisodes)
+                                clearEpisodeSelection()
+                            },
+                            onSelectVisible = {
+                                val visibleItemKeys =
+                                    listState.layoutInfo.visibleItemsInfo
+                                        .mapNotNull { item -> item.key as? String }
+                                        .toSet()
+                                val visibleEpisodes =
+                                    PodcastEpisodeSelectionLogic
+                                        .visibleEpisodes(feedItems, visibleItemKeys)
+                                        .filterNot { hideCompleted && it.id in completedEpisodeIds }
+                                selectionEpisodePool =
+                                    (selectionEpisodePool + visibleEpisodes).distinctBy(Episode::id)
+                                selectedEpisodeIds =
+                                    (selectedEpisodeIdSet + visibleEpisodes.map(Episode::id)).toList()
+                            },
+                            onSelectAll = {
+                                selectFullRange(EpisodeSelectionRange.ALL)
+                            },
+                            onSelectOlder = {
+                                selectFullRange(EpisodeSelectionRange.OLDER)
+                            },
+                            onSelectNewer = {
+                                selectFullRange(EpisodeSelectionRange.NEWER)
+                            },
+                        ),
                     )
                 }
 
@@ -834,21 +834,21 @@ fun PodcastInfoScreen(
                 if (showPodcastPlaybackSettings) {
                     cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsSheet(
                         state =
-                            cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsState(
-                                podcastTitle = state.podcast.title,
-                                isSubscribed = state.isSubscribed,
-                                globalSkipBeginningMs = globalSkipBeginningMs,
-                                globalSkipEndingMs = globalSkipEndingMs,
-                                skipBeginningOverrideMs = state.podcast.skipBeginningOverrideMs,
-                                skipEndingOverrideMs = state.podcast.skipEndingOverrideMs,
-                            ),
+                        cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsState(
+                            podcastTitle = state.podcast.title,
+                            isSubscribed = state.isSubscribed,
+                            globalSkipBeginningMs = globalSkipBeginningMs,
+                            globalSkipEndingMs = globalSkipEndingMs,
+                            skipBeginningOverrideMs = state.podcast.skipBeginningOverrideMs,
+                            skipEndingOverrideMs = state.podcast.skipEndingOverrideMs,
+                        ),
                         actions =
-                            cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsActions(
-                                onUseAppDefaultsChange = viewModel::setUseAppPlaybackDefaults,
-                                onSkipBeginningOverrideChange = viewModel::setSkipBeginningOverride,
-                                onSkipEndingOverrideChange = viewModel::setSkipEndingOverride,
-                                onDismissRequest = { showPodcastPlaybackSettings = false },
-                            ),
+                        cx.aswin.boxlore.feature.info.components.PodcastPlaybackSettingsActions(
+                            onUseAppDefaultsChange = viewModel::setUseAppPlaybackDefaults,
+                            onSkipBeginningOverrideChange = viewModel::setSkipBeginningOverride,
+                            onSkipEndingOverrideChange = viewModel::setSkipEndingOverride,
+                            onDismissRequest = { showPodcastPlaybackSettings = false },
+                        ),
                     )
                 }
 
@@ -869,13 +869,13 @@ fun PodcastInfoScreen(
                     overflow = TextOverflow.Ellipsis,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Start,
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = titleStartPadding, end = titleEndPadding)
-                            .graphicsLayer {
-                                translationY = titleTranslationY
-                                alpha = titleAlpha
-                            },
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = titleStartPadding, end = titleEndPadding)
+                        .graphicsLayer {
+                            translationY = titleTranslationY
+                            alpha = titleAlpha
+                        },
                 )
 
                 // Derived visibility check for floating action pill
@@ -924,41 +924,41 @@ fun PodcastInfoScreen(
                 SnackbarHost(
                     hostState = snackbarHostState,
                     modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .navigationBarsPadding()
-                            .padding(
-                                bottom =
-                                    bottomContentPadding + 16.dp +
-                                        when {
-                                            jumpPillVisible -> 56.dp
-                                            selectionActive -> 72.dp
-                                            else -> 0.dp
-                                        },
-                            ),
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(
+                            bottom =
+                            bottomContentPadding + 16.dp +
+                                when {
+                                    jumpPillVisible -> 56.dp
+                                    selectionActive -> 72.dp
+                                    else -> 0.dp
+                                },
+                        ),
                 )
 
                 // Floating Jump-To Pill overlay
                 val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(bottom = systemBottomPadding + bottomContentPadding + 16.dp),
+                    Modifier
+                        .fillMaxSize()
+                        .padding(bottom = systemBottomPadding + bottomContentPadding + 16.dp),
                     contentAlignment = Alignment.BottomCenter,
                 ) {
                     AnimatedVisibility(
                         visible = jumpPillVisible,
                         enter =
-                            slideInVertically(
-                                initialOffsetY = { it },
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
-                            ) + fadeIn(),
+                        slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
+                        ) + fadeIn(),
                         exit =
-                            slideOutVertically(
-                                targetOffsetY = { it },
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
-                            ) + fadeOut(),
+                        slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
+                        ) + fadeOut(),
                     ) {
                         Surface(
                             onClick = {
@@ -971,16 +971,16 @@ fun PodcastInfoScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             shadowElevation = 6.dp,
                             modifier =
-                                Modifier
-                                    .padding(horizontal = 24.dp)
-                                    .widthIn(max = 320.dp)
-                                    .height(48.dp),
+                            Modifier
+                                .padding(horizontal = 24.dp)
+                                .widthIn(max = 320.dp)
+                                .height(48.dp),
                         ) {
                             Row(
                                 modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 16.dp),
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
                             ) {
@@ -1002,9 +1002,9 @@ fun PodcastInfoScreen(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     maxLines = 1,
                                     modifier =
-                                        Modifier
-                                            .weight(1f, fill = false)
-                                            .basicMarquee(iterations = Int.MAX_VALUE),
+                                    Modifier
+                                        .weight(1f, fill = false)
+                                        .basicMarquee(iterations = Int.MAX_VALUE),
                                 )
                             }
                         }
@@ -1019,8 +1019,8 @@ fun PodcastInfoScreen(
                 ) {
                     PodcastInfoSearchOverlay(
                         podcastImageUrl =
-                            state.podcast.imageUrl.takeIf { it.isNotEmpty() }
-                                ?: state.podcast.fallbackImageUrl,
+                        state.podcast.imageUrl.takeIf { it.isNotEmpty() }
+                            ?: state.podcast.fallbackImageUrl,
                         query = state.searchQuery,
                         onQueryChange = { viewModel.searchEpisodes(it) },
                         onClose = {

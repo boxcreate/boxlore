@@ -26,21 +26,10 @@ plugins {
     alias(libs.plugins.dependencyGuard) apply false
 }
 
-fun Project.ktlintBaselineFile() =
-    rootProject.layout.projectDirectory
-        .file(
-            if (this == rootProject) {
-                "config/ktlint/baseline.xml"
-            } else {
-                "config/ktlint/${path.removePrefix(":").replace(':', '-')}-baseline.xml"
-            },
-        ).asFile
-
 fun Project.configureKtlint() {
     extensions.configure<KtlintExtension>("ktlint") {
         android.set(true)
         outputToConsole.set(true)
-        baseline.set(ktlintBaselineFile())
         filter {
             exclude("**/build/**", "**/generated/**")
         }

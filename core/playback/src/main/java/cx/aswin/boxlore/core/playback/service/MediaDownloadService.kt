@@ -7,8 +7,8 @@ import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.PlatformScheduler
 import androidx.media3.exoplayer.scheduler.Scheduler
-import cx.aswin.boxlore.core.downloads.DownloadRepository
 import cx.aswin.boxlore.core.catalog.R
+import cx.aswin.boxlore.core.downloads.DownloadRepository
 
 open class MediaDownloadService :
     DownloadService(
@@ -26,10 +26,7 @@ open class MediaDownloadService :
 
     override fun getScheduler(): Scheduler? = if (Util.SDK_INT >= 21) PlatformScheduler(this, JOB_ID) else null
 
-    override fun getForegroundNotification(
-        downloads: List<Download>,
-        notMetRequirements: Int,
-    ): Notification {
+    override fun getForegroundNotification(downloads: List<Download>, notMetRequirements: Int,): Notification {
         // Find active download
         val activeDownload =
             downloads.find {

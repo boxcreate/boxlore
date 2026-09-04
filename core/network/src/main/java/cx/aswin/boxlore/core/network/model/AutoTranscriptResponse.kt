@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.core.network.model
 
-import kotlinx.serialization.Serializable
 import cx.aswin.boxlore.core.model.Chapter
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class AutoTranscriptResponse(

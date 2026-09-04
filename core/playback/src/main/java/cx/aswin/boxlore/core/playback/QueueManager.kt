@@ -6,10 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class QueueManager(
-    private val queueRepository: QueueRepository,
-    private val playbackRepository: PlaybackRepository,
-) {
+class QueueManager(private val queueRepository: QueueRepository, private val playbackRepository: PlaybackRepository,) {
     private val TAG = "QueueManager"
     private val scope = CoroutineScope(Dispatchers.Main)
 
@@ -23,8 +20,7 @@ class QueueManager(
      * forwarded separately as sourceContext so analytics keeps the precise origin (e.g.
      * "episode_info_screen", "home_hero_new_episodes_grid") instead of collapsing to GENERIC.
      */
-    private fun resolveEntryPoint(entryPointContext: android.os.Bundle?): PlaybackEntryPoint =
-        PlaybackEntryPointResolve.fromSourceContext(entryPointContext)
+    private fun resolveEntryPoint(entryPointContext: android.os.Bundle?): PlaybackEntryPoint = PlaybackEntryPointResolve.fromSourceContext(entryPointContext)
 
     fun playEpisode(
         episode: EpisodeItem,
@@ -176,32 +172,31 @@ class QueueManager(
         }
     }
 
-    private fun cx.aswin.boxlore.core.model.Episode.toEpisodeItem(podcast: cx.aswin.boxlore.core.model.Podcast?): EpisodeItem =
-        EpisodeItem(
-            id = this.id.toLongOrNull() ?: 0L,
-            title = this.title,
-            description = this.description,
-            enclosureUrl = this.audioUrl,
-            duration = this.duration,
-            datePublished = this.publishedDate,
-            image = this.imageUrl,
-            feedImage = this.podcastImageUrl ?: podcast?.imageUrl,
-            // Podcast 2.0
-            chaptersUrl = this.chaptersUrl,
-            transcriptUrl = this.transcriptUrl,
-            persons =
-                this.persons?.map {
-                    cx.aswin.boxlore.core.network.model
-                        .PersonItem(name = it.name, role = it.role, img = it.img, href = it.href)
-                },
-            transcripts =
-                this.transcripts?.map {
-                    cx.aswin.boxlore.core.network.model
-                        .TranscriptItem(url = it.url, type = it.type)
-                },
-            episodeType = this.episodeType,
-            enclosureType = this.enclosureType,
-        )
+    private fun cx.aswin.boxlore.core.model.Episode.toEpisodeItem(podcast: cx.aswin.boxlore.core.model.Podcast?): EpisodeItem = EpisodeItem(
+        id = this.id.toLongOrNull() ?: 0L,
+        title = this.title,
+        description = this.description,
+        enclosureUrl = this.audioUrl,
+        duration = this.duration,
+        datePublished = this.publishedDate,
+        image = this.imageUrl,
+        feedImage = this.podcastImageUrl ?: podcast?.imageUrl,
+        // Podcast 2.0
+        chaptersUrl = this.chaptersUrl,
+        transcriptUrl = this.transcriptUrl,
+        persons =
+        this.persons?.map {
+            cx.aswin.boxlore.core.network.model
+                .PersonItem(name = it.name, role = it.role, img = it.img, href = it.href)
+        },
+        transcripts =
+        this.transcripts?.map {
+            cx.aswin.boxlore.core.network.model
+                .TranscriptItem(url = it.url, type = it.type)
+        },
+        episodeType = this.episodeType,
+        enclosureType = this.enclosureType,
+    )
 
     /**
      * Canonical conversion: EpisodeItem + Podcast -> Domain Episode
@@ -240,19 +235,19 @@ class QueueManager(
             chaptersUrl = this.chaptersUrl,
             transcriptUrl = resolvedTranscriptUrl,
             persons =
-                this.persons?.map {
-                    cx.aswin.boxlore.core.model.Person(
-                        name = it.name,
-                        role = it.role,
-                        img = it.img,
-                        href = it.href,
-                    )
-                },
+            this.persons?.map {
+                cx.aswin.boxlore.core.model.Person(
+                    name = it.name,
+                    role = it.role,
+                    img = it.img,
+                    href = it.href,
+                )
+            },
             transcripts =
-                this.transcripts?.map {
-                    cx.aswin.boxlore.core.model
-                        .Transcript(url = it.url, type = it.type)
-                },
+            this.transcripts?.map {
+                cx.aswin.boxlore.core.model
+                    .Transcript(url = it.url, type = it.type)
+            },
             episodeType = this.episodeType,
             enclosureType = this.enclosureType,
         )

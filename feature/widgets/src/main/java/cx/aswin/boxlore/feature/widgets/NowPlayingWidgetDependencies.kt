@@ -36,12 +36,11 @@ object NowPlayingWidgetDependenciesHolder {
     var instance: NowPlayingWidgetDependencies? = null
         internal set
 
-    fun require(): NowPlayingWidgetDependencies =
-        instance
-            ?: error(
-                "NowPlayingWidgetDependencies not installed. " +
-                    "Call configureNowPlayingWidget from Application after AppContainer is ready.",
-            )
+    fun require(): NowPlayingWidgetDependencies = instance
+        ?: error(
+            "NowPlayingWidgetDependencies not installed. " +
+                "Call configureNowPlayingWidget from Application after AppContainer is ready.",
+        )
 }
 
 /** Installs dependencies and starts the widget coordinator. Call from `:app` only. */

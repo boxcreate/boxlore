@@ -14,26 +14,25 @@ internal data class ShareBrandingLayout(
     val showListenNow: Boolean,
 )
 
-internal fun shareBrandingLayout(isStory: Boolean): ShareBrandingLayout =
-    if (isStory) {
-        ShareBrandingLayout(
-            contentGap = 112f,
-            labelSize = 28f,
-            logoWidth = 400,
-            listenNowGap = 18f,
-            listenNowSize = 28f,
-            showListenNow = true,
-        )
-    } else {
-        ShareBrandingLayout(
-            contentGap = 64f,
-            labelSize = 24f,
-            logoWidth = 340,
-            listenNowGap = 0f,
-            listenNowSize = 0f,
-            showListenNow = false,
-        )
-    }
+internal fun shareBrandingLayout(isStory: Boolean): ShareBrandingLayout = if (isStory) {
+    ShareBrandingLayout(
+        contentGap = 112f,
+        labelSize = 28f,
+        logoWidth = 400,
+        listenNowGap = 18f,
+        listenNowSize = 28f,
+        showListenNow = true,
+    )
+} else {
+    ShareBrandingLayout(
+        contentGap = 64f,
+        labelSize = 24f,
+        logoWidth = 340,
+        listenNowGap = 0f,
+        listenNowSize = 0f,
+        showListenNow = false,
+    )
+}
 
 /** Bitmap card composition for [ShareManager] share sheets / Instagram stories. */
 internal object ShareCardRenderer {
@@ -135,12 +134,7 @@ internal object ShareCardRenderer {
     }
 
     @Suppress("CyclomaticComplexMethod")
-    private fun drawShareCardShapes(
-        canvas: android.graphics.Canvas,
-        width: Float,
-        height: Float,
-        isStory: Boolean,
-    ) {
+    private fun drawShareCardShapes(canvas: android.graphics.Canvas, width: Float, height: Float, isStory: Boolean,) {
         val paint =
             android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.parseColor("#5B5BDF")
@@ -235,7 +229,7 @@ internal object ShareCardRenderer {
         val waveCenter =
             brandingTop + (
                 textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
-            ) / 2f
+                ) / 2f
         if (brandingRight > waveStart) {
             val path = android.graphics.Path()
             val amplitude = 9f
@@ -395,17 +389,13 @@ internal object ShareCardRenderer {
         return layout.height
     }
 
-    private fun googleSansTypeface(
-        context: Context,
-        style: Int,
-    ): android.graphics.Typeface =
-        cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces.create(
-            context = context,
-            style = style,
-            roundness =
-                cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
-                    .cachedRoundness(context),
-        )
+    private fun googleSansTypeface(context: Context, style: Int,): android.graphics.Typeface = cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces.create(
+        context = context,
+        style = style,
+        roundness =
+        cx.aswin.boxlore.core.designsystem.theme.GoogleSansTypefaces
+            .cachedRoundness(context),
+    )
 
     private fun drawRoundedArtwork(
         canvas: android.graphics.Canvas,

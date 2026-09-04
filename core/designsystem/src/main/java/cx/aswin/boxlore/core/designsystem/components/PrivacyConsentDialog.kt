@@ -1,20 +1,15 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
-import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -24,19 +19,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 @Composable
-fun PrivacyConsentDialog(
-    onConsentDecided: (crashReporting: Boolean, usageAnalytics: Boolean) -> Unit
-) {
+fun PrivacyConsentDialog(onConsentDecided: (crashReporting: Boolean, usageAnalytics: Boolean) -> Unit) {
     Dialog(
         onDismissRequest = { },
         properties = DialogProperties(
@@ -64,9 +57,9 @@ fun PrivacyConsentDialog(
                 ) {
                     // Header
                     PrivacyHeader()
-                    
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     // Options First (Redesign)
                     ConsentOptions(
                         crashReporting = crashReporting,
@@ -76,12 +69,12 @@ fun PrivacyConsentDialog(
                         privacyPolicyAccepted = privacyPolicyAccepted,
                         onPolicyChange = { privacyPolicyAccepted = it }
                     )
-                    
+
                     Spacer(modifier = Modifier.height(32.dp))
-                    
+
                     // Info/Legal Text Last
                     PrivacyInfo()
-                    
+
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
@@ -91,12 +84,12 @@ fun PrivacyConsentDialog(
                     tonalElevation = 8.dp,
                     shadowElevation = 4.dp
                 ) {
-                     Column(modifier = Modifier.padding(24.dp)) {
-                         ConsentActions(
-                             isEnabled = privacyPolicyAccepted,
-                             onAccept = { onConsentDecided(crashReporting, usageAnalytics) }
-                         )
-                     }
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        ConsentActions(
+                            isEnabled = privacyPolicyAccepted,
+                            onAccept = { onConsentDecided(crashReporting, usageAnalytics) }
+                        )
+                    }
                 }
             }
         }
@@ -142,7 +135,7 @@ private fun PrivacyInfo() {
     Column {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = "Why we collect data",
             style = MaterialTheme.typography.labelLarge,
@@ -154,7 +147,7 @@ private fun PrivacyInfo() {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
         DataCollectedExpander()
     }
@@ -187,7 +180,7 @@ private fun DataCollectedExpander() {
                 modifier = Modifier.size(20.dp)
             )
         }
-        
+
         AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically() + fadeIn(),
@@ -214,7 +207,7 @@ private fun ConsentOptions(
     onPolicyChange: (Boolean) -> Unit
 ) {
     val allChecked = crashReporting && usageAnalytics && privacyPolicyAccepted
-    
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Master Toggle Card
         Surface(
@@ -252,15 +245,21 @@ private fun ConsentOptions(
                     Text(
                         text = "Enables Crash Reporting, Usage Analytics, and accepts Privacy Policy.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (allChecked) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha=0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (allChecked) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                alpha = 0.8f
+                            )
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     )
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(4.dp))
         Text("Individual Settings", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        
+
         // Individual Cards
         ToggleCard(
             title = "Crash Reports (Optional)",
@@ -268,19 +267,22 @@ private fun ConsentOptions(
             checked = crashReporting,
             onCheckedChange = onCrashChange
         )
-        
+
         ToggleCard(
             title = "Usage Statistics (Optional)",
             description = "Share anonymous interaction data to help us identify popular features.",
             checked = usageAnalytics,
             onCheckedChange = onUsageChange
         )
-        
+
         // Privacy Policy Card
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shape = MaterialTheme.shapes.large,
-            border = BorderStroke(1.dp, if (!privacyPolicyAccepted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant),
+            border = BorderStroke(
+                1.dp,
+                if (!privacyPolicyAccepted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onPolicyChange(!privacyPolicyAccepted) }
@@ -298,7 +300,7 @@ private fun ConsentOptions(
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = GoogleSansWeight.medium
                     )
-                     Text(
+                    Text(
                         text = "I have read and agree to the Privacy Policy",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -308,7 +310,11 @@ private fun ConsentOptions(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 4.dp).clickable {
-                             try { uriHandler.openUri("https://aswin.cx/boxlore/privacy") } catch(_: Exception) {}
+                            try {
+                                uriHandler.openUri("https://aswin.cx/boxlore/privacy")
+                            } catch (_: Exception) {
+                                // Ignore if browser cannot be opened
+                            }
                         }
                     )
                 }
@@ -318,12 +324,7 @@ private fun ConsentOptions(
 }
 
 @Composable
-private fun ToggleCard(
-    title: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
+private fun ToggleCard(title: String, description: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.large,
@@ -347,10 +348,7 @@ private fun ToggleCard(
 }
 
 @Composable
-private fun ConsentActions(
-    isEnabled: Boolean,
-    onAccept: () -> Unit
-) {
+private fun ConsentActions(isEnabled: Boolean, onAccept: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -372,7 +370,12 @@ private fun ConsentActions(
 @Composable
 private fun DataPoint(title: String, desc: String) {
     Column {
-        Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.bold, color = MaterialTheme.colorScheme.primary)
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = GoogleSansWeight.bold,
+            color = MaterialTheme.colorScheme.primary
+        )
         Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

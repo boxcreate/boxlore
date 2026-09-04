@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.core.playback
 
+import java.util.Calendar
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.util.Calendar
 
 class NightWindowLogicTest {
     @Test

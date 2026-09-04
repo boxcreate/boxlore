@@ -10,22 +10,20 @@ internal object HomePlaybackStateLogic {
     fun progressRatio(
         progressMs: Long,
         durationMs: Long,
-    ): Float =
-        if (durationMs > 0) {
-            (progressMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-        } else {
-            0f
-        }
+    ): Float = if (durationMs > 0) {
+        (progressMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
 
     fun statusForHistory(
         isCompleted: Boolean,
         progressMs: Long,
-    ): EpisodeStatus =
-        when {
-            isCompleted -> EpisodeStatus.COMPLETED
-            progressMs > 0L -> EpisodeStatus.IN_PROGRESS
-            else -> EpisodeStatus.UNPLAYED
-        }
+    ): EpisodeStatus = when {
+        isCompleted -> EpisodeStatus.COMPLETED
+        progressMs > 0L -> EpisodeStatus.IN_PROGRESS
+        else -> EpisodeStatus.UNPLAYED
+    }
 
     fun buildEpisodePlaybackState(
         allHistory: List<HomeListeningHistoryItem>,
@@ -66,26 +64,24 @@ internal object HomePlaybackStateLogic {
         currentPlayingEpisodeId: String?,
         currentPlayingPodcastId: String?,
         isPlaying: Boolean,
-    ): Boolean =
-        isPlaying &&
-            isHeroItemCurrent(
-                itemEpisodeId = itemEpisodeId,
-                itemPodcastId = itemPodcastId,
-                currentPlayingEpisodeId = currentPlayingEpisodeId,
-                currentPlayingPodcastId = currentPlayingPodcastId,
-            )
+    ): Boolean = isPlaying &&
+        isHeroItemCurrent(
+            itemEpisodeId = itemEpisodeId,
+            itemPodcastId = itemPodcastId,
+            currentPlayingEpisodeId = currentPlayingEpisodeId,
+            currentPlayingPodcastId = currentPlayingPodcastId,
+        )
 
     fun isBriefingDisplayedInResume(
         heroList: List<SmartHeroItem>,
         briefingPodcastId: String,
-    ): Boolean =
-        heroList.any { item ->
-            when (item.type) {
-                HeroType.RESUME -> item.podcast.id == briefingPodcastId
-                HeroType.RESUME_GRID -> item.gridItems.any { it.id == briefingPodcastId }
-                else -> false
-            }
+    ): Boolean = heroList.any { item ->
+        when (item.type) {
+            HeroType.RESUME -> item.podcast.id == briefingPodcastId
+            HeroType.RESUME_GRID -> item.gridItems.any { it.id == briefingPodcastId }
+            else -> false
         }
+    }
 
     fun shouldShowBriefing(
         rawBriefing: Briefing?,

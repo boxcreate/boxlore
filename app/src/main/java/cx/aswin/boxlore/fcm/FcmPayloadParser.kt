@@ -63,12 +63,9 @@ object FcmPayloadParser {
     /** Snake or camel case episode id from FCM data. */
     fun episodeId(data: Map<String, String>): String? = data["episode_id"] ?: data["episodeId"]
 
-    fun feedUrl(data: Map<String, String>): String? =
-        data["feedUrl"]?.trim()?.takeIf { it.isNotEmpty() }
+    fun feedUrl(data: Map<String, String>): String? = data["feedUrl"]?.trim()?.takeIf { it.isNotEmpty() }
 
-    fun guid(data: Map<String, String>): String? =
-        data["guid"]?.trim()?.takeIf { it.isNotEmpty() }
+    fun guid(data: Map<String, String>): String? = data["guid"]?.trim()?.takeIf { it.isNotEmpty() }
 
-    fun enclosureUrl(data: Map<String, String>): String? =
-        (data["enclosureUrl"] ?: data["enclosure_url"])?.trim()?.takeIf { it.isNotEmpty() }
+    fun enclosureUrl(data: Map<String, String>): String? = (data["enclosureUrl"] ?: data["enclosure_url"])?.trim()?.takeIf { it.isNotEmpty() }
 }

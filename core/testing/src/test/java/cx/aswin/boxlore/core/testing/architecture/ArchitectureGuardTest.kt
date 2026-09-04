@@ -2,9 +2,9 @@ package cx.aswin.boxlore.core.testing.architecture
 
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.verify.assertTrue
+import java.io.File
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.io.File
 
 /**
  * Architecture-as-code (B8). Runs as `:core:testing` JVM unit tests so
@@ -197,7 +197,7 @@ class ArchitectureGuardTest {
                             it.path.contains("/src/main/") ||
                                 it.path.contains("/src/test/") ||
                                 it.path.contains("/src/androidTest/")
-                        )
+                            )
                 }.forEach { file ->
                     file.readLines().forEachIndexed { index, line ->
                         val code = line.trim()
@@ -377,7 +377,7 @@ class ArchitectureGuardTest {
                             (
                                 file.name.endsWith("ViewModel.kt") ||
                                     file.name.endsWith("Repository.kt")
-                            )
+                                )
                     }.toList()
             }
         require(mainFiles.isNotEmpty()) { "No ViewModel/Repository sources found under $projectRoot" }
@@ -448,11 +448,7 @@ class ArchitectureGuardTest {
         )
     }
 
-    private fun packageModuleViolationsFor(
-        module: String,
-        expectedRoot: String,
-        stubAllowlistPrefixes: List<String>,
-    ): List<String> {
+    private fun packageModuleViolationsFor(module: String, expectedRoot: String, stubAllowlistPrefixes: List<String>,): List<String> {
         val mainJava = File(projectRoot, "core/$module/src/main/java")
         if (!mainJava.isDirectory) {
             return listOf("missing sources: core/$module/src/main/java")
@@ -469,11 +465,7 @@ class ArchitectureGuardTest {
             }.toList()
     }
 
-    private fun packageDeclarationViolation(
-        file: File,
-        expectedRoot: String,
-        stubAllowlistPrefixes: List<String>,
-    ): String? {
+    private fun packageDeclarationViolation(file: File, expectedRoot: String, stubAllowlistPrefixes: List<String>,): String? {
         val relative = file.relativeTo(projectRoot).path.replace('\\', '/')
         val pkg =
             Regex("""^package\s+([\w.]+)""", RegexOption.MULTILINE)

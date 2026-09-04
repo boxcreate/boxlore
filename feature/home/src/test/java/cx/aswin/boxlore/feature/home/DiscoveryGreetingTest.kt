@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.feature.home
 
 import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import java.time.LocalDate
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
 
 /**
  * Narrow Home greeting path extracted from [HomeViewModel] (pure helper; no Application).

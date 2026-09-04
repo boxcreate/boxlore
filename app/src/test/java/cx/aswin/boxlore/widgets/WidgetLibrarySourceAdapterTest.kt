@@ -18,13 +18,13 @@ class WidgetLibrarySourceAdapterTest {
                 artist = "Host",
                 imageUrl = "https://example.com/a.jpg",
                 latestEpisode =
-                    Episode(
-                        id = "e1",
-                        title = "Ep",
-                        description = "",
-                        audioUrl = "https://example.com/a.mp3",
-                        publishedDate = 1_700_000_000L,
-                    ),
+                Episode(
+                    id = "e1",
+                    title = "Ep",
+                    description = "",
+                    audioUrl = "https://example.com/a.mp3",
+                    publishedDate = 1_700_000_000L,
+                ),
             )
         val history =
             listOf(

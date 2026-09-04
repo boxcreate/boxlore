@@ -6,9 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class OnboardingPart(
-    @SerialName("text") val text: String
-)
+data class OnboardingPart(@SerialName("text") val text: String)
 
 @Serializable
 data class OnboardingHistoryEntry(
@@ -30,9 +28,7 @@ data class OnboardingNextTurnResponse(
 )
 
 @Serializable
-data class OnboardingSynthesizeRequest(
-    @SerialName("history") val history: List<OnboardingHistoryEntry>
-)
+data class OnboardingSynthesizeRequest(@SerialName("history") val history: List<OnboardingHistoryEntry>)
 
 @Serializable
 data class OnboardingQuery(
@@ -127,10 +123,7 @@ data class OnboardingGenreSynthRequest(
 )
 
 @Serializable
-data class OnboardingSelectedShowDto(
-    @SerialName("title") val title: String,
-    @SerialName("description") val description: String
-)
+data class OnboardingSelectedShowDto(@SerialName("title") val title: String, @SerialName("description") val description: String)
 
 @Serializable
 data class OnboardingSimilarShowsRequest(
@@ -138,4 +131,3 @@ data class OnboardingSimilarShowsRequest(
     @SerialName("country") val country: String? = null,
     @SerialName("languages") val languages: List<String> = emptyList(),
 )
-

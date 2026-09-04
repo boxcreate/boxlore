@@ -6,11 +6,7 @@ object ContentLanguageSelection {
      * Returns the updated language list after toggling [languageCode], or `null` when the toggle
      * is a no-op (English lock, at capacity without deselect, invalid code).
      */
-    fun applyToggle(
-        selectedLanguages: List<String>,
-        languageCode: String,
-        country: String,
-    ): List<String>? {
+    fun applyToggle(selectedLanguages: List<String>, languageCode: String, country: String,): List<String>? {
         val code = languageCode.trim().lowercase().substringBefore('-')
         if (code == "en" || code !in ContentRegions.LANGUAGE_ALLOWLIST) return null
 

@@ -13,19 +13,16 @@ import cx.aswin.boxlore.surveys.internal.theme.localAppearance
 
 /** Multiline free-text answer field styled to match engagement sheets. */
 @Composable
-internal fun OpenText(
-    value: String,
-    onValueChange: (String) -> Unit,
-) {
+internal fun OpenText(value: String, onValueChange: (String) -> Unit,) {
     val appearance = localAppearance()
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(150.dp)
-                .restoreFocusOnReentry(),
+        Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .restoreFocusOnReentry(),
         placeholder = {
             androidx.compose.material3.Text(
                 text = appearance.placeholder,
@@ -35,12 +32,12 @@ internal fun OpenText(
         textStyle = MaterialTheme.typography.bodyMedium.copy(color = appearance.inputTextColor),
         shape = RoundedCornerShape(16.dp),
         colors =
-            OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = appearance.inputBackgroundColor,
-                unfocusedContainerColor = appearance.inputBackgroundColor,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = appearance.borderColor,
-                cursorColor = appearance.inputTextColor,
-            ),
+        OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = appearance.inputBackgroundColor,
+            unfocusedContainerColor = appearance.inputBackgroundColor,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = appearance.borderColor,
+            cursorColor = appearance.inputTextColor,
+        ),
     )
 }

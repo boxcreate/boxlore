@@ -2,19 +2,19 @@ package cx.aswin.boxlore.core.designsystem.theme
 
 import android.app.Activity
 import android.os.Build
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -166,52 +166,52 @@ fun BoxLoreTheme(
 /**
  * Applies surface style overrides to an existing ColorScheme (used for dynamic color schemes).
  */
-private fun applyClassicOverrides(base: ColorScheme, isDark: Boolean): ColorScheme {
-    return if (isDark) {
-        base.copy(
-            background = Color(0xFF111316),
-            surface = Color(0xFF111316),
-            surfaceContainerLowest = Color(0xFF111316),
-            surfaceContainerLow = Color(0xFF181B20),
-            surfaceContainer = Color(0xFF181B20),
-            surfaceContainerHigh = Color(0xFF21252B),
-            surfaceContainerHighest = Color(0xFF21252B),
-            onBackground = Color(0xFFE8EAED),
-            onSurface = Color(0xFFE8EAED),
-            surfaceVariant = Color(0xFF181B20),
-            onSurfaceVariant = Color(0xFFA4AAB2),
-            outline = Color(0xFF2C313A),
-            outlineVariant = Color(0xFF2C313A),
-            tertiary = Color(0xFF4FB587),
-            tertiaryContainer = Color(0xFF1E352A),
-            onTertiaryContainer = Color(0xFF4FB587)
-        )
-    } else {
-        base.copy(
-            background = Color(0xFFF0EBE0),
-            surface = Color(0xFFF0EBE0),
-            surfaceContainerLowest = Color(0xFFFFFFFF),
-            surfaceContainerLow = Color(0xFFFBF8F1),
-            surfaceContainer = Color(0xFFFBF8F1),
-            surfaceContainerHigh = Color(0xFFFFFFFF),
-            surfaceContainerHighest = Color(0xFFFFFFFF),
-            onBackground = Color(0xFF211D15),
-            onSurface = Color(0xFF211D15),
-            surfaceVariant = Color(0xFFFBF8F1),
-            onSurfaceVariant = Color(0xFF5F5A50),
-            outline = Color(0xFFE6DFCF),
-            outlineVariant = Color(0xFFE6DFCF),
-            tertiary = Color(0xFF3E9B6E),
-            tertiaryContainer = Color(0xFFE8F5EE),
-            onTertiaryContainer = Color(0xFF3E9B6E)
-        )
-    }
+private fun applyClassicOverrides(base: ColorScheme, isDark: Boolean): ColorScheme = if (isDark) {
+    base.copy(
+        background = Color(0xFF111316),
+        surface = Color(0xFF111316),
+        surfaceContainerLowest = Color(0xFF111316),
+        surfaceContainerLow = Color(0xFF181B20),
+        surfaceContainer = Color(0xFF181B20),
+        surfaceContainerHigh = Color(0xFF21252B),
+        surfaceContainerHighest = Color(0xFF21252B),
+        onBackground = Color(0xFFE8EAED),
+        onSurface = Color(0xFFE8EAED),
+        surfaceVariant = Color(0xFF181B20),
+        onSurfaceVariant = Color(0xFFA4AAB2),
+        outline = Color(0xFF2C313A),
+        outlineVariant = Color(0xFF2C313A),
+        tertiary = Color(0xFF4FB587),
+        tertiaryContainer = Color(0xFF1E352A),
+        onTertiaryContainer = Color(0xFF4FB587)
+    )
+} else {
+    base.copy(
+        background = Color(0xFFF0EBE0),
+        surface = Color(0xFFF0EBE0),
+        surfaceContainerLowest = Color(0xFFFFFFFF),
+        surfaceContainerLow = Color(0xFFFBF8F1),
+        surfaceContainer = Color(0xFFFBF8F1),
+        surfaceContainerHigh = Color(0xFFFFFFFF),
+        surfaceContainerHighest = Color(0xFFFFFFFF),
+        onBackground = Color(0xFF211D15),
+        onSurface = Color(0xFF211D15),
+        surfaceVariant = Color(0xFFFBF8F1),
+        onSurfaceVariant = Color(0xFF5F5A50),
+        outline = Color(0xFFE6DFCF),
+        outlineVariant = Color(0xFFE6DFCF),
+        tertiary = Color(0xFF3E9B6E),
+        tertiaryContainer = Color(0xFFE8F5EE),
+        onTertiaryContainer = Color(0xFF3E9B6E)
+    )
 }
 
 private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: String): ColorScheme {
     val style = if (surfaceStyle == SurfaceStyles.DYNAMIC_OLED_WHITE) {
         if (isDark) SurfaceStyles.AMOLED else SurfaceStyles.PURE_WHITE
-    } else surfaceStyle
+    } else {
+        surfaceStyle
+    }
 
     return when {
         style == SurfaceStyles.AMOLED && isDark -> base.copy(
@@ -267,18 +267,20 @@ private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: 
 private fun Color.saturate(factor: Float): Color {
     val hsl = FloatArray(3)
     androidx.core.graphics.ColorUtils.RGBToHSL(
-        (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt(), hsl
+        (red * 255).toInt(),
+        (green * 255).toInt(),
+        (blue * 255).toInt(),
+        hsl
     )
     hsl[1] = (hsl[1] * factor).coerceIn(0f, 1f)
     return Color(androidx.core.graphics.ColorUtils.HSLToColor(hsl))
 }
 
 /** Pins [ColorScheme.primary] to [seedColor] and picks a contrasting on-primary. */
-fun ColorScheme.withPinnedPrimary(seedColor: Color): ColorScheme =
-    copy(
-        primary = seedColor,
-        onPrimary = seedColor.contrastColor(),
-    )
+fun ColorScheme.withPinnedPrimary(seedColor: Color): ColorScheme = copy(
+    primary = seedColor,
+    onPrimary = seedColor.contrastColor(),
+)
 
 /**
  * Generates a complete Material 3 color scheme algorithmically from a single semantic seed color.
@@ -293,9 +295,7 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
         hsl
     )
 
-    fun hslToColor(h: Float, s: Float, l: Float): Color {
-        return Color(androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(h, s.coerceIn(0f, 1f), l.coerceIn(0f, 1f))))
-    }
+    fun hslToColor(h: Float, s: Float, l: Float): Color = Color(androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(h, s.coerceIn(0f, 1f), l.coerceIn(0f, 1f))))
 
     val hue = hsl[0]
     val baseSat = hsl[1].coerceIn(0.3f, 0.8f)
@@ -303,11 +303,13 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
     // Adjust saturation based on surface style
     val sat = if (surfaceStyle == SurfaceStyles.HIGH_CONTRAST) {
         (baseSat * if (isDark) 1.3f else 1.2f).coerceIn(0.3f, 0.95f)
-    } else baseSat
+    } else {
+        baseSat
+    }
 
     val isClassic = surfaceStyle == SurfaceStyles.CLASSIC_DYNAMIC ||
-                    surfaceStyle == SurfaceStyles.CLASSIC_DARK ||
-                    surfaceStyle == SurfaceStyles.CLASSIC_LIGHT
+        surfaceStyle == SurfaceStyles.CLASSIC_DARK ||
+        surfaceStyle == SurfaceStyles.CLASSIC_LIGHT
     val contentSat = if (isClassic) 0f else sat
 
     // Surface lightness values vary by surface style
@@ -392,7 +394,9 @@ private fun getSurfaceLevels(isDark: Boolean, surfaceStyle: String, hue: Float, 
 
     val style = if (surfaceStyle == SurfaceStyles.DYNAMIC_OLED_WHITE) {
         if (isDark) SurfaceStyles.AMOLED else SurfaceStyles.PURE_WHITE
-    } else surfaceStyle
+    } else {
+        surfaceStyle
+    }
 
     return when {
         // AMOLED: Pure black background, near-black containers

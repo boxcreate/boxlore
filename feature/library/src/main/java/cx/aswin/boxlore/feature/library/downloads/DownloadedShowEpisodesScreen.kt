@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.downloads
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -73,13 +71,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -103,9 +101,9 @@ fun DownloadedShowEpisodesScreen(
 
     // Retrieve episodes belonging to this show
     val showEpisodes = remember(downloads, podcastId, podcastTitle) {
-        downloads.filter { 
-            (podcastId.isNotEmpty() && it.podcastId == podcastId) || 
-            (podcastTitle.isNotEmpty() && it.podcastName == podcastTitle) 
+        downloads.filter {
+            (podcastId.isNotEmpty() && it.podcastId == podcastId) ||
+                (podcastTitle.isNotEmpty() && it.podcastName == podcastTitle)
         }
     }
 
@@ -132,7 +130,9 @@ fun DownloadedShowEpisodesScreen(
         derivedStateOf {
             if (listState.firstVisibleItemIndex == 0) {
                 listState.firstVisibleItemScrollOffset.toFloat()
-            } else 1000f
+            } else {
+                1000f
+            }
         }
     }
     val density = LocalDensity.current
@@ -152,7 +152,7 @@ fun DownloadedShowEpisodesScreen(
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         if (showEpisodes.isNotEmpty()) {
             val firstItem = showEpisodes.first()
-            
+
             // Blurred Background Header matching PodcastInfoScreen
             Box(
                 modifier = Modifier
@@ -542,7 +542,7 @@ fun DownloadedShowEpisodesScreen(
                                                 durationText,
                                                 sizeText
                                             ).joinToString(" • ")
-                                            
+
                                             Text(
                                                 text = subText,
                                                 style = MaterialTheme.typography.labelSmall,

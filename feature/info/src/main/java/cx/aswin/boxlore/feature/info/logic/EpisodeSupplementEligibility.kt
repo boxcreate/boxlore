@@ -7,12 +7,11 @@ import cx.aswin.boxlore.core.model.Podcast
  * Never applies to RSS-owned library shows.
  */
 object EpisodeSupplementEligibility {
-    fun canLoadMissingEpisodes(podcast: Podcast): Boolean =
-        !podcast.isRss &&
-            runCatching {
-                cx.aswin.boxlore.core.rss.RssIdGenerator.validateAndNormalizeFeedUrl(
-                    podcast.feedUrl.orEmpty(),
-                )
-                true
-            }.getOrDefault(false)
+    fun canLoadMissingEpisodes(podcast: Podcast): Boolean = !podcast.isRss &&
+        runCatching {
+            cx.aswin.boxlore.core.rss.RssIdGenerator.validateAndNormalizeFeedUrl(
+                podcast.feedUrl.orEmpty(),
+            )
+            true
+        }.getOrDefault(false)
 }

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.drawOutline
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
@@ -96,21 +95,21 @@ fun HeroGridCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         modifier =
-            modifier
-                .fillMaxSize()
-                .clip(MaterialTheme.shapes.extraLarge),
+        modifier
+            .fillMaxSize()
+            .clip(MaterialTheme.shapes.extraLarge),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .heroGridBackground(
-                            title = title,
-                            primaryColor = primaryColor,
-                            shape1 = shape1,
-                            shape2 = shape2,
-                        ),
+                Modifier
+                    .fillMaxSize()
+                    .heroGridBackground(
+                        title = title,
+                        primaryColor = primaryColor,
+                        shape1 = shape1,
+                        shape2 = shape2,
+                    ),
             )
 
             Column(modifier = Modifier.fillMaxSize()) {
@@ -118,10 +117,10 @@ fun HeroGridCard(
 
                 Box(
                     modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 ) {
                     val displayItems = items.take(4)
                     val cellContent: @Composable (Podcast, Modifier) -> Unit = { podcast, cellModifier ->
@@ -130,14 +129,14 @@ fun HeroGridCard(
                             mode = mode,
                             onClick = onCellClick,
                             isNowPlaying =
-                                mode == HeroGridMode.Resume &&
-                                    HomePlaybackStateLogic.isHeroItemPlaying(
-                                        itemEpisodeId = podcast.latestEpisode?.id,
-                                        itemPodcastId = podcast.id,
-                                        currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                        currentPlayingPodcastId = currentPlayingPodcastId,
-                                        isPlaying = isPlaying,
-                                    ),
+                            mode == HeroGridMode.Resume &&
+                                HomePlaybackStateLogic.isHeroItemPlaying(
+                                    itemEpisodeId = podcast.latestEpisode?.id,
+                                    itemPodcastId = podcast.id,
+                                    currentPlayingEpisodeId = currentPlayingEpisodeId,
+                                    currentPlayingPodcastId = currentPlayingPodcastId,
+                                    isPlaying = isPlaying,
+                                ),
                             modifier = cellModifier,
                         )
                     }
@@ -220,9 +219,9 @@ private fun GridLayout2x2(
 private fun RowHeader(title: String) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -268,34 +267,34 @@ private fun GridCell(
         remember {
             Brush.verticalGradient(
                 colorStops =
-                    arrayOf(
-                        0.0f to Color.Transparent,
-                        0.35f to Color.Black.copy(alpha = 0.15f),
-                        0.55f to Color.Black.copy(alpha = 0.45f),
-                        0.75f to Color.Black.copy(alpha = 0.75f),
-                        1.0f to Color.Black.copy(alpha = 0.92f),
-                    ),
+                arrayOf(
+                    0.0f to Color.Transparent,
+                    0.35f to Color.Black.copy(alpha = 0.15f),
+                    0.55f to Color.Black.copy(alpha = 0.45f),
+                    0.75f to Color.Black.copy(alpha = 0.75f),
+                    1.0f to Color.Black.copy(alpha = 0.92f),
+                ),
             )
         }
 
     Box(
         modifier =
-            modifier
-                .clip(GridCellCorner)
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .then(
-                    if (isNowPlaying) {
-                        Modifier.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = GridCellCorner,
-                        )
-                    } else {
-                        Modifier
-                    },
-                ).expressiveClickable {
-                    currentOnClick(currentPodcast)
+        modifier
+            .clip(GridCellCorner)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .then(
+                if (isNowPlaying) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = GridCellCorner,
+                    )
+                } else {
+                    Modifier
                 },
+            ).expressiveClickable {
+                currentOnClick(currentPodcast)
+            },
     ) {
         OptimizedImage(
             url = podcast.imageUrl.ifEmpty { podcast.fallbackImageUrl.orEmpty() },
@@ -303,22 +302,22 @@ private fun GridCell(
             contentDescription = podcast.title,
             contentScale = ContentScale.Crop,
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .drawWithContent {
-                        drawContent()
-                        drawRect(gradientBrush)
-                    },
+            Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    drawContent()
+                    drawRect(gradientBrush)
+                },
         )
 
         if (isNew) {
             Box(
                 modifier =
-                    Modifier
-                        .padding(6.dp)
-                        .align(Alignment.TopStart)
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .background(MaterialTheme.colorScheme.primary),
+                Modifier
+                    .padding(6.dp)
+                    .align(Alignment.TopStart)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .background(MaterialTheme.colorScheme.primary),
             ) {
                 Text(
                     text = "NEW",
@@ -333,12 +332,12 @@ private fun GridCell(
         if (isNowPlaying) {
             Box(
                 modifier =
-                    Modifier
-                        .padding(6.dp)
-                        .align(Alignment.TopEnd)
-                        .size(22.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                Modifier
+                    .padding(6.dp)
+                    .align(Alignment.TopEnd)
+                    .size(22.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -352,10 +351,10 @@ private fun GridCell(
 
         Column(
             modifier =
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(10.dp),
+            Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             val episodeTitle = podcast.latestEpisode?.title
@@ -363,20 +362,20 @@ private fun GridCell(
             // Reserve 3 episode title lines (sp→dp); vertically center shorter titles.
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(titleFootHeight),
+                Modifier
+                    .fillMaxWidth()
+                    .height(titleFootHeight),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 Text(
                     text = primaryText,
                     style =
-                        MaterialTheme.typography.titleSmall.copy(
-                            fontSize = TitleFontSize,
-                            lineHeight = TitleLineHeight,
-                            fontWeight = GoogleSansWeight.bold,
-                            color = Color.White,
-                        ),
+                    MaterialTheme.typography.titleSmall.copy(
+                        fontSize = TitleFontSize,
+                        lineHeight = TitleLineHeight,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = Color.White,
+                    ),
                     maxLines = TitleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -386,9 +385,9 @@ private fun GridCell(
                 ProgressBar(
                     progress = podcast.resumeProgress!!,
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(4.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
                 )
             }
         }
@@ -404,17 +403,17 @@ private fun ProgressBar(
 ) {
     Box(
         modifier =
-            modifier
-                .clip(androidx.compose.foundation.shape.CircleShape)
-                .background(trackColor),
+        modifier
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(trackColor),
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(progress)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(indicatorColor),
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(progress)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(indicatorColor),
         )
     }
 }
@@ -424,62 +423,61 @@ private fun Modifier.heroGridBackground(
     primaryColor: Color,
     shape1: androidx.compose.ui.graphics.Shape,
     shape2: androidx.compose.ui.graphics.Shape,
-): Modifier =
-    this.drawWithCache {
-        val size1Px = 180.dp.toPx()
-        val size2Px = 220.dp.toPx()
+): Modifier = this.drawWithCache {
+    val size1Px = 180.dp.toPx()
+    val size2Px = 220.dp.toPx()
 
-        val shape1OffsetX = -50.dp.toPx()
-        val shape1OffsetY = -30.dp.toPx()
-        val shape2Inset = 150.dp.toPx()
+    val shape1OffsetX = -50.dp.toPx()
+    val shape1OffsetY = -30.dp.toPx()
+    val shape2Inset = 150.dp.toPx()
 
-        val outline1 =
-            shape1.createOutline(
-                size = Size(size1Px, size1Px),
-                layoutDirection = layoutDirection,
-                density = this,
-            )
-        val outline2 =
-            shape2.createOutline(
-                size = Size(size2Px, size2Px),
-                layoutDirection = layoutDirection,
-                density = this,
-            )
+    val outline1 =
+        shape1.createOutline(
+            size = Size(size1Px, size1Px),
+            layoutDirection = layoutDirection,
+            density = this,
+        )
+    val outline2 =
+        shape2.createOutline(
+            size = Size(size2Px, size2Px),
+            layoutDirection = layoutDirection,
+            density = this,
+        )
 
-        val isJumpBackIn = title.contains("JUMP", ignoreCase = true)
-        val shapeAlpha = 0.06f
+    val isJumpBackIn = title.contains("JUMP", ignoreCase = true)
+    val shapeAlpha = 0.06f
 
-        onDrawBehind {
-            if (isJumpBackIn) {
-                translate(left = shape1OffsetX, top = shape1OffsetY) {
-                    drawOutline(
-                        outline = outline1,
-                        color = primaryColor,
-                        alpha = shapeAlpha,
-                    )
-                }
-                translate(left = size.width - shape2Inset, top = size.height - shape2Inset) {
-                    drawOutline(
-                        outline = outline2,
-                        color = primaryColor,
-                        alpha = shapeAlpha,
-                    )
-                }
-            } else {
-                translate(left = shape1OffsetX, top = size.height - shape2Inset) {
-                    drawOutline(
-                        outline = outline1,
-                        color = primaryColor,
-                        alpha = shapeAlpha,
-                    )
-                }
-                translate(left = size.width - shape2Inset, top = shape1OffsetY) {
-                    drawOutline(
-                        outline = outline2,
-                        color = primaryColor,
-                        alpha = shapeAlpha,
-                    )
-                }
+    onDrawBehind {
+        if (isJumpBackIn) {
+            translate(left = shape1OffsetX, top = shape1OffsetY) {
+                drawOutline(
+                    outline = outline1,
+                    color = primaryColor,
+                    alpha = shapeAlpha,
+                )
+            }
+            translate(left = size.width - shape2Inset, top = size.height - shape2Inset) {
+                drawOutline(
+                    outline = outline2,
+                    color = primaryColor,
+                    alpha = shapeAlpha,
+                )
+            }
+        } else {
+            translate(left = shape1OffsetX, top = size.height - shape2Inset) {
+                drawOutline(
+                    outline = outline1,
+                    color = primaryColor,
+                    alpha = shapeAlpha,
+                )
+            }
+            translate(left = size.width - shape2Inset, top = shape1OffsetY) {
+                drawOutline(
+                    outline = outline2,
+                    color = primaryColor,
+                    alpha = shapeAlpha,
+                )
             }
         }
     }
+}

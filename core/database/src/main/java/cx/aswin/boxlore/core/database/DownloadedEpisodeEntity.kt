@@ -16,10 +16,10 @@ data class DownloadedEpisodeEntity(
     val podcastImageUrl: String?,
     val durationMs: Long,
     val publishedDate: Long,
-    
+
     // Download Specifics
     val localFilePath: String, // Path to file on disk
-    val downloadId: Long,      // ID from DownloadManager (if using system manager)
+    val downloadId: Long, // ID from DownloadManager (if using system manager)
     val downloadedAt: Long,
     val sizeBytes: Long,
     val status: Int = STATUS_QUEUED,

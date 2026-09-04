@@ -1,10 +1,10 @@
 package cx.aswin.boxlore.core.catalog.content
 
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.Podcast
 
 enum class ContentDaypart {
     MORNING,
@@ -29,30 +29,21 @@ enum class ContentRefreshPolicy {
     DAILY,
 }
 
-data class ContentDurationRange(
-    val minimumMinutes: Int,
-    val maximumMinutes: Int,
-) {
+data class ContentDurationRange(val minimumMinutes: Int, val maximumMinutes: Int,) {
     init {
         require(minimumMinutes >= 0)
         require(maximumMinutes >= minimumMinutes)
     }
 }
 
-data class ContentDiversityConstraints(
-    val maximumItemsPerShow: Int = 2,
-    val minimumDistinctShows: Int = 1,
-) {
+data class ContentDiversityConstraints(val maximumItemsPerShow: Int = 2, val minimumDistinctShows: Int = 1,) {
     init {
         require(maximumItemsPerShow > 0)
         require(minimumDistinctShows >= 0)
     }
 }
 
-data class ContentQualityConstraints(
-    val minimumSemanticScore: Double = 0.0,
-    val unseenShowReserve: Double = 0.0,
-) {
+data class ContentQualityConstraints(val minimumSemanticScore: Double = 0.0, val unseenShowReserve: Double = 0.0,) {
     init {
         require(minimumSemanticScore.isFinite())
         require(unseenShowReserve in 0.0..1.0)
@@ -119,9 +110,7 @@ data class ContentIntent(
         require(diversity.minimumDistinctShows <= maximumItems)
     }
 
-    fun isEligible(context: ContentContext): Boolean {
-        return context.surface in eligibleSurfaces && context.daypart in eligibleDayparts
-    }
+    fun isEligible(context: ContentContext): Boolean = context.surface in eligibleSurfaces && context.daypart in eligibleDayparts
 }
 
 data class ContentCandidate(
@@ -147,10 +136,7 @@ data class ContentCandidate(
     }
 }
 
-data class GroupedContentSection(
-    val intent: ContentIntent,
-    val items: List<ContentCandidate>,
-) {
+data class GroupedContentSection(val intent: ContentIntent, val items: List<ContentCandidate>,) {
     init {
         require(items.all { it.intentId == intent.id })
     }
@@ -191,10 +177,7 @@ data class ContentSlate(
 interface CandidateProvider {
     val source: CandidateSource
 
-    suspend fun candidates(
-        intent: ContentIntent,
-        context: ContentContext,
-    ): List<ContentCandidate>
+    suspend fun candidates(intent: ContentIntent, context: ContentContext,): List<ContentCandidate>
 }
 
 interface GroupedCandidateProvider {
@@ -204,9 +187,5 @@ interface GroupedCandidateProvider {
 }
 
 fun interface ContentCandidateRanker {
-    suspend fun rank(
-        candidates: List<ContentCandidate>,
-        intent: ContentIntent,
-        context: ContentContext,
-    ): List<ContentCandidate>
+    suspend fun rank(candidates: List<ContentCandidate>, intent: ContentIntent, context: ContentContext,): List<ContentCandidate>
 }

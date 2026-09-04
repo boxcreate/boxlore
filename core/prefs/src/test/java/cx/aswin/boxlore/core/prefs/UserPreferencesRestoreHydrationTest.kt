@@ -48,37 +48,35 @@ class UserPreferencesRestoreHydrationTest {
     }
 
     @Test
-    fun themeStreamsKeepRestoredFastCacheWhenDataStoreIsEmpty() =
-        runTest {
-            assertEquals("dark", repository.themeConfigStream.first())
-            assertEquals("amoled", repository.surfaceStyleStream.first())
-            assertEquals("emerald", repository.themeBrandStream.first())
-            assertTrue(repository.useDynamicColorStream.first())
-            assertEquals("crisp", repository.fontRoundnessStream.first())
-            assertEquals("classic", repository.navigationStyleStream.first())
-            assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
-            assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
-            assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
-            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
-            assertEquals("dark", repository.cachedThemeConfig)
-        }
+    fun themeStreamsKeepRestoredFastCacheWhenDataStoreIsEmpty() = runTest {
+        assertEquals("dark", repository.themeConfigStream.first())
+        assertEquals("amoled", repository.surfaceStyleStream.first())
+        assertEquals("emerald", repository.themeBrandStream.first())
+        assertTrue(repository.useDynamicColorStream.first())
+        assertEquals("crisp", repository.fontRoundnessStream.first())
+        assertEquals("classic", repository.navigationStyleStream.first())
+        assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
+        assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
+        assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
+        assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
+        assertEquals("dark", repository.cachedThemeConfig)
+    }
 
     @Test
-    fun hydrateMissingDataStoreFromFastCacheWritesRestoredAppearance() =
-        runTest {
-            repository.hydrateMissingDataStoreFromFastCache()
+    fun hydrateMissingDataStoreFromFastCacheWritesRestoredAppearance() = runTest {
+        repository.hydrateMissingDataStoreFromFastCache()
 
-            assertEquals("dark", repository.themeConfigStream.first())
-            assertEquals("amoled", repository.surfaceStyleStream.first())
-            assertEquals("emerald", repository.themeBrandStream.first())
-            assertTrue(repository.useDynamicColorStream.first())
-            assertEquals("crisp", repository.fontRoundnessStream.first())
-            assertEquals("classic", repository.navigationStyleStream.first())
-            assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
-            assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
-            assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
-            assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
-        }
+        assertEquals("dark", repository.themeConfigStream.first())
+        assertEquals("amoled", repository.surfaceStyleStream.first())
+        assertEquals("emerald", repository.themeBrandStream.first())
+        assertTrue(repository.useDynamicColorStream.first())
+        assertEquals("crisp", repository.fontRoundnessStream.first())
+        assertEquals("classic", repository.navigationStyleStream.first())
+        assertEquals(OpenAppTo.DOWNLOADS, repository.openAppToStream.first())
+        assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
+        assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
+        assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
+    }
 
     private fun seedThemeCache(
         themeConfig: String,

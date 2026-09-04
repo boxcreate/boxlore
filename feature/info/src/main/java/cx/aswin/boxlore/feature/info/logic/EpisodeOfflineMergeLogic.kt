@@ -29,16 +29,16 @@ object EpisodeOfflineMergeLogic {
             episodeTitle = seed.episodeTitle.ifEmpty { snapshot.episodeTitle },
             episodeImageUrl = seed.episodeImageUrl.ifEmpty { snapshot.episodeImageUrl.orEmpty() },
             episodeDescription =
-                seed.episodeDescription.ifEmpty {
-                    snapshot.episodeDescription.orEmpty()
-                },
+            seed.episodeDescription.ifEmpty {
+                snapshot.episodeDescription.orEmpty()
+            },
             episodeAudioUrl = seed.episodeAudioUrl.ifEmpty { snapshot.audioUrl },
             episodeDurationSec =
-                if (seed.episodeDurationSec == 0) {
-                    (snapshot.durationMs / 1000L).toInt()
-                } else {
-                    seed.episodeDurationSec
-                },
+            if (seed.episodeDurationSec == 0) {
+                (snapshot.durationMs / 1000L).toInt()
+            } else {
+                seed.episodeDurationSec
+            },
         )
     }
 }

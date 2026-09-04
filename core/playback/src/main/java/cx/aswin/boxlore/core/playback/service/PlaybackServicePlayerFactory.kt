@@ -33,26 +33,12 @@ import kotlinx.coroutines.CoroutineScope
  * for [BoxLorePlaybackService.onCreate].
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal class PlaybackServicePlayerFactory(
-    private val context: Context,
-    private val serviceScope: CoroutineScope,
-) {
-    data class SeekButtons(
-        val seekBack: CommandButton,
-        val seekForward: CommandButton,
-    )
+internal class PlaybackServicePlayerFactory(private val context: Context, private val serviceScope: CoroutineScope,) {
+    data class SeekButtons(val seekBack: CommandButton, val seekForward: CommandButton,)
 
-    data class CustomActions(
-        val like: CommandButton,
-        val addToQueue: CommandButton,
-        val markComplete: CommandButton,
-    )
+    data class CustomActions(val like: CommandButton, val addToQueue: CommandButton, val markComplete: CommandButton,)
 
-    data class BuiltSession(
-        val mediaSession: MediaLibrarySession,
-        val seekButtons: SeekButtons,
-        val customActions: CustomActions,
-    )
+    data class BuiltSession(val mediaSession: MediaLibrarySession, val seekButtons: SeekButtons, val customActions: CustomActions,)
 
     fun createExoPlayer(): ExoPlayer {
         val audioAttributes =
@@ -130,46 +116,41 @@ internal class PlaybackServicePlayerFactory(
         seekBackMs: () -> Long,
         onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
         onSkipNext: () -> Unit,
-    ): ForwardingPlayer =
-        object : ForwardingPlayer(player) {
-            override fun getSeekForwardIncrement(): Long = seekForwardMs()
+    ): ForwardingPlayer = object : ForwardingPlayer(player) {
+        override fun getSeekForwardIncrement(): Long = seekForwardMs()
 
-            override fun getSeekBackIncrement(): Long = seekBackMs()
+        override fun getSeekBackIncrement(): Long = seekBackMs()
 
-            override fun seekForward() {
-                onSeekByConfiguredIncrement(player, seekForwardMs(), "seek_forward")
-            }
-
-            override fun seekBack() {
-                onSeekByConfiguredIncrement(player, -seekBackMs(), "seek_backward")
-            }
-
-            override fun seekToNext() {
-                onSkipNext()
-            }
-
-            override fun seekToNextMediaItem() {
-                onSkipNext()
-            }
-
-            override fun isCommandAvailable(command: Int): Boolean {
-                if (command == Player.COMMAND_SEEK_FORWARD || command == Player.COMMAND_SEEK_BACK) return true
-                return super.isCommandAvailable(command)
-            }
-
-            override fun getAvailableCommands(): Player.Commands =
-                super
-                    .getAvailableCommands()
-                    .buildUpon()
-                    .add(Player.COMMAND_SEEK_FORWARD)
-                    .add(Player.COMMAND_SEEK_BACK)
-                    .build()
+        override fun seekForward() {
+            onSeekByConfiguredIncrement(player, seekForwardMs(), "seek_forward")
         }
 
-    fun buildSeekButtons(
-        seekBackwardMs: Long,
-        seekForwardMs: Long,
-    ): SeekButtons {
+        override fun seekBack() {
+            onSeekByConfiguredIncrement(player, -seekBackMs(), "seek_backward")
+        }
+
+        override fun seekToNext() {
+            onSkipNext()
+        }
+
+        override fun seekToNextMediaItem() {
+            onSkipNext()
+        }
+
+        override fun isCommandAvailable(command: Int): Boolean {
+            if (command == Player.COMMAND_SEEK_FORWARD || command == Player.COMMAND_SEEK_BACK) return true
+            return super.isCommandAvailable(command)
+        }
+
+        override fun getAvailableCommands(): Player.Commands = super
+            .getAvailableCommands()
+            .buildUpon()
+            .add(Player.COMMAND_SEEK_FORWARD)
+            .add(Player.COMMAND_SEEK_BACK)
+            .build()
+    }
+
+    fun buildSeekButtons(seekBackwardMs: Long, seekForwardMs: Long,): SeekButtons {
         val seekBack =
             CommandButton
                 .Builder()

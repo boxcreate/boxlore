@@ -29,30 +29,26 @@ class ListeningInsightsMaintenance(
      * Merge eligible raw sessions into daily episode rollups and delete those raw rows.
      * Never touches sessions from [todayLocalDay].
      */
-    suspend fun rollUpEligibleSessions(
-        cutoffEndedAtExclusive: Long,
-        todayLocalDay: Long,
-    ): Int =
-        database.withTransaction {
-            val eligible =
-                sessions.getSessionsEligibleForRollup(cutoffEndedAtExclusive, todayLocalDay)
-            if (eligible.isEmpty()) return@withTransaction 0
+    suspend fun rollUpEligibleSessions(cutoffEndedAtExclusive: Long, todayLocalDay: Long,): Int = database.withTransaction {
+        val eligible =
+            sessions.getSessionsEligibleForRollup(cutoffEndedAtExclusive, todayLocalDay)
+        if (eligible.isEmpty()) return@withTransaction 0
 
-            val grouped = eligible.groupBy { it.localDay to it.episodeId }
-            for ((key, groupSessions) in grouped) {
-                val (localDay, episodeId) = key
-                val existing = rollups.getRollup(localDay, episodeId)
-                rollups.upsertRollup(
-                    ListeningRollupMerge.mergeSessionsIntoRollup(
-                        localDay = localDay,
-                        episodeId = episodeId,
-                        sessions = groupSessions,
-                        existing = existing,
-                    ),
-                )
-            }
-
-            sessions.deleteSessionsEligibleForRollup(cutoffEndedAtExclusive, todayLocalDay)
-            eligible.size
+        val grouped = eligible.groupBy { it.localDay to it.episodeId }
+        for ((key, groupSessions) in grouped) {
+            val (localDay, episodeId) = key
+            val existing = rollups.getRollup(localDay, episodeId)
+            rollups.upsertRollup(
+                ListeningRollupMerge.mergeSessionsIntoRollup(
+                    localDay = localDay,
+                    episodeId = episodeId,
+                    sessions = groupSessions,
+                    existing = existing,
+                ),
+            )
         }
+
+        sessions.deleteSessionsEligibleForRollup(cutoffEndedAtExclusive, todayLocalDay)
+        eligible.size
+    }
 }

@@ -60,13 +60,12 @@ class AdaptiveCandidateScorerTest {
         podcastId: String = "pod-1",
         publishedSeconds: Long = nowMs / 1_000 - 3_600,
         duration: Int = 45 * 60,
-    ): Episode =
-        TestFixtures.episode(
-            id = id,
-            podcastId = podcastId,
-            publishedDate = publishedSeconds,
-            duration = duration,
-        )
+    ): Episode = TestFixtures.episode(
+        id = id,
+        podcastId = podcastId,
+        publishedDate = publishedSeconds,
+        duration = duration,
+    )
 
     private fun podcast(
         id: String = "pod-1",
@@ -76,13 +75,12 @@ class AdaptiveCandidateScorerTest {
         notifications: Boolean = false,
         preferredSort: String? = null,
         latest: Episode? = null,
-    ): Podcast =
-        TestFixtures.podcast(id = id, genre = genre, subscribedAt = subscribedAt).copy(
-            autoDownloadEnabled = autoDownload,
-            notificationsEnabled = notifications,
-            preferredSort = preferredSort,
-            latestEpisode = latest,
-        )
+    ): Podcast = TestFixtures.podcast(id = id, genre = genre, subscribedAt = subscribedAt).copy(
+        autoDownloadEnabled = autoDownload,
+        notificationsEnabled = notifications,
+        preferredSort = preferredSort,
+        latestEpisode = latest,
+    )
 
     private fun scorable(
         id: String = "pod-1",
@@ -90,14 +88,13 @@ class AdaptiveCandidateScorerTest {
         latest: Episode? = episode(podcastId = id),
         notifications: Boolean = false,
         autoDownload: Boolean = false,
-    ): ScorablePodcast =
-        ScorablePodcast(
-            id = id,
-            subscribedAt = subscribedAt,
-            latestEpisode = latest,
-            notificationsEnabled = notifications,
-            autoDownloadEnabled = autoDownload,
-        )
+    ): ScorablePodcast = ScorablePodcast(
+        id = id,
+        subscribedAt = subscribedAt,
+        latestEpisode = latest,
+        notificationsEnabled = notifications,
+        autoDownloadEnabled = autoDownload,
+    )
 
     private fun history(
         episodeId: String = "ep-1",
@@ -107,414 +104,402 @@ class AdaptiveCandidateScorerTest {
         isCompleted: Boolean = false,
         isLiked: Boolean = false,
         lastPlayedAt: Long = nowMs - 60_000L,
-    ): ListeningHistoryEntity =
-        ListeningHistoryEntity(
-            episodeId = episodeId,
-            podcastId = podcastId,
-            episodeTitle = "Episode $episodeId",
-            episodeImageUrl = null,
-            podcastImageUrl = null,
-            episodeAudioUrl = null,
-            podcastName = "Podcast $podcastId",
-            progressMs = progressMs,
-            durationMs = durationMs,
-            isCompleted = isCompleted,
-            isLiked = isLiked,
-            lastPlayedAt = lastPlayedAt,
-        )
+    ): ListeningHistoryEntity = ListeningHistoryEntity(
+        episodeId = episodeId,
+        podcastId = podcastId,
+        episodeTitle = "Episode $episodeId",
+        episodeImageUrl = null,
+        podcastImageUrl = null,
+        episodeAudioUrl = null,
+        podcastName = "Podcast $podcastId",
+        progressMs = progressMs,
+        durationMs = durationMs,
+        isCompleted = isCompleted,
+        isLiked = isLiked,
+        lastPlayedAt = lastPlayedAt,
+    )
 
     @Test
-    fun scorePodcastsEmptyReturnsEmpty() =
-        runTest {
-            val result =
-                scorer.scorePodcasts(
-                    podcasts = emptyList(),
-                    history = emptyList(),
-                    objective = RankingObjective.YOUR_SHOWS,
-                    surface = RankingSurface.HOME,
-                    nowMs = nowMs,
-                )
-            assertTrue(result.isEmpty())
-        }
+    fun scorePodcastsEmptyReturnsEmpty() = runTest {
+        val result =
+            scorer.scorePodcasts(
+                podcasts = emptyList(),
+                history = emptyList(),
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.HOME,
+                nowMs = nowMs,
+            )
+        assertTrue(result.isEmpty())
+    }
 
     @Test
-    fun scorePodcastsAdaptiveDisabledReturnsLegacyScores() =
-        runTest {
-            // EXPLORE surface defaults to adaptive-disabled, so legacy scoring is returned verbatim.
-            val podcasts =
-                listOf(
-                    scorable(id = "pod-1", autoDownload = true),
-                    scorable(id = "pod-2"),
-                )
-            val legacy =
-                scorer.scorePodcasts(
-                    podcasts = podcasts,
-                    history = listOf(history(podcastId = "pod-1", isLiked = true)),
-                    objective = RankingObjective.CONTINUATION,
-                    surface = RankingSurface.EXPLORE,
-                    nowMs = nowMs,
-                )
-            assertEquals(setOf("pod-1", "pod-2"), legacy.keys)
-            assertTrue(legacy.values.all { it.isFinite() })
-        }
+    fun scorePodcastsAdaptiveDisabledReturnsLegacyScores() = runTest {
+        // EXPLORE surface defaults to adaptive-disabled, so legacy scoring is returned verbatim.
+        val podcasts =
+            listOf(
+                scorable(id = "pod-1", autoDownload = true),
+                scorable(id = "pod-2"),
+            )
+        val legacy =
+            scorer.scorePodcasts(
+                podcasts = podcasts,
+                history = listOf(history(podcastId = "pod-1", isLiked = true)),
+                objective = RankingObjective.CONTINUATION,
+                surface = RankingSurface.EXPLORE,
+                nowMs = nowMs,
+            )
+        assertEquals(setOf("pod-1", "pod-2"), legacy.keys)
+        assertTrue(legacy.values.all { it.isFinite() })
+    }
 
     @Test
-    fun scorePodcastsAdaptiveEnabledProducesBoundedScores() =
-        runTest {
-            controls.setShadowDiagnosticsEnabled(true)
-            val podcasts =
-                listOf(
-                    scorable(id = "pod-1", autoDownload = true, notifications = true),
-                    scorable(id = "pod-2", latest = null),
-                    scorable(id = "pod-3", subscribedAt = 0L),
-                )
-            val history =
-                listOf(
-                    history(podcastId = "pod-1", progressMs = 30 * 60 * 1000L, isLiked = true),
-                )
-            repository.updateFacet(PreferenceFacetType.SHOW, "pod-1", reward = 1.0, now = nowMs)
+    fun scorePodcastsAdaptiveEnabledProducesBoundedScores() = runTest {
+        controls.setShadowDiagnosticsEnabled(true)
+        val podcasts =
+            listOf(
+                scorable(id = "pod-1", autoDownload = true, notifications = true),
+                scorable(id = "pod-2", latest = null),
+                scorable(id = "pod-3", subscribedAt = 0L),
+            )
+        val history =
+            listOf(
+                history(podcastId = "pod-1", progressMs = 30 * 60 * 1000L, isLiked = true),
+            )
+        repository.updateFacet(PreferenceFacetType.SHOW, "pod-1", reward = 1.0, now = nowMs)
 
-            val adaptive =
-                scorer.scorePodcasts(
-                    podcasts = podcasts,
-                    history = history,
-                    objective = RankingObjective.CONTINUATION,
-                    surface = RankingSurface.HOME,
-                    includeAutoDownloadBoost = true,
-                    nowMs = nowMs,
-                )
+        val adaptive =
+            scorer.scorePodcasts(
+                podcasts = podcasts,
+                history = history,
+                objective = RankingObjective.CONTINUATION,
+                surface = RankingSurface.HOME,
+                includeAutoDownloadBoost = true,
+                nowMs = nowMs,
+            )
 
-            assertEquals(setOf("pod-1", "pod-2", "pod-3"), adaptive.keys)
-            assertTrue(adaptive.values.all { it.isFinite() })
-            assertTrue(RankingShadowDiagnostics.snapshots().isNotEmpty())
-        }
-
-    @Test
-    fun scoreEpisodesEmptyReturnsEmpty() =
-        runTest {
-            val result =
-                scorer.scoreEpisodes(
-                    inputs = emptyList(),
-                    history = emptyList(),
-                    objective = RankingObjective.DISCOVERY,
-                    surface = RankingSurface.HOME,
-                    nowMs = nowMs,
-                )
-            assertTrue(result.isEmpty())
-        }
+        assertEquals(setOf("pod-1", "pod-2", "pod-3"), adaptive.keys)
+        assertTrue(adaptive.values.all { it.isFinite() })
+        assertTrue(RankingShadowDiagnostics.snapshots().isNotEmpty())
+    }
 
     @Test
-    fun scoreEpisodesAdaptiveDisabledReturnsNormalizedPriors() =
-        runTest {
-            val inputs =
-                listOf(
-                    EpisodeRankingInput(
-                        episode = episode(id = "ep-1"),
-                        podcast = podcast(),
-                        priorScore = 10.0,
-                        source = CandidateSource.SERVER_RECOMMENDATION,
-                    ),
-                    EpisodeRankingInput(
-                        episode = episode(id = "ep-2"),
-                        podcast = podcast(),
-                        priorScore = 0.0,
-                        source = CandidateSource.TRENDING,
-                    ),
-                )
-            val result =
-                scorer.scoreEpisodes(
-                    inputs = inputs,
-                    history = emptyList(),
-                    objective = RankingObjective.DISCOVERY,
-                    surface = RankingSurface.LIBRARY,
-                    nowMs = nowMs,
-                )
-            assertEquals(setOf("ep-1", "ep-2"), result.keys)
-            assertTrue(result.getValue("ep-1") in 0.0..1.0)
-            assertEquals(0.0, result.getValue("ep-2"), 1e-9)
-        }
+    fun scoreEpisodesEmptyReturnsEmpty() = runTest {
+        val result =
+            scorer.scoreEpisodes(
+                inputs = emptyList(),
+                history = emptyList(),
+                objective = RankingObjective.DISCOVERY,
+                surface = RankingSurface.HOME,
+                nowMs = nowMs,
+            )
+        assertTrue(result.isEmpty())
+    }
 
     @Test
-    fun scoreEpisodesAdaptiveEnabledUsesFacetsAndHistory() =
-        runTest {
-            repository.updateFacet(PreferenceFacetType.GENRE, "Technology", reward = 1.0, now = nowMs)
-            repository.updateFacet(PreferenceFacetType.SOURCE, CandidateSource.LIKED.name, reward = 1.0, now = nowMs)
-            val inputs =
-                listOf(
-                    EpisodeRankingInput(
-                        episode = episode(id = "ep-1", duration = 30 * 60),
-                        podcast = podcast(preferredSort = "oldest"),
-                        priorScore = 5.0,
-                        source = CandidateSource.LIKED,
-                        isNovel = true,
-                        online = false,
-                    ),
-                    EpisodeRankingInput(
-                        episode = episode(id = "ep-2"),
-                        podcast = podcast(id = "pod-2", genre = "News"),
-                        priorScore = 2.0,
-                        source = CandidateSource.TRENDING,
-                    ),
-                )
-            val result =
-                scorer.scoreEpisodes(
-                    inputs = inputs,
-                    history = listOf(history(episodeId = "ep-1", progressMs = 15 * 60 * 1000L)),
-                    objective = RankingObjective.DISCOVERY,
-                    surface = RankingSurface.HOME,
-                    nowMs = nowMs,
-                )
-            assertEquals(setOf("ep-1", "ep-2"), result.keys)
-            assertTrue(result.values.all { it.isFinite() })
-        }
+    fun scoreEpisodesAdaptiveDisabledReturnsNormalizedPriors() = runTest {
+        val inputs =
+            listOf(
+                EpisodeRankingInput(
+                    episode = episode(id = "ep-1"),
+                    podcast = podcast(),
+                    priorScore = 10.0,
+                    source = CandidateSource.SERVER_RECOMMENDATION,
+                ),
+                EpisodeRankingInput(
+                    episode = episode(id = "ep-2"),
+                    podcast = podcast(),
+                    priorScore = 0.0,
+                    source = CandidateSource.TRENDING,
+                ),
+            )
+        val result =
+            scorer.scoreEpisodes(
+                inputs = inputs,
+                history = emptyList(),
+                objective = RankingObjective.DISCOVERY,
+                surface = RankingSurface.LIBRARY,
+                nowMs = nowMs,
+            )
+        assertEquals(setOf("ep-1", "ep-2"), result.keys)
+        assertTrue(result.getValue("ep-1") in 0.0..1.0)
+        assertEquals(0.0, result.getValue("ep-2"), 1e-9)
+    }
 
     @Test
-    fun rankEpisodesReturnsDiversifiedOrder() =
-        runTest {
-            controls.setShadowDiagnosticsEnabled(true)
-            val inputs =
-                (1..5).map { i ->
-                    EpisodeRankingInput(
-                        episode = episode(id = "ep-$i", podcastId = if (i <= 3) "pod-a" else "pod-b"),
-                        podcast = podcast(id = if (i <= 3) "pod-a" else "pod-b"),
-                        priorScore = i.toDouble(),
-                        source = CandidateSource.SUBSCRIPTION,
-                        isNovel = i == 5,
-                    )
-                }
-            val ranked =
-                scorer.rankEpisodes(
-                    inputs = inputs,
-                    history = emptyList(),
-                    objective = RankingObjective.DISCOVERY,
-                    surface = RankingSurface.HOME,
-                    diversityPolicy = DiversityPolicy(limit = 3, maxPerShow = 2, reserveNovelSlot = true),
-                    nowMs = nowMs,
-                )
-            assertTrue(ranked.size <= 3)
-            assertEquals(ranked.map(Episode::id).distinct(), ranked.map(Episode::id))
-        }
+    fun scoreEpisodesAdaptiveEnabledUsesFacetsAndHistory() = runTest {
+        repository.updateFacet(PreferenceFacetType.GENRE, "Technology", reward = 1.0, now = nowMs)
+        repository.updateFacet(PreferenceFacetType.SOURCE, CandidateSource.LIKED.name, reward = 1.0, now = nowMs)
+        val inputs =
+            listOf(
+                EpisodeRankingInput(
+                    episode = episode(id = "ep-1", duration = 30 * 60),
+                    podcast = podcast(preferredSort = "oldest"),
+                    priorScore = 5.0,
+                    source = CandidateSource.LIKED,
+                    isNovel = true,
+                    online = false,
+                ),
+                EpisodeRankingInput(
+                    episode = episode(id = "ep-2"),
+                    podcast = podcast(id = "pod-2", genre = "News"),
+                    priorScore = 2.0,
+                    source = CandidateSource.TRENDING,
+                ),
+            )
+        val result =
+            scorer.scoreEpisodes(
+                inputs = inputs,
+                history = listOf(history(episodeId = "ep-1", progressMs = 15 * 60 * 1000L)),
+                objective = RankingObjective.DISCOVERY,
+                surface = RankingSurface.HOME,
+                nowMs = nowMs,
+            )
+        assertEquals(setOf("ep-1", "ep-2"), result.keys)
+        assertTrue(result.values.all { it.isFinite() })
+    }
 
     @Test
-    fun rankPodcastsEmptyReturnsEmpty() =
-        runTest {
-            val ranked =
-                scorer.rankPodcasts(
-                    inputs = emptyList(),
-                    history = emptyList(),
-                    objective = RankingObjective.YOUR_SHOWS,
-                    surface = RankingSurface.HOME,
-                    nowMs = nowMs,
+    fun rankEpisodesReturnsDiversifiedOrder() = runTest {
+        controls.setShadowDiagnosticsEnabled(true)
+        val inputs =
+            (1..5).map { i ->
+                EpisodeRankingInput(
+                    episode = episode(id = "ep-$i", podcastId = if (i <= 3) "pod-a" else "pod-b"),
+                    podcast = podcast(id = if (i <= 3) "pod-a" else "pod-b"),
+                    priorScore = i.toDouble(),
+                    source = CandidateSource.SUBSCRIPTION,
+                    isNovel = i == 5,
                 )
-            assertTrue(ranked.isEmpty())
-        }
-
-    @Test
-    fun rankPodcastsWithoutDiversityPolicySortsByScore() =
-        runTest {
-            val inputs =
-                listOf(
-                    PodcastRankingInput(
-                        podcast = podcast(id = "pod-1", latest = episode(id = "ep-1", podcastId = "pod-1")),
-                        priorScore = 1.0,
-                        source = CandidateSource.SUBSCRIPTION,
-                    ),
-                    PodcastRankingInput(
-                        podcast = podcast(id = "pod-2", latest = episode(id = "ep-2", podcastId = "pod-2")),
-                        priorScore = 9.0,
-                        source = CandidateSource.SUBSCRIPTION,
-                        isNovel = true,
-                    ),
-                )
-            // Disable adaptive so ordering follows normalized priors deterministically.
-            controls.setSurfaceEnabled(RankingSurface.HOME, false)
-            val ranked =
-                scorer.rankPodcasts(
-                    inputs = inputs,
-                    history = listOf(history(episodeId = "ep-1", podcastId = "pod-1")),
-                    objective = RankingObjective.YOUR_SHOWS,
-                    surface = RankingSurface.HOME,
-                    nowMs = nowMs,
-                )
-            assertEquals(listOf("pod-2", "pod-1"), ranked.map(Podcast::id))
-        }
-
-    @Test
-    fun rankPodcastsWithDiversityPolicyAppliesReranker() =
-        runTest {
-            controls.setShadowDiagnosticsEnabled(true)
-            val inputs =
-                (1..4).map { i ->
-                    PodcastRankingInput(
-                        podcast =
-                            podcast(
-                                id = "pod-$i",
-                                genre = if (i % 2 == 0) "News" else "Technology",
-                                latest = episode(id = "ep-$i", podcastId = "pod-$i"),
-                            ),
-                        priorScore = i.toDouble(),
-                        source = CandidateSource.SUBSCRIPTION,
-                        timeContextMatch = 0.9,
-                    )
-                }
-            val ranked =
-                scorer.rankPodcasts(
-                    inputs = inputs,
-                    history = emptyList(),
-                    objective = RankingObjective.YOUR_SHOWS,
-                    surface = RankingSurface.HOME,
-                    diversityPolicy = DiversityPolicy(limit = 2),
-                    nowMs = nowMs,
-                )
-            assertTrue(ranked.size <= 2)
-        }
-
-    @Test
-    fun scorePodcastsUsesSameDeterministicYourShowsScoresAcrossSurfaces() =
-        runTest {
-            val ignoredFeatures =
-                CandidateFeatureBuilder.build(
-                    CandidateSignals(
-                        showAffinity = 0.5,
-                        isSubscribed = true,
-                        isUnplayed = true,
-                        serialMatch = 1.0,
-                        hoursSinceSubscription = 24.0 * 120,
-                        ageHours = 24.0 * 60,
-                    ),
-                )
-            repeat(60) { index ->
-                val exposureId =
-                    repository.recordExposure(
-                        RankingExposure(
-                            episodeId = "skip-$index",
-                            podcastId = "ignored-$index",
-                            objective = RankingObjective.YOUR_SHOWS,
-                            surface = RankingSurface.HOME,
-                            source = CandidateSource.SUBSCRIPTION,
-                            features = ignoredFeatures,
-                            online = true,
-                            shownAt = nowMs - index,
-                        ),
-                    )
-                assertTrue(repository.resolveExposure(exposureId, reward = -0.85, listenSeconds = 8))
             }
-
-            val dayMs = 24L * 60 * 60 * 1000
-            val favoriteHistory =
-                (1..40).map { index ->
-                    history(
-                        episodeId = "fav-ep-$index",
-                        podcastId = "fav",
-                        progressMs = 40 * 60 * 1000L,
-                        isCompleted = true,
-                        isLiked = index <= 5,
-                        lastPlayedAt = nowMs - 60_000L,
-                    )
-                }
-            val scores =
-                scorer.scorePodcasts(
-                    podcasts =
-                        listOf(
-                            scorable(
-                                id = "fresh",
-                                subscribedAt = nowMs,
-                                latest =
-                                    episode(
-                                        id = "fresh-ep",
-                                        podcastId = "fresh",
-                                        publishedSeconds = nowMs / 1_000 - 3_600,
-                                    ),
-                            ),
-                            scorable(
-                                id = "ignored",
-                                subscribedAt = nowMs - 120 * dayMs,
-                                latest =
-                                    episode(
-                                        id = "ignored-ep",
-                                        podcastId = "ignored",
-                                        publishedSeconds = nowMs / 1_000 - 60 * 24 * 3_600,
-                                    ),
-                            ),
-                            scorable(
-                                id = "fav",
-                                subscribedAt = nowMs - 200 * dayMs,
-                                latest =
-                                    episode(
-                                        id = "fav-ep-40",
-                                        podcastId = "fav",
-                                        publishedSeconds = nowMs / 1_000 - 3_600,
-                                    ),
-                            ),
-                        ),
-                    history =
-                        favoriteHistory +
-                            history(
-                                episodeId = "ignored-ep",
-                                podcastId = "ignored",
-                                isCompleted = true,
-                                lastPlayedAt = nowMs - 90 * dayMs,
-                            ),
-                    objective = RankingObjective.YOUR_SHOWS,
-                    surface = RankingSurface.LIBRARY,
-                    nowMs = nowMs,
-                )
-            val homeScores =
-                scorer.scorePodcasts(
-                    podcasts =
-                        listOf(
-                            scorable(
-                                id = "fresh",
-                                subscribedAt = nowMs,
-                                latest =
-                                    episode(
-                                        id = "fresh-ep",
-                                        podcastId = "fresh",
-                                        publishedSeconds = nowMs / 1_000 - 3_600,
-                                    ),
-                            ),
-                            scorable(
-                                id = "ignored",
-                                subscribedAt = nowMs - 120 * dayMs,
-                                latest =
-                                    episode(
-                                        id = "ignored-ep",
-                                        podcastId = "ignored",
-                                        publishedSeconds = nowMs / 1_000 - 60 * 24 * 3_600,
-                                    ),
-                            ),
-                            scorable(
-                                id = "fav",
-                                subscribedAt = nowMs - 200 * dayMs,
-                                latest =
-                                    episode(
-                                        id = "fav-ep-40",
-                                        podcastId = "fav",
-                                        publishedSeconds = nowMs / 1_000 - 3_600,
-                                    ),
-                            ),
-                        ),
-                    history =
-                        favoriteHistory +
-                            history(
-                                episodeId = "ignored-ep",
-                                podcastId = "ignored",
-                                isCompleted = true,
-                                lastPlayedAt = nowMs - 90 * dayMs,
-                            ),
-                    objective = RankingObjective.YOUR_SHOWS,
-                    surface = RankingSurface.HOME,
-                    nowMs = nowMs,
-                )
-
-            assertEquals(scores, homeScores)
-            assertTrue(
-                "fresh=${scores["fresh"]} ignored=${scores["ignored"]}",
-                scores.getValue("fresh") > scores.getValue("ignored"),
+        val ranked =
+            scorer.rankEpisodes(
+                inputs = inputs,
+                history = emptyList(),
+                objective = RankingObjective.DISCOVERY,
+                surface = RankingSurface.HOME,
+                diversityPolicy = DiversityPolicy(limit = 3, maxPerShow = 2, reserveNovelSlot = true),
+                nowMs = nowMs,
             )
-            assertTrue(
-                "fresh=${scores["fresh"]} should stay in the recency floor band",
-                scores.getValue("fresh") >= 0.94,
+        assertTrue(ranked.size <= 3)
+        assertEquals(ranked.map(Episode::id).distinct(), ranked.map(Episode::id))
+    }
+
+    @Test
+    fun rankPodcastsEmptyReturnsEmpty() = runTest {
+        val ranked =
+            scorer.rankPodcasts(
+                inputs = emptyList(),
+                history = emptyList(),
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.HOME,
+                nowMs = nowMs,
             )
+        assertTrue(ranked.isEmpty())
+    }
+
+    @Test
+    fun rankPodcastsWithoutDiversityPolicySortsByScore() = runTest {
+        val inputs =
+            listOf(
+                PodcastRankingInput(
+                    podcast = podcast(id = "pod-1", latest = episode(id = "ep-1", podcastId = "pod-1")),
+                    priorScore = 1.0,
+                    source = CandidateSource.SUBSCRIPTION,
+                ),
+                PodcastRankingInput(
+                    podcast = podcast(id = "pod-2", latest = episode(id = "ep-2", podcastId = "pod-2")),
+                    priorScore = 9.0,
+                    source = CandidateSource.SUBSCRIPTION,
+                    isNovel = true,
+                ),
+            )
+        // Disable adaptive so ordering follows normalized priors deterministically.
+        controls.setSurfaceEnabled(RankingSurface.HOME, false)
+        val ranked =
+            scorer.rankPodcasts(
+                inputs = inputs,
+                history = listOf(history(episodeId = "ep-1", podcastId = "pod-1")),
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.HOME,
+                nowMs = nowMs,
+            )
+        assertEquals(listOf("pod-2", "pod-1"), ranked.map(Podcast::id))
+    }
+
+    @Test
+    fun rankPodcastsWithDiversityPolicyAppliesReranker() = runTest {
+        controls.setShadowDiagnosticsEnabled(true)
+        val inputs =
+            (1..4).map { i ->
+                PodcastRankingInput(
+                    podcast =
+                    podcast(
+                        id = "pod-$i",
+                        genre = if (i % 2 == 0) "News" else "Technology",
+                        latest = episode(id = "ep-$i", podcastId = "pod-$i"),
+                    ),
+                    priorScore = i.toDouble(),
+                    source = CandidateSource.SUBSCRIPTION,
+                    timeContextMatch = 0.9,
+                )
+            }
+        val ranked =
+            scorer.rankPodcasts(
+                inputs = inputs,
+                history = emptyList(),
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.HOME,
+                diversityPolicy = DiversityPolicy(limit = 2),
+                nowMs = nowMs,
+            )
+        assertTrue(ranked.size <= 2)
+    }
+
+    @Test
+    fun scorePodcastsUsesSameDeterministicYourShowsScoresAcrossSurfaces() = runTest {
+        val ignoredFeatures =
+            CandidateFeatureBuilder.build(
+                CandidateSignals(
+                    showAffinity = 0.5,
+                    isSubscribed = true,
+                    isUnplayed = true,
+                    serialMatch = 1.0,
+                    hoursSinceSubscription = 24.0 * 120,
+                    ageHours = 24.0 * 60,
+                ),
+            )
+        repeat(60) { index ->
+            val exposureId =
+                repository.recordExposure(
+                    RankingExposure(
+                        episodeId = "skip-$index",
+                        podcastId = "ignored-$index",
+                        objective = RankingObjective.YOUR_SHOWS,
+                        surface = RankingSurface.HOME,
+                        source = CandidateSource.SUBSCRIPTION,
+                        features = ignoredFeatures,
+                        online = true,
+                        shownAt = nowMs - index,
+                    ),
+                )
+            assertTrue(repository.resolveExposure(exposureId, reward = -0.85, listenSeconds = 8))
         }
+
+        val dayMs = 24L * 60 * 60 * 1000
+        val favoriteHistory =
+            (1..40).map { index ->
+                history(
+                    episodeId = "fav-ep-$index",
+                    podcastId = "fav",
+                    progressMs = 40 * 60 * 1000L,
+                    isCompleted = true,
+                    isLiked = index <= 5,
+                    lastPlayedAt = nowMs - 60_000L,
+                )
+            }
+        val scores =
+            scorer.scorePodcasts(
+                podcasts =
+                listOf(
+                    scorable(
+                        id = "fresh",
+                        subscribedAt = nowMs,
+                        latest =
+                        episode(
+                            id = "fresh-ep",
+                            podcastId = "fresh",
+                            publishedSeconds = nowMs / 1_000 - 3_600,
+                        ),
+                    ),
+                    scorable(
+                        id = "ignored",
+                        subscribedAt = nowMs - 120 * dayMs,
+                        latest =
+                        episode(
+                            id = "ignored-ep",
+                            podcastId = "ignored",
+                            publishedSeconds = nowMs / 1_000 - 60 * 24 * 3_600,
+                        ),
+                    ),
+                    scorable(
+                        id = "fav",
+                        subscribedAt = nowMs - 200 * dayMs,
+                        latest =
+                        episode(
+                            id = "fav-ep-40",
+                            podcastId = "fav",
+                            publishedSeconds = nowMs / 1_000 - 3_600,
+                        ),
+                    ),
+                ),
+                history =
+                favoriteHistory +
+                    history(
+                        episodeId = "ignored-ep",
+                        podcastId = "ignored",
+                        isCompleted = true,
+                        lastPlayedAt = nowMs - 90 * dayMs,
+                    ),
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.LIBRARY,
+                nowMs = nowMs,
+            )
+        val homeScores =
+            scorer.scorePodcasts(
+                podcasts =
+                listOf(
+                    scorable(
+                        id = "fresh",
+                        subscribedAt = nowMs,
+                        latest =
+                        episode(
+                            id = "fresh-ep",
+                            podcastId = "fresh",
+                            publishedSeconds = nowMs / 1_000 - 3_600,
+                        ),
+                    ),
+                    scorable(
+                        id = "ignored",
+                        subscribedAt = nowMs - 120 * dayMs,
+                        latest =
+                        episode(
+                            id = "ignored-ep",
+                            podcastId = "ignored",
+                            publishedSeconds = nowMs / 1_000 - 60 * 24 * 3_600,
+                        ),
+                    ),
+                    scorable(
+                        id = "fav",
+                        subscribedAt = nowMs - 200 * dayMs,
+                        latest =
+                        episode(
+                            id = "fav-ep-40",
+                            podcastId = "fav",
+                            publishedSeconds = nowMs / 1_000 - 3_600,
+                        ),
+                    ),
+                ),
+                history =
+                favoriteHistory +
+                    history(
+                        episodeId = "ignored-ep",
+                        podcastId = "ignored",
+                        isCompleted = true,
+                        lastPlayedAt = nowMs - 90 * dayMs,
+                    ),
+                objective = RankingObjective.YOUR_SHOWS,
+                surface = RankingSurface.HOME,
+                nowMs = nowMs,
+            )
+
+        assertEquals(scores, homeScores)
+        assertTrue(
+            "fresh=${scores["fresh"]} ignored=${scores["ignored"]}",
+            scores.getValue("fresh") > scores.getValue("ignored"),
+        )
+        assertTrue(
+            "fresh=${scores["fresh"]} should stay in the recency floor band",
+            scores.getValue("fresh") >= 0.94,
+        )
+    }
 }

@@ -13,9 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * Single process-scoped connectivity observer (INTERNET capability).
  * Shared by NavHost offline UX.
  */
-class AndroidConnectivityObserver(
-    context: Context,
-) : ConnectivityStatusPort {
+class AndroidConnectivityObserver(context: Context,) : ConnectivityStatusPort {
     private val appContext = context.applicationContext
     private val connectivityManager =
         appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -36,10 +34,7 @@ class AndroidConnectivityObserver(
                 onlineState.value = readIsOnline()
             }
 
-            override fun onCapabilitiesChanged(
-                network: Network,
-                networkCapabilities: NetworkCapabilities,
-            ) {
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities,) {
                 onlineState.value =
                     networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             }
@@ -68,11 +63,10 @@ class AndroidConnectivityObserver(
         }
     }
 
-    private fun readIsOnline(): Boolean =
-        try {
-            val caps = connectivityManager?.getNetworkCapabilities(connectivityManager.activeNetwork)
-            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        } catch (_: Exception) {
-            true
-        }
+    private fun readIsOnline(): Boolean = try {
+        val caps = connectivityManager?.getNetworkCapabilities(connectivityManager.activeNetwork)
+        caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    } catch (_: Exception) {
+        true
+    }
 }

@@ -12,7 +12,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 enum class SwipeDirection {
-    Left, Right
+    Left,
+    Right
 }
 
 class SwipeableCardState(

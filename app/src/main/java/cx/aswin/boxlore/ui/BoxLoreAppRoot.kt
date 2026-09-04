@@ -208,7 +208,7 @@ fun BoxLoreAppRoot(
             (
                 openedToLandingOnLaunch.value &&
                     isLaunchLandingBackRoute(currentRoute)
-            )
+                )
 
     SideEffect { onPlaybackRepositoryReady(playbackRepository) }
 
@@ -494,88 +494,88 @@ fun BoxLoreAppRoot(
         fontRoundness = fontRoundness,
     ) {
         CompositionLocalProvider(LocalNavigationStyle provides navigationStyle) {
-        loreQueueConflictEpisode?.let { pendingLoreEpisode ->
-            LoreQueueConflictDialog(
-                pendingLoreEpisode = pendingLoreEpisode,
-                onDismiss = { loreQueueConflictEpisode = null },
-                onConfirmStart = { episode ->
-                    playbackRepository.stopAndClearQueue()
-                    queueLoreEpisode(episode)
-                },
-            )
-        }
-
-        if (onboardingCompleted && activeAnnouncement != null) {
-            val announcement = activeAnnouncement!!
-            val suppressWhatsNewOnPlay =
-                remember(announcement.category) {
-                    activity.shouldSuppressWhatsNewOnPlay(announcement.category)
-                }
-            if (suppressWhatsNewOnPlay) {
-                LaunchedEffect(announcement.timestamp, announcement.category) {
-                    userPrefs.clearAnnouncement()
-                }
-            } else {
-                InAppAnnouncementDialog(
-                    announcement = announcement,
-                    onDismiss = { scope.launch { userPrefs.clearAnnouncement() } },
-                    onAction = { route ->
-                        scope.launch { userPrefs.clearAnnouncement() }
-                        try {
-                            val intent =
-                                android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse(route),
-                                )
-                            activity.startActivity(intent)
-                        } catch (e: Exception) {
-                            Log.e("Announcement", "Failed to open route", e)
-                        }
+            loreQueueConflictEpisode?.let { pendingLoreEpisode ->
+                LoreQueueConflictDialog(
+                    pendingLoreEpisode = pendingLoreEpisode,
+                    onDismiss = { loreQueueConflictEpisode = null },
+                    onConfirmStart = { episode ->
+                        playbackRepository.stopAndClearQueue()
+                        queueLoreEpisode(episode)
                     },
                 )
             }
-        }
 
-        if (showFeatureDialog) {
-            FeatureAnnouncementOverlay(
-                featureAnnouncementId = featureAnnouncementId,
-                userPrefs = userPrefs,
-            )
-        }
-
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                containerColor = MaterialTheme.colorScheme.surface,
-                // Screens own their system-bar insets; keep Scaffold padding at zero.
-                contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            ) { innerPadding ->
-                // Consume Scaffold padding for lint; with zeroed insets this is a no-op.
-                Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-                    PredictiveBackWrapper(
-                        enabled = canGoBack,
-                        onBack = {
-                            when (
-                                resolveLaunchSubscriptionsBack(
-                                    openedToLandingOnLaunch.value &&
-                                        isLaunchLandingBackRoute(currentRoute),
-                                )
-                            ) {
-                                LaunchSubscriptionsBackAction.NavigateHome -> {
-                                    openedToLandingOnLaunch.value = false
-                                    navController.navigateHomeFromLaunchSubscriptions()
-                                }
-                                LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
+            if (onboardingCompleted && activeAnnouncement != null) {
+                val announcement = activeAnnouncement!!
+                val suppressWhatsNewOnPlay =
+                    remember(announcement.category) {
+                        activity.shouldSuppressWhatsNewOnPlay(announcement.category)
+                    }
+                if (suppressWhatsNewOnPlay) {
+                    LaunchedEffect(announcement.timestamp, announcement.category) {
+                        userPrefs.clearAnnouncement()
+                    }
+                } else {
+                    InAppAnnouncementDialog(
+                        announcement = announcement,
+                        onDismiss = { scope.launch { userPrefs.clearAnnouncement() } },
+                        onAction = { route ->
+                            scope.launch { userPrefs.clearAnnouncement() }
+                            try {
+                                val intent =
+                                    android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(route),
+                                    )
+                                activity.startActivity(intent)
+                            } catch (e: Exception) {
+                                Log.e("Announcement", "Failed to open route", e)
                             }
                         },
-                    ) {
-                        BoxLoreNavHost(
-                            navController = navController,
-                            application = application,
-                            session =
+                    )
+                }
+            }
+
+            if (showFeatureDialog) {
+                FeatureAnnouncementOverlay(
+                    featureAnnouncementId = featureAnnouncementId,
+                    userPrefs = userPrefs,
+                )
+            }
+
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    // Screens own their system-bar insets; keep Scaffold padding at zero.
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                ) { innerPadding ->
+                    // Consume Scaffold padding for lint; with zeroed insets this is a no-op.
+                    Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                        PredictiveBackWrapper(
+                            enabled = canGoBack,
+                            onBack = {
+                                when (
+                                    resolveLaunchSubscriptionsBack(
+                                        openedToLandingOnLaunch.value &&
+                                            isLaunchLandingBackRoute(currentRoute),
+                                    )
+                                ) {
+                                    LaunchSubscriptionsBackAction.NavigateHome -> {
+                                        openedToLandingOnLaunch.value = false
+                                        navController.navigateHomeFromLaunchSubscriptions()
+                                    }
+                                    LaunchSubscriptionsBackAction.PopBackStack -> navController.popBackStack()
+                                }
+                            },
+                        ) {
+                            BoxLoreNavHost(
+                                navController = navController,
+                                application = application,
+                                session =
                                 NavHostSession(
                                     onboardingCompleted = onboardingCompleted,
                                     onOnboardingCompleted = { onboardingCompleted = true },
-                                onInitialHomeContentReady = { isInitialHomeContentReady = true },
+                                    onInitialHomeContentReady = { isInitialHomeContentReady = true },
                                     onboardingViewModel = onboardingViewModel,
                                     hasDeepLink = hasDeepLink,
                                     openedToLandingOnLaunch = openedToLandingOnLaunch,
@@ -586,7 +586,7 @@ fun BoxLoreAppRoot(
                                     permissionLauncher = permissionLauncher,
                                     appInstanceId = appInstanceId,
                                 ),
-                            opmlCallbacks =
+                                opmlCallbacks =
                                 NavOpmlCallbacks(
                                     importState = opmlImportState,
                                     onImportStateChange = { opmlImportState = it },
@@ -595,14 +595,14 @@ fun BoxLoreAppRoot(
                                     onSourceChange = { opmlImportSource = it },
                                     performJsonImport = ::performJsonImport,
                                 ),
-                            actions =
+                                actions =
                                 NavHostActions(
                                     onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
                                     queueLoreEpisode = queueLoreEpisode,
                                     onShowFeedbackSheet = { showFeedbackSheet = true },
                                     onSubmitFeedback = onSubmitFeedback,
                                 ),
-                            settingsState =
+                                settingsState =
                                 NavSettingsState(
                                     currentRegion = currentRegion,
                                     contentLanguages = contentLanguages,
@@ -628,49 +628,49 @@ fun BoxLoreAppRoot(
                                     exploreDefaultTab = exploreDefaultTab,
                                     subscriptionsDefaultTab = subscriptionsDefaultTab,
                                 ),
-                        )
+                            )
+                        }
                     }
                 }
-            }
 
-            val density = LocalDensity.current
-            val screenHeightDp = maxHeight
-            val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            val chromeMetrics = navigationChromeMetrics(navigationStyle)
-            val bottomChromeClearance = chromeMetrics.bottomNavigationClearance
-            val playerSystemNavigationInset =
-                if (navigationStyleUsesExternalSystemNavigationInset(navigationStyle)) {
-                    systemNavBarHeight
-                } else {
-                    0.dp
-                }
-            val containerHeight = screenHeightDp + systemNavBarHeight + 50.dp
-            val collapsedTargetY =
-                with(density) {
-                    (
-                        screenHeightDp -
-                            chromeMetrics.miniPlayerHeight -
-                            bottomChromeClearance -
-                            playerSystemNavigationInset -
-                            chromeMetrics.miniPlayerNavigationGap
-                    ).toPx()
-                }
+                val density = LocalDensity.current
+                val screenHeightDp = maxHeight
+                val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                val chromeMetrics = navigationChromeMetrics(navigationStyle)
+                val bottomChromeClearance = chromeMetrics.bottomNavigationClearance
+                val playerSystemNavigationInset =
+                    if (navigationStyleUsesExternalSystemNavigationInset(navigationStyle)) {
+                        systemNavBarHeight
+                    } else {
+                        0.dp
+                    }
+                val containerHeight = screenHeightDp + systemNavBarHeight + 50.dp
+                val collapsedTargetY =
+                    with(density) {
+                        (
+                            screenHeightDp -
+                                chromeMetrics.miniPlayerHeight -
+                                bottomChromeClearance -
+                                playerSystemNavigationInset -
+                                chromeMetrics.miniPlayerNavigationGap
+                            ).toPx()
+                    }
 
-            if (showBottomNav) {
-                val backStack = remember(navBackStackEntry) { snapshotNavBackStack(navController) }
-                val activeTab =
-                    resolveBottomNavTab(
-                        currentRoute = currentRoute,
-                        backStack = backStack,
-                    )
-                BoxLoreNavigationBar(
-                    currentRoute = activeTab,
-                    onNavigate = { route ->
-                        navController.navigateBottomNavTab(route, activeTab)
-                    },
-                    style = navigationStyle,
-                    initialContentReady = isInitialHomeContentReady,
-                    modifier =
+                if (showBottomNav) {
+                    val backStack = remember(navBackStackEntry) { snapshotNavBackStack(navController) }
+                    val activeTab =
+                        resolveBottomNavTab(
+                            currentRoute = currentRoute,
+                            backStack = backStack,
+                        )
+                    BoxLoreNavigationBar(
+                        currentRoute = activeTab,
+                        onNavigate = { route ->
+                            navController.navigateBottomNavTab(route, activeTab)
+                        },
+                        style = navigationStyle,
+                        initialContentReady = isInitialHomeContentReady,
+                        modifier =
                         Modifier
                             .align(Alignment.BottomCenter)
                             .let { navigationModifier ->
@@ -680,65 +680,65 @@ fun BoxLoreAppRoot(
                                     navigationModifier
                                 }
                             },
-                )
-            }
+                    )
+                }
 
-            val isPlayerActive = currentEpisode != null
-            val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-            RepairProgressPopup(
-                visible = legacyRssRepairInProgress,
-                modifier =
+                val isPlayerActive = currentEpisode != null
+                val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                RepairProgressPopup(
+                    visible = legacyRssRepairInProgress,
+                    modifier =
                     Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = statusBarHeight + 8.dp, start = 16.dp, end = 16.dp)
                         .zIndex(11f),
-            )
-            SleepTimerPopup(
-                visible =
+                )
+                SleepTimerPopup(
+                    visible =
                     showLateNightNudge &&
                         isPlayerActive &&
                         !isModeSwitching &&
                         !legacyRssRepairInProgress,
-                modifier =
+                    modifier =
                     Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = statusBarHeight + 8.dp, start = 16.dp, end = 16.dp)
                         .zIndex(10f),
-                onSelectDuration = { minutes ->
-                    AnalyticsHelper.trackLateNightSafeguardDecision("timer_set", minutes)
-                    playbackRepository.setSleepTimer(minutes, dismissNudge = false)
-                },
-                onDismiss = { reason ->
-                    when (reason) {
-                        SleepTimerPopupDismissReason.Manual ->
-                            AnalyticsHelper.trackLateNightSafeguardDecision("dismiss")
-                        SleepTimerPopupDismissReason.Timeout ->
-                            AnalyticsHelper.trackLateNightSafeguardDecision("ignore")
-                        SleepTimerPopupDismissReason.Confirmation -> Unit
-                    }
-                    playbackRepository.dismissLateNightNudge()
-                },
-            )
+                    onSelectDuration = { minutes ->
+                        AnalyticsHelper.trackLateNightSafeguardDecision("timer_set", minutes)
+                        playbackRepository.setSleepTimer(minutes, dismissNudge = false)
+                    },
+                    onDismiss = { reason ->
+                        when (reason) {
+                            SleepTimerPopupDismissReason.Manual ->
+                                AnalyticsHelper.trackLateNightSafeguardDecision("dismiss")
+                            SleepTimerPopupDismissReason.Timeout ->
+                                AnalyticsHelper.trackLateNightSafeguardDecision("ignore")
+                            SleepTimerPopupDismissReason.Confirmation -> Unit
+                        }
+                        playbackRepository.dismissLateNightNudge()
+                    },
+                )
 
-            if (!isModeSwitching) {
-                PlayerSheetScaffold(
-                    playbackRepository = playbackRepository,
-                    downloadRepository = downloadRepository,
-                    userPrefs = userPrefs,
-                    layout =
+                if (!isModeSwitching) {
+                    PlayerSheetScaffold(
+                        playbackRepository = playbackRepository,
+                        downloadRepository = downloadRepository,
+                        userPrefs = userPrefs,
+                        layout =
                         PlayerSheetLayout(
                             collapsedTargetY = collapsedTargetY,
                             containerHeight = containerHeight,
                             collapsedHorizontalPadding =
-                                if (navigationStyle == NavigationStyle.Floating) {
-                                    AppNavigationBarHorizontalInset
-                                } else {
-                                    12.dp
-                                },
+                            if (navigationStyle == NavigationStyle.Floating) {
+                                AppNavigationBarHorizontalInset
+                            } else {
+                                12.dp
+                            },
                             navigationStyle = navigationStyle,
                             expandTrigger = expandPlayerTrigger,
                         ),
-                    actions =
+                        actions =
                         PlayerSheetActions(
                             onEpisodeInfoClick = { episode ->
                                 if (episode.id.startsWith("briefing_")) {
@@ -777,61 +777,84 @@ fun BoxLoreAppRoot(
                                 }
                             },
                         ),
-                    modifier = Modifier.align(Alignment.TopStart),
-                )
+                        modifier = Modifier.align(Alignment.TopStart),
+                    )
+                }
             }
-        }
 
-        OpmlImportDialog(
-            state = opmlImportState,
-            onDismissRequest = {
-                val currentState = opmlImportState
-                if (currentState is OpmlImportState.Success) {
-                    if (currentState.isJson) {
-                        if (currentRoute == "onboarding") {
-                            onboardingCompleted = true
-                            navController.navigate("home") {
-                                popUpTo("onboarding") { inclusive = true }
+            OpmlImportDialog(
+                state = opmlImportState,
+                onDismissRequest = {
+                    val currentState = opmlImportState
+                    if (currentState is OpmlImportState.Success) {
+                        if (currentState.isJson) {
+                            if (currentRoute == "onboarding") {
+                                onboardingCompleted = true
+                                navController.navigate("home") {
+                                    popUpTo("onboarding") { inclusive = true }
+                                }
+                            }
+                            onboardingViewModel.markOnboardingCompletedSilent {
+                                activity.recreate()
+                            }
+                        } else {
+                            if (currentRoute == "onboarding") {
+                                AnalyticsHelper.trackOnboardingImportCompleted(
+                                    importType = "opml",
+                                    importedPodcastCount = currentState.importedCount,
+                                    importedPodcastsList = currentState.importedPodcasts.map { it.title },
+                                    totalOnboardingTimeSeconds = onboardingViewModel.getTotalOnboardingTime(),
+                                    entryPoint = opmlImportSource,
+                                )
+                                onboardingViewModel.generateRecommendationsFromOpml(currentState.importedPodcasts)
+                            } else if (opmlImportSource == "home_import_banner") {
+                                AnalyticsHelper.trackOnboardingImportCompleted(
+                                    importType = "opml",
+                                    importedPodcastCount = currentState.importedCount,
+                                    importedPodcastsList = currentState.importedPodcasts.map { it.title },
+                                    totalOnboardingTimeSeconds = 0f,
+                                    entryPoint = "home_import_banner",
+                                )
                             }
                         }
-                        onboardingViewModel.markOnboardingCompletedSilent {
-                            activity.recreate()
-                        }
-                    } else {
-                        if (currentRoute == "onboarding") {
-                            AnalyticsHelper.trackOnboardingImportCompleted(
-                                importType = "opml",
-                                importedPodcastCount = currentState.importedCount,
-                                importedPodcastsList = currentState.importedPodcasts.map { it.title },
-                                totalOnboardingTimeSeconds = onboardingViewModel.getTotalOnboardingTime(),
-                                entryPoint = opmlImportSource,
-                            )
-                            onboardingViewModel.generateRecommendationsFromOpml(currentState.importedPodcasts)
-                        } else if (opmlImportSource == "home_import_banner") {
-                            AnalyticsHelper.trackOnboardingImportCompleted(
-                                importType = "opml",
-                                importedPodcastCount = currentState.importedCount,
-                                importedPodcastsList = currentState.importedPodcasts.map { it.title },
-                                totalOnboardingTimeSeconds = 0f,
-                                entryPoint = "home_import_banner",
-                            )
+                    }
+                    opmlImportState = OpmlImportState.Idle
+                },
+                onSelectionChanged = { newSelection ->
+                    val currentState = opmlImportState
+                    if (currentState is OpmlImportState.AskCompleted) {
+                        opmlImportState = currentState.copy(selectedIds = newSelection)
+                    }
+                },
+                onConfirmCompleted = {
+                    val currentState = opmlImportState
+                    if (currentState is OpmlImportState.AskCompleted) {
+                        val selectedIds = currentState.selectedIds
+                        val podcastsToMark = currentState.importedPodcasts.filter { it.id in selectedIds }
+                        if (podcastsToMark.isEmpty()) {
+                            opmlImportState =
+                                OpmlImportState.Success(
+                                    importedCount = currentState.importedPodcasts.size,
+                                    completedCount = 0,
+                                    isJson = false,
+                                    importedPodcasts = currentState.importedPodcasts,
+                                )
+                        } else {
+                            opmlImportState =
+                                OpmlImportState.Completing(
+                                    progress = 0f,
+                                    currentShowTitle = podcastsToMark.first().title,
+                                    podcastsToMark = podcastsToMark,
+                                    totalImportedCount = currentState.importedPodcasts.size,
+                                    importedPodcasts = currentState.importedPodcasts,
+                                )
+                            importTriggerKey = System.currentTimeMillis()
                         }
                     }
-                }
-                opmlImportState = OpmlImportState.Idle
-            },
-            onSelectionChanged = { newSelection ->
-                val currentState = opmlImportState
-                if (currentState is OpmlImportState.AskCompleted) {
-                    opmlImportState = currentState.copy(selectedIds = newSelection)
-                }
-            },
-            onConfirmCompleted = {
-                val currentState = opmlImportState
-                if (currentState is OpmlImportState.AskCompleted) {
-                    val selectedIds = currentState.selectedIds
-                    val podcastsToMark = currentState.importedPodcasts.filter { it.id in selectedIds }
-                    if (podcastsToMark.isEmpty()) {
+                },
+                onSkipCompleted = {
+                    val currentState = opmlImportState
+                    if (currentState is OpmlImportState.AskCompleted) {
                         opmlImportState =
                             OpmlImportState.Success(
                                 importedCount = currentState.importedPodcasts.size,
@@ -839,74 +862,51 @@ fun BoxLoreAppRoot(
                                 isJson = false,
                                 importedPodcasts = currentState.importedPodcasts,
                             )
-                    } else {
-                        opmlImportState =
-                            OpmlImportState.Completing(
-                                progress = 0f,
-                                currentShowTitle = podcastsToMark.first().title,
-                                podcastsToMark = podcastsToMark,
-                                totalImportedCount = currentState.importedPodcasts.size,
-                                importedPodcasts = currentState.importedPodcasts,
-                            )
-                        importTriggerKey = System.currentTimeMillis()
-                    }
-                }
-            },
-            onSkipCompleted = {
-                val currentState = opmlImportState
-                if (currentState is OpmlImportState.AskCompleted) {
-                    opmlImportState =
-                        OpmlImportState.Success(
-                            importedCount = currentState.importedPodcasts.size,
-                            completedCount = 0,
-                            isJson = false,
-                            importedPodcasts = currentState.importedPodcasts,
-                        )
-                }
-            },
-            onImportJsonSelected = { uri -> performJsonImport(uri) },
-            onImportOpmlSelected = { uri ->
-                opmlImportState = OpmlImportState.Parsing(uri)
-                importTriggerKey = System.currentTimeMillis()
-            },
-        )
-
-        if (showFeedbackSheet) {
-            val versionStr =
-                remember {
-                    try {
-                        activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
-                            ?: "unknown"
-                    } catch (_: Exception) {
-                        "unknown"
-                    }
-                }
-            FeedbackSheet(
-                appVersion = versionStr,
-                onSubmit = onSubmitFeedback,
-                onRateInstead = {
-                    showFeedbackSheet = false
-                    try {
-                        activity.startActivity(
-                            android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse("market://details?id=${activity.packageName}"),
-                            ),
-                        )
-                    } catch (_: Exception) {
-                        activity.startActivity(
-                            android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse(
-                                    "https://play.google.com/store/apps/details?id=${activity.packageName}",
-                                ),
-                            ),
-                        )
                     }
                 },
-                onDismissRequest = { showFeedbackSheet = false },
+                onImportJsonSelected = { uri -> performJsonImport(uri) },
+                onImportOpmlSelected = { uri ->
+                    opmlImportState = OpmlImportState.Parsing(uri)
+                    importTriggerKey = System.currentTimeMillis()
+                },
             )
-        }
+
+            if (showFeedbackSheet) {
+                val versionStr =
+                    remember {
+                        try {
+                            activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
+                                ?: "unknown"
+                        } catch (_: Exception) {
+                            "unknown"
+                        }
+                    }
+                FeedbackSheet(
+                    appVersion = versionStr,
+                    onSubmit = onSubmitFeedback,
+                    onRateInstead = {
+                        showFeedbackSheet = false
+                        try {
+                            activity.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("market://details?id=${activity.packageName}"),
+                                ),
+                            )
+                        } catch (_: Exception) {
+                            activity.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(
+                                        "https://play.google.com/store/apps/details?id=${activity.packageName}",
+                                    ),
+                                ),
+                            )
+                        }
+                    },
+                    onDismissRequest = { showFeedbackSheet = false },
+                )
+            }
         }
     }
 }

@@ -157,21 +157,21 @@ internal fun ToolbarWarningBanner(
         androidx.compose.material3.Card(
             shape = RoundedCornerShape(16.dp),
             colors =
-                androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ),
+            androidx.compose.material3.CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -228,10 +228,10 @@ internal fun ToolbarWarningBanner(
                         Button(
                             onClick = onAction,
                             colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError,
-                                ),
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError,
+                            ),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         ) {
                             Text(
@@ -384,11 +384,11 @@ internal fun PodcastInfoTopOverlay(
 ) {
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(collapsedHeaderHeight)
-                .background(headerColor)
-                .statusBarsPadding(),
+        Modifier
+            .fillMaxWidth()
+            .height(collapsedHeaderHeight)
+            .background(headerColor)
+            .statusBarsPadding(),
     ) {
         IconButton(
             onClick = actions.onBack,
@@ -563,17 +563,17 @@ private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
             shape = RoundedCornerShape(percent = 50),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
             colors =
-                ButtonDefaults.textButtonColors(
-                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                    contentColor = quietColor,
-                    disabledContainerColor =
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                    disabledContentColor = quietColor,
-                ),
+            ButtonDefaults.textButtonColors(
+                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                contentColor = quietColor,
+                disabledContainerColor =
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                disabledContentColor = quietColor,
+            ),
             modifier =
-                Modifier
-                    .padding(end = 4.dp)
-                    .heightIn(max = 28.dp),
+            Modifier
+                .padding(end = 4.dp)
+                .heightIn(max = 28.dp),
         ) {
             when (chip.state) {
                 DirectFeedChipState.Fetching -> {
@@ -640,11 +640,11 @@ internal fun MarkAllEpisodesDialog(
         text = {
             Text(
                 text =
-                    if (markAsPlayed) {
-                        "This will mark all episodes of \"$podcastTitle\" as played."
-                    } else {
-                        "This will reset all episodes of \"$podcastTitle\" to unplayed."
-                    },
+                if (markAsPlayed) {
+                    "This will mark all episodes of \"$podcastTitle\" as played."
+                } else {
+                    "This will reset all episodes of \"$podcastTitle\" to unplayed."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -655,9 +655,9 @@ internal fun MarkAllEpisodesDialog(
             Button(
                 onClick = onConfirm,
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = if (markAsPlayed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                    ),
+                ButtonDefaults.buttonColors(
+                    containerColor = if (markAsPlayed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                ),
                 shape = ExpressiveShapes.Pill,
             ) {
                 Text("Confirm")

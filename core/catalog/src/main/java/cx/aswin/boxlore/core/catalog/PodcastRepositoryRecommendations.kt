@@ -1,9 +1,8 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Episode
-
-import cx.aswin.boxlore.core.catalog.BuildConfig
 
 internal fun PodcastRepository.fetchRecommendationV2(
     history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,

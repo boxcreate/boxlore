@@ -178,10 +178,14 @@ private fun TranscriptDialogActions(
 }
 
 private fun squircle(radius: Dp) = AbsoluteSmoothCornerShape(
-    cornerRadiusTL = radius, smoothnessAsPercentTL = 60,
-    cornerRadiusTR = radius, smoothnessAsPercentTR = 60,
-    cornerRadiusBL = radius, smoothnessAsPercentBL = 60,
-    cornerRadiusBR = radius, smoothnessAsPercentBR = 60
+    cornerRadiusTL = radius,
+    smoothnessAsPercentTL = 60,
+    cornerRadiusTR = radius,
+    smoothnessAsPercentTR = 60,
+    cornerRadiusBL = radius,
+    smoothnessAsPercentBL = 60,
+    cornerRadiusBR = radius,
+    smoothnessAsPercentBR = 60
 )
 
 @Composable

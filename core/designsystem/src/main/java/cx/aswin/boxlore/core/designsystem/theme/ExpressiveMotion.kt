@@ -7,46 +7,24 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Indication
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.foundation.gestures.awaitFirstDown
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.collect
-
-/**
- * Material 3 Expressive Motion Physics.
- * 
- * Guidelines:
- * - Springs over Easing.
- * - Tactile Scaling (0.85 down, 1.0 up with bounce).
- */
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 /**
  * Material 3 Expressive Motion Physics.
- * 
+ *
  * Guidelines:
  * - Springs over Easing.
  * - Tactile Scaling (0.85 down, 1.0 up with bounce).
@@ -58,7 +36,7 @@ object ExpressiveMotion {
         dampingRatio = 0.45f, // Very bouncy!
         stiffness = 300f // Slow enough to see the bounce
     )
-    
+
     // Quick spring for press
     val QuickSpring = spring<Float>(
         dampingRatio = Spring.DampingRatioNoBouncy,
@@ -92,9 +70,7 @@ object ExpressiveMotion {
 }
 
 @Composable
-private fun rememberExpressiveVisualScale(
-    interactionSource: MutableInteractionSource
-): Animatable<Float, AnimationVector1D> {
+private fun rememberExpressiveVisualScale(interactionSource: MutableInteractionSource): Animatable<Float, AnimationVector1D> {
     val scale = remember(interactionSource) { Animatable(1f) }
     LaunchedEffect(interactionSource) {
         var animationJob: Job? = null
@@ -122,18 +98,14 @@ private fun rememberExpressiveVisualScale(
     return scale
 }
 
-private fun Modifier.expressivePressLayer(
-    scale: Float,
-    shape: androidx.compose.ui.graphics.Shape?,
-): Modifier =
-    graphicsLayer {
-        scaleX = scale
-        scaleY = scale
-        if (shape != null) {
-            clip = true
-            this.shape = shape
-        }
+private fun Modifier.expressivePressLayer(scale: Float, shape: androidx.compose.ui.graphics.Shape?,): Modifier = graphicsLayer {
+    scaleX = scale
+    scaleY = scale
+    if (shape != null) {
+        clip = true
+        this.shape = shape
     }
+}
 
 /**
  * Expressive clickable modifier that always shows visible animation:

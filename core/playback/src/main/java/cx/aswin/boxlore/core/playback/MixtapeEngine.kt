@@ -3,14 +3,14 @@ package cx.aswin.boxlore.core.playback
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastScoring
 import cx.aswin.boxlore.core.database.toScorable
+import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeStatus
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.EpisodeStatus
-import cx.aswin.boxlore.core.model.Podcast
 import kotlinx.coroutines.CancellationException
 
 object MixtapeEngine {
@@ -18,11 +18,7 @@ object MixtapeEngine {
     private const val AFFINITY_WEIGHT = 0.8
     private const val MAX_RESUME_AGE_MS = 30L * 24L * 60L * 60L * 1_000L
 
-    data class Result(
-        val podcasts: List<Podcast>,
-        val episodes: List<Episode>,
-        val unplayedCount: Int,
-    )
+    data class Result(val podcasts: List<Podcast>, val episodes: List<Episode>, val unplayedCount: Int,)
 
     data class AdaptiveRanking(
         val scorer: AdaptiveCandidateScorer,

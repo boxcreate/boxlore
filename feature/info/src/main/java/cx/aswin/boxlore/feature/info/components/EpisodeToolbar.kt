@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -72,10 +70,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.EpisodeSort
@@ -97,9 +95,9 @@ internal fun ToolbarIconButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier =
-            modifier
-                .expressiveClickable(onClick = onClick, shape = ExpressiveShapes.Pill)
-                .background(containerColor, ExpressiveShapes.Pill),
+        modifier
+            .expressiveClickable(onClick = onClick, shape = ExpressiveShapes.Pill)
+            .background(containerColor, ExpressiveShapes.Pill),
     ) {
         Icon(
             imageVector = icon,
@@ -240,9 +238,9 @@ internal fun EpisodeToolbar(
 
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -262,11 +260,11 @@ internal fun EpisodeToolbar(
         // Animate container color smoothly
         val containerColor by animateColorAsState(
             targetValue =
-                when (celebrationPhase) {
-                    1 -> accentColor // Keep accent during celebration
-                    2 -> MaterialTheme.colorScheme.surfaceContainerHigh
-                    else -> accentColor
-                },
+            when (celebrationPhase) {
+                1 -> accentColor // Keep accent during celebration
+                2 -> MaterialTheme.colorScheme.surfaceContainerHigh
+                else -> accentColor
+            },
             animationSpec = tween(400),
             label = "containerColor",
         )
@@ -274,11 +272,11 @@ internal fun EpisodeToolbar(
         val onAccent = accentColor.contrastColor()
         val contentColor by animateColorAsState(
             targetValue =
-                when (celebrationPhase) {
-                    1 -> onAccent
-                    2 -> MaterialTheme.colorScheme.onSurface
-                    else -> onAccent
-                },
+            when (celebrationPhase) {
+                1 -> onAccent
+                2 -> MaterialTheme.colorScheme.onSurface
+                else -> onAccent
+            },
             animationSpec = tween(400),
             label = "contentColor",
         )
@@ -286,21 +284,21 @@ internal fun EpisodeToolbar(
         FilledTonalButton(
             onClick = onSubscribeClick,
             colors =
-                ButtonDefaults.filledTonalButtonColors(
-                    containerColor = containerColor,
-                    contentColor = contentColor,
-                ),
+            ButtonDefaults.filledTonalButtonColors(
+                containerColor = containerColor,
+                contentColor = contentColor,
+            ),
             shape = ExpressiveShapes.Pill,
             contentPadding = PaddingValues(horizontal = animatedHorizontalPadding, vertical = 10.dp),
             interactionSource = subInteractionSource,
             modifier =
-                Modifier
-                    .weight(1f)
-                    .height(buttonHeight)
-                    .graphicsLayer {
-                        scaleX = subScale
-                        scaleY = subScale
-                    },
+            Modifier
+                .weight(1f)
+                .height(buttonHeight)
+                .graphicsLayer {
+                    scaleX = subScale
+                    scaleY = subScale
+                },
         ) {
             // Content: AnimatedContent for the 3 phases
             AnimatedContent(
@@ -336,13 +334,13 @@ internal fun EpisodeToolbar(
                                 imageVector = celebrationIcon,
                                 contentDescription = null,
                                 modifier =
-                                    Modifier
-                                        .size(28.dp)
-                                        .graphicsLayer {
-                                            scaleX = celebScale.value
-                                            scaleY = celebScale.value
-                                            rotationZ = celebRotation.value
-                                        },
+                                Modifier
+                                    .size(28.dp)
+                                    .graphicsLayer {
+                                        scaleX = celebScale.value
+                                        scaleY = celebScale.value
+                                        rotationZ = celebRotation.value
+                                    },
                             )
                         }
                         else -> {
@@ -367,7 +365,7 @@ internal fun EpisodeToolbar(
                             spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
                             initialScale = 0.85f,
                         )
-                ).togetherWith(
+                    ).togetherWith(
                     fadeOut(spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)) +
                         scaleOut(
                             spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
@@ -404,22 +402,22 @@ internal fun EpisodeToolbar(
 
                     val bellContainerColor by animateColorAsState(
                         targetValue =
-                            if (notificationsEnabled) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceContainerLow
-                            },
+                        if (notificationsEnabled) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerLow
+                        },
                         animationSpec = tween(300),
                         label = "bellContainerColor",
                     )
 
                     val bellContentColor by animateColorAsState(
                         targetValue =
-                            if (notificationsEnabled) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                        if (notificationsEnabled) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                         animationSpec = tween(300),
                         label = "bellContentColor",
                     )
@@ -431,12 +429,12 @@ internal fun EpisodeToolbar(
                         contentColor = bellContentColor,
                         onClick = onNotificationsToggle,
                         modifier =
-                            Modifier
-                                .size(buttonSize)
-                                .graphicsLayer {
-                                    scaleX = bellScale
-                                    scaleY = bellScale
-                                },
+                        Modifier
+                            .size(buttonSize)
+                            .graphicsLayer {
+                                scaleX = bellScale
+                                scaleY = bellScale
+                            },
                         iconSize = iconSize,
                     )
 
@@ -455,22 +453,22 @@ internal fun EpisodeToolbar(
 
                     val downloadContainerColor by animateColorAsState(
                         targetValue =
-                            if (autoDownloadEnabled) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceContainerLow
-                            },
+                        if (autoDownloadEnabled) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerLow
+                        },
                         animationSpec = tween(300),
                         label = "downloadContainerColor",
                     )
 
                     val downloadContentColor by animateColorAsState(
                         targetValue =
-                            if (autoDownloadEnabled) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                        if (autoDownloadEnabled) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                         animationSpec = tween(300),
                         label = "downloadContentColor",
                     )
@@ -483,12 +481,12 @@ internal fun EpisodeToolbar(
                         contentColor = downloadContentColor,
                         onClick = onAutoDownloadToggle,
                         modifier =
-                            Modifier
-                                .size(buttonSize)
-                                .graphicsLayer {
-                                    scaleX = downloadScale
-                                    scaleY = downloadScale
-                                },
+                        Modifier
+                            .size(buttonSize)
+                            .graphicsLayer {
+                                scaleX = downloadScale
+                                scaleY = downloadScale
+                            },
                         iconSize = iconSize,
                     )
                 }
@@ -501,9 +499,9 @@ internal fun EpisodeToolbar(
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     onClick = onSortToggle,
                     modifier =
-                        Modifier
-                            .graphicsLayer { rotationX = sortRotation }
-                            .size(buttonSize),
+                    Modifier
+                        .graphicsLayer { rotationX = sortRotation }
+                        .size(buttonSize),
                     iconSize = iconSize,
                 )
 

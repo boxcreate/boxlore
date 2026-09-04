@@ -1,9 +1,8 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.playback.completedEpisodeIds
-
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
 import kotlinx.coroutines.CancellationException

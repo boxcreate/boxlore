@@ -115,11 +115,11 @@ internal object NewEpisodePushHydration {
                     feedUrl = feedUrl,
                     meta = meta,
                     loadPiBaseline =
-                        if (needsBaseline) {
-                            sources.loadPiBaseline?.let { loader -> { loader(podcastId) } }
-                        } else {
-                            null
-                        },
+                    if (needsBaseline) {
+                        sources.loadPiBaseline?.let { loader -> { loader(podcastId) } }
+                    } else {
+                        null
+                    },
                 ),
             )
         } catch (e: CancellationException) {
@@ -147,43 +147,37 @@ internal object NewEpisodePushHydration {
         podcastId: String,
         meta: HydrationMeta,
         loadPiBaseline: (suspend (String) -> List<Episode>)?,
-    ): EpisodeSupplementOutcome? =
-        try {
-            port.refreshFromFeed(
-                EpisodeSupplementPort.RefreshFromFeedRequest(
-                    podcastIndexId = podcastId,
-                    feedUrl = meta.feedUrl,
-                    loadBaseline = loadPiBaseline?.let { loader -> { loader(podcastId) } },
-                    podcastTitle = meta.title,
-                    podcastImageUrl = meta.imageUrl,
-                    podcastGenre = meta.genre,
-                    podcastArtist = meta.artist,
-                ),
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            null
-        }
-
-    private suspend fun cachedExtras(
-        port: EpisodeSupplementPort,
-        podcastId: String,
-        meta: HydrationMeta,
-    ): List<Episode> =
-        try {
-            port.getEpisodesForPodcast(
+    ): EpisodeSupplementOutcome? = try {
+        port.refreshFromFeed(
+            EpisodeSupplementPort.RefreshFromFeedRequest(
                 podcastIndexId = podcastId,
+                feedUrl = meta.feedUrl,
+                loadBaseline = loadPiBaseline?.let { loader -> { loader(podcastId) } },
                 podcastTitle = meta.title,
                 podcastImageUrl = meta.imageUrl,
                 podcastGenre = meta.genre,
                 podcastArtist = meta.artist,
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            emptyList()
-        }
+            ),
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
+
+    private suspend fun cachedExtras(port: EpisodeSupplementPort, podcastId: String, meta: HydrationMeta,): List<Episode> = try {
+        port.getEpisodesForPodcast(
+            podcastIndexId = podcastId,
+            podcastTitle = meta.title,
+            podcastImageUrl = meta.imageUrl,
+            podcastGenre = meta.genre,
+            podcastArtist = meta.artist,
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        emptyList()
+    }
 
     private suspend fun resolveMatchedTip(
         port: EpisodeSupplementPort,
@@ -191,35 +185,33 @@ internal object NewEpisodePushHydration {
         meta: HydrationMeta,
         guid: String,
         enclosure: String,
-    ): Episode? =
-        try {
-            port.resolveNewestTipFromFeed(
-                EpisodeSupplementPort.NewestTipRequest(
-                    podcastIndexId = podcastId,
-                    feedUrl = meta.feedUrl,
-                    knownEpisodes = listOfNotNull(meta.knownTip),
-                    podcastTitle = meta.title,
-                    podcastImageUrl = meta.imageUrl,
-                    podcastGenre = meta.genre,
-                    podcastArtist = meta.artist,
-                    match =
-                        EpisodeSupplementPort
-                            .FeedItemMatch(
-                                guid = guid.takeIf { it.isNotEmpty() },
-                                enclosureUrl = enclosure.takeIf { it.isNotEmpty() },
-                            ).takeIf { it.guid != null || it.enclosureUrl != null },
-                ),
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            null
-        }
+    ): Episode? = try {
+        port.resolveNewestTipFromFeed(
+            EpisodeSupplementPort.NewestTipRequest(
+                podcastIndexId = podcastId,
+                feedUrl = meta.feedUrl,
+                knownEpisodes = listOfNotNull(meta.knownTip),
+                podcastTitle = meta.title,
+                podcastImageUrl = meta.imageUrl,
+                podcastGenre = meta.genre,
+                podcastArtist = meta.artist,
+                match =
+                EpisodeSupplementPort
+                    .FeedItemMatch(
+                        guid = guid.takeIf { it.isNotEmpty() },
+                        enclosureUrl = enclosure.takeIf { it.isNotEmpty() },
+                    ).takeIf { it.guid != null || it.enclosureUrl != null },
+            ),
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
 
-    internal fun piBaselineLoader(loadPage: suspend (feedId: String, limit: Int) -> List<Episode>): suspend (String) -> List<Episode> =
-        { podcastId ->
-            loadPage(podcastId, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT)
-        }
+    internal fun piBaselineLoader(loadPage: suspend (feedId: String, limit: Int) -> List<Episode>): suspend (String) -> List<Episode> = { podcastId ->
+        loadPage(podcastId, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT)
+    }
 
     private data class HydrationMeta(
         val feedUrl: String,

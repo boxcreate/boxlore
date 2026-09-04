@@ -44,376 +44,366 @@ class NewEpisodePushHydrationTest {
     }
 
     @Test
-    fun skipsWhenNotOptedIn() =
-        runBlocking {
-            val port = FakePort(optedIn = emptySet(), tip = episode("-9"))
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            episodeSupplementPort = port,
-                        ),
-                )
-            assertNull(result)
-            assertEquals(0, port.resolveCalls)
-            assertEquals(0, port.refreshCalls)
-        }
-
-    @Test
-    fun refreshPersistsTipButDoesNotHydrateWithoutEnclosureOrGuid() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+    fun skipsWhenNotOptedIn() = runBlocking {
+        val port = FakePort(optedIn = emptySet(), tip = episode("-9"))
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
                 ),
             )
-            val tip = episode("-9")
-            val port =
-                FakePort(
-                    optedIn = setOf("123"),
-                    tip = tip,
-                    cached = listOf(tip),
-                    refreshOutcome =
-                        EpisodeSupplementOutcome.Success(
-                            addedCount = 1,
-                            totalSupplementCount = 1,
-                            newestFeedEpisode = tip,
-                        ),
-                )
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = null,
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            episodeSupplementPort = port,
-                            loadPiBaseline = { emptyList() },
-                        ),
-                )
-            assertNull(result)
-            assertEquals(1, port.refreshCalls)
-            assertEquals(0, port.resolveCalls)
-            assertTrue(port.baselineLoaded)
-            val stored = subscriptionRepository.getPodcastEntity("123")
-            assertEquals("-9", stored?.latestEpisode?.id)
-            assertTrue(stored?.rssHasNewEpisodes != true)
-        }
+        assertNull(result)
+        assertEquals(0, port.resolveCalls)
+        assertEquals(0, port.refreshCalls)
+    }
 
     @Test
-    fun fallsBackToCachedEnclosureWhenRefreshReturnsNull() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+    fun refreshPersistsTipButDoesNotHydrateWithoutEnclosureOrGuid() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val tip = episode("-9")
+        val port =
+            FakePort(
+                optedIn = setOf("123"),
+                tip = tip,
+                cached = listOf(tip),
+                refreshOutcome =
+                EpisodeSupplementOutcome.Success(
+                    addedCount = 1,
+                    totalSupplementCount = 1,
+                    newestFeedEpisode = tip,
                 ),
             )
-            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
-            val port =
-                FakePort(
-                    optedIn = setOf("123"),
-                    tip = null,
-                    cached = listOf(cached),
-                    refreshOutcome = EpisodeSupplementOutcome.Failure("feed down"),
-                )
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            episodeSupplementPort = port,
-                        ),
-                )
-            assertEquals("-8", result?.id)
-        }
-
-    @Test
-    fun returnsNullWhenResolveThrowsAndNoCachedMatch() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = null,
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                    loadPiBaseline = { emptyList() },
                 ),
             )
-            val port =
-                FakePort(
-                    optedIn = setOf("123"),
-                    throwOnResolve = true,
-                    throwOnRefresh = true,
-                )
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            episodeSupplementPort = port,
-                        ),
-                )
-            assertNull(result)
-            assertNull(subscriptionRepository.getPodcastEntity("123")?.latestEpisode)
-        }
+        assertNull(result)
+        assertEquals(1, port.refreshCalls)
+        assertEquals(0, port.resolveCalls)
+        assertTrue(port.baselineLoaded)
+        val stored = subscriptionRepository.getPodcastEntity("123")
+        assertEquals("-9", stored?.latestEpisode?.id)
+        assertTrue(stored?.rssHasNewEpisodes != true)
+    }
 
     @Test
-    fun doesNotPromoteUnrelatedNewestWhenPayloadEnclosureDiffers() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+    fun fallsBackToCachedEnclosureWhenRefreshReturnsNull() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+        val port =
+            FakePort(
+                optedIn = setOf("123"),
+                tip = null,
+                cached = listOf(cached),
+                refreshOutcome = EpisodeSupplementOutcome.Failure("feed down"),
+            )
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
                 ),
             )
-            val newest = episode("-9", audioUrl = "https://cdn.example.com/newer.mp3")
-            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
-            val port =
-                FakePort(
-                    optedIn = setOf("123"),
-                    tip = newest,
-                    cached = listOf(cached, newest),
-                    refreshOutcome =
-                        EpisodeSupplementOutcome.Success(
-                            addedCount = 1,
-                            totalSupplementCount = 2,
-                            newestFeedEpisode = newest,
-                        ),
-                )
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
-                    payloadGuid = "guid-ep",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            episodeSupplementPort = port,
-                        ),
-                )
-            assertEquals("-8", result?.id)
-            assertEquals(1, port.refreshCalls)
-            assertEquals(0, port.resolveCalls)
-            assertEquals("-9", subscriptionRepository.getPodcastEntity("123")?.latestEpisode?.id)
-        }
+        assertEquals("-8", result?.id)
+    }
 
     @Test
-    fun promotesMatchedGuidWhenEnclosureIsAbsent() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+    fun returnsNullWhenResolveThrowsAndNoCachedMatch() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val port =
+            FakePort(
+                optedIn = setOf("123"),
+                throwOnResolve = true,
+                throwOnRefresh = true,
+            )
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
                 ),
             )
-            val tip = episode("-9", audioUrl = "https://cdn.example.com/guid-only.mp3")
-            val port =
-                FakePort(
-                    optedIn = setOf("123"),
-                    tip = tip,
-                    tipGuid = "guid-ep",
-                    cached = listOf(tip),
-                    refreshOutcome =
-                        EpisodeSupplementOutcome.Success(
-                            addedCount = 1,
-                            totalSupplementCount = 1,
-                            newestFeedEpisode = tip,
-                        ),
-                )
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = null,
-                    payloadGuid = "guid-ep",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            episodeSupplementPort = port,
-                        ),
-                )
-            assertEquals("-9", result?.id)
-            assertEquals("guid-ep", port.lastMatch?.guid)
-            assertNull(port.lastMatch?.enclosureUrl)
-        }
+        assertNull(result)
+        assertNull(subscriptionRepository.getPodcastEntity("123")?.latestEpisode)
+    }
 
     @Test
-    fun returnsNullWhenIdentifiedPayloadDoesNotMatchNewestTip() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+    fun doesNotPromoteUnrelatedNewestWhenPayloadEnclosureDiffers() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val newest = episode("-9", audioUrl = "https://cdn.example.com/newer.mp3")
+        val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+        val port =
+            FakePort(
+                optedIn = setOf("123"),
+                tip = newest,
+                cached = listOf(cached, newest),
+                refreshOutcome =
+                EpisodeSupplementOutcome.Success(
+                    addedCount = 1,
+                    totalSupplementCount = 2,
+                    newestFeedEpisode = newest,
                 ),
             )
-            val newest = episode("-9", audioUrl = "https://cdn.example.com/newer.mp3")
-            val port =
-                FakePort(
-                    optedIn = setOf("123"),
-                    tip = newest,
-                    cached = listOf(newest),
-                    refreshOutcome =
-                        EpisodeSupplementOutcome.Success(
-                            addedCount = 1,
-                            totalSupplementCount = 1,
-                            newestFeedEpisode = newest,
-                        ),
-                )
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
-                    payloadGuid = "guid-missing",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            episodeSupplementPort = port,
-                        ),
-                )
-            assertNull(result)
-        }
-
-    @Test
-    fun piBaselineLoaderForwardsPodcastIdAndLimit1000() =
-        runBlocking {
-            var seenFeed: String? = null
-            var seenLimit: Int? = null
-            val loader =
-                NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
-                    seenFeed = feedId
-                    seenLimit = limit
-                    emptyList()
-                }
-            loader("123")
-            assertEquals("123", seenFeed)
-            assertEquals(1000, seenLimit)
-        }
-
-    @Test
-    fun localCatalogMatchesEnclosureAndSkipsBlankKeys() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                payloadGuid = "guid-ep",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
                 ),
             )
-            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
-            val catalog =
-                cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
-                    readyIds = setOf("123"),
-                    episodes = mutableMapOf("-8" to cached),
-                )
-            val matched =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
-                    payloadGuid = "guid-ep",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            localEpisodeCatalog = catalog,
-                        ),
-                )
-            assertEquals("-8", matched?.id)
-            assertEquals(1, catalog.refreshCalls)
-            val blank =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = null,
-                    payloadGuid = null,
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            localEpisodeCatalog = catalog,
-                        ),
-                )
-            assertNull(blank)
-        }
+        assertEquals("-8", result?.id)
+        assertEquals(1, port.refreshCalls)
+        assertEquals(0, port.resolveCalls)
+        assertEquals("-9", subscriptionRepository.getPodcastEntity("123")?.latestEpisode?.id)
+    }
 
     @Test
-    fun localCatalogStillResolvesAfterRefreshFailure() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+    fun promotesMatchedGuidWhenEnclosureIsAbsent() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val tip = episode("-9", audioUrl = "https://cdn.example.com/guid-only.mp3")
+        val port =
+            FakePort(
+                optedIn = setOf("123"),
+                tip = tip,
+                tipGuid = "guid-ep",
+                cached = listOf(tip),
+                refreshOutcome =
+                EpisodeSupplementOutcome.Success(
+                    addedCount = 1,
+                    totalSupplementCount = 1,
+                    newestFeedEpisode = tip,
                 ),
             )
-            val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
-            val catalog =
-                cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
-                    readyIds = setOf("123"),
-                    episodes = mutableMapOf("-8" to cached),
-                )
-            catalog.refreshError = IllegalStateException("feed down")
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            localEpisodeCatalog = catalog,
-                        ),
-                )
-            assertEquals("-8", result?.id)
-        }
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = null,
+                payloadGuid = "guid-ep",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                ),
+            )
+        assertEquals("-9", result?.id)
+        assertEquals("guid-ep", port.lastMatch?.guid)
+        assertNull(port.lastMatch?.enclosureUrl)
+    }
+
+    @Test
+    fun returnsNullWhenIdentifiedPayloadDoesNotMatchNewestTip() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val newest = episode("-9", audioUrl = "https://cdn.example.com/newer.mp3")
+        val port =
+            FakePort(
+                optedIn = setOf("123"),
+                tip = newest,
+                cached = listOf(newest),
+                refreshOutcome =
+                EpisodeSupplementOutcome.Success(
+                    addedCount = 1,
+                    totalSupplementCount = 1,
+                    newestFeedEpisode = newest,
+                ),
+            )
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
+                payloadGuid = "guid-missing",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    episodeSupplementPort = port,
+                ),
+            )
+        assertNull(result)
+    }
+
+    @Test
+    fun piBaselineLoaderForwardsPodcastIdAndLimit1000() = runBlocking {
+        var seenFeed: String? = null
+        var seenLimit: Int? = null
+        val loader =
+            NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
+                seenFeed = feedId
+                seenLimit = limit
+                emptyList()
+            }
+        loader("123")
+        assertEquals("123", seenFeed)
+        assertEquals(1000, seenLimit)
+    }
+
+    @Test
+    fun localCatalogMatchesEnclosureAndSkipsBlankKeys() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+        val catalog =
+            cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+                readyIds = setOf("123"),
+                episodes = mutableMapOf("-8" to cached),
+            )
+        val matched =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                payloadGuid = "guid-ep",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    localEpisodeCatalog = catalog,
+                ),
+            )
+        assertEquals("-8", matched?.id)
+        assertEquals(1, catalog.refreshCalls)
+        val blank =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = null,
+                payloadGuid = null,
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    localEpisodeCatalog = catalog,
+                ),
+            )
+        assertNull(blank)
+    }
+
+    @Test
+    fun localCatalogStillResolvesAfterRefreshFailure() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val cached = episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")
+        val catalog =
+            cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+                readyIds = setOf("123"),
+                episodes = mutableMapOf("-8" to cached),
+            )
+        catalog.refreshError = IllegalStateException("feed down")
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    localEpisodeCatalog = catalog,
+                ),
+            )
+        assertEquals("-8", result?.id)
+    }
 
     @Test
     fun localCatalogPropagatesCancellation() {
@@ -431,10 +421,10 @@ class NewEpisodePushHydrationTest {
                             payloadFeedUrl = "https://feeds.example/show.xml",
                             payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
                             sources =
-                                NewEpisodePushHydration.Sources(
-                                    subscriptionRepository = subscriptionRepository,
-                                    localEpisodeCatalog = catalog,
-                                ),
+                            NewEpisodePushHydration.Sources(
+                                subscriptionRepository = subscriptionRepository,
+                                localEpisodeCatalog = catalog,
+                            ),
                         )
                     }
                 }.exceptionOrNull()
@@ -442,46 +432,42 @@ class NewEpisodePushHydrationTest {
     }
 
     @Test
-    fun localCatalogReturnsNullWhenPayloadDoesNotMatch() =
-        runBlocking {
-            subscriptionRepository.subscribe(
-                Podcast(
-                    id = "123",
-                    title = "Show",
-                    artist = "A",
-                    imageUrl = "https://img",
-                    description = "d",
-                    genre = "News",
-                    feedUrl = "https://feeds.example/show.xml",
+    fun localCatalogReturnsNullWhenPayloadDoesNotMatch() = runBlocking {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+        val catalog =
+            cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+                readyIds = setOf("123"),
+                episodes =
+                mutableMapOf(
+                    "-8" to episode("-8", audioUrl = "https://cdn.example.com/ep.mp3"),
                 ),
             )
-            val catalog =
-                cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
-                    readyIds = setOf("123"),
-                    episodes =
-                        mutableMapOf(
-                            "-8" to episode("-8", audioUrl = "https://cdn.example.com/ep.mp3"),
-                        ),
-                )
-            val result =
-                NewEpisodePushHydration.resolveLocalEpisode(
-                    podcastId = "123",
-                    payloadFeedUrl = "https://feeds.example/show.xml",
-                    payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
-                    payloadGuid = "guid-missing",
-                    sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = subscriptionRepository,
-                            localEpisodeCatalog = catalog,
-                        ),
-                )
-            assertNull(result)
-        }
+        val result =
+            NewEpisodePushHydration.resolveLocalEpisode(
+                podcastId = "123",
+                payloadFeedUrl = "https://feeds.example/show.xml",
+                payloadEnclosureUrl = "https://cdn.example.com/missing.mp3",
+                payloadGuid = "guid-missing",
+                sources =
+                NewEpisodePushHydration.Sources(
+                    subscriptionRepository = subscriptionRepository,
+                    localEpisodeCatalog = catalog,
+                ),
+            )
+        assertNull(result)
+    }
 
-    private fun episode(
-        id: String,
-        audioUrl: String = "https://cdn.example.com/ep.mp3",
-    ) = Episode(
+    private fun episode(id: String, audioUrl: String = "https://cdn.example.com/ep.mp3",) = Episode(
         id = id,
         title = "Feed ep",
         description = "d",

@@ -87,11 +87,11 @@ internal object AutoMediaItemFactory {
                 progress = spec.progress,
                 isCompleted = spec.isCompleted,
                 downloadStatus =
-                    if (spec.isDownloaded) {
-                        MediaConstants.EXTRAS_VALUE_STATUS_DOWNLOADED
-                    } else {
-                        null
-                    },
+                if (spec.isDownloaded) {
+                    MediaConstants.EXTRAS_VALUE_STATUS_DOWNLOADED
+                } else {
+                    null
+                },
             )
         return MediaItem
             .Builder()
@@ -119,13 +119,7 @@ internal object AutoMediaItemFactory {
             ).build()
     }
 
-    fun fromHistory(
-        history: ListeningHistoryEntity,
-        source: String,
-        artworkUri: Uri?,
-        subtitle: String,
-        groupTitle: String,
-    ): MediaItem {
+    fun fromHistory(history: ListeningHistoryEntity, source: String, artworkUri: Uri?, subtitle: String, groupTitle: String,): MediaItem {
         val progress =
             if (history.durationMs > 0) {
                 history.progressMs.toDouble() / history.durationMs.toDouble()
@@ -146,7 +140,7 @@ internal object AutoMediaItemFactory {
                 progress = progress,
                 isCompleted = history.isCompleted,
                 customCacheKey =
-                    EpisodeMediaCacheKey.of(history.episodeId, history.episodeAudioUrl),
+                EpisodeMediaCacheKey.of(history.episodeId, history.episodeAudioUrl),
             ),
         )
     }
@@ -159,49 +153,39 @@ internal object AutoMediaItemFactory {
         groupTitle: String? = null,
         mediaIdPrefix: String = "episode:",
         isDownloaded: Boolean = false,
-    ): MediaItem =
-        playable(
-            AutoPlayableSpec(
-                mediaId = "$mediaIdPrefix${episode.id}",
-                title = episode.title,
-                podcastTitle = podcastTitle,
-                subtitle = buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
-                artworkUri = artworkUri,
-                uri = episode.audioUrl,
-                durationMs = episode.duration.toLong() * 1_000L,
-                source = source,
-                groupTitle = groupTitle,
-                isDownloaded = isDownloaded,
-                customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
-            ),
-        )
+    ): MediaItem = playable(
+        AutoPlayableSpec(
+            mediaId = "$mediaIdPrefix${episode.id}",
+            title = episode.title,
+            podcastTitle = podcastTitle,
+            subtitle = buildDurationSubtitle(podcastTitle, episode.duration.toLong() * 1_000L),
+            artworkUri = artworkUri,
+            uri = episode.audioUrl,
+            durationMs = episode.duration.toLong() * 1_000L,
+            source = source,
+            groupTitle = groupTitle,
+            isDownloaded = isDownloaded,
+            customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
+        ),
+    )
 
-    fun fromDownload(
-        download: DownloadedEpisodeEntity,
-        artworkUri: Uri?,
-        uri: String?,
-        groupTitle: String,
-    ): MediaItem =
-        playable(
-            AutoPlayableSpec(
-                mediaId = "episode:${download.episodeId}",
-                title = download.episodeTitle,
-                podcastTitle = download.podcastName,
-                subtitle = buildDurationSubtitle(download.podcastName, download.durationMs),
-                artworkUri = artworkUri,
-                uri = uri,
-                durationMs = download.durationMs,
-                source = AutoBrowseContract.SOURCE_DOWNLOADS,
-                groupTitle = groupTitle,
-                isDownloaded = true,
-                customCacheKey = EpisodeMediaCacheKey.of(download.episodeId, uri),
-            ),
-        )
+    fun fromDownload(download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String,): MediaItem = playable(
+        AutoPlayableSpec(
+            mediaId = "episode:${download.episodeId}",
+            title = download.episodeTitle,
+            podcastTitle = download.podcastName,
+            subtitle = buildDurationSubtitle(download.podcastName, download.durationMs),
+            artworkUri = artworkUri,
+            uri = uri,
+            durationMs = download.durationMs,
+            source = AutoBrowseContract.SOURCE_DOWNLOADS,
+            groupTitle = groupTitle,
+            isDownloaded = true,
+            customCacheKey = EpisodeMediaCacheKey.of(download.episodeId, uri),
+        ),
+    )
 
-    fun buildDurationSubtitle(
-        podcastTitle: String?,
-        durationMs: Long,
-    ): String {
+    fun buildDurationSubtitle(podcastTitle: String?, durationMs: Long,): String {
         val duration = formatDuration(durationMs)
         return listOfNotNull(
             podcastTitle?.takeIf(String::isNotBlank),

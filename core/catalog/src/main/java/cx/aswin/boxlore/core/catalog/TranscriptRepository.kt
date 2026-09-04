@@ -1,28 +1,24 @@
 package cx.aswin.boxlore.core.catalog
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
-import java.net.URL
 import androidx.annotation.VisibleForTesting
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * Parsed transcript segment with timing.
  */
-data class TranscriptSegment(
-    val startMs: Long,
-    val endMs: Long,
-    val text: String
-)
+data class TranscriptSegment(val startMs: Long, val endMs: Long, val text: String)
 
 /**
  * Fetches and parses podcast transcripts in SRT or VTT format.
  */
 object TranscriptRepository {
-    
+
     private val HTML_TAG_REGEX = Regex("<[^>]+>")
     private val cache = mutableMapOf<String, List<TranscriptSegment>>()
-    
+
     private const val HTTPS_SCHEME = "https://"
     private const val HTTP_SCHEME = "http://"
     private const val HTTPS_PREFIX = "https:"
@@ -51,7 +47,7 @@ object TranscriptRepository {
     suspend fun getTranscript(url: String, type: String? = null): List<TranscriptSegment> = withContext(Dispatchers.IO) {
         val normalizedUrl = normalizeUrl(url)
         cache[normalizedUrl]?.let { return@withContext it }
-        
+
         try {
             val content = URL(normalizedUrl).readText()
             val segments = when {
@@ -91,19 +87,19 @@ object TranscriptRepository {
                     if (body != null) {
                         when (body.status) {
                             "completed" -> {
-                                  val srtText = body.srt
-                                  val chapters = body.chapters
-                                  if (srtText != null) {
-                                      val segments = parseSrt(srtText)
-                                      cache[cacheKey] = segments
-                                      if (chapters != null) {
-                                          ChapterRepository.setCachedChapters("auto_$episodeId", chapters)
-                                      }
-                                      return@withContext segments
-                                  } else {
-                                      android.util.Log.w("TranscriptRepo", "Completed status but srt is null for $episodeId")
-                                      return@withContext emptyList()
-                                  }
+                                val srtText = body.srt
+                                val chapters = body.chapters
+                                if (srtText != null) {
+                                    val segments = parseSrt(srtText)
+                                    cache[cacheKey] = segments
+                                    if (chapters != null) {
+                                        ChapterRepository.setCachedChapters("auto_$episodeId", chapters)
+                                    }
+                                    return@withContext segments
+                                } else {
+                                    android.util.Log.w("TranscriptRepo", "Completed status but srt is null for $episodeId")
+                                    return@withContext emptyList()
+                                }
                             }
                             "failed" -> {
                                 android.util.Log.e("TranscriptRepo", "Auto-transcription failed on server for $episodeId: ${body.error}")
@@ -165,7 +161,7 @@ object TranscriptRepository {
             null
         }
     }
-    
+
     /**
      * Parse SRT format:
      * 1
@@ -176,11 +172,11 @@ object TranscriptRepository {
     internal fun parseSrt(content: String): List<TranscriptSegment> {
         val segments = mutableListOf<TranscriptSegment>()
         val lines = content.lines().map { it.trim() }
-        
+
         var currentId: Int? = null
         var currentTimeLine: String? = null
         val currentTextLines = mutableListOf<String>()
-        
+
         for (line in lines) {
             if (line.isEmpty()) {
                 // End of block
@@ -199,7 +195,7 @@ object TranscriptRepository {
                 currentTextLines.clear()
                 continue
             }
-            
+
             if (currentId == null) {
                 // Try to parse block ID
                 val id = line.toIntOrNull()
@@ -218,7 +214,7 @@ object TranscriptRepository {
                 currentTextLines.add(line)
             }
         }
-        
+
         // Handle last block if file doesn't end with blank line
         if (currentTimeLine != null && currentTextLines.isNotEmpty()) {
             val times = parseTimestampLine(currentTimeLine)
@@ -230,10 +226,10 @@ object TranscriptRepository {
                 }
             }
         }
-        
+
         return healSegments(segments)
     }
-    
+
     /**
      * Parse WebVTT format:
      * WEBVTT
@@ -245,25 +241,25 @@ object TranscriptRepository {
     internal fun parseVtt(content: String): List<TranscriptSegment> {
         val segments = mutableListOf<TranscriptSegment>()
         val blocks = content.trim().split(Regex("\\n\\n+"))
-        
+
         for (block in blocks) {
             val lines = block.trim().lines()
-            
+
             // Find the line with -->
             val timeLineIdx = lines.indexOfFirst { it.contains("-->") }
             if (timeLineIdx < 0) continue
-            
+
             val times = parseTimestampLine(lines[timeLineIdx]) ?: continue
             val text = lines.drop(timeLineIdx + 1).joinToString(" ").trim()
                 .replace(HTML_TAG_REGEX, "") // Strip VTT tags (<v>, <c>, etc.)
-            
+
             if (text.isNotBlank()) {
                 segments.add(TranscriptSegment(startMs = times.first, endMs = times.second, text = text))
             }
         }
         return healSegments(segments)
     }
-    
+
     /**
      * Parse "00:01:23,456 --> 00:01:26,789" or "00:01:23.456 --> 00:01:26.789"
      */
@@ -274,7 +270,7 @@ object TranscriptRepository {
         val end = parseTimestamp(parts[1].trim().split(" ").first()) ?: return null
         return Pair(start, end)
     }
-    
+
     /**
      * Parse timestamp to milliseconds with support for:
      * - HH:MM:SS,mmm
@@ -286,13 +282,13 @@ object TranscriptRepository {
     private fun parseTimestamp(ts: String): Long? {
         val parts = ts.split(Regex("[^0-9]+")).filter { it.isNotEmpty() }
         if (parts.isEmpty()) return null
-        
+
         return try {
             var h = 0L
             var m = 0L
             var s = 0L
             var ms = 0L
-            
+
             when (parts.size) {
                 4 -> {
                     h = parts[0].toLong()
@@ -331,17 +327,15 @@ object TranscriptRepository {
                 }
                 else -> return null
             }
-            
+
             h * 3600000L + m * 60000L + s * 1000L + ms
         } catch (e: Exception) {
             null
         }
     }
-    
-    private fun parseMillis(part: String): Long {
-        return part.padEnd(3, '0').take(3).toLong()
-    }
-    
+
+    private fun parseMillis(part: String): Long = part.padEnd(3, '0').take(3).toLong()
+
     /**
      * Reconstructs and self-heals shorthand or malformed transcript timelines
      * to ensure they are strictly chronological and monotonically increasing.
@@ -350,17 +344,17 @@ object TranscriptRepository {
         if (segments.isEmpty()) return segments
         val correctedSegments = mutableListOf<TranscriptSegment>()
         var prevEnd = 0L
-        
+
         for (i in segments.indices) {
             val segment = segments[i]
             var start = segment.startMs
             var end = segment.endMs
-            
+
             // Failsafe for the very first block
             if (i == 0 && start > end) {
                 start = (end - 3000L).coerceAtLeast(0L)
             }
-            
+
             // 1. If start is backwards compared to previous end, try to correct it by adding minutes
             if (start < prevEnd) {
                 var tempStart = start
@@ -369,7 +363,7 @@ object TranscriptRepository {
                 }
                 start = tempStart
             }
-            
+
             // 2. If end is backwards compared to start, correct it by adding minutes
             if (end < start) {
                 var tempEnd = end
@@ -378,20 +372,20 @@ object TranscriptRepository {
                 }
                 end = tempEnd
             }
-            
+
             // 3. Absolute failsafe check
             if (start >= end) {
                 start = prevEnd
                 end = start + 3000L
             }
-            
+
             correctedSegments.add(TranscriptSegment(startMs = start, endMs = end, text = segment.text))
             prevEnd = end
         }
-        
+
         return correctedSegments
     }
-    
+
     fun clearCache() {
         cache.clear()
     }

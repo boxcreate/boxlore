@@ -23,15 +23,13 @@ abstract class AdaptiveRankingDatabase : RoomDatabase() {
         @Volatile
         private var instance: AdaptiveRankingDatabase? = null
 
-        fun getDatabase(context: Context): AdaptiveRankingDatabase {
-            return instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    AdaptiveRankingDatabase::class.java,
-                    DATABASE_NAME,
-                ).build()
-                    .also { instance = it }
-            }
+        fun getDatabase(context: Context): AdaptiveRankingDatabase = instance ?: synchronized(this) {
+            instance ?: Room.databaseBuilder(
+                context.applicationContext,
+                AdaptiveRankingDatabase::class.java,
+                DATABASE_NAME,
+            ).build()
+                .also { instance = it }
         }
     }
 }

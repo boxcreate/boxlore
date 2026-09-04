@@ -12,8 +12,7 @@ enum class LearnHistoryAction {
     fun toStorageValue(): String = name.lowercase()
 
     companion object {
-        fun fromStorageValue(value: String?): LearnHistoryAction =
-            entries.find { it.toStorageValue() == value } ?: DISMISS
+        fun fromStorageValue(value: String?): LearnHistoryAction = entries.find { it.toStorageValue() == value } ?: DISMISS
     }
 }
 
@@ -50,9 +49,7 @@ class LearnCuriosityHistoryStore(application: Application) {
         }.getOrElse { emptyList() }
     }
 
-    fun getDismissedIds(): Set<String> {
-        return boxcastPrefs.getDismissedCuriosityIds()
-    }
+    fun getDismissedIds(): Set<String> = boxcastPrefs.getDismissedCuriosityIds()
 
     fun recordDismissal(card: LearnCuriosityCard, action: LearnHistoryAction) {
         val episodeId = card.episodeId
@@ -104,42 +101,38 @@ class LearnCuriosityHistoryStore(application: Application) {
         boxcastPrefs.setLearnCuriosityHistoryJson(array.toString())
     }
 
-    private fun LearnCuriosityCard.toHistoryEntry(action: LearnHistoryAction): LearnHistoryEntry {
-        return LearnHistoryEntry(
-            episodeId = episodeId,
-            episodeTitle = episodeTitle,
-            podcastTitle = podcastTitle,
-            imageUrl = imageUrl,
-            feedImage = feedImage,
-            podcastId = podcastId,
-            audioUrl = audioUrl,
-            duration = duration,
-            description = description,
-            question = question,
-            explanation = explanation,
-            curiosityScore = curiosityScore,
-            action = action,
-            dismissedAtMs = System.currentTimeMillis()
-        )
-    }
+    private fun LearnCuriosityCard.toHistoryEntry(action: LearnHistoryAction): LearnHistoryEntry = LearnHistoryEntry(
+        episodeId = episodeId,
+        episodeTitle = episodeTitle,
+        podcastTitle = podcastTitle,
+        imageUrl = imageUrl,
+        feedImage = feedImage,
+        podcastId = podcastId,
+        audioUrl = audioUrl,
+        duration = duration,
+        description = description,
+        question = question,
+        explanation = explanation,
+        curiosityScore = curiosityScore,
+        action = action,
+        dismissedAtMs = System.currentTimeMillis()
+    )
 
-    private fun LearnHistoryEntry.toJson(): JSONObject {
-        return JSONObject().apply {
-            put("episodeId", episodeId)
-            put("episodeTitle", episodeTitle)
-            put("podcastTitle", podcastTitle)
-            put("imageUrl", imageUrl)
-            put("feedImage", feedImage)
-            put("podcastId", podcastId)
-            put("audioUrl", audioUrl)
-            put("duration", duration)
-            put("description", description)
-            put("question", question)
-            put("explanation", explanation)
-            put("curiosityScore", curiosityScore)
-            put("action", action.toStorageValue())
-            put("dismissedAtMs", dismissedAtMs)
-        }
+    private fun LearnHistoryEntry.toJson(): JSONObject = JSONObject().apply {
+        put("episodeId", episodeId)
+        put("episodeTitle", episodeTitle)
+        put("podcastTitle", podcastTitle)
+        put("imageUrl", imageUrl)
+        put("feedImage", feedImage)
+        put("podcastId", podcastId)
+        put("audioUrl", audioUrl)
+        put("duration", duration)
+        put("description", description)
+        put("question", question)
+        put("explanation", explanation)
+        put("curiosityScore", curiosityScore)
+        put("action", action.toStorageValue())
+        put("dismissedAtMs", dismissedAtMs)
     }
 
     private fun parseEntry(json: JSONObject): LearnHistoryEntry? {
@@ -167,6 +160,7 @@ class LearnCuriosityHistoryStore(application: Application) {
         private const val MAX_ENTRIES = 100
 
         private val pendingRestoreLock = Any()
+
         @Volatile
         private var pendingRestores: List<LearnHistoryEntry> = emptyList()
     }

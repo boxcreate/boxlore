@@ -35,10 +35,10 @@ fun ExploreSkeletonLoader() {
                     .fillMaxWidth()
                     .height(56.dp)
                     .clip(MaterialTheme.shapes.extraLarge)
-                .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.extraLarge)
+                    .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.extraLarge)
             ) // Search Bar
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Category Chips
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(4) {
@@ -47,12 +47,12 @@ fun ExploreSkeletonLoader() {
                             .width(80.dp)
                             .height(32.dp)
                             .clip(MaterialTheme.shapes.small)
-                .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.small)
+                            .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.small)
                     )
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // Grid Skeleton
@@ -73,7 +73,7 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
     item(span = StaggeredGridItemSpan.FullLine) {
         val bColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
         val hColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        
+
         Column {
             // Header
             Box(
@@ -81,10 +81,10 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                     .width(120.dp)
                     .height(24.dp)
                     .clip(MaterialTheme.shapes.small)
-                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.small)
+                    .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.small)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Row of cards
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 repeat(3) {
@@ -93,19 +93,19 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                             .width(280.dp)
                             .height(170.dp)
                             .clip(MaterialTheme.shapes.extraLarge)
-                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraLarge)
+                            .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraLarge)
                     )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-    
+
     // Section Header
     item(span = StaggeredGridItemSpan.FullLine) {
         val bColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
         val hColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        
+
         Box(
             modifier = Modifier
                 .width(200.dp)
@@ -120,14 +120,14 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
         val bColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
         val hColor = MaterialTheme.colorScheme.surfaceContainerHighest
         val isTall = index % 3 == 0
-        
+
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(if (isTall) 280.dp else 220.dp)
                     .clip(MaterialTheme.shapes.large)
-                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.large)
+                    .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.large)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Box(
@@ -135,15 +135,15 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.explor
                     .fillMaxWidth(0.8f)
                     .height(16.dp)
                     .clip(MaterialTheme.shapes.extraSmall)
-                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraSmall)
+                    .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraSmall)
             )
-             Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.5f)
                     .height(14.dp)
                     .clip(MaterialTheme.shapes.extraSmall)
-                .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraSmall)
+                    .m3Shimmer(bColor, hColor, shape = MaterialTheme.shapes.extraSmall)
             )
         }
     }

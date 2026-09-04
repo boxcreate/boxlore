@@ -15,10 +15,7 @@ import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
  * ```
  */
 class RecordingAnalytics : Analytics {
-    data class CapturedEvent(
-        val name: String,
-        val properties: Map<String, Any>,
-    )
+    data class CapturedEvent(val name: String, val properties: Map<String, Any>,)
 
     private val _events = mutableListOf<CapturedEvent>()
 
@@ -39,10 +36,7 @@ class RecordingAnalytics : Analytics {
 
     // ── Analytics interface ────────────────────────────────────────
 
-    override fun capture(
-        event: String,
-        properties: Map<String, Any>,
-    ) {
+    override fun capture(event: String, properties: Map<String, Any>,) {
         if (!AnalyticsGlossary.isAllowedEvent(event)) return
         _events.add(CapturedEvent(event, properties))
     }
@@ -70,11 +64,7 @@ class RecordingAnalytics : Analytics {
         )
     }
 
-    override fun trackEngagementPromptShown(
-        promptType: String,
-        source: String,
-        completedEpisodes: Int?,
-    ) {
+    override fun trackEngagementPromptShown(promptType: String, source: String, completedEpisodes: Int?,) {
         capture(
             "feedback_submitted",
             buildMap {
@@ -85,10 +75,7 @@ class RecordingAnalytics : Analytics {
         )
     }
 
-    override fun trackSurveyNpsEligible(
-        completedEpisodes: Int?,
-        triggerContext: String,
-    ) {
+    override fun trackSurveyNpsEligible(completedEpisodes: Int?, triggerContext: String,) {
         capture(
             "feedback_submitted",
             buildMap {
@@ -123,10 +110,7 @@ class RecordingAnalytics : Analytics {
         capture("first_episode_played")
     }
 
-    override fun trackAppCheckStatus(
-        tokenObtained: Boolean,
-        provider: String,
-    ) {
+    override fun trackAppCheckStatus(tokenObtained: Boolean, provider: String,) {
         capture(
             "app_check_status",
             mapOf("token_obtained" to tokenObtained, "provider" to provider),

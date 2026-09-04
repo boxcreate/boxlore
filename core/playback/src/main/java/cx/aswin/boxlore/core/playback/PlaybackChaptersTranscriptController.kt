@@ -2,11 +2,11 @@ package cx.aswin.boxlore.core.playback
 
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.ChapterRepository
-import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.TranscriptRepository
 import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
 import cx.aswin.boxlore.core.model.AutoTranscriptState
+import cx.aswin.boxlore.core.playback.PlayerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -236,13 +236,13 @@ internal class PlaybackChaptersTranscriptController(
                                                     playerStateFlow.value.copy(
                                                         currentChapters = if (playerStateFlow.value.isChaptersNative) playerStateFlow.value.currentChapters else chapters,
                                                         autoChaptersState =
-                                                            if (chapters.isNotEmpty() ||
-                                                                playerStateFlow.value.isChaptersNative
-                                                            ) {
-                                                                AutoTranscriptState.COMPLETED
-                                                            } else {
-                                                                playerStateFlow.value.autoChaptersState
-                                                            },
+                                                        if (chapters.isNotEmpty() ||
+                                                            playerStateFlow.value.isChaptersNative
+                                                        ) {
+                                                            AutoTranscriptState.COMPLETED
+                                                        } else {
+                                                            playerStateFlow.value.autoChaptersState
+                                                        },
                                                     )
                                             }
 
@@ -314,13 +314,13 @@ internal class PlaybackChaptersTranscriptController(
                                                 playerStateFlow.value.copy(
                                                     currentChapters = if (playerStateFlow.value.isChaptersNative) playerStateFlow.value.currentChapters else chapters,
                                                     autoChaptersState =
-                                                        if (chapters.isNotEmpty() ||
-                                                            playerStateFlow.value.isChaptersNative
-                                                        ) {
-                                                            AutoTranscriptState.COMPLETED
-                                                        } else {
-                                                            playerStateFlow.value.autoChaptersState
-                                                        },
+                                                    if (chapters.isNotEmpty() ||
+                                                        playerStateFlow.value.isChaptersNative
+                                                    ) {
+                                                        AutoTranscriptState.COMPLETED
+                                                    } else {
+                                                        playerStateFlow.value.autoChaptersState
+                                                    },
                                                 )
                                         }
 
@@ -346,27 +346,27 @@ internal class PlaybackChaptersTranscriptController(
                                                         playerStateFlow.value.copy(
                                                             currentTranscript = transcript,
                                                             currentChapters =
-                                                                if (playerStateFlow.value.isChaptersNative) {
-                                                                    playerStateFlow.value.currentChapters
-                                                                } else {
-                                                                    (
-                                                                        if (autoChapters
-                                                                                .isNotEmpty()
-                                                                        ) {
-                                                                            autoChapters
-                                                                        } else {
-                                                                            playerStateFlow.value.currentChapters
-                                                                        }
+                                                            if (playerStateFlow.value.isChaptersNative) {
+                                                                playerStateFlow.value.currentChapters
+                                                            } else {
+                                                                (
+                                                                    if (autoChapters
+                                                                            .isNotEmpty()
+                                                                    ) {
+                                                                        autoChapters
+                                                                    } else {
+                                                                        playerStateFlow.value.currentChapters
+                                                                    }
                                                                     )
-                                                                },
+                                                            },
                                                             autoChaptersState =
-                                                                if (autoChapters.isNotEmpty() ||
-                                                                    playerStateFlow.value.isChaptersNative
-                                                                ) {
-                                                                    AutoTranscriptState.COMPLETED
-                                                                } else {
-                                                                    playerStateFlow.value.autoChaptersState
-                                                                },
+                                                            if (autoChapters.isNotEmpty() ||
+                                                                playerStateFlow.value.isChaptersNative
+                                                            ) {
+                                                                AutoTranscriptState.COMPLETED
+                                                            } else {
+                                                                playerStateFlow.value.autoChaptersState
+                                                            },
                                                         )
                                                 }
                                             }
@@ -477,12 +477,7 @@ internal class PlaybackChaptersTranscriptController(
      * Starts the background polling/streaming call to generate and retrieve
      * the auto-transcript. Cancels any previous generation job.
      */
-    fun startAutoTranscriptGeneration(
-        episodeId: String,
-        audioUrl: String,
-        transcriptUrl: String?,
-        isTranscriptRequested: Boolean,
-    ) {
+    fun startAutoTranscriptGeneration(episodeId: String, audioUrl: String, transcriptUrl: String?, isTranscriptRequested: Boolean,) {
         val deviceUuid = deviceUuid()
         autoTranscriptGenerationJob?.cancel()
         autoTranscriptGenerationJob =
@@ -505,28 +500,28 @@ internal class PlaybackChaptersTranscriptController(
                                 playerStateFlow.value.copy(
                                     currentTranscript = transcript,
                                     currentChapters =
-                                        if (playerStateFlow.value.isChaptersNative) {
-                                            playerStateFlow.value.currentChapters
-                                        } else {
-                                            (
-                                                if (autoChapters
-                                                        .isNotEmpty()
-                                                ) {
-                                                    autoChapters
-                                                } else {
-                                                    playerStateFlow.value.currentChapters
-                                                }
+                                    if (playerStateFlow.value.isChaptersNative) {
+                                        playerStateFlow.value.currentChapters
+                                    } else {
+                                        (
+                                            if (autoChapters
+                                                    .isNotEmpty()
+                                            ) {
+                                                autoChapters
+                                            } else {
+                                                playerStateFlow.value.currentChapters
+                                            }
                                             )
-                                        },
+                                    },
                                     autoTranscriptState = if (isTranscriptRequested) AutoTranscriptState.COMPLETED else playerStateFlow.value.autoTranscriptState,
                                     autoChaptersState =
-                                        if (autoChapters.isNotEmpty() ||
-                                            playerStateFlow.value.isChaptersNative
-                                        ) {
-                                            AutoTranscriptState.COMPLETED
-                                        } else {
-                                            AutoTranscriptState.FAILED
-                                        },
+                                    if (autoChapters.isNotEmpty() ||
+                                        playerStateFlow.value.isChaptersNative
+                                    ) {
+                                        AutoTranscriptState.COMPLETED
+                                    } else {
+                                        AutoTranscriptState.FAILED
+                                    },
                                 )
                             if (isTranscriptRequested) {
                                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackAutoTranscriptCompleted(

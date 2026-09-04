@@ -8,10 +8,7 @@ import org.junit.jupiter.api.Test
 class PodcastLatestEpisodeNewTest {
     private val nowSeconds = System.currentTimeMillis() / 1000L
 
-    private fun episode(
-        id: String = "ep-1",
-        publishedSecondsAgo: Long = 3_600L,
-    ) = Episode(
+    private fun episode(id: String = "ep-1", publishedSecondsAgo: Long = 3_600L,) = Episode(
         id = id,
         title = "Latest",
         description = "",

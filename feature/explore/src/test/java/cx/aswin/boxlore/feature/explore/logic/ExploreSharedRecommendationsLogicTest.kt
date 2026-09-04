@@ -36,15 +36,14 @@ class ExploreSharedRecommendationsLogicTest {
     private fun episode(
         id: String,
         title: String,
-    ): Episode =
-        Episode(
-            id = id,
-            title = title,
-            description = "",
-            audioUrl = "https://example.com/$id.mp3",
-            duration = 60,
-            publishedDate = 0L,
-            podcastId = "pod",
-            podcastTitle = "Show",
-        )
+    ): Episode = Episode(
+        id = id,
+        title = title,
+        description = "",
+        audioUrl = "https://example.com/$id.mp3",
+        duration = 60,
+        publishedDate = 0L,
+        podcastId = "pod",
+        podcastTitle = "Show",
+    )
 }

@@ -11,6 +11,8 @@ import cx.aswin.boxlore.core.domain.RssSubscriptionResult
 import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -24,14 +26,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
 
 /** Escapes `\`, `%`, and `_` so a raw search term is matched literally by a SQL `LIKE` clause. */
-fun String.escapeForSqlLike(): String =
-    replace("\\", "\\\\")
-        .replace("%", "\\%")
-        .replace("_", "\\_")
+fun String.escapeForSqlLike(): String = replace("\\", "\\\\")
+    .replace("%", "\\%")
+    .replace("_", "\\_")
 
 class RssPodcastRepository private constructor(
     private val appContext: Context,
@@ -57,221 +56,215 @@ class RssPodcastRepository private constructor(
     val refreshingPodcastIds: StateFlow<Set<String>> = _refreshingPodcastIds.asStateFlow()
 
     @Suppress("LongMethod")
-    override suspend fun addSubscription(rawUrl: String): RssSubscriptionResult =
-        withContext(Dispatchers.IO) {
-            val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(rawUrl)
-            val fetched = feedClient.fetch(normalizedUrl)
-            val podcastId = RssIdGenerator.podcastId(fetched.finalUrl)
-            val parsed =
-                feedClient.parse(
-                    feedUrl = fetched.finalUrl,
-                    bytes = fetched.body,
-                    podcastId = podcastId,
+    override suspend fun addSubscription(rawUrl: String): RssSubscriptionResult = withContext(Dispatchers.IO) {
+        val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(rawUrl)
+        val fetched = feedClient.fetch(normalizedUrl)
+        val podcastId = RssIdGenerator.podcastId(fetched.finalUrl)
+        val parsed =
+            feedClient.parse(
+                feedUrl = fetched.finalUrl,
+                bytes = fetched.body,
+                podcastId = podcastId,
+            )
+        val supportsHeadChecks =
+            feedClient.confirmHeadValidators(
+                url = fetched.finalUrl,
+                etag = fetched.etag,
+                lastModified = fetched.lastModified,
+            )
+        val existing = podcastDao.getPodcast(podcastId)
+        val podcastIndexSubscriptions = podcastDao.getSubscribedPodcastIndexPodcasts()
+        val exactMatch =
+            podcastIndexSubscriptions.firstOrNull { candidate ->
+                RssSourceMatcher.feedIdentityMatches(
+                    rssFeedUrl = fetched.finalUrl,
+                    rssPodcastGuid = parsed.podcastGuid,
+                    candidate = candidate,
                 )
-            val supportsHeadChecks =
-                feedClient.confirmHeadValidators(
-                    url = fetched.finalUrl,
-                    etag = fetched.etag,
-                    lastModified = fetched.lastModified,
-                )
-            val existing = podcastDao.getPodcast(podcastId)
-            val podcastIndexSubscriptions = podcastDao.getSubscribedPodcastIndexPodcasts()
-            val exactMatch =
+            }
+        val potentialMatch =
+            if (exactMatch == null) {
                 podcastIndexSubscriptions.firstOrNull { candidate ->
-                    RssSourceMatcher.feedIdentityMatches(
-                        rssFeedUrl = fetched.finalUrl,
-                        rssPodcastGuid = parsed.podcastGuid,
+                    RssSourceMatcher.likelySameShow(
+                        rssTitle = parsed.title,
+                        rssAuthor = parsed.author,
                         candidate = candidate,
                     )
                 }
-            val potentialMatch =
-                if (exactMatch == null) {
-                    podcastIndexSubscriptions.firstOrNull { candidate ->
-                        RssSourceMatcher.likelySameShow(
-                            rssTitle = parsed.title,
-                            rssAuthor = parsed.author,
-                            candidate = candidate,
-                        )
-                    }
-                } else {
-                    null
-                }
-            val stateSource = exactMatch ?: existing
-            val now = System.currentTimeMillis()
-            val sticky =
-                StickyRssEpisodeRemap.prepare(
-                    parsed = parsed.episodes,
-                    existing = episodeDao.listIdentities(podcastId),
-                    podcastTitle = parsed.title,
-                    podcastImageUrl = parsed.imageUrl,
-                    podcastGenre = parsed.genre,
-                    podcastArtist = parsed.author,
-                )
-            val entity =
-                PodcastEntity(
-                    podcastId = podcastId,
-                    title = parsed.title,
-                    author = parsed.author,
-                    imageUrl = parsed.imageUrl.orEmpty(),
-                    description = parsed.description,
-                    isSubscribed = true,
-                    subscribedAt = stateSource?.subscribedAt?.takeIf { stateSource.isSubscribed } ?: now,
-                    genre = parsed.genre,
-                    type = parsed.podcastType,
-                    lastRefreshed = now,
-                    latestEpisode = sticky.latestEpisode,
-                    preferredSort =
-                        stateSource?.preferredSort
-                            ?: if (parsed.podcastType == "serial") "oldest" else "newest",
-                    notificationsEnabled = false,
-                    autoDownloadEnabled = false,
-                    skipBeginningOverrideMs = stateSource?.skipBeginningOverrideMs,
-                    skipEndingOverrideMs = stateSource?.skipEndingOverrideMs,
-                    sourceType = PodcastEntity.SOURCE_RSS,
-                    feedUrl = fetched.finalUrl,
-                    feedEtag = fetched.etag,
-                    feedLastModified = fetched.lastModified,
-                    feedDeclaredUpdatedAt = parsed.declaredUpdatedAt,
-                    rssRefreshCapability =
-                        if (supportsHeadChecks) {
-                            PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS
-                        } else {
-                            PodcastEntity.RSS_REFRESH_MANUAL
-                        },
-                    lastRssSyncAt = now,
-                    rssCatalogStale = false,
-                    rssHasNewEpisodes = false,
-                    podcastGuid = parsed.podcastGuid,
-                    linkedPodcastIndexId = exactMatch?.podcastId ?: existing?.linkedPodcastIndexId,
-                )
-            database.withTransaction {
-                podcastDao.upsert(entity)
-                episodeDao.upsertAll(sticky.episodes)
-                exactMatch?.let { matched ->
-                    migrateLinkedState(
-                        podcastIndexPodcast = matched,
-                        rssPodcast = entity,
-                        rssEpisodes = sticky.episodes,
-                    )
-                }
+            } else {
+                null
             }
-            exactMatch?.let { unsubscribeFromPodcastIndexNotifications(it.podcastId) }
-            RssSubscriptionResult(
-                podcast = entity.toPodcast(),
-                episodeCount = sticky.episodes.size,
-                automaticUpdateChecksSupported = supportsHeadChecks,
-                potentialPodcastIndexMatch = potentialMatch?.toPodcast(),
-                linkedPodcastIndexId = exactMatch?.podcastId,
+        val stateSource = exactMatch ?: existing
+        val now = System.currentTimeMillis()
+        val sticky =
+            StickyRssEpisodeRemap.prepare(
+                parsed = parsed.episodes,
+                existing = episodeDao.listIdentities(podcastId),
+                podcastTitle = parsed.title,
+                podcastImageUrl = parsed.imageUrl,
+                podcastGenre = parsed.genre,
+                podcastArtist = parsed.author,
             )
-        }
-
-    override suspend fun confirmPodcastIndexLink(
-        rssPodcastId: String,
-        podcastIndexId: String,
-    ): Podcast =
-        withContext(Dispatchers.IO) {
-            val linkedPodcast =
-                database.withTransaction {
-                    val rssPodcast =
-                        podcastDao.getPodcast(rssPodcastId)
-                            ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
-                    require(rssPodcast.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
-                    val podcastIndexPodcast =
-                        podcastDao.getPodcast(podcastIndexId)
-                            ?: error("Podcast Index subscription not found")
-                    require(!podcastIndexPodcast.isRss) {
-                        "Linked source must be a Podcast Index subscription"
-                    }
-                    val linkedRssPodcast =
-                        rssPodcast.copy(
-                            subscribedAt =
-                                podcastIndexPodcast.subscribedAt
-                                    .takeIf { podcastIndexPodcast.isSubscribed }
-                                    ?: rssPodcast.subscribedAt,
-                            preferredSort = podcastIndexPodcast.preferredSort ?: rssPodcast.preferredSort,
-                            linkedPodcastIndexId = podcastIndexId,
-                        )
-                    podcastDao.upsert(linkedRssPodcast)
-                    migrateLinkedState(
-                        podcastIndexPodcast = podcastIndexPodcast,
-                        rssPodcast = linkedRssPodcast,
-                        rssEpisodes = episodeDao.getAllNewest(rssPodcastId),
-                    )
-                    linkedRssPodcast.toPodcast()
-                }
-            unsubscribeFromPodcastIndexNotifications(podcastIndexId)
-            linkedPodcast
-        }
-
-    suspend fun refreshCatalog(podcastId: String): Result<Int> =
-        withContext(Dispatchers.IO) {
-            val lock = refreshLocks.getOrPut(podcastId) { Mutex() }
-            lock.withLock {
-                markRefreshing(podcastId, true)
-                try {
-                    runCatching {
-                        val existing =
-                            podcastDao.getPodcast(podcastId)
-                                ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
-                        require(existing.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
-                        val feedUrl = existing.feedUrl ?: error("RSS feed URL is missing")
-                        val fetched = feedClient.fetch(feedUrl)
-                        val parsed =
-                            feedClient.parse(
-                                feedUrl = fetched.finalUrl,
-                                bytes = fetched.body,
-                                podcastId = podcastId,
-                            )
-                        val supportsHeadChecks =
-                            feedClient.confirmHeadValidators(
-                                url = fetched.finalUrl,
-                                etag = fetched.etag,
-                                lastModified = fetched.lastModified,
-                            )
-                        val sticky =
-                            StickyRssEpisodeRemap.prepare(
-                                parsed = parsed.episodes,
-                                existing = episodeDao.listIdentities(podcastId),
-                                podcastTitle = parsed.title,
-                                podcastImageUrl = parsed.imageUrl ?: existing.imageUrl,
-                                podcastGenre = parsed.genre ?: existing.genre,
-                                podcastArtist = parsed.author.ifBlank { existing.author },
-                            )
-                        val updated =
-                            existing.copy(
-                                title = parsed.title,
-                                author = parsed.author.ifBlank { existing.author },
-                                imageUrl = parsed.imageUrl ?: existing.imageUrl,
-                                description = parsed.description ?: existing.description,
-                                genre = parsed.genre ?: existing.genre,
-                                type = parsed.podcastType,
-                                latestEpisode = sticky.latestEpisode,
-                                lastRefreshed = System.currentTimeMillis(),
-                                feedUrl = fetched.finalUrl,
-                                feedEtag = fetched.etag,
-                                feedLastModified = fetched.lastModified,
-                                feedDeclaredUpdatedAt = parsed.declaredUpdatedAt,
-                                rssRefreshCapability =
-                                    if (supportsHeadChecks) {
-                                        PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS
-                                    } else {
-                                        PodcastEntity.RSS_REFRESH_MANUAL
-                                    },
-                                lastRssSyncAt = System.currentTimeMillis(),
-                                rssCatalogStale = false,
-                                rssHasNewEpisodes = false,
-                            )
-                        database.withTransaction {
-                            podcastDao.upsert(updated)
-                            episodeDao.upsertAll(sticky.episodes)
-                        }
-                        sticky.episodes.size
-                    }
-                } finally {
-                    markRefreshing(podcastId, false)
-                }
+        val entity =
+            PodcastEntity(
+                podcastId = podcastId,
+                title = parsed.title,
+                author = parsed.author,
+                imageUrl = parsed.imageUrl.orEmpty(),
+                description = parsed.description,
+                isSubscribed = true,
+                subscribedAt = stateSource?.subscribedAt?.takeIf { stateSource.isSubscribed } ?: now,
+                genre = parsed.genre,
+                type = parsed.podcastType,
+                lastRefreshed = now,
+                latestEpisode = sticky.latestEpisode,
+                preferredSort =
+                stateSource?.preferredSort
+                    ?: if (parsed.podcastType == "serial") "oldest" else "newest",
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                skipBeginningOverrideMs = stateSource?.skipBeginningOverrideMs,
+                skipEndingOverrideMs = stateSource?.skipEndingOverrideMs,
+                sourceType = PodcastEntity.SOURCE_RSS,
+                feedUrl = fetched.finalUrl,
+                feedEtag = fetched.etag,
+                feedLastModified = fetched.lastModified,
+                feedDeclaredUpdatedAt = parsed.declaredUpdatedAt,
+                rssRefreshCapability =
+                if (supportsHeadChecks) {
+                    PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS
+                } else {
+                    PodcastEntity.RSS_REFRESH_MANUAL
+                },
+                lastRssSyncAt = now,
+                rssCatalogStale = false,
+                rssHasNewEpisodes = false,
+                podcastGuid = parsed.podcastGuid,
+                linkedPodcastIndexId = exactMatch?.podcastId ?: existing?.linkedPodcastIndexId,
+            )
+        database.withTransaction {
+            podcastDao.upsert(entity)
+            episodeDao.upsertAll(sticky.episodes)
+            exactMatch?.let { matched ->
+                migrateLinkedState(
+                    podcastIndexPodcast = matched,
+                    rssPodcast = entity,
+                    rssEpisodes = sticky.episodes,
+                )
             }
         }
+        exactMatch?.let { unsubscribeFromPodcastIndexNotifications(it.podcastId) }
+        RssSubscriptionResult(
+            podcast = entity.toPodcast(),
+            episodeCount = sticky.episodes.size,
+            automaticUpdateChecksSupported = supportsHeadChecks,
+            potentialPodcastIndexMatch = potentialMatch?.toPodcast(),
+            linkedPodcastIndexId = exactMatch?.podcastId,
+        )
+    }
+
+    override suspend fun confirmPodcastIndexLink(rssPodcastId: String, podcastIndexId: String,): Podcast = withContext(Dispatchers.IO) {
+        val linkedPodcast =
+            database.withTransaction {
+                val rssPodcast =
+                    podcastDao.getPodcast(rssPodcastId)
+                        ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
+                require(rssPodcast.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
+                val podcastIndexPodcast =
+                    podcastDao.getPodcast(podcastIndexId)
+                        ?: error("Podcast Index subscription not found")
+                require(!podcastIndexPodcast.isRss) {
+                    "Linked source must be a Podcast Index subscription"
+                }
+                val linkedRssPodcast =
+                    rssPodcast.copy(
+                        subscribedAt =
+                        podcastIndexPodcast.subscribedAt
+                            .takeIf { podcastIndexPodcast.isSubscribed }
+                            ?: rssPodcast.subscribedAt,
+                        preferredSort = podcastIndexPodcast.preferredSort ?: rssPodcast.preferredSort,
+                        linkedPodcastIndexId = podcastIndexId,
+                    )
+                podcastDao.upsert(linkedRssPodcast)
+                migrateLinkedState(
+                    podcastIndexPodcast = podcastIndexPodcast,
+                    rssPodcast = linkedRssPodcast,
+                    rssEpisodes = episodeDao.getAllNewest(rssPodcastId),
+                )
+                linkedRssPodcast.toPodcast()
+            }
+        unsubscribeFromPodcastIndexNotifications(podcastIndexId)
+        linkedPodcast
+    }
+
+    suspend fun refreshCatalog(podcastId: String): Result<Int> = withContext(Dispatchers.IO) {
+        val lock = refreshLocks.getOrPut(podcastId) { Mutex() }
+        lock.withLock {
+            markRefreshing(podcastId, true)
+            try {
+                runCatching {
+                    val existing =
+                        podcastDao.getPodcast(podcastId)
+                            ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
+                    require(existing.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
+                    val feedUrl = existing.feedUrl ?: error("RSS feed URL is missing")
+                    val fetched = feedClient.fetch(feedUrl)
+                    val parsed =
+                        feedClient.parse(
+                            feedUrl = fetched.finalUrl,
+                            bytes = fetched.body,
+                            podcastId = podcastId,
+                        )
+                    val supportsHeadChecks =
+                        feedClient.confirmHeadValidators(
+                            url = fetched.finalUrl,
+                            etag = fetched.etag,
+                            lastModified = fetched.lastModified,
+                        )
+                    val sticky =
+                        StickyRssEpisodeRemap.prepare(
+                            parsed = parsed.episodes,
+                            existing = episodeDao.listIdentities(podcastId),
+                            podcastTitle = parsed.title,
+                            podcastImageUrl = parsed.imageUrl ?: existing.imageUrl,
+                            podcastGenre = parsed.genre ?: existing.genre,
+                            podcastArtist = parsed.author.ifBlank { existing.author },
+                        )
+                    val updated =
+                        existing.copy(
+                            title = parsed.title,
+                            author = parsed.author.ifBlank { existing.author },
+                            imageUrl = parsed.imageUrl ?: existing.imageUrl,
+                            description = parsed.description ?: existing.description,
+                            genre = parsed.genre ?: existing.genre,
+                            type = parsed.podcastType,
+                            latestEpisode = sticky.latestEpisode,
+                            lastRefreshed = System.currentTimeMillis(),
+                            feedUrl = fetched.finalUrl,
+                            feedEtag = fetched.etag,
+                            feedLastModified = fetched.lastModified,
+                            feedDeclaredUpdatedAt = parsed.declaredUpdatedAt,
+                            rssRefreshCapability =
+                            if (supportsHeadChecks) {
+                                PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS
+                            } else {
+                                PodcastEntity.RSS_REFRESH_MANUAL
+                            },
+                            lastRssSyncAt = System.currentTimeMillis(),
+                            rssCatalogStale = false,
+                            rssHasNewEpisodes = false,
+                        )
+                    database.withTransaction {
+                        podcastDao.upsert(updated)
+                        episodeDao.upsertAll(sticky.episodes)
+                    }
+                    sticky.episodes.size
+                }
+            } finally {
+                markRefreshing(podcastId, false)
+            }
+        }
+    }
 
     /**
      * Refreshes the catalog only when there is reason to believe it changed, so opening a podcast
@@ -285,116 +278,114 @@ class RssPodcastRepository private constructor(
      *
      * Returns the number of episodes downloaded (0 when nothing was refreshed).
      */
-    suspend fun refreshCatalogIfNeeded(podcastId: String): Result<Int> =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                val existing =
-                    podcastDao.getPodcast(podcastId)
-                        ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
-                require(existing.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
+    suspend fun refreshCatalogIfNeeded(podcastId: String): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            val existing =
+                podcastDao.getPodcast(podcastId)
+                    ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
+            require(existing.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
 
-                // A prior HEAD check already flagged the catalog as stale → download now.
-                if (existing.rssCatalogStale) {
-                    return@runCatching refreshCatalog(podcastId).getOrThrow()
-                }
-
-                if (existing.rssRefreshCapability == PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS) {
-                    return@runCatching when (val freshness = feedClient.checkFreshness(existing)) {
-                        is RssFreshnessResult.Unchanged -> {
-                            podcastDao.updateRssState(
-                                RssFeedStateUpdate(
-                                    podcastId = existing.podcastId,
-                                    feedEtag = freshness.etag ?: existing.feedEtag,
-                                    feedLastModified = freshness.lastModified ?: existing.feedLastModified,
-                                    feedDeclaredUpdatedAt = existing.feedDeclaredUpdatedAt,
-                                    rssRefreshCapability = existing.rssRefreshCapability,
-                                    lastRssSyncAt = System.currentTimeMillis(),
-                                    rssCatalogStale = false,
-                                    rssHasNewEpisodes = existing.rssHasNewEpisodes,
-                                ),
-                            )
-                            0
-                        }
-                        is RssFreshnessResult.Changed -> refreshCatalog(podcastId).getOrThrow()
-                        RssFreshnessResult.Unsupported -> refreshCatalog(podcastId).getOrThrow()
-                        is RssFreshnessResult.Failed -> 0
-                    }
-                }
-
-                // No cheap validator available → gate a full refresh behind a quiet interval.
-                val sinceLastSync = System.currentTimeMillis() - existing.lastRssSyncAt
-                if (existing.lastRssSyncAt > 0L && sinceLastSync < HEAD_CHECK_INTERVAL_MS) {
-                    return@runCatching 0
-                }
-                refreshCatalog(podcastId).getOrThrow()
+            // A prior HEAD check already flagged the catalog as stale → download now.
+            if (existing.rssCatalogStale) {
+                return@runCatching refreshCatalog(podcastId).getOrThrow()
             }
-        }
 
-    suspend fun checkSubscribedFeedFreshness() =
-        coroutineScope {
-            val now = System.currentTimeMillis()
-            val semaphore = Semaphore(MAX_CONCURRENT_HEAD_CHECKS)
-            podcastDao
-                .getSubscribedRssPodcasts()
-                .filter { podcast ->
-                    podcast.rssRefreshCapability == PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS &&
-                        now - podcast.lastRssSyncAt >= HEAD_CHECK_INTERVAL_MS
-                }.map { podcast ->
-                    async(Dispatchers.IO) {
-                        semaphore.withPermit {
-                            when (val freshness = feedClient.checkFreshness(podcast)) {
-                                is RssFreshnessResult.Unchanged -> {
-                                    podcastDao.updateRssState(
-                                        RssFeedStateUpdate(
-                                            podcastId = podcast.podcastId,
-                                            feedEtag = freshness.etag ?: podcast.feedEtag,
-                                            feedLastModified =
-                                                freshness.lastModified
-                                                    ?: podcast.feedLastModified,
-                                            feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
-                                            rssRefreshCapability = podcast.rssRefreshCapability,
-                                            lastRssSyncAt = now,
-                                            rssCatalogStale = podcast.rssCatalogStale,
-                                            rssHasNewEpisodes = podcast.rssHasNewEpisodes,
-                                        ),
-                                    )
-                                }
-                                is RssFreshnessResult.Changed -> {
-                                    podcastDao.updateRssState(
-                                        RssFeedStateUpdate(
-                                            podcastId = podcast.podcastId,
-                                            feedEtag = freshness.etag ?: podcast.feedEtag,
-                                            feedLastModified =
-                                                freshness.lastModified
-                                                    ?: podcast.feedLastModified,
-                                            feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
-                                            rssRefreshCapability = podcast.rssRefreshCapability,
-                                            lastRssSyncAt = now,
-                                            rssCatalogStale = true,
-                                            rssHasNewEpisodes = true,
-                                        ),
-                                    )
-                                }
-                                RssFreshnessResult.Unsupported -> {
-                                    podcastDao.updateRssState(
-                                        RssFeedStateUpdate(
-                                            podcastId = podcast.podcastId,
-                                            feedEtag = podcast.feedEtag,
-                                            feedLastModified = podcast.feedLastModified,
-                                            feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
-                                            rssRefreshCapability = PodcastEntity.RSS_REFRESH_MANUAL,
-                                            lastRssSyncAt = now,
-                                            rssCatalogStale = podcast.rssCatalogStale,
-                                            rssHasNewEpisodes = podcast.rssHasNewEpisodes,
-                                        ),
-                                    )
-                                }
-                                is RssFreshnessResult.Failed -> Unit
+            if (existing.rssRefreshCapability == PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS) {
+                return@runCatching when (val freshness = feedClient.checkFreshness(existing)) {
+                    is RssFreshnessResult.Unchanged -> {
+                        podcastDao.updateRssState(
+                            RssFeedStateUpdate(
+                                podcastId = existing.podcastId,
+                                feedEtag = freshness.etag ?: existing.feedEtag,
+                                feedLastModified = freshness.lastModified ?: existing.feedLastModified,
+                                feedDeclaredUpdatedAt = existing.feedDeclaredUpdatedAt,
+                                rssRefreshCapability = existing.rssRefreshCapability,
+                                lastRssSyncAt = System.currentTimeMillis(),
+                                rssCatalogStale = false,
+                                rssHasNewEpisodes = existing.rssHasNewEpisodes,
+                            ),
+                        )
+                        0
+                    }
+                    is RssFreshnessResult.Changed -> refreshCatalog(podcastId).getOrThrow()
+                    RssFreshnessResult.Unsupported -> refreshCatalog(podcastId).getOrThrow()
+                    is RssFreshnessResult.Failed -> 0
+                }
+            }
+
+            // No cheap validator available → gate a full refresh behind a quiet interval.
+            val sinceLastSync = System.currentTimeMillis() - existing.lastRssSyncAt
+            if (existing.lastRssSyncAt > 0L && sinceLastSync < HEAD_CHECK_INTERVAL_MS) {
+                return@runCatching 0
+            }
+            refreshCatalog(podcastId).getOrThrow()
+        }
+    }
+
+    suspend fun checkSubscribedFeedFreshness() = coroutineScope {
+        val now = System.currentTimeMillis()
+        val semaphore = Semaphore(MAX_CONCURRENT_HEAD_CHECKS)
+        podcastDao
+            .getSubscribedRssPodcasts()
+            .filter { podcast ->
+                podcast.rssRefreshCapability == PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS &&
+                    now - podcast.lastRssSyncAt >= HEAD_CHECK_INTERVAL_MS
+            }.map { podcast ->
+                async(Dispatchers.IO) {
+                    semaphore.withPermit {
+                        when (val freshness = feedClient.checkFreshness(podcast)) {
+                            is RssFreshnessResult.Unchanged -> {
+                                podcastDao.updateRssState(
+                                    RssFeedStateUpdate(
+                                        podcastId = podcast.podcastId,
+                                        feedEtag = freshness.etag ?: podcast.feedEtag,
+                                        feedLastModified =
+                                        freshness.lastModified
+                                            ?: podcast.feedLastModified,
+                                        feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
+                                        rssRefreshCapability = podcast.rssRefreshCapability,
+                                        lastRssSyncAt = now,
+                                        rssCatalogStale = podcast.rssCatalogStale,
+                                        rssHasNewEpisodes = podcast.rssHasNewEpisodes,
+                                    ),
+                                )
                             }
+                            is RssFreshnessResult.Changed -> {
+                                podcastDao.updateRssState(
+                                    RssFeedStateUpdate(
+                                        podcastId = podcast.podcastId,
+                                        feedEtag = freshness.etag ?: podcast.feedEtag,
+                                        feedLastModified =
+                                        freshness.lastModified
+                                            ?: podcast.feedLastModified,
+                                        feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
+                                        rssRefreshCapability = podcast.rssRefreshCapability,
+                                        lastRssSyncAt = now,
+                                        rssCatalogStale = true,
+                                        rssHasNewEpisodes = true,
+                                    ),
+                                )
+                            }
+                            RssFreshnessResult.Unsupported -> {
+                                podcastDao.updateRssState(
+                                    RssFeedStateUpdate(
+                                        podcastId = podcast.podcastId,
+                                        feedEtag = podcast.feedEtag,
+                                        feedLastModified = podcast.feedLastModified,
+                                        feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
+                                        rssRefreshCapability = PodcastEntity.RSS_REFRESH_MANUAL,
+                                        lastRssSyncAt = now,
+                                        rssCatalogStale = podcast.rssCatalogStale,
+                                        rssHasNewEpisodes = podcast.rssHasNewEpisodes,
+                                    ),
+                                )
+                            }
+                            is RssFreshnessResult.Failed -> Unit
                         }
                     }
-                }.awaitAll()
-        }
+                }
+            }.awaitAll()
+    }
 
     suspend fun getPodcast(podcastId: String): PodcastEntity? = podcastDao.getPodcast(podcastId)
 
@@ -403,12 +394,7 @@ class RssPodcastRepository private constructor(
         return entity.toDomainEpisode()
     }
 
-    suspend fun getEpisodes(
-        podcastId: String,
-        limit: Int,
-        offset: Int,
-        sort: String,
-    ): List<Episode> {
+    suspend fun getEpisodes(podcastId: String, limit: Int, offset: Int, sort: String,): List<Episode> {
         val podcast = podcastDao.getPodcast(podcastId) ?: return emptyList()
         val rows =
             if (sort == "oldest") {
@@ -419,11 +405,7 @@ class RssPodcastRepository private constructor(
         return rows.map { it.toDomainEpisode(podcast) }
     }
 
-    suspend fun getEpisodesAround(
-        podcastId: String,
-        bound: Int,
-        aroundEpisodeId: String?,
-    ): List<Episode> {
+    suspend fun getEpisodesAround(podcastId: String, bound: Int, aroundEpisodeId: String?,): List<Episode> {
         val podcast = podcastDao.getPodcast(podcastId) ?: return emptyList()
         val limit = bound.coerceAtLeast(1)
         val around = aroundEpisodeId?.let { episodeDao.getEpisode(it) }
@@ -452,10 +434,7 @@ class RssPodcastRepository private constructor(
         return episodeDao.getAllNewest(podcastId).map { it.toDomainEpisode(podcast) }
     }
 
-    suspend fun searchEpisodes(
-        podcastId: String,
-        query: String,
-    ): List<Episode> {
+    suspend fun searchEpisodes(podcastId: String, query: String,): List<Episode> {
         val podcast = podcastDao.getPodcast(podcastId) ?: return emptyList()
         return episodeDao
             .search(podcastId, query.trim().escapeForSqlLike())
@@ -466,47 +445,45 @@ class RssPodcastRepository private constructor(
 
     suspend fun deleteCatalog(podcastId: String) = episodeDao.deleteForPodcast(podcastId)
 
-    private fun RssEpisodeEntity.toDomainEpisode(podcast: PodcastEntity? = null): Episode =
-        toEpisode(
-            podcastTitle = podcast?.title,
-            podcastImageUrl = podcast?.imageUrl,
-            podcastGenre = podcast?.genre,
-            podcastArtist = podcast?.author,
-        )
+    private fun RssEpisodeEntity.toDomainEpisode(podcast: PodcastEntity? = null): Episode = toEpisode(
+        podcastTitle = podcast?.title,
+        podcastImageUrl = podcast?.imageUrl,
+        podcastGenre = podcast?.genre,
+        podcastArtist = podcast?.author,
+    )
 
-    private fun PodcastEntity.toPodcast(): Podcast =
-        Podcast(
-            id = podcastId,
-            title = title,
-            artist = author,
-            imageUrl = imageUrl,
-            fallbackImageUrl = latestEpisode?.imageUrl,
-            type = type,
-            description = description,
-            genre = genre ?: "Podcast",
-            latestEpisode = latestEpisode,
-            subscribedAt = subscribedAt,
-            podcastGuid = podcastGuid,
-            fundingUrl = fundingUrl,
-            fundingMessage = fundingMessage,
-            medium = medium,
-            hasValue = hasValue,
-            updateFrequency = updateFrequency,
-            location = location,
-            license = license,
-            isLocked = isLocked,
-            preferredSort = preferredSort,
-            notificationsEnabled = false,
-            autoDownloadEnabled = false,
-            skipBeginningOverrideMs = skipBeginningOverrideMs,
-            skipEndingOverrideMs = skipEndingOverrideMs,
-            sourceType = sourceType,
-            feedUrl = feedUrl,
-            rssRefreshCapability = rssRefreshCapability,
-            rssCatalogStale = rssCatalogStale,
-            rssHasNewEpisodes = rssHasNewEpisodes,
-            linkedPodcastIndexId = linkedPodcastIndexId,
-        )
+    private fun PodcastEntity.toPodcast(): Podcast = Podcast(
+        id = podcastId,
+        title = title,
+        artist = author,
+        imageUrl = imageUrl,
+        fallbackImageUrl = latestEpisode?.imageUrl,
+        type = type,
+        description = description,
+        genre = genre ?: "Podcast",
+        latestEpisode = latestEpisode,
+        subscribedAt = subscribedAt,
+        podcastGuid = podcastGuid,
+        fundingUrl = fundingUrl,
+        fundingMessage = fundingMessage,
+        medium = medium,
+        hasValue = hasValue,
+        updateFrequency = updateFrequency,
+        location = location,
+        license = license,
+        isLocked = isLocked,
+        preferredSort = preferredSort,
+        notificationsEnabled = false,
+        autoDownloadEnabled = false,
+        skipBeginningOverrideMs = skipBeginningOverrideMs,
+        skipEndingOverrideMs = skipEndingOverrideMs,
+        sourceType = sourceType,
+        feedUrl = feedUrl,
+        rssRefreshCapability = rssRefreshCapability,
+        rssCatalogStale = rssCatalogStale,
+        rssHasNewEpisodes = rssHasNewEpisodes,
+        linkedPodcastIndexId = linkedPodcastIndexId,
+    )
 
     private suspend fun migrateLinkedState(
         podcastIndexPodcast: PodcastEntity,
@@ -613,12 +590,8 @@ class RssPodcastRepository private constructor(
         podcastDao.retireLinkedPodcastIndexSubscription(podcastIndexPodcast.podcastId)
     }
 
-    private fun canRekeyDownloadedEpisode(
-        old: DownloadedEpisodeEntity,
-        rssEpisode: RssEpisodeEntity,
-    ): Boolean =
-        old.status != DownloadedEpisodeEntity.STATUS_COMPLETED ||
-            downloadCacheRelinker.relink(old.episodeId, rssEpisode.episodeId)
+    private fun canRekeyDownloadedEpisode(old: DownloadedEpisodeEntity, rssEpisode: RssEpisodeEntity,): Boolean = old.status != DownloadedEpisodeEntity.STATUS_COMPLETED ||
+        downloadCacheRelinker.relink(old.episodeId, rssEpisode.episodeId)
 
     private fun unsubscribeFromPodcastIndexNotifications(podcastIndexId: String) {
         runCatching {
@@ -634,10 +607,7 @@ class RssPodcastRepository private constructor(
         }
     }
 
-    private fun markRefreshing(
-        podcastId: String,
-        refreshing: Boolean,
-    ) {
+    private fun markRefreshing(podcastId: String, refreshing: Boolean,) {
         _refreshingPodcastIds.value =
             if (refreshing) {
                 _refreshingPodcastIds.value + podcastId
@@ -667,12 +637,11 @@ class RssPodcastRepository private constructor(
             context: Context,
             database: BoxLoreDatabase = BoxLoreDatabase.getDatabase(context.applicationContext),
             feedClient: RssFeedClient = RssFeedClient(),
-        ): RssPodcastRepository =
-            RssPodcastRepository(
-                appContext = context.applicationContext,
-                database = database,
-                feedClient = feedClient,
-            )
+        ): RssPodcastRepository = RssPodcastRepository(
+            appContext = context.applicationContext,
+            database = database,
+            feedClient = feedClient,
+        )
 
         fun install(instance: RssPodcastRepository) {
             INSTANCE = instance
@@ -682,10 +651,9 @@ class RssPodcastRepository private constructor(
          * Legacy accessor — returns the AppContainer-installed instance when present.
          * Production call sites must use [SharedAppDependenciesHolder] / AppContainer.
          */
-        fun getInstance(context: Context): RssPodcastRepository =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE ?: create(context).also { INSTANCE = it }
-            }
+        fun getInstance(context: Context): RssPodcastRepository = INSTANCE ?: synchronized(this) {
+            INSTANCE ?: create(context).also { INSTANCE = it }
+        }
 
         /** Hermetic test factory (JVM / MockWebServer catalog tests). */
         fun createForTests(
@@ -704,12 +672,7 @@ class RssPodcastRepository private constructor(
 internal object RssSourceMatcher {
     private const val ONE_DAY_SECONDS = 24L * 60L * 60L
 
-    fun findMatchingEpisode(
-        episodes: List<RssEpisodeEntity>,
-        title: String,
-        audioUrl: String?,
-        publishedDate: Long?,
-    ): RssEpisodeEntity? {
+    fun findMatchingEpisode(episodes: List<RssEpisodeEntity>, title: String, audioUrl: String?, publishedDate: Long?,): RssEpisodeEntity? {
         val normalizedAudioUrl = audioUrl?.trim()?.takeIf(String::isNotBlank)
         if (normalizedAudioUrl != null) {
             episodes.firstOrNull { it.audioUrl.trim() == normalizedAudioUrl }?.let { return it }
@@ -726,11 +689,7 @@ internal object RssSourceMatcher {
         return null
     }
 
-    fun feedIdentityMatches(
-        rssFeedUrl: String,
-        rssPodcastGuid: String?,
-        candidate: PodcastEntity,
-    ): Boolean {
+    fun feedIdentityMatches(rssFeedUrl: String, rssPodcastGuid: String?, candidate: PodcastEntity,): Boolean {
         val canonicalRssUrl = canonicalFeedUrl(rssFeedUrl)
         val sameUrl =
             canonicalRssUrl != null &&
@@ -741,11 +700,7 @@ internal object RssSourceMatcher {
         return sameUrl || sameGuid
     }
 
-    fun likelySameShow(
-        rssTitle: String,
-        rssAuthor: String,
-        candidate: PodcastEntity,
-    ): Boolean {
+    fun likelySameShow(rssTitle: String, rssAuthor: String, candidate: PodcastEntity,): Boolean {
         if (normalizeText(rssTitle) != normalizeText(candidate.title)) return false
         val rssAuthorKey = normalizeText(rssAuthor)
         val candidateAuthorKey = normalizeText(candidate.author)
@@ -754,15 +709,14 @@ internal object RssSourceMatcher {
             rssAuthorKey == candidateAuthorKey
     }
 
-    private fun canonicalFeedUrl(url: String?): String? =
-        url
-            ?.trim()
-            ?.toHttpUrlOrNull()
-            ?.newBuilder()
-            ?.fragment(null)
-            ?.build()
-            ?.toString()
-            ?.removeSuffix("/")
+    private fun canonicalFeedUrl(url: String?): String? = url
+        ?.trim()
+        ?.toHttpUrlOrNull()
+        ?.newBuilder()
+        ?.fragment(null)
+        ?.build()
+        ?.toString()
+        ?.removeSuffix("/")
 
     private fun normalizeText(value: String): String = value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
 }

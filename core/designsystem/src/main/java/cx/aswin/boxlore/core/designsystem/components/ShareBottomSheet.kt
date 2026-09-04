@@ -80,10 +80,10 @@ fun ShareBottomSheet(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 28.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
             horizontalAlignment = Alignment.Start,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -130,9 +130,9 @@ fun ShareBottomSheet(
                             proxyWidth = 160,
                             contentDescription = null,
                             modifier =
-                                Modifier
-                                    .size(76.dp)
-                                    .clip(MaterialTheme.shapes.large),
+                            Modifier
+                                .size(76.dp)
+                                .clip(MaterialTheme.shapes.large),
                         )
                         Spacer(modifier = Modifier.width(14.dp))
                     }
@@ -176,19 +176,19 @@ fun ShareBottomSheet(
                 Spacer(modifier = Modifier.height(14.dp))
                 Surface(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .expressiveClickable(
-                                shape = MaterialTheme.shapes.extraLarge,
-                                onClick = { includeTimestamp = !includeTimestamp },
-                            ),
+                    Modifier
+                        .fillMaxWidth()
+                        .expressiveClickable(
+                            shape = MaterialTheme.shapes.extraLarge,
+                            onClick = { includeTimestamp = !includeTimestamp },
+                        ),
                     shape = MaterialTheme.shapes.extraLarge,
                     color =
-                        if (includeTimestamp) {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
-                        },
+                    if (includeTimestamp) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    },
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
@@ -223,10 +223,10 @@ fun ShareBottomSheet(
                             checked = includeTimestamp,
                             onCheckedChange = { includeTimestamp = it },
                             colors =
-                                SwitchDefaults.colors(
-                                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                                ),
+                            SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
                         )
                     }
                 }
@@ -270,9 +270,9 @@ fun ShareBottomSheet(
                                 id = id,
                                 type = type,
                                 timestampMs =
-                                    currentPositionMs.takeIf {
-                                        includeTimestamp && showTimestampOption
-                                    },
+                                currentPositionMs.takeIf {
+                                    includeTimestamp && showTimestampOption
+                                },
                             )
                         val clipboard =
                             context.getSystemService(
@@ -323,12 +323,12 @@ private fun SharePrimaryAction(
 ) {
     Surface(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .expressiveClickable(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    onClick = onClick,
-                ),
+        modifier
+            .fillMaxWidth()
+            .expressiveClickable(
+                shape = MaterialTheme.shapes.extraLarge,
+                onClick = onClick,
+            ),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -380,12 +380,12 @@ private fun ShareSecondaryAction(
 ) {
     Surface(
         modifier =
-            modifier
-                .defaultMinSize(minHeight = 108.dp)
-                .expressiveClickable(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    onClick = onClick,
-                ),
+        modifier
+            .defaultMinSize(minHeight = 108.dp)
+            .expressiveClickable(
+                shape = MaterialTheme.shapes.extraLarge,
+                onClick = onClick,
+            ),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,

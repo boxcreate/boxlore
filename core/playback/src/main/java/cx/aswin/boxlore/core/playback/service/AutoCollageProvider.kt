@@ -25,11 +25,7 @@ open class AutoCollageProvider : ContentProvider() {
         private val artworkLocks = ConcurrentHashMap<String, Any>()
         private val HEX_64_PATTERN = Regex("[a-f0-9]{64}")
 
-        fun getUri(
-            context: android.content.Context,
-            filename: String,
-            version: String? = null,
-        ): Uri {
+        fun getUri(context: android.content.Context, filename: String, version: String? = null,): Uri {
             val builder =
                 Uri
                     .Builder()
@@ -46,10 +42,7 @@ open class AutoCollageProvider : ContentProvider() {
 
     override fun onCreate(): Boolean = true
 
-    override fun openFile(
-        uri: Uri,
-        mode: String,
-    ): ParcelFileDescriptor? {
+    override fun openFile(uri: Uri, mode: String,): ParcelFileDescriptor? {
         if (mode != "r") return null
         val context = context ?: return null
         val segments = uri.pathSegments
@@ -74,11 +67,7 @@ open class AutoCollageProvider : ContentProvider() {
 
     override fun getType(uri: Uri): String = if (uri.pathSegments.firstOrNull() == "collage") "image/png" else "image/*"
 
-    private fun openRemoteArtwork(
-        uri: Uri,
-        context: android.content.Context,
-        key: String,
-    ): ParcelFileDescriptor? {
+    private fun openRemoteArtwork(uri: Uri, context: android.content.Context, key: String,): ParcelFileDescriptor? {
         val cached = cachedRemoteArtwork(context, key)
         if (cached != null) {
             return ParcelFileDescriptor.open(cached, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -101,10 +90,7 @@ open class AutoCollageProvider : ContentProvider() {
         )
     }
 
-    private fun cachedRemoteArtwork(
-        context: android.content.Context,
-        key: String,
-    ): File? {
+    private fun cachedRemoteArtwork(context: android.content.Context, key: String,): File? {
         if (!key.matches(HEX_64_PATTERN)) return null
         val cacheDir = File(context.cacheDir, "auto_artwork").apply { mkdirs() }
         return childFile(cacheDir, key)
@@ -121,10 +107,7 @@ open class AutoCollageProvider : ContentProvider() {
             }
     }
 
-    private fun getOrFetchRemoteArtwork(
-        context: android.content.Context,
-        key: String,
-    ): File? {
+    private fun getOrFetchRemoteArtwork(context: android.content.Context, key: String,): File? {
         if (!key.matches(HEX_64_PATTERN)) return null
         val cacheDir = File(context.cacheDir, "auto_artwork").apply { mkdirs() }
         val target = childFile(cacheDir, key) ?: return null
@@ -148,11 +131,7 @@ open class AutoCollageProvider : ContentProvider() {
         }
     }
 
-    private fun fetchRemoteArtwork(
-        url: URL,
-        cacheDir: File,
-        target: File,
-    ): File? {
+    private fun fetchRemoteArtwork(url: URL, cacheDir: File, target: File,): File? {
         val temp = File.createTempFile("artwork_", ".tmp", cacheDir)
         return try {
             val bytes = AutoArtworkDownloader.downloadHttpsBytes(url) ?: return null
@@ -187,18 +166,12 @@ open class AutoCollageProvider : ContentProvider() {
         }
     }
 
-    private fun resolveCollage(
-        context: android.content.Context,
-        filename: String,
-    ): File? {
+    private fun resolveCollage(context: android.content.Context, filename: String,): File? {
         if (!filename.matches(Regex("[a-zA-Z0-9_]+\\.png"))) return null
         return childFile(File(context.cacheDir, "auto_collages"), filename)
     }
 
-    private fun resolveRegisteredLocalFile(
-        context: android.content.Context,
-        key: String,
-    ): File? {
+    private fun resolveRegisteredLocalFile(context: android.content.Context, key: String,): File? {
         if (!key.matches(HEX_64_PATTERN)) return null
         val path = AutoArtworkSourceStore.get(context, key) ?: return null
         val candidate = runCatching { File(path).canonicalFile }.getOrNull() ?: return null
@@ -218,10 +191,7 @@ open class AutoCollageProvider : ContentProvider() {
         }
     }
 
-    private fun childFile(
-        parent: File,
-        name: String,
-    ): File? {
+    private fun childFile(parent: File, name: String,): File? {
         val canonicalParent =
             runCatching { parent.apply { mkdirs() }.canonicalFile }.getOrNull()
                 ?: return null
@@ -233,10 +203,7 @@ open class AutoCollageProvider : ContentProvider() {
         }
     }
 
-    private fun evictArtworkCache(
-        cacheDir: File,
-        protectedFile: File,
-    ) {
+    private fun evictArtworkCache(cacheDir: File, protectedFile: File,) {
         val files =
             cacheDir
                 .listFiles()
@@ -252,37 +219,18 @@ open class AutoCollageProvider : ContentProvider() {
         }
     }
 
-    private fun File.readHeader(maxBytes: Int): ByteArray =
-        inputStream().use { input ->
-            val buffer = ByteArray(maxBytes)
-            val read = input.read(buffer)
-            if (read <= 0) byteArrayOf() else buffer.copyOf(read)
-        }
+    private fun File.readHeader(maxBytes: Int): ByteArray = inputStream().use { input ->
+        val buffer = ByteArray(maxBytes)
+        val read = input.read(buffer)
+        if (read <= 0) byteArrayOf() else buffer.copyOf(read)
+    }
 
     // Unused but required
-    override fun query(
-        uri: Uri,
-        p: Array<out String>?,
-        s: String?,
-        sa: Array<out String>?,
-        so: String?,
-    ): Cursor? = null
+    override fun query(uri: Uri, p: Array<out String>?, s: String?, sa: Array<out String>?, so: String?,): Cursor? = null
 
-    override fun insert(
-        uri: Uri,
-        values: ContentValues?,
-    ): Uri? = null
+    override fun insert(uri: Uri, values: ContentValues?,): Uri? = null
 
-    override fun delete(
-        uri: Uri,
-        s: String?,
-        sa: Array<out String>?,
-    ): Int = 0
+    override fun delete(uri: Uri, s: String?, sa: Array<out String>?,): Int = 0
 
-    override fun update(
-        uri: Uri,
-        values: ContentValues?,
-        s: String?,
-        sa: Array<out String>?,
-    ): Int = 0
+    override fun update(uri: Uri, values: ContentValues?, s: String?, sa: Array<out String>?,): Int = 0
 }

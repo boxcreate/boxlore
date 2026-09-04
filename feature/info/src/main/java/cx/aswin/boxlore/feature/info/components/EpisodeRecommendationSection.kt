@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -37,12 +35,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Episode
@@ -74,26 +72,26 @@ internal fun EpisodeRecommendationSection(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
+        CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(modifier = Modifier.padding(vertical = 16.dp)) {
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .then(
-                            if (onHeaderClick != null) {
-                                Modifier.expressiveClickable(
-                                    shape = MaterialTheme.shapes.large,
-                                    onClick = onHeaderClick,
-                                )
-                            } else {
-                                Modifier
-                            },
-                        ).padding(horizontal = 20.dp, vertical = 4.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (onHeaderClick != null) {
+                            Modifier.expressiveClickable(
+                                shape = MaterialTheme.shapes.large,
+                                onClick = onHeaderClick,
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ).padding(horizontal = 20.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -133,8 +131,8 @@ internal fun EpisodeRecommendationSection(
                             ExpressiveEpisodeCard(
                                 episode = episode,
                                 imageUrl =
-                                    episode.imageUrl?.ifBlank { episode.podcastImageUrl }
-                                        ?: state.fallbackImageUrl,
+                                episode.imageUrl?.ifBlank { episode.podcastImageUrl }
+                                    ?: state.fallbackImageUrl,
                                 onClick = { onEpisodeClick(episode) },
                             )
                         }
@@ -162,42 +160,42 @@ private fun ExpressiveEpisodeCard(
     val durationText = formatEpisodeDuration(episode.duration)
     OutlinedCard(
         modifier =
-            Modifier
-                .width(160.dp)
-                .expressiveClickable(
-                    shape = MaterialTheme.shapes.large,
-                    onClick = onClick,
-                ),
+        Modifier
+            .width(160.dp)
+            .expressiveClickable(
+                shape = MaterialTheme.shapes.large,
+                onClick = onClick,
+            ),
         shape = MaterialTheme.shapes.large,
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
+        CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
             ) {
                 OptimizedImage(
                     url = imageUrl,
                     proxyWidth = 400,
                     contentDescription = episode.title,
                     modifier =
-                        Modifier
-                            .matchParentSize()
-                            .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
+                    Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
                     contentScale = ContentScale.Crop,
                 )
                 if (durationText.isNotEmpty()) {
                     Surface(
                         modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(6.dp),
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp),
                         shape = MaterialTheme.shapes.small,
                         color = Color.Black.copy(alpha = 0.6f),
                         contentColor = Color.White,
@@ -213,17 +211,17 @@ private fun ExpressiveEpisodeCard(
             }
             Column(
                 modifier =
-                    Modifier
-                        .padding(10.dp)
-                        .heightIn(min = 58.dp),
+                Modifier
+                    .padding(10.dp)
+                    .heightIn(min = 58.dp),
             ) {
                 Text(
                     text = episode.title,
                     style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            fontSize = 13.sp,
-                            lineHeight = 17.sp,
-                        ),
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 13.sp,
+                        lineHeight = 17.sp,
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -250,23 +248,23 @@ private fun RecommendationSkeleton() {
     Column(modifier = Modifier.width(160.dp)) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(MaterialTheme.shapes.large)
-                    .background(baseColor)
-                    .m3Shimmer(baseColor, highlightColor),
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(MaterialTheme.shapes.large)
+                .background(baseColor)
+                .m3Shimmer(baseColor, highlightColor),
         )
         Spacer(Modifier.height(10.dp))
         repeat(2) { index ->
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth(if (index == 0) 1f else 0.72f)
-                        .height(13.dp)
-                        .clip(ExpressiveShapes.Pill)
-                        .background(baseColor)
-                        .m3Shimmer(baseColor, highlightColor),
+                Modifier
+                    .fillMaxWidth(if (index == 0) 1f else 0.72f)
+                    .height(13.dp)
+                    .clip(ExpressiveShapes.Pill)
+                    .background(baseColor)
+                    .m3Shimmer(baseColor, highlightColor),
             )
             Spacer(Modifier.height(5.dp))
         }

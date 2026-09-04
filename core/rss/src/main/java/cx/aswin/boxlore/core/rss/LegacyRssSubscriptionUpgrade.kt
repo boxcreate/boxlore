@@ -8,13 +8,13 @@ import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.model.Podcast
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import java.util.concurrent.ConcurrentHashMap
 
 data class LegacyRssFeedSnapshot(
     val sourceFeedUrl: String,
@@ -35,10 +35,7 @@ enum class LegacyRssUpgradeOutcome {
 }
 
 internal object LegacyRssUpgradeLogic {
-    fun isExactTarget(
-        snapshot: LegacyRssFeedSnapshot,
-        target: Podcast,
-    ): Boolean {
+    fun isExactTarget(snapshot: LegacyRssFeedSnapshot, target: Podcast,): Boolean {
         val sourceKeys =
             listOf(snapshot.sourceFeedUrl, snapshot.finalFeedUrl)
                 .mapNotNull(::canonicalFeedKey)
@@ -51,10 +48,7 @@ internal object LegacyRssUpgradeLogic {
         return sameUrl || sameGuid
     }
 
-    fun listenerIdsResolve(
-        rows: Collection<String>,
-        listenerIds: Collection<String>,
-    ): Boolean = listenerIds.all { it in rows || it.toLongOrNull()?.let { value -> value > 0L } == true }
+    fun listenerIdsResolve(rows: Collection<String>, listenerIds: Collection<String>,): Boolean = listenerIds.all { it in rows || it.toLongOrNull()?.let { value -> value > 0L } == true }
 
     fun targetEntity(
         source: PodcastEntity,
@@ -62,37 +56,36 @@ internal object LegacyRssUpgradeLogic {
         snapshot: LegacyRssFeedSnapshot,
         latestEpisode: cx.aswin.boxlore.core.model.Episode?,
         nowMillis: Long,
-    ): PodcastEntity =
-        PodcastEntity(
-            podcastId = target.id,
-            title = target.title,
-            author = target.artist,
-            imageUrl = target.imageUrl.ifBlank { source.imageUrl },
-            description = target.description ?: source.description,
-            isSubscribed = true,
-            subscribedAt = source.subscribedAt,
-            genre = target.genre,
-            type = target.type,
-            lastRefreshed = nowMillis,
-            latestEpisode = latestEpisode,
-            podcastGuid = target.podcastGuid ?: snapshot.podcastGuid,
-            fundingUrl = target.fundingUrl,
-            fundingMessage = target.fundingMessage,
-            medium = target.medium,
-            hasValue = target.hasValue,
-            updateFrequency = target.updateFrequency,
-            location = target.location,
-            license = target.license,
-            isLocked = target.isLocked,
-            preferredSort = source.preferredSort,
-            notificationsEnabled = source.notificationsEnabled,
-            autoDownloadEnabled = source.autoDownloadEnabled,
-            skipBeginningOverrideMs = source.skipBeginningOverrideMs,
-            skipEndingOverrideMs = source.skipEndingOverrideMs,
-            sourceType = PodcastEntity.SOURCE_PODCAST_INDEX,
-            feedUrl = snapshot.finalFeedUrl,
-            rssHasNewEpisodes = source.rssHasNewEpisodes,
-        )
+    ): PodcastEntity = PodcastEntity(
+        podcastId = target.id,
+        title = target.title,
+        author = target.artist,
+        imageUrl = target.imageUrl.ifBlank { source.imageUrl },
+        description = target.description ?: source.description,
+        isSubscribed = true,
+        subscribedAt = source.subscribedAt,
+        genre = target.genre,
+        type = target.type,
+        lastRefreshed = nowMillis,
+        latestEpisode = latestEpisode,
+        podcastGuid = target.podcastGuid ?: snapshot.podcastGuid,
+        fundingUrl = target.fundingUrl,
+        fundingMessage = target.fundingMessage,
+        medium = target.medium,
+        hasValue = target.hasValue,
+        updateFrequency = target.updateFrequency,
+        location = target.location,
+        license = target.license,
+        isLocked = target.isLocked,
+        preferredSort = source.preferredSort,
+        notificationsEnabled = source.notificationsEnabled,
+        autoDownloadEnabled = source.autoDownloadEnabled,
+        skipBeginningOverrideMs = source.skipBeginningOverrideMs,
+        skipEndingOverrideMs = source.skipEndingOverrideMs,
+        sourceType = PodcastEntity.SOURCE_PODCAST_INDEX,
+        feedUrl = snapshot.finalFeedUrl,
+        rssHasNewEpisodes = source.rssHasNewEpisodes,
+    )
 
     private fun canonicalFeedKey(raw: String?): String? {
         val url = raw?.trim()?.toHttpUrlOrNull() ?: return null
@@ -114,86 +107,73 @@ class LegacyRssSubscriptionRepair internal constructor(
      * Loads the current publisher feed without mutating Room. The snapshot verifies exact
      * URL/GUID identity and seeds the PI-owned local catalog atomically.
      */
-    suspend fun inspect(podcastId: String): Result<LegacyRssFeedSnapshot> =
-        withContext(Dispatchers.IO) {
-            val lock = refreshLocks.getOrPut(podcastId) { Mutex() }
-            lock.withLock {
-                try {
-                    val source =
-                        database.podcastDao().getPodcast(podcastId)
-                            ?: error("RSS subscription not found")
-                    require(source.isSubscribed && source.isRss) {
-                        "Podcast is not a subscribed RSS source"
-                    }
-                    val sourceFeedUrl = source.feedUrl ?: error("RSS feed URL is missing")
-                    val fetched = feedClient.fetch(sourceFeedUrl)
-                    val parsed =
-                        feedClient.parse(
-                            feedUrl = fetched.finalUrl,
-                            bytes = fetched.body,
-                            podcastId = podcastId,
-                        )
-                    Result.success(
-                        LegacyRssFeedSnapshot(
-                            sourceFeedUrl = sourceFeedUrl,
-                            finalFeedUrl = fetched.finalUrl,
-                            podcastGuid = parsed.podcastGuid ?: source.podcastGuid,
-                            etag = fetched.etag,
-                            lastModified = fetched.lastModified,
-                            parsed = parsed,
-                        ),
-                    )
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: Exception) {
-                    Result.failure(error)
+    suspend fun inspect(podcastId: String): Result<LegacyRssFeedSnapshot> = withContext(Dispatchers.IO) {
+        val lock = refreshLocks.getOrPut(podcastId) { Mutex() }
+        lock.withLock {
+            try {
+                val source =
+                    database.podcastDao().getPodcast(podcastId)
+                        ?: error("RSS subscription not found")
+                require(source.isSubscribed && source.isRss) {
+                    "Podcast is not a subscribed RSS source"
                 }
-            }
-        }
-
-    suspend fun upgrade(
-        sourcePodcastId: String,
-        target: Podcast,
-        snapshot: LegacyRssFeedSnapshot,
-    ): LegacyRssUpgradeOutcome =
-        withContext(Dispatchers.IO) {
-            val lock = refreshLocks.getOrPut(sourcePodcastId) { Mutex() }
-            lock.withLock {
-                upgrader.upgrade(
-                    sourcePodcastId = sourcePodcastId,
-                    target = target,
-                    snapshot = snapshot,
+                val sourceFeedUrl = source.feedUrl ?: error("RSS feed URL is missing")
+                val fetched = feedClient.fetch(sourceFeedUrl)
+                val parsed =
+                    feedClient.parse(
+                        feedUrl = fetched.finalUrl,
+                        bytes = fetched.body,
+                        podcastId = podcastId,
+                    )
+                Result.success(
+                    LegacyRssFeedSnapshot(
+                        sourceFeedUrl = sourceFeedUrl,
+                        finalFeedUrl = fetched.finalUrl,
+                        podcastGuid = parsed.podcastGuid ?: source.podcastGuid,
+                        etag = fetched.etag,
+                        lastModified = fetched.lastModified,
+                        parsed = parsed,
+                    ),
                 )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Result.failure(error)
             }
         }
+    }
+
+    suspend fun upgrade(sourcePodcastId: String, target: Podcast, snapshot: LegacyRssFeedSnapshot,): LegacyRssUpgradeOutcome = withContext(Dispatchers.IO) {
+        val lock = refreshLocks.getOrPut(sourcePodcastId) { Mutex() }
+        lock.withLock {
+            upgrader.upgrade(
+                sourcePodcastId = sourcePodcastId,
+                target = target,
+                snapshot = snapshot,
+            )
+        }
+    }
 }
 
-internal class LegacyRssSubscriptionUpgrader(
-    private val database: BoxLoreDatabase,
-) {
-    suspend fun upgrade(
-        sourcePodcastId: String,
-        target: Podcast,
-        snapshot: LegacyRssFeedSnapshot,
-    ): LegacyRssUpgradeOutcome =
-        database.withTransaction {
-            val source =
-                eligibleSource(sourcePodcastId)
-                    ?: return@withTransaction ineligibleSourceOutcome(target.id)
-            if (!LegacyRssUpgradeLogic.isExactTarget(snapshot, target)) {
-                return@withTransaction LegacyRssUpgradeOutcome.IDENTITY_MISMATCH
-            }
-            if (targetIsInUse(target.id)) {
-                return@withTransaction LegacyRssUpgradeOutcome.TARGET_ALREADY_IN_USE
-            }
-            val catalog =
-                copiedCatalog(source, target, snapshot)
-                    ?: return@withTransaction LegacyRssUpgradeOutcome.INCOMPLETE_CATALOG
-            persistTargetCatalog(target, snapshot, catalog)
-            reassignListenerReferences(sourcePodcastId, catalog.targetEntity)
-            retireSource(source, target.id)
-            LegacyRssUpgradeOutcome.MIGRATED
+internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDatabase,) {
+    suspend fun upgrade(sourcePodcastId: String, target: Podcast, snapshot: LegacyRssFeedSnapshot,): LegacyRssUpgradeOutcome = database.withTransaction {
+        val source =
+            eligibleSource(sourcePodcastId)
+                ?: return@withTransaction ineligibleSourceOutcome(target.id)
+        if (!LegacyRssUpgradeLogic.isExactTarget(snapshot, target)) {
+            return@withTransaction LegacyRssUpgradeOutcome.IDENTITY_MISMATCH
         }
+        if (targetIsInUse(target.id)) {
+            return@withTransaction LegacyRssUpgradeOutcome.TARGET_ALREADY_IN_USE
+        }
+        val catalog =
+            copiedCatalog(source, target, snapshot)
+                ?: return@withTransaction LegacyRssUpgradeOutcome.INCOMPLETE_CATALOG
+        persistTargetCatalog(target, snapshot, catalog)
+        reassignListenerReferences(sourcePodcastId, catalog.targetEntity)
+        retireSource(source, target.id)
+        LegacyRssUpgradeOutcome.MIGRATED
+    }
 
     private suspend fun eligibleSource(sourcePodcastId: String): PodcastEntity? {
         val source = database.podcastDao().getPodcast(sourcePodcastId)
@@ -209,11 +189,7 @@ internal class LegacyRssSubscriptionUpgrader(
         }
     }
 
-    private suspend fun copiedCatalog(
-        source: PodcastEntity,
-        target: Podcast,
-        snapshot: LegacyRssFeedSnapshot,
-    ): CopiedRssCatalog? {
+    private suspend fun copiedCatalog(source: PodcastEntity, target: Podcast, snapshot: LegacyRssFeedSnapshot,): CopiedRssCatalog? {
         val rssDao = database.rssEpisodeDao()
         val stored = rssDao.getAllNewest(source.podcastId)
         val refreshed =
@@ -248,7 +224,7 @@ internal class LegacyRssSubscriptionUpgrader(
                 database.listeningHistoryDao().getHistoryForPodcast(source.podcastId).map { it.episodeId } +
                     database.downloadedEpisodeDao().getDownloadsForPodcast(source.podcastId).map { it.episodeId } +
                     database.queueDao().getEpisodeIdsForPodcast(source.podcastId)
-            ).toSet()
+                ).toSet()
         val localIds = localRows.mapTo(mutableSetOf()) { it.episodeId }
         if (!LegacyRssUpgradeLogic.listenerIdsResolve(localIds, listenerIds)) {
             return null
@@ -265,22 +241,18 @@ internal class LegacyRssSubscriptionUpgrader(
         return CopiedRssCatalog(
             localRows = localRows,
             targetEntity =
-                LegacyRssUpgradeLogic.targetEntity(
-                    source = source,
-                    target = target,
-                    snapshot = snapshot,
-                    latestEpisode = latestEpisode,
-                    nowMillis = now,
-                ),
+            LegacyRssUpgradeLogic.targetEntity(
+                source = source,
+                target = target,
+                snapshot = snapshot,
+                latestEpisode = latestEpisode,
+                nowMillis = now,
+            ),
             nowMillis = now,
         )
     }
 
-    private suspend fun persistTargetCatalog(
-        target: Podcast,
-        snapshot: LegacyRssFeedSnapshot,
-        catalog: CopiedRssCatalog,
-    ) {
+    private suspend fun persistTargetCatalog(target: Podcast, snapshot: LegacyRssFeedSnapshot, catalog: CopiedRssCatalog,) {
         val localDao = database.localEpisodeCatalogDao()
         localDao.deleteCatalog(target.id)
         database.episodeSupplementDao().deleteItemsForPodcast(target.id)
@@ -305,10 +277,7 @@ internal class LegacyRssSubscriptionUpgrader(
         )
     }
 
-    private suspend fun reassignListenerReferences(
-        sourcePodcastId: String,
-        targetEntity: PodcastEntity,
-    ) {
+    private suspend fun reassignListenerReferences(sourcePodcastId: String, targetEntity: PodcastEntity,) {
         val historyDao = database.listeningHistoryDao()
         val downloadDao = database.downloadedEpisodeDao()
         val queueDao = database.queueDao()
@@ -348,10 +317,7 @@ internal class LegacyRssSubscriptionUpgrader(
         database.listeningRollupDao().reassignPodcastId(sourcePodcastId, targetEntity.podcastId)
     }
 
-    private suspend fun retireSource(
-        source: PodcastEntity,
-        targetId: String,
-    ) {
+    private suspend fun retireSource(source: PodcastEntity, targetId: String,) {
         database.podcastDao().upsert(
             source.copy(
                 isSubscribed = false,
@@ -371,8 +337,4 @@ internal class LegacyRssSubscriptionUpgrader(
     }
 }
 
-private data class CopiedRssCatalog(
-    val localRows: List<LocalEpisodeEntity>,
-    val targetEntity: PodcastEntity,
-    val nowMillis: Long,
-)
+private data class CopiedRssCatalog(val localRows: List<LocalEpisodeEntity>, val targetEntity: PodcastEntity, val nowMillis: Long,)

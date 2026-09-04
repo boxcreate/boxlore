@@ -40,12 +40,12 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                 val request =
                     OnboardingSimilarShowsRequest(
                         shows =
-                            seedShows.distinctBy { it.title.lowercase().trim() }.take(20).map {
-                                OnboardingSelectedShowDto(
-                                    title = it.title,
-                                    description = it.description ?: "",
-                                )
-                            },
+                        seedShows.distinctBy { it.title.lowercase().trim() }.take(20).map {
+                            OnboardingSelectedShowDto(
+                                title = it.title,
+                                description = it.description ?: "",
+                            )
+                        },
                         country = locale.country,
                         languages = locale.languages,
                     )
@@ -63,9 +63,9 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                     val rows =
                         OnboardingSuggestionsPresentation.filterCurriculumRowsExcluding(
                             rows =
-                                response.body()!!.map {
-                                    it.copy(episodes = emptyList())
-                                },
+                            response.body()!!.map {
+                                it.copy(episodes = emptyList())
+                            },
                             excludeIds = seedIds,
                         )
                     _uiState.update { state ->
@@ -88,7 +88,7 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                         isSynthesizing = false,
                         aiLoadingStage = AiLoadingStage.IDLE,
                         onboardingError =
-                            "We encountered a temporary issue generating recommendations. Let's try again.",
+                        "We encountered a temporary issue generating recommendations. Let's try again.",
                     )
                 }
             }

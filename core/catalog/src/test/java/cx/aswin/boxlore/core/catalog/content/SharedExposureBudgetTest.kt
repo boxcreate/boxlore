@@ -142,44 +142,37 @@ class SharedExposureBudgetTest {
         assertTrue(slate.sections.isEmpty())
     }
 
-    private fun intent(id: String): ContentIntent =
-        ContentIntent(
-            id = id,
-            objective = RankingObjective.DISCOVERY,
-            eligibleSurfaces = setOf(RankingSurface.HOME),
-            title = id,
-            layout = ContentLayout.PODCAST_RAIL,
-        )
+    private fun intent(id: String): ContentIntent = ContentIntent(
+        id = id,
+        objective = RankingObjective.DISCOVERY,
+        eligibleSurfaces = setOf(RankingSurface.HOME),
+        title = id,
+        layout = ContentLayout.PODCAST_RAIL,
+    )
 
-    private fun context(): ContentContext =
-        ContentContext(
-            surface = RankingSurface.HOME,
-            localMinuteOfDay = 600,
-            weekday = 3,
-            daypart = ContentDaypart.MORNING,
-            region = "us",
-            isDriving = false,
-            isOnline = true,
-            availableMinutes = null,
-            currentEpisodeId = null,
-            currentPodcastId = null,
-            historyMaturity = 10,
-            subscriptionCount = 2,
-            sessionId = "session",
-        )
+    private fun context(): ContentContext = ContentContext(
+        surface = RankingSurface.HOME,
+        localMinuteOfDay = 600,
+        weekday = 3,
+        daypart = ContentDaypart.MORNING,
+        region = "us",
+        isDriving = false,
+        isOnline = true,
+        availableMinutes = null,
+        currentEpisodeId = null,
+        currentPodcastId = null,
+        historyMaturity = 10,
+        subscriptionCount = 2,
+        sessionId = "session",
+    )
 
-    private fun candidate(
-        id: String,
-        showId: String,
-        score: Double = 1.0,
-    ): ContentCandidate =
-        ContentCandidate(
-            id = id,
-            episode = null,
-            podcast = Podcast(showId, showId, "", ""),
-            source = CandidateSource.SERVER_RECOMMENDATION,
-            intentId = "discover",
-            retrievalScore = score,
-            rankingScore = score,
-        )
+    private fun candidate(id: String, showId: String, score: Double = 1.0,): ContentCandidate = ContentCandidate(
+        id = id,
+        episode = null,
+        podcast = Podcast(showId, showId, "", ""),
+        source = CandidateSource.SERVER_RECOMMENDATION,
+        intentId = "discover",
+        retrievalScore = score,
+        rankingScore = score,
+    )
 }

@@ -13,12 +13,11 @@ class QueueSkipMemoryTest {
     private var store: String? = null
     private var now: Long = 1_000_000_000_000L
 
-    private fun newMemory() =
-        QueueSkipMemory(
-            readRaw = { store },
-            writeRaw = { store = it },
-            nowMs = { now },
-        )
+    private fun newMemory() = QueueSkipMemory(
+        readRaw = { store },
+        writeRaw = { store = it },
+        nowMs = { now },
+    )
 
     @Test
     fun `recorded skips are returned and never re-suggested`() {

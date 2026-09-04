@@ -82,10 +82,7 @@ interface ListeningHistoryDao {
     suspend fun getDirtyItems(): List<ListeningHistoryEntity>
 
     @Query("UPDATE listening_history SET isDirty = 0, syncedAt = :timestamp WHERE episodeId IN (:ids)")
-    suspend fun markAsSynced(
-        ids: List<String>,
-        timestamp: Long,
-    )
+    suspend fun markAsSynced(ids: List<String>, timestamp: Long,)
 
     @Query("DELETE FROM listening_history WHERE episodeId = :episodeId")
     suspend fun delete(episodeId: String)
@@ -128,10 +125,7 @@ interface ListeningHistoryDao {
     suspend fun getLikedEpisodesList(limit: Int = 50): List<ListeningHistoryEntity>
 
     @Query("UPDATE listening_history SET isLiked = :isLiked WHERE episodeId = :episodeId")
-    suspend fun setLikeStatus(
-        episodeId: String,
-        isLiked: Boolean,
-    )
+    suspend fun setLikeStatus(episodeId: String, isLiked: Boolean,)
 
     @Query(
         """
@@ -143,12 +137,7 @@ interface ListeningHistoryDao {
         WHERE episodeId = :episodeId AND isCompleted = 0
         """,
     )
-    suspend fun updateProgress(
-        episodeId: String,
-        progressMs: Long,
-        durationMs: Long,
-        lastPlayedAt: Long,
-    ): Int
+    suspend fun updateProgress(episodeId: String, progressMs: Long, durationMs: Long, lastPlayedAt: Long,): Int
 
     @Query(
         """
@@ -163,18 +152,10 @@ interface ListeningHistoryDao {
         WHERE episodeId = :episodeId
         """,
     )
-    suspend fun completeFromPlayback(
-        episodeId: String,
-        durationMs: Long,
-        lastPlayedAt: Long,
-        isManualCompletion: Boolean,
-    )
+    suspend fun completeFromPlayback(episodeId: String, durationMs: Long, lastPlayedAt: Long, isManualCompletion: Boolean,)
 
     @Query("UPDATE listening_history SET isCompleted = :isCompleted WHERE episodeId = :episodeId")
-    suspend fun setCompletionStatus(
-        episodeId: String,
-        isCompleted: Boolean,
-    )
+    suspend fun setCompletionStatus(episodeId: String, isCompleted: Boolean,)
 
     // Get all episode IDs that have been fully played (for "unplayed" filtering in queue)
     @Query("SELECT episodeId FROM listening_history WHERE isCompleted = 1")

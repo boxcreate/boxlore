@@ -114,8 +114,7 @@ internal object HomeShowsRefreshPolicy {
         hasPendingRequest: Boolean,
         snapshotCreatedAtMs: Long,
         nowMs: Long,
-    ): Boolean =
-        hasStableOrder &&
-            !hasPendingRequest &&
-            nowMs - snapshotCreatedAtMs >= MIN_SNAPSHOT_AGE_MS
+    ): Boolean = hasStableOrder &&
+        !hasPendingRequest &&
+        nowMs - snapshotCreatedAtMs >= MIN_SNAPSHOT_AGE_MS
 }

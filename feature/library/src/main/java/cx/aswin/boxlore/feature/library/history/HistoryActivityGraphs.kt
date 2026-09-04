@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library.history
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,9 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningDayActivity
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningTimeBucket
@@ -124,9 +122,9 @@ fun HistoryActivityGraph(
             HorizontalPager(
                 state = pagerState,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(148.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(148.dp),
             ) { page ->
                 val pageWeek = weeks[page]
                 val pageMax = pageWeek.maxOf { it.second }.coerceAtLeast(1L)
@@ -251,13 +249,12 @@ private fun TimeOfDayBars(
 }
 
 @Composable
-internal fun timeBucketLabel(bucket: ListeningTimeBucket): String =
-    when (bucket) {
-        ListeningTimeBucket.MORNING -> stringResource(R.string.history_bucket_morning)
-        ListeningTimeBucket.AFTERNOON -> stringResource(R.string.history_bucket_afternoon)
-        ListeningTimeBucket.EVENING -> stringResource(R.string.history_bucket_evening)
-        ListeningTimeBucket.NIGHT -> stringResource(R.string.history_bucket_night)
-    }
+internal fun timeBucketLabel(bucket: ListeningTimeBucket): String = when (bucket) {
+    ListeningTimeBucket.MORNING -> stringResource(R.string.history_bucket_morning)
+    ListeningTimeBucket.AFTERNOON -> stringResource(R.string.history_bucket_afternoon)
+    ListeningTimeBucket.EVENING -> stringResource(R.string.history_bucket_evening)
+    ListeningTimeBucket.NIGHT -> stringResource(R.string.history_bucket_night)
+}
 
 @Composable
 private fun TimeOfDayBarColumn(
@@ -286,20 +283,20 @@ private fun TimeOfDayBarColumn(
         )
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(96.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(colors.track),
+            Modifier
+                .fillMaxWidth()
+                .height(96.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(colors.track),
             contentAlignment = Alignment.BottomCenter,
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height((96.dp * max(fraction, if (ms > 0) 0.08f else 0f)))
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(fill),
+                Modifier
+                    .fillMaxWidth()
+                    .height((96.dp * max(fraction, if (ms > 0) 0.08f else 0f)))
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(fill),
             )
         }
         Text(
@@ -342,25 +339,25 @@ private fun WeekdayBars(
                 )
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(96.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(trackColor),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(96.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(trackColor),
                     contentAlignment = Alignment.BottomCenter,
                 ) {
                     Box(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height((96.dp * max(fraction, if (ms > 0) 0.08f else 0f)))
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(barColor),
+                        Modifier
+                            .fillMaxWidth()
+                            .height((96.dp * max(fraction, if (ms > 0) 0.08f else 0f)))
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(barColor),
                     )
                 }
                 Text(
                     text =
-                        date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = GoogleSansWeight.medium,
                 )

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,6 +27,7 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -72,17 +70,17 @@ internal fun OnboardingSearchScreen(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .windowInsetsPadding(WindowInsets.statusBars),
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .windowInsetsPadding(WindowInsets.statusBars),
     ) {
         // Prominent search bar in top row next to back button
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
@@ -107,9 +105,9 @@ internal fun OnboardingSearchScreen(
                 value = query,
                 onValueChange = onQueryChange,
                 modifier =
-                    Modifier
-                        .weight(1f)
-                        .height(56.dp),
+                Modifier
+                    .weight(1f)
+                    .height(56.dp),
                 placeholder = {
                     Text(
                         text = "Search titles, hosts, or topics...",
@@ -119,15 +117,15 @@ internal fun OnboardingSearchScreen(
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge,
                 colors =
-                    OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
+                OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
                 shape =
-                    androidx.compose.foundation.shape
-                        .RoundedCornerShape(percent = 50),
+                androidx.compose.foundation.shape
+                    .RoundedCornerShape(percent = 50),
                 leadingIcon = {
                     Icon(
                         Icons.Rounded.Search,
@@ -177,9 +175,9 @@ internal fun OnboardingSearchScreen(
                 // Discovery view: Trending shows
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                 ) {
                     val titleLabel = SEARCH_CATEGORIES.find { it.categoryValue == selectedSearchGenre }?.label ?: "Trending"
                     val sectionTitle = if (selectedSearchGenre == null) "Trending Shows" else "Popular in $titleLabel"
@@ -329,15 +327,15 @@ internal fun OnboardingSearchScreen(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                 tonalElevation = 2.dp,
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.navigationBars),
+                Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.navigationBars),
             ) {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 12.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
                 ) {
                     Text(
                         text = "Selected Shows (${subscribedIds.size})",
@@ -361,23 +359,23 @@ internal fun OnboardingSearchScreen(
                                     proxyWidth = 150,
                                     contentDescription = podcast.title,
                                     modifier =
-                                        Modifier
-                                            .fillMaxSize()
-                                            .clip(MaterialTheme.shapes.medium)
-                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(MaterialTheme.shapes.medium)
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                                 )
                                 // Tiny custom circular close badge on top-right (avoids IconButton target size constraint)
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier =
-                                        Modifier
-                                            .align(Alignment.TopEnd)
-                                            .offset(x = 4.dp, y = (-4).dp)
-                                            .size(16.dp)
-                                            .background(
-                                                color = MaterialTheme.colorScheme.error,
-                                                shape = androidx.compose.foundation.shape.CircleShape,
-                                            ).clickable { onSubscribe(podcast) },
+                                    Modifier
+                                        .align(Alignment.TopEnd)
+                                        .offset(x = 4.dp, y = (-4).dp)
+                                        .size(16.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.error,
+                                            shape = androidx.compose.foundation.shape.CircleShape,
+                                        ).clickable { onSubscribe(podcast) },
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Close,
@@ -403,9 +401,9 @@ internal fun OnboardingSearchScreen(
                     Button(
                         onClick = onDone,
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
@@ -432,17 +430,17 @@ private fun PopularPodcastGridItem(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .expressiveClickable(onClick = onClick),
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .expressiveClickable(onClick = onClick),
     ) {
         Box(
             modifier =
-                Modifier
-                    .aspectRatio(1f)
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.large),
+            Modifier
+                .aspectRatio(1f)
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large),
         ) {
             OptimizedImage(
                 url = podcast.imageUrl,
@@ -450,9 +448,9 @@ private fun PopularPodcastGridItem(
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
             )
 
             // Subscribed indicator overlay
@@ -475,10 +473,10 @@ private fun PopularPodcastGridItem(
                 contentColor = contentColor,
                 shadowElevation = 4.dp,
                 modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp)
-                        .size(32.dp),
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .size(32.dp),
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -522,11 +520,11 @@ private fun SearchResultRow(
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .expressiveClickable(onClick = onSubscribe)
-                .padding(12.dp),
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .expressiveClickable(onClick = onSubscribe)
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OptimizedImage(
@@ -535,10 +533,10 @@ private fun SearchResultRow(
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier =
-                Modifier
-                    .size(56.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            Modifier
+                .size(56.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         )
 
         Spacer(modifier = Modifier.width(14.dp))
@@ -566,9 +564,9 @@ private fun SearchResultRow(
             FilledIconButton(
                 onClick = onSubscribe,
                 colors =
-                    IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
+                IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
                 modifier = Modifier.size(36.dp),
             ) {
                 Icon(

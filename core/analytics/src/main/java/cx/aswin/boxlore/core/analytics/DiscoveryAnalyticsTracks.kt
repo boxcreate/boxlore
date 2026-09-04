@@ -16,11 +16,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackInAppAnnouncementViewed(
-        category: String,
-        hasImage: Boolean,
-        hasAction: Boolean,
-    ) {
+    fun trackInAppAnnouncementViewed(category: String, hasImage: Boolean, hasAction: Boolean,) {
         AnalyticsEmit.event(
             "feature_announcement_action",
             mapOf(
@@ -32,11 +28,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackInAppAnnouncementDismissed(
-        category: String,
-        hasImage: Boolean,
-        hasAction: Boolean,
-    ) {
+    fun trackInAppAnnouncementDismissed(category: String, hasImage: Boolean, hasAction: Boolean,) {
         AnalyticsEmit.event(
             "feature_announcement_action",
             mapOf(
@@ -48,11 +40,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackInAppAnnouncementAction(
-        category: String,
-        hasImage: Boolean,
-        actionLabel: String,
-    ) {
+    fun trackInAppAnnouncementAction(category: String, hasImage: Boolean, actionLabel: String,) {
         AnalyticsEmit.event(
             "feature_announcement_action",
             mapOf(
@@ -77,10 +65,7 @@ internal object DiscoveryAnalyticsTracks {
         AnalyticsEmit.personSet(mapOf("notifications_enabled" to isGranted))
     }
 
-    fun trackHomeHeroCarouselSwiped(
-        maxCardIndexViewed: Int,
-        totalCardsAvailable: Int,
-    ) {
+    fun trackHomeHeroCarouselSwiped(maxCardIndexViewed: Int, totalCardsAvailable: Int,) {
         AnalyticsEmit.event(
             "home_surface_tapped",
             mapOf(
@@ -91,10 +76,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackCuratedBlockImpression(
-        blockTitle: String,
-        vibeIds: List<String>,
-    ) {
+    fun trackCuratedBlockImpression(blockTitle: String, vibeIds: List<String>,) {
         AnalyticsEmit.event(
             "home_surface_impression",
             mapOf(
@@ -106,10 +88,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackVideoSpotlightImpression(
-        itemsCount: Int,
-        podcastIds: List<String>,
-    ) {
+    fun trackVideoSpotlightImpression(itemsCount: Int, podcastIds: List<String>,) {
         AnalyticsEmit.event(
             "home_surface_impression",
             mapOf(
@@ -120,12 +99,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackVideoSpotlightPodcastTapped(
-        podcastId: String,
-        podcastName: String,
-        positionIndex: Int,
-        clickTarget: String,
-    ) {
+    fun trackVideoSpotlightPodcastTapped(podcastId: String, podcastName: String, positionIndex: Int, clickTarget: String,) {
         AnalyticsEmit.event(
             "home_surface_tapped",
             mapOf(
@@ -139,12 +113,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackVideoSpotlightPlayInitiated(
-        podcastId: String,
-        podcastName: String,
-        episodeId: String,
-        episodeTitle: String?,
-    ) {
+    fun trackVideoSpotlightPlayInitiated(podcastId: String, podcastName: String, episodeId: String, episodeTitle: String?,) {
         val props =
             mutableMapOf<String, Any>(
                 "surface_component" to "video_spotlight_play",
@@ -157,11 +126,7 @@ internal object DiscoveryAnalyticsTracks {
         AnalyticsEmit.event("home_surface_tapped", props)
     }
 
-    fun trackHomeRecommendationsImpression(
-        recommendationsCount: Int,
-        episodeIds: List<String>,
-        timeBlockTitle: String?,
-    ) {
+    fun trackHomeRecommendationsImpression(recommendationsCount: Int, episodeIds: List<String>, timeBlockTitle: String?,) {
         val props =
             mutableMapOf<String, Any>(
                 "surface_component" to "recommendations",
@@ -194,10 +159,7 @@ internal object DiscoveryAnalyticsTracks {
         AnalyticsEmit.event("home_surface_tapped", props)
     }
 
-    fun trackExploreRecommendationsImpression(
-        recommendationsCount: Int,
-        episodeIds: List<String>,
-    ) {
+    fun trackExploreRecommendationsImpression(recommendationsCount: Int, episodeIds: List<String>,) {
         AnalyticsEmit.event(
             "explore_recommendation_tapped",
             mapOf(
@@ -247,12 +209,7 @@ internal object DiscoveryAnalyticsTracks {
         AnalyticsEmit.event("podcast_detail_viewed", props)
     }
 
-    fun trackPodcastSubscriptionToggled(
-        podcastId: String,
-        podcastName: String?,
-        isSubscribed: Boolean,
-        entryPoint: String,
-    ) {
+    fun trackPodcastSubscriptionToggled(podcastId: String, podcastName: String?, isSubscribed: Boolean, entryPoint: String,) {
         val props =
             mutableMapOf<String, Any>(
                 "podcast_id" to podcastId,
@@ -293,12 +250,7 @@ internal object DiscoveryAnalyticsTracks {
         )
     }
 
-    fun trackCuratedCardTapped(
-        podcastId: String,
-        podcastName: String?,
-        vibeId: String,
-        positionIndex: Int,
-    ) {
+    fun trackCuratedCardTapped(podcastId: String, podcastName: String?, vibeId: String, positionIndex: Int,) {
         val props =
             mutableMapOf<String, Any>(
                 "surface_component" to "curated_card",
@@ -324,11 +276,7 @@ internal object DiscoveryAnalyticsTracks {
         AnalyticsEmit.event("episode_detail_viewed", properties)
     }
 
-    fun trackProxyFallbackTriggered(
-        imageHost: String,
-        proxyWidth: Int,
-        sampleMultiplier: Int = 10,
-    ) {
+    fun trackProxyFallbackTriggered(imageHost: String, proxyWidth: Int, sampleMultiplier: Int = 10,) {
         PhaseCAnalyticsTracks.trackProxyFallbackTriggered(imageHost, proxyWidth, sampleMultiplier)
     }
 }

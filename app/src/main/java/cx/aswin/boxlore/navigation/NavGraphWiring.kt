@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.navigation
 
-import android.annotation.SuppressLint
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.ManagedActivityResultLauncher
@@ -11,7 +11,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -56,17 +55,13 @@ internal fun bottomNavTabRoutePattern(tab: String): String? = when (tab) {
  * Uses the library-group API because Navigation Compose exposes no public full-stack accessor.
  */
 @SuppressLint("RestrictedApi")
-internal fun snapshotNavBackStack(navController: NavController): List<androidx.navigation.NavBackStackEntry> =
-    navController.currentBackStack.value
+internal fun snapshotNavBackStack(navController: NavController): List<androidx.navigation.NavBackStackEntry> = navController.currentBackStack.value
 
 /**
  * Resolves which bottom-nav tab owns the current screen.
  * Overlays like settings/debug/podcast detail inherit the tab beneath them.
  */
-internal fun resolveBottomNavTab(
-    currentRoute: String?,
-    backStack: List<androidx.navigation.NavBackStackEntry>,
-): String {
+internal fun resolveBottomNavTab(currentRoute: String?, backStack: List<androidx.navigation.NavBackStackEntry>,): String {
     val route = currentRoute ?: return "home"
     return when {
         route == "home" -> "home"
@@ -83,9 +78,7 @@ internal fun resolveBottomNavTab(
 }
 
 /** Overlay screens inherit the tab of the nearest bottom-nav entry beneath them. */
-internal fun resolveBottomNavTabFromBackStack(
-    backStack: List<androidx.navigation.NavBackStackEntry>,
-): String {
+internal fun resolveBottomNavTabFromBackStack(backStack: List<androidx.navigation.NavBackStackEntry>,): String {
     for (i in backStack.size - 2 downTo 0) {
         val prior = backStack.getOrNull(i)?.destination?.route ?: continue
         when {
@@ -214,10 +207,7 @@ internal fun isTabToTab(fromRoute: String?, toRoute: String?): Boolean {
     return fromIndex < 10 && toIndex < 10
 }
 
-internal fun navEnterTransition(
-    fromRoute: String?,
-    toRoute: String?,
-): androidx.compose.animation.EnterTransition {
+internal fun navEnterTransition(fromRoute: String?, toRoute: String?,): androidx.compose.animation.EnterTransition {
     val fromIndex = getRouteIndex(fromRoute)
     val toIndex = getRouteIndex(toRoute)
     return if (toIndex > fromIndex) {
@@ -233,10 +223,7 @@ internal fun navEnterTransition(
     }
 }
 
-internal fun navExitTransition(
-    fromRoute: String?,
-    toRoute: String?,
-): androidx.compose.animation.ExitTransition {
+internal fun navExitTransition(fromRoute: String?, toRoute: String?,): androidx.compose.animation.ExitTransition {
     val fromIndex = getRouteIndex(fromRoute)
     val toIndex = getRouteIndex(toRoute)
     return if (isTabToTab(fromRoute, toRoute)) {
@@ -254,10 +241,7 @@ internal fun navExitTransition(
     }
 }
 
-internal fun navPopEnterTransition(
-    fromRoute: String?,
-    toRoute: String?,
-): androidx.compose.animation.EnterTransition {
+internal fun navPopEnterTransition(fromRoute: String?, toRoute: String?,): androidx.compose.animation.EnterTransition {
     val fromIndex = getRouteIndex(fromRoute)
     val toIndex = getRouteIndex(toRoute)
     return if (isTabToTab(fromRoute, toRoute)) {
@@ -275,10 +259,7 @@ internal fun navPopEnterTransition(
     }
 }
 
-internal fun navPopExitTransition(
-    fromRoute: String?,
-    toRoute: String?,
-): androidx.compose.animation.ExitTransition {
+internal fun navPopExitTransition(fromRoute: String?, toRoute: String?,): androidx.compose.animation.ExitTransition {
     val fromIndex = getRouteIndex(fromRoute)
     val toIndex = getRouteIndex(toRoute)
     return if (isTabToTab(fromRoute, toRoute)) {
@@ -300,8 +281,7 @@ internal fun navPopExitTransition(
 // Navigation argument / route helpers (keeps destination methods under Sonar S3776)
 // ---------------------------------------------------------------------------
 
-internal fun encodeNavArg(s: String?): String =
-    android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+internal fun encodeNavArg(s: String?): String = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
 
 internal fun decodeNavArg(s: String?): String = try {
     android.net.Uri.decode(s ?: "").let { if (it == "_") "" else it }
@@ -319,21 +299,15 @@ internal fun episodeFullPathRoute(
     podcastId: String?,
     podcastTitle: String?,
     querySuffix: String = "",
-): String =
-    "episode/$episodeId/${encodeNavArg(title)}/" +
-        "${encodeNavArg(description?.take(500))}/" +
-        "${encodeNavArg(imageUrl)}/" +
-        "${encodeNavArg(audioUrl)}/" +
-        "$duration/${encodeNavArg(podcastId)}/" +
-        "${encodeNavArg(podcastTitle)}" +
-        querySuffix
+): String = "episode/$episodeId/${encodeNavArg(title)}/" +
+    "${encodeNavArg(description?.take(500))}/" +
+    "${encodeNavArg(imageUrl)}/" +
+    "${encodeNavArg(audioUrl)}/" +
+    "$duration/${encodeNavArg(podcastId)}/" +
+    "${encodeNavArg(podcastTitle)}" +
+    querySuffix
 
-internal fun podcastDetailRoute(
-    podcastId: String,
-    entryPoint: String,
-    genre: String? = null,
-    depth: Int? = null,
-): String {
+internal fun podcastDetailRoute(podcastId: String, entryPoint: String, genre: String? = null, depth: Int? = null,): String {
     val params = buildList {
         add("entryPoint=$entryPoint")
         if (genre != null) add("genre=$genre")
@@ -348,11 +322,7 @@ internal fun exploreRoute(category: String?, entryPoint: String, tab: String?): 
     return "explore?${catQuery}${tabQuery}entryPoint=$entryPoint"
 }
 
-internal fun entryPointBundle(
-    entryPoint: String?,
-    vibeId: String = "",
-    carouselPosition: Int = -1,
-): android.os.Bundle? {
+internal fun entryPointBundle(entryPoint: String?, vibeId: String = "", carouselPosition: Int = -1,): android.os.Bundle? {
     if (entryPoint == null) return null
     return android.os.Bundle().apply {
         putString("entry_point", entryPoint)
@@ -362,19 +332,14 @@ internal fun entryPointBundle(
 }
 
 @androidx.compose.runtime.Composable
-internal fun miniPlayerBottomPadding(isPlayerVisible: Boolean): androidx.compose.ui.unit.Dp =
-    appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerVisible)
+internal fun miniPlayerBottomPadding(isPlayerVisible: Boolean): androidx.compose.ui.unit.Dp = appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerVisible)
 
-internal fun shouldRequestNotificationPermission(
-    showFeatureDialog: Boolean,
-    context: android.content.Context,
-): Boolean =
-    !showFeatureDialog &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) != PackageManager.PERMISSION_GRANTED
+internal fun shouldRequestNotificationPermission(showFeatureDialog: Boolean, context: android.content.Context,): Boolean = !showFeatureDialog &&
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+    ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.POST_NOTIFICATIONS,
+    ) != PackageManager.PERMISSION_GRANTED
 
 internal fun launchInAppReview(context: android.content.Context) {
     val activity = context as? androidx.activity.ComponentActivity ?: return
@@ -444,12 +409,7 @@ internal fun navigateHomeEpisode(
     )
 }
 
-internal fun navigateHomeExplore(
-    navController: NavHostController,
-    category: String?,
-    entryPoint: String,
-    tab: String?,
-) {
+internal fun navigateHomeExplore(navController: NavHostController, category: String?, entryPoint: String, tab: String?,) {
     navController.navigate(exploreRoute(category, entryPoint, tab)) {
         popUpTo("home") { saveState = true }
         launchSingleTop = true
@@ -457,17 +417,9 @@ internal fun navigateHomeExplore(
     }
 }
 
-internal fun podcastIdFromInfoUiState(
-    state: cx.aswin.boxlore.feature.info.PodcastInfoUiState,
-    fallback: String,
-): String =
-    (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.id ?: fallback
+internal fun podcastIdFromInfoUiState(state: cx.aswin.boxlore.feature.info.PodcastInfoUiState, fallback: String,): String = (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.id ?: fallback
 
-internal fun podcastTitleFromInfoUiState(
-    state: cx.aswin.boxlore.feature.info.PodcastInfoUiState,
-    fallback: String,
-): String =
-    (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.title ?: fallback
+internal fun podcastTitleFromInfoUiState(state: cx.aswin.boxlore.feature.info.PodcastInfoUiState, fallback: String,): String = (state as? cx.aswin.boxlore.feature.info.PodcastInfoUiState.Success)?.podcast?.title ?: fallback
 
 internal fun navigatePodcastInfoEpisode(
     navController: NavHostController,

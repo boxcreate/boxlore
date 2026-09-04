@@ -200,8 +200,8 @@ class SmartQueueRefillCoordinator(
                     region = region,
                     sourceCounts = sourceCounts,
                     usedServerRecommendations =
-                        SmartQueueEngine.SOURCE_PERSONALIZED_REC in sourceCounts ||
-                            SmartQueueEngine.SOURCE_SERVER_REC in sourceCounts,
+                    SmartQueueEngine.SOURCE_PERSONALIZED_REC in sourceCounts ||
+                        SmartQueueEngine.SOURCE_SERVER_REC in sourceCounts,
                 ),
             )
         }

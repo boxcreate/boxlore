@@ -24,26 +24,25 @@ object ListeningHistoryUpsertLogic {
         val episodeDescription: String? = null,
     )
 
-    fun buildProgressSaveEntity(input: ProgressSaveInput): ListeningHistoryEntity =
-        ListeningHistoryEntity(
-            episodeId = input.episodeId,
-            podcastId = input.podcastId,
-            episodeTitle = input.episodeTitle,
-            episodeImageUrl = input.episodeImageUrl,
-            podcastImageUrl = input.podcastImageUrl,
-            episodeAudioUrl = input.episodeAudioUrl,
-            podcastName = input.podcastName,
-            progressMs = input.positionMs,
-            durationMs = input.durationMs,
-            isCompleted = input.isCompleted,
-            isLiked = input.isLiked,
-            lastPlayedAt = input.lastPlayedAt,
-            isDirty = true,
-            enclosureType = input.enclosureType,
-            isManualCompletion = false,
-            isBulkCompletion = false,
-            episodeDescription = input.episodeDescription,
-        )
+    fun buildProgressSaveEntity(input: ProgressSaveInput): ListeningHistoryEntity = ListeningHistoryEntity(
+        episodeId = input.episodeId,
+        podcastId = input.podcastId,
+        episodeTitle = input.episodeTitle,
+        episodeImageUrl = input.episodeImageUrl,
+        podcastImageUrl = input.podcastImageUrl,
+        episodeAudioUrl = input.episodeAudioUrl,
+        podcastName = input.podcastName,
+        progressMs = input.positionMs,
+        durationMs = input.durationMs,
+        isCompleted = input.isCompleted,
+        isLiked = input.isLiked,
+        lastPlayedAt = input.lastPlayedAt,
+        isDirty = true,
+        enclosureType = input.enclosureType,
+        isManualCompletion = false,
+        isBulkCompletion = false,
+        episodeDescription = input.episodeDescription,
+    )
 
     fun buildBulkCompleteEntity(
         episode: Episode,
@@ -84,10 +83,7 @@ object ListeningHistoryUpsertLogic {
         )
     }
 
-    fun buildBulkUncompleteEntity(
-        existing: ListeningHistoryEntity,
-        nowMs: Long,
-    ): ListeningHistoryEntity? {
+    fun buildBulkUncompleteEntity(existing: ListeningHistoryEntity, nowMs: Long,): ListeningHistoryEntity? {
         if (!existing.isCompleted) return null
         return existing.copy(
             isCompleted = false,

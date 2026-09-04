@@ -1,9 +1,8 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.playback.completedEpisodeIds
-
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.feature.home.logic.HomeSerialLogic
 import cx.aswin.boxlore.feature.home.logic.resolveNextSerialEpisode
 import kotlinx.coroutines.async
@@ -90,11 +89,10 @@ internal fun HomeViewModel.findPendingSerialPodcasts(
     subs: List<Podcast>,
     allHistory: List<HomeListeningHistoryItem>,
     completedEpisodeIds: Set<String>,
-): List<Podcast> =
-    HomeSerialLogic.findPendingSerialPodcasts(
-        subs = subs,
-        allHistory = allHistory,
-        completedEpisodeIds = completedEpisodeIds,
-        resolvedSerial = _resolvedSerialEpisodes.value,
-        inFlightResolutions = inFlightResolutions,
-    )
+): List<Podcast> = HomeSerialLogic.findPendingSerialPodcasts(
+    subs = subs,
+    allHistory = allHistory,
+    completedEpisodeIds = completedEpisodeIds,
+    resolvedSerial = _resolvedSerialEpisodes.value,
+    inFlightResolutions = inFlightResolutions,
+)

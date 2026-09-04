@@ -22,11 +22,7 @@ class CachedPathShape(private val pathBuilder: (Size) -> Path) : androidx.compos
     private var lastSize: Size? = null
     private var lastPath: Path? = null
 
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density
-    ): Outline {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         if (size != lastSize || lastPath == null) {
             lastSize = size
             lastPath = pathBuilder(size)
@@ -47,11 +43,7 @@ class CachedPolygonShape(
     private var lastSize: Size? = null
     private var lastPath: Path? = null
 
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density
-    ): Outline {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         if (size.width <= 0f || size.height <= 0f) {
             return Outline.Rectangle(androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height))
         }
@@ -110,9 +102,9 @@ object ExpressiveShapes {
     // --- Basic Shapes ---
     val Circle = CircleShape
     val Square = RoundedCornerShape(0)
-    val Pill = CircleShape 
-    val Oval = CircleShape 
-    val Full = RoundedCornerShape(50) 
+    val Pill = CircleShape
+    val Oval = CircleShape
+    val Full = RoundedCornerShape(50)
 
     val Slanted = CachedPathShape { size ->
         val path = Path()
@@ -152,15 +144,15 @@ object ExpressiveShapes {
         path.close()
         path
     }
-    
+
     val Fan = CachedPathShape { size ->
-         val path = Path()
-         path.moveTo(0f, size.height)
-         path.lineTo(0f, 0f)
-         path.arcTo(Rect(0f, 0f, size.width * 2, size.height * 2), 180f, 90f, false)
-         path.lineTo(size.width, size.height)
-         path.close()
-         path
+        val path = Path()
+        path.moveTo(0f, size.height)
+        path.lineTo(0f, 0f)
+        path.arcTo(Rect(0f, 0f, size.width * 2, size.height * 2), 180f, 90f, false)
+        path.lineTo(size.width, size.height)
+        path.close()
+        path
     }
 
     val Arrow = CachedPolygonShape(
@@ -183,7 +175,7 @@ object ExpressiveShapes {
         innerRadiusRatio = 0.7f,
         roundingRatio = 0.05f
     )
-    
+
     val VerySunny = CachedPolygonShape(
         numVertices = 12,
         isStar = true,
@@ -196,12 +188,12 @@ object ExpressiveShapes {
         isStar = false,
         roundingRatio = 0.1f
     )
-        
+
     val Pentagon = CachedPolygonShape(
         numVertices = 5,
         isStar = false
     )
-    
+
     val Hexagon = CachedPolygonShape(
         numVertices = 6,
         isStar = false
@@ -239,7 +231,7 @@ object ExpressiveShapes {
         innerRadiusRatio = 0.1f,
         roundingRatio = 0.25f
     )
-        
+
     val Clover8 = CachedPolygonShape(
         numVertices = 8,
         isStar = true,
@@ -252,20 +244,20 @@ object ExpressiveShapes {
         isStar = true,
         innerRadiusRatio = 0.6f
     )
-        
+
     val SoftBurst = CachedPolygonShape(
         numVertices = 10,
         isStar = true,
         innerRadiusRatio = 0.7f,
         roundingRatio = 0.05f
     )
-        
+
     val Boom = CachedPolygonShape(
         numVertices = 16,
         isStar = true,
         innerRadiusRatio = 0.4f
     )
-    
+
     val SoftBoom = CachedPolygonShape(
         numVertices = 16,
         isStar = true,
@@ -286,7 +278,7 @@ object ExpressiveShapes {
         innerRadiusRatio = 0.7f,
         roundingRatio = 0.2f
     )
-    
+
     val PuffyDiamond = CachedPolygonShape(
         numVertices = 4,
         isStar = true,
@@ -310,15 +302,15 @@ object ExpressiveShapes {
         path.cubicTo(0f, height * 0.5f, 0f, 0f, width / 2, height * 0.25f)
         path
     }
-        
+
     val Clamshell = CachedPathShape { size ->
-         val path = Path()
-         path.addArc(Rect(0f, 0f, size.width, size.height), 0f, 180f)
-         path
+        val path = Path()
+        path.addArc(Rect(0f, 0f, size.width, size.height), 0f, 180f)
+        path
     }
 
     val Decorative = listOf(
-        Sunny, VerySunny, 
+        Sunny, VerySunny,
         Cookie4, Cookie6, Cookie9, Cookie12,
         Burst, SoftBurst, Boom, SoftBoom,
         Flower, Puffy, PuffyDiamond,
@@ -326,11 +318,7 @@ object ExpressiveShapes {
         Diamond, Gem, Pentagon
     )
 
-    fun androidPath(
-        type: DecorativeType,
-        width: Float,
-        height: Float
-    ): android.graphics.Path {
+    fun androidPath(type: DecorativeType, width: Float, height: Float): android.graphics.Path {
         val shape = when (type) {
             DecorativeType.Puffy -> Puffy
             DecorativeType.PuffyDiamond -> PuffyDiamond
@@ -364,7 +352,7 @@ object ExpressiveShapes {
     // --- Raw Polygons (for LoadingIndicator) ---
     object Polygons {
         private const val RADIUS = 1f
-        
+
         val Star: RoundedPolygon = RoundedPolygon.star(
             numVerticesPerRadius = 5,
             radius = RADIUS,
@@ -384,13 +372,13 @@ object ExpressiveShapes {
             radius = RADIUS,
             innerRadius = RADIUS * 0.6f
         )
-        
+
         val Cookie4: RoundedPolygon = RoundedPolygon(
             numVertices = 4,
             radius = RADIUS,
             rounding = CornerRounding(RADIUS * 0.2f)
         )
-        
+
         val Cookie12: RoundedPolygon = RoundedPolygon(
             numVertices = 12,
             radius = RADIUS,

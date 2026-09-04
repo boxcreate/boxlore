@@ -18,9 +18,7 @@ object PlaybackSkipBounds {
 
     fun sanitizeTrim(valueMs: Long): Long = valueMs.coerceIn(0L, MAX_TRIM_MS)
 
-    fun sanitizeSeekBackward(valueMs: Long): Long =
-        valueMs.coerceIn(MIN_SEEK_MS, MAX_SEEK_MS)
+    fun sanitizeSeekBackward(valueMs: Long): Long = valueMs.coerceIn(MIN_SEEK_MS, MAX_SEEK_MS)
 
-    fun sanitizeSeekForward(valueMs: Long): Long =
-        valueMs.coerceIn(MIN_SEEK_MS, MAX_SEEK_MS)
+    fun sanitizeSeekForward(valueMs: Long): Long = valueMs.coerceIn(MIN_SEEK_MS, MAX_SEEK_MS)
 }

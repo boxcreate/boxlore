@@ -116,19 +116,19 @@ private fun DebugScreenPagerPage(
         DebugTab.Learner ->
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                Modifier
+                    .fillMaxSize()
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
             ) {
                 AdaptiveLearnerDebugSection(
                     state =
-                        AdaptiveLearnerDebugState(
-                            snapshot = state.learnerSnapshot,
-                            events = state.learningEvents,
-                            logEnabled = state.logEnabled,
-                            shadowDiagnostics = state.shadowDiagnostics,
-                            loading = state.learnerLoading,
-                        ),
+                    AdaptiveLearnerDebugState(
+                        snapshot = state.learnerSnapshot,
+                        events = state.learningEvents,
+                        logEnabled = state.logEnabled,
+                        shadowDiagnostics = state.shadowDiagnostics,
+                        loading = state.learnerLoading,
+                    ),
                     onSetLogEnabled = viewModel::setLogEnabled,
                     onRefresh = viewModel::refreshLearnerSnapshot,
                     bottomContentPadding = state.scrollBottomPadding,
@@ -139,20 +139,20 @@ private fun DebugScreenPagerPage(
             DebugTabScrollPane(bottomContentPadding = state.scrollBottomPadding) {
                 SleepTestingSection(
                     state =
-                        SleepTestingState(
-                            skipSleepWindow = state.skipSleepWindow,
-                            isInNightWindow = state.isInNightWindow,
-                            showLateNightNudge = state.playerState.showLateNightNudge,
-                            sleepTimerEnd = state.playerState.sleepTimerEnd,
-                            sleepAtEndOfEpisode = state.playerState.sleepAtEndOfEpisode,
-                        ),
+                    SleepTestingState(
+                        skipSleepWindow = state.skipSleepWindow,
+                        isInNightWindow = state.isInNightWindow,
+                        showLateNightNudge = state.playerState.showLateNightNudge,
+                        sleepTimerEnd = state.playerState.sleepTimerEnd,
+                        sleepAtEndOfEpisode = state.playerState.sleepAtEndOfEpisode,
+                    ),
                     actions =
-                        SleepTestingActions(
-                            onToggleSkipSleepWindow = viewModel::setSkipSleepWindow,
-                            onForcePromptNow = viewModel::forceSleepPromptNow,
-                            onClearSleepTimer = viewModel::clearSleepTimer,
-                            onResetSleepWindowGuard = viewModel::resetSleepWindowGuard,
-                        ),
+                    SleepTestingActions(
+                        onToggleSkipSleepWindow = viewModel::setSkipSleepWindow,
+                        onForcePromptNow = viewModel::forceSleepPromptNow,
+                        onClearSleepTimer = viewModel::clearSleepTimer,
+                        onResetSleepWindowGuard = viewModel::resetSleepWindowGuard,
+                    ),
                 )
             }
 

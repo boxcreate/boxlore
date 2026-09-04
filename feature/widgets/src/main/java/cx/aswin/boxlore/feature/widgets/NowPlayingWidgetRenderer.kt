@@ -197,16 +197,16 @@ object NowPlayingWidgetRenderer {
             WidgetTextBitmapRenderer.renderColor(
                 context = context,
                 spec =
-                    WidgetTextBitmapRenderer.Spec(
-                        text = context.getString(R.string.widget_empty_title),
-                        widthDp = metadataWidth,
-                        heightDp = 40,
-                        preferredSizeSp = 17f,
-                        minSizeSp = 13f,
-                        weight = TITLE_WEIGHT,
-                        maxLines = 2,
-                        alignment = Layout.Alignment.ALIGN_CENTER,
-                    ),
+                WidgetTextBitmapRenderer.Spec(
+                    text = context.getString(R.string.widget_empty_title),
+                    widthDp = metadataWidth,
+                    heightDp = 40,
+                    preferredSizeSp = 17f,
+                    minSizeSp = 13f,
+                    weight = TITLE_WEIGHT,
+                    maxLines = 2,
+                    alignment = Layout.Alignment.ALIGN_CENTER,
+                ),
                 color = chrome.argb(WidgetPalette.onSurface),
             ),
         )
@@ -215,16 +215,16 @@ object NowPlayingWidgetRenderer {
             WidgetTextBitmapRenderer.renderColor(
                 context = context,
                 spec =
-                    WidgetTextBitmapRenderer.Spec(
-                        text = context.getString(R.string.widget_empty_subtitle),
-                        widthDp = metadataWidth,
-                        heightDp = 18,
-                        preferredSizeSp = 11f,
-                        minSizeSp = 9f,
-                        weight = BODY_WEIGHT,
-                        maxLines = 1,
-                        alignment = Layout.Alignment.ALIGN_CENTER,
-                    ),
+                WidgetTextBitmapRenderer.Spec(
+                    text = context.getString(R.string.widget_empty_subtitle),
+                    widthDp = metadataWidth,
+                    heightDp = 18,
+                    preferredSizeSp = 11f,
+                    minSizeSp = 9f,
+                    weight = BODY_WEIGHT,
+                    maxLines = 1,
+                    alignment = Layout.Alignment.ALIGN_CENTER,
+                ),
                 color = chrome.argb(WidgetPalette.onSurfaceVariant),
             ),
         )
@@ -242,16 +242,16 @@ object NowPlayingWidgetRenderer {
             WidgetTextBitmapRenderer.renderColor(
                 context = context,
                 spec =
-                    WidgetTextBitmapRenderer.Spec(
-                        text = context.getString(R.string.widget_empty_bar_title),
-                        widthDp = textWidth,
-                        heightDp = 24,
-                        preferredSizeSp = 14f,
-                        minSizeSp = 11f,
-                        weight = TITLE_WEIGHT,
-                        maxLines = 1,
-                        alignment = Layout.Alignment.ALIGN_CENTER,
-                    ),
+                WidgetTextBitmapRenderer.Spec(
+                    text = context.getString(R.string.widget_empty_bar_title),
+                    widthDp = textWidth,
+                    heightDp = 24,
+                    preferredSizeSp = 14f,
+                    minSizeSp = 11f,
+                    weight = TITLE_WEIGHT,
+                    maxLines = 1,
+                    alignment = Layout.Alignment.ALIGN_CENTER,
+                ),
                 color = chrome.argb(WidgetPalette.onSurface),
             ),
         )
@@ -271,16 +271,16 @@ object NowPlayingWidgetRenderer {
             WidgetTextBitmapRenderer.renderColor(
                 context = context,
                 spec =
-                    WidgetTextBitmapRenderer.Spec(
-                        text = context.getString(R.string.widget_empty_title),
-                        widthDp = textWidth,
-                        heightDp = 28,
-                        preferredSizeSp = 11f,
-                        minSizeSp = 9f,
-                        weight = TITLE_WEIGHT,
-                        maxLines = 2,
-                        alignment = Layout.Alignment.ALIGN_CENTER,
-                    ),
+                WidgetTextBitmapRenderer.Spec(
+                    text = context.getString(R.string.widget_empty_title),
+                    widthDp = textWidth,
+                    heightDp = 28,
+                    preferredSizeSp = 11f,
+                    minSizeSp = 9f,
+                    weight = TITLE_WEIGHT,
+                    maxLines = 2,
+                    alignment = Layout.Alignment.ALIGN_CENTER,
+                ),
                 color = chrome.argb(WidgetPalette.onSurface),
             ),
         )

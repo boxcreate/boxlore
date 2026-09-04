@@ -5,10 +5,10 @@ import android.content.ComponentName
 import android.content.Context
 import cx.aswin.boxlore.feature.widgets.logic.NowPlayingWidgetMapper
 import cx.aswin.boxlore.feature.widgets.logic.WidgetUpdatePolicy
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicReference
 
 object NowPlayingWidgetCoordinator {
     private val collectJob = AtomicReference<Job?>(null)

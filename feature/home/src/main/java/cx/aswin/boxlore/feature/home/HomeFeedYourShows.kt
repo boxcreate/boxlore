@@ -60,8 +60,7 @@ private fun shouldShowYourShows(
     content: PodcastFeedContent,
     feedState: PodcastFeedUiState,
     loadingState: PodcastFeedLoadingState,
-): Boolean =
-    loadingState.isLoading || content.subscribedItems.list.isNotEmpty() || feedState.showImportBanner
+): Boolean = loadingState.isLoading || content.subscribedItems.list.isNotEmpty() || feedState.showImportBanner
 
 @Composable
 private fun YourShowsFeedContent(

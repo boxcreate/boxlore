@@ -38,33 +38,31 @@ class LatestEpisodesDisplayLogicTest {
     }
 
     @Test
-    fun scoreLatestIfNeeded_skipsWhenNotSmart() =
-        runTest {
-            var calls = 0
-            val scores =
-                scoreLatestIfNeeded(
-                    useSmartRank = false,
-                    podcasts = listOf(podcast("a", 10L)),
-                    history = emptyList(),
-                ) { _, _ ->
-                    calls++
-                    mapOf("a_ep" to 1.0)
-                }
-            assertTrue(scores.isEmpty())
-            assertEquals(0, calls)
-        }
+    fun scoreLatestIfNeeded_skipsWhenNotSmart() = runTest {
+        var calls = 0
+        val scores =
+            scoreLatestIfNeeded(
+                useSmartRank = false,
+                podcasts = listOf(podcast("a", 10L)),
+                history = emptyList(),
+            ) { _, _ ->
+                calls++
+                mapOf("a_ep" to 1.0)
+            }
+        assertTrue(scores.isEmpty())
+        assertEquals(0, calls)
+    }
 
     @Test
-    fun scoreLatestIfNeeded_invokesWhenSmart() =
-        runTest {
-            val scores =
-                scoreLatestIfNeeded(
-                    useSmartRank = true,
-                    podcasts = listOf(podcast("a", 10L)),
-                    history = emptyList(),
-                ) { _, _ -> mapOf("a_ep" to 9.0) }
-            assertEquals(mapOf("a_ep" to 9.0), scores)
-        }
+    fun scoreLatestIfNeeded_invokesWhenSmart() = runTest {
+        val scores =
+            scoreLatestIfNeeded(
+                useSmartRank = true,
+                podcasts = listOf(podcast("a", 10L)),
+                history = emptyList(),
+            ) { _, _ -> mapOf("a_ep" to 9.0) }
+        assertEquals(mapOf("a_ep" to 9.0), scores)
+    }
 
     @Test
     fun sortLatestDisplayPodcasts_smartUsesScores() {

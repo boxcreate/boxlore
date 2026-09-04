@@ -75,18 +75,18 @@ fun PodcastInfoSearchOverlay(
         topBar = {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
             ) {
                 // Unified "M3 Style" Search Bar Component
                 Surface(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .height(56.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .height(56.dp),
                     // Standard M3 Search Height
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     shape = androidx.compose.foundation.shape.CircleShape, // Full Pill
@@ -107,9 +107,9 @@ fun PodcastInfoSearchOverlay(
                         // Input Field
                         Box(
                             modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 8.dp),
+                            Modifier
+                                .weight(1f)
+                                .padding(horizontal = 8.dp),
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             if (query.isEmpty()) {
@@ -125,16 +125,16 @@ fun PodcastInfoSearchOverlay(
                                 onValueChange = onQueryChange,
                                 singleLine = true,
                                 textStyle =
-                                    MaterialTheme.typography.bodyLarge.copy(
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                    ),
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                ),
                                 cursorBrush =
-                                    androidx.compose.ui.graphics
-                                        .SolidColor(accentColor),
+                                androidx.compose.ui.graphics
+                                    .SolidColor(accentColor),
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .focusRequester(focusRequester),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester),
                             )
                         }
 
@@ -155,10 +155,10 @@ fun PodcastInfoSearchOverlay(
 
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .imePadding(),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .imePadding(),
         ) {
             if (isSearching) {
                 Box(
@@ -184,10 +184,10 @@ fun PodcastInfoSearchOverlay(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding =
-                        PaddingValues(
-                            top = 16.dp,
-                            bottom = 16.dp,
-                        ),
+                    PaddingValues(
+                        top = 16.dp,
+                        bottom = 16.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     itemsIndexed(displayList, key = { _, ep -> ep.id }) { index, episode ->

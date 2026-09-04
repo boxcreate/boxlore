@@ -17,7 +17,4 @@ data class Briefing(
 )
 
 @Serializable
-data class BriefingSource(
-    val title: String,
-    val url: String
-)
+data class BriefingSource(val title: String, val url: String)

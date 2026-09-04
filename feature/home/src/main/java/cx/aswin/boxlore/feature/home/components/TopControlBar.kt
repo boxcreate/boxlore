@@ -74,7 +74,7 @@ fun TopControlBar(
                     0.299f * expandedColor.red +
                         0.587f * expandedColor.green +
                         0.114f * expandedColor.blue
-                )
+                    )
                 luminance > 0.5f
             }
         LaunchedEffect(isLightStatusBar) {
@@ -85,37 +85,37 @@ fun TopControlBar(
 
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .then(
-                    remember(expandedColor, collapsedColor) {
-                        Modifier.drawBehind {
-                            val fraction = scrollFractionProvider().coerceIn(0f, 1f)
-                            val color = lerp(expandedColor, collapsedColor, fraction)
-                            drawRect(color)
-                        }
-                    },
-                ).statusBarsPadding()
-                .layout { measurable, constraints ->
-                    val fraction = scrollFractionProvider().coerceIn(0f, 1f)
-                    val currentPadding =
-                        androidx.compose.ui.unit
-                            .lerp(expandedPadding, collapsedPadding, fraction)
-                    val paddingPx = currentPadding.roundToPx()
-
-                    val placeable =
-                        measurable.measure(
-                            constraints.copy(
-                                minWidth = constraints.minWidth,
-                                maxWidth = constraints.maxWidth,
-                            ),
-                        )
-
-                    val height = placeable.height + paddingPx * 2
-                    layout(placeable.width, height) {
-                        placeable.place(0, paddingPx)
+        modifier
+            .fillMaxWidth()
+            .then(
+                remember(expandedColor, collapsedColor) {
+                    Modifier.drawBehind {
+                        val fraction = scrollFractionProvider().coerceIn(0f, 1f)
+                        val color = lerp(expandedColor, collapsedColor, fraction)
+                        drawRect(color)
                     }
-                }.padding(horizontal = 12.dp),
+                },
+            ).statusBarsPadding()
+            .layout { measurable, constraints ->
+                val fraction = scrollFractionProvider().coerceIn(0f, 1f)
+                val currentPadding =
+                    androidx.compose.ui.unit
+                        .lerp(expandedPadding, collapsedPadding, fraction)
+                val paddingPx = currentPadding.roundToPx()
+
+                val placeable =
+                    measurable.measure(
+                        constraints.copy(
+                            minWidth = constraints.minWidth,
+                            maxWidth = constraints.maxWidth,
+                        ),
+                    )
+
+                val height = placeable.height + paddingPx * 2
+                layout(placeable.width, height) {
+                    placeable.place(0, paddingPx)
+                }
+            }.padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -135,10 +135,10 @@ fun TopControlBar(
                     val feedbackScale by animateFloatAsState(
                         targetValue = if (isFeedbackPressed) 0.90f else 1f,
                         animationSpec =
-                            spring(
-                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                stiffness = Spring.StiffnessMedium,
-                            ),
+                        spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMedium,
+                        ),
                         label = "feedbackBounce",
                     )
 
@@ -147,18 +147,18 @@ fun TopControlBar(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier =
-                            Modifier
-                                .size(36.dp)
-                                .graphicsLayer {
-                                    scaleX = feedbackScale
-                                    scaleY = feedbackScale
-                                }.clip(CircleShape)
-                                .combinedClickable(
-                                    interactionSource = feedbackInteractionSource,
-                                    indication = androidx.compose.foundation.LocalIndication.current,
-                                    onClick = onFeedbackClick,
-                                    onLongClick = onFeedbackLongClick,
-                                ),
+                        Modifier
+                            .size(36.dp)
+                            .graphicsLayer {
+                                scaleX = feedbackScale
+                                scaleY = feedbackScale
+                            }.clip(CircleShape)
+                            .combinedClickable(
+                                interactionSource = feedbackInteractionSource,
+                                indication = androidx.compose.foundation.LocalIndication.current,
+                                onClick = onFeedbackClick,
+                                onLongClick = onFeedbackLongClick,
+                            ),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
@@ -175,10 +175,10 @@ fun TopControlBar(
                     val settingsScale by animateFloatAsState(
                         targetValue = if (isSettingsPressed) 0.90f else 1f,
                         animationSpec =
-                            spring(
-                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                stiffness = Spring.StiffnessMedium,
-                            ),
+                        spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMedium,
+                        ),
                         label = "settingsBounce",
                     )
 
@@ -187,19 +187,19 @@ fun TopControlBar(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier =
-                            Modifier
-                                .size(36.dp)
-                                .testTag("home_settings_button")
-                                .graphicsLayer {
-                                    scaleX = settingsScale
-                                    scaleY = settingsScale
-                                }.clip(CircleShape)
-                                .combinedClickable(
-                                    interactionSource = settingsInteractionSource,
-                                    indication = androidx.compose.foundation.LocalIndication.current,
-                                    onClick = onAvatarClick,
-                                    onLongClick = onAvatarLongClick,
-                                ),
+                        Modifier
+                            .size(36.dp)
+                            .testTag("home_settings_button")
+                            .graphicsLayer {
+                                scaleX = settingsScale
+                                scaleY = settingsScale
+                            }.clip(CircleShape)
+                            .combinedClickable(
+                                interactionSource = settingsInteractionSource,
+                                indication = androidx.compose.foundation.LocalIndication.current,
+                                onClick = onAvatarClick,
+                                onLongClick = onAvatarLongClick,
+                            ),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(

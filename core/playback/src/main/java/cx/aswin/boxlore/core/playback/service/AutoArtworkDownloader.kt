@@ -45,13 +45,12 @@ internal object AutoArtworkDownloader {
         return addresses.isNotEmpty() && addresses.all(::isPublicAddress)
     }
 
-    fun isPublicAddress(address: InetAddress): Boolean =
-        !address.isAnyLocalAddress &&
-            !address.isLoopbackAddress &&
-            !address.isLinkLocalAddress &&
-            !address.isSiteLocalAddress &&
-            !address.isMulticastAddress &&
-            !address.isUniqueLocalIpv6()
+    fun isPublicAddress(address: InetAddress): Boolean = !address.isAnyLocalAddress &&
+        !address.isLoopbackAddress &&
+        !address.isLinkLocalAddress &&
+        !address.isSiteLocalAddress &&
+        !address.isMulticastAddress &&
+        !address.isUniqueLocalIpv6()
 
     private fun fetchOnce(url: URL): FetchOutcome? {
         if (!isPublicHttpsUrl(url)) return null
@@ -94,13 +93,9 @@ internal object AutoArtworkDownloader {
         return connection
     }
 
-    private fun resolveRedirect(
-        current: URL,
-        location: String,
-    ): URL? =
-        runCatching {
-            URI(current.toURI().resolve(location).toString()).toURL()
-        }.getOrNull()
+    private fun resolveRedirect(current: URL, location: String,): URL? = runCatching {
+        URI(current.toURI().resolve(location).toString()).toURL()
+    }.getOrNull()
 
     private fun readBounded(input: InputStream): ByteArray? {
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -122,12 +117,8 @@ internal object AutoArtworkDownloader {
     }
 
     private sealed class FetchOutcome {
-        class Redirect(
-            val url: URL,
-        ) : FetchOutcome()
+        class Redirect(val url: URL,) : FetchOutcome()
 
-        class Body(
-            val bytes: ByteArray,
-        ) : FetchOutcome()
+        class Body(val bytes: ByteArray,) : FetchOutcome()
     }
 }

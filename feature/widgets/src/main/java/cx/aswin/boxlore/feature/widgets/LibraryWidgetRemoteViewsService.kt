@@ -33,13 +33,12 @@ class LibraryWidgetRemoteViewsService : RemoteViewsService() {
             context: Context,
             appWidgetId: Int,
             kind: LibraryWidgetKind,
-        ): Intent =
-            Intent(context, LibraryWidgetRemoteViewsService::class.java).apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                putExtra(EXTRA_KIND, kind.name)
-                // Unique data URI so each widget instance gets its own adapter.
-                data = Uri.parse("boxlore://library_widget/${kind.name}/$appWidgetId")
-            }
+        ): Intent = Intent(context, LibraryWidgetRemoteViewsService::class.java).apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            putExtra(EXTRA_KIND, kind.name)
+            // Unique data URI so each widget instance gets its own adapter.
+            data = Uri.parse("boxlore://library_widget/${kind.name}/$appWidgetId")
+        }
     }
 }
 
@@ -65,11 +64,10 @@ internal class LibraryWidgetRemoteViewsFactory(
         episodes = emptyList()
     }
 
-    override fun getCount(): Int =
-        when (kind) {
-            LibraryWidgetKind.SUBSCRIPTIONS -> shows.size
-            LibraryWidgetKind.NEW_EPISODES -> episodes.size
-        }
+    override fun getCount(): Int = when (kind) {
+        LibraryWidgetKind.SUBSCRIPTIONS -> shows.size
+        LibraryWidgetKind.NEW_EPISODES -> episodes.size
+    }
 
     override fun getViewAt(position: Int): RemoteViews {
         val layoutId =
@@ -152,23 +150,22 @@ internal class LibraryWidgetRemoteViewsFactory(
 
     override fun getViewTypeCount(): Int = 1
 
-    override fun getItemId(position: Int): Long =
-        when (kind) {
-            LibraryWidgetKind.SUBSCRIPTIONS ->
-                shows
-                    .getOrNull(position)
-                    ?.podcastId
-                    ?.hashCode()
-                    ?.toLong()
-                    ?: position.toLong()
-            LibraryWidgetKind.NEW_EPISODES ->
-                episodes
-                    .getOrNull(position)
-                    ?.episodeId
-                    ?.hashCode()
-                    ?.toLong()
-                    ?: position.toLong()
-        }
+    override fun getItemId(position: Int): Long = when (kind) {
+        LibraryWidgetKind.SUBSCRIPTIONS ->
+            shows
+                .getOrNull(position)
+                ?.podcastId
+                ?.hashCode()
+                ?.toLong()
+                ?: position.toLong()
+        LibraryWidgetKind.NEW_EPISODES ->
+            episodes
+                .getOrNull(position)
+                ?.episodeId
+                ?.hashCode()
+                ?.toLong()
+                ?: position.toLong()
+    }
 
     override fun hasStableIds(): Boolean = true
 

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -38,12 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import kotlinx.coroutines.delay
 import cx.aswin.boxlore.core.model.SleepTimerConstants
+import kotlinx.coroutines.delay
 
 /** A single selectable duration option in the sleep timer popup. 999 means "End of episode". */
 data class SleepTimerOption(val label: String, val minutes: Int)
@@ -228,10 +226,7 @@ private fun SleepTimerOptionsContent(
 }
 
 @Composable
-private fun SleepTimerPopupHeader(
-    palette: SleepTimerPopupPalette,
-    onDismiss: (SleepTimerPopupDismissReason) -> Unit
-) {
+private fun SleepTimerPopupHeader(palette: SleepTimerPopupPalette, onDismiss: (SleepTimerPopupDismissReason) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -290,11 +285,7 @@ private fun SleepTimerPopupHeader(
 }
 
 @Composable
-private fun DurationOptionsRow(
-    options: List<SleepTimerOption>,
-    palette: SleepTimerPopupPalette,
-    onSelectDuration: (Int) -> Unit
-) {
+private fun DurationOptionsRow(options: List<SleepTimerOption>, palette: SleepTimerPopupPalette, onSelectDuration: (Int) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -312,11 +303,7 @@ private fun DurationOptionsRow(
 }
 
 @Composable
-private fun EndOfEpisodeOption(
-    option: SleepTimerOption?,
-    palette: SleepTimerPopupPalette,
-    onSelectDuration: (Int) -> Unit
-) {
+private fun EndOfEpisodeOption(option: SleepTimerOption?, palette: SleepTimerPopupPalette, onSelectDuration: (Int) -> Unit) {
     if (option == null) return
 
     Spacer(modifier = Modifier.height(10.dp))

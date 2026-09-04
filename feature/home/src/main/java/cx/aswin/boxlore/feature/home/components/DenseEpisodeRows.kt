@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -59,11 +58,11 @@ internal fun DenseEpisodeRow(
 
     Row(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .expressiveClickable(onClick = actions.onClick)
-                .padding(vertical = 8.dp),
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .expressiveClickable(onClick = actions.onClick)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         DenseEpisodeArtwork(
@@ -132,16 +131,16 @@ private fun DenseEpisodeArtwork(
     Box(modifier = Modifier.size(56.dp)) {
         OptimizedImage(
             url =
-                episode.imageUrl?.takeIf { it.isNotEmpty() }
-                    ?: podcast.imageUrl.takeIf { it.isNotEmpty() }
-                    ?: podcast.fallbackImageUrl,
+            episode.imageUrl?.takeIf { it.isNotEmpty() }
+                ?: podcast.imageUrl.takeIf { it.isNotEmpty() }
+                ?: podcast.fallbackImageUrl,
             proxyWidth = 112,
             contentDescription = episode.title,
             contentScale = ContentScale.Crop,
             modifier =
-                Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+            Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(8.dp)),
         )
         DenseEpisodePlayButton(
             isCurrentPlaying = rowState.isCurrentPlaying,
@@ -170,9 +169,9 @@ private fun DenseEpisodePlayButton(
         contentColor = Color.White,
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)),
         modifier =
-            modifier
-                .size(28.dp)
-                .expressiveClickable(onClick = onPlay),
+        modifier
+            .size(28.dp)
+            .expressiveClickable(onClick = onPlay),
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -191,11 +190,11 @@ private fun DenseEpisodePlayButton(
 private fun DenseEpisodeCompletedBadge(modifier: Modifier = Modifier) {
     Box(
         modifier =
-            modifier
-                .padding(3.dp)
-                .size(14.dp)
-                .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
-                .border(1.dp, MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.4f), CircleShape),
+        modifier
+            .padding(3.dp)
+            .size(14.dp)
+            .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
+            .border(1.dp, MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.4f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -212,11 +211,11 @@ private fun BoxScope.DenseEpisodeProgress(progress: Float) {
     LinearProgressIndicator(
         progress = { progress },
         modifier =
-            Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(3.dp)
-                .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)),
+        Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .height(3.dp)
+            .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)),
         color = MaterialTheme.colorScheme.primary,
         trackColor = Color.White.copy(alpha = 0.4f),
         drawStopIndicator = {},
@@ -238,11 +237,11 @@ private fun RowScope.DenseEpisodeDetails(
         Text(
             text = episode.title,
             style =
-                MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = GoogleSansWeight.bold,
-                    fontSize = 13.sp,
-                    lineHeight = 16.sp,
-                ),
+            MaterialTheme.typography.titleSmall.copy(
+                fontWeight = GoogleSansWeight.bold,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            ),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface,
@@ -298,19 +297,19 @@ private fun RowScope.DensePodcastTitle(title: String) {
 private fun DenseNewEpisodeBadge() {
     Box(
         modifier =
-            Modifier
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+        Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
             text = "NEW",
             style =
-                MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = GoogleSansWeight.bold,
-                    fontSize = 8.sp,
-                    letterSpacing = 0.5.sp,
-                ),
+            MaterialTheme.typography.labelSmall.copy(
+                fontWeight = GoogleSansWeight.bold,
+                fontSize = 8.sp,
+                letterSpacing = 0.5.sp,
+            ),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
     }
@@ -342,12 +341,11 @@ private fun DenseEpisodeDuration(
         text = "• $displayText",
         style = MaterialTheme.typography.bodySmall,
         color =
-            if (rowState.isInProgress) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            },
+        if (rowState.isInProgress) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        },
         fontWeight = if (rowState.isInProgress) GoogleSansWeight.bold else FontWeight.Normal,
     )
 }
-

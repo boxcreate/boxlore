@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,8 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlin.math.roundToInt
 
 data class PodcastPlaybackSettingsState(
@@ -57,11 +55,11 @@ fun PodcastPlaybackSettingsSheet(
     ModalBottomSheet(onDismissRequest = actions.onDismissRequest) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 24.dp),
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
@@ -76,9 +74,9 @@ fun PodcastPlaybackSettingsSheet(
             )
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics(mergeDescendants = true) {},
+                Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -86,13 +84,13 @@ fun PodcastPlaybackSettingsSheet(
                     Text("Use app defaults", style = MaterialTheme.typography.titleMedium)
                     Text(
                         text =
-                            if (state.isSubscribed) {
-                                "Beginning ${durationLabel(
-                                    state.globalSkipBeginningMs,
-                                )} · Ending ${durationLabel(state.globalSkipEndingMs)}"
-                            } else {
-                                "Subscribe to customize playback for this show"
-                            },
+                        if (state.isSubscribed) {
+                            "Beginning ${durationLabel(
+                                state.globalSkipBeginningMs,
+                            )} · Ending ${durationLabel(state.globalSkipEndingMs)}"
+                        } else {
+                            "Subscribe to customize playback for this show"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -159,9 +157,9 @@ private fun PodcastDurationSlider(
             valueRange = 0f..300f,
             steps = 0,
             modifier =
-                Modifier.semantics {
-                    contentDescription = "$title, $label"
-                },
+            Modifier.semantics {
+                contentDescription = "$title, $label"
+            },
         )
     }
 }

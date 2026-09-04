@@ -176,10 +176,10 @@ class HomeShowsOrderLogicTest {
                 previousOrder = listOf("a", "b"),
                 subs = subs,
                 scores =
-                    mapOf(
-                        "a" to 0.50,
-                        "b" to 0.50 + HomeShowsOrderLogic.SCORE_MOVE_THRESHOLD,
-                    ),
+                mapOf(
+                    "a" to 0.50,
+                    "b" to 0.50 + HomeShowsOrderLogic.SCORE_MOVE_THRESHOLD,
+                ),
                 refreshFromScores = true,
             )
 

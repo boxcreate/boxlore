@@ -13,10 +13,9 @@ import kotlinx.serialization.json.Json
 object ExploreSharedRecommendationsLogic {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun distinctRecommendations(episodes: List<Episode>): List<Episode> =
-        episodes
-            .distinctBy { it.id }
-            .distinctBy { it.title.lowercase().trim() }
+    fun distinctRecommendations(episodes: List<Episode>): List<Episode> = episodes
+        .distinctBy { it.id }
+        .distinctBy { it.title.lowercase().trim() }
 
     fun decodeCachedRecommendationsJson(serialized: String?): List<Episode> {
         if (serialized.isNullOrBlank()) return emptyList()
@@ -25,6 +24,5 @@ object ExploreSharedRecommendationsLogic {
         }.getOrDefault(emptyList())
     }
 
-    fun encodeRecommendationsJson(episodes: List<Episode>): String =
-        json.encodeToString(distinctRecommendations(episodes))
+    fun encodeRecommendationsJson(episodes: List<Episode>): String = json.encodeToString(distinctRecommendations(episodes))
 }

@@ -7,12 +7,10 @@ package cx.aswin.boxlore.core.prefs
 object PreferenceIdList {
     private const val SEPARATOR = '\u001f'
 
-    fun encode(ids: List<String>): String {
-        return ids
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .joinToString(SEPARATOR.toString())
-    }
+    fun encode(ids: List<String>): String = ids
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .joinToString(SEPARATOR.toString())
 
     fun decode(raw: String?): List<String> {
         if (raw.isNullOrEmpty()) return emptyList()

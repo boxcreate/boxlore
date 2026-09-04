@@ -43,16 +43,15 @@ object InfoViewModelAssembler {
         episodeSupplementPort: EpisodeSupplementPort,
         userPrefs: UserPreferencesRepository,
         routeArgs: PodcastInfoRouteArgs,
-    ): PodcastInfoViewModel =
-        PodcastInfoViewModel(
-            application = application,
-            deps = deps,
-            subscriptionRepository = subscriptionRepository,
-            rssRepository = rssRepository,
-            episodeSupplementPort = episodeSupplementPort,
-            userPreferencesRepository = userPrefs,
-            routeArgs = routeArgs,
-        )
+    ): PodcastInfoViewModel = PodcastInfoViewModel(
+        application = application,
+        deps = deps,
+        subscriptionRepository = subscriptionRepository,
+        rssRepository = rssRepository,
+        episodeSupplementPort = episodeSupplementPort,
+        userPreferencesRepository = userPrefs,
+        routeArgs = routeArgs,
+    )
 
     fun podcastInfoFactory(
         application: Application,
@@ -62,57 +61,54 @@ object InfoViewModelAssembler {
         episodeSupplementPort: EpisodeSupplementPort,
         userPrefs: UserPreferencesRepository,
         routeArgs: PodcastInfoRouteArgs,
-    ): ViewModelProvider.Factory =
-        object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                require(modelClass.isAssignableFrom(PodcastInfoViewModel::class.java)) {
-                    "Unknown ViewModel class: ${modelClass.name}"
-                }
-                return createPodcastInfo(
-                    application = application,
-                    deps = deps,
-                    subscriptionRepository = subscriptionRepository,
-                    rssRepository = rssRepository,
-                    episodeSupplementPort = episodeSupplementPort,
-                    userPrefs = userPrefs,
-                    routeArgs = routeArgs,
-                ) as T
+    ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            require(modelClass.isAssignableFrom(PodcastInfoViewModel::class.java)) {
+                "Unknown ViewModel class: ${modelClass.name}"
             }
+            return createPodcastInfo(
+                application = application,
+                deps = deps,
+                subscriptionRepository = subscriptionRepository,
+                rssRepository = rssRepository,
+                episodeSupplementPort = episodeSupplementPort,
+                userPrefs = userPrefs,
+                routeArgs = routeArgs,
+            ) as T
         }
+    }
 
     fun createEpisodeInfo(
         application: Application,
         deps: InfoSharedDeps,
         userPrefs: UserPreferencesRepository,
-    ): EpisodeInfoViewModel =
-        EpisodeInfoViewModel(
-            application = application,
-            podcastRepository = deps.podcastRepository,
-            playbackRepository = deps.playbackRepository,
-            downloadRepository = deps.downloadRepository,
-            queueManager = deps.queueManager,
-            userPrefs = userPrefs,
-            localCatalog = deps.localCatalog,
-            episodeOfflineLookup = deps.episodeOfflineLookup,
-        )
+    ): EpisodeInfoViewModel = EpisodeInfoViewModel(
+        application = application,
+        podcastRepository = deps.podcastRepository,
+        playbackRepository = deps.playbackRepository,
+        downloadRepository = deps.downloadRepository,
+        queueManager = deps.queueManager,
+        userPrefs = userPrefs,
+        localCatalog = deps.localCatalog,
+        episodeOfflineLookup = deps.episodeOfflineLookup,
+    )
 
     fun episodeInfoFactory(
         application: Application,
         deps: InfoSharedDeps,
         userPrefs: UserPreferencesRepository,
-    ): ViewModelProvider.Factory =
-        object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                require(modelClass.isAssignableFrom(EpisodeInfoViewModel::class.java)) {
-                    "Unknown ViewModel class: ${modelClass.name}"
-                }
-                return createEpisodeInfo(
-                    application = application,
-                    deps = deps,
-                    userPrefs = userPrefs,
-                ) as T
+    ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            require(modelClass.isAssignableFrom(EpisodeInfoViewModel::class.java)) {
+                "Unknown ViewModel class: ${modelClass.name}"
             }
+            return createEpisodeInfo(
+                application = application,
+                deps = deps,
+                userPrefs = userPrefs,
+            ) as T
         }
+    }
 }

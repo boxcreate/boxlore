@@ -11,12 +11,7 @@ object PlayerSessionAggregator {
     private val actionCounts = mutableMapOf<String, Int>()
     private val propertyValues = mutableMapOf<String, String>()
 
-    fun startSession(
-        podcastId: String?,
-        episodeId: String?,
-        podcastName: String? = null,
-        episodeTitle: String? = null,
-    ) {
+    fun startSession(podcastId: String?, episodeId: String?, podcastName: String? = null, episodeTitle: String? = null,) {
         // If a session is already active for a different episode, flush it first
         if (isSessionActive && (this.episodeId != episodeId || this.podcastId != podcastId)) {
             endSession()
@@ -34,10 +29,7 @@ object PlayerSessionAggregator {
         }
     }
 
-    fun logAction(
-        action: String,
-        value: String? = null,
-    ) {
+    fun logAction(action: String, value: String? = null,) {
         if (!isSessionActive) return // Ignore clicks if no session is active
 
         actionCounts[action] = (actionCounts[action] ?: 0) + 1

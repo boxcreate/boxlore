@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info.sections
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,11 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.model.Episode
@@ -49,28 +47,28 @@ internal fun EpisodeInfoMoreLikeThisCard(
 ) {
     androidx.compose.material3.OutlinedCard(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         colors =
-            androidx.compose.material3.CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
+        androidx.compose.material3.CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
         ) {
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(bottom = 12.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -83,10 +81,10 @@ internal fun EpisodeInfoMoreLikeThisCard(
                 Text(
                     text = "More Like This",
                     style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            letterSpacing = (-0.1).sp,
-                        ),
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = GoogleSansWeight.bold,
+                        letterSpacing = (-0.1).sp,
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
@@ -111,31 +109,31 @@ internal fun EpisodeInfoMoreLikeThisCard(
                         ) {
                             Box(
                                 modifier =
-                                    Modifier
-                                        .size(120.dp)
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .background(baseColor)
-                                        .m3Shimmer(baseColor, highlightColor),
+                                Modifier
+                                    .size(120.dp)
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .background(baseColor)
+                                    .m3Shimmer(baseColor, highlightColor),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Box(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(14.dp)
-                                        .clip(MaterialTheme.shapes.small)
-                                        .background(baseColor)
-                                        .m3Shimmer(baseColor, highlightColor),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(14.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(baseColor)
+                                    .m3Shimmer(baseColor, highlightColor),
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Box(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth(0.7f)
-                                        .height(14.dp)
-                                        .clip(MaterialTheme.shapes.small)
-                                        .background(baseColor)
-                                        .m3Shimmer(baseColor, highlightColor),
+                                Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(14.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(baseColor)
+                                    .m3Shimmer(baseColor, highlightColor),
                             )
                         }
                     }
@@ -144,16 +142,16 @@ internal fun EpisodeInfoMoreLikeThisCard(
                         androidx.compose.material3.OutlinedCard(
                             shape = RoundedCornerShape(16.dp),
                             colors =
-                                androidx.compose.material3.CardDefaults.outlinedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                ),
+                            androidx.compose.material3.CardDefaults.outlinedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                            ),
                             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier =
-                                Modifier
-                                    .width(140.dp)
-                                    .expressiveClickable {
-                                        onEpisodeClick(episode)
-                                    },
+                            Modifier
+                                .width(140.dp)
+                                .expressiveClickable {
+                                    onEpisodeClick(episode)
+                                },
                         ) {
                             Column {
                                 OptimizedImage(
@@ -161,9 +159,9 @@ internal fun EpisodeInfoMoreLikeThisCard(
                                     proxyWidth = 300,
                                     contentDescription = episode.title,
                                     modifier =
-                                        Modifier
-                                            .size(140.dp)
-                                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                                    Modifier
+                                        .size(140.dp)
+                                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                                     contentScale = ContentScale.Crop,
                                 )
                                 Column(
@@ -173,10 +171,10 @@ internal fun EpisodeInfoMoreLikeThisCard(
                                     Text(
                                         text = episode.title,
                                         style =
-                                            MaterialTheme.typography.labelMedium.copy(
-                                                fontWeight = GoogleSansWeight.bold,
-                                                lineHeight = 14.sp,
-                                            ),
+                                        MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = GoogleSansWeight.bold,
+                                            lineHeight = 14.sp,
+                                        ),
                                         color = MaterialTheme.colorScheme.onSurface,
                                         minLines = 2,
                                         maxLines = 2,
@@ -187,10 +185,10 @@ internal fun EpisodeInfoMoreLikeThisCard(
                                         Text(
                                             text = podTitle,
                                             style =
-                                                MaterialTheme.typography.bodySmall.copy(
-                                                    fontSize = 11.sp,
-                                                    fontWeight = GoogleSansWeight.medium,
-                                                ),
+                                            MaterialTheme.typography.bodySmall.copy(
+                                                fontSize = 11.sp,
+                                                fontWeight = GoogleSansWeight.medium,
+                                            ),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
@@ -217,31 +215,31 @@ internal fun EpisodeInfoMoreFromPodcastCard(
 ) {
     androidx.compose.material3.OutlinedCard(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         colors =
-            androidx.compose.material3.CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
+        androidx.compose.material3.CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
         ) {
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .expressiveClickable {
-                            onPodcastLinkClicked()
-                            onPodcastClick(state.podcastId)
-                        }.padding(horizontal = 20.dp)
-                        .padding(bottom = 12.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .expressiveClickable {
+                        onPodcastLinkClicked()
+                        onPodcastClick(state.podcastId)
+                    }.padding(horizontal = 20.dp)
+                    .padding(bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -254,10 +252,10 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                 Text(
                     text = "More from ${state.podcastTitle}",
                     style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            letterSpacing = (-0.1).sp,
-                        ),
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = GoogleSansWeight.bold,
+                        letterSpacing = (-0.1).sp,
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
@@ -295,11 +293,11 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                             // Skeleton artwork with shimmer
                             Box(
                                 modifier =
-                                    Modifier
-                                        .size(120.dp)
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .background(baseColor)
-                                        .m3Shimmer(baseColor, highlightColor),
+                                Modifier
+                                    .size(120.dp)
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .background(baseColor)
+                                    .m3Shimmer(baseColor, highlightColor),
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -307,22 +305,22 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                             // Skeleton text with shimmer
                             Box(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(14.dp)
-                                        .clip(MaterialTheme.shapes.small)
-                                        .background(baseColor)
-                                        .m3Shimmer(baseColor, highlightColor),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(14.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(baseColor)
+                                    .m3Shimmer(baseColor, highlightColor),
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Box(
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth(0.7f)
-                                        .height(14.dp)
-                                        .clip(MaterialTheme.shapes.small)
-                                        .background(baseColor)
-                                        .m3Shimmer(baseColor, highlightColor),
+                                Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(14.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(baseColor)
+                                    .m3Shimmer(baseColor, highlightColor),
                             )
                         }
                     }
@@ -331,17 +329,17 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                         androidx.compose.material3.OutlinedCard(
                             shape = RoundedCornerShape(16.dp),
                             colors =
-                                androidx.compose.material3.CardDefaults.outlinedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                ),
+                            androidx.compose.material3.CardDefaults.outlinedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                            ),
                             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier =
-                                Modifier
-                                    .width(140.dp)
-                                    .expressiveClickable {
-                                        onRelatedEpisodeClicked()
-                                        onEpisodeClick(episode)
-                                    },
+                            Modifier
+                                .width(140.dp)
+                                .expressiveClickable {
+                                    onRelatedEpisodeClicked()
+                                    onEpisodeClick(episode)
+                                },
                         ) {
                             Column {
                                 // Episode Artwork
@@ -350,9 +348,9 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                                     proxyWidth = 300, // 140dp thumbnails
                                     contentDescription = episode.title,
                                     modifier =
-                                        Modifier
-                                            .size(140.dp)
-                                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                                    Modifier
+                                        .size(140.dp)
+                                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                                     contentScale = ContentScale.Crop,
                                 )
 
@@ -360,10 +358,10 @@ internal fun EpisodeInfoMoreFromPodcastCard(
                                 Text(
                                     text = episode.title,
                                     style =
-                                        MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = GoogleSansWeight.semiBold,
-                                            lineHeight = 14.sp,
-                                        ),
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = GoogleSansWeight.semiBold,
+                                        lineHeight = 14.sp,
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     minLines = 3,
                                     maxLines = 3,

@@ -6,15 +6,12 @@ import cx.aswin.boxlore.core.model.Podcast
 enum class ShowSearchGroup {
     /** Meili catalog typeahead (episodeCount≥4 index). */
     CATALOG,
+
     /** Hybrid PodIndex / iTunes / Turso — coverage for shows missing from Meili. */
     ALSO_FOUND,
 }
 
-data class GroupedShowSearchResult(
-    val catalog: List<Podcast>,
-    val alsoFound: List<Podcast>,
-    val correctedQuery: String? = null,
-) {
+data class GroupedShowSearchResult(val catalog: List<Podcast>, val alsoFound: List<Podcast>, val correctedQuery: String? = null,) {
     val all: List<Podcast>
         get() = catalog + alsoFound
 }
@@ -23,18 +20,12 @@ data class GroupedShowSearchResult(
  * Merge Meili typeahead + hybrid `/search` into catalog / also-found groups.
  * Prefer catalog (Meili) when the same show appears in both (matched by id, itunes:, or feed URL).
  */
-fun mergeShowSearchResults(
-    typeahead: List<Podcast>,
-    hybrid: List<Podcast>,
-): GroupedShowSearchResult {
+fun mergeShowSearchResults(typeahead: List<Podcast>, hybrid: List<Podcast>,): GroupedShowSearchResult {
     val seenKeys = mutableSetOf<String>()
     val catalog = mutableListOf<Podcast>()
     val alsoFound = mutableListOf<Podcast>()
 
-    fun tryAdd(
-        target: MutableList<Podcast>,
-        podcast: Podcast,
-    ) {
+    fun tryAdd(target: MutableList<Podcast>, podcast: Podcast,) {
         val keys = podcastIdentityKeys(podcast)
         if (keys.any { it in seenKeys }) {
             // Still absorb alternate identity keys so chained collisions stay deduped.
@@ -71,5 +62,4 @@ fun podcastIdentityKeys(podcast: Podcast): Set<String> {
     return keys
 }
 
-fun podcastDedupeKey(podcast: Podcast): String =
-    podcastIdentityKeys(podcast).firstOrNull() ?: "unknown"
+fun podcastDedupeKey(podcast: Podcast): String = podcastIdentityKeys(podcast).firstOrNull() ?: "unknown"

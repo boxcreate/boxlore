@@ -16,18 +16,14 @@ import kotlinx.coroutines.withContext
 object ShareManager {
 
     private val shareScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
-    fun sharePodcast(
-        context: Context,
-        podcast: Podcast,
-        target: ShareTarget = ShareTarget.MESSAGE
-    ) {
+
+    fun sharePodcast(context: Context, podcast: Podcast, target: ShareTarget = ShareTarget.MESSAGE) {
         trackShare(contentType = "podcast", podcastId = podcast.id, target = target)
         val shareUrl = ShareLinkBuilder.podcast(podcast.id)
         val creator = podcast.artist.takeIf { it.isNotBlank() }?.let { "\n$it" }.orEmpty()
         val shareText = "I think you'll like this podcast:\n\n" +
             "${podcast.title}$creator\n\nListen on boxlore:\n$shareUrl"
-        
+
         shareWithCompositeImage(
             context = context,
             text = shareText,
@@ -78,7 +74,7 @@ object ShareManager {
         ).joinToString(" • ")
         val shareText = "This episode is worth a listen:\n\n" +
             "“${episode.title}”\n$contextLine\n\nListen on boxlore:\n$shareUrl"
-        
+
         shareWithCompositeImage(
             context = context,
             text = shareText,
@@ -92,21 +88,16 @@ object ShareManager {
         )
     }
 
-    private fun trackShare(
-        contentType: String,
-        podcastId: String?,
-        episodeId: String? = null,
-        target: ShareTarget,
-    ) {
+    private fun trackShare(contentType: String, podcastId: String?, episodeId: String? = null, target: ShareTarget,) {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackShareContent(
             contentType = contentType,
             podcastId = podcastId,
             episodeId = episodeId,
             channel =
-                when (target) {
-                    ShareTarget.MESSAGE -> "message"
-                    ShareTarget.INSTAGRAM_STORY -> "instagram_story"
-                },
+            when (target) {
+                ShareTarget.MESSAGE -> "message"
+                ShareTarget.INSTAGRAM_STORY -> "instagram_story"
+            },
         )
     }
 
@@ -124,7 +115,7 @@ object ShareManager {
         shareScope.launch {
             var sharedUri: android.net.Uri? = null
             val targetUrl = imageUrl?.takeIf { it.isNotEmpty() } ?: fallbackImageUrl?.takeIf { it.isNotEmpty() }
-            
+
             if (targetUrl != null) {
                 try {
                     val loader = coil.ImageLoader(context)
@@ -134,7 +125,7 @@ object ShareManager {
                         .build()
                     val result = loader.execute(request)
                     val originalBitmap = (result as? coil.request.SuccessResult)?.drawable?.toBitmap()
-                    
+
                     if (originalBitmap != null) {
                         val shareCard = ShareCardRenderer.createShareCard(
                             context = context,
@@ -156,7 +147,7 @@ object ShareManager {
                         java.io.FileOutputStream(cacheFile).use { out ->
                             shareCard.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
                         }
-                        
+
                         sharedUri = androidx.core.content.FileProvider.getUriForFile(
                             context,
                             "${context.packageName}.fileprovider",
@@ -167,7 +158,7 @@ object ShareManager {
                     android.util.Log.e("ShareManager", "Error generating composite image", e)
                 }
             }
-            
+
             withContext(Dispatchers.Main) {
                 val openedInstagram = if (
                     target == ShareTarget.INSTAGRAM_STORY &&
@@ -201,12 +192,7 @@ object ShareManager {
         }
     }
 
-    private fun openShareSheet(
-        context: Context,
-        imageUri: android.net.Uri?,
-        text: String,
-        chooserTitle: String
-    ) {
+    private fun openShareSheet(context: Context, imageUri: android.net.Uri?, text: String, chooserTitle: String) {
         val intent = Intent(Intent.ACTION_SEND).apply {
             if (imageUri != null) {
                 type = "image/png"
@@ -226,11 +212,7 @@ object ShareManager {
         )
     }
 
-    private fun openInstagramStory(
-        context: Context,
-        imageUri: android.net.Uri,
-        shareUrl: String
-    ): Boolean {
+    private fun openInstagramStory(context: Context, imageUri: android.net.Uri, shareUrl: String): Boolean {
         val instagramPackage = "com.instagram.android"
         val intent = Intent("com.instagram.share.ADD_TO_STORY").apply {
             setDataAndType(imageUri, "image/png")
@@ -278,7 +260,4 @@ object ShareManager {
             String.format("%d:%02d", minutes, seconds)
         }
     }
-
-
-
 }

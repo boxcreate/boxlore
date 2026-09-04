@@ -16,10 +16,9 @@ object DownloadServiceLauncherHolder {
     @Volatile
     var instance: DownloadServiceLauncher? = null
 
-    fun require(): DownloadServiceLauncher =
-        instance
-            ?: error(
-                "DownloadServiceLauncher not installed. " +
-                    "Set DownloadServiceLauncherHolder.instance from AppContainer.",
-            )
+    fun require(): DownloadServiceLauncher = instance
+        ?: error(
+            "DownloadServiceLauncher not installed. " +
+                "Set DownloadServiceLauncherHolder.instance from AppContainer.",
+        )
 }

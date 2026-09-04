@@ -4,8 +4,8 @@ import android.util.Log
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
-import kotlinx.coroutines.launch
 import java.io.IOException
+import kotlinx.coroutines.launch
 
 /** Transport / seek / speed [PlaybackRepository] API. */
 fun PlaybackRepository.isTransportReady(): Boolean = controller?.isConnected == true
@@ -50,12 +50,11 @@ fun PlaybackRepository.togglePlayPause(entryPointContext: android.os.Bundle? = n
 }
 
 internal object PlaybackRepeatModePolicy {
-    fun next(mode: Int): Int =
-        when (mode) {
-            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-            else -> Player.REPEAT_MODE_OFF
-        }
+    fun next(mode: Int): Int = when (mode) {
+        Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+        Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+        else -> Player.REPEAT_MODE_OFF
+    }
 }
 
 fun PlaybackRepository.pause() {

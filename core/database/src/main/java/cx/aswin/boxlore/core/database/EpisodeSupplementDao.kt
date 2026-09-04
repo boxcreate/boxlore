@@ -53,11 +53,7 @@ interface EpisodeSupplementDao {
     suspend fun deleteSupplement(podcastId: String)
 
     @Transaction
-    suspend fun replaceAll(
-        podcastId: String,
-        supplement: EpisodeSupplementEntity,
-        items: List<EpisodeSupplementItemEntity>,
-    ) {
+    suspend fun replaceAll(podcastId: String, supplement: EpisodeSupplementEntity, items: List<EpisodeSupplementItemEntity>,) {
         deleteItemsForPodcast(podcastId)
         upsertSupplement(supplement)
         upsertItems(items)
@@ -65,10 +61,7 @@ interface EpisodeSupplementDao {
 
     /** Atomically refresh validators and optionally insert a feed-only tip item. */
     @Transaction
-    suspend fun upsertSupplementAndOptionalItems(
-        supplement: EpisodeSupplementEntity,
-        items: List<EpisodeSupplementItemEntity>,
-    ) {
+    suspend fun upsertSupplementAndOptionalItems(supplement: EpisodeSupplementEntity, items: List<EpisodeSupplementItemEntity>,) {
         upsertSupplement(supplement)
         if (items.isNotEmpty()) {
             upsertItems(items)

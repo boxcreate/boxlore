@@ -35,21 +35,20 @@ class LearnCuriosityHistoryStoreTest {
     private fun card(
         id: String,
         title: String = "Episode $id",
-    ): LearnCuriosityCard =
-        LearnCuriosityCard(
-            episodeId = id,
-            question = "Why $id?",
-            explanation = "Because $id",
-            curiosityScore = 7,
-            episodeTitle = title,
-            podcastTitle = "Show",
-            imageUrl = "https://img/$id.jpg",
-            feedImage = null,
-            podcastId = "pod-$id",
-            audioUrl = "https://audio/$id.mp3",
-            duration = 1234,
-            description = "Desc $id",
-        )
+    ): LearnCuriosityCard = LearnCuriosityCard(
+        episodeId = id,
+        question = "Why $id?",
+        explanation = "Because $id",
+        curiosityScore = 7,
+        episodeTitle = title,
+        podcastTitle = "Show",
+        imageUrl = "https://img/$id.jpg",
+        feedImage = null,
+        podcastId = "pod-$id",
+        audioUrl = "https://audio/$id.mp3",
+        duration = 1234,
+        description = "Desc $id",
+    )
 
     @Test
     fun emptyStoreReturnsNoEntries() {

@@ -36,10 +36,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingFlowSelected(
-        flowType: String,
-        entryPoint: String = "welcome_screen",
-    ) {
+    fun trackOnboardingFlowSelected(flowType: String, entryPoint: String = "welcome_screen",) {
         AnalyticsEmit.event(
             "onboarding_flow_selected",
             mapOf(
@@ -49,10 +46,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingSkipped(
-        screen: String,
-        totalOnboardingTimeSeconds: Float,
-    ) {
+    fun trackOnboardingSkipped(screen: String, totalOnboardingTimeSeconds: Float,) {
         AnalyticsEmit.event(
             "onboarding_completed",
             mapOf(
@@ -71,12 +65,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingAiTurnSubmitted(
-        turnNumber: Int,
-        selectedOptions: Set<String>,
-        customInputText: String,
-        timeSpentSeconds: Float,
-    ) {
+    fun trackOnboardingAiTurnSubmitted(turnNumber: Int, selectedOptions: Set<String>, customInputText: String, timeSpentSeconds: Float,) {
         val userInputText = customInputText
         AnalyticsEmit.event(
             "onboarding_ai_turn_submitted",
@@ -111,10 +100,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingAiSearchRedirect(
-        turnNumber: Int,
-        suggestedQuery: String?,
-    ) {
+    fun trackOnboardingAiSearchRedirect(turnNumber: Int, suggestedQuery: String?,) {
         AnalyticsEmit.event(
             "onboarding_ai_search_redirect",
             buildMap {
@@ -124,11 +110,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingAiSynthesisCompleted(
-        rowsCount: Int,
-        podcastsCount: Int,
-        durationSeconds: Float,
-    ) {
+    fun trackOnboardingAiSynthesisCompleted(rowsCount: Int, podcastsCount: Int, durationSeconds: Float,) {
         AnalyticsEmit.event(
             "onboarding_ai_synthesis_completed",
             mapOf(
@@ -178,10 +160,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackSearchPerformed(
-        query: String,
-        resultsCount: Int,
-    ) {
+    fun trackSearchPerformed(query: String, resultsCount: Int,) {
         val trimmed = query.trim()
         AnalyticsEmit.event(
             "onboarding_search_performed",
@@ -204,11 +183,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackSearchPodcastSubscribed(
-        podcastName: String,
-        podcastId: String,
-        totalSubscribedCount: Int,
-    ) {
+    fun trackSearchPodcastSubscribed(podcastName: String, podcastId: String, totalSubscribedCount: Int,) {
         AnalyticsEmit.event(
             "onboarding_search_podcast_subscribed",
             mapOf(
@@ -285,10 +260,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingImportFailed(
-        importType: String,
-        errorMessage: String?,
-    ) {
+    fun trackOnboardingImportFailed(importType: String, errorMessage: String?,) {
         AnalyticsEmit.event(
             "onboarding_import_failed",
             mapOf(
@@ -298,11 +270,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingStepViewed(
-        stepName: String,
-        flowType: String,
-        stepIndex: Int? = null,
-    ) {
+    fun trackOnboardingStepViewed(stepName: String, flowType: String, stepIndex: Int? = null,) {
         AnalyticsEmit.event(
             "onboarding_step_viewed",
             buildMap {
@@ -313,12 +281,7 @@ internal object OnboardingAnalyticsTracks {
         )
     }
 
-    fun trackOnboardingManualStepCompleted(
-        stepName: String,
-        selectionsCount: Int,
-        selectionsList: List<String>,
-        timeSpentSeconds: Float,
-    ) {
+    fun trackOnboardingManualStepCompleted(stepName: String, selectionsCount: Int, selectionsList: List<String>, timeSpentSeconds: Float,) {
         AnalyticsEmit.event(
             "onboarding_manual_step_completed",
             mapOf(

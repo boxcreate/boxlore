@@ -115,26 +115,25 @@ object AnalyticsGlossary {
         return normalizeEntryPointFamily(key)
     }
 
-    private fun normalizeEntryPointFamily(key: String): String =
-        when {
-            key.startsWith("home_adaptive_") -> key
-            key.startsWith("android_auto_") ->
-                if (key == "android_auto_drive_picks") {
-                    "android_auto_discover"
-                } else if (key in CANONICAL_ENTRY_POINTS) {
-                    key
-                } else {
-                    "android_auto"
-                }
-            key.startsWith("home_hero_") ->
-                when {
-                    "resume" in key -> "home_hero_resume"
-                    "jump_back" in key -> "home_hero_jump_back_in"
-                    "new_episode" in key -> "home_hero_new_episodes"
-                    else -> "home_hero_spotlight"
-                }
-            else -> "unknown"
-        }
+    private fun normalizeEntryPointFamily(key: String): String = when {
+        key.startsWith("home_adaptive_") -> key
+        key.startsWith("android_auto_") ->
+            if (key == "android_auto_drive_picks") {
+                "android_auto_discover"
+            } else if (key in CANONICAL_ENTRY_POINTS) {
+                key
+            } else {
+                "android_auto"
+            }
+        key.startsWith("home_hero_") ->
+            when {
+                "resume" in key -> "home_hero_resume"
+                "jump_back" in key -> "home_hero_jump_back_in"
+                "new_episode" in key -> "home_hero_new_episodes"
+                else -> "home_hero_spotlight"
+            }
+        else -> "unknown"
+    }
 
     private val LEGACY_ENTRY_POINT_ALIASES: Map<String, String> =
         mapOf(

@@ -14,13 +14,9 @@ object LibraryBackupAnalyticsErrors {
     const val NO_PODCASTS_RESOLVED = "no_podcasts_resolved"
     const val MARK_COMPLETED_FAILED = "mark_completed_failed"
 
-    fun fromThrowable(
-        error: Throwable,
-        fallback: String,
-    ): String =
-        when (error) {
-            is java.io.IOException -> IO_ERROR
-            is SecurityException -> PERMISSION_DENIED
-            else -> fallback
-        }
+    fun fromThrowable(error: Throwable, fallback: String,): String = when (error) {
+        is java.io.IOException -> IO_ERROR
+        is SecurityException -> PERMISSION_DENIED
+        else -> fallback
+    }
 }

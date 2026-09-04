@@ -16,10 +16,5 @@ interface ListeningHistoryBackupPort {
 
     suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity)
 
-    suspend fun markAllEpisodesCompleted(
-        episodes: List<Episode>,
-        podcastId: String,
-        podcastTitle: String,
-        podcastImageUrl: String?,
-    )
+    suspend fun markAllEpisodesCompleted(episodes: List<Episode>, podcastId: String, podcastTitle: String, podcastImageUrl: String?,)
 }

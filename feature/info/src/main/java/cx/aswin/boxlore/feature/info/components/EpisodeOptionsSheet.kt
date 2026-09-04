@@ -63,16 +63,16 @@ fun EpisodeOptionsSheet(
     ) {
         Column(
             modifier =
-                Modifier
-                    .padding(bottom = 24.dp)
-                    .verticalScroll(rememberScrollState()),
+            Modifier
+                .padding(bottom = 24.dp)
+                .verticalScroll(rememberScrollState()),
         ) {
             // Header: Episode Info
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
@@ -179,10 +179,10 @@ private fun OptionItem(
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .expressiveClickable(onClick = onClick)
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+        Modifier
+            .fillMaxWidth()
+            .expressiveClickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.library
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.library.history.HistoryScreenBody
 import cx.aswin.boxlore.feature.library.history.HistoryScreenDialogs
@@ -51,25 +50,25 @@ fun HistoryScreen(
 
     Scaffold(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+        Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             HistoryTopBar(
                 state =
-                    HistoryTopBarState(
-                        showOverflowAction = uiState is HistoryUiState.Success,
-                        showOverflow = showOverflow,
-                        titleStyle = titleStyle,
-                    ),
+                HistoryTopBarState(
+                    showOverflowAction = uiState is HistoryUiState.Success,
+                    showOverflow = showOverflow,
+                    titleStyle = titleStyle,
+                ),
                 callbacks =
-                    HistoryTopBarCallbacks(
-                        onBack = onBack,
-                        onShowOverflow = { showOverflow = true },
-                        onDismissOverflow = { showOverflow = false },
-                        onRequestClearAll = { showClearDialog = true },
-                    ),
+                HistoryTopBarCallbacks(
+                    onBack = onBack,
+                    onShowOverflow = { showOverflow = true },
+                    onDismissOverflow = { showOverflow = false },
+                    onRequestClearAll = { showClearDialog = true },
+                ),
                 scrollBehavior = scrollBehavior,
             )
         },

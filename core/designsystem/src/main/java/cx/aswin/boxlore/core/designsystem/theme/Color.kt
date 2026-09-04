@@ -49,12 +49,11 @@ fun isExactThemeBrand(themeBrand: String): Boolean {
 fun isCustomThemeBrand(themeBrand: String): Boolean = isExactThemeBrand(themeBrand) || isCustomHexSeed(themeBrand)
 
 /** Hex body of a custom brand (`#RRGGBB`), or null for named palettes. */
-fun customThemeBrandHex(themeBrand: String): String? =
-    when {
-        isExactThemeBrand(themeBrand) -> themeBrand.substring(EXACT_THEME_BRAND_PREFIX.length)
-        isCustomHexSeed(themeBrand) -> themeBrand
-        else -> null
-    }
+fun customThemeBrandHex(themeBrand: String): String? = when {
+    isExactThemeBrand(themeBrand) -> themeBrand.substring(EXACT_THEME_BRAND_PREFIX.length)
+    isCustomHexSeed(themeBrand) -> themeBrand
+    else -> null
+}
 
 /**
  * Resolves a theme brand key or custom hex into a seed [Color] for scheme generation.
@@ -116,14 +115,12 @@ val md_theme_dark_onSurface = Color(0xFFE6E1E5)
  *
  * Usage: `val textColor = backgroundColor.contrastColor()`
  */
-fun Color.contrastColor(): Color =
-    if (this.luminance() > 0.4f) Color.Black else Color.White
+fun Color.contrastColor(): Color = if (this.luminance() > 0.4f) Color.Black else Color.White
 
 /**
  * Like [contrastColor] but returns the color with an optional alpha.
  */
-fun Color.contrastColor(alpha: Float): Color =
-    contrastColor().copy(alpha = alpha)
+fun Color.contrastColor(alpha: Float): Color = contrastColor().copy(alpha = alpha)
 
 /**
  * Returns the luminance value for this color (0.0 = pure black, 1.0 = pure white).
@@ -133,4 +130,3 @@ fun Color.luminance(): Float {
     // sRGB relative luminance per ITU-R BT.709
     return 0.2126f * red + 0.7152f * green + 0.0722f * blue
 }
-

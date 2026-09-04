@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -29,9 +27,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.ContentRegionLanguagePicker
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.home.settings.components.SettingsDivider
@@ -158,14 +156,14 @@ private fun CountryNotListedFaq(
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .expressiveClickable(
-                        shape = MaterialTheme.shapes.medium,
-                        onClick = {
-                            if (expanded) onCollapse() else onExpand()
-                        },
-                    ).padding(horizontal = 16.dp, vertical = 14.dp),
+            Modifier
+                .fillMaxWidth()
+                .expressiveClickable(
+                    shape = MaterialTheme.shapes.medium,
+                    onClick = {
+                        if (expanded) onCollapse() else onExpand()
+                    },
+                ).padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -178,11 +176,11 @@ private fun CountryNotListedFaq(
             )
             Icon(
                 imageVector =
-                    if (expanded) {
-                        Icons.Rounded.KeyboardArrowUp
-                    } else {
-                        Icons.Rounded.KeyboardArrowDown
-                    },
+                if (expanded) {
+                    Icons.Rounded.KeyboardArrowUp
+                } else {
+                    Icons.Rounded.KeyboardArrowDown
+                },
                 contentDescription = if (expanded) "Collapse" else "Expand",
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.primary,
@@ -196,12 +194,12 @@ private fun CountryNotListedFaq(
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .expressiveClickable(
-                            shape = MaterialTheme.shapes.medium,
-                            onClick = onCollapse,
-                        ).padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .expressiveClickable(
+                        shape = MaterialTheme.shapes.medium,
+                        onClick = onCollapse,
+                    ).padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(

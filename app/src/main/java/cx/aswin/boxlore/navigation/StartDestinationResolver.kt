@@ -6,27 +6,17 @@ import cx.aswin.boxlore.core.prefs.OpenAppTo
  * Resolves NavHost [startDestination] for a cold start.
  * Precedence: onboarding → offline downloads → open-app-to subscriptions/downloads → home.
  */
-fun resolveStartDestination(
-    onboardingCompleted: Boolean,
-    isOfflineOnLaunch: Boolean,
-    hasDeepLink: Boolean,
-    openAppTo: String,
-): String =
-    when {
-        !onboardingCompleted -> "onboarding"
-        isOfflineOnLaunch && !hasDeepLink -> NavRoutes.LIBRARY_DOWNLOADS
-        !hasDeepLink && openAppTo == OpenAppTo.SUBSCRIPTIONS -> NavRoutes.LIBRARY_SUBSCRIPTIONS
-        !hasDeepLink && openAppTo == OpenAppTo.DOWNLOADS -> NavRoutes.LIBRARY_DOWNLOADS
-        else -> "home"
-    }
+fun resolveStartDestination(onboardingCompleted: Boolean, isOfflineOnLaunch: Boolean, hasDeepLink: Boolean, openAppTo: String,): String = when {
+    !onboardingCompleted -> "onboarding"
+    isOfflineOnLaunch && !hasDeepLink -> NavRoutes.LIBRARY_DOWNLOADS
+    !hasDeepLink && openAppTo == OpenAppTo.SUBSCRIPTIONS -> NavRoutes.LIBRARY_SUBSCRIPTIONS
+    !hasDeepLink && openAppTo == OpenAppTo.DOWNLOADS -> NavRoutes.LIBRARY_DOWNLOADS
+    else -> "home"
+}
 
 /** True when cold start opened Subscriptions or Downloads via **Open app to**. */
-fun shouldMarkOpenedToLandingOnLaunch(
-    destination: String,
-    openAppTo: String,
-): Boolean =
-    destination == NavRoutes.LIBRARY_SUBSCRIPTIONS ||
-        (destination == NavRoutes.LIBRARY_DOWNLOADS && openAppTo == OpenAppTo.DOWNLOADS)
+fun shouldMarkOpenedToLandingOnLaunch(destination: String, openAppTo: String,): Boolean = destination == NavRoutes.LIBRARY_SUBSCRIPTIONS ||
+    (destination == NavRoutes.LIBRARY_DOWNLOADS && openAppTo == OpenAppTo.DOWNLOADS)
 
 /**
  * Predictive-back / toolbar Back treats these as the launch landing root.

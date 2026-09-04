@@ -10,12 +10,12 @@ import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * First-class local episode catalog for subscribed Podcast Index shows.
@@ -39,10 +39,10 @@ class LocalEpisodeCatalogRepository private constructor(
             feedClient.confirmUnchanged(url, etag, lastModified)
         },
         reconcileListenerState =
-            LocalCatalogListenerStateReconciler(
-                database = database,
-                downloadCacheRelinker = downloadCacheRelinker,
-            )::reconcile,
+        LocalCatalogListenerStateReconciler(
+            database = database,
+            downloadCacheRelinker = downloadCacheRelinker,
+        )::reconcile,
         megaGetGate = Semaphore(MEGA_GET_PERMITS),
     )
 
@@ -59,23 +59,22 @@ class LocalEpisodeCatalogRepository private constructor(
     ) : this(
         reads = LocalEpisodeCatalogReads(dao, isFeedUnchanged),
         refreshDeps =
-            LocalCatalogRefreshDeps(
-                dao = dao,
-                feedClient = feedClient,
-                runInTransaction = runInTransaction,
-                isFeedUnchanged = isFeedUnchanged,
-                reconcileListenerState = reconcileListenerState,
-                megaGetGate = megaGetGate,
-            ),
+        LocalCatalogRefreshDeps(
+            dao = dao,
+            feedClient = feedClient,
+            runInTransaction = runInTransaction,
+            isFeedUnchanged = isFeedUnchanged,
+            reconcileListenerState = reconcileListenerState,
+            megaGetGate = megaGetGate,
+        ),
     )
 
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
 
-    override suspend fun refresh(request: RefreshRequest): RefreshOutcome =
-        withContext(Dispatchers.IO) {
-            val lock = refreshLocks.getOrPut(request.podcastIndexId) { Mutex() }
-            lock.withLock { refreshLocalCatalogLocked(refreshDeps, request) }
-        }
+    override suspend fun refresh(request: RefreshRequest): RefreshOutcome = withContext(Dispatchers.IO) {
+        val lock = refreshLocks.getOrPut(request.podcastIndexId) { Mutex() }
+        lock.withLock { refreshLocalCatalogLocked(refreshDeps, request) }
+    }
 
     companion object {
         const val FEED_LOAD_FAILED_MESSAGE = "Couldn't update episodes from the feed"
@@ -88,39 +87,30 @@ class LocalEpisodeCatalogRepository private constructor(
             database: BoxLoreDatabase,
             feedClient: RssFeedClient = RssFeedClient(),
             downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
-        ): LocalEpisodeCatalogRepository =
-            LocalEpisodeCatalogRepository(
-                database = database,
-                feedClient = feedClient,
-                downloadCacheRelinker = downloadCacheRelinker,
-            )
+        ): LocalEpisodeCatalogRepository = LocalEpisodeCatalogRepository(
+            database = database,
+            feedClient = feedClient,
+            downloadCacheRelinker = downloadCacheRelinker,
+        )
 
-        internal fun resolveHttps(
-            primary: String,
-            fallback: String?,
-        ): String? {
+        internal fun resolveHttps(primary: String, fallback: String?,): String? {
             val candidate = primary.trim().ifBlank { fallback.orEmpty() }
             return candidate.takeIf { it.startsWith("https://", ignoreCase = true) }
         }
 
-        internal fun stubFeed(
-            podcastId: String,
-            feedUrl: String = "",
-            feedUrlLookupAt: Long = 0L,
-        ): LocalEpisodeFeedEntity =
-            LocalEpisodeFeedEntity(
-                podcastId = podcastId,
-                feedUrl = feedUrl,
-                feedEtag = null,
-                feedLastModified = null,
-                fetchedAt = 0L,
-                itemCount = 0,
-                feedOrder = LocalFeedOrder.MIXED,
-                ttlExpiresAt = null,
-                needsFullBackfill = true,
-                copiedExtrasCount = 0,
-                ready = false,
-                feedUrlLookupAt = feedUrlLookupAt,
-            )
+        internal fun stubFeed(podcastId: String, feedUrl: String = "", feedUrlLookupAt: Long = 0L,): LocalEpisodeFeedEntity = LocalEpisodeFeedEntity(
+            podcastId = podcastId,
+            feedUrl = feedUrl,
+            feedEtag = null,
+            feedLastModified = null,
+            fetchedAt = 0L,
+            itemCount = 0,
+            feedOrder = LocalFeedOrder.MIXED,
+            ttlExpiresAt = null,
+            needsFullBackfill = true,
+            copiedExtrasCount = 0,
+            ready = false,
+            feedUrlLookupAt = feedUrlLookupAt,
+        )
     }
 }

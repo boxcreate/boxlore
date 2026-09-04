@@ -86,9 +86,7 @@ internal fun PostHogDisplaySurveyAppearance?.resolveAppearance(): ResolvedSurvey
     return resolve(defaults)
 }
 
-internal fun PostHogDisplaySurveyAppearance?.resolve(
-    defaults: MaterialSurveyDefaults,
-): ResolvedSurveyAppearance {
+internal fun PostHogDisplaySurveyAppearance?.resolve(defaults: MaterialSurveyDefaults,): ResolvedSurveyAppearance {
     val backgroundColor = parseSurveyColorOrDefault(this?.backgroundColor, defaults.background)
     val submitButtonColor = parseSurveyColorOrDefault(this?.submitButtonColor, defaults.primary)
     val submitButtonTextColor =

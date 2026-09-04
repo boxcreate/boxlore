@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.ui.libraryimport
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,10 +34,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 
 private val AskCompletedCorner = RoundedCornerShape(24.dp)
@@ -53,9 +51,9 @@ internal fun AskCompletedContent(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(top = 40.dp),
+        Modifier
+            .fillMaxSize()
+            .padding(top = 40.dp),
     ) {
         AskCompletedHeader()
         Spacer(modifier = Modifier.height(16.dp))
@@ -95,10 +93,7 @@ private fun AskCompletedHeader() {
 }
 
 @Composable
-private fun AskCompletedBulkActions(
-    importedPodcasts: List<Podcast>,
-    onSelectionChanged: (Set<String>) -> Unit,
-) {
+private fun AskCompletedBulkActions(importedPodcasts: List<Podcast>, onSelectionChanged: (Set<String>) -> Unit,) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -152,19 +147,15 @@ private fun AskCompletedPodcastList(
 }
 
 @Composable
-private fun AskCompletedPodcastRow(
-    podcast: Podcast,
-    selectedIds: Set<String>,
-    onSelectionChanged: (Set<String>) -> Unit,
-) {
+private fun AskCompletedPodcastRow(podcast: Podcast, selectedIds: Set<String>, onSelectionChanged: (Set<String>) -> Unit,) {
     val isChecked = podcast.id in selectedIds
     ListItem(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onSelectionChanged(selectedIds.withIdSelected(podcast.id, !isChecked))
-                },
+        Modifier
+            .fillMaxWidth()
+            .clickable {
+                onSelectionChanged(selectedIds.withIdSelected(podcast.id, !isChecked))
+            },
         headlineContent = {
             AskCompletedPodcastTitle(title = podcast.title)
         },
@@ -183,16 +174,13 @@ private fun AskCompletedPodcastRow(
             )
         },
         colors =
-            ListItemDefaults.colors(
-                containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            ),
+        ListItemDefaults.colors(
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
     )
 }
 
-private fun Set<String>.withIdSelected(
-    id: String,
-    selected: Boolean,
-): Set<String> = if (selected) this + id else this - id
+private fun Set<String>.withIdSelected(id: String, selected: Boolean,): Set<String> = if (selected) this + id else this - id
 
 @Composable
 private fun AskCompletedPodcastTitle(title: String) {
@@ -220,10 +208,10 @@ private fun AskCompletedPodcastArtist(artist: String) {
 private fun AskCompletedPodcastImage(podcast: Podcast) {
     Box(
         modifier =
-            Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+        Modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         OptimizedImage(
             url = podcast.imageUrl,
@@ -236,17 +224,13 @@ private fun AskCompletedPodcastImage(podcast: Podcast) {
 }
 
 @Composable
-private fun AskCompletedFooterActions(
-    selectedCount: Int,
-    onConfirmCompleted: () -> Unit,
-    onSkipCompleted: () -> Unit,
-) {
+private fun AskCompletedFooterActions(selectedCount: Int, onConfirmCompleted: () -> Unit, onSkipCompleted: () -> Unit,) {
     Button(
         onClick = onConfirmCompleted,
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+        Modifier
+            .fillMaxWidth()
+            .height(56.dp),
         shape = RoundedCornerShape(16.dp),
     ) {
         Text(
@@ -258,9 +242,9 @@ private fun AskCompletedFooterActions(
     TextButton(
         onClick = onSkipCompleted,
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(48.dp),
+        Modifier
+            .fillMaxWidth()
+            .height(48.dp),
     ) {
         Text(
             text = "Keep all unplayed",

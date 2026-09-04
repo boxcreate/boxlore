@@ -131,29 +131,23 @@ class EpisodeSupplementTipLogicTest {
         assertEquals("Host", tip.podcastArtist)
     }
 
-    private fun rssEpisode(
-        episodeId: String,
-        title: String,
-        audioUrl: String,
-        publishedDate: Long,
-    ): RssEpisodeEntity =
-        RssEpisodeEntity(
-            episodeId = episodeId,
-            podcastId = "rss:unused",
-            guid = null,
-            title = title,
-            description = "",
-            audioUrl = audioUrl,
-            imageUrl = null,
-            duration = 60,
-            publishedDate = publishedDate,
-            chaptersUrl = null,
-            transcriptUrl = null,
-            transcripts = null,
-            persons = null,
-            seasonNumber = null,
-            episodeNumber = null,
-            episodeType = null,
-            enclosureType = null,
-        )
+    private fun rssEpisode(episodeId: String, title: String, audioUrl: String, publishedDate: Long,): RssEpisodeEntity = RssEpisodeEntity(
+        episodeId = episodeId,
+        podcastId = "rss:unused",
+        guid = null,
+        title = title,
+        description = "",
+        audioUrl = audioUrl,
+        imageUrl = null,
+        duration = 60,
+        publishedDate = publishedDate,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
 }

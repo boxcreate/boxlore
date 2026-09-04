@@ -11,11 +11,7 @@ internal object NewEpisodeFcmLogic {
         return id
     }
 
-    fun route(
-        podcastId: String,
-        episodeId: String?,
-        podcastTitle: String,
-    ): String {
+    fun route(podcastId: String, episodeId: String?, podcastTitle: String,): String {
         val ep = usableEpisodeId(episodeId)
         return if (ep != null) {
             "boxlore://episode/$ep?autoplay=false&podcastId=${Uri.encode(podcastId)}" +
@@ -25,10 +21,7 @@ internal object NewEpisodeFcmLogic {
         }
     }
 
-    fun durationMinutes(
-        localDurationSeconds: Int?,
-        payloadDurationMinutes: String?,
-    ): Int {
+    fun durationMinutes(localDurationSeconds: Int?, payloadDurationMinutes: String?,): Int {
         if (localDurationSeconds != null && localDurationSeconds > 0) {
             return localDurationSeconds / 60
         }
@@ -39,11 +32,7 @@ internal object NewEpisodeFcmLogic {
      * After a catalog persist, resolve the payload item by enclosure only.
      * No newest-in-feed fallback — an unmatched payload must not open a different episode.
      */
-    fun pickHydratedEpisode(
-        extras: List<Episode>,
-        @Suppress("UNUSED_PARAMETER") newestTip: Episode?,
-        enclosureUrl: String,
-    ): Episode? {
+    fun pickHydratedEpisode(extras: List<Episode>, @Suppress("UNUSED_PARAMETER") newestTip: Episode?, enclosureUrl: String,): Episode? {
         val enclosure = enclosureUrl.trim()
         if (enclosure.isNotEmpty()) {
             extras.find { it.audioUrl.trim() == enclosure }?.let { return it }

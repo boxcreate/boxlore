@@ -46,9 +46,7 @@ sealed interface OpmlImportState {
 
     data object ImportingJson : OpmlImportState
 
-    data class Parsing(
-        val uri: android.net.Uri,
-    ) : OpmlImportState
+    data class Parsing(val uri: android.net.Uri,) : OpmlImportState
 
     data class Importing(
         val currentFeedTitle: String,
@@ -58,10 +56,7 @@ sealed interface OpmlImportState {
         val importedPodcasts: List<Podcast>,
     ) : OpmlImportState
 
-    data class AskCompleted(
-        val importedPodcasts: List<Podcast>,
-        val selectedIds: Set<String>,
-    ) : OpmlImportState
+    data class AskCompleted(val importedPodcasts: List<Podcast>, val selectedIds: Set<String>,) : OpmlImportState
 
     data class Completing(
         val progress: Float,
@@ -79,20 +74,17 @@ sealed interface OpmlImportState {
         val hasNotificationsEnabled: Boolean = false,
     ) : OpmlImportState
 
-    data class Error(
-        val message: String,
-    ) : OpmlImportState
+    data class Error(val message: String,) : OpmlImportState
 }
 
-private fun canDismissImportState(state: OpmlImportState): Boolean =
-    when (state) {
-        is OpmlImportState.ShowSelector,
-        is OpmlImportState.AskCompleted,
-        is OpmlImportState.Success,
-        is OpmlImportState.Error,
-        -> true
-        else -> false
-    }
+private fun canDismissImportState(state: OpmlImportState): Boolean = when (state) {
+    is OpmlImportState.ShowSelector,
+    is OpmlImportState.AskCompleted,
+    is OpmlImportState.Success,
+    is OpmlImportState.Error,
+    -> true
+    else -> false
+}
 
 @Composable
 fun OpmlImportDialog(
@@ -137,18 +129,18 @@ fun OpmlImportDialog(
 
     Surface(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .zIndex(200f)
-                .pointerInput(Unit) { /* Block touch-through to welcome / player. */ },
+        Modifier
+            .fillMaxSize()
+            .zIndex(200f)
+            .pointerInput(Unit) { /* Block touch-through to welcome / player. */ },
         color = backgroundColor,
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
         ) {
             if (canDismiss) {
                 ImportCloseButton(
@@ -172,19 +164,16 @@ fun OpmlImportDialog(
 }
 
 @Composable
-private fun ImportCloseButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun ImportCloseButton(onClick: () -> Unit, modifier: Modifier = Modifier,) {
     IconButton(
         onClick = onClick,
         modifier =
-            modifier
-                .size(44.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shape = CircleShape,
-                ),
+        modifier
+            .size(44.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = CircleShape,
+            ),
     ) {
         Icon(
             imageVector = Icons.Rounded.Close,
@@ -225,11 +214,11 @@ private fun ImportDialogBody(
                         initialScale = 0.98f,
                         animationSpec = tween(280, easing = FastOutSlowInEasing),
                     )
-            ) togetherWith
+                ) togetherWith
                 (
                     fadeOut(tween(180)) +
                         scaleOut(targetScale = 0.98f, animationSpec = tween(180))
-                )
+                    )
         },
         contentKey = { contentKeyFor(it) },
         label = "import_content",

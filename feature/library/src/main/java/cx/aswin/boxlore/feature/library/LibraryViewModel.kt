@@ -4,17 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
-import cx.aswin.boxlore.core.playback.likedEpisodes
-import cx.aswin.boxlore.core.playback.playEpisode
-import cx.aswin.boxlore.core.playback.addToQueue
-import cx.aswin.boxlore.core.playback.addToQueueNext
-import cx.aswin.boxlore.core.playback.playQueue
-import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.toScorable
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.database.toScorable
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.addToQueue
+import cx.aswin.boxlore.core.playback.addToQueueNext
+import cx.aswin.boxlore.core.playback.likedEpisodes
+import cx.aswin.boxlore.core.playback.playEpisode
+import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.CandidateSource
 import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
@@ -22,16 +22,16 @@ import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.library.logic.SubscriptionManualOrderLogic
 import cx.aswin.boxlore.feature.library.logic.SubscriptionSmartOrderLogic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 enum class SubscriptionSort { SmartRank, RecentlyUpdated, Alphabetical, MostListened, Manual }
@@ -223,9 +223,11 @@ class LibraryViewModel(
                 }
                 // Started but not finished → IN_PROGRESS
                 !history.isCompleted && history.progressMs > 0L -> {
-                    val progress = if (history.durationMs > 0)
+                    val progress = if (history.durationMs > 0) {
                         (history.progressMs.toFloat() / history.durationMs).coerceIn(0f, 1f)
-                    else 0f
+                    } else {
+                        0f
+                    }
                     podcast.copy(
                         resumeProgress = progress,
                         episodeStatus = EpisodeStatus.IN_PROGRESS

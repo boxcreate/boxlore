@@ -83,10 +83,7 @@ internal class PlaybackProgressCoordinator(
      * stops and immediately clears the playlist: the later Room write must retain the pre-clear
      * media id and position.
      */
-    fun captureProgressSnapshot(
-        player: Player,
-        allowZeroPosition: Boolean = false,
-    ): PlaybackProgressSnapshot? {
+    fun captureProgressSnapshot(player: Player, allowZeroPosition: Boolean = false,): PlaybackProgressSnapshot? {
         if (isEffectiveEndLatched()) return null
         val currentItem = player.currentMediaItem ?: return null
         val episodeId = currentItem.mediaId.stripEpisodePrefix()
@@ -99,24 +96,21 @@ internal class PlaybackProgressCoordinator(
             positionMs = player.currentPosition,
             durationMs = player.duration,
             hasBeenPlayingFor10s =
-                activePlaybackStartTimeMs > 0 &&
-                    nowMs - activePlaybackStartTimeMs >= 10_000L,
+            activePlaybackStartTimeMs > 0 &&
+                nowMs - activePlaybackStartTimeMs >= 10_000L,
             allowZeroPosition = allowZeroPosition || zeroStartRequested,
             episodeTitle = CastMediaMetadata.queueTitle(currentItem.mediaMetadata.title),
             episodeImageUrl = currentItem.mediaMetadata.artworkUri?.toString(),
             episodeAudioUrl = currentItem.localConfiguration?.uri?.toString(),
             podcastName =
-                currentItem.mediaMetadata.subtitle?.toString()
-                    ?: currentItem.mediaMetadata.artist?.toString(),
+            currentItem.mediaMetadata.subtitle?.toString()
+                ?: currentItem.mediaMetadata.artist?.toString(),
             enclosureType = currentItem.localConfiguration?.mimeType,
         )
     }
 
     /** Captures and saves the current playback position to Room once. */
-    suspend fun saveProgressOnce(
-        player: Player,
-        allowZeroPosition: Boolean = false,
-    ) {
+    suspend fun saveProgressOnce(player: Player, allowZeroPosition: Boolean = false,) {
         val snapshot =
             withContext(mainDispatcher) {
                 captureProgressSnapshot(player, allowZeroPosition)
@@ -177,10 +171,7 @@ internal class PlaybackProgressCoordinator(
         return didWrite
     }
 
-    private suspend fun loadOrSeedHistory(
-        dao: ListeningHistoryDao,
-        snapshot: PlaybackProgressSnapshot,
-    ): ListeningHistoryEntity? {
+    private suspend fun loadOrSeedHistory(dao: ListeningHistoryDao, snapshot: PlaybackProgressSnapshot,): ListeningHistoryEntity? {
         val existing = dao.getHistoryItem(snapshot.episodeId)
         if (existing != null) {
             missingSeedAttemptCountByEpisode -= snapshot.episodeId
@@ -266,11 +257,7 @@ internal class PlaybackProgressCoordinator(
         return true
     }
 
-    private fun maybeReportProgressSyncAnomaly(
-        episodeId: String,
-        positionMs: Long,
-        durationMs: Long,
-    ) {
+    private fun maybeReportProgressSyncAnomaly(episodeId: String, positionMs: Long, durationMs: Long,) {
         if (durationMs <= 0 || positionMs <= durationMs) return
         if (lastProgressAnomalyEpisodeId == episodeId) return
         lastProgressAnomalyEpisodeId = episodeId
@@ -280,23 +267,18 @@ internal class PlaybackProgressCoordinator(
         )
     }
 
-    private fun checkIsPlaybackCompleted(
-        positionMs: Long,
-        durationMs: Long,
-    ): Boolean =
-        PlaybackSkipPolicy.shouldCompleteFromProgress(
-            positionMs = positionMs,
-            durationMs = durationMs,
-            effectiveSkipEndingMs = effectiveSkipEndingMs(durationMs),
-        )
+    private fun checkIsPlaybackCompleted(positionMs: Long, durationMs: Long,): Boolean = PlaybackSkipPolicy.shouldCompleteFromProgress(
+        positionMs = positionMs,
+        durationMs = durationMs,
+        effectiveSkipEndingMs = effectiveSkipEndingMs(durationMs),
+    )
 }
 
-private fun ListeningHistoryEntity.hasIncompletePlaybackMetadata(): Boolean =
-    podcastId.isBlank() ||
-        episodeTitle.isBlank() ||
-        episodeAudioUrl.isNullOrBlank() ||
-        podcastName.isBlank() ||
-        durationMs <= 0L
+private fun ListeningHistoryEntity.hasIncompletePlaybackMetadata(): Boolean = podcastId.isBlank() ||
+    episodeTitle.isBlank() ||
+    episodeAudioUrl.isNullOrBlank() ||
+    podcastName.isBlank() ||
+    durationMs <= 0L
 
 private suspend fun ListeningHistoryDao.enrichFromSeed(seed: ListeningHistoryEntity) {
     enrichMetadataIfMissing(

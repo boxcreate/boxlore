@@ -35,10 +35,7 @@ android {
         localPropsFile.inputStream().use { localProps.load(it) }
     }
 
-    fun Properties.dual(
-        newKey: String,
-        oldKey: String,
-    ): String {
+    fun Properties.dual(newKey: String, oldKey: String,): String {
         val newest = getProperty(newKey)?.trim().orEmpty()
         if (newest.isNotEmpty()) return newest
         return getProperty(oldKey, "") ?: ""

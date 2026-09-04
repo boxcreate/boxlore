@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -27,7 +26,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Material 3 Expressive Extended FAB with physics-based bounce animation.
- * 
+ *
  * Motion Spec (from rules.md):
  * - Press: scale(0.95) with Spring.StiffnessMedium
  * - Release: spring back to 1.0 with DampingRatioLowBouncy

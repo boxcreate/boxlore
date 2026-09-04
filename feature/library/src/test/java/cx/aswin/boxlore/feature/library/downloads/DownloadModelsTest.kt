@@ -10,22 +10,21 @@ class DownloadModelsTest {
         episodeId: String = "ep-1",
         podcastId: String = "pod-1",
         durationMs: Long = 120_000L,
-    ): DownloadedEpisodeEntity =
-        DownloadedEpisodeEntity(
-            episodeId = episodeId,
-            podcastId = podcastId,
-            episodeTitle = "Episode Title",
-            episodeDescription = "Episode description",
-            episodeImageUrl = "https://example.com/ep.jpg",
-            podcastName = "Podcast Name",
-            podcastImageUrl = "https://example.com/pod.jpg",
-            durationMs = durationMs,
-            publishedDate = 42L,
-            localFilePath = "/downloads/ep-1.mp3",
-            downloadId = 7L,
-            downloadedAt = 1_000L,
-            sizeBytes = 2_048L,
-        )
+    ): DownloadedEpisodeEntity = DownloadedEpisodeEntity(
+        episodeId = episodeId,
+        podcastId = podcastId,
+        episodeTitle = "Episode Title",
+        episodeDescription = "Episode description",
+        episodeImageUrl = "https://example.com/ep.jpg",
+        podcastName = "Podcast Name",
+        podcastImageUrl = "https://example.com/pod.jpg",
+        durationMs = durationMs,
+        publishedDate = 42L,
+        localFilePath = "/downloads/ep-1.mp3",
+        downloadId = 7L,
+        downloadedAt = 1_000L,
+        sizeBytes = 2_048L,
+    )
 
     @Test
     fun toEpisodeMapsLocalFileAsAudioAndDurationInSeconds() {

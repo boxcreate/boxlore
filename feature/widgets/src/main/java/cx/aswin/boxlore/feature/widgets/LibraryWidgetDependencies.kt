@@ -61,12 +61,11 @@ object LibraryWidgetDependenciesHolder {
     var instance: LibraryWidgetDependencies? = null
         internal set
 
-    fun require(): LibraryWidgetDependencies =
-        instance
-            ?: error(
-                "LibraryWidgetDependencies not installed. " +
-                    "Call configureLibraryWidgets from Application after AppContainer is ready.",
-            )
+    fun require(): LibraryWidgetDependencies = instance
+        ?: error(
+            "LibraryWidgetDependencies not installed. " +
+                "Call configureLibraryWidgets from Application after AppContainer is ready.",
+        )
 }
 
 /** Installs dependencies and starts the library widget coordinator. Call from `:app` only. */

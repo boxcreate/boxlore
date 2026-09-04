@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -36,9 +35,9 @@ internal fun GenrePickerScreen(
 
     Scaffold(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+        Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -61,10 +60,10 @@ internal fun GenrePickerScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
             )
         },
         bottomBar = {
@@ -75,19 +74,19 @@ internal fun GenrePickerScreen(
             ) {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.navigationBars)
-                            .padding(24.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Button(
                         onClick = onContinue,
                         enabled = selectedGenres.isNotEmpty(),
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
@@ -106,11 +105,11 @@ internal fun GenrePickerScreen(
     ) { innerPadding ->
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
         ) {
             Text(
                 text = "Pick the topics you enjoy",
@@ -166,9 +165,9 @@ private fun GenreChip(
         shape = MaterialTheme.shapes.extraLarge,
         border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
         modifier =
-            Modifier
-                .height(64.dp)
-                .expressiveClickable(onClick = onClick),
+        Modifier
+            .height(64.dp)
+            .expressiveClickable(onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -228,9 +227,9 @@ internal fun SubGenrePickerScreen(
 
     Scaffold(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+        Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -249,10 +248,10 @@ internal fun SubGenrePickerScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
             )
         },
         bottomBar = {
@@ -263,18 +262,18 @@ internal fun SubGenrePickerScreen(
             ) {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.navigationBars)
-                            .padding(24.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Button(
                         onClick = onContinue,
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
@@ -289,11 +288,11 @@ internal fun SubGenrePickerScreen(
     ) { innerPadding ->
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
         ) {
             Text(
                 text = "Select specific topics (Optional)",
@@ -327,9 +326,9 @@ internal fun SubGenrePickerScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 24.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 24.dp),
                         ) {
                             subGenres.forEach { subGenre ->
                                 val isSelected = subGenre in selectedSubGenres
@@ -373,9 +372,9 @@ private fun SubGenreChip(
         shape = MaterialTheme.shapes.extraLarge,
         border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
         modifier =
-            Modifier
-                .height(56.dp)
-                .expressiveClickable(onClick = onClick),
+        Modifier
+            .height(56.dp)
+            .expressiveClickable(onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -426,9 +425,9 @@ internal fun ActivityPickerScreen(
 
     Scaffold(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+        Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -447,10 +446,10 @@ internal fun ActivityPickerScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
             )
         },
         bottomBar = {
@@ -461,19 +460,19 @@ internal fun ActivityPickerScreen(
             ) {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.navigationBars)
-                            .padding(24.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Button(
                         onClick = onContinue,
                         enabled = selectedActivities.isNotEmpty(),
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
@@ -488,11 +487,11 @@ internal fun ActivityPickerScreen(
     ) { innerPadding ->
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
         ) {
             Text(
                 text = "Select all that apply",
@@ -515,26 +514,26 @@ internal fun ActivityPickerScreen(
                     colors = CardDefaults.cardColors(containerColor = cardColor),
                     shape = MaterialTheme.shapes.extraLarge,
                     border =
-                        if (isSelected) {
-                            BorderStroke(
-                                2.dp,
-                                MaterialTheme.colorScheme.primary,
-                            )
-                        } else {
-                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                        },
+                    if (isSelected) {
+                        BorderStroke(
+                            2.dp,
+                            MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    },
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                            .animateContentSize(),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                        .animateContentSize(),
                 ) {
                     Column(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .expressiveClickable { onToggleActivity(item.value) }
-                                .padding(16.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .expressiveClickable { onToggleActivity(item.value) }
+                            .padding(16.dp),
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -542,27 +541,27 @@ internal fun ActivityPickerScreen(
                         ) {
                             Box(
                                 modifier =
-                                    Modifier
-                                        .size(48.dp)
-                                        .background(
-                                            if (isSelected) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.secondaryContainer
-                                            },
-                                            androidx.compose.foundation.shape.CircleShape,
-                                        ),
+                                Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        if (isSelected) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.secondaryContainer
+                                        },
+                                        androidx.compose.foundation.shape.CircleShape,
+                                    ),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     item.icon,
                                     contentDescription = null,
                                     tint =
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.onPrimary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSecondaryContainer
-                                        },
+                                    if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    },
                                     modifier = Modifier.size(24.dp),
                                 )
                             }
@@ -624,16 +623,16 @@ internal fun ActivityPickerScreen(
                                             shape = RoundedCornerShape(12.dp),
                                             border = BorderStroke(1.dp, chipBorderColor),
                                             modifier =
-                                                Modifier
-                                                    .expressiveClickable {
-                                                        val newGenres =
-                                                            if (isGenreAssigned) {
-                                                                mappedGenres - genre
-                                                            } else {
-                                                                mappedGenres + genre
-                                                            }
-                                                        onSetGenresForActivity(item.value, newGenres)
-                                                    },
+                                            Modifier
+                                                .expressiveClickable {
+                                                    val newGenres =
+                                                        if (isGenreAssigned) {
+                                                            mappedGenres - genre
+                                                        } else {
+                                                            mappedGenres + genre
+                                                        }
+                                                    onSetGenresForActivity(item.value, newGenres)
+                                                },
                                         ) {
                                             Row(
                                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -688,9 +687,9 @@ internal fun LengthPickerScreen(
 
     Scaffold(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+        Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -709,10 +708,10 @@ internal fun LengthPickerScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
             )
         },
         bottomBar = {
@@ -723,19 +722,19 @@ internal fun LengthPickerScreen(
             ) {
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.navigationBars)
-                            .padding(24.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Button(
                         onClick = onContinue,
                         enabled = selectedLengths.isNotEmpty(),
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {
                         Text(
@@ -750,11 +749,11 @@ internal fun LengthPickerScreen(
     ) { innerPadding ->
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
         ) {
             Text(
                 text = "Select all that apply",
@@ -777,26 +776,26 @@ internal fun LengthPickerScreen(
                     colors = CardDefaults.cardColors(containerColor = cardColor),
                     shape = MaterialTheme.shapes.extraLarge,
                     border =
-                        if (isSelected) {
-                            BorderStroke(
-                                2.dp,
-                                MaterialTheme.colorScheme.primary,
-                            )
-                        } else {
-                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                        },
+                    if (isSelected) {
+                        BorderStroke(
+                            2.dp,
+                            MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    },
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                            .animateContentSize(),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                        .animateContentSize(),
                 ) {
                     Column(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .expressiveClickable { onToggleLength(item.value) }
-                                .padding(16.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .expressiveClickable { onToggleLength(item.value) }
+                            .padding(16.dp),
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -804,27 +803,27 @@ internal fun LengthPickerScreen(
                         ) {
                             Box(
                                 modifier =
-                                    Modifier
-                                        .size(48.dp)
-                                        .background(
-                                            if (isSelected) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.secondaryContainer
-                                            },
-                                            androidx.compose.foundation.shape.CircleShape,
-                                        ),
+                                Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        if (isSelected) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.secondaryContainer
+                                        },
+                                        androidx.compose.foundation.shape.CircleShape,
+                                    ),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     item.icon,
                                     contentDescription = null,
                                     tint =
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.onPrimary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSecondaryContainer
-                                        },
+                                    if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    },
                                     modifier = Modifier.size(24.dp),
                                 )
                             }
@@ -892,16 +891,16 @@ internal fun LengthPickerScreen(
                                             shape = RoundedCornerShape(12.dp),
                                             border = BorderStroke(1.dp, chipBorderColor),
                                             modifier =
-                                                Modifier
-                                                    .expressiveClickable {
-                                                        val newGenres =
-                                                            if (isGenreAssigned) {
-                                                                mappedGenres - genre
-                                                            } else {
-                                                                mappedGenres + genre
-                                                            }
-                                                        onSetGenresForLength(item.value, newGenres)
-                                                    },
+                                            Modifier
+                                                .expressiveClickable {
+                                                    val newGenres =
+                                                        if (isGenreAssigned) {
+                                                            mappedGenres - genre
+                                                        } else {
+                                                            mappedGenres + genre
+                                                        }
+                                                    onSetGenresForLength(item.value, newGenres)
+                                                },
                                         ) {
                                             Row(
                                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

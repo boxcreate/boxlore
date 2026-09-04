@@ -47,19 +47,19 @@ class HomeEditorialRowsLogicTest {
             buildHomeEditorialRows(
                 daypart = ContentDaypart.MORNING,
                 podcastsByProvider =
-                    mapOf(
-                        "morning_news" to
-                            listOf(
-                                first,
-                                first,
-                                noEpisode,
-                                noAudio,
-                                second,
-                                overCap,
-                            ),
-                        "morning_motivation" to listOf(first, nextRow, repeatedEpisode),
-                        "business_insider" to emptyList(),
-                    ),
+                mapOf(
+                    "morning_news" to
+                        listOf(
+                            first,
+                            first,
+                            noEpisode,
+                            noAudio,
+                            second,
+                            overCap,
+                        ),
+                    "morning_motivation" to listOf(first, nextRow, repeatedEpisode),
+                    "business_insider" to emptyList(),
+                ),
                 maximumItemsPerRow = 2,
             )
 
@@ -84,15 +84,14 @@ class HomeEditorialRowsLogicTest {
         id: String,
         episodeId: String,
         audioUrl: String = "https://example.com/$episodeId.mp3",
-    ): Podcast =
-        TestFixtures
-            .podcast(id = id)
-            .copy(
-                latestEpisode =
-                    TestFixtures.episode(
-                        id = episodeId,
-                        podcastId = id,
-                        audioUrl = audioUrl,
-                    ),
-            )
+    ): Podcast = TestFixtures
+        .podcast(id = id)
+        .copy(
+            latestEpisode =
+            TestFixtures.episode(
+                id = episodeId,
+                podcastId = id,
+                audioUrl = audioUrl,
+            ),
+        )
 }

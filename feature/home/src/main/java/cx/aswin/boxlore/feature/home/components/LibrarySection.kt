@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.home.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -67,10 +65,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalSurfaceStyle
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
-import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
@@ -201,20 +200,20 @@ fun YourShowsSection(
         // --- Header ---
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 0.dp, bottom = 8.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 0.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
-                    Modifier.expressiveClickable {
-                        if (selectedPodcastId != null) {
-                            onPodcastSelected(null) // clear selection
-                        }
-                    },
+                Modifier.expressiveClickable {
+                    if (selectedPodcastId != null) {
+                        onPodcastSelected(null) // clear selection
+                    }
+                },
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Bookmark,
@@ -226,31 +225,31 @@ fun YourShowsSection(
                 Text(
                     text = "Your Shows",
                     style =
-                        MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = rememberSectionHeaderFontFamily(),
-                            fontWeight = FontWeight.Normal,
-                        ),
+                    MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = rememberSectionHeaderFontFamily(),
+                        fontWeight = FontWeight.Normal,
+                    ),
                     letterSpacing = (-0.5).sp,
                 )
                 if (selectedPodcastId != null && subscribedPodcasts.list.size > 1) {
                     Spacer(modifier = Modifier.width(10.dp))
                     Row(
                         modifier =
-                            Modifier
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                .clickable { onPodcastSelected(null) }
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                        Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .clickable { onPodcastSelected(null) }
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "Filtered",
                             style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = GoogleSansWeight.bold,
-                                    letterSpacing = 0.5.sp,
-                                ),
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = GoogleSansWeight.bold,
+                                letterSpacing = 0.5.sp,
+                            ),
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -308,10 +307,10 @@ fun YourShowsSection(
                         },
                         modifier = Modifier.size(60.dp).animateItem(),
                         pin =
-                            CoverPin(
-                                pinned = podcast.id in pinnedPodcastIds,
-                                onToggle = { onTogglePin(podcast.id) },
-                            ),
+                        CoverPin(
+                            pinned = podcast.id in pinnedPodcastIds,
+                            onToggle = { onTogglePin(podcast.id) },
+                        ),
                     )
                 }
             }
@@ -330,10 +329,10 @@ fun YourShowsSection(
 
             BoxWithConstraints(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(156.dp)
-                        .padding(bottom = 16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .height(156.dp)
+                    .padding(bottom = 16.dp),
             ) {
                 val containerWidth = maxWidth
                 val availableWidth = containerWidth - 8.dp
@@ -388,10 +387,10 @@ fun YourShowsSection(
                                     },
                                     modifier = itemModifier,
                                     pin =
-                                        CoverPin(
-                                            pinned = item.id in pinnedPodcastIds,
-                                            onToggle = { onTogglePin(item.id) },
-                                        ),
+                                    CoverPin(
+                                        pinned = item.id in pinnedPodcastIds,
+                                        onToggle = { onTogglePin(item.id) },
+                                    ),
                                 )
                             }
                         }
@@ -414,10 +413,10 @@ fun YourShowsSection(
                                     },
                                     modifier = itemModifier,
                                     pin =
-                                        CoverPin(
-                                            pinned = item.id in pinnedPodcastIds,
-                                            onToggle = { onTogglePin(item.id) },
-                                        ),
+                                    CoverPin(
+                                        pinned = item.id in pinnedPodcastIds,
+                                        onToggle = { onTogglePin(item.id) },
+                                    ),
                                 )
                             }
                         }
@@ -431,9 +430,9 @@ fun YourShowsSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier =
-                    Modifier
-                        .height(156.dp) // 60 + 60 + 12 + 4 + 4 = 140 + 16 (bottom padding) = 156
-                        .padding(bottom = 16.dp),
+                Modifier
+                    .height(156.dp) // 60 + 60 + 12 + 4 + 4 = 140 + 16 (bottom padding) = 156
+                    .padding(bottom = 16.dp),
             ) {
                 item(key = "mixtape") {
                     MixtapeSelectorCover(
@@ -454,10 +453,10 @@ fun YourShowsSection(
                         },
                         modifier = Modifier.size(60.dp).animateItem(),
                         pin =
-                            CoverPin(
-                                pinned = podcast.id in pinnedPodcastIds,
-                                onToggle = { onTogglePin(podcast.id) },
-                            ),
+                        CoverPin(
+                            pinned = podcast.id in pinnedPodcastIds,
+                            onToggle = { onTogglePin(podcast.id) },
+                        ),
                     )
                 }
             }
@@ -475,22 +474,22 @@ fun YourShowsSection(
         Card(
             shape = RoundedCornerShape(24.dp),
             colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
             border =
-                if (showPureSurfaceBorder) {
-                    BorderStroke(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f),
-                    )
-                } else {
-                    null
-                },
+            if (showPureSurfaceBorder) {
+                BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f),
+                )
+            } else {
+                null
+            },
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .animateContentSize(), // Animates height changes smoothly with a spring curve!
+            Modifier
+                .fillMaxWidth()
+                .animateContentSize(), // Animates height changes smoothly with a spring curve!
         ) {
             AnimatedContent(
                 targetState = selectedPodcastId == null && subscribedPodcasts.list.size > 1,
@@ -533,17 +532,17 @@ fun YourShowsSection(
                     } else {
                         Column(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp, horizontal = 18.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp, horizontal = 18.dp),
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .expressiveClickable { onPodcastClick(selectedPodcast) }
-                                        .padding(vertical = 2.dp),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .expressiveClickable { onPodcastClick(selectedPodcast) }
+                                    .padding(vertical = 2.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Row(
@@ -556,9 +555,9 @@ fun YourShowsSection(
                                         contentDescription = selectedPodcast.title,
                                         contentScale = ContentScale.Crop,
                                         modifier =
-                                            Modifier
-                                                .size(44.dp)
-                                                .clip(RoundedCornerShape(10.dp)),
+                                        Modifier
+                                            .size(44.dp)
+                                            .clip(RoundedCornerShape(10.dp)),
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
@@ -569,11 +568,11 @@ fun YourShowsSection(
                                             Text(
                                                 text = selectedPodcast.title,
                                                 style =
-                                                    MaterialTheme.typography.titleMedium.copy(
-                                                        fontWeight = GoogleSansWeight.bold,
-                                                        letterSpacing = (-0.4).sp,
-                                                        fontSize = 17.sp,
-                                                    ),
+                                                MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = GoogleSansWeight.bold,
+                                                    letterSpacing = (-0.4).sp,
+                                                    fontSize = 17.sp,
+                                                ),
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
@@ -589,10 +588,10 @@ fun YourShowsSection(
                                                         style = MaterialTheme.typography.labelSmall,
                                                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                                                         modifier =
-                                                            Modifier.padding(
-                                                                horizontal = 6.dp,
-                                                                vertical = 2.dp,
-                                                            ),
+                                                        Modifier.padding(
+                                                            horizontal = 6.dp,
+                                                            vertical = 2.dp,
+                                                        ),
                                                     )
                                                 }
                                             }
@@ -601,15 +600,15 @@ fun YourShowsSection(
                                         val isOldest = (selectedPodcast.preferredSort ?: "newest") == "oldest"
                                         Text(
                                             text =
-                                                buildString {
-                                                    append("Tap for show info • ")
-                                                    append(if (isOldest) "Next Up" else "Latest Drops")
-                                                },
+                                            buildString {
+                                                append("Tap for show info • ")
+                                                append(if (isOldest) "Next Up" else "Latest Drops")
+                                            },
                                             style =
-                                                MaterialTheme.typography.bodySmall.copy(
-                                                    fontSize = 11.5.sp,
-                                                    fontWeight = GoogleSansWeight.medium,
-                                                ),
+                                            MaterialTheme.typography.bodySmall.copy(
+                                                fontSize = 11.5.sp,
+                                                fontWeight = GoogleSansWeight.medium,
+                                            ),
                                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
@@ -648,9 +647,9 @@ fun YourShowsSection(
                             ) {
                                 Box(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     BoxLoreLoader.Expressive(size = 48.dp)
@@ -658,9 +657,9 @@ fun YourShowsSection(
                             } else if (selectedPodcastEpisodes.list.isEmpty()) {
                                 Box(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 24.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 24.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
@@ -672,11 +671,11 @@ fun YourShowsSection(
                             } else {
                                 Column(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .heightIn(max = 324.dp)
-                                            .nestedScroll(filteredScrollConnection)
-                                            .verticalScroll(filteredScrollState),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 324.dp)
+                                        .nestedScroll(filteredScrollConnection)
+                                        .verticalScroll(filteredScrollState),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     if (selectedPodcast.isRss && isSelectedRssRefreshing) {
@@ -701,24 +700,24 @@ fun YourShowsSection(
                                             episode = episode,
                                             podcast = selectedPodcast,
                                             actions =
-                                                DenseEpisodeRowActions(
-                                                    onClick = { onEpisodeClick(episode, selectedPodcast, "home_filtered_latest_episodes") },
-                                                    onPlay = {
-                                                        onPlayEpisode(
-                                                            episode,
-                                                            selectedPodcast,
-                                                            cx.aswin.boxlore.core.model.PlaybackEntryPoint.GENERIC,
-                                                        )
-                                                    },
-                                                ),
+                                            DenseEpisodeRowActions(
+                                                onClick = { onEpisodeClick(episode, selectedPodcast, "home_filtered_latest_episodes") },
+                                                onPlay = {
+                                                    onPlayEpisode(
+                                                        episode,
+                                                        selectedPodcast,
+                                                        cx.aswin.boxlore.core.model.PlaybackEntryPoint.GENERIC,
+                                                    )
+                                                },
+                                            ),
                                             showPodcastTitle = false,
                                             playback =
-                                                DenseEpisodeRowPlayback(
-                                                    overrideStatus = state?.first,
-                                                    overrideProgress = state?.second,
-                                                    currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                                    isPlaying = isPlaying,
-                                                ),
+                                            DenseEpisodeRowPlayback(
+                                                overrideStatus = state?.first,
+                                                overrideProgress = state?.second,
+                                                currentPlayingEpisodeId = currentPlayingEpisodeId,
+                                                isPlaying = isPlaying,
+                                            ),
                                             isEligibleForNewTag = episode.id in latestTwoIds,
                                         )
                                     }
@@ -729,10 +728,10 @@ fun YourShowsSection(
                                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                         shape = RoundedCornerShape(12.dp),
                                         modifier =
-                                            Modifier
-                                                .height(40.dp)
-                                                .fillMaxWidth()
-                                                .expressiveClickable { onPodcastClick(selectedPodcast) },
+                                        Modifier
+                                            .height(40.dp)
+                                            .fillMaxWidth()
+                                            .expressiveClickable { onPodcastClick(selectedPodcast) },
                                     ) {
                                         Row(
                                             modifier = Modifier.fillMaxSize(),
@@ -742,10 +741,10 @@ fun YourShowsSection(
                                             Text(
                                                 text = "See All Episodes",
                                                 style =
-                                                    MaterialTheme.typography.labelMedium.copy(
-                                                        fontWeight = GoogleSansWeight.bold,
-                                                        letterSpacing = 0.1.sp,
-                                                    ),
+                                                MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = GoogleSansWeight.bold,
+                                                    letterSpacing = 0.1.sp,
+                                                ),
                                                 color = MaterialTheme.colorScheme.primary,
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))

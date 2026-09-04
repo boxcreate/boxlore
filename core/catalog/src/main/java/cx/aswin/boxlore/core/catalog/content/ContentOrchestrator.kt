@@ -5,10 +5,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
 
-class SharedExposureBudget(
-    private val maximumRememberedItems: Int = 200,
-    private val maximumItemsPerShow: Int = 2,
-) {
+class SharedExposureBudget(private val maximumRememberedItems: Int = 200, private val maximumItemsPerShow: Int = 2,) {
     private val exposedItems = linkedMapOf<String, String>()
     private val showCounts = mutableMapOf<String, Int>()
 
@@ -18,10 +15,8 @@ class SharedExposureBudget(
     }
 
     @Synchronized
-    fun allows(candidate: ContentCandidate): Boolean {
-        return candidate.id !in exposedItems &&
-            (showCounts[candidate.podcast.id] ?: 0) < maximumItemsPerShow
-    }
+    fun allows(candidate: ContentCandidate): Boolean = candidate.id !in exposedItems &&
+        (showCounts[candidate.podcast.id] ?: 0) < maximumItemsPerShow
 
     @Synchronized
     fun record(candidates: Collection<ContentCandidate>) {
@@ -36,8 +31,11 @@ class SharedExposureBudget(
             val oldest = exposedItems.entries.first()
             exposedItems.remove(oldest.key)
             val remainingCount = (showCounts[oldest.value] ?: 1) - 1
-            if (remainingCount <= 0) showCounts.remove(oldest.value)
-            else showCounts[oldest.value] = remainingCount
+            if (remainingCount <= 0) {
+                showCounts.remove(oldest.value)
+            } else {
+                showCounts[oldest.value] = remainingCount
+            }
         }
     }
 
@@ -145,9 +143,7 @@ class SlateComposer {
         }.orEmpty()
     }
 
-    private fun enforceCrossSectionConstraints(
-        sections: List<ContentSection>,
-    ): List<ContentSection> {
+    private fun enforceCrossSectionConstraints(sections: List<ContentSection>,): List<ContentSection> {
         val seenEpisodes = mutableSetOf<String>()
         val showCounts = mutableMapOf<String, Int>()
         return sections.mapNotNull { section ->
@@ -179,13 +175,12 @@ class SlateComposer {
         }
     }
 
-    private fun sectionUtility(
-        items: List<ContentCandidate>,
-        context: ContentContext,
-    ): Double {
+    private fun sectionUtility(items: List<ContentCandidate>, context: ContentContext,): Double {
         val topQuality = items.take(3).map(ContentCandidate::rankingScore).averageOrZero()
         val novelty = items.count(ContentCandidate::isNovel).toDouble() / items.size
-        val onlineFit = if (context.isOnline) 1.0 else {
+        val onlineFit = if (context.isOnline) {
+            1.0
+        } else {
             items.count { it.source.name == "DOWNLOADED" }.toDouble() / items.size
         }
         return (topQuality * 0.7 + novelty * 0.2 + onlineFit * 0.1).coerceIn(-1.0, 1.0)
@@ -196,10 +191,7 @@ class SlateComposer {
     }
 }
 
-private fun ContentCandidate.meetsConstraints(
-    intent: ContentIntent,
-    nowMillis: Long,
-): Boolean {
+private fun ContentCandidate.meetsConstraints(intent: ContentIntent, nowMillis: Long,): Boolean {
     // semanticScore already defaults from episode?.semanticScore at construction time.
     val qualityScore = semanticScore ?: retrievalScore
     val missingRequiredServerScore =
@@ -312,10 +304,7 @@ class ContentOrchestrator(
         }
     }
 
-    private suspend fun rankIntent(
-        intent: ContentIntent,
-        context: ContentContext,
-    ): List<ContentCandidate> {
+    private suspend fun rankIntent(intent: ContentIntent, context: ContentContext,): List<ContentCandidate> {
         val candidates = providers.flatMap { provider ->
             providerCandidates(provider, intent, context)
         }.distinctBy(ContentCandidate::id)
@@ -326,23 +315,19 @@ class ContentOrchestrator(
         candidates: List<ContentCandidate>,
         intent: ContentIntent,
         context: ContentContext,
-    ): List<ContentCandidate> {
-        return try {
-            ranker.rank(candidates, intent, context)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            candidates.sortedWith(
-                compareByDescending<ContentCandidate>(ContentCandidate::retrievalScore)
-                    .thenBy { it.serverRank ?: Int.MAX_VALUE }
-                    .thenBy(ContentCandidate::id),
-            )
-        }
+    ): List<ContentCandidate> = try {
+        ranker.rank(candidates, intent, context)
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Exception) {
+        candidates.sortedWith(
+            compareByDescending<ContentCandidate>(ContentCandidate::retrievalScore)
+                .thenBy { it.serverRank ?: Int.MAX_VALUE }
+                .thenBy(ContentCandidate::id),
+        )
     }
 
-    private suspend fun loadGroupedSections(
-        context: ContentContext,
-    ): GroupedContentSections? {
+    private suspend fun loadGroupedSections(context: ContentContext,): GroupedContentSections? {
         for (provider in groupedProviders) {
             val result = try {
                 provider.sections(context)
@@ -360,14 +345,12 @@ class ContentOrchestrator(
         provider: CandidateProvider,
         intent: ContentIntent,
         context: ContentContext,
-    ): List<ContentCandidate> {
-        return try {
-            provider.candidates(intent, context)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            emptyList()
-        }
+    ): List<ContentCandidate> = try {
+        provider.candidates(intent, context)
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Exception) {
+        emptyList()
     }
 
     fun clearSession(sessionId: String) {
@@ -384,12 +367,7 @@ class ContentOrchestrator(
         exposureBudget.reset()
     }
 
-    private fun cacheKey(
-        context: ContentContext,
-        catalogVersion: String,
-        intents: List<ContentIntent>,
-        now: Long,
-    ): String {
+    private fun cacheKey(context: ContentContext, catalogVersion: String, intents: List<ContentIntent>, now: Long,): String {
         val refreshFingerprint = intents.joinToString(",") { intent ->
             val token = when (intent.refreshPolicy) {
                 ContentRefreshPolicy.SESSION -> context.sessionId

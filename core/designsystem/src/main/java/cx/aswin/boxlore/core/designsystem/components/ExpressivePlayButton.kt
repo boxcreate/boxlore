@@ -1,11 +1,9 @@
 package cx.aswin.boxlore.core.designsystem.components
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -14,10 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
 data class ExpressivePlayButtonState(
     val isPlaying: Boolean,
@@ -29,12 +27,7 @@ data class ExpressivePlayButtonState(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ExpressivePlayButton(
-    onClick: () -> Unit,
-    state: ExpressivePlayButtonState,
-    accentColor: Color,
-    modifier: Modifier = Modifier
-) {
+fun ExpressivePlayButton(onClick: () -> Unit, state: ExpressivePlayButtonState, accentColor: Color, modifier: Modifier = Modifier) {
     Surface(
         color = accentColor,
         contentColor = accentColor.contrastColor(),
@@ -68,7 +61,7 @@ fun ExpressivePlayButton(
                     )
                 }
                 Spacer(modifier = Modifier.width(6.dp))
-                
+
                 Text(
                     text = getPlayButtonDisplayText(state),
                     style = MaterialTheme.typography.titleMedium,
@@ -85,11 +78,7 @@ fun ExpressivePlayButton(
 }
 
 @Composable
-private fun PlayButtonProgressStrip(
-    isResume: Boolean,
-    progress: Float,
-    accentColor: Color
-) {
+private fun PlayButtonProgressStrip(isResume: Boolean, progress: Float, accentColor: Color) {
     if (isResume && progress > 0f) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -108,15 +97,10 @@ private fun PlayButtonProgressStrip(
     }
 }
 
-private fun getPlayButtonDisplayText(
-    state: ExpressivePlayButtonState,
-): String {
-    return when {
-        state.isLoading -> "Loading"
-        state.isPlaying -> "Pause"
-        state.isResume && state.timeText != null -> "Resume • ${state.timeText}"
-        state.isResume -> "Resume"
-        else -> "Play"
-    }
+private fun getPlayButtonDisplayText(state: ExpressivePlayButtonState,): String = when {
+    state.isLoading -> "Loading"
+    state.isPlaying -> "Pause"
+    state.isResume && state.timeText != null -> "Resume • ${state.timeText}"
+    state.isResume -> "Resume"
+    else -> "Play"
 }
-

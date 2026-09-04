@@ -18,10 +18,7 @@ object SameShowContinuationLogic {
      * - `contextSourceId` is not in [SmartQueueEngine.SHOW_BINGE_SOURCES],
      *   meaning playback started from recommendations/discovery.
      */
-    fun canShowBanner(
-        episode: Episode?,
-        sameShowQueueOnly: Boolean,
-    ): Boolean {
+    fun canShowBanner(episode: Episode?, sameShowQueueOnly: Boolean,): Boolean {
         if (episode == null) return false
         if (sameShowQueueOnly) return false
         if (episode.id.startsWith(QueueMath.LEARN_PREFIX)) return false

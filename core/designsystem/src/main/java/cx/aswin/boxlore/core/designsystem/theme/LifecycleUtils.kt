@@ -7,10 +7,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
-fun TrackScreenSession(
-    onSessionResume: () -> Unit,
-    onSessionExit: () -> Unit
-) {
+fun TrackScreenSession(onSessionResume: () -> Unit, onSessionExit: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->

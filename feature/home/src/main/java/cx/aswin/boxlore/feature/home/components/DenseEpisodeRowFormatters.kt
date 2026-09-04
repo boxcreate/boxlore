@@ -8,10 +8,9 @@ internal fun isNewEpisode(
     episode: Episode,
     podcast: Podcast,
     status: EpisodeStatus,
-): Boolean =
-    status == EpisodeStatus.UNPLAYED &&
-        podcast.subscribedAt > 0L &&
-        episode.publishedDate > (podcast.subscribedAt / 1000L - 7 * 24 * 3600L)
+): Boolean = status == EpisodeStatus.UNPLAYED &&
+    podcast.subscribedAt > 0L &&
+    episode.publishedDate > (podcast.subscribedAt / 1000L - 7 * 24 * 3600L)
 
 internal fun denseDurationText(
     durationSeconds: Int,

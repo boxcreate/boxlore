@@ -161,8 +161,8 @@ fun ContentLanguageChipRow(
             }
             Text(
                 text =
-                    "Languages selected will influence your recommendations. " +
-                        "Charts are bound to the selected country only.",
+                "Languages selected will influence your recommendations. " +
+                    "Charts are bound to the selected country only.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
@@ -198,7 +198,7 @@ fun ContentLanguageChipRow(
             ) {
                 Text(
                     text =
-                        "Some picks aren’t typical for $countryLabel — that’s fine if you want them.",
+                    "Some picks aren’t typical for $countryLabel — that’s fine if you want them.",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                 )
@@ -208,29 +208,24 @@ fun ContentLanguageChipRow(
 }
 
 @Composable
-private fun RegionPickerTrigger(
-    label: String,
-    supportingText: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun RegionPickerTrigger(label: String, supportingText: String, onClick: () -> Unit, modifier: Modifier = Modifier,) {
     Surface(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .expressiveClickable(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    onClick = onClick,
-                ),
+        modifier
+            .fillMaxWidth()
+            .expressiveClickable(
+                shape = MaterialTheme.shapes.extraLarge,
+                onClick = onClick,
+            ),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -268,11 +263,7 @@ private fun RegionPickerTrigger(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RegionPickerBottomSheet(
-    selectedCode: String,
-    onSelect: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
+private fun RegionPickerBottomSheet(selectedCode: String, onSelect: (String) -> Unit, onDismiss: () -> Unit,) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -282,10 +273,10 @@ private fun RegionPickerBottomSheet(
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 28.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
         ) {
             Text(
                 text = "Content region",
@@ -301,11 +292,11 @@ private fun RegionPickerBottomSheet(
             )
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 420.dp)
-                        .verticalScroll(rememberScrollState())
-                        .selectableGroup(),
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState())
+                    .selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 ContentRegions.all.forEach { region ->
@@ -321,11 +312,7 @@ private fun RegionPickerBottomSheet(
 }
 
 @Composable
-private fun RegionPickerOptionRow(
-    region: ContentRegion,
-    selected: Boolean,
-    onSelect: (String) -> Unit,
-) {
+private fun RegionPickerOptionRow(region: ContentRegion, selected: Boolean, onSelect: (String) -> Unit,) {
     val recommended =
         region.recommendedLanguages
             .mapNotNull { ContentRegions.LANGUAGE_LABELS[it] }
@@ -335,22 +322,22 @@ private fun RegionPickerOptionRow(
     val contentColor = if (selected) scheme.onPrimaryContainer else scheme.onSurface
     Surface(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .selectable(
-                    selected = selected,
-                    onClick = { onSelect(region.code) },
-                    role = Role.RadioButton,
-                ),
+        Modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = selected,
+                onClick = { onSelect(region.code) },
+                role = Role.RadioButton,
+            ),
         shape = MaterialTheme.shapes.large,
         color = containerColor,
         contentColor = contentColor,
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -369,12 +356,7 @@ private fun RegionPickerOptionRow(
 }
 
 @Composable
-private fun RegionPickerOptionCopy(
-    label: String,
-    recommended: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-) {
+private fun RegionPickerOptionCopy(label: String, recommended: String, selected: Boolean, modifier: Modifier = Modifier,) {
     Column(modifier = modifier) {
         Text(
             text = label,
@@ -441,13 +423,7 @@ private fun LanguageChipSection(
 }
 
 @Composable
-private fun LanguagePreferenceChip(
-    label: String,
-    selected: Boolean,
-    locked: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
+private fun LanguagePreferenceChip(label: String, selected: Boolean, locked: Boolean, enabled: Boolean, onClick: () -> Unit,) {
     val containerColor =
         when {
             selected -> MaterialTheme.colorScheme.primaryContainer
@@ -466,14 +442,14 @@ private fun LanguagePreferenceChip(
         color = containerColor,
         contentColor = contentColor,
         border =
-            if (selected) {
-                null
-            } else {
-                BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
-                )
-            },
+        if (selected) {
+            null
+        } else {
+            BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+            )
+        },
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

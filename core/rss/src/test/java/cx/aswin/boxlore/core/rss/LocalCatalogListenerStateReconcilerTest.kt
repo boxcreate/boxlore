@@ -16,14 +16,14 @@ class LocalCatalogListenerStateReconcilerTest {
             LocalCatalogListenerRemapLogic.mappings(
                 catalogRows = listOf(target),
                 references =
-                    listOf(
-                        LocalCatalogListenerReference(
-                            episodeId = "-9201381574733086607",
-                            enclosureUrl = target.audioUrl,
-                            title = target.title,
-                            publishedDate = null,
-                        ),
+                listOf(
+                    LocalCatalogListenerReference(
+                        episodeId = "-9201381574733086607",
+                        enclosureUrl = target.audioUrl,
+                        title = target.title,
+                        publishedDate = null,
                     ),
+                ),
             )
 
         assertEquals(target.episodeId, mappings.getValue("-9201381574733086607").episodeId)
@@ -65,14 +65,14 @@ class LocalCatalogListenerStateReconcilerTest {
             LocalCatalogListenerRemapLogic.mappings(
                 catalogRows = listOf(target),
                 references =
-                    listOf(
-                        LocalCatalogListenerReference(
-                            episodeId = "-9",
-                            enclosureUrl = null,
-                            title = target.title,
-                            publishedDate = target.publishedDate + 3L * 24L * 60L * 60L,
-                        ),
+                listOf(
+                    LocalCatalogListenerReference(
+                        episodeId = "-9",
+                        enclosureUrl = null,
+                        title = target.title,
+                        publishedDate = target.publishedDate + 3L * 24L * 60L * 60L,
                     ),
+                ),
             )
 
         assertTrue(mappings.isEmpty())
@@ -116,10 +116,7 @@ class LocalCatalogListenerStateReconcilerTest {
         assertEquals(3, merged.sessionCount)
     }
 
-    private fun localEpisode(
-        id: String,
-        publishedDate: Long = 1_000L,
-    ) = LocalEpisodeEntity(
+    private fun localEpisode(id: String, publishedDate: Long = 1_000L,) = LocalEpisodeEntity(
         episodeId = id,
         podcastId = "9926",
         guid = "guid-$id",
@@ -139,12 +136,7 @@ class LocalCatalogListenerStateReconcilerTest {
         enclosureType = "audio/mpeg",
     )
 
-    private fun history(
-        id: String,
-        progress: Long,
-        completed: Boolean,
-        liked: Boolean,
-    ) = ListeningHistoryEntity(
+    private fun history(id: String, progress: Long, completed: Boolean, liked: Boolean,) = ListeningHistoryEntity(
         episodeId = id,
         podcastId = "9926",
         episodeTitle = "Old title",
@@ -159,10 +151,7 @@ class LocalCatalogListenerStateReconcilerTest {
         lastPlayedAt = progress,
     )
 
-    private fun download(
-        id: String,
-        status: Int,
-    ) = DownloadedEpisodeEntity(
+    private fun download(id: String, status: Int,) = DownloadedEpisodeEntity(
         episodeId = id,
         podcastId = "9926",
         episodeTitle = "Old title",
@@ -179,11 +168,7 @@ class LocalCatalogListenerStateReconcilerTest {
         status = status,
     )
 
-    private fun rollup(
-        id: String,
-        consumed: Long,
-        sessions: Int,
-    ) = ListeningRollupEntity(
+    private fun rollup(id: String, consumed: Long, sessions: Int,) = ListeningRollupEntity(
         localDay = 1L,
         episodeId = id,
         podcastId = "9926",

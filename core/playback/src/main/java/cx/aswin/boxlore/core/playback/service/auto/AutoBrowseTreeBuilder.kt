@@ -11,10 +11,7 @@ import kotlinx.coroutines.flow.first
  * Builds Android Auto browse-tree MediaItem lists.
  * Extracted from [AutoBrowseLibraryCallback].
  */
-internal class AutoBrowseTreeBuilder(
-    private val host: AutoBrowseLibraryHost,
-    private val mediaResolver: AutoMediaResolver,
-) {
+internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, private val mediaResolver: AutoMediaResolver,) {
     @Volatile
     private var lastDrivePicks: List<MediaItem> = emptyList()
 
@@ -33,45 +30,44 @@ internal class AutoBrowseTreeBuilder(
     private val PLAY_ALL_NEW_EPISODES_ID = AutoBrowseContract.PLAY_ALL_NEW_ID
     private val SUBSCRIPTION_PREFIX = AutoBrowseContract.SUBSCRIPTION_PREFIX
 
-    fun getRootChildren(): List<MediaItem> =
-        listOf(
-            AutoMediaItemFactory.browsable(
-                id = HOME_ID,
-                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_home),
-                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_home_subtitle),
-                artworkUri = folderArtwork(HOME_ID),
-                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            ),
-            AutoMediaItemFactory.browsable(
-                id = LIBRARY_ID,
-                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_library),
-                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_library_subtitle),
-                artworkUri = folderArtwork(LIBRARY_ID),
-                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            ),
-            AutoMediaItemFactory.browsable(
-                id = DISCOVER_ID,
-                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_discover),
-                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_discover_subtitle),
-                artworkUri = folderArtwork(DISCOVER_ID),
-                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            ),
-            AutoMediaItemFactory.browsable(
-                id = DOWNLOADS_ID,
-                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_downloads),
-                subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_downloads_subtitle),
-                artworkUri = folderArtwork(DOWNLOADS_ID),
-                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            ),
-        )
+    fun getRootChildren(): List<MediaItem> = listOf(
+        AutoMediaItemFactory.browsable(
+            id = HOME_ID,
+            title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_home),
+            subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_home_subtitle),
+            artworkUri = folderArtwork(HOME_ID),
+            mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+            singleItemStyle =
+            androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+        ),
+        AutoMediaItemFactory.browsable(
+            id = LIBRARY_ID,
+            title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_library),
+            subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_library_subtitle),
+            artworkUri = folderArtwork(LIBRARY_ID),
+            mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+            singleItemStyle =
+            androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+        ),
+        AutoMediaItemFactory.browsable(
+            id = DISCOVER_ID,
+            title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_discover),
+            subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_discover_subtitle),
+            artworkUri = folderArtwork(DISCOVER_ID),
+            mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+            singleItemStyle =
+            androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+        ),
+        AutoMediaItemFactory.browsable(
+            id = DOWNLOADS_ID,
+            title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_downloads),
+            subtitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_downloads_subtitle),
+            artworkUri = folderArtwork(DOWNLOADS_ID),
+            mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+            singleItemStyle =
+            androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+        ),
+    )
 
     suspend fun getContinueListeningChildren(): List<MediaItem> {
         val resumeItems = host.database.listeningHistoryDao().getResumeItemsList()
@@ -83,15 +79,15 @@ internal class AutoBrowseTreeBuilder(
                 history = entity,
                 source = AutoBrowseContract.SOURCE_CONTINUE,
                 artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        entity.episodeImageUrl ?: entity.podcastImageUrl,
-                    ),
+                AutoArtworkRepository.remoteUri(
+                    host.asContext(),
+                    entity.episodeImageUrl ?: entity.podcastImageUrl,
+                ),
                 subtitle = subtitle,
                 groupTitle =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_group_continue,
-                    ),
+                host.getString(
+                    cx.aswin.boxlore.core.catalog.R.string.auto_group_continue,
+                ),
             )
         }
     }
@@ -118,26 +114,26 @@ internal class AutoBrowseTreeBuilder(
                 title = entity.title,
                 subtitle = entity.author,
                 artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        entity.imageUrl,
-                    ),
+                AutoArtworkRepository.remoteUri(
+                    host.asContext(),
+                    entity.imageUrl,
+                ),
                 mediaType = MediaMetadata.MEDIA_TYPE_PODCAST,
                 childStyleExtras =
-                    AutoBrowseContract.mergeExtras(
-                        AutoBrowseContract.listChildrenExtras(),
-                        android.os.Bundle().apply {
-                            putString(
-                                androidx.media3.session.MediaConstants
-                                    .EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
-                                host.getString(
-                                    cx.aswin.boxlore.core.catalog.R.string.auto_group_subscriptions,
-                                ),
-                            )
-                        },
-                    ),
+                AutoBrowseContract.mergeExtras(
+                    AutoBrowseContract.listChildrenExtras(),
+                    android.os.Bundle().apply {
+                        putString(
+                            androidx.media3.session.MediaConstants
+                                .EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
+                            host.getString(
+                                cx.aswin.boxlore.core.catalog.R.string.auto_group_subscriptions,
+                            ),
+                        )
+                    },
+                ),
                 singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             )
         }
     }
@@ -167,27 +163,27 @@ internal class AutoBrowseTreeBuilder(
             AutoMediaItemFactory.browsable(
                 id = HOME_CONTINUE_LISTENING_ID,
                 title =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_continue_listening,
-                    ),
+                host.getString(
+                    cx.aswin.boxlore.core.catalog.R.string.auto_continue_listening,
+                ),
                 artworkUri = folderArtwork(HOME_CONTINUE_LISTENING_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 childStyleExtras = AutoBrowseContract.listChildrenExtras(),
                 singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             ),
             AutoMediaItemFactory.browsable(
                 id = AutoBrowseContract.HOME_DRIVE_MIX_ID,
                 title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_drive_mix),
                 subtitle =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_drive_mix_subtitle,
-                    ),
+                host.getString(
+                    cx.aswin.boxlore.core.catalog.R.string.auto_drive_mix_subtitle,
+                ),
                 artworkUri = folderArtwork(AutoBrowseContract.HOME_DRIVE_MIX_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 childStyleExtras = AutoBrowseContract.listChildrenExtras(),
                 singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             ),
             AutoMediaItemFactory.browsable(
                 id = HOME_NEW_EPISODES_ID,
@@ -197,7 +193,7 @@ internal class AutoBrowseTreeBuilder(
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 childStyleExtras = AutoBrowseContract.listChildrenExtras(),
                 singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             ),
         )
     }
@@ -218,42 +214,42 @@ internal class AutoBrowseTreeBuilder(
                 id = AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID,
                 title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_drive_picks),
                 subtitle =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_drive_picks_subtitle,
-                    ),
+                host.getString(
+                    cx.aswin.boxlore.core.catalog.R.string.auto_drive_picks_subtitle,
+                ),
                 artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_DRIVE_PICKS_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             ),
             AutoMediaItemFactory.browsable(
                 id = AutoBrowseContract.DISCOVER_TIME_PICKS_ID,
                 title =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_time_picks,
-                        timeLabel,
-                    ),
+                host.getString(
+                    cx.aswin.boxlore.core.catalog.R.string.auto_time_picks,
+                    timeLabel,
+                ),
                 subtitle =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_time_picks_subtitle,
-                    ),
+                host.getString(
+                    cx.aswin.boxlore.core.catalog.R.string.auto_time_picks_subtitle,
+                ),
                 artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_TIME_PICKS_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             ),
             AutoMediaItemFactory.browsable(
                 id = AutoBrowseContract.DISCOVER_GENRES_ID,
                 title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_browse_genre),
                 subtitle =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_browse_genre_subtitle,
-                    ),
+                host.getString(
+                    cx.aswin.boxlore.core.catalog.R.string.auto_browse_genre_subtitle,
+                ),
                 artworkUri = folderArtwork(AutoBrowseContract.DISCOVER_GENRES_ID),
                 mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
                 childStyleExtras = AutoBrowseContract.listChildrenExtras(),
                 singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
             ),
         )
     }
@@ -271,56 +267,54 @@ internal class AutoBrowseTreeBuilder(
         }
     }
 
-    fun getGenresChildren(): List<MediaItem> =
-        listOf(
-            "News" to "News",
-            "Technology" to "Tech",
-            "Business" to "Business",
-            "Comedy" to "Comedy",
-            AutoBrowseContract.GENRE_TRUE_CRIME to AutoBrowseContract.GENRE_TRUE_CRIME,
-            "Sports" to "Sports",
-            "Health" to "Health",
-            "History" to "History",
-            "Arts" to "Arts",
-            "Society & Culture" to "Society",
-            "Education" to "Education",
-            "Science" to "Science",
-            AutoBrowseContract.GENRE_TV_FILM to AutoBrowseContract.GENRE_TV_FILM,
-            "Fiction" to "Fiction",
-            "Music" to "Music",
-            "Religion & Spirituality" to "Religion",
-            "Kids & Family" to "Family",
-            "Leisure" to "Leisure",
-            "Government" to "Government",
-        ).map { (category, title) ->
-            AutoMediaItemFactory.browsable(
-                id = "${AutoBrowseContract.GENRE_PREFIX}$category",
-                title = title,
-                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                childStyleExtras = AutoBrowseContract.gridChildrenExtras(),
-            )
-        }
+    fun getGenresChildren(): List<MediaItem> = listOf(
+        "News" to "News",
+        "Technology" to "Tech",
+        "Business" to "Business",
+        "Comedy" to "Comedy",
+        AutoBrowseContract.GENRE_TRUE_CRIME to AutoBrowseContract.GENRE_TRUE_CRIME,
+        "Sports" to "Sports",
+        "Health" to "Health",
+        "History" to "History",
+        "Arts" to "Arts",
+        "Society & Culture" to "Society",
+        "Education" to "Education",
+        "Science" to "Science",
+        AutoBrowseContract.GENRE_TV_FILM to AutoBrowseContract.GENRE_TV_FILM,
+        "Fiction" to "Fiction",
+        "Music" to "Music",
+        "Religion & Spirituality" to "Religion",
+        "Kids & Family" to "Family",
+        "Leisure" to "Leisure",
+        "Government" to "Government",
+    ).map { (category, title) ->
+        AutoMediaItemFactory.browsable(
+            id = "${AutoBrowseContract.GENRE_PREFIX}$category",
+            title = title,
+            mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+            childStyleExtras = AutoBrowseContract.gridChildrenExtras(),
+        )
+    }
 
-    suspend fun getLibraryChildren(): List<MediaItem> =
-        getSubscriptionsChildren() +
-            listOf(
-                AutoMediaItemFactory.browsable(
-                    id = AutoBrowseContract.LIBRARY_LIKED_ID,
-                    title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_liked_episodes),
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
-                    singleItemStyle =
-                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
-                ),
-                AutoMediaItemFactory.browsable(
-                    id = AutoBrowseContract.LIBRARY_HISTORY_ID,
-                    title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_listening_history),
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
-                    childStyleExtras = AutoBrowseContract.listChildrenExtras(),
-                    singleItemStyle =
-                        androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
-                ),
-            )
+    suspend fun getLibraryChildren(): List<MediaItem> = getSubscriptionsChildren() +
+        listOf(
+            AutoMediaItemFactory.browsable(
+                id = AutoBrowseContract.LIBRARY_LIKED_ID,
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_liked_episodes),
+                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                singleItemStyle =
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+            ),
+            AutoMediaItemFactory.browsable(
+                id = AutoBrowseContract.LIBRARY_HISTORY_ID,
+                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_listening_history),
+                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PODCASTS,
+                childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+                singleItemStyle =
+                androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM,
+            ),
+        )
 
     suspend fun getLikedChildren(): List<MediaItem> {
         val history = host.database.listeningHistoryDao().getLikedEpisodesList(50)
@@ -331,15 +325,15 @@ internal class AutoBrowseTreeBuilder(
                     history = it,
                     source = AutoBrowseContract.SOURCE_LIKED,
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            it.episodeImageUrl ?: it.podcastImageUrl,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        it.episodeImageUrl ?: it.podcastImageUrl,
+                    ),
                     subtitle =
-                        AutoMediaItemFactory.buildDurationSubtitle(
-                            it.podcastName,
-                            it.durationMs,
-                        ),
+                    AutoMediaItemFactory.buildDurationSubtitle(
+                        it.podcastName,
+                        it.durationMs,
+                    ),
                     groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_liked),
                 )
             }
@@ -356,24 +350,23 @@ internal class AutoBrowseTreeBuilder(
         }
     }
 
-    suspend fun getHistoryChildren(): List<MediaItem> =
-        host.database.listeningHistoryDao().getRecentHistoryList(50).map {
-            AutoMediaItemFactory.fromHistory(
-                history = it,
-                source = AutoBrowseContract.SOURCE_HISTORY,
-                artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        it.episodeImageUrl ?: it.podcastImageUrl,
-                    ),
-                subtitle =
-                    AutoMediaItemFactory.buildDurationSubtitle(
-                        it.podcastName,
-                        it.durationMs,
-                    ),
-                groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_history),
-            )
-        }
+    suspend fun getHistoryChildren(): List<MediaItem> = host.database.listeningHistoryDao().getRecentHistoryList(50).map {
+        AutoMediaItemFactory.fromHistory(
+            history = it,
+            source = AutoBrowseContract.SOURCE_HISTORY,
+            artworkUri =
+            AutoArtworkRepository.remoteUri(
+                host.asContext(),
+                it.episodeImageUrl ?: it.podcastImageUrl,
+            ),
+            subtitle =
+            AutoMediaItemFactory.buildDurationSubtitle(
+                it.podcastName,
+                it.durationMs,
+            ),
+            groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_history),
+        )
+    }
 
     suspend fun getMixtapeChildren(): List<MediaItem> {
         val now = System.currentTimeMillis()
@@ -388,10 +381,10 @@ internal class AutoBrowseTreeBuilder(
                 subscriptions = subscriptions,
                 history = history,
                 adaptiveRanking =
-                    cx.aswin.boxlore.core.playback.MixtapeEngine.AdaptiveRanking(
-                        scorer = host.adaptiveCandidateScorer,
-                        surface = cx.aswin.boxlore.core.ranking.RankingSurface.ANDROID_AUTO,
-                    ),
+                cx.aswin.boxlore.core.playback.MixtapeEngine.AdaptiveRanking(
+                    scorer = host.adaptiveCandidateScorer,
+                    surface = cx.aswin.boxlore.core.ranking.RankingSurface.ANDROID_AUTO,
+                ),
             )
         if (result.episodes.size < 3) {
             val recommendations =
@@ -414,10 +407,10 @@ internal class AutoBrowseTreeBuilder(
                     history = history,
                     recommendations = recommendations,
                     adaptiveRanking =
-                        cx.aswin.boxlore.core.playback.MixtapeEngine.AdaptiveRanking(
-                            scorer = host.adaptiveCandidateScorer,
-                            surface = cx.aswin.boxlore.core.ranking.RankingSurface.ANDROID_AUTO,
-                        ),
+                    cx.aswin.boxlore.core.playback.MixtapeEngine.AdaptiveRanking(
+                        scorer = host.adaptiveCandidateScorer,
+                        surface = cx.aswin.boxlore.core.ranking.RankingSurface.ANDROID_AUTO,
+                    ),
                 )
         }
         val episodes =
@@ -427,15 +420,15 @@ internal class AutoBrowseTreeBuilder(
                         episode = episode,
                         source = AutoBrowseContract.SOURCE_MIXTAPE,
                         artworkUri =
-                            AutoArtworkRepository.remoteUri(
-                                host.asContext(),
-                                episode.imageUrl ?: episode.podcastImageUrl ?: podcast.imageUrl,
-                            ),
+                        AutoArtworkRepository.remoteUri(
+                            host.asContext(),
+                            episode.imageUrl ?: episode.podcastImageUrl ?: podcast.imageUrl,
+                        ),
                         podcastTitle = podcast.title,
                         groupTitle =
-                            host.getString(
-                                cx.aswin.boxlore.core.catalog.R.string.auto_group_mixtape,
-                            ),
+                        host.getString(
+                            cx.aswin.boxlore.core.catalog.R.string.auto_group_mixtape,
+                        ),
                     )
                 }
             }
@@ -456,21 +449,20 @@ internal class AutoBrowseTreeBuilder(
         return items
     }
 
-    suspend fun getQueueChildren(): List<MediaItem> =
-        host.queueRepository.getQueueSnapshot().take(50).map { episode ->
-            AutoMediaItemFactory.fromEpisode(
-                episode = episode,
-                source = AutoBrowseContract.SOURCE_QUEUE,
-                artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        episode.imageUrl ?: episode.podcastImageUrl,
-                    ),
-                podcastTitle = episode.podcastTitle,
-                mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
-                groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue),
-            )
-        }
+    suspend fun getQueueChildren(): List<MediaItem> = host.queueRepository.getQueueSnapshot().take(50).map { episode ->
+        AutoMediaItemFactory.fromEpisode(
+            episode = episode,
+            source = AutoBrowseContract.SOURCE_QUEUE,
+            artworkUri =
+            AutoArtworkRepository.remoteUri(
+                host.asContext(),
+                episode.imageUrl ?: episode.podcastImageUrl,
+            ),
+            podcastTitle = episode.podcastTitle,
+            mediaIdPrefix = AutoBrowseContract.QUEUE_PREFIX,
+            groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_queue),
+        )
+    }
 
     suspend fun getDownloadsChildren(): List<MediaItem> {
         val items = getDownloadEpisodeItems()
@@ -487,37 +479,36 @@ internal class AutoBrowseTreeBuilder(
         }
     }
 
-    suspend fun getDownloadEpisodeItems(): List<MediaItem> =
-        host.database.downloadedEpisodeDao().getCompletedDownloads(50).map { download ->
-            val sourceUri =
-                download.localFilePath
-                    .takeIf {
-                        it.isNotBlank() && it != "CACHED" && java.io.File(it).exists()
-                    }?.let {
-                        android.net.Uri
-                            .fromFile(java.io.File(it))
-                            .toString()
-                    }
-                    ?: mediaResolver.resolveDownloadRequestUri(download.episodeId)
-                    ?: host.database
-                        .listeningHistoryDao()
-                        .getHistoryItem(download.episodeId)
-                        ?.episodeAudioUrl
-                    ?: host.queueRepository.getQueueItemByEpisodeId(download.episodeId)?.audioUrl
-            AutoMediaItemFactory.fromDownload(
-                download = download,
-                artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        download.episodeImageUrl ?: download.podcastImageUrl,
-                    ),
-                uri = sourceUri,
-                groupTitle =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_group_downloads,
-                    ),
-            )
-        }
+    suspend fun getDownloadEpisodeItems(): List<MediaItem> = host.database.downloadedEpisodeDao().getCompletedDownloads(50).map { download ->
+        val sourceUri =
+            download.localFilePath
+                .takeIf {
+                    it.isNotBlank() && it != "CACHED" && java.io.File(it).exists()
+                }?.let {
+                    android.net.Uri
+                        .fromFile(java.io.File(it))
+                        .toString()
+                }
+                ?: mediaResolver.resolveDownloadRequestUri(download.episodeId)
+                ?: host.database
+                    .listeningHistoryDao()
+                    .getHistoryItem(download.episodeId)
+                    ?.episodeAudioUrl
+                ?: host.queueRepository.getQueueItemByEpisodeId(download.episodeId)?.audioUrl
+        AutoMediaItemFactory.fromDownload(
+            download = download,
+            artworkUri =
+            AutoArtworkRepository.remoteUri(
+                host.asContext(),
+                download.episodeImageUrl ?: download.podcastImageUrl,
+            ),
+            uri = sourceUri,
+            groupTitle =
+            host.getString(
+                cx.aswin.boxlore.core.catalog.R.string.auto_group_downloads,
+            ),
+        )
+    }
 
     suspend fun getDrivePicksChildren(): List<MediaItem> {
         val calendar = java.util.Calendar.getInstance()
@@ -582,18 +573,18 @@ internal class AutoBrowseTreeBuilder(
             episodes.map { (episode, podcast) ->
                 AutoMediaItemFactory.fromEpisode(
                     episode =
-                        episode.copy(
-                            podcastId = podcast.id,
-                            podcastTitle = podcast.title,
-                            podcastArtist = podcast.artist,
-                            podcastImageUrl = podcast.imageUrl,
-                        ),
+                    episode.copy(
+                        podcastId = podcast.id,
+                        podcastTitle = podcast.title,
+                        podcastArtist = podcast.artist,
+                        podcastImageUrl = podcast.imageUrl,
+                    ),
                     source = AutoBrowseContract.SOURCE_DRIVE,
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            episode.imageUrl ?: podcast.imageUrl,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        episode.imageUrl ?: podcast.imageUrl,
+                    ),
                     podcastTitle = podcast.title,
                     groupTitle = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_drive),
                 )
@@ -662,15 +653,15 @@ internal class AutoBrowseTreeBuilder(
                     episode = ep,
                     source = AutoBrowseContract.SOURCE_NEW,
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            ep.imageUrl ?: pod.imageUrl,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        ep.imageUrl ?: pod.imageUrl,
+                    ),
                     podcastTitle = pod.title,
                     groupTitle =
-                        host.getString(
-                            cx.aswin.boxlore.core.catalog.R.string.auto_group_new,
-                        ),
+                    host.getString(
+                        cx.aswin.boxlore.core.catalog.R.string.auto_group_new,
+                    ),
                 )
             },
         )
@@ -689,9 +680,9 @@ internal class AutoBrowseTreeBuilder(
                 vibeId,
                 region,
                 languages =
-                    kotlinx.coroutines.withTimeoutOrNull(1_000L) {
-                        host.userPreferencesRepository.contentLanguagesStream.first()
-                    },
+                kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+                    host.userPreferencesRepository.contentLanguagesStream.first()
+                },
             )
         android.util.Log.d(
             "AutoBrowse",
@@ -721,44 +712,42 @@ internal class AutoBrowseTreeBuilder(
         return buildPodcastFolderItems(podcasts)
     }
 
-    private fun buildPodcastFolderItems(podcasts: List<cx.aswin.boxlore.core.model.Podcast>): List<MediaItem> =
-        podcasts.map { podcast ->
-            AutoMediaItemFactory.browsable(
-                id = "$SUBSCRIPTION_PREFIX${podcast.id}",
-                title = podcast.title,
-                subtitle = podcast.artist,
-                artworkUri =
-                    AutoArtworkRepository.remoteUri(
-                        host.asContext(),
-                        podcast.imageUrl,
-                    ),
-                mediaType = MediaMetadata.MEDIA_TYPE_PODCAST,
-                childStyleExtras = AutoBrowseContract.listChildrenExtras(),
-                singleItemStyle =
-                    androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
-            )
-        }
+    private fun buildPodcastFolderItems(podcasts: List<cx.aswin.boxlore.core.model.Podcast>): List<MediaItem> = podcasts.map { podcast ->
+        AutoMediaItemFactory.browsable(
+            id = "$SUBSCRIPTION_PREFIX${podcast.id}",
+            title = podcast.title,
+            subtitle = podcast.artist,
+            artworkUri =
+            AutoArtworkRepository.remoteUri(
+                host.asContext(),
+                podcast.imageUrl,
+            ),
+            mediaType = MediaMetadata.MEDIA_TYPE_PODCAST,
+            childStyleExtras = AutoBrowseContract.listChildrenExtras(),
+            singleItemStyle =
+            androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+        )
+    }
 
-    private fun legacyAutoGenreCategory(genreId: String): String? =
-        when (genreId) {
-            "true_crime" -> AutoBrowseContract.GENRE_TRUE_CRIME
-            "comedy" -> "Comedy"
-            "news" -> "News"
-            "technology" -> "Technology"
-            "science" -> "Science"
-            "health" -> "Health"
-            "business" -> "Business"
-            "sports" -> "Sports"
-            "history" -> "History"
-            "society" -> "Society & Culture"
-            "education" -> "Education"
-            "arts" -> "Arts"
-            "music" -> "Music"
-            "fiction" -> "Fiction"
-            "kids" -> "Kids & Family"
-            "self_improvement" -> "Health"
-            else -> null
-        }
+    private fun legacyAutoGenreCategory(genreId: String): String? = when (genreId) {
+        "true_crime" -> AutoBrowseContract.GENRE_TRUE_CRIME
+        "comedy" -> "Comedy"
+        "news" -> "News"
+        "technology" -> "Technology"
+        "science" -> "Science"
+        "health" -> "Health"
+        "business" -> "Business"
+        "sports" -> "Sports"
+        "history" -> "History"
+        "society" -> "Society & Culture"
+        "education" -> "Education"
+        "arts" -> "Arts"
+        "music" -> "Music"
+        "fiction" -> "Fiction"
+        "kids" -> "Kids & Family"
+        "self_improvement" -> "Health"
+        else -> null
+    }
 
     suspend fun getPodcastEpisodes(podcastId: String): List<MediaItem> {
         android.util.Log.d("AutoBrowse", "Fetching episodes for podcast: $podcastId")
@@ -784,26 +773,26 @@ internal class AutoBrowseTreeBuilder(
                     title = episode.title,
                     podcastTitle = podcastEntity?.title ?: episode.podcastTitle,
                     subtitle =
-                        AutoMediaItemFactory.buildDurationSubtitle(
-                            podcastEntity?.title ?: episode.podcastTitle,
-                            episode.duration.toLong() * 1_000L,
-                        ),
+                    AutoMediaItemFactory.buildDurationSubtitle(
+                        podcastEntity?.title ?: episode.podcastTitle,
+                        episode.duration.toLong() * 1_000L,
+                    ),
                     artworkUri =
-                        AutoArtworkRepository.remoteUri(
-                            host.asContext(),
-                            episode.imageUrl ?: podcastArtwork,
-                        ),
+                    AutoArtworkRepository.remoteUri(
+                        host.asContext(),
+                        episode.imageUrl ?: podcastArtwork,
+                    ),
                     uri = episode.audioUrl,
                     durationMs = episode.duration.toLong() * 1_000L,
                     source = AutoBrowseContract.SOURCE_DISCOVER,
                     progress =
-                        history?.let {
-                            if (it.durationMs > 0) {
-                                it.progressMs.toDouble() / it.durationMs.toDouble()
-                            } else {
-                                0.0
-                            }
-                        },
+                    history?.let {
+                        if (it.durationMs > 0) {
+                            it.progressMs.toDouble() / it.durationMs.toDouble()
+                        } else {
+                            0.0
+                        }
+                    },
                     isCompleted = history?.isCompleted == true,
                     customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
                 ),
@@ -811,33 +800,23 @@ internal class AutoBrowseTreeBuilder(
         }
     }
 
-    private fun buildPlayAllItem(
-        id: String,
-        count: Int,
-        source: String,
-    ): MediaItem =
-        AutoMediaItemFactory.playable(
-            AutoPlayableSpec(
-                mediaId = id,
-                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_play_all, count),
-                podcastTitle =
-                    host.getString(
-                        cx.aswin.boxlore.core.catalog.R.string.auto_play_all_subtitle,
-                    ),
-                source = source,
-                supportedCommands = emptyList(),
+    private fun buildPlayAllItem(id: String, count: Int, source: String,): MediaItem = AutoMediaItemFactory.playable(
+        AutoPlayableSpec(
+            mediaId = id,
+            title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_play_all, count),
+            podcastTitle =
+            host.getString(
+                cx.aswin.boxlore.core.catalog.R.string.auto_play_all_subtitle,
             ),
-        )
+            source = source,
+            supportedCommands = emptyList(),
+        ),
+    )
 
-    private fun folderArtwork(folderId: String): android.net.Uri? =
-        host.autoCollageUris[folderId]
-            ?: AutoArtworkRepository.collageUri(host.asContext(), folderId)
+    private fun folderArtwork(folderId: String): android.net.Uri? = host.autoCollageUris[folderId]
+        ?: AutoArtworkRepository.collageUri(host.asContext(), folderId)
 
-    fun slicePage(
-        items: List<MediaItem>,
-        page: Int,
-        pageSize: Int,
-    ): List<MediaItem> {
+    fun slicePage(items: List<MediaItem>, page: Int, pageSize: Int,): List<MediaItem> {
         val safePageSize = pageSize.takeIf { it > 0 }?.coerceAtMost(50) ?: 50
         val start = page.coerceAtLeast(0) * safePageSize
         if (start >= items.size) return emptyList()
@@ -847,11 +826,7 @@ internal class AutoBrowseTreeBuilder(
     /**
      * Build a subtitle showing remaining time, e.g. "Podcast Name · 35 min left"
      */
-    fun buildProgressSubtitle(
-        podcastName: String,
-        progressMs: Long,
-        durationMs: Long,
-    ): String {
+    fun buildProgressSubtitle(podcastName: String, progressMs: Long, durationMs: Long,): String {
         if (durationMs <= 0) return podcastName
         val remainingMs = (durationMs - progressMs).coerceAtLeast(0)
         val remainingMin = remainingMs / 60000

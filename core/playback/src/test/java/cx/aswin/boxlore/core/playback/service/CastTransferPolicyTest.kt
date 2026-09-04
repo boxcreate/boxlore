@@ -56,10 +56,9 @@ class CastTransferPolicyTest {
         assertTrue(result.resetPosition)
     }
 
-    private fun playableItem(id: String): MediaItem =
-        MediaItem
-            .Builder()
-            .setMediaId(id)
-            .setUri("https://cdn.example.com/$id.mp3")
-            .build()
+    private fun playableItem(id: String): MediaItem = MediaItem
+        .Builder()
+        .setMediaId(id)
+        .setUri("https://cdn.example.com/$id.mp3")
+        .build()
 }

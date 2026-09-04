@@ -1,18 +1,19 @@
 package cx.aswin.boxlore.feature.briefing
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.DragInteraction
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,9 +29,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.foundation.interaction.DragInteraction
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun BriefingStoriesPager(
@@ -96,14 +96,14 @@ internal fun BriefingStoriesPager(
 
     BriefingStoriesPagerContent(
         uiState =
-            BriefingStoriesPagerUiState(
-                briefing = briefing,
-                chapters = chapters,
-                paragraphs = paragraphs,
-                activeChapterIndex = activeChapterIndex,
-                isPlaying = isPlaying,
-                accentColor = accentColor,
-            ),
+        BriefingStoriesPagerUiState(
+            briefing = briefing,
+            chapters = chapters,
+            paragraphs = paragraphs,
+            activeChapterIndex = activeChapterIndex,
+            isPlaying = isPlaying,
+            accentColor = accentColor,
+        ),
         actions = pagerActions,
     )
 }
@@ -228,11 +228,11 @@ private fun trackChapterPageInteraction(
         region = briefing.region,
         date = briefing.date,
         extraProps =
-            mapOf(
-                "chapter_index" to page,
-                "chapter_title" to chapter.title,
-                "method" to if (swiped) "swipe" else "click",
-            ),
+        mapOf(
+            "chapter_index" to page,
+            "chapter_title" to chapter.title,
+            "method" to if (swiped) "swipe" else "click",
+        ),
     )
 }
 
@@ -272,15 +272,15 @@ private fun BriefingChapterPager(
     ) { page ->
         BriefingStoryCard(
             state =
-                BriefingStoryCardState(
-                    briefing = uiState.briefing,
-                    chapter = uiState.chapters[page],
-                    paragraph = uiState.paragraphs.getOrNull(page) ?: "",
-                    page = page,
-                    pageCount = uiState.chapters.size,
-                    isActive = uiState.activeChapterIndex == page && uiState.isPlaying,
-                    accentColor = uiState.accentColor,
-                ),
+            BriefingStoryCardState(
+                briefing = uiState.briefing,
+                chapter = uiState.chapters[page],
+                paragraph = uiState.paragraphs.getOrNull(page) ?: "",
+                page = page,
+                pageCount = uiState.chapters.size,
+                isActive = uiState.activeChapterIndex == page && uiState.isPlaying,
+                accentColor = uiState.accentColor,
+            ),
             actions = actions,
         )
     }

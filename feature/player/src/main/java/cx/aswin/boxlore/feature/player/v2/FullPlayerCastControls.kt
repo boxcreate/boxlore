@@ -253,11 +253,11 @@ private fun CastRoutePickerContent(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .navigationBarsPadding()
+            .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
     ) {
         CastPickerHeader()
         Spacer(modifier = Modifier.height(18.dp))
@@ -291,13 +291,13 @@ private fun CastRoutePickerContent(
             CastRouteRow(
                 title = route.name,
                 subtitle =
-                    castRouteSubtitle(
-                        isSelected = route.isSelected,
-                        isConnecting =
-                            isPending ||
-                                route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTING,
-                        description = route.description,
-                    ),
+                castRouteSubtitle(
+                    isSelected = route.isSelected,
+                    isConnecting =
+                    isPending ||
+                        route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTING,
+                    description = route.description,
+                ),
                 selected = route.isSelected,
                 enabled = connectingRouteId == null,
                 connecting = isPending,
@@ -365,29 +365,29 @@ private fun CastRouteRow(
         }
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .background(containerColor)
-                .clickable(enabled = enabled, onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(containerColor)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
             modifier = Modifier.size(44.dp),
             shape = CircleShape,
             color =
-                if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHighest
-                },
+            if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHighest
+            },
             contentColor =
-                if (selected) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
+            if (selected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         ) {
             Box(contentAlignment = Alignment.Center) {
                 icon()
@@ -395,9 +395,9 @@ private fun CastRouteRow(
         }
         Column(
             modifier =
-                Modifier
-                    .weight(1f)
-                    .padding(horizontal = 14.dp),
+            Modifier
+                .weight(1f)
+                .padding(horizontal = 14.dp),
         ) {
             Text(
                 text = title,
@@ -437,9 +437,9 @@ private fun CastConnectingIndicator(deviceName: String) {
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -461,9 +461,9 @@ private fun CastConnectingIndicator(deviceName: String) {
 private fun CastRouteEmptyState() {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 28.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {

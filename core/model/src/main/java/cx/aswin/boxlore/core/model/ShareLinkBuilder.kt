@@ -5,12 +5,7 @@ object ShareLinkBuilder {
 
     fun podcast(id: String): String = "$BASE_URL?type=podcast&id=$id"
 
-    fun episode(
-        id: String,
-        timestampMs: Long? = null,
-        startMs: Long? = null,
-        endMs: Long? = null
-    ): String {
+    fun episode(id: String, timestampMs: Long? = null, startMs: Long? = null, endMs: Long? = null): String {
         val baseUrl = "$BASE_URL?type=episode&id=$id"
         return when {
             startMs != null && endMs != null -> {
@@ -23,13 +18,7 @@ object ShareLinkBuilder {
         }
     }
 
-    fun build(
-        type: String,
-        id: String,
-        timestampMs: Long? = null,
-        startMs: Long? = null,
-        endMs: Long? = null
-    ): String = if (type == "podcast") {
+    fun build(type: String, id: String, timestampMs: Long? = null, startMs: Long? = null, endMs: Long? = null): String = if (type == "podcast") {
         podcast(id)
     } else {
         episode(

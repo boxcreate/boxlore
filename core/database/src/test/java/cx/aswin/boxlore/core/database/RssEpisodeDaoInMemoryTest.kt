@@ -86,124 +86,114 @@ class RssEpisodeDaoInMemoryTest {
     }
 
     @Test
-    fun upsertAllAndGetEpisode() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(listOf(episode("-1"), episode("-2")))
+    fun upsertAllAndGetEpisode() = runTest {
+        seedPodcast()
+        dao.upsertAll(listOf(episode("-1"), episode("-2")))
 
-            assertEquals("Title -1", dao.getEpisode("-1")?.title)
-            assertNull(dao.getEpisode("-999"))
-            assertEquals(2, dao.count("-1001"))
-        }
-
-    @Test
-    fun newestPageOrdersByPublishedDateDesc() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(
-                listOf(
-                    episode("-1", publishedDate = 100L),
-                    episode("-2", publishedDate = 300L),
-                    episode("-3", publishedDate = 200L),
-                ),
-            )
-
-            val page = dao.getNewestPage("-1001", limit = 2, offset = 0).map { it.episodeId }
-            assertEquals(listOf("-2", "-3"), page)
-
-            val second = dao.getNewestPage("-1001", limit = 2, offset = 2).map { it.episodeId }
-            assertEquals(listOf("-1"), second)
-        }
+        assertEquals("Title -1", dao.getEpisode("-1")?.title)
+        assertNull(dao.getEpisode("-999"))
+        assertEquals(2, dao.count("-1001"))
+    }
 
     @Test
-    fun oldestPageOrdersByPublishedDateAsc() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(
-                listOf(
-                    episode("-1", publishedDate = 100L),
-                    episode("-2", publishedDate = 300L),
-                    episode("-3", publishedDate = 200L),
-                ),
-            )
+    fun newestPageOrdersByPublishedDateDesc() = runTest {
+        seedPodcast()
+        dao.upsertAll(
+            listOf(
+                episode("-1", publishedDate = 100L),
+                episode("-2", publishedDate = 300L),
+                episode("-3", publishedDate = 200L),
+            ),
+        )
 
-            assertEquals(listOf("-1", "-3", "-2"), dao.getOldestPage("-1001", limit = 10, offset = 0).map { it.episodeId })
-        }
+        val page = dao.getNewestPage("-1001", limit = 2, offset = 0).map { it.episodeId }
+        assertEquals(listOf("-2", "-3"), page)
 
-    @Test
-    fun getEpisodesAfterOrdersByPublishedDateAsc() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(
-                listOf(
-                    episode("-1", publishedDate = 100L),
-                    episode("-2", publishedDate = 300L),
-                    episode("-3", publishedDate = 200L),
-                    episode("-4", publishedDate = 50L),
-                ),
-            )
-
-            val after = dao.getEpisodesAfter("-1001", publishedDate = 100L, episodeId = "-1", limit = 10)
-            assertEquals(listOf("-3", "-2"), after.map { it.episodeId })
-        }
+        val second = dao.getNewestPage("-1001", limit = 2, offset = 2).map { it.episodeId }
+        assertEquals(listOf("-1"), second)
+    }
 
     @Test
-    fun getAllNewestReturnsEveryEpisode() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(listOf(episode("-1", publishedDate = 1L), episode("-2", publishedDate = 2L)))
-            assertEquals(listOf("-2", "-1"), dao.getAllNewest("-1001").map { it.episodeId })
-        }
+    fun oldestPageOrdersByPublishedDateAsc() = runTest {
+        seedPodcast()
+        dao.upsertAll(
+            listOf(
+                episode("-1", publishedDate = 100L),
+                episode("-2", publishedDate = 300L),
+                episode("-3", publishedDate = 200L),
+            ),
+        )
+
+        assertEquals(listOf("-1", "-3", "-2"), dao.getOldestPage("-1001", limit = 10, offset = 0).map { it.episodeId })
+    }
 
     @Test
-    fun searchMatchesTitleOrDescription() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(
-                listOf(
-                    episode("-1", title = "Kotlin coroutines", description = "async"),
-                    episode("-2", title = "Gardening", description = "kotlin tips inside"),
-                    episode("-3", title = "Cooking", description = "food"),
-                ),
-            )
+    fun getEpisodesAfterOrdersByPublishedDateAsc() = runTest {
+        seedPodcast()
+        dao.upsertAll(
+            listOf(
+                episode("-1", publishedDate = 100L),
+                episode("-2", publishedDate = 300L),
+                episode("-3", publishedDate = 200L),
+                episode("-4", publishedDate = 50L),
+            ),
+        )
 
-            val matches = dao.search("-1001", "kotlin").map { it.episodeId }.toSet()
-            assertEquals(setOf("-1", "-2"), matches)
-        }
-
-    @Test
-    fun getNewestReturnsSingleTopEpisode() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(listOf(episode("-1", publishedDate = 1L), episode("-2", publishedDate = 5L)))
-            assertEquals("-2", dao.getNewest("-1001")?.episodeId)
-        }
+        val after = dao.getEpisodesAfter("-1001", publishedDate = 100L, episodeId = "-1", limit = 10)
+        assertEquals(listOf("-3", "-2"), after.map { it.episodeId })
+    }
 
     @Test
-    fun getEpisodeIdsReturnsAllForPodcast() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(listOf(episode("-1"), episode("-2")))
-            assertEquals(setOf("-1", "-2"), dao.getEpisodeIds("-1001").toSet())
-        }
+    fun getAllNewestReturnsEveryEpisode() = runTest {
+        seedPodcast()
+        dao.upsertAll(listOf(episode("-1", publishedDate = 1L), episode("-2", publishedDate = 2L)))
+        assertEquals(listOf("-2", "-1"), dao.getAllNewest("-1001").map { it.episodeId })
+    }
 
     @Test
-    fun deleteForPodcastClearsRows() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(listOf(episode("-1"), episode("-2")))
-            dao.deleteForPodcast("-1001")
-            assertEquals(0, dao.count("-1001"))
-        }
+    fun searchMatchesTitleOrDescription() = runTest {
+        seedPodcast()
+        dao.upsertAll(
+            listOf(
+                episode("-1", title = "Kotlin coroutines", description = "async"),
+                episode("-2", title = "Gardening", description = "kotlin tips inside"),
+                episode("-3", title = "Cooking", description = "food"),
+            ),
+        )
+
+        val matches = dao.search("-1001", "kotlin").map { it.episodeId }.toSet()
+        assertEquals(setOf("-1", "-2"), matches)
+    }
 
     @Test
-    fun deletingParentPodcastCascadesToEpisodes() =
-        runTest {
-            seedPodcast()
-            dao.upsertAll(listOf(episode("-1")))
+    fun getNewestReturnsSingleTopEpisode() = runTest {
+        seedPodcast()
+        dao.upsertAll(listOf(episode("-1", publishedDate = 1L), episode("-2", publishedDate = 5L)))
+        assertEquals("-2", dao.getNewest("-1001")?.episodeId)
+    }
 
-            podcastDao.deleteRssEpisodes("-1001")
+    @Test
+    fun getEpisodeIdsReturnsAllForPodcast() = runTest {
+        seedPodcast()
+        dao.upsertAll(listOf(episode("-1"), episode("-2")))
+        assertEquals(setOf("-1", "-2"), dao.getEpisodeIds("-1001").toSet())
+    }
 
-            assertTrue(dao.getEpisodeIds("-1001").isEmpty())
-        }
+    @Test
+    fun deleteForPodcastClearsRows() = runTest {
+        seedPodcast()
+        dao.upsertAll(listOf(episode("-1"), episode("-2")))
+        dao.deleteForPodcast("-1001")
+        assertEquals(0, dao.count("-1001"))
+    }
+
+    @Test
+    fun deletingParentPodcastCascadesToEpisodes() = runTest {
+        seedPodcast()
+        dao.upsertAll(listOf(episode("-1")))
+
+        podcastDao.deleteRssEpisodes("-1001")
+
+        assertTrue(dao.getEpisodeIds("-1001").isEmpty())
+    }
 }

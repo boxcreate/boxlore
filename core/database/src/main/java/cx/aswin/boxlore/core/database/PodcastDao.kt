@@ -25,10 +25,10 @@ data class RssFeedStateUpdate(
 
 @Dao
 interface PodcastDao {
-    
+
     @Upsert
     suspend fun upsert(podcast: PodcastEntity)
-    
+
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 ORDER BY title ASC")
     fun getSubscribedPodcasts(): Flow<List<PodcastEntity>>
 
@@ -44,13 +44,13 @@ interface PodcastDao {
 
     @Query("SELECT * FROM podcasts WHERE linkedPodcastIndexId = :podcastIndexId LIMIT 1")
     suspend fun getRssPodcastLinkedTo(podcastIndexId: String): PodcastEntity?
-    
+
     @Query("SELECT * FROM podcasts WHERE podcastId = :id")
     suspend fun getPodcast(id: String): PodcastEntity?
 
     @Query("SELECT * FROM podcasts WHERE podcastId IN (:ids)")
     suspend fun getPodcastsByIds(ids: List<String>): List<PodcastEntity>
-    
+
     @Query("UPDATE podcasts SET isSubscribed = :isSubscribed WHERE podcastId = :id")
     suspend fun setSubscribed(id: String, isSubscribed: Boolean)
 
@@ -68,7 +68,7 @@ interface PodcastDao {
 
     @Query("DELETE FROM rss_episodes WHERE podcastId = :podcastId")
     suspend fun deleteRssEpisodes(podcastId: String)
-    
+
     @Query("UPDATE podcasts SET latestEpisode = :episode WHERE podcastId = :id")
     suspend fun updateLatestEpisode(id: String, episode: cx.aswin.boxlore.core.model.Episode?)
 
@@ -89,11 +89,7 @@ interface PodcastDao {
         WHERE podcastId = :id
         """,
     )
-    suspend fun setPlaybackSkipOverrides(
-        id: String,
-        skipBeginningMs: Long?,
-        skipEndingMs: Long?,
-    )
+    suspend fun setPlaybackSkipOverrides(id: String, skipBeginningMs: Long?, skipEndingMs: Long?,)
 
     /** Partial-entity update — see [RssFeedStateUpdate] for why this isn't a plain `@Query`. */
     @Update(entity = PodcastEntity::class)
@@ -115,8 +111,5 @@ interface PodcastDao {
 
     /** Publisher HTTPS URL for PI shows opted into Missing episodes? (library restore). */
     @Query("UPDATE podcasts SET feedUrl = :feedUrl WHERE podcastId = :id")
-    suspend fun setFeedUrl(
-        id: String,
-        feedUrl: String,
-    )
+    suspend fun setFeedUrl(id: String, feedUrl: String,)
 }

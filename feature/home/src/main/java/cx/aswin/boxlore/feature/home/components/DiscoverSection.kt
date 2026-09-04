@@ -36,9 +36,9 @@ fun DiscoverSection(
         // Section Header (Matches OnTheRiseSection styling)
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 0.dp, bottom = 8.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 0.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -54,9 +54,9 @@ fun DiscoverSection(
                 Text(
                     text = if (selectedCategory == null) "Explore" else "Top in $selectedCategory",
                     style =
-                        MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = rememberSectionHeaderFontFamily(),
-                        ),
+                    MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = rememberSectionHeaderFontFamily(),
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }

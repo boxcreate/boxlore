@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.explore
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -52,7 +50,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -60,14 +57,15 @@ import androidx.compose.ui.unit.dp
 import coil.request.ImageRequest
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import kotlin.math.abs
-import kotlin.math.PI
-import kotlin.math.roundToInt
-import kotlin.math.sin
 
 sealed interface CardAction {
     data object Dismiss : CardAction
@@ -134,57 +132,60 @@ fun CuriosityCardStack(
                 val depth = visibleCards.indexOf(card)
                 val isActive = depth == 0
                 val cardModifier = when (depth) {
-                    2 -> Modifier
-                        .matchParentSize()
-                        .offset(y = (24f - (10f * swipeProgress)).dp)
-                        .scale(0.93f + (0.035f * swipeProgress))
-                        .graphicsLayer {
-                            rotationZ = 1.8f * (1f - swipeProgress)
-                        }
-                    1 -> Modifier
-                        .matchParentSize()
-                        .offset(y = (13f - (11f * swipeProgress)).dp)
-                        .scale(0.965f + (0.025f * swipeProgress))
-                        .graphicsLayer {
-                            rotationZ = -1.15f * (1f - swipeProgress)
-                        }
-                    else -> Modifier
-                        .fillMaxSize()
-                        .offset {
-                            IntOffset(
-                                swipeState.offset.value.x.roundToInt(),
-                                0
-                            )
-                        }
-                        .graphicsLayer {
-                            rotationZ = (swipeState.offset.value.x / 180f)
-                                .coerceIn(-2.5f, 2.5f)
-                            cameraDistance = 12f * density
-                        }
-                        .pointerInput(card.episodeId) {
-                            detectHorizontalDragGestures(
-                                onDragEnd = {
-                                    val offsetX = swipeState.offset.value.x
-                                    if (offsetX > swipeThresholdPx) {
-                                        swipeState.swipe(SwipeDirection.Right)
-                                    } else if (offsetX < -swipeThresholdPx) {
-                                        swipeState.swipe(SwipeDirection.Left)
-                                    } else {
-                                        swipeState.reset()
-                                    }
-                                },
-                                onDragCancel = swipeState::reset,
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    swipeState.drag(
-                                        androidx.compose.ui.geometry.Offset(
-                                            x = dragAmount,
-                                            y = 0f
+                    2 ->
+                        Modifier
+                            .matchParentSize()
+                            .offset(y = (24f - (10f * swipeProgress)).dp)
+                            .scale(0.93f + (0.035f * swipeProgress))
+                            .graphicsLayer {
+                                rotationZ = 1.8f * (1f - swipeProgress)
+                            }
+                    1 ->
+                        Modifier
+                            .matchParentSize()
+                            .offset(y = (13f - (11f * swipeProgress)).dp)
+                            .scale(0.965f + (0.025f * swipeProgress))
+                            .graphicsLayer {
+                                rotationZ = -1.15f * (1f - swipeProgress)
+                            }
+                    else ->
+                        Modifier
+                            .fillMaxSize()
+                            .offset {
+                                IntOffset(
+                                    swipeState.offset.value.x.roundToInt(),
+                                    0
+                                )
+                            }
+                            .graphicsLayer {
+                                rotationZ = (swipeState.offset.value.x / 180f)
+                                    .coerceIn(-2.5f, 2.5f)
+                                cameraDistance = 12f * density
+                            }
+                            .pointerInput(card.episodeId) {
+                                detectHorizontalDragGestures(
+                                    onDragEnd = {
+                                        val offsetX = swipeState.offset.value.x
+                                        if (offsetX > swipeThresholdPx) {
+                                            swipeState.swipe(SwipeDirection.Right)
+                                        } else if (offsetX < -swipeThresholdPx) {
+                                            swipeState.swipe(SwipeDirection.Left)
+                                        } else {
+                                            swipeState.reset()
+                                        }
+                                    },
+                                    onDragCancel = swipeState::reset,
+                                    onHorizontalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        swipeState.drag(
+                                            androidx.compose.ui.geometry.Offset(
+                                                x = dragAmount,
+                                                y = 0f
+                                            )
                                         )
-                                    )
-                                }
-                            )
-                        }
+                                    }
+                                )
+                            }
                 }
 
                 DeckCard(
@@ -345,28 +346,28 @@ private fun CuriosityCardContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .drawWithCache {
-                    val upperWash = Brush.radialGradient(
-                        colors = listOf(
-                            accentColor.copy(alpha = 0.34f),
-                            accentColor.copy(alpha = 0.10f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.08f, size.height * 0.02f),
-                        radius = size.maxDimension * 0.8f
-                    )
-                    val lowerWash = Brush.radialGradient(
-                        colors = listOf(
-                            tertiaryColor.copy(alpha = 0.18f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width, size.height),
-                        radius = size.maxDimension * 0.7f
-                    )
-                    onDrawBehind {
-                        drawRect(upperWash)
-                        drawRect(lowerWash)
+                        val upperWash = Brush.radialGradient(
+                            colors = listOf(
+                                accentColor.copy(alpha = 0.34f),
+                                accentColor.copy(alpha = 0.10f),
+                                Color.Transparent
+                            ),
+                            center = Offset(size.width * 0.08f, size.height * 0.02f),
+                            radius = size.maxDimension * 0.8f
+                        )
+                        val lowerWash = Brush.radialGradient(
+                            colors = listOf(
+                                tertiaryColor.copy(alpha = 0.18f),
+                                Color.Transparent
+                            ),
+                            center = Offset(size.width, size.height),
+                            radius = size.maxDimension * 0.7f
+                        )
+                        onDrawBehind {
+                            drawRect(upperWash)
+                            drawRect(lowerWash)
+                        }
                     }
-                }
             )
             Box(
                 modifier = Modifier

@@ -35,37 +35,36 @@ class ContentOrchestratorTest {
     }
 
     @Test
-    fun `provider failures are isolated and session slate is stable`() =
-        runTest {
-            var successfulCalls = 0
-            val failing = provider(CandidateSource.TRENDING) { error("offline") }
-            val successful =
-                provider(CandidateSource.SERVER_RECOMMENDATION) {
-                    successfulCalls++
-                    listOf(candidate("episode-a", "show-a", score = 0.8))
-                }
-            val orchestrator =
-                ContentOrchestrator(
-                    providers = listOf(failing, successful),
-                    ranker =
-                        ContentCandidateRanker { candidates, _, _ ->
-                            candidates.sortedByDescending(ContentCandidate::rankingScore)
-                        },
-                )
-
-            val first = orchestrator.compose(context(), catalog())
-            val second = orchestrator.compose(context(), catalog())
-
-            assertEquals(
-                listOf("episode-a"),
-                first.sections
-                    .single()
-                    .items
-                    .map(ContentCandidate::id),
+    fun `provider failures are isolated and session slate is stable`() = runTest {
+        var successfulCalls = 0
+        val failing = provider(CandidateSource.TRENDING) { error("offline") }
+        val successful =
+            provider(CandidateSource.SERVER_RECOMMENDATION) {
+                successfulCalls++
+                listOf(candidate("episode-a", "show-a", score = 0.8))
+            }
+        val orchestrator =
+            ContentOrchestrator(
+                providers = listOf(failing, successful),
+                ranker =
+                ContentCandidateRanker { candidates, _, _ ->
+                    candidates.sortedByDescending(ContentCandidate::rankingScore)
+                },
             )
-            assertSame(first, second)
-            assertEquals(1, successfulCalls)
-        }
+
+        val first = orchestrator.compose(context(), catalog())
+        val second = orchestrator.compose(context(), catalog())
+
+        assertEquals(
+            listOf("episode-a"),
+            first.sections
+                .single()
+                .items
+                .map(ContentCandidate::id),
+        )
+        assertSame(first, second)
+        assertEquals(1, successfulCalls)
+    }
 
     @Test
     fun `slate keeps protected sections and deduplicates across optional sections`() {
@@ -79,10 +78,10 @@ class ContentOrchestratorTest {
                 context = context(),
                 catalogVersion = "test",
                 rankedByIntent =
-                    listOf(
-                        protectedIntent to listOf(duplicate),
-                        optionalIntent to listOf(duplicate, unique),
-                    ),
+                listOf(
+                    protectedIntent to listOf(duplicate),
+                    optionalIntent to listOf(duplicate, unique),
+                ),
                 exposureBudget = SharedExposureBudget(),
                 now = 1,
             )
@@ -114,127 +113,123 @@ class ContentOrchestratorTest {
     }
 
     @Test
-    fun `ranker failure falls back to retrieval order`() =
-        runTest {
-            val orchestrator =
-                ContentOrchestrator(
-                    providers =
+    fun `ranker failure falls back to retrieval order`() = runTest {
+        val orchestrator =
+            ContentOrchestrator(
+                providers =
+                listOf(
+                    provider(CandidateSource.SERVER_RECOMMENDATION) {
                         listOf(
-                            provider(CandidateSource.SERVER_RECOMMENDATION) {
-                                listOf(
-                                    candidate("low", "show-a", score = 0.2),
-                                    candidate("high", "show-b", score = 0.9),
-                                )
-                            },
-                        ),
-                    ranker = ContentCandidateRanker { _, _, _ -> error("ranking unavailable") },
-                )
-
-            val slate = orchestrator.compose(context(), catalog())
-
-            assertEquals(
-                listOf("high", "low"),
-                slate.sections
-                    .single()
-                    .items
-                    .map(ContentCandidate::id),
+                            candidate("low", "show-a", score = 0.2),
+                            candidate("high", "show-b", score = 0.9),
+                        )
+                    },
+                ),
+                ranker = ContentCandidateRanker { _, _, _ -> error("ranking unavailable") },
             )
-        }
+
+        val slate = orchestrator.compose(context(), catalog())
+
+        assertEquals(
+            listOf("high", "low"),
+            slate.sections
+                .single()
+                .items
+                .map(ContentCandidate::id),
+        )
+    }
 
     @Test
-    fun `provider cancellation is never converted to an empty result`() =
-        runTest {
-            val orchestrator =
-                ContentOrchestrator(
-                    providers =
-                        listOf(
-                            provider(CandidateSource.TRENDING) {
-                                throw CancellationException("cancelled")
-                            },
-                        ),
-                    ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
-                )
+    fun `provider cancellation is never converted to an empty result`() = runTest {
+        val orchestrator =
+            ContentOrchestrator(
+                providers =
+                listOf(
+                    provider(CandidateSource.TRENDING) {
+                        throw CancellationException("cancelled")
+                    },
+                ),
+                ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
+            )
 
-            try {
-                orchestrator.compose(context(), catalog())
-                fail("Expected cancellation")
-            } catch (_: CancellationException) {
-                // Expected: structured concurrency must remain cancellable.
-            }
+        try {
+            orchestrator.compose(context(), catalog())
+            fail("Expected cancellation")
+        } catch (_: CancellationException) {
+            // Expected: structured concurrency must remain cancellable.
         }
+    }
 
     @Test
-    fun `daily refresh policy invalidates slate on the next day`() =
-        runTest {
-            var calls = 0
-            val dailyIntent = intent("daily", refreshPolicy = ContentRefreshPolicy.DAILY)
-            val dailyCatalog =
-                ContentCatalogSnapshot(
-                    schemaVersion = 1,
-                    catalogVersion = "daily-test",
-                    validUntil = Long.MAX_VALUE,
-                    intents = listOf(dailyIntent),
-                )
-            val orchestrator =
-                ContentOrchestrator(
-                    providers =
-                        listOf(
-                            provider(CandidateSource.TRENDING) {
-                                calls++
-                                listOf(candidate("episode-$calls", "show-$calls", score = 1.0))
-                            },
-                        ),
-                    ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
-                )
+    fun `daily refresh policy invalidates slate on the next day`() = runTest {
+        var calls = 0
+        val dailyIntent = intent("daily", refreshPolicy = ContentRefreshPolicy.DAILY)
+        val dailyCatalog =
+            ContentCatalogSnapshot(
+                schemaVersion = 1,
+                catalogVersion = "daily-test",
+                validUntil = Long.MAX_VALUE,
+                intents = listOf(dailyIntent),
+            )
+        val orchestrator =
+            ContentOrchestrator(
+                providers =
+                listOf(
+                    provider(CandidateSource.TRENDING) {
+                        calls++
+                        listOf(candidate("episode-$calls", "show-$calls", score = 1.0))
+                    },
+                ),
+                ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
+            )
 
-            val first = orchestrator.compose(context(), dailyCatalog, now = 1)
-            val cached = orchestrator.compose(context(), dailyCatalog, now = 2)
-            val nextDay =
-                orchestrator.compose(
-                    context(),
-                    dailyCatalog,
-                    now = 24L * 60L * 60L * 1_000L,
-                )
+        val first = orchestrator.compose(context(), dailyCatalog, now = 1)
+        val cached = orchestrator.compose(context(), dailyCatalog, now = 2)
+        val nextDay =
+            orchestrator.compose(
+                context(),
+                dailyCatalog,
+                now = 24L * 60L * 60L * 1_000L,
+            )
 
-            assertSame(first, cached)
-            assertNotSame(first, nextDay)
-            assertEquals(2, calls)
-        }
+        assertSame(first, cached)
+        assertNotSame(first, nextDay)
+        assertEquals(2, calls)
+    }
 
     @Test
-    fun `daypart refresh policy invalidates slate when daypart changes`() =
-        runTest {
-            var calls = 0
-            val daypartIntent = intent("daypart", refreshPolicy = ContentRefreshPolicy.DAYPART)
-            val daypartCatalog =
-                ContentCatalogSnapshot(
-                    schemaVersion = 1,
-                    catalogVersion = "daypart-test",
-                    validUntil = Long.MAX_VALUE,
-                    intents = listOf(daypartIntent),
-                )
-            val orchestrator =
-                ContentOrchestrator(
-                    providers =
-                        listOf(
-                            provider(CandidateSource.TRENDING) {
-                                calls++
-                                listOf(candidate("episode-$calls", "show-$calls", score = 1.0))
-                            },
-                        ),
-                    ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
-                )
+    fun `daypart refresh policy invalidates slate when daypart changes`() = runTest {
+        var calls = 0
+        val daypartIntent = intent("daypart", refreshPolicy = ContentRefreshPolicy.DAYPART)
+        val daypartCatalog =
+            ContentCatalogSnapshot(
+                schemaVersion = 1,
+                catalogVersion = "daypart-test",
+                validUntil = Long.MAX_VALUE,
+                intents = listOf(daypartIntent),
+            )
+        val orchestrator =
+            ContentOrchestrator(
+                providers =
+                listOf(
+                    provider(CandidateSource.TRENDING) {
+                        calls++
+                        listOf(candidate("episode-$calls", "show-$calls", score = 1.0))
+                    },
+                ),
+                ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
+            )
 
-            val morning = orchestrator.compose(context(ContentDaypart.MORNING), daypartCatalog, now = 1)
-            val morningCached =
-                orchestrator.compose(context(ContentDaypart.MORNING), daypartCatalog, now = 1)
-            val afternoon =
-                orchestrator.compose(context(ContentDaypart.AFTERNOON), daypartCatalog, now = 1)
+        val morning = orchestrator.compose(context(ContentDaypart.MORNING), daypartCatalog, now = 1)
+        val morningCached =
+            orchestrator.compose(context(ContentDaypart.MORNING), daypartCatalog, now = 1)
+        val afternoon =
+            orchestrator.compose(context(ContentDaypart.AFTERNOON), daypartCatalog, now = 1)
 
-            assertSame(morning, morningCached)
-            assertNotSame(morning, afternoon)
-            assertEquals(2, calls)
-        }
+        assertSame(morning, morningCached)
+        assertNotSame(morning, afternoon)
+        assertEquals(2, calls)
+    }
 
     @Test
     fun `resolver keeps only daypart-and-surface eligible intents`() {
@@ -266,48 +261,47 @@ class ContentOrchestratorTest {
     }
 
     @Test
-    fun `force refresh without budget reset drops previously composed ids`() =
-        runTest {
-            var calls = 0
-            val orchestrator =
-                ContentOrchestrator(
-                    providers =
+    fun `force refresh without budget reset drops previously composed ids`() = runTest {
+        var calls = 0
+        val orchestrator =
+            ContentOrchestrator(
+                providers =
+                listOf(
+                    provider(CandidateSource.TRENDING) {
+                        calls++
                         listOf(
-                            provider(CandidateSource.TRENDING) {
-                                calls++
-                                listOf(
-                                    candidate("episode-a", "show-a", score = 1.0),
-                                    candidate("episode-b", "show-b", score = 0.9),
-                                )
-                            },
-                        ),
-                    ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
-                )
-
-            val first = orchestrator.compose(context(), catalog(), forceRefresh = true, now = 1)
-            val second = orchestrator.compose(context(), catalog(), forceRefresh = true, now = 2)
-
-            assertEquals(
-                listOf("episode-a", "episode-b"),
-                first.sections
-                    .single()
-                    .items
-                    .map(ContentCandidate::id),
+                            candidate("episode-a", "show-a", score = 1.0),
+                            candidate("episode-b", "show-b", score = 0.9),
+                        )
+                    },
+                ),
+                ranker = ContentCandidateRanker { candidates, _, _ -> candidates },
             )
-            assertTrue(second.sections.isEmpty())
-            assertEquals(2, calls)
 
-            orchestrator.resetExposureBudget()
-            val third = orchestrator.compose(context(), catalog(), forceRefresh = true, now = 3)
+        val first = orchestrator.compose(context(), catalog(), forceRefresh = true, now = 1)
+        val second = orchestrator.compose(context(), catalog(), forceRefresh = true, now = 2)
 
-            assertEquals(
-                listOf("episode-a", "episode-b"),
-                third.sections
-                    .single()
-                    .items
-                    .map(ContentCandidate::id),
-            )
-        }
+        assertEquals(
+            listOf("episode-a", "episode-b"),
+            first.sections
+                .single()
+                .items
+                .map(ContentCandidate::id),
+        )
+        assertTrue(second.sections.isEmpty())
+        assertEquals(2, calls)
+
+        orchestrator.resetExposureBudget()
+        val third = orchestrator.compose(context(), catalog(), forceRefresh = true, now = 3)
+
+        assertEquals(
+            listOf("episode-a", "episode-b"),
+            third.sections
+                .single()
+                .items
+                .map(ContentCandidate::id),
+        )
+    }
 
     @Test
     fun `recommendation v2 request excludes raw behavioral history`() {
@@ -348,71 +342,56 @@ class ContentOrchestratorTest {
         assertEquals(false, offline.isOnline)
     }
 
-    private fun catalog(): ContentCatalogSnapshot =
-        ContentCatalogSnapshot(
-            schemaVersion = 1,
-            catalogVersion = "test",
-            validUntil = Long.MAX_VALUE,
-            intents = listOf(intent("discover")),
-        )
+    private fun catalog(): ContentCatalogSnapshot = ContentCatalogSnapshot(
+        schemaVersion = 1,
+        catalogVersion = "test",
+        validUntil = Long.MAX_VALUE,
+        intents = listOf(intent("discover")),
+    )
 
     private fun intent(
         id: String,
         protected: Boolean = false,
         refreshPolicy: ContentRefreshPolicy = ContentRefreshPolicy.SESSION,
-    ): ContentIntent =
-        ContentIntent(
-            id = id,
-            objective = RankingObjective.DISCOVERY,
-            eligibleSurfaces = setOf(RankingSurface.HOME),
-            title = id,
-            layout = ContentLayout.PODCAST_RAIL,
-            refreshPolicy = refreshPolicy,
-            protected = protected,
-        )
+    ): ContentIntent = ContentIntent(
+        id = id,
+        objective = RankingObjective.DISCOVERY,
+        eligibleSurfaces = setOf(RankingSurface.HOME),
+        title = id,
+        layout = ContentLayout.PODCAST_RAIL,
+        refreshPolicy = refreshPolicy,
+        protected = protected,
+    )
 
-    private fun context(daypart: ContentDaypart = ContentDaypart.MORNING): ContentContext =
-        ContentContext(
-            surface = RankingSurface.HOME,
-            localMinuteOfDay = 600,
-            weekday = 3,
-            daypart = daypart,
-            region = "us",
-            isDriving = false,
-            isOnline = true,
-            availableMinutes = null,
-            currentEpisodeId = null,
-            currentPodcastId = null,
-            historyMaturity = 10,
-            subscriptionCount = 2,
-            sessionId = "session",
-        )
+    private fun context(daypart: ContentDaypart = ContentDaypart.MORNING): ContentContext = ContentContext(
+        surface = RankingSurface.HOME,
+        localMinuteOfDay = 600,
+        weekday = 3,
+        daypart = daypart,
+        region = "us",
+        isDriving = false,
+        isOnline = true,
+        availableMinutes = null,
+        currentEpisodeId = null,
+        currentPodcastId = null,
+        historyMaturity = 10,
+        subscriptionCount = 2,
+        sessionId = "session",
+    )
 
-    private fun candidate(
-        id: String,
-        showId: String,
-        score: Double,
-    ): ContentCandidate =
-        ContentCandidate(
-            id = id,
-            episode = null,
-            podcast = Podcast(showId, showId, "", ""),
-            source = CandidateSource.SERVER_RECOMMENDATION,
-            intentId = "discover",
-            retrievalScore = score,
-            rankingScore = score,
-        )
+    private fun candidate(id: String, showId: String, score: Double,): ContentCandidate = ContentCandidate(
+        id = id,
+        episode = null,
+        podcast = Podcast(showId, showId, "", ""),
+        source = CandidateSource.SERVER_RECOMMENDATION,
+        intentId = "discover",
+        retrievalScore = score,
+        rankingScore = score,
+    )
 
-    private fun provider(
-        source: CandidateSource,
-        block: suspend () -> List<ContentCandidate>,
-    ): CandidateProvider =
-        object : CandidateProvider {
-            override val source: CandidateSource = source
+    private fun provider(source: CandidateSource, block: suspend () -> List<ContentCandidate>,): CandidateProvider = object : CandidateProvider {
+        override val source: CandidateSource = source
 
-            override suspend fun candidates(
-                intent: ContentIntent,
-                context: ContentContext,
-            ): List<ContentCandidate> = block()
-        }
+        override suspend fun candidates(intent: ContentIntent, context: ContentContext,): List<ContentCandidate> = block()
+    }
 }

@@ -22,11 +22,7 @@ internal object PodcastEpisodeSupplementMerge {
         return EpisodeSupplementListMerge.merge(piEpisodes, supplements, sort)
     }
 
-    fun unionSearch(
-        podcastId: String,
-        networkResults: List<Episode>,
-        supplementMatches: List<Episode>,
-    ): List<Episode> {
+    fun unionSearch(podcastId: String, networkResults: List<Episode>, supplementMatches: List<Episode>,): List<Episode> {
         if (podcastId.startsWith("rss:") || supplementMatches.isEmpty()) {
             return networkResults
         }
@@ -36,10 +32,9 @@ internal object PodcastEpisodeSupplementMerge {
         )
     }
 
-    fun sortFromQuery(sort: String): EpisodeSupplementListMerge.Sort =
-        if (sort == "oldest") {
-            EpisodeSupplementListMerge.Sort.OLDEST
-        } else {
-            EpisodeSupplementListMerge.Sort.NEWEST
-        }
+    fun sortFromQuery(sort: String): EpisodeSupplementListMerge.Sort = if (sort == "oldest") {
+        EpisodeSupplementListMerge.Sort.OLDEST
+    } else {
+        EpisodeSupplementListMerge.Sort.NEWEST
+    }
 }

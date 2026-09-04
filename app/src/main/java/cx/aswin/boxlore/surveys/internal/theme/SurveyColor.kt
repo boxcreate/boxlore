@@ -53,8 +53,7 @@ internal fun Color.isLight(): Boolean {
  * accepting most intentional PostHog color pairings.
  */
 internal fun hasAdequateContrast(foreground: Color, background: Color): Boolean {
-    fun luminance(c: Color): Float =
-        0.2126f * c.red + 0.7152f * c.green + 0.0722f * c.blue
+    fun luminance(c: Color): Float = 0.2126f * c.red + 0.7152f * c.green + 0.0722f * c.blue
 
     val fgL = luminance(foreground) + 0.05f
     val bgL = luminance(background) + 0.05f

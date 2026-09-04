@@ -151,11 +151,7 @@ class LocalEpisodeCatalogPersistTest {
         assertTrue(rows.single().episodeId != "77")
     }
 
-    private fun rssEpisode(
-        guid: String? = "g1",
-        title: String = "Ep",
-        audioUrl: String = "https://cdn.example/a.mp3",
-    ): RssEpisodeEntity {
+    private fun rssEpisode(guid: String? = "g1", title: String = "Ep", audioUrl: String = "https://cdn.example/a.mp3",): RssEpisodeEntity {
         val id =
             if (StickyEpisodeIdentity.catalogKey(guid, audioUrl) == null) {
                 "-1"

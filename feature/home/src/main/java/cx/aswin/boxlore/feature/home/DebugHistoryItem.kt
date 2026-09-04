@@ -12,13 +12,12 @@ data class DebugHistoryItem(
     val isCompleted: Boolean,
 )
 
-internal fun ListeningHistoryEntity.toDebugHistoryItem(): DebugHistoryItem =
-    DebugHistoryItem(
-        episodeId = episodeId,
-        episodeTitle = episodeTitle,
-        podcastName = podcastName,
-        progressMs = progressMs,
-        durationMs = durationMs,
-        isDirty = isDirty,
-        isCompleted = isCompleted,
-    )
+internal fun ListeningHistoryEntity.toDebugHistoryItem(): DebugHistoryItem = DebugHistoryItem(
+    episodeId = episodeId,
+    episodeTitle = episodeTitle,
+    podcastName = podcastName,
+    progressMs = progressMs,
+    durationMs = durationMs,
+    isDirty = isDirty,
+    isCompleted = isCompleted,
+)

@@ -71,36 +71,36 @@ fun EpisodeListItem(
 ) {
     androidx.compose.material3.OutlinedCard(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .expressiveClickable(
-                    onLongClickLabel = "Select episode",
-                    onLongClick = onLongClick,
-                    onClick = onClick,
-                ),
+        modifier
+            .fillMaxWidth()
+            .expressiveClickable(
+                onLongClickLabel = "Select episode",
+                onLongClick = onLongClick,
+                onClick = onClick,
+            ),
         shape = MaterialTheme.shapes.large,
         colors =
-            androidx.compose.material3.CardDefaults.outlinedCardColors(
-                containerColor =
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainer
-                    },
-            ),
+        androidx.compose.material3.CardDefaults.outlinedCardColors(
+            containerColor =
+            if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainer
+            },
+        ),
         border =
-            BorderStroke(
-                width = if (isSelected) 2.dp else 0.5.dp,
-                color =
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.outlineVariant
-                    },
-            ),
+        BorderStroke(
+            width = if (isSelected) 2.dp else 0.5.dp,
+            color =
+            if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            },
+        ),
         elevation =
-            androidx.compose.material3.CardDefaults
-                .outlinedCardElevation(defaultElevation = 1.dp),
+        androidx.compose.material3.CardDefaults
+            .outlinedCardElevation(defaultElevation = 1.dp),
     ) {
         Column(
             modifier = Modifier.padding(14.dp), // Generous padding inside the card
@@ -128,37 +128,37 @@ fun EpisodeListItem(
                     if (isSelected || isCompleted) {
                         Box(
                             modifier =
-                                Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(4.dp)
-                                    .size(20.dp)
-                                    .background(
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.secondaryContainer
-                                        },
-                                        CircleShape,
-                                    ).border(
-                                        1.dp,
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.onPrimary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSecondaryContainer
-                                        },
-                                        CircleShape,
-                                    ),
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(20.dp)
+                                .background(
+                                    if (isSelected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    },
+                                    CircleShape,
+                                ).border(
+                                    1.dp,
+                                    if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    },
+                                    CircleShape,
+                                ),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Check,
                                 contentDescription = if (isSelected) "Selected" else "Completed",
                                 tint =
-                                    if (isSelected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    },
+                                if (isSelected) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                },
                                 modifier = Modifier.size(14.dp),
                             )
                         }
@@ -253,22 +253,22 @@ fun EpisodeListItem(
                             Surface(
                                 shape = ExpressiveShapes.Pill,
                                 color =
-                                    if (episode.episodeType == "trailer") {
-                                        MaterialTheme.colorScheme.tertiaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.secondaryContainer
-                                    },
+                                if (episode.episodeType == "trailer") {
+                                    MaterialTheme.colorScheme.tertiaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                },
                             ) {
                                 Text(
                                     text = episode.episodeType!!.replaceFirstChar { it.uppercase() },
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = GoogleSansWeight.bold,
                                     color =
-                                        if (episode.episodeType == "trailer") {
-                                            MaterialTheme.colorScheme.onTertiaryContainer
-                                        } else {
-                                            MaterialTheme.colorScheme.onSecondaryContainer
-                                        },
+                                    if (episode.episodeType == "trailer") {
+                                        MaterialTheme.colorScheme.onTertiaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    },
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
@@ -326,9 +326,9 @@ fun EpisodeListItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .animateContentSize(),
+                    Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(),
                 ) {
                     cx.aswin.boxlore.core.designsystem.components.AdvancedPlayerControls(
                         isLiked = isLiked,
@@ -353,18 +353,18 @@ fun EpisodeListItem(
                     cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton(
                         onClick = onPlayClick,
                         state =
-                            cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
-                                isPlaying = isPlaying,
-                                isResume = isResume,
-                                progress = progress,
-                                timeText = timeLeft,
-                            ),
+                        cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
+                            isPlaying = isPlaying,
+                            isResume = isResume,
+                            progress = progress,
+                            timeText = timeLeft,
+                        ),
                         accentColor = accentColor,
                         modifier =
-                            Modifier
-                                .height(44.dp)
-                                .padding(start = 16.dp)
-                                .weight(1f),
+                        Modifier
+                            .height(44.dp)
+                            .padding(start = 16.dp)
+                            .weight(1f),
                     )
                 }
             }

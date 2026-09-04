@@ -1,18 +1,32 @@
 package cx.aswin.boxlore.feature.player
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,25 +35,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.playback.SameShowContinuationState
 import cx.aswin.boxlore.feature.player.v2.logic.queueSourceLabel
 import sh.calvin.reorderable.ReorderableItem
@@ -98,15 +97,15 @@ fun QueueSheetContent(
                 fontWeight = GoogleSansWeight.bold,
                 color = colorScheme.onSurface
             )
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             Text(
                 text = "${queue.size} episodes",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
 
             IconButton(onClick = actions.onClose) {
@@ -117,7 +116,7 @@ fun QueueSheetContent(
                 )
             }
         }
-        
+
         HorizontalDivider(
             color = colorScheme.outlineVariant.copy(alpha = 0.3f),
             modifier = Modifier.padding(horizontal = 20.dp)
@@ -234,8 +233,11 @@ fun QueueItemRow(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                if (display.isDragging) colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                else colorScheme.surface.copy(alpha = 0f)
+                if (display.isDragging) {
+                    colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                } else {
+                    colorScheme.surface.copy(alpha = 0f)
+                }
             )
             .expressiveClickable { onClick() }
             .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
@@ -252,9 +254,9 @@ fun QueueItemRow(
                 .background(colorScheme.surfaceVariant),
             contentScale = ContentScale.Crop
         )
-        
+
         Spacer(modifier = Modifier.width(14.dp))
-        
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = episode.title.replace("+", " "),
@@ -283,7 +285,7 @@ fun QueueItemRow(
                 )
             }
         }
-        
+
         if (onRemove != null) {
             IconButton(
                 onClick = onRemove,
@@ -314,26 +316,24 @@ fun QueueItemRow(
 object SameShowContinuationBannerDefaults {
     fun buttonText(availableCount: Int): String = "Add next $availableCount from this show"
 
-    fun titleText(podcastTitle: String): String =
-        if (podcastTitle.isNotBlank()) "Continue $podcastTitle?" else "Continue this show?"
+    fun titleText(podcastTitle: String): String = if (podcastTitle.isNotBlank()) "Continue $podcastTitle?" else "Continue this show?"
 
     const val EXPLANATION_TEXT =
         "We skipped newer episodes from this show as you played it from recommendations."
 
-    fun previewToggleText(availableCount: Int, isExpanded: Boolean): String =
-        if (isExpanded) {
-            "Hide preview"
-        } else if (availableCount == 1) {
-            "Preview 1 upcoming episode"
-        } else {
-            "Preview $availableCount upcoming episodes"
-        }
+    fun previewToggleText(availableCount: Int, isExpanded: Boolean): String = if (isExpanded) {
+        "Hide preview"
+    } else if (availableCount == 1) {
+        "Preview 1 upcoming episode"
+    } else {
+        "Preview $availableCount upcoming episodes"
+    }
 
     fun formatDuration(seconds: Int): String {
         if (seconds <= 0) return ""
         val hrs = seconds / 3600
         val mins = (seconds % 3600) / 60
-        return if (hrs > 0) "${hrs}h ${mins}m" else "${mins} min"
+        return if (hrs > 0) "${hrs}h ${mins}m" else "$mins min"
     }
 }
 
@@ -355,9 +355,9 @@ private fun SameShowContinuationBannerHeader(
             color = colorScheme.onSurface,
             maxLines = 1,
             modifier =
-                Modifier
-                    .weight(1f)
-                    .basicMarquee(),
+            Modifier
+                .weight(1f)
+                .basicMarquee(),
         )
         Spacer(modifier = Modifier.width(8.dp))
         IconButton(
@@ -388,27 +388,27 @@ private fun SameShowContinuationPreviewList(
         episodes.forEach { episode ->
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            color = colorScheme.surfaceContainerHighest,
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                        .expressiveClickable { onEpisodeClick(episode) }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        color = colorScheme.surfaceContainerHighest,
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                    .expressiveClickable { onEpisodeClick(episode) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AsyncImage(
                     model =
-                        episode.imageUrl?.takeIf { it.isNotBlank() }
-                            ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
+                    episode.imageUrl?.takeIf { it.isNotBlank() }
+                        ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
                     contentDescription = null,
                     modifier =
-                        Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(colorScheme.surfaceVariant),
+                    Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colorScheme.surfaceVariant),
                     contentScale = ContentScale.Crop,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -446,10 +446,10 @@ private fun SameShowContinuationAccordionToggle(
         onClick = onToggle,
         shape = CircleShape,
         colors =
-            ButtonDefaults.filledTonalButtonColors(
-                containerColor = colorScheme.surfaceContainerHighest,
-                contentColor = colorScheme.primary,
-            ),
+        ButtonDefaults.filledTonalButtonColors(
+            containerColor = colorScheme.surfaceContainerHighest,
+            contentColor = colorScheme.primary,
+        ),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
@@ -482,21 +482,21 @@ fun SameShowContinuationBanner(
 
     Card(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         colors =
-            CardDefaults.cardColors(
-                containerColor = colorScheme.surfaceContainerHigh,
-                contentColor = colorScheme.onSurface,
-            ),
+        CardDefaults.cardColors(
+            containerColor = colorScheme.surfaceContainerHigh,
+            contentColor = colorScheme.onSurface,
+        ),
         shape = RoundedCornerShape(20.dp),
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         ) {
             SameShowContinuationBannerHeader(
                 podcastTitle = state.podcastTitle,
@@ -537,10 +537,10 @@ fun SameShowContinuationBanner(
             Button(
                 onClick = onAddEpisodes,
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = colorScheme.primary,
-                        contentColor = colorScheme.onPrimary,
-                    ),
+                ButtonDefaults.buttonColors(
+                    containerColor = colorScheme.primary,
+                    contentColor = colorScheme.onPrimary,
+                ),
                 shape = CircleShape,
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 modifier = Modifier.fillMaxWidth(),

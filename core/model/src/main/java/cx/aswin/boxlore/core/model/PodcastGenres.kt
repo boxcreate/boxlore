@@ -68,8 +68,6 @@ object PodcastGenres {
     }
 }
 
-private fun String.normalizedGenreKey(): String {
-    return trim()
-        .lowercase()
-        .replace(Regex("\\s+"), " ")
-}
+private fun String.normalizedGenreKey(): String = trim()
+    .lowercase()
+    .replace(Regex("\\s+"), " ")

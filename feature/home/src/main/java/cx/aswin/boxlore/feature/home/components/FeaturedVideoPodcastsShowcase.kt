@@ -93,17 +93,17 @@ internal fun FeaturedVideoPodcastsShowcase(
                     isLead = index == 0,
                     onClick = { onPodcastClick(podcast, index, "card") },
                     onHdClick =
-                        if (index == 0) {
-                            { onPodcastClick(podcast, index, "hd") }
-                        } else {
-                            null
-                        },
+                    if (index == 0) {
+                        { onPodcastClick(podcast, index, "hd") }
+                    } else {
+                        null
+                    },
                     onSdClick =
-                        if (index == 0) {
-                            { onPodcastClick(tedTalksSdPodcast, index, "sd") }
-                        } else {
-                            null
-                        },
+                    if (index == 0) {
+                        { onPodcastClick(tedTalksSdPodcast, index, "sd") }
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -157,10 +157,10 @@ private fun VideoSpotlightHeader(
             onClick = onDismissClick,
             modifier = Modifier.size(36.dp),
             colors =
-                IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
+            IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
@@ -186,21 +186,21 @@ private fun SpotlightArtworkTile(
     ) {
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .shadow(
-                        elevation = 3.dp,
-                        shape = ArtworkShape,
-                        clip = false,
-                    ).border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        shape = ArtworkShape,
-                    ).expressiveClickable(
-                        shape = ArtworkShape,
-                        onClick = onClick,
-                    ).clip(ArtworkShape),
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .shadow(
+                    elevation = 3.dp,
+                    shape = ArtworkShape,
+                    clip = false,
+                ).border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    shape = ArtworkShape,
+                ).expressiveClickable(
+                    shape = ArtworkShape,
+                    onClick = onClick,
+                ).clip(ArtworkShape),
         ) {
             OptimizedImage(
                 url = podcast.imageUrl,
@@ -211,22 +211,22 @@ private fun SpotlightArtworkTile(
             )
             Surface(
                 modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(12.dp),
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp),
                 shape = RoundedCornerShape(11.dp),
                 color =
-                    if (isLead) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHighest
-                    },
+                if (isLead) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHighest
+                },
                 contentColor =
-                    if (isLead) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                if (isLead) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
             ) {
                 Text(
                     text = if (isLead) "EDITOR’S PICK" else rank.toString().padStart(2, '0'),
@@ -238,9 +238,9 @@ private fun SpotlightArtworkTile(
             if (onSdClick != null) {
                 Row(
                     modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(12.dp),
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
                     Button(
@@ -270,12 +270,12 @@ private fun SpotlightArtworkTile(
         }
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .expressiveClickable(
-                        shape = RoundedCornerShape(12.dp),
-                        onClick = onClick,
-                    ).padding(horizontal = 3.dp, vertical = 2.dp),
+            Modifier
+                .fillMaxWidth()
+                .expressiveClickable(
+                    shape = RoundedCornerShape(12.dp),
+                    onClick = onClick,
+                ).padding(horizontal = 3.dp, vertical = 2.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Text(

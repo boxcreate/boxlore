@@ -17,10 +17,7 @@ object PlaybackSkipPolicy {
     /** Soft-expire window for implicit mid-episode seek when restart-forgotten is enabled. */
     const val STALE_RESUME_MS = 7L * 24L * 60L * 60L * 1_000L
 
-    data class EffectiveTrim(
-        val skipBeginningMs: Long,
-        val skipEndingMs: Long,
-    )
+    data class EffectiveTrim(val skipBeginningMs: Long, val skipEndingMs: Long,)
 
     /**
      * Whether the listener chose an unfinished episode (true resume) vs something that just started
@@ -38,10 +35,7 @@ object PlaybackSkipPolicy {
         START,
     }
 
-    data class InitialPosition(
-        val positionMs: Long,
-        val reason: InitialPositionReason,
-    )
+    data class InitialPosition(val positionMs: Long, val reason: InitialPositionReason,)
 
     /**
      * Maps free-form `entry_point` strings to [ResumeIntent].
@@ -55,11 +49,7 @@ object PlaybackSkipPolicy {
         return ResumeIntent.IMPLICIT
     }
 
-    fun isStaleLastPlayed(
-        lastPlayedAtMs: Long?,
-        nowMs: Long,
-        warmWindowMs: Long = STALE_RESUME_MS,
-    ): Boolean {
+    fun isStaleLastPlayed(lastPlayedAtMs: Long?, nowMs: Long, warmWindowMs: Long = STALE_RESUME_MS,): Boolean {
         if (lastPlayedAtMs == null || lastPlayedAtMs <= 0L) return true
         return nowMs - lastPlayedAtMs > warmWindowMs
     }
@@ -75,17 +65,16 @@ object PlaybackSkipPolicy {
         globalSkipEndingMs: Long,
         podcastSkipBeginningOverrideMs: Long?,
         podcastSkipEndingOverrideMs: Long?,
-    ): EffectiveTrim =
-        EffectiveTrim(
-            skipBeginningMs =
-                sanitizeTrim(
-                    podcastSkipBeginningOverrideMs ?: globalSkipBeginningMs,
-                ),
-            skipEndingMs =
-                sanitizeTrim(
-                    podcastSkipEndingOverrideMs ?: globalSkipEndingMs,
-                ),
-        )
+    ): EffectiveTrim = EffectiveTrim(
+        skipBeginningMs =
+        sanitizeTrim(
+            podcastSkipBeginningOverrideMs ?: globalSkipBeginningMs,
+        ),
+        skipEndingMs =
+        sanitizeTrim(
+            podcastSkipEndingOverrideMs ?: globalSkipEndingMs,
+        ),
+    )
 
     @Suppress("LongParameterList")
     fun resolveInitialPosition(
@@ -121,11 +110,7 @@ object PlaybackSkipPolicy {
         }
     }
 
-    fun hasSafePlayableWindow(
-        durationMs: Long,
-        skipBeginningMs: Long,
-        skipEndingMs: Long,
-    ): Boolean {
+    fun hasSafePlayableWindow(durationMs: Long, skipBeginningMs: Long, skipEndingMs: Long,): Boolean {
         if (durationMs <= 0L) return false
         val beginning = sanitizeTrim(skipBeginningMs)
         val ending = sanitizeTrim(skipEndingMs)
@@ -134,20 +119,13 @@ object PlaybackSkipPolicy {
             durationMs - beginning - ending >= MIN_PLAYABLE_CONTENT_MS
     }
 
-    fun outroBoundaryMs(
-        durationMs: Long,
-        skipEndingMs: Long,
-    ): Long? {
+    fun outroBoundaryMs(durationMs: Long, skipEndingMs: Long,): Long? {
         val ending = sanitizeTrim(skipEndingMs)
         if (durationMs <= 0L || ending <= 0L) return null
         return (durationMs - ending).takeIf { it >= 0L }
     }
 
-    fun effectiveEndingTrimForCompletion(
-        durationMs: Long,
-        skipBeginningMs: Long,
-        skipEndingMs: Long,
-    ): Long {
+    fun effectiveEndingTrimForCompletion(durationMs: Long, skipBeginningMs: Long, skipEndingMs: Long,): Long {
         val ending = sanitizeTrim(skipEndingMs)
         return ending.takeIf {
             it > 0L &&
@@ -179,11 +157,7 @@ object PlaybackSkipPolicy {
      * effective ending trim is active, only the service's terminal effective-end path completes
      * the episode, preventing progress writers from completing it minutes before the boundary.
      */
-    fun shouldCompleteFromProgress(
-        positionMs: Long,
-        durationMs: Long,
-        effectiveSkipEndingMs: Long,
-    ): Boolean {
+    fun shouldCompleteFromProgress(positionMs: Long, durationMs: Long, effectiveSkipEndingMs: Long,): Boolean {
         if (durationMs <= 0L || sanitizeTrim(effectiveSkipEndingMs) > 0L) return false
         return positionMs >= durationMs - 5_000L ||
             positionMs >= durationMs * 0.95 ||

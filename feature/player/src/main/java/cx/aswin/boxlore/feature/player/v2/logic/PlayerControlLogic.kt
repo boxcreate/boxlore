@@ -18,5 +18,4 @@ internal fun downloadLabel(isDownloaded: Boolean, isDownloading: Boolean): Strin
     else -> "Download"
 }
 
-internal fun formatSpeedLabel(speed: Float): String =
-    if (speed == speed.toInt().toFloat()) "${speed.toInt()}×" else "${speed}×"
+internal fun formatSpeedLabel(speed: Float): String = if (speed == speed.toInt().toFloat()) "${speed.toInt()}×" else "$speed×"

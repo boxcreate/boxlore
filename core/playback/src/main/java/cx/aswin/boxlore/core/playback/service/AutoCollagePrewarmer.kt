@@ -18,10 +18,10 @@ import cx.aswin.boxlore.core.playback.SmartQueueSources
 import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseContract
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.core.ranking.RankingSurface
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Prewarms Android Auto folder collage artwork for [BoxLorePlaybackService].
@@ -93,10 +93,10 @@ internal class AutoCollagePrewarmer(
                 subscriptions = snapshot.subscriptions.map(toAutoPodcast),
                 history = snapshot.history,
                 adaptiveRanking =
-                    MixtapeEngine.AdaptiveRanking(
-                        scorer = adaptiveCandidateScorer,
-                        surface = RankingSurface.ANDROID_AUTO,
-                    ),
+                MixtapeEngine.AdaptiveRanking(
+                    scorer = adaptiveCandidateScorer,
+                    surface = RankingSurface.ANDROID_AUTO,
+                ),
             )
         if (mixtape.episodes.size >= 3) return mixtape
         val recommendations =
@@ -108,7 +108,7 @@ internal class AutoCollagePrewarmer(
                         country = smartQueueSources.getRegion(),
                         subscribedPodcastIds = snapshot.subscriptions.map { it.podcastId },
                         subscribedGenres =
-                            snapshot.subscriptions.mapNotNull { it.genre }.distinct(),
+                        snapshot.subscriptions.mapNotNull { it.genre }.distinct(),
                     )
                 }
             }.getOrDefault(emptyList())
@@ -117,17 +117,14 @@ internal class AutoCollagePrewarmer(
             history = snapshot.history,
             recommendations = recommendations,
             adaptiveRanking =
-                MixtapeEngine.AdaptiveRanking(
-                    scorer = adaptiveCandidateScorer,
-                    surface = RankingSurface.ANDROID_AUTO,
-                ),
+            MixtapeEngine.AdaptiveRanking(
+                scorer = adaptiveCandidateScorer,
+                surface = RankingSurface.ANDROID_AUTO,
+            ),
         )
     }
 
-    private fun notifyBrowseTree(
-        subscriptionCount: Int,
-        resumeCount: Int,
-    ) {
+    private fun notifyBrowseTree(subscriptionCount: Int, resumeCount: Int,) {
         val session = mediaSessionProvider()
         session?.notifyChildrenChanged(AutoBrowseContract.ROOT_ID, 4, null)
         session?.notifyChildrenChanged(AutoBrowseContract.HOME_ID, 3, null)

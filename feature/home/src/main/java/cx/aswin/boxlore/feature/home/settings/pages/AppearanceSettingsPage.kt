@@ -202,11 +202,11 @@ private fun OpenAppToSection(
         SettingsContent {
             ConnectedOptionSelector(
                 options =
-                    listOf(
-                        OpenAppTo.HOME to "Home",
-                        OpenAppTo.SUBSCRIPTIONS to "Subscriptions",
-                        OpenAppTo.DOWNLOADS to "Downloads",
-                    ),
+                listOf(
+                    OpenAppTo.HOME to "Home",
+                    OpenAppTo.SUBSCRIPTIONS to "Subscriptions",
+                    OpenAppTo.DOWNLOADS to "Downloads",
+                ),
                 selected = selected,
                 onSelect = onSetOpenAppTo,
                 labelStyle = MaterialTheme.typography.labelMedium,
@@ -232,20 +232,20 @@ private fun DefaultTabsSection(
                 DefaultTabPicker(
                     label = "Explore",
                     options =
-                        listOf(
-                            ExploreDefaultTab.FOR_YOU to "For You",
-                            ExploreDefaultTab.TOP to "Top",
-                        ),
+                    listOf(
+                        ExploreDefaultTab.FOR_YOU to "For You",
+                        ExploreDefaultTab.TOP to "Top",
+                    ),
                     selected = ExploreDefaultTab.sanitize(currentExploreDefaultTab),
                     onSelect = onSetExploreDefaultTab,
                 )
                 DefaultTabPicker(
                     label = "Subscriptions",
                     options =
-                        listOf(
-                            SubscriptionsDefaultTab.SHOWS to "Shows",
-                            SubscriptionsDefaultTab.NEW_EPISODES to "New episodes",
-                        ),
+                    listOf(
+                        SubscriptionsDefaultTab.SHOWS to "Shows",
+                        SubscriptionsDefaultTab.NEW_EPISODES to "New episodes",
+                    ),
                     selected = SubscriptionsDefaultTab.sanitize(currentSubscriptionsDefaultTab),
                     onSelect = onSetSubscriptionsDefaultTab,
                 )
@@ -291,9 +291,9 @@ private fun ThemeModeSection(
     SettingsGroup(
         title = "Theme",
         footer =
-            modeLock?.let {
-                "This background was locked to ${it.mode.label.lowercase()}. Choosing another theme unlocks it."
-            } ?: "Chooses whether the app looks light or dark. Backgrounds follow this.",
+        modeLock?.let {
+            "This background was locked to ${it.mode.label.lowercase()}. Choosing another theme unlocks it."
+        } ?: "Chooses whether the app looks light or dark. Backgrounds follow this.",
     ) {
         SettingsContent {
             if (modeLock != null) {
@@ -433,11 +433,11 @@ private fun LetteringPreviewToggle(
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
-                .clickable(role = Role.Button, onClick = onToggle)
-                .padding(vertical = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .clickable(role = Role.Button, onClick = onToggle)
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -464,9 +464,9 @@ private fun LetteringPreviewSamples(
 ) {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         LetteringPreviewLine(
@@ -538,16 +538,16 @@ private fun WidgetsSection(
     SettingsGroup(
         title = "Widgets",
         footer =
-            "App theme uses the same Theme, Background, and Colors as boxlore. " +
-                "System uses the launcher’s light/dark and wallpaper accents.",
+        "App theme uses the same Theme, Background, and Colors as boxlore. " +
+            "System uses the launcher’s light/dark and wallpaper accents.",
     ) {
         SettingsContent {
             ConnectedOptionSelector(
                 options =
-                    listOf(
-                        WidgetAppearance.APP to "App theme",
-                        WidgetAppearance.SYSTEM to "System",
-                    ),
+                listOf(
+                    WidgetAppearance.APP to "App theme",
+                    WidgetAppearance.SYSTEM to "System",
+                ),
                 selected = WidgetAppearance.sanitize(currentWidgetAppearance),
                 onSelect = onSetWidgetAppearance,
             )
@@ -563,7 +563,7 @@ private fun HomeChromeSection(
     SettingsGroup(
         title = "Home",
         footer =
-            "When this is on, Home only shows the logo. Settings and Feedback move to the Library top bar.",
+        "When this is on, Home only shows the logo. Settings and Feedback move to the Library top bar.",
     ) {
         SettingsSwitchRow(
             title = "Cleaner Home",
@@ -591,11 +591,11 @@ private fun ColorsSection(
     SettingsGroup(
         title = "Colors",
         footer =
-            if (isDynamicColorEnabled) {
-                "Uses your wallpaper. Turn off to pick a fixed color."
-            } else {
-                null
-            },
+        if (isDynamicColorEnabled) {
+            "Uses your wallpaper. Turn off to pick a fixed color."
+        } else {
+            null
+        },
     ) {
         SettingsSwitchRow(
             title = "Wallpaper colors",
@@ -621,12 +621,12 @@ private fun ColorsSection(
                 SettingsChoiceRow(
                     title = "Custom color",
                     supportingText =
-                        when {
-                            exactSelected && customHex != null ->
-                                "$customHex · exact, not recommended"
-                            customSelected && customHex != null -> customHex
-                            else -> "Pick any accent with the full color picker"
-                        },
+                    when {
+                        exactSelected && customHex != null ->
+                            "$customHex · exact, not recommended"
+                        customSelected && customHex != null -> customHex
+                        else -> "Pick any accent with the full color picker"
+                    },
                     selected = customSelected,
                     onClick = { showColorPicker = true },
                     leading = {
@@ -635,10 +635,10 @@ private fun ColorsSection(
                             shape = androidx.compose.foundation.shape.CircleShape,
                             color = customPreview,
                             border =
-                                androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.outlineVariant,
-                                ),
+                            androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant,
+                            ),
                         ) {}
                     },
                 )
@@ -686,30 +686,29 @@ private fun selectSurfaceStyle(
  * Legacy locked styles still resolve in the theme engine. Changing Theme unlocks them
  * to Soft/Pure automatic so Theme can drive light/dark again.
  */
-private fun themeModeLockFor(surfaceStyle: String): ThemeModeLock? =
-    when (surfaceStyle) {
-        SurfaceStyles.AMOLED ->
-            ThemeModeLock(
-                mode = ThemeMode.DARK,
-                automaticSiblingStyle = SurfaceStyles.DYNAMIC_OLED_WHITE,
-            )
-        SurfaceStyles.PURE_WHITE ->
-            ThemeModeLock(
-                mode = ThemeMode.LIGHT,
-                automaticSiblingStyle = SurfaceStyles.DYNAMIC_OLED_WHITE,
-            )
-        SurfaceStyles.CLASSIC_DARK ->
-            ThemeModeLock(
-                mode = ThemeMode.DARK,
-                automaticSiblingStyle = SurfaceStyles.CLASSIC_DYNAMIC,
-            )
-        SurfaceStyles.CLASSIC_LIGHT ->
-            ThemeModeLock(
-                mode = ThemeMode.LIGHT,
-                automaticSiblingStyle = SurfaceStyles.CLASSIC_DYNAMIC,
-            )
-        else -> null
-    }
+private fun themeModeLockFor(surfaceStyle: String): ThemeModeLock? = when (surfaceStyle) {
+    SurfaceStyles.AMOLED ->
+        ThemeModeLock(
+            mode = ThemeMode.DARK,
+            automaticSiblingStyle = SurfaceStyles.DYNAMIC_OLED_WHITE,
+        )
+    SurfaceStyles.PURE_WHITE ->
+        ThemeModeLock(
+            mode = ThemeMode.LIGHT,
+            automaticSiblingStyle = SurfaceStyles.DYNAMIC_OLED_WHITE,
+        )
+    SurfaceStyles.CLASSIC_DARK ->
+        ThemeModeLock(
+            mode = ThemeMode.DARK,
+            automaticSiblingStyle = SurfaceStyles.CLASSIC_DYNAMIC,
+        )
+    SurfaceStyles.CLASSIC_LIGHT ->
+        ThemeModeLock(
+            mode = ThemeMode.LIGHT,
+            automaticSiblingStyle = SurfaceStyles.CLASSIC_DYNAMIC,
+        )
+    else -> null
+}
 
 private enum class BackgroundLook(
     val label: String,
@@ -734,20 +733,19 @@ private enum class BackgroundLook(
     ;
 
     companion object {
-        fun fromSurfaceStyle(style: String): BackgroundLook =
-            when (style) {
-                SurfaceStyles.CLASSIC_DYNAMIC,
-                SurfaceStyles.CLASSIC_DARK,
-                SurfaceStyles.CLASSIC_LIGHT,
-                -> Classic
+        fun fromSurfaceStyle(style: String): BackgroundLook = when (style) {
+            SurfaceStyles.CLASSIC_DYNAMIC,
+            SurfaceStyles.CLASSIC_DARK,
+            SurfaceStyles.CLASSIC_LIGHT,
+            -> Classic
 
-                SurfaceStyles.DYNAMIC_OLED_WHITE,
-                SurfaceStyles.AMOLED,
-                SurfaceStyles.PURE_WHITE,
-                -> Pure
+            SurfaceStyles.DYNAMIC_OLED_WHITE,
+            SurfaceStyles.AMOLED,
+            SurfaceStyles.PURE_WHITE,
+            -> Pure
 
-                else -> MaterialYouSoft
-            }
+            else -> MaterialYouSoft
+        }
     }
 }
 

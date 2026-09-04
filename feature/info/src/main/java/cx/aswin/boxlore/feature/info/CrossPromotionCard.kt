@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.info
 
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
 import android.text.Html
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -18,11 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.ResolvedCrossPromotion
 
@@ -40,25 +38,25 @@ fun CrossPromotionCard(
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
         colors =
-            CardDefaults.outlinedCardColors(
-                containerColor = surfaceColor,
-            ),
+        CardDefaults.outlinedCardColors(
+            containerColor = surfaceColor,
+        ),
         border =
-            BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-            ),
+        BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant,
+        ),
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-                .expressiveClickable { onPodcastClick(podcast.id) },
+        modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .expressiveClickable { onPodcastClick(podcast.id) },
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         ) {
             // Header label with icon
             Row(
@@ -74,10 +72,10 @@ fun CrossPromotionCard(
                 Text(
                     text = "FEATURED SHOW",
                     style =
-                        MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            letterSpacing = 0.5.sp,
-                        ),
+                    MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = GoogleSansWeight.bold,
+                        letterSpacing = 0.5.sp,
+                    ),
                     color = primaryColor,
                 )
             }
@@ -88,10 +86,10 @@ fun CrossPromotionCard(
             Text(
                 text = "This episode appears to be a promotional preview for the podcast below. Explore the featured show:",
                 style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 13.sp,
-                        lineHeight = 17.sp,
-                    ),
+                MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
@@ -112,9 +110,9 @@ fun CrossPromotionCard(
                     proxyWidth = 200,
                     contentDescription = podcast.title,
                     modifier =
-                        Modifier
-                            .size(56.dp)
-                            .clip(MaterialTheme.shapes.medium),
+                    Modifier
+                        .size(56.dp)
+                        .clip(MaterialTheme.shapes.medium),
                     contentScale = ContentScale.Crop,
                 )
 
@@ -127,10 +125,10 @@ fun CrossPromotionCard(
                     Text(
                         text = podcast.title,
                         style =
-                            MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = GoogleSansWeight.bold,
-                                fontSize = 15.sp,
-                            ),
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = GoogleSansWeight.bold,
+                            fontSize = 15.sp,
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Clip,
                         modifier = Modifier.basicMarquee(),
@@ -160,12 +158,12 @@ fun CrossPromotionCard(
                 IconButton(
                     onClick = { onPodcastClick(podcast.id) },
                     modifier =
-                        Modifier
-                            .size(36.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = CircleShape,
-                            ),
+                    Modifier
+                        .size(36.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = CircleShape,
+                        ),
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
@@ -188,10 +186,10 @@ fun CrossPromotionCard(
                     Text(
                         text = cleanDesc,
                         style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
-                            ),
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                        ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
