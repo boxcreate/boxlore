@@ -89,4 +89,5 @@ dependencies {
     // Robolectric: in-memory Room (QueueRepository) + SharedPreferences/Uri (AutoArtworkRepository).
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.6.1")
+    testImplementation("org.mockito:mockito-core:5.14.2")
 }

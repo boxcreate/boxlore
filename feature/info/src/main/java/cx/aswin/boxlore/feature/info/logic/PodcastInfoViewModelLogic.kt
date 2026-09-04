@@ -5,10 +5,18 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.EpisodeSort
 
 object PodcastInfoPlaybackSourceLogic {
+    const val BULK_PLAY_ENTRY_POINT = "podcast_detail"
+    const val BULK_PLAY_SOURCE_ENTRY_POINT = "podcast_detail"
+
     fun retainedEntryPoint(entryPoint: String?): String? =
         entryPoint?.takeIf {
             it == cx.aswin.boxlore.core.analytics.AnalyticsGlossary.VIDEO_SPOTLIGHT_ENTRY_POINT
         }
+
+    fun resolvedPlaybackEntryPoints(entryPoint: String?): Pair<String, String> {
+        val retained = retainedEntryPoint(entryPoint)
+        return (retained ?: "podcast_detail") to "podcast_detail"
+    }
 }
 
 object PodcastInfoSortLogic {

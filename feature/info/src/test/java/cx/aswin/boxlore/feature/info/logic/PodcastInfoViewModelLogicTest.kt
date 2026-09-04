@@ -22,6 +22,27 @@ class PodcastInfoViewModelLogicTest {
     }
 
     @Test
+    fun `resolvedPlaybackEntryPoints retains video spotlight and falls back to podcast_detail`() {
+        val (videoEntryPoint, videoSource) =
+            PodcastInfoPlaybackSourceLogic.resolvedPlaybackEntryPoints("home_video_spotlight")
+        assertEquals("home_video_spotlight", videoEntryPoint)
+        assertEquals("podcast_detail", videoSource)
+
+        val (gridEntryPoint, gridSource) =
+            PodcastInfoPlaybackSourceLogic.resolvedPlaybackEntryPoints("home_discover_grid")
+        assertEquals("podcast_detail", gridEntryPoint)
+        assertEquals("podcast_detail", gridSource)
+
+        val (nullEntryPoint, nullSource) =
+            PodcastInfoPlaybackSourceLogic.resolvedPlaybackEntryPoints(null)
+        assertEquals("podcast_detail", nullEntryPoint)
+        assertEquals("podcast_detail", nullSource)
+
+        assertEquals("podcast_detail", PodcastInfoPlaybackSourceLogic.BULK_PLAY_ENTRY_POINT)
+        assertEquals("podcast_detail", PodcastInfoPlaybackSourceLogic.BULK_PLAY_SOURCE_ENTRY_POINT)
+    }
+
+    @Test
     fun `resolveInitialSort prefers explicit preferredSort`() {
         assertEquals(EpisodeSort.OLDEST, PodcastInfoSortLogic.resolveInitialSort("oldest", "episodic"))
         assertEquals(EpisodeSort.NEWEST, PodcastInfoSortLogic.resolveInitialSort("newest", "serial"))

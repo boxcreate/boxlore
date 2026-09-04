@@ -405,16 +405,21 @@ class DefaultSmartQueueEngine(
         currentId: String,
         currentPublished: Long,
         newestFirst: Boolean,
-    ): List<Episode> =
-        if (newestFirst) {
-            allEpisodes
-                .filter { it.publishedDate > currentPublished }
-                .sortedByDescending { it.publishedDate }
+    ): List<Episode> {
+        val chronological = allEpisodes.sortedBy { it.publishedDate }
+        val idx = chronological.indexOfFirst { it.id == currentId }
+        val forward =
+            if (idx != -1) {
+                chronological.drop(idx + 1)
+            } else {
+                chronological.filter { it.publishedDate > currentPublished }
+            }
+        return if (newestFirst) {
+            forward.sortedByDescending { it.publishedDate }
         } else {
-            val chronological = allEpisodes.sortedBy { it.publishedDate }
-            val idx = chronological.indexOfFirst { it.id == currentId }
-            if (idx == -1) emptyList() else chronological.drop(idx + 1)
+            forward
         }
+    }
 
     private fun logTier0Summary(
         podcast: Podcast,

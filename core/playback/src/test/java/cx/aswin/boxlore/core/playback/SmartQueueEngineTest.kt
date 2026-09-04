@@ -962,4 +962,28 @@ class SmartQueueEngineTest {
             )
             assertFalse(batch.isEmpty())
         }
+
+    @Test
+    fun `continuation preserves forward episodes sharing the anchor timestamp`() =
+        runTest {
+            val sources = FakeSources()
+            val ep1 = episode(1, publishedDate = 1000L)
+            val ep2 = episode(2, publishedDate = 2000L)
+            val ep3 = episode(3, publishedDate = 2000L)
+            val ep4 = episode(4, publishedDate = 3000L)
+            sources.episodesByPodcast["pod1"] = listOf(ep1, ep2, ep3, ep4)
+
+            val batch =
+                engine(sources).getNextEpisodes(
+                    currentItem(2),
+                    podcast("pod1", type = "episodic", preferredSort = "newest"),
+                    currentContextSourceId = "podcast_detail",
+                )
+
+            val samePodIds =
+                batch
+                    .filter { it.source == SmartQueueEngine.SOURCE_SAME_PODCAST }
+                    .map { it.episode.id }
+            assertTrue(3L in samePodIds, "Expected ep3 (same timestamp as anchor) to be included in continuation")
+        }
 }

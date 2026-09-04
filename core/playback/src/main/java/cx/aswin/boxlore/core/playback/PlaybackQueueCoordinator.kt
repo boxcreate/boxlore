@@ -507,8 +507,8 @@ internal class PlaybackQueueCoordinator(
     suspend fun addEpisodesAfterCurrent(
         episodes: List<Episode>,
         podcast: Podcast,
-    ) {
-        if (episodes.isEmpty()) return
+    ): Boolean {
+        if (episodes.isEmpty()) return false
 
         val currentQueue = playerStateFlow.value.queue
         val playingId = playerStateFlow.value.currentEpisode?.id
@@ -518,11 +518,11 @@ internal class PlaybackQueueCoordinator(
             episodes
                 .distinctBy { it.id }
                 .filter { it.id != playingId && it.id !in existingIds }
-        if (uniqueCandidates.isEmpty()) return
+        if (uniqueCandidates.isEmpty()) return false
 
         val spaceLeft = (queueMaxSize - currentQueue.size).coerceAtLeast(0)
         val episodesToAdd = uniqueCandidates.take(spaceLeft)
-        if (episodesToAdd.isEmpty()) return
+        if (episodesToAdd.isEmpty()) return false
 
         val taggedEpisodes =
             episodesToAdd.map { ep ->
@@ -538,48 +538,52 @@ internal class PlaybackQueueCoordinator(
             mediaHandle.controller = mediaHandle.future?.await()
         }
 
-        mediaHandle.controller?.let { controller ->
-            val mediaItems =
-                taggedEpisodes.map { ep ->
-                    val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(ep, podcast)
-                    val metadata =
-                        androidx.media3.common.MediaMetadata
-                            .Builder()
-                            .setTitle(ep.title)
-                            .setArtist(podcast.title)
-                            .setArtworkUri(android.net.Uri.parse(resolvedUrl))
-                            .setDisplayTitle(ep.title)
-                            .setSubtitle(podcast.title)
-                            .setGenre(ep.podcastGenre ?: podcast.genre)
-                            .build()
-
-                    MediaItem
-                        .Builder()
-                        .setUri(ep.audioUrl)
-                        .setMimeType(ep.enclosureType)
-                        .setMediaMetadata(metadata)
-                        .setMediaId(ep.id)
-                        .setCustomCacheKey(
-                            PlaybackMediaIdPolicy.customCacheKey(ep.id, ep.audioUrl),
-                        ).build()
-                }
-
-            val insertIndex =
-                if (controller.mediaItemCount > 0) {
-                    (controller.currentMediaItemIndex + 1).coerceIn(0, controller.mediaItemCount)
-                } else {
-                    0
-                }
-            controller.addMediaItems(insertIndex, mediaItems)
+        val controller = mediaHandle.controller
+        if (controller == null) {
+            Log.w("PlaybackRepo", "addEpisodesAfterCurrent: mediaHandle.controller NULL after await!")
+            return false
         }
+
+        val mediaItems =
+            taggedEpisodes.map { ep ->
+                val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(ep, podcast)
+                val metadata =
+                    androidx.media3.common.MediaMetadata
+                        .Builder()
+                        .setTitle(ep.title)
+                        .setArtist(podcast.title)
+                        .setArtworkUri(android.net.Uri.parse(resolvedUrl))
+                        .setDisplayTitle(ep.title)
+                        .setSubtitle(podcast.title)
+                        .setGenre(ep.podcastGenre ?: podcast.genre)
+                        .build()
+
+                MediaItem
+                    .Builder()
+                    .setUri(ep.audioUrl)
+                    .setMimeType(ep.enclosureType)
+                    .setMediaMetadata(metadata)
+                    .setMediaId(ep.id)
+                    .setCustomCacheKey(
+                        PlaybackMediaIdPolicy.customCacheKey(ep.id, ep.audioUrl),
+                    ).build()
+            }
+
+        val insertIndex =
+            if (controller.mediaItemCount > 0) {
+                (controller.currentMediaItemIndex + 1).coerceIn(0, controller.mediaItemCount)
+            } else {
+                0
+            }
+        controller.addMediaItems(insertIndex, mediaItems)
 
         val newQueue =
             if (currentQueue.isNotEmpty()) {
                 val mutable = currentQueue.toMutableList()
                 val currentIndex =
                     if (playingId != null) mutable.indexOfFirst { it.id == playingId } else -1
-                val insertIndex = if (currentIndex != -1) currentIndex + 1 else 1.coerceAtMost(mutable.size)
-                mutable.addAll(insertIndex, taggedEpisodes)
+                val targetIndex = if (currentIndex != -1) currentIndex + 1 else 1.coerceAtMost(mutable.size)
+                mutable.addAll(targetIndex, taggedEpisodes)
                 mutable.toList()
             } else {
                 listOfNotNull(playerStateFlow.value.currentEpisode) + taggedEpisodes
@@ -587,6 +591,7 @@ internal class PlaybackQueueCoordinator(
 
         playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
         syncQueueToDb()
+        return true
     }
 
     /**

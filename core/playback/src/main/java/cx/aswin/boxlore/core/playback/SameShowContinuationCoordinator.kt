@@ -124,13 +124,10 @@ internal class SameShowContinuationCoordinator(
         updateState(SameShowContinuationState.HIDDEN)
     }
 
-    suspend fun addContinuationEpisodes() {
+    suspend fun addContinuationEpisodes(): Boolean {
         val currentState = playerState.value.sameShowContinuation
         val currentEpisode = playerState.value.currentEpisode
-        if (!currentState.visible || currentState.nextEpisodes.isEmpty() || currentEpisode == null) return
-
-        addedEpisodeId = currentEpisode.id
-        updateState(SameShowContinuationState.HIDDEN)
+        if (!currentState.visible || currentState.nextEpisodes.isEmpty() || currentEpisode == null) return false
 
         val podcast =
             playerState.value.currentPodcast
@@ -144,7 +141,12 @@ internal class SameShowContinuationCoordinator(
                     imageUrl = currentEpisode.podcastImageUrl.orEmpty(),
                 )
 
-        queueCoordinator.addEpisodesAfterCurrent(currentState.nextEpisodes, podcast)
+        val success = queueCoordinator.addEpisodesAfterCurrent(currentState.nextEpisodes, podcast)
+        if (success) {
+            addedEpisodeId = currentEpisode.id
+            updateState(SameShowContinuationState.HIDDEN)
+        }
+        return success
     }
 
     private fun updateState(newState: SameShowContinuationState) {

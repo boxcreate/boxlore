@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback
 
 import android.content.Context
+import androidx.media3.session.MediaController
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.PodcastRepository
@@ -25,6 +26,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -37,6 +40,7 @@ class SameShowContinuationCoordinatorTest {
     private lateinit var queueRepository: QueueRepository
     private lateinit var queueCoordinator: PlaybackQueueCoordinator
     private lateinit var userPreferencesRepository: UserPreferencesRepository
+    private lateinit var mediaHandle: PlaybackMediaControllerHandle
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
@@ -133,11 +137,16 @@ class SameShowContinuationCoordinatorTest {
         queueRepository = QueueRepository(database, podcastRepository)
         userPreferencesRepository = UserPreferencesRepository(context)
 
+        val mockController = mock(MediaController::class.java)
+        `when`(mockController.mediaItemCount).thenReturn(0)
+        mediaHandle = PlaybackMediaControllerHandle()
+        mediaHandle.controller = mockController
+
         queueCoordinator =
             PlaybackQueueCoordinator(
                 scope = testScope,
                 playerStateFlow = playerStateFlow,
-                mediaHandle = PlaybackMediaControllerHandle(),
+                mediaHandle = mediaHandle,
                 queueRepository = queueRepository,
                 rankingFeedbackRepository = RankingFeedbackRepository.create(null),
                 queueSkipMemory = QueueSkipMemory.fromContext(context),
@@ -422,5 +431,44 @@ class SameShowContinuationCoordinatorTest {
             assertEquals("-1", queue[0].id)
             assertEquals("-2", queue[1].id)
             assertEquals("-3", queue[2].id)
+        }
+
+    @Test
+    fun `addContinuationEpisodes fails and leaves banner visible when controller is unavailable`() =
+        runTest(testDispatcher) {
+            mediaHandle.controller = null
+
+            val current = createEpisode("-1", pubDate = 1000L)
+            insertTestShow(type = "serial", count = 4)
+            val podcast = createPodcast()
+            val coordinator =
+                SameShowContinuationCoordinator(
+                    scope = testScope,
+                    playerState = playerStateFlow,
+                    playerStateFlow = playerStateFlow,
+                    podcastRepository = podcastRepository,
+                    userPreferencesRepository = userPreferencesRepository,
+                    queueCoordinator = queueCoordinator,
+                )
+
+            playerStateFlow.value =
+                playerStateFlow.value.copy(
+                    currentEpisode = current,
+                    currentPodcast = podcast,
+                    queue = listOf(current),
+                    sameShowContinuation =
+                        SameShowContinuationState(
+                            visible = true,
+                            podcastTitle = "Test Show",
+                            availableCount = 2,
+                            nextEpisodes = listOf(createEpisode("-2"), createEpisode("-3")),
+                        ),
+                )
+
+            val success = coordinator.addContinuationEpisodes()
+
+            org.junit.Assert.assertFalse(success)
+            org.junit.Assert.assertTrue(playerStateFlow.value.sameShowContinuation.visible)
+            assertEquals(1, playerStateFlow.value.queue.size)
         }
 }
