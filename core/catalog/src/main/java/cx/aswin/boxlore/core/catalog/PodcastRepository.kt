@@ -24,9 +24,9 @@ import kotlinx.coroutines.withContext
 
 /**
  * Canonical [PodcastEntity] → [Podcast] mapper shared across the data layer (and by feature
- * modules such as `feature/info`) so every caller maps the same fields the same way — see
- * [RssPodcastRepository]'s own variant for the one deliberate RSS-specific override
- * (notifications/auto-download are not surfaced from that entity snapshot).
+ * modules such as `feature/info`) so every caller maps the same fields the same way.
+ * [RssPodcastRepository] maintains an internal variant to respect module boundaries
+ * without creating a reverse dependency on `:core:catalog`.
  */
 fun PodcastEntity.toPodcast(): Podcast = Podcast(
     id = podcastId,
