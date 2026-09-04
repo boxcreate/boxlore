@@ -1019,6 +1019,10 @@ class PodcastInfoViewModel(
             (_uiState.value as? PodcastInfoUiState.Success)
                 ?.takeIf { it.podcast.id == targetPodcastId }
                 ?: activeInitialState
+        if (!PodcastInfoPullRefreshLogic.shouldAcceptPageSort(activeInitialState.currentSort, activeState.currentSort)) {
+            _uiState.value = activeState.copy(isLoadingMore = false, isRssRefreshing = false)
+            return
+        }
         val localPodcast = localCatalog.getLocalPodcast(targetPodcastId)
         val preservedPodcast =
             cx.aswin.boxlore.feature.info.logic.PodcastInfoEnrichLogic.preserveSubscriptionProperties(

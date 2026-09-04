@@ -32,6 +32,11 @@ internal object PodcastInfoPullRefreshLogic {
 
     fun shouldApply(currentPodcastId: String, targetPodcastId: String): Boolean = currentPodcastId == targetPodcastId
 
+    fun shouldAcceptPageSort(
+        initialSort: cx.aswin.boxlore.feature.info.EpisodeSort,
+        activeSort: cx.aswin.boxlore.feature.info.EpisodeSort,
+    ): Boolean = initialSort == activeSort
+
     fun shouldPersistLibraryTip(isSubscribed: Boolean, hasTip: Boolean): Boolean = isSubscribed && hasTip
 
     fun extractTip(outcome: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome): cx.aswin.boxlore.core.model.Episode? =

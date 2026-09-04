@@ -287,6 +287,35 @@ class PodcastInfoViewModelLogicTest {
     }
 
     @Test
+    fun `preserveSubscriptionProperties latest disabled flags override stale local enabled flags`() {
+        val rawApiPodcast = TestFixtures.podcast(id = "p1")
+        val latestPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                subscribedAt = 12345L,
+            )
+        val localPodcast =
+            TestFixtures.podcast(id = "p1").copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                subscribedAt = 12345L,
+            )
+
+        val preserved =
+            PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+                refreshedPodcast = rawApiPodcast,
+                latestPodcast = latestPodcast,
+                localPodcast = localPodcast,
+                isSubscribed = true,
+            )
+
+        assertFalse(preserved.notificationsEnabled)
+        assertFalse(preserved.autoDownloadEnabled)
+        assertEquals(12345L, preserved.subscribedAt)
+    }
+
+    @Test
     fun `late refresh preserves an unsubscribe completed while it was loading`() {
         val current =
             PodcastInfoUiState.Success(
@@ -464,5 +493,69 @@ class PodcastInfoViewModelLogicTest {
 
         assertEquals("ep-new", enriched.latestEpisode?.id)
         assertEquals(2000L, enriched.latestEpisode?.publishedDate)
+    }
+
+    @Test
+    fun `shouldAcceptPageSort only accepts matching sort snapshot`() {
+        assertTrue(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.NEWEST,
+                EpisodeSort.NEWEST,
+            ),
+        )
+        assertTrue(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.OLDEST,
+                EpisodeSort.OLDEST,
+            ),
+        )
+        assertFalse(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.NEWEST,
+                EpisodeSort.OLDEST,
+            ),
+        )
+        assertFalse(
+            PodcastInfoPullRefreshLogic.shouldAcceptPageSort(
+                EpisodeSort.OLDEST,
+                EpisodeSort.NEWEST,
+            ),
+        )
+    }
+
+    @Test
+    fun `extractTip resolves newest episode across outcomes`() {
+        val ep = TestFixtures.episode(id = "ep-1")
+        assertEquals(
+            ep,
+            PodcastInfoPullRefreshLogic.extractTip(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success(
+                    newest = ep,
+                    itemCount = 1,
+                    ready = true,
+                ),
+            ),
+        )
+        assertEquals(
+            ep,
+            PodcastInfoPullRefreshLogic.extractTip(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(ep),
+            ),
+        )
+        assertNull(
+            PodcastInfoPullRefreshLogic.extractTip(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Failure(
+                    "Network error",
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `shouldPersistLibraryTip only persists when subscribed and tip exists`() {
+        assertTrue(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = true))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = false, hasTip = true))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = false))
+        assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = false, hasTip = false))
     }
 }

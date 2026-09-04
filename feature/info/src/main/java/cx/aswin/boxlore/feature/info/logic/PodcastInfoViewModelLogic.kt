@@ -42,8 +42,16 @@ object PodcastInfoEnrichLogic {
         return apiPodcast.copy(
             fallbackImageUrl = resolveEnrichedFallbackImage(currentPodcast, localPodcast, apiPodcast, pageEpisodes),
             subscribedAt = resolveEnrichedSubscribedAt(currentPodcast, localPodcast),
-            notificationsEnabled = resolveNotifications(effectiveSubscribed, currentPodcast ?: apiPodcast, localPodcast),
-            autoDownloadEnabled = resolveAutoDownload(effectiveSubscribed, currentPodcast ?: apiPodcast, localPodcast),
+            notificationsEnabled = resolveEnrichedToggle(
+                effectiveSubscribed,
+                currentPodcast?.notificationsEnabled,
+                localPodcast?.notificationsEnabled,
+            ),
+            autoDownloadEnabled = resolveEnrichedToggle(
+                effectiveSubscribed,
+                currentPodcast?.autoDownloadEnabled,
+                localPodcast?.autoDownloadEnabled,
+            ),
             skipBeginningOverrideMs = skipBeginning,
             skipEndingOverrideMs = skipEnding,
             preferredSort = resolvePreferredSort(currentPodcast ?: apiPodcast, localPodcast, apiPodcast),
@@ -51,6 +59,12 @@ object PodcastInfoEnrichLogic {
             latestEpisode = resolveEnrichedLatestEpisode(localPodcast, currentPodcast, apiPodcast, pageEpisodes, sortParam),
         )
     }
+
+    private fun resolveEnrichedToggle(
+        effectiveSubscribed: Boolean,
+        current: Boolean?,
+        local: Boolean?,
+    ): Boolean = effectiveSubscribed && (local == true || current == true)
 
     private fun resolveEnrichedFallbackImage(
         current: Podcast?,
@@ -94,8 +108,18 @@ object PodcastInfoEnrichLogic {
             isSubscribed ?: (latestPodcast.subscribedAt > 0L || (localPodcast?.subscribedAt ?: 0L) > 0L)
         val (skipBeginning, skipEnding) = resolveSkips(latestPodcast, localPodcast, refreshedPodcast)
         return refreshedPodcast.copy(
-            notificationsEnabled = resolveNotifications(effectiveSubscribed, latestPodcast, localPodcast),
-            autoDownloadEnabled = resolveAutoDownload(effectiveSubscribed, latestPodcast, localPodcast),
+            notificationsEnabled = resolvePreservedToggle(
+                effectiveSubscribed,
+                latestPodcast.subscribedAt > 0L,
+                latestPodcast.notificationsEnabled,
+                localPodcast?.notificationsEnabled,
+            ),
+            autoDownloadEnabled = resolvePreservedToggle(
+                effectiveSubscribed,
+                latestPodcast.subscribedAt > 0L,
+                latestPodcast.autoDownloadEnabled,
+                localPodcast?.autoDownloadEnabled,
+            ),
             subscribedAt = resolveSubscribedAt(effectiveSubscribed, latestPodcast, localPodcast, refreshedPodcast),
             skipBeginningOverrideMs = skipBeginning,
             skipEndingOverrideMs = skipEnding,
@@ -106,17 +130,19 @@ object PodcastInfoEnrichLogic {
         )
     }
 
-    private fun resolveNotifications(
+    private fun resolvePreservedToggle(
         effectiveSubscribed: Boolean,
-        latest: Podcast,
-        local: Podcast?,
-    ): Boolean = effectiveSubscribed && (latest.notificationsEnabled || (local?.notificationsEnabled == true))
-
-    private fun resolveAutoDownload(
-        effectiveSubscribed: Boolean,
-        latest: Podcast,
-        local: Podcast?,
-    ): Boolean = effectiveSubscribed && (latest.autoDownloadEnabled || (local?.autoDownloadEnabled == true))
+        hasSubscribedAt: Boolean,
+        latestEnabled: Boolean,
+        localEnabled: Boolean?,
+    ): Boolean {
+        if (!effectiveSubscribed) return false
+        return if (hasSubscribedAt) {
+            latestEnabled
+        } else {
+            localEnabled ?: latestEnabled
+        }
+    }
 
     private fun resolveSubscribedAt(
         effectiveSubscribed: Boolean,
