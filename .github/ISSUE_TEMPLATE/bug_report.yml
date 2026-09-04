@@ -1,7 +1,6 @@
 name: 🐛 Bug Report
 description: Report a reproducible bug or unexpected behavior in boxlore
 title: "[Bug]: "
-labels: ["bug"]
 body:
   - type: markdown
     attributes:
@@ -30,7 +29,6 @@ body:
     id: area
     attributes:
       label: Which area is affected?
-      description: "Matches roadmap project categories"
       options:
         - Playback
         - Player UI
@@ -43,18 +41,6 @@ body:
         - Backend & Catalog
         - Developer / CI
         - Other
-    validations:
-      required: true
-
-  - type: dropdown
-    id: severity
-    attributes:
-      label: Severity / Urgency
-      description: "How severely does this affect listening?"
-      options:
-        - "Minor / Cosmetic (UI glitch, minor styling, or edge case) -> P3"
-        - "Standard Bug (Normal feature impaired, workaround exists) -> P2"
-        - "Critical / Blocking (Audio broken, crash, or data loss) -> P1"
     validations:
       required: true
 

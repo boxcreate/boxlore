@@ -1,17 +1,14 @@
 name: Auto-Triage & Labeler
 
 on:
-  issues:
-    types: [opened, edited]
   pull_request:
     types: [opened, edited]
 
 concurrency:
-  group: triage-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: triage-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
-  issues: write
   pull-requests: write
 
 jobs:
@@ -20,22 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Evaluate and apply taxonomy labels
+      - name: Evaluate and apply CI labels from PR body
         uses: actions/github-script@v7
         with:
           script: |
-            const isPR = !!context.payload.pull_request;
-            const target = isPR ? context.payload.pull_request : context.payload.issue;
-            const number = target.number;
-            const title = (target.title || '').trim();
-            const body = (target.body || '').trim();
-            const currentLabels = (target.labels || []).map(l => typeof l === 'string' ? l : l.name);
+            const pr = context.payload.pull_request;
+            const number = pr.number;
+            const body = (pr.body || '').trim();
+            const currentLabels = (pr.labels || []).map(l => typeof l === 'string' ? l : l.name);
 
             const labelsToAdd = new Set();
             const labelsToRemove = new Set();
-
-            const knownTypes = ['bug', 'feature', 'perf', 'docs', 'refactor', 'chore'];
-            const knownPriorities = ['P0', 'P1', 'P2', 'P3'];
 
             const impactLabels = [
               'user-impact-critical',
@@ -45,94 +37,30 @@ jobs:
               'no-user-impact'
             ];
 
-            if (isPR) {
-              // --- PULL REQUEST TRIAGE ---
-
-              // 1. Infer type from Conventional Commit prefix
-              const hasType = currentLabels.some(l => knownTypes.includes(l));
-              if (!hasType) {
-                if (/^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('bug');
-                else if (/^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('feature');
-                else if (/^perf(\(.*\))?:/i.test(title)) labelsToAdd.add('perf');
-                else if (/^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('refactor');
-                else if (/^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('docs');
-                else if (/^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('chore');
+            // 1. Infer user impact from checkboxes: - [x] `user-impact-...`
+            let checkedImpact = null;
+            for (const impact of impactLabels) {
+              const regex = new RegExp(`-\\s*\\[[xX]\\]\\s*(\`?)${impact}\\1`, 'i');
+              if (regex.test(body)) {
+                checkedImpact = impact;
+                break;
               }
+            }
 
-              // 2. Infer user impact from checkboxes: - [x] `user-impact-...` or - [x] user-impact-...
-              let checkedImpact = null;
+            if (checkedImpact) {
               for (const impact of impactLabels) {
-                const regex = new RegExp(`-\\s*\\[[xX]\\]\\s*(\`?)${impact}\\1`, 'i');
-                if (regex.test(body)) {
-                  checkedImpact = impact;
-                  break;
+                if (impact === checkedImpact) {
+                  if (!currentLabels.includes(impact)) labelsToAdd.add(impact);
+                } else if (currentLabels.includes(impact)) {
+                  labelsToRemove.add(impact);
                 }
               }
+            }
 
-              if (checkedImpact) {
-                for (const impact of impactLabels) {
-                  if (impact === checkedImpact) {
-                    if (!currentLabels.includes(impact)) labelsToAdd.add(impact);
-                  } else if (currentLabels.includes(impact)) {
-                    labelsToRemove.add(impact);
-                  }
-                }
-              }
-
-              // 3. Infer backend-change from checkbox
-              const backendRegex = /-\s*\[[xX]\]\s*(`?)backend-change\1/i;
-              if (backendRegex.test(body) && !currentLabels.includes('backend-change')) {
-                labelsToAdd.add('backend-change');
-              }
-
-            } else {
-              // --- ISSUE TRIAGE ---
-
-              // 1. Infer type from title prefix, then fall back to GitHub Issue Type
-              const hasType = currentLabels.some(l => knownTypes.includes(l));
-              if (!hasType) {
-                // a) Title prefix matching
-                if (/^\[Crash\]/i.test(title)) labelsToAdd.add('bug');
-                else if (/^\[Bug\]/i.test(title) || /^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('bug');
-                else if (/^\[Feature\]/i.test(title) || /^\[Idea\]/i.test(title) || /^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('feature');
-                else if (/^\[Docs\]/i.test(title) || /^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('docs');
-                else if (/^\[Refactor\]/i.test(title) || /^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('refactor');
-                else if (/^\[Chore\]/i.test(title) || /^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('chore');
-                else if (/^perf(\(.*\))?:/i.test(title)) labelsToAdd.add('perf');
-
-                // b) Fallback: read GitHub's native Issue Type (Bug/Feature/Task)
-                if (labelsToAdd.size === 0) {
-                  const issueType = (context.payload.issue.issue_type || {}).name || '';
-                  const typeLower = issueType.toLowerCase();
-                  if (typeLower === 'bug') labelsToAdd.add('bug');
-                  else if (typeLower === 'feature') labelsToAdd.add('feature');
-                  // Task type doesn't map to a specific label
-                }
-
-                // c) Emoji prefix fallback (💡 = idea/feature, 🐛 = bug)
-                if (labelsToAdd.size === 0) {
-                  if (/^💡/u.test(title)) labelsToAdd.add('feature');
-                  else if (/^🐛/u.test(title)) labelsToAdd.add('bug');
-                  else if (/^💥/u.test(title)) labelsToAdd.add('bug');
-                }
-              }
-
-              // 2. Infer priority from title / dropdown
-              const hasPriority = currentLabels.some(l => knownPriorities.includes(l));
-              if (!hasPriority) {
-                if (/^\[Crash\]/i.test(title) || body.includes('Critical / Blocking') || body.includes('user-impact-critical')) {
-                  labelsToAdd.add('P1');
-                } else if (body.includes('Minor / Cosmetic') || body.includes('user-impact-low') || labelsToAdd.has('feature')) {
-                  labelsToAdd.add('P3');
-                } else if (labelsToAdd.has('bug') || currentLabels.includes('bug')) {
-                  labelsToAdd.add('P2');
-                } else {
-                  labelsToAdd.add('P3');
-                }
-              }
-
-              // Note: Issues are auto-added to Project 2 by the built-in
-              // "Auto-add to project" project workflow (no token needed).
+            // 2. Infer backend-change from checkbox
+            const backendRegex = /-\s*\[[xX]\]\s*(`?)backend-change\1/i;
+            if (backendRegex.test(body) && !currentLabels.includes('backend-change')) {
+              labelsToAdd.add('backend-change');
             }
 
             // Remove superseded labels

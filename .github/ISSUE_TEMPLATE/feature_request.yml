@@ -1,7 +1,6 @@
 name: 💡 Feature Request
 description: Propose a new feature, improvement, or idea for boxlore
 title: "[Feature]: "
-labels: ["feature", "P3"]
 body:
   - type: markdown
     attributes:
@@ -12,7 +11,6 @@ body:
     id: area
     attributes:
       label: Which area does this relate to?
-      description: "Matches roadmap project categories"
       options:
         - Playback
         - Player UI

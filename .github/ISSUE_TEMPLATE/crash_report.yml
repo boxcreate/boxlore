@@ -1,7 +1,6 @@
 name: 💥 Crash or ANR Report
 description: Report an application crash, freeze, or ANR (Application Not Responding)
 title: "[Crash]: "
-labels: ["bug", "P1"]
 body:
   - type: markdown
     attributes:
@@ -30,7 +29,6 @@ body:
     id: area
     attributes:
       label: Which area did the crash happen in?
-      description: "Matches roadmap project categories"
       options:
         - Playback
         - Player UI
