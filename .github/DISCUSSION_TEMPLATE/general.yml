@@ -1,0 +1,15 @@
+title: "💬 [General]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Welcome to boxlore discussions! Share podcast recommendations, general feedback, or start an open conversation with fellow listeners. ☕
+
+  - type: textarea
+    id: topic
+    attributes:
+      label: Topic / Thoughts
+      description: "What would you like to discuss?"
+      placeholder: "Share your thoughts, favorite shows, or thoughts on recent boxlore updates..."
+    validations:
+      required: true

@@ -1,30 +1,30 @@
-title: "❓ [Question] "
+title: "❓ [Question]: "
 body:
   - type: markdown
     attributes:
       value: |
-        Have a question about using BoxLore? Can't figure something out?
-        Ask the community here! 🙋‍♂️
+        Have a question about using boxlore? Can't figure out a feature or setting? Ask the community here! 🙋
 
   - type: dropdown
     id: category
     attributes:
-      label: What is this related to?
+      label: What is your question related to?
       options:
-        - How-to / Usage
-        - Troubleshooting
-        - Supported Devices
-        - Setup / Installation
-        - Other
+        - How-to & Usage Tips
+        - OPML Import / Export / Feeds
+        - Downloads & Storage
+        - Android Auto & Car Playback
+        - Troubleshooting & Device Compatibility
+        - General Question
     validations:
       required: true
 
   - type: textarea
     id: question
     attributes:
-      label: What is your question?
-      description: "Please be as specific as possible so others can help you better."
-      placeholder: "How do I..."
+      label: What would you like to know?
+      description: "Be as specific as possible so other community members can help."
+      placeholder: "How can I set up continuous playback for a specific show?"
     validations:
       required: true
 
@@ -32,6 +32,6 @@ body:
     id: context
     attributes:
       label: Additional Context
-      description: "Any screenshots, device specs, or other relevant information."
+      description: "App version, device model, screenshots, or any steps you've already tried."
     validations:
       required: false

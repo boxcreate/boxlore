@@ -1,24 +1,22 @@
-title: "💡 [Idea] "
+title: "💡 [Idea]: "
 body:
   - type: markdown
     attributes:
       value: |
-        Got an idea to make BoxLore even better? We'd love to hear it! 📺
-        Share it with the community here to get feedback.
+        Have an idea or design suggestion for boxlore? Share it with the community here to brainstorm and get feedback! 🎧
 
   - type: dropdown
     id: area
     attributes:
       label: Which area does this relate to?
       options:
-        - Playback / Streams
-        - Search
-        - Explore
-        - Settings
-        - Network / Connectivity
-        - UI / Design
-        - New Feature
-        - Other
+        - Playback / Queue / Mini-Player
+        - Explore / Discover / Recommendations
+        - Library / Downloads / Episode Management
+        - OPML / Feed Integration / Backup
+        - UI / Layout / Themes / Widgets
+        - Performance & Caching
+        - New Concept / Other
     validations:
       required: true
 
@@ -26,15 +24,24 @@ body:
     id: description
     attributes:
       label: Describe your idea
-      description: "What would you like to see? How would it work?"
-      placeholder: "I'd love to have a feature that..."
+      description: "What would you like to see? How should it work in boxlore?"
+      placeholder: "I'd love to see a feature where..."
     validations:
       required: true
 
   - type: textarea
     id: motivation
     attributes:
-      label: Why is this useful?
-      description: "How would this improve your watching experience?"
+      label: Why is this helpful?
+      description: "How would this improve your daily podcast listening experience?"
+      placeholder: "This would make it much easier to..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Visuals or Examples
+      description: "Any mockups, screenshots, or examples from other apps that inspire this idea?"
     validations:
       required: false

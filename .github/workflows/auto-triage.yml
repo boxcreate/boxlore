@@ -1,0 +1,169 @@
+name: Auto-Triage & Labeler
+
+on:
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited]
+
+concurrency:
+  group: triage-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  triage:
+    name: Auto-Triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Evaluate and apply taxonomy labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isPR = !!context.payload.pull_request;
+            const target = isPR ? context.payload.pull_request : context.payload.issue;
+            const number = target.number;
+            const title = (target.title || '').trim();
+            const body = (target.body || '').trim();
+            const currentLabels = (target.labels || []).map(l => typeof l === 'string' ? l : l.name);
+
+            const labelsToAdd = new Set();
+            const labelsToRemove = new Set();
+
+            const impactLabels = [
+              'user-impact-critical',
+              'user-impact-high',
+              'user-impact-medium',
+              'user-impact-low',
+              'no-user-impact'
+            ];
+
+            if (isPR) {
+              // --- PULL REQUEST TRIAGE ---
+
+              // 1. Infer type from Conventional Commit prefix
+              const hasType = currentLabels.some(l => l.startsWith('type: '));
+              if (!hasType) {
+                if (/^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('type: bug');
+                else if (/^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('type: feature');
+                else if (/^perf(\(.*\))?:/i.test(title)) labelsToAdd.add('type: perf');
+                else if (/^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('type: refactor');
+                else if (/^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('type: docs');
+                else if (/^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('type: chore');
+              }
+
+              // 2. Infer user impact from checkboxes: - [x] `user-impact-...` or - [x] user-impact-...
+              let checkedImpact = null;
+              for (const impact of impactLabels) {
+                const regex = new RegExp(`-\\s*\\[[xX]\\]\\s*(\`?)${impact}\\1`, 'i');
+                if (regex.test(body)) {
+                  checkedImpact = impact;
+                  break;
+                }
+              }
+
+              if (checkedImpact) {
+                // Ensure only the selected user-impact label is present
+                for (const impact of impactLabels) {
+                  if (impact === checkedImpact) {
+                    if (!currentLabels.includes(impact)) labelsToAdd.add(impact);
+                  } else if (currentLabels.includes(impact)) {
+                    labelsToRemove.add(impact);
+                  }
+                }
+              }
+
+              // 3. Infer backend-change from checkbox
+              const backendRegex = /-\s*\[[xX]\]\s*(`?)backend-change\1/i;
+              if (backendRegex.test(body) && !currentLabels.includes('backend-change')) {
+                labelsToAdd.add('backend-change');
+              }
+
+            } else {
+              // --- ISSUE TRIAGE ---
+
+              // 1. Infer type from issue template prefix or title
+              const hasType = currentLabels.some(l => l.startsWith('type: '));
+              if (!hasType) {
+                if (/^\[Crash\]/i.test(title)) labelsToAdd.add('type: bug');
+                else if (/^\[Bug\]/i.test(title) || /^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('type: bug');
+                else if (/^\[Feature\]/i.test(title) || /^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('type: feature');
+                else if (/^\[Docs\]/i.test(title) || /^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('type: docs');
+                else if (/^\[Refactor\]/i.test(title) || /^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('type: refactor');
+                else if (/^\[Chore\]/i.test(title) || /^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('type: chore');
+              }
+
+              // 2. Infer user impact from dropdown / body text
+              let detectedImpact = null;
+              if (body.includes('user-impact-critical') || /^\[Crash\]/i.test(title)) {
+                detectedImpact = 'user-impact-critical';
+              } else if (body.includes('user-impact-high')) {
+                detectedImpact = 'user-impact-high';
+              } else if (body.includes('user-impact-medium')) {
+                detectedImpact = 'user-impact-medium';
+              } else if (body.includes('user-impact-low')) {
+                detectedImpact = 'user-impact-low';
+              }
+
+              if (detectedImpact) {
+                for (const impact of impactLabels) {
+                  if (impact === detectedImpact) {
+                    if (!currentLabels.includes(impact)) labelsToAdd.add(impact);
+                  } else if (currentLabels.includes(impact)) {
+                    labelsToRemove.add(impact);
+                  }
+                }
+              }
+
+              // 3. Infer priority if none set
+              const hasPriority = currentLabels.some(l => l.startsWith('priority: '));
+              if (!hasPriority) {
+                const isCritical = detectedImpact === 'user-impact-critical' || /^\[Crash\]/i.test(title);
+                const isHigh = detectedImpact === 'user-impact-high';
+                const isBug = labelsToAdd.has('type: bug') || currentLabels.includes('type: bug');
+                const isFeature = labelsToAdd.has('type: feature') || currentLabels.includes('type: feature');
+
+                if (isCritical) {
+                  labelsToAdd.add('priority: P1');
+                } else if (isBug && isHigh) {
+                  labelsToAdd.add('priority: P1');
+                } else if (isBug) {
+                  labelsToAdd.add('priority: P2');
+                } else if (isFeature) {
+                  labelsToAdd.add('priority: P3');
+                }
+              }
+            }
+
+            // Remove superseded labels
+            for (const label of labelsToRemove) {
+              console.log(`Removing superseded label from #${number}: ${label}`);
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  name: label
+                });
+              } catch (e) {
+                console.warn(`Could not remove label ${label}:`, e.message);
+              }
+            }
+
+            // Add new labels
+            const finalToAdd = Array.from(labelsToAdd).filter(l => !currentLabels.includes(l));
+            if (finalToAdd.length > 0) {
+              console.log(`Adding labels to #${number}:`, finalToAdd);
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: number,
+                labels: finalToAdd
+              });
+            } else {
+              console.log(`No new labels to add for #${number}.`);
+            }

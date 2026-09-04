@@ -1,49 +1,63 @@
 name: 💡 Feature Request
-description: Suggest a new feature or improvement
-labels: ["enhancement"]
+description: Propose a new feature, improvement, or idea for boxlore
+title: "[Feature]: "
+labels: ["type: feature"]
 body:
   - type: markdown
     attributes:
       value: |
-        Got an idea to make BoxLore even better? We'd love to hear it! 📺
+        Have an idea to make boxlore even better? We'd love to hear your suggestions! 🎧
 
   - type: dropdown
     id: area
     attributes:
       label: Which area does this relate to?
       options:
-        - Playback / Streams
-        - Search
-        - Explore
-        - Settings
-        - Network / Connectivity
-        - UI / Design
-        - New Feature
+        - Playback / Queue / Smart Queue
+        - Explore / Discover / Recommendations
+        - Library / Downloads / Episode Management
+        - OPML / Feed Integration / Backup
+        - UI / Layout / Themes / Widgets
+        - Performance & Caching
+        - New Feature / Capability
         - Other
     validations:
       required: true
 
+  - type: dropdown
+    id: user-impact
+    attributes:
+      label: Anticipated User Impact
+      description: "How much value would this bring to listeners?"
+      options:
+        - "user-impact-high (Essential daily podcasting feature or major enhancement)"
+        - "user-impact-medium (Great improvement for regular users)"
+        - "user-impact-low (Nice-to-have quality-of-life polish or niche preference)"
+    validations:
+      required: false
+
   - type: textarea
     id: description
     attributes:
-      label: Describe the feature
-      description: "What would you like to see? Be as detailed as possible."
-      placeholder: "It would be great if the app could..."
+      label: Feature Description
+      description: "What would you like to see added or changed? Be as clear as possible."
+      placeholder: "I would like boxlore to support..."
     validations:
       required: true
 
   - type: textarea
     id: motivation
     attributes:
-      label: Why is this useful?
-      description: "How would this improve your listening experience?"
+      label: Problem & Motivation
+      description: "What problem does this solve for your listening experience?"
+      placeholder: "Currently, when I want to do X, I have to..."
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: mockups
     attributes:
-      label: Mockups / References
-      description: "Any screenshots, sketches, or links to similar features in other apps?"
+      label: Mockups, Screenshots, or References
+      description: "Any concept sketches, mockups, or examples from other podcast apps"
     validations:
       required: false

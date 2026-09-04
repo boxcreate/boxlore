@@ -1,0 +1,85 @@
+name: 💥 Crash or ANR Report
+description: Report an application crash, freeze, or ANR (Application Not Responding)
+title: "[Crash]: "
+labels: ["type: bug", "priority: P1", "user-impact-critical"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We take stability issues and crashes very seriously. Thank you for reporting this so we can investigate and fix it immediately!
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App Version & Build
+      description: "Which version of boxlore are you running? (Found in Settings > About)"
+      placeholder: "e.g. v0.0.24"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device & Android Version
+      description: "Device model and Android OS version"
+      placeholder: "e.g. Pixel 7 Pro, Android 14"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: crash-context
+    attributes:
+      label: When does the crash or freeze occur?
+      options:
+        - App startup / launch
+        - During audio playback or lockscreen controls
+        - Navigating to show details / episode list
+        - During OPML import or library restore
+        - In the background or during sync
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Reproducibility
+      options:
+        - "Always (100% reproducible on every attempt)"
+        - "Frequently (Occurs often under specific conditions)"
+        - "Intermittently (Hard to reproduce, happens sometimes)"
+        - "Happened once"
+    validations:
+      required: true
+
+  - type: textarea
+    id: stacktrace
+    attributes:
+      label: Crash Log / Stack Trace
+      description: "Please paste the Android crash log or logcat output (if available)"
+      placeholder: |
+        FATAL EXCEPTION: main
+        java.lang.NullPointerException: ...
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: "What were you doing right before the crash occurred?"
+      placeholder: |
+        1. Open boxlore
+        2. Tap on ...
+        3. App immediately closes
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Confirmation
+      options:
+        - label: "I have verified this crash exists on the latest release of boxlore."
+          required: true

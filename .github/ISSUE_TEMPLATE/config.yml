@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: BoxLore Discussions
+  - name: boxlore Discussions
     url: https://github.com/boxcreate/boxlore/discussions
-    about: Ask questions, share ideas, and engage with the BoxLore community.
+    about: Ask questions, share ideas, and connect with the boxlore community.
+  - name: Security Vulnerability Reporting
+    url: https://github.com/boxcreate/boxlore/security/advisories/new
+    about: Privately report potential security vulnerabilities or exposure.
