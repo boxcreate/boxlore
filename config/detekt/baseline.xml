@@ -70,9 +70,9 @@
     <ID>CyclomaticComplexMethod:OnboardingViewModelAi.kt$internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = false)</ID>
     <ID>CyclomaticComplexMethod:PlaybackChaptersTranscriptController.kt$PlaybackChaptersTranscriptController$fun monitorChaptersAndTranscripts()</ID>
     <ID>CyclomaticComplexMethod:PlaybackChaptersTranscriptController.kt$PlaybackChaptersTranscriptController$fun startAutoTranscriptGeneration(episodeId: String, audioUrl: String, transcriptUrl: String?, isTranscriptRequested: Boolean,)</ID>
-    <ID>CyclomaticComplexMethod:PlaybackMediaControllerBridge.kt$PlaybackMediaControllerBridge$override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int,)</ID>
-    <ID>CyclomaticComplexMethod:PlaybackQueueCoordinator.kt$PlaybackQueueCoordinator$suspend fun removeFromQueue(episodeId: String, deferSkipSignal: Boolean = false,): RemovedQueueItem?</ID>
-    <ID>CyclomaticComplexMethod:PlaybackTelemetrySession.kt$PlaybackTelemetrySession$fun end(forceCompleted: Boolean = false, isTransition: Boolean = false,)</ID>
+    <ID>CyclomaticComplexMethod:PlaybackMediaControllerBridge.kt$PlaybackMediaControllerBridge$override fun onMediaItemTransition( mediaItem: MediaItem?, reason: Int, )</ID>
+    <ID>CyclomaticComplexMethod:PlaybackQueueCoordinator.kt$PlaybackQueueCoordinator$suspend fun removeFromQueue( episodeId: String, deferSkipSignal: Boolean = false, ): RemovedQueueItem?</ID>
+    <ID>CyclomaticComplexMethod:PlaybackTelemetrySession.kt$PlaybackTelemetrySession$fun end( forceCompleted: Boolean = false, isTransition: Boolean = false, )</ID>
     <ID>CyclomaticComplexMethod:PlaybackTransportHelper.kt$PlaybackTransportHelper$fun resume(entryPointContext: android.os.Bundle? = null)</ID>
     <ID>CyclomaticComplexMethod:PodcastInfoMetadataChips.kt$internal fun explicitFrequencyTag(tag: String?): Pair&lt;String, ImageVector&gt;?</ID>
     <ID>CyclomaticComplexMethod:PodcastInfoMetadataChips.kt$internal fun genreIconFor(genre: String): ImageVector</ID>
@@ -194,9 +194,9 @@
     <ID>LongMethod:OpmlImportEffects.kt$@Composable fun OpmlImportEffects( importTriggerKey: Long, opmlImportState: OpmlImportState, onStateChange: (OpmlImportState) -&gt; Unit, context: Context, subscriptionRepository: SubscriptionRepository, playbackRepository: PlaybackRepository, podcastRepository: PodcastRepository, )</ID>
     <ID>LongMethod:PlaybackChaptersTranscriptController.kt$PlaybackChaptersTranscriptController$fun monitorChaptersAndTranscripts()</ID>
     <ID>LongMethod:PlaybackChaptersTranscriptController.kt$PlaybackChaptersTranscriptController$fun startAutoTranscriptGeneration(episodeId: String, audioUrl: String, transcriptUrl: String?, isTranscriptRequested: Boolean,)</ID>
-    <ID>LongMethod:PlaybackMediaControllerBridge.kt$PlaybackMediaControllerBridge$override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int,)</ID>
+    <ID>LongMethod:PlaybackMediaControllerBridge.kt$PlaybackMediaControllerBridge$override fun onMediaItemTransition( mediaItem: MediaItem?, reason: Int, )</ID>
     <ID>LongMethod:PlaybackSettingsPage.kt$@Composable internal fun PlaybackSettingsPage( state: PlaybackUiState, actions: PlaybackActions, onBack: () -&gt; Unit, )</ID>
-    <ID>LongMethod:PlaybackTelemetrySession.kt$PlaybackTelemetrySession$fun end(forceCompleted: Boolean = false, isTransition: Boolean = false,)</ID>
+    <ID>LongMethod:PlaybackTelemetrySession.kt$PlaybackTelemetrySession$fun end( forceCompleted: Boolean = false, isTransition: Boolean = false, )</ID>
     <ID>LongMethod:PlayerSeekbar.kt$@Composable fun PlayerSeekbar( progressFlows: PlayerProgressFlows, durationMs: Long, isPlaying: Boolean, colorScheme: ColorScheme, onSeek: (Long) -&gt; Unit, chapters: List&lt;Chapter&gt; = emptyList(), modifier: Modifier = Modifier )</ID>
     <ID>LongMethod:PlayerSheetScaffold.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun PlayerSheetScaffold( playbackRepository: PlaybackRepository, downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository, userPrefs: UserPreferencesRepository, layout: PlayerSheetLayout, actions: PlayerSheetActions = PlayerSheetActions(), modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:PodcastInfoScreen.kt$@Composable fun EpisodeLazyColumn()</ID>
