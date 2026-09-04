@@ -13,7 +13,6 @@ concurrency:
 permissions:
   issues: write
   pull-requests: write
-  repository-projects: write
 
 jobs:
   triage:
@@ -89,15 +88,33 @@ jobs:
             } else {
               // --- ISSUE TRIAGE ---
 
-              // 1. Infer type from title prefix
+              // 1. Infer type from title prefix, then fall back to GitHub Issue Type
               const hasType = currentLabels.some(l => knownTypes.includes(l));
               if (!hasType) {
+                // a) Title prefix matching
                 if (/^\[Crash\]/i.test(title)) labelsToAdd.add('bug');
                 else if (/^\[Bug\]/i.test(title) || /^fix(\(.*\))?:/i.test(title)) labelsToAdd.add('bug');
-                else if (/^\[Feature\]/i.test(title) || /^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('feature');
+                else if (/^\[Feature\]/i.test(title) || /^\[Idea\]/i.test(title) || /^feat(\(.*\))?:/i.test(title)) labelsToAdd.add('feature');
                 else if (/^\[Docs\]/i.test(title) || /^docs(\(.*\))?:/i.test(title)) labelsToAdd.add('docs');
                 else if (/^\[Refactor\]/i.test(title) || /^refactor(\(.*\))?:/i.test(title)) labelsToAdd.add('refactor');
                 else if (/^\[Chore\]/i.test(title) || /^chore(\(.*\))?:/i.test(title)) labelsToAdd.add('chore');
+                else if (/^perf(\(.*\))?:/i.test(title)) labelsToAdd.add('perf');
+
+                // b) Fallback: read GitHub's native Issue Type (Bug/Feature/Task)
+                if (labelsToAdd.size === 0) {
+                  const issueType = (context.payload.issue.issue_type || {}).name || '';
+                  const typeLower = issueType.toLowerCase();
+                  if (typeLower === 'bug') labelsToAdd.add('bug');
+                  else if (typeLower === 'feature') labelsToAdd.add('feature');
+                  // Task type doesn't map to a specific label
+                }
+
+                // c) Emoji prefix fallback (💡 = idea/feature, 🐛 = bug)
+                if (labelsToAdd.size === 0) {
+                  if (/^💡/u.test(title)) labelsToAdd.add('feature');
+                  else if (/^🐛/u.test(title)) labelsToAdd.add('bug');
+                  else if (/^💥/u.test(title)) labelsToAdd.add('bug');
+                }
               }
 
               // 2. Infer priority from title / dropdown
@@ -105,7 +122,7 @@ jobs:
               if (!hasPriority) {
                 if (/^\[Crash\]/i.test(title) || body.includes('Critical / Blocking') || body.includes('user-impact-critical')) {
                   labelsToAdd.add('P1');
-                } else if (body.includes('Minor / Cosmetic') || body.includes('user-impact-low') || /^\[Feature\]/i.test(title)) {
+                } else if (body.includes('Minor / Cosmetic') || body.includes('user-impact-low') || labelsToAdd.has('feature')) {
                   labelsToAdd.add('P3');
                 } else if (labelsToAdd.has('bug') || currentLabels.includes('bug')) {
                   labelsToAdd.add('P2');
@@ -114,32 +131,8 @@ jobs:
                 }
               }
 
-              // Clean up any stray user-impact labels accidentally placed on issues
-              for (const impact of impactLabels) {
-                if (currentLabels.includes(impact)) {
-                  labelsToRemove.add(impact);
-                }
-              }
-
-              // 3. GitHub Projects Integration: Auto-add to "boxlore roadmap" (Project 2)
-              try {
-                const projectNodeId = 'PVT_kwDOEkjj9s4BgJ6E';
-                if (target.node_id) {
-                  await github.graphql(`
-                    mutation($projectId: ID!, $contentId: ID!) {
-                      addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
-                        item { id }
-                      }
-                    }
-                  `, {
-                    projectId: projectNodeId,
-                    contentId: target.node_id
-                  });
-                  console.log(`Ensured #${number} is added to Project 2 (boxlore roadmap).`);
-                }
-              } catch (projectErr) {
-                console.log(`Project auto-add note for #${number}:`, projectErr.message);
-              }
+              // Note: Issues are auto-added to Project 2 by the built-in
+              // "Auto-add to project" project workflow (no token needed).
             }
 
             // Remove superseded labels
