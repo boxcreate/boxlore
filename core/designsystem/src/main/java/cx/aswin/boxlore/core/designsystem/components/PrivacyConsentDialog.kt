@@ -312,7 +312,9 @@ private fun ConsentOptions(
                         modifier = Modifier.padding(top = 4.dp).clickable {
                             try {
                                 uriHandler.openUri("https://aswin.cx/boxlore/privacy")
-                            } catch (_: Exception) {}
+                            } catch (_: Exception) {
+                                // Ignore if browser cannot be opened
+                            }
                         }
                     )
                 }

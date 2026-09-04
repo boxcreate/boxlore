@@ -99,7 +99,11 @@ internal class PlaybackTelemetrySession(
         lastPositionSampleMs = SystemClock.elapsedRealtime()
     }
 
-    fun start(episodeId: String, currentItem: MediaItem?, fallbackEntryPoint: String? = null,) {
+    fun start(
+        episodeId: String,
+        currentItem: MediaItem?,
+        fallbackEntryPoint: String? = null,
+    ) {
         if (startTimeMs > 0 && this.episodeId == episodeId) return
 
         end(forceCompleted = false)
@@ -151,39 +155,42 @@ internal class PlaybackTelemetrySession(
         }
     }
 
-    private suspend fun resolvePodcastFromDb(podcastId: String): Pair<String?, String?> = try {
-        val podcast = database.podcastDao().getPodcast(podcastId)
-        if (podcast != null) {
-            val genre =
-                if (!podcast.genre.isNullOrBlank() && podcast.genre != "Podcast") {
-                    podcast.genre
-                } else {
-                    null
-                }
-            Pair(podcast.title, genre)
-        } else {
+    private suspend fun resolvePodcastFromDb(podcastId: String): Pair<String?, String?> =
+        try {
+            val podcast = database.podcastDao().getPodcast(podcastId)
+            if (podcast != null) {
+                val genre =
+                    if (!podcast.genre.isNullOrBlank() && podcast.genre != "Podcast") {
+                        podcast.genre
+                    } else {
+                        null
+                    }
+                Pair(podcast.title, genre)
+            } else {
+                Pair(null, null)
+            }
+        } catch (_: Exception) {
             Pair(null, null)
         }
-    } catch (_: Exception) {
-        Pair(null, null)
-    }
 
-    private suspend fun resolvePodcastFromHistory(episodeId: String): String? = try {
-        val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
-        if (historyItem != null && !historyItem.podcastName.isNullOrBlank()) {
-            historyItem.podcastName
-        } else {
+    private suspend fun resolvePodcastFromHistory(episodeId: String): String? =
+        try {
+            val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
+            if (historyItem != null && !historyItem.podcastName.isNullOrBlank()) {
+                historyItem.podcastName
+            } else {
+                null
+            }
+        } catch (_: Exception) {
             null
         }
-    } catch (_: Exception) {
-        null
-    }
 
-    private suspend fun resolvePodcastFromNetwork(podcastId: String): String? = try {
-        podcastRepository.getPodcastDetails(podcastId)?.title
-    } catch (_: Exception) {
-        null
-    }
+    private suspend fun resolvePodcastFromNetwork(podcastId: String): String? =
+        try {
+            podcastRepository.getPodcastDetails(podcastId)?.title
+        } catch (_: Exception) {
+            null
+        }
 
     private suspend fun resolvePodcastMetadata(
         podcastId: String,
@@ -210,7 +217,11 @@ internal class PlaybackTelemetrySession(
         return Pair(finalPodcastName, actualGenre)
     }
 
-    private suspend fun enrich(episodeId: String, currentItem: MediaItem?, genre: String?,) {
+    private suspend fun enrich(
+        episodeId: String,
+        currentItem: MediaItem?,
+        genre: String?,
+    ) {
         try {
             val queueItem = database.queueDao().getQueueItemByEpisodeId(episodeId)
             if (queueItem != null) {
@@ -276,7 +287,10 @@ internal class PlaybackTelemetrySession(
         )
     }
 
-    fun end(forceCompleted: Boolean = false, isTransition: Boolean = false,) {
+    fun end(
+        forceCompleted: Boolean = false,
+        isTransition: Boolean = false,
+    ) {
         val currentEpisodeId = episodeId
         if (startTimeMs <= 0 || currentEpisodeId == null) return
 
@@ -407,12 +421,12 @@ internal class PlaybackTelemetrySession(
         scope.launch {
             rankingFeedbackRepository.recordPlayback(
                 target =
-                FeedbackTarget(
-                    episodeId = currentEpisodeId,
-                    podcastId = currentPodcastId.orEmpty(),
-                    genre = currentPodcastGenre,
-                    source = adaptiveSource,
-                ),
+                    FeedbackTarget(
+                        episodeId = currentEpisodeId,
+                        podcastId = currentPodcastId.orEmpty(),
+                        genre = currentPodcastGenre,
+                        source = adaptiveSource,
+                    ),
                 listenSeconds = consumedAudioSeconds.toLong().coerceAtLeast(0L),
                 durationSeconds = (sessionTotalDurationMs / 1_000L).coerceAtLeast(0L),
                 completed = isCompleted,
@@ -429,9 +443,9 @@ internal class PlaybackTelemetrySession(
                     ListeningSessionRecordLogic.buildSession(
                         ListeningSessionRecordLogic.BuildSessionInput(
                             sessionId =
-                            java.util.UUID
-                                .randomUUID()
-                                .toString(),
+                                java.util.UUID
+                                    .randomUUID()
+                                    .toString(),
                             episodeId = currentEpisodeId,
                             podcastId = sessionPodcastIdForRecord.orEmpty(),
                             startedAt = sessionStartedAt,
@@ -505,7 +519,12 @@ internal class PlaybackTelemetrySession(
         checkIntervalHeartbeats(episodeId, currentPosSec, durationSec)
     }
 
-    private fun checkPercentHeartbeats(episodeId: String, currentPosSec: Float, durationSec: Float, percent: Float,) {
+    private fun checkPercentHeartbeats(
+        episodeId: String,
+        currentPosSec: Float,
+        durationSec: Float,
+        percent: Float,
+    ) {
         val percentMilestones = listOf(10, 25, 50, 75, 90)
         for (milestone in percentMilestones) {
             if (percent >= milestone && !firedHeartbeats.contains("percent_$milestone")) {
@@ -525,7 +544,11 @@ internal class PlaybackTelemetrySession(
         }
     }
 
-    private fun checkIntervalHeartbeats(episodeId: String, currentPosSec: Float, durationSec: Float,) {
+    private fun checkIntervalHeartbeats(
+        episodeId: String,
+        currentPosSec: Float,
+        durationSec: Float,
+    ) {
         val fiveMinuteIntervals = (currentPosSec / 300f).toInt()
         if (fiveMinuteIntervals > 0) {
             val milestoneKey = "time_${fiveMinuteIntervals * 5}m"
@@ -546,7 +569,10 @@ internal class PlaybackTelemetrySession(
         }
     }
 
-    fun updateHeartbeatsForPosition(positionMs: Long, durationMs: Long,) {
+    fun updateHeartbeatsForPosition(
+        positionMs: Long,
+        durationMs: Long,
+    ) {
         if (durationMs <= 0) return
         val percent = (positionMs.toFloat() / durationMs.toFloat()) * 100f
 
@@ -564,7 +590,10 @@ internal class PlaybackTelemetrySession(
         }
     }
 
-    fun trackManualCompletion(episodeId: String, totalDurationSeconds: Float,) {
+    fun trackManualCompletion(
+        episodeId: String,
+        totalDurationSeconds: Float,
+    ) {
         AnalyticsHelper.trackPlaybackCompleted(
             podcastId = podcastId,
             podcastName = podcastName,

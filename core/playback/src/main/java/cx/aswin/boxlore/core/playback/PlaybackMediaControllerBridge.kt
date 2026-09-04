@@ -61,7 +61,10 @@ internal class PlaybackMediaControllerBridge(
         )
     }
 
-    override fun onDeviceVolumeChanged(volume: Int, muted: Boolean,) {
+    override fun onDeviceVolumeChanged(
+        volume: Int,
+        muted: Boolean,
+    ) {
         val controller = mediaHandle.controller ?: return
         updatePlaybackRoute(
             deviceInfo = controller.deviceInfo,
@@ -70,7 +73,11 @@ internal class PlaybackMediaControllerBridge(
         )
     }
 
-    private fun updatePlaybackRoute(deviceInfo: DeviceInfo, volume: Int, isMuted: Boolean,) {
+    private fun updatePlaybackRoute(
+        deviceInfo: DeviceInfo,
+        volume: Int,
+        isMuted: Boolean,
+    ) {
         val resolvedRoute =
             PlaybackRouteResolver.resolve(
                 context = context,
@@ -135,7 +142,7 @@ internal class PlaybackMediaControllerBridge(
                     (
                         controller.currentPosition >= controller.duration - 10000 ||
                             controller.currentPosition >= controller.duration * 0.95
-                        )
+                    )
 
             if (hasMedia && reachedEnd) {
                 // Sleep Timer: End of Episode — stop everything if EOE is active
@@ -224,7 +231,10 @@ internal class PlaybackMediaControllerBridge(
         }
     }
 
-    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int,) {
+    override fun onMediaItemTransition(
+        mediaItem: MediaItem?,
+        reason: Int,
+    ) {
         if (mediaItem != null && pendingCastTransition?.mediaId != mediaItem.mediaId) {
             pendingCastTransition = null
         }
@@ -346,9 +356,9 @@ internal class PlaybackMediaControllerBridge(
                         newEpisode =
                             newEpisode.copy(
                                 chaptersUrl =
-                                "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
+                                    "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
                                 transcriptUrl =
-                                "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
+                                    "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
                             )
                         android.util.Log.d(
                             "PlaybackRepo",
@@ -430,13 +440,13 @@ internal class PlaybackMediaControllerBridge(
                         cx.aswin.boxlore.core.model.Podcast(
                             id = newEpisode.podcastId!!,
                             title =
-                            newEpisode.podcastTitle?.takeIf { !it.isNullOrBlank() && it != "Unknown Podcast" }
-                                ?: "Unknown Podcast",
+                                newEpisode.podcastTitle?.takeIf { !it.isNullOrBlank() && it != "Unknown Podcast" }
+                                    ?: "Unknown Podcast",
                             artist = newEpisode.podcastArtist?.takeIf { it.isNotEmpty() } ?: existingPod?.artist ?: "",
                             imageUrl =
-                            newEpisode.podcastImageUrl?.takeIf {
-                                it.isNotEmpty()
-                            } ?: existingPod?.imageUrl ?: "",
+                                newEpisode.podcastImageUrl?.takeIf {
+                                    it.isNotEmpty()
+                                } ?: existingPod?.imageUrl ?: "",
                             description = null,
                             genre = newEpisode.podcastGenre ?: existingPod?.genre ?: "Podcast",
                         )
@@ -486,7 +496,10 @@ internal class PlaybackMediaControllerBridge(
         )
     }
 
-    override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int,) {
+    override fun onTimelineChanged(
+        timeline: androidx.media3.common.Timeline,
+        reason: Int,
+    ) {
         // The playback service (auto-refill, Android Auto) can append items
         // directly to the player. Reconcile the in-memory queue whenever the
         // playlist changes so the UI stays in sync.
@@ -496,8 +509,15 @@ internal class PlaybackMediaControllerBridge(
     }
 }
 
-private data class PendingCastTransition(val mediaId: String, val reason: Int,)
+private data class PendingCastTransition(
+    val mediaId: String,
+    val reason: Int,
+)
 
 internal object DeferredCastTransitionPolicy {
-    fun shouldRetry(pendingMediaId: String, currentMediaId: String, title: CharSequence?,): Boolean = pendingMediaId == currentMediaId && CastMediaMetadata.queueTitle(title) != null
+    fun shouldRetry(
+        pendingMediaId: String,
+        currentMediaId: String,
+        title: CharSequence?,
+    ): Boolean = pendingMediaId == currentMediaId && CastMediaMetadata.queueTitle(title) != null
 }
