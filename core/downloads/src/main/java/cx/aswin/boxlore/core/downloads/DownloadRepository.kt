@@ -435,13 +435,19 @@ open class DownloadRepository(
         fun resetForTesting() {
             try {
                 downloadManager?.release()
-            } catch (ignored: Exception) {}
+            } catch (ignored: Exception) {
+                Log.d("DownloadRepo", "Release failed", ignored)
+            }
             try {
                 cache?.release()
-            } catch (ignored: Exception) {}
+            } catch (ignored: Exception) {
+                Log.d("DownloadRepo", "Release failed", ignored)
+            }
             try {
                 streamCache?.release()
-            } catch (ignored: Exception) {}
+            } catch (ignored: Exception) {
+                Log.d("DownloadRepo", "Release failed", ignored)
+            }
             downloadManager = null
             cache = null
             streamCache = null
@@ -449,9 +455,8 @@ open class DownloadRepository(
             streamDatabaseProvider = null
         }
 
-        fun mediaDownloadServiceClass(): Class<out DownloadService> = cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
-            .require()
-            .mediaDownloadServiceClass()
+        fun mediaDownloadServiceClass(): Class<out DownloadService> =
+            cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder.require().mediaDownloadServiceClass()
 
         fun getDownloadManager(context: Context): DownloadManager = downloadManager ?: synchronized(this) {
             downloadManager ?: createDownloadManager(context).also { downloadManager = it }
@@ -684,7 +689,9 @@ private fun evictFromCaches(
         if (cacheKey != episodeId) {
             try {
                 cache.removeResource(episodeId)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Log.d("DownloadRepo", "Cache removal failed", e)
+            }
         }
         if (episodeId.startsWith("briefing_")) {
             evictMatchingBriefingResources(cache, episodeId)
@@ -699,7 +706,9 @@ private fun evictMatchingBriefingResources(cache: Cache, episodeId: String) {
         cache.keys
             .filter { it.startsWith("${episodeId}_") }
             .forEach { versionedKey -> runCatching { cache.removeResource(versionedKey) } }
-    } catch (_: Exception) {}
+    } catch (e: Exception) {
+        Log.d("DownloadRepo", "Briefing evict failed", e)
+    }
 }
 
 private suspend fun cleanupArtwork(
@@ -712,10 +721,7 @@ private suspend fun cleanupArtwork(
     try {
         deleteLocalFileIfValid(episodeImgPath)
         if (podcastId != null && podcastImgPath != null) {
-            val othersCount =
-                database
-                    .downloadedEpisodeDao()
-                    .countOthersByPodcastId(podcastId, episodeId)
+            val othersCount = database.downloadedEpisodeDao().countOthersByPodcastId(podcastId, episodeId)
             if (othersCount == 0) {
                 deleteLocalFileIfValid(podcastImgPath)
             }
@@ -734,14 +740,8 @@ private fun downloadArtworkLocally(
     if (imageUrl.isNullOrBlank()) return null
     try {
         val cleanUrlStr = if (imageUrl.startsWith("//")) "https:$imageUrl" else imageUrl
-        val url =
-            java.net.URI
-                .create(cleanUrlStr)
-                .toURL()
-        val dir = File(context.filesDir, subDir)
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
+        val url = java.net.URI.create(cleanUrlStr).toURL()
+        val dir = File(context.filesDir, subDir).apply { mkdirs() }
         val file = File(dir, fileName)
         url.openStream().use { input ->
             file.outputStream().use { output ->

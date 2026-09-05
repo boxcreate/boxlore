@@ -36,6 +36,7 @@ internal data class SmartDownloadBudget(
     val maxTimeBudgetMs: Long = SmartDownloadManager.MAX_TIME_BUDGET_MS,
 )
 
+@Suppress("TooManyFunctions")
 class SmartDownloadManager(
     private val context: Context,
     private val database: BoxLoreDatabase,
@@ -319,54 +320,18 @@ class SmartDownloadManager(
         val startTime = currentTimeMillis()
 
         for (episode in combinedEpisodes) {
-            val elapsedTime = currentTimeMillis() - startTime
-            val remainingBudgetMs = budget.maxTimeBudgetMs - elapsedTime
-            if (remainingBudgetMs <= 0) {
-                Log.d("SmartDownloadManager", "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
-                writeLogToFile(context, "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
-                break
-            }
-
             val currentInDb = database.downloadedEpisodeDao().getDownload(episode.id)
             if (isEpisodeActiveOrDone(currentInDb, episode, existingDownloads)) {
                 Log.d("SmartDownloadManager", "Episode ${episode.title} already downloaded or downloading. Skipping.")
                 continue
             }
 
-            if (countDownloaded >= budget.maxCount) {
-                Log.d("SmartDownloadManager", "Hit max count limit (${budget.maxCount} episodes). Halting downloads.")
-                writeLogToFile(context, "Hit max count limit (${budget.maxCount} episodes). Halting downloads.")
+            if (checkBudgetHalt(budget, startTime, countDownloaded, currentDownloadedBytes, episode, currentTimeMillis)) {
                 break
             }
 
             val estimatedSize = SmartDownloadCandidateLogic.estimateEpisodeSize(episode)
-
-            if (budget.storageBudgetMb > 0 && currentDownloadedBytes + estimatedSize > budget.storageBudgetMb * 1024 * 1024L) {
-                val estMb = estimatedSize / (1024 * 1024)
-                val currMb = currentDownloadedBytes / (1024 * 1024)
-                Log.d(
-                    "SmartDownloadManager",
-                    "Hit storage budget limit (${budget.storageBudgetMb} MB). Adding '${episode.title}' (Est: $estMb MB) would exceed budget (Current: $currMb MB). Halting downloads.",
-                )
-                writeLogToFile(
-                    context,
-                    "Adding '${episode.title}' (Est: $estMb MB) would exceed storage budget (${budget.storageBudgetMb} MB). Halting downloads.",
-                )
-                break
-            }
-
-            val parentPod =
-                subs.find { it.podcastId == episode.podcastId }?.toDownloadManagerPodcast() ?: Podcast(
-                    id = episode.podcastId ?: "0",
-                    title = episode.podcastTitle?.takeIf { it.isNotBlank() } ?: "Unknown Podcast",
-                    artist = episode.podcastArtist ?: "Unknown",
-                    imageUrl =
-                    DownloadArtworkUrls.remoteUrl(episode.podcastImageUrl)
-                        ?: DownloadArtworkUrls.remoteUrl(episode.imageUrl)
-                        ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
-                        ?: episode.imageUrl
-                        ?: "",
-                )
+            val parentPod = resolveParentPodcast(subs, episode)
 
             Log.d(
                 "SmartDownloadManager",
@@ -377,26 +342,93 @@ class SmartDownloadManager(
                 "Triggered download for episode: '${episode.title}' (Show: '${parentPod.title}', Est: ${estimatedSize / (1024 * 1024)} MB)",
             )
 
+            val remainingBudgetMs = budget.maxTimeBudgetMs - (currentTimeMillis() - startTime)
             val episodeTimeout = minOf(remainingBudgetMs, PER_EPISODE_TIMEOUT_MS)
-            downloadRepository.addDownload(episode, parentPod, isSmartDownloaded = true, isForeground = false)
-            val success = downloadRepository.awaitDownloadCompletion(episode.id, timeoutMs = episodeTimeout)
-            if (success) {
+            val (downloadSuccess, bytesAdded) =
+                executeEpisodeDownload(episode, parentPod, episodeTimeout, estimatedSize)
+            if (downloadSuccess) {
                 countDownloaded++
-                currentDownloadedBytes += estimatedSize
-            } else {
-                Log.w("SmartDownloadManager", "Download failed or timed out for episode: ${episode.id}")
-                writeLogToFile(
-                    context,
-                    "Download failed or timed out for episode: '${episode.title}' (${episode.id})",
-                )
-                val completedInDb = database.downloadedEpisodeDao().getDownload(episode.id)?.status == DownloadedEpisodeEntity.STATUS_COMPLETED
-                if (completedInDb) {
-                    countDownloaded++
-                    currentDownloadedBytes += estimatedSize
-                } else {
-                    downloadRepository.removeDownload(episode.id, isForeground = false).join()
-                }
+                currentDownloadedBytes += bytesAdded
             }
+        }
+    }
+
+    private fun checkBudgetHalt(
+        budget: SmartDownloadBudget,
+        startTime: Long,
+        countDownloaded: Int,
+        currentDownloadedBytes: Long,
+        episode: Episode,
+        currentTimeMillis: () -> Long,
+    ): Boolean {
+        val elapsedTime = currentTimeMillis() - startTime
+        val remainingBudgetMs = budget.maxTimeBudgetMs - elapsedTime
+        if (remainingBudgetMs <= 0) {
+            Log.d("SmartDownloadManager", "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
+            writeLogToFile(context, "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
+            return true
+        }
+
+        if (countDownloaded >= budget.maxCount) {
+            Log.d("SmartDownloadManager", "Hit max count limit (${budget.maxCount} episodes). Halting downloads.")
+            writeLogToFile(context, "Hit max count limit (${budget.maxCount} episodes). Halting downloads.")
+            return true
+        }
+
+        val estimatedSize = SmartDownloadCandidateLogic.estimateEpisodeSize(episode)
+        if (budget.storageBudgetMb > 0 && currentDownloadedBytes + estimatedSize > budget.storageBudgetMb * 1024 * 1024L) {
+            val estMb = estimatedSize / (1024 * 1024)
+            val currMb = currentDownloadedBytes / (1024 * 1024)
+            Log.d(
+                "SmartDownloadManager",
+                "Hit storage budget limit (${budget.storageBudgetMb} MB). Adding '${episode.title}' (Est: $estMb MB) would exceed budget (Current: $currMb MB). Halting downloads.",
+            )
+            writeLogToFile(
+                context,
+                "Adding '${episode.title}' (Est: $estMb MB) would exceed storage budget (${budget.storageBudgetMb} MB). Halting downloads.",
+            )
+            return true
+        }
+
+        return false
+    }
+
+    private fun resolveParentPodcast(subs: List<PodcastEntity>, episode: Episode): Podcast =
+        subs.find { it.podcastId == episode.podcastId }?.toDownloadManagerPodcast() ?: Podcast(
+            id = episode.podcastId ?: "0",
+            title = episode.podcastTitle?.takeIf { it.isNotBlank() } ?: "Unknown Podcast",
+            artist = episode.podcastArtist ?: "Unknown",
+            imageUrl =
+            DownloadArtworkUrls.remoteUrl(episode.podcastImageUrl)
+                ?: DownloadArtworkUrls.remoteUrl(episode.imageUrl)
+                ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
+                ?: episode.imageUrl
+                ?: "",
+        )
+
+    private suspend fun executeEpisodeDownload(
+        episode: Episode,
+        parentPod: Podcast,
+        episodeTimeout: Long,
+        estimatedSize: Long,
+    ): Pair<Boolean, Long> {
+        downloadRepository.addDownload(episode, parentPod, isSmartDownloaded = true, isForeground = false)
+        val success = downloadRepository.awaitDownloadCompletion(episode.id, timeoutMs = episodeTimeout)
+        if (success) {
+            return true to estimatedSize
+        }
+
+        Log.w("SmartDownloadManager", "Download failed or timed out for episode: ${episode.id}")
+        writeLogToFile(
+            context,
+            "Download failed or timed out for episode: '${episode.title}' (${episode.id})",
+        )
+        val completedInDb = database.downloadedEpisodeDao().getDownload(episode.id)?.status == DownloadedEpisodeEntity.STATUS_COMPLETED
+        return if (completedInDb) {
+            true to estimatedSize
+        } else {
+            downloadRepository.removeDownload(episode.id, isForeground = false).join()
+            false to 0L
         }
     }
 
@@ -549,12 +581,6 @@ class SmartDownloadManager(
                         it.status == DownloadedEpisodeEntity.STATUS_COMPLETED ||
                             it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING
                         ) &&
-                        it.isSmartDownloaded &&
-                        it.episodeId in candidateEpisodeIds
-                }
-            val completedCount =
-                existingDownloads.count {
-                    it.status == DownloadedEpisodeEntity.STATUS_COMPLETED &&
                         it.isSmartDownloaded &&
                         it.episodeId in candidateEpisodeIds
                 }
