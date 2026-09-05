@@ -229,4 +229,41 @@ class PlaybackSessionRestoreHelperTest {
 
         assertNull(restored)
     }
+
+    @Test
+    fun controllerOnlyItemWithArtworkUsesArtworkForPodcastAndSyntheticSession() = testScope.runTest {
+        val dao = database.listeningHistoryDao()
+        val currentItem =
+            androidx.media3.common.MediaItem
+                .Builder()
+                .setMediaId("ep-controller-art")
+                .setUri("https://example.com/stream.mp3")
+                .setMediaMetadata(
+                    androidx.media3.common.MediaMetadata
+                        .Builder()
+                        .setTitle("Live Episode")
+                        .setArtist("Live Podcast")
+                        .setArtworkUri(android.net.Uri.parse("https://example.com/controller-art.png"))
+                        .build(),
+                ).build()
+
+        val restored =
+            PlaybackSessionRestoreHelper.resolveRestoredSession(
+                targetEpisodeId = "ep-controller-art",
+                currentItem = currentItem,
+                listeningHistoryDao = dao,
+                podcastRepository = podcastRepository,
+                savedQueue = emptyList(),
+            )
+
+        assertNotNull(restored)
+        assertEquals("https://example.com/controller-art.png", restored!!.podcast.imageUrl)
+        assertEquals("https://example.com/controller-art.png", restored.episode.imageUrl)
+        assertEquals("https://example.com/controller-art.png", restored.episode.podcastImageUrl)
+
+        val stored = dao.getHistoryItem("ep-controller-art")
+        assertNotNull(stored)
+        assertEquals("https://example.com/controller-art.png", stored!!.podcastImageUrl)
+        assertEquals("https://example.com/controller-art.png", stored.episodeImageUrl)
+    }
 }

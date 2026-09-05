@@ -38,7 +38,7 @@ internal object PlaybackSessionRestoreHelper {
                 podcastRepository = podcastRepository,
             )
         val resolvedPodcastId = resolvePodcastId(lastSession, queueEpisode, podcastRepository)
-        val resolvedPodcastImageUrl = resolvePodcastImageUrl(lastSession, queueEpisode, podcastRepository)
+        val resolvedPodcastImageUrl = resolvePodcastImageUrl(lastSession, currentItem, queueEpisode, podcastRepository)
 
         enrichIfMissingMetadata(
             lastSession = lastSession,
@@ -125,13 +125,8 @@ internal object PlaybackSessionRestoreHelper {
         val resolvedAudioUrl = baseEp?.audioUrl ?: liveAudioUrl ?: return null
         val resolvedEpisodeTitle = baseEp?.title ?: liveTitle ?: ""
         val resolvedPodcastId = baseEp?.podcastId.orEmpty()
-        val resolvedPodcastName =
-            baseEp?.podcastTitle?.takeIf(String::isNotBlank)
-                ?: baseEp?.podcastArtist?.takeIf(String::isNotBlank)
-                ?: livePodcast
-                ?: ""
-        val resolvedArtwork = baseEp?.imageUrl ?: currentItem?.mediaMetadata?.artworkUri?.toString()
-        val resolvedPodcastArtwork = baseEp?.podcastImageUrl
+        val resolvedPodcastName = resolveSyntheticPodcastName(baseEp, livePodcast)
+        val (resolvedArtwork, resolvedPodcastArtwork) = resolveSyntheticArtwork(baseEp, currentItem)
         val durationMs = (baseEp?.duration?.toLong() ?: 0L) * 1_000L
 
         val syntheticSession =
@@ -240,12 +235,14 @@ internal object PlaybackSessionRestoreHelper {
 
     private suspend fun resolvePodcastImageUrl(
         lastSession: ListeningHistoryEntity,
+        currentItem: MediaItem?,
         queueEpisode: Episode?,
         podcastRepository: PodcastRepository,
     ): String? =
         lastSession.podcastImageUrl?.takeIf(String::isNotBlank)
             ?: queueEpisode?.podcastImageUrl?.takeIf(String::isNotBlank)
-            ?: runCatching { podcastRepository.getEpisode(lastSession.episodeId) }.getOrNull()?.podcastImageUrl
+            ?: runCatching { podcastRepository.getEpisode(lastSession.episodeId) }.getOrNull()?.podcastImageUrl?.takeIf(String::isNotBlank)
+            ?: currentItem?.mediaMetadata?.artworkUri?.toString()?.takeIf(String::isNotBlank)
 
     private suspend fun resolvePodcastName(
         lastSession: ListeningHistoryEntity,
@@ -275,5 +272,21 @@ internal object PlaybackSessionRestoreHelper {
         }
 
         return ""
+    }
+
+    private fun resolveSyntheticPodcastName(baseEp: Episode?, livePodcast: String?): String =
+        baseEp?.podcastTitle?.takeIf(String::isNotBlank)
+            ?: baseEp?.podcastArtist?.takeIf(String::isNotBlank)
+            ?: livePodcast
+            ?: ""
+
+    private fun resolveSyntheticArtwork(
+        baseEp: Episode?,
+        currentItem: MediaItem?,
+    ): Pair<String?, String?> {
+        val itemArtwork = currentItem?.mediaMetadata?.artworkUri?.toString()
+        val artwork = baseEp?.imageUrl?.takeIf(String::isNotBlank) ?: itemArtwork
+        val podcastArtwork = baseEp?.podcastImageUrl?.takeIf(String::isNotBlank) ?: itemArtwork
+        return artwork to podcastArtwork
     }
 }
